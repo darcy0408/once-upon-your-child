@@ -1,0 +1,32 @@
+# ---- Flutter / Dart
+.dart_tool/
+.packages
+.pub-cache/
+build/
+**/Generated.xcconfig
+**/flutter_export_environment.sh
+
+# ---- Android / iOS
+android/.gradle/
+android/local.properties
+ios/Pods/
+ios/.symlinks/
+macos/Flutter/ephemeral/
+
+# ---- Web
+web/.dart_tool/
+
+# ---- VS Code / IDEs
+.vscode/
+.idea/
+
+# ---- Python backend
+backend/__pycache__/
+backend/.env
+backend/venv/
+backend/*.pyc
+backend/characters.db
+
+# ---- System
+.DS_Store
+Thumbs.db
