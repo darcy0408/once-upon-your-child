@@ -9,7 +9,6 @@ import 'models.dart';
 import 'multi_character_screen.dart';
 import 'character_creation_screen_enhanced.dart';
 import 'interactive_story_screen.dart';
-import 'adventure_map_screen.dart';
 import 'subscription_service.dart';
 import 'subscription_models.dart';
 import 'paywall_dialog.dart';
@@ -17,13 +16,9 @@ import 'premium_upgrade_screen.dart';
 import 'therapeutic_customization_screen.dart';
 import 'therapeutic_models.dart';
 import 'story_intent_card.dart';
-import 'reading_dashboard_screen.dart';
 import 'offline_stories_screen.dart';
 import 'coloring_book_library_screen.dart';
-import 'superhero_builder_screen.dart';
-import 'reading_unlocks_screen.dart';
 import 'emotions_screen.dart';
-import 'unlock_all_for_testing.dart';
 
 class StoryCreatorApp extends StatelessWidget {
   const StoryCreatorApp({super.key});
@@ -425,16 +420,6 @@ class _StoryScreenState extends State<StoryScreen> {
                 await _loadSubscriptionInfo();
               },
             ),
-          // Reading Dashboard
-          IconButton(
-            tooltip: 'Reading Progress',
-            icon: const Icon(Icons.auto_stories),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ReadingDashboardScreen()),
-              );
-            },
-          ),
           // Offline Stories
           IconButton(
             tooltip: 'Offline Stories',
@@ -452,43 +437,6 @@ class _StoryScreenState extends State<StoryScreen> {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ColoringBookLibraryScreen()),
-              );
-            },
-          ),
-          IconButton(
-            tooltip: 'Adventure Map',
-            icon: const Icon(Icons.map),
-            onPressed: () async {
-              final selectedTheme = await Navigator.of(context).push<String>(
-                MaterialPageRoute(
-                  builder: (_) => AdventureMapScreen(
-                    selectedCharacter: _selectedCharacter,
-                  ),
-                ),
-              );
-              // If a theme was selected from the map, update the current theme
-              if (selectedTheme != null && mounted) {
-                setState(() => _selectedTheme = selectedTheme);
-              }
-            },
-          ),
-          // Superhero Builder
-          IconButton(
-            tooltip: 'Superhero Builder',
-            icon: const Icon(Icons.shield),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SuperheroBuilderScreen()),
-              );
-            },
-          ),
-          // Reading Unlocks
-          IconButton(
-            tooltip: 'Reading Unlocks',
-            icon: const Icon(Icons.stars),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ReadingUnlocksScreen()),
               );
             },
           ),
