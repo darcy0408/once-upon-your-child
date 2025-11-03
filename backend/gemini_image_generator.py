@@ -47,10 +47,16 @@ class GeminiImageGenerator:
         # Determine detail level based on age
         if age <= 5:
             detail_level = "simple, bold shapes with minimal details, cartoonish and fun"
+            age_descriptor = "young children (ages 3-5)"
         elif age <= 11:
             detail_level = "balanced details with fun elements, engaging and colorful"
+            age_descriptor = "children (ages 6-11)"
+        elif age <= 17:
+            detail_level = "intricate artwork with rich details, sophisticated and relatable for teens"
+            age_descriptor = "teenagers (ages 12-17)"
         else:
-            detail_level = "intricate, nuanced artwork with rich details"
+            detail_level = "sophisticated, nuanced artwork with depth and symbolism, suitable for adult reflection"
+            age_descriptor = "adults (18+)"
 
         # Build therapeutic context
         therapeutic_context = ""
@@ -62,7 +68,7 @@ Create a vibrant, engaging {style} that depicts this scene from a therapeutic st
 
 Scene: {scene_description}
 Main character: {character_name}
-Age group: {age} years old
+Target audience: {age_descriptor} (person is {age} years old)
 Detail level: {detail_level}{therapeutic_context}
 
 Visual requirements:
@@ -70,14 +76,14 @@ Visual requirements:
 - Positive, uplifting emotional tone
 - Show characters in action, expressing emotions appropriately
 - Include diverse, inclusive representations
-- Age-appropriate content (ages {age})
+- Age-appropriate content for {age_descriptor}
 - Dynamic composition with balanced elements
 - Professional illustration quality
 - No text or words in the image
-- Therapeutic value: promote emotional expression, confidence, and positivity
-- Safe, non-violent, child-friendly content
+- Therapeutic value: promote emotional expression, growth, and positivity
+- Respectful, safe, and appropriate for the intended age group
 
-Style: {style}, optimized for ages {age}
+Style: {style}, optimized for {age_descriptor}
 """.strip()
 
         try:
@@ -136,12 +142,19 @@ Style: {style}, optimized for ages {age}
         if age <= 5:
             intricacy = "very simple shapes with large coloring areas, minimal details, easy for small hands"
             line_thickness = "very thick, bold lines"
+            age_descriptor = "young children (ages 3-5)"
         elif age <= 11:
             intricacy = "moderate details with interesting elements to color, balanced complexity"
             line_thickness = "medium-thick lines"
+            age_descriptor = "children (ages 6-11)"
+        elif age <= 17:
+            intricacy = "intricate patterns with fine details, sophisticated designs for focused coloring"
+            line_thickness = "varied line weights with detail work"
+            age_descriptor = "teenagers (ages 12-17)"
         else:
-            intricacy = "intricate patterns and finer details, sophisticated design"
-            line_thickness = "varied line weights for depth"
+            intricacy = "complex, intricate patterns with fine details, meditative and sophisticated designs"
+            line_thickness = "varied line weights with intricate detail work"
+            age_descriptor = "adults (18+)"
 
         # Build therapeutic context
         therapeutic_context = ""
@@ -153,7 +166,7 @@ Create a therapeutic coloring book page featuring elements from a personalized s
 
 Story context: {scene_description}
 Main character: {character_name}
-User age: {age} years old
+Target audience: {age_descriptor} (person is {age} years old)
 Intricacy level: {intricacy}
 Line style: {line_thickness}{therapeutic_context}
 
@@ -165,15 +178,15 @@ Critical requirements:
 - {intricacy}
 - Balanced composition covering 70%+ of story themes
 - High contrast for easy visibility
-- Engaging, fun elements tied to the narrative
+- Engaging elements tied to the narrative
 - Positive, uplifting content only
-- Age-appropriate for {age} years old
-- Promotes creativity and emotional processing
-- Safe therapeutic content: no violence, scary elements, or distressing themes
+- Age-appropriate for {age_descriptor}
+- Promotes creativity, mindfulness, and emotional processing
+- Safe therapeutic content: respectful and appropriate for the intended age
 - No text or words in the image
 - Printable quality (suitable for app display or printing)
 
-Design style: Clean line art coloring page, therapeutic and story-based, ages {age}
+Design style: Clean line art coloring page, therapeutic and story-based, for {age_descriptor}
 Output: Pure black lines on white background only
 """.strip()
 

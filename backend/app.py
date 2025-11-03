@@ -284,7 +284,19 @@ def generate_story_endpoint():
     user_api_key = payload.get("user_api_key")  # Optional user-provided API key
     character_age = payload.get("character_age", 7)  # For age-appropriate content
 
+    # Add age-appropriate context to the prompt
+    if character_age <= 5:
+        age_context = "Write for very young children (ages 3-5): simple language, short sentences, clear lessons."
+    elif character_age <= 11:
+        age_context = "Write for children (ages 6-11): engaging language, moderate complexity, relatable situations."
+    elif character_age <= 17:
+        age_context = "Write for teenagers (ages 12-17): sophisticated language, complex emotions, relatable teen experiences."
+    else:
+        age_context = "Write for adults (18+): mature themes, nuanced emotions, reflective and meaningful content."
+
     prompt = story_engine.generate_enhanced_prompt(character, theme, companion, therapeutic_prompt)
+    # Add age-appropriate context to the prompt
+    prompt = f"{prompt}\n\nAGE-APPROPRIATE CONTENT:\n{age_context}\nCharacter age: {character_age} years old"
 
     # Decide which model to use
     using_user_key = False
