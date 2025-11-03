@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'superhero_name_generator.dart';
 import 'avatar_builder_screen.dart';
@@ -158,9 +159,12 @@ class _CharacterCreationScreenEnhancedState
     }
 
     try {
+      final ageValue = int.tryParse(_ageController.text.trim());
+      final ageToSend =
+          (ageValue == null || ageValue < 3 || ageValue > 100) ? 7 : ageValue;
       final body = {
         'name': _nameController.text.trim(),
-        'age': int.tryParse(_ageController.text.trim()) ?? 0,
+        'age': ageToSend,
         'gender': _isA, // Send Boy/Girl for story pronouns
         'character_style': _characterStyle, // Character appearance/personality
         'role': role,
@@ -369,7 +373,7 @@ class _CharacterCreationScreenEnhancedState
                 controller: _ageController,
                 decoration: InputDecoration(
                   labelText: 'Age *',
-                  hintText: '5-12',
+                  hintText: '3-100',
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8)),
                   filled: true,
@@ -377,9 +381,16 @@ class _CharacterCreationScreenEnhancedState
                   prefixIcon: const Icon(Icons.cake),
                 ),
                 keyboardType: TextInputType.number,
+                inputFormatters: const [
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return 'Required';
-                  if (int.tryParse(v.trim()) == null) return 'Invalid';
+                  final age = int.tryParse(v.trim());
+                  if (age == null) return 'Invalid number';
+                  if (age < 3 || age > 100) {
+                    return 'Age must be 3-100';
+                  }
                   return null;
                 },
               ),

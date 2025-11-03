@@ -13,6 +13,8 @@ class Character {
   final List<String>? likes;
   final List<String>? dislikes;
   final List<String>? fears;
+  final List<String>? strengths;
+  final List<String>? personalityTraits;
   final String? comfortItem;
   final String? hair;
   final String? eyes;
@@ -34,6 +36,8 @@ class Character {
     this.likes,
     this.dislikes,
     this.fears,
+    this.strengths,
+    this.personalityTraits,
     this.comfortItem,
     this.hair,
     this.eyes,
@@ -50,10 +54,16 @@ class Character {
     if (avatarJson is Map<String, dynamic>) {
       avatar = CharacterAvatar.fromJson(avatarJson);
     }
+    final dynamic ageValue = json['age'];
+    final int parsedAge = ageValue is int
+        ? ageValue
+        : ageValue is num
+            ? ageValue.toInt()
+            : int.tryParse(ageValue?.toString() ?? '') ?? 0;
     return Character(
       id: json['id'] ?? '',
       name: json['name'] ?? 'Unknown',
-      age: json['age'] ?? 0,
+      age: parsedAge,
       role: json['role'] ?? 'Hero',
       gender: json['gender'],
       characterStyle: json['character_style'],
@@ -63,6 +73,8 @@ class Character {
       dislikes:
           json['dislikes'] != null ? List<String>.from(json['dislikes']) : null,
       fears: json['fears'] != null ? List<String>.from(json['fears']) : null,
+      strengths: json['strengths'] != null ? List<String>.from(json['strengths']) : null,
+      personalityTraits: json['personality_traits'] != null ? List<String>.from(json['personality_traits']) : null,
       comfortItem: json['comfort_item'],
       hair: json['hair'],
       eyes: json['eyes'],
@@ -86,6 +98,8 @@ class Character {
         'likes': likes,
         'dislikes': dislikes,
         'fears': fears,
+        'strengths': strengths,
+        'personality_traits': personalityTraits,
         'comfort_item': comfortItem,
         'hair': hair,
         'eyes': eyes,

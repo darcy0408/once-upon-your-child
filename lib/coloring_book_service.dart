@@ -1,5 +1,6 @@
 // lib/coloring_book_service.dart
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -46,7 +47,8 @@ class ColoringPage {
       originalIllustrationUrl: json['originalIllustrationUrl'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       characterAppearance: json['characterAppearance'] != null
-          ? CharacterAppearance.fromJson(json['characterAppearance'] as Map<String, dynamic>)
+          ? CharacterAppearance.fromJson(
+              json['characterAppearance'] as Map<String, dynamic>)
           : null,
     );
   }
@@ -67,6 +69,8 @@ class ColoringBookService {
     required String scene,
     CharacterAppearance? characterAppearance,
     String? originalIllustrationUrl,
+    int age = 7,
+    String? therapeuticFocus,
   }) async {
     if (openAiApiKey == null || openAiApiKey!.isEmpty) {
       throw Exception('OpenAI API key not configured');
@@ -76,6 +80,8 @@ class ColoringBookService {
     final prompt = _generateLineArtPrompt(
       scene: scene,
       characterAppearance: characterAppearance,
+      age: age,
+      therapeuticFocus: therapeuticFocus,
     );
 
     // Call DALL-E to generate line art
@@ -96,11 +102,14 @@ class ColoringBookService {
   String _generateLineArtPrompt({
     required String scene,
     CharacterAppearance? characterAppearance,
+    required int age,
+    String? therapeuticFocus,
   }) {
-    final characterDesc = characterAppearance?.toColoringBookDescription() ?? 'a child character';
+    final characterDesc =
+        characterAppearance?.toColoringBookDescription() ?? 'a child character';
 
     return '''
-Create a coloring book page (black and white line art only) for children ages 4-8.
+Create a coloring book page (black and white line art only) for a child around age $age.
 
 Scene: $scene
 
@@ -117,9 +126,11 @@ Requirements:
 - Suitable for printing
 - Similar to classic children's coloring books
 - Include the character prominently in the scene
+${therapeuticFocus != null ? 'Therapeutic focus: $therapeuticFocus' : ''}
 
 Style: Clean line art, coloring book page, black outlines on white background
-'''.trim();
+'''
+        .trim();
   }
 
   /// Call DALL-E API to generate image
@@ -143,7 +154,8 @@ Style: Clean line art, coloring book page, black outlines on white background
       final data = jsonDecode(response.body);
       return data['data'][0]['url'] as String;
     } else {
-      throw Exception('DALL-E API error: ${response.statusCode} - ${response.body}');
+      throw Exception(
+          'DALL-E API error: ${response.statusCode} - ${response.body}');
     }
   }
 
@@ -165,6 +177,8 @@ Style: Clean line art, coloring book page, black outlines on white background
           pageTitle: '$storyTitle - Page ${i + 1}',
           scene: scenes[i],
           characterAppearance: characterAppearance,
+          age: age,
+          therapeuticFocus: therapeuticFocus,
         );
 
         pages.add(page);
@@ -269,19 +283,22 @@ class GeminiColoringBookService extends ColoringBookService {
       }).toList();
 
       // Call backend to generate therapeutic coloring pages
-      final response = await http.post(
-        Uri.parse('$backendUrl/generate-coloring-pages'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'scenes': scenesData,
-          'character_name': characterAppearance?.name ?? 'the character',
-          'age': age,
-          'therapeutic_focus': therapeuticFocus,
-        }),
-      );
+      final response = await http
+          .post(
+            Uri.parse('$backendUrl/generate-coloring-pages'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'scenes': scenesData,
+              'character_name': characterAppearance?.characterName ?? 'the character',
+              'age': age,
+              'therapeutic_focus': therapeuticFocus,
+            }),
+          )
+          .timeout(const Duration(seconds: 65));
 
       if (response.statusCode != 200) {
-        throw Exception('Failed to generate coloring pages: ${response.statusCode}');
+        throw Exception(
+            'Failed to generate coloring pages: ${response.statusCode}');
       }
 
       final data = jsonDecode(response.body);
@@ -349,13 +366,16 @@ class MockColoringBookService extends ColoringBookService {
     required String scene,
     CharacterAppearance? characterAppearance,
     String? originalIllustrationUrl,
+    int age = 7,
+    String? therapeuticFocus,
   }) async {
     // Simulate API delay
     await Future.delayed(const Duration(seconds: 2));
 
     // Use a placeholder service that provides black and white coloring book style images
     // In production, this would call DALL-E with the coloring book prompt
-    final mockImageUrl = 'https://picsum.photos/seed/coloring${DateTime.now().millisecondsSinceEpoch}/400/400?grayscale';
+    final mockImageUrl =
+        'https://picsum.photos/seed/coloring${DateTime.now().millisecondsSinceEpoch}/400/400?grayscale';
 
     return ColoringPage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),

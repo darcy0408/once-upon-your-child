@@ -1,6 +1,7 @@
 // lib/story_based_illustration_service.dart
 // Story-based illustration service that uses backend to extract scenes
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'story_illustration_service.dart';
@@ -21,18 +22,24 @@ class StoryBasedIllustrationService extends StoryIllustrationService {
     String? theme,
     IllustrationStyle style = IllustrationStyle.childrenBook,
     int numberOfImages = 3,
+    int age = 7,
+    String? therapeuticFocus,
   }) async {
     try {
       // Call backend to extract story scenes
-      final response = await http.post(
-        Uri.parse('$backendUrl/extract-story-scenes'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'story_text': storyText,
-          'character_name': characterName,
-          'num_scenes': numberOfImages,
-        }),
-      );
+      final response = await http
+          .post(
+            Uri.parse('$backendUrl/extract-story-scenes'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'story_text': storyText,
+              'character_name': characterName,
+              'num_scenes': numberOfImages,
+              'age': age,
+              'therapeutic_focus': therapeuticFocus,
+            }),
+          )
+          .timeout(const Duration(seconds: 45));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -46,7 +53,8 @@ class StoryBasedIllustrationService extends StoryIllustrationService {
 
           // For now, still use placeholders but with scene-specific seeds
           // This will make images consistent with the scene content
-          final seed = '${storyTitle}_${sceneTitle.replaceAll(' ', '_')}'.hashCode.abs();
+          final seed =
+              '${storyTitle}_${sceneTitle.replaceAll(' ', '_')}'.hashCode.abs();
 
           illustrations.add(StoryIllustration(
             id: '${DateTime.now().millisecondsSinceEpoch}_$i',
