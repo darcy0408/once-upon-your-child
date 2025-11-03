@@ -796,11 +796,13 @@ Focus on the most visually interesting and important moments. Make descriptions 
 
 @app.route("/generate-illustrations", methods=["POST"])
 def generate_illustrations():
-    """Generate actual illustrations for story scenes using Gemini Imagen."""
+    """Generate therapeutic story illustrations using Gemini Imagen with age-appropriate detail."""
     payload = request.get_json(silent=True) or {}
     scenes = payload.get("scenes", [])
     character_name = payload.get("character_name", "the hero")
     style = payload.get("style", "children's book illustration")
+    age = payload.get("age", 7)  # User's age for appropriate detail level
+    therapeutic_focus = payload.get("therapeutic_focus")  # Optional: e.g., "overcoming fear"
 
     if not scenes:
         return jsonify({"error": "scenes are required"}), 400
@@ -817,12 +819,14 @@ def generate_illustrations():
             if not scene_description:
                 continue
 
-            # Generate one image per scene
+            # Generate one therapeutic illustration per scene
             images = generator.generate_story_illustration(
                 scene_description=scene_description,
                 character_name=character_name,
                 style=style,
-                num_images=1
+                num_images=1,
+                age=age,
+                therapeutic_focus=therapeutic_focus
             )
 
             if images:
@@ -843,37 +847,56 @@ def generate_illustrations():
         logger.error(f"Illustration generation error: {e}")
         return jsonify({"error": f"Failed to generate illustrations: {str(e)}"}), 500
 
-@app.route("/generate-coloring-prompt", methods=["POST"])
-def generate_coloring_prompt():
-    """Generate a prompt for a coloring book page."""
+@app.route("/generate-coloring-pages", methods=["POST"])
+def generate_coloring_pages():
+    """Generate therapeutic coloring book pages from story scenes."""
     payload = request.get_json(silent=True) or {}
-    scene_description = payload.get("scene_description", "")
-    character_name = payload.get("character_name", "a child")
-    
-    if not scene_description:
-        return jsonify({"error": "scene_description is required"}), 400
-    
-    coloring_prompt = f"""
-Create a simple BLACK AND WHITE line art coloring book page for children ages 4-8.
+    scenes = payload.get("scenes", [])
+    character_name = payload.get("character_name", "the hero")
+    age = payload.get("age", 7)  # User's age for appropriate intricacy
+    therapeutic_focus = payload.get("therapeutic_focus")  # Optional: e.g., "relaxation"
 
-Scene: {scene_description}
-Main character: {character_name}
+    if not scenes:
+        return jsonify({"error": "scenes are required"}), 400
 
-The image should be:
-- ONLY black lines on white background (no colors, no shading, no gray)
-- Bold, clear outlines perfect for coloring
-- Simple shapes with large areas to color
-- Child-friendly and fun
-- Similar to classic Disney coloring books
+    try:
+        from gemini_image_generator import GeminiImageGenerator
+        generator = GeminiImageGenerator()
 
-Describe what this coloring page would show in detail.
-"""
-    
-    return jsonify({
-        "prompt": coloring_prompt,
-        "scene": scene_description,
-        "character": character_name
-    }), 200
+        coloring_pages = []
+        for i, scene in enumerate(scenes):
+            scene_description = scene.get("description", scene.get("text", ""))
+            scene_title = scene.get("title", f"Scene {i+1}")
+
+            if not scene_description:
+                continue
+
+            # Generate therapeutic coloring page
+            pages = generator.generate_coloring_page(
+                scene_description=scene_description,
+                character_name=character_name,
+                num_images=1,
+                age=age,
+                therapeutic_focus=therapeutic_focus
+            )
+
+            if pages:
+                coloring_pages.append({
+                    "scene_title": scene_title,
+                    "scene_description": scene_description,
+                    "image_data": pages[0]["image_data"],  # base64 PNG
+                    "image_id": pages[0]["id"],
+                    "format": "png"
+                })
+
+        if not coloring_pages:
+            return jsonify({"error": "Failed to generate any coloring pages"}), 500
+
+        return jsonify({"coloring_pages": coloring_pages}), 200
+
+    except Exception as e:
+        logger.error(f"Coloring page generation error: {e}")
+        return jsonify({"error": f"Failed to generate coloring pages: {str(e)}"}), 500
 
 
 @app.route("/setup-test-account", methods=["POST"])

@@ -153,6 +153,8 @@ Style: Clean line art, coloring book page, black outlines on white background
     required String storyTitle,
     required List<String> scenes,
     CharacterAppearance? characterAppearance,
+    int age = 7,
+    String? therapeuticFocus,
   }) async {
     final pages = <ColoringPage>[];
 
@@ -237,6 +239,102 @@ Style: Clean line art, coloring book page, black outlines on white background
   Future<void> clearAllPages() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_cacheKey);
+  }
+}
+
+/// Gemini-based therapeutic coloring book service
+class GeminiColoringBookService extends ColoringBookService {
+  final String backendUrl;
+
+  GeminiColoringBookService({
+    this.backendUrl = 'http://localhost:5000',
+  }) : super(openAiApiKey: null);
+
+  @override
+  Future<List<ColoringPage>> generateColoringPagesFromStory({
+    required String storyId,
+    required String storyTitle,
+    required List<String> scenes,
+    CharacterAppearance? characterAppearance,
+    int age = 7,
+    String? therapeuticFocus,
+  }) async {
+    try {
+      // Prepare scenes for backend
+      final scenesData = scenes.asMap().entries.map((entry) {
+        return {
+          'title': 'Scene ${entry.key + 1}',
+          'description': entry.value,
+        };
+      }).toList();
+
+      // Call backend to generate therapeutic coloring pages
+      final response = await http.post(
+        Uri.parse('$backendUrl/generate-coloring-pages'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'scenes': scenesData,
+          'character_name': characterAppearance?.name ?? 'the character',
+          'age': age,
+          'therapeutic_focus': therapeuticFocus,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to generate coloring pages: ${response.statusCode}');
+      }
+
+      final data = jsonDecode(response.body);
+      final coloringPagesData = data['coloring_pages'] as List;
+
+      // Convert to ColoringPage objects
+      return coloringPagesData.asMap().entries.map((entry) {
+        final index = entry.key;
+        final pageData = entry.value as Map<String, dynamic>;
+
+        // Convert base64 to data URL
+        final base64Data = pageData['image_data'] as String;
+        final dataUrl = 'data:image/png;base64,$base64Data';
+
+        return ColoringPage(
+          id: pageData['image_id'] as String,
+          storyId: storyId,
+          pageTitle: '${storyTitle} - ${pageData['scene_title']}',
+          imageUrl: dataUrl,
+          createdAt: DateTime.now(),
+          characterAppearance: characterAppearance,
+        );
+      }).toList();
+    } catch (e) {
+      print('Error generating coloring pages with Gemini: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<ColoringPage> generateColoringPage({
+    required String storyId,
+    required String pageTitle,
+    required String scene,
+    CharacterAppearance? characterAppearance,
+    String? originalIllustrationUrl,
+    int age = 7,
+    String? therapeuticFocus,
+  }) async {
+    final pages = await generateColoringPagesFromStory(
+      storyId: storyId,
+      storyTitle: pageTitle,
+      scenes: [scene],
+      characterAppearance: characterAppearance,
+      age: age,
+      therapeuticFocus: therapeuticFocus,
+    );
+
+    if (pages.isEmpty) {
+      throw Exception('Failed to generate coloring page');
+    }
+
+    return pages.first;
   }
 }
 

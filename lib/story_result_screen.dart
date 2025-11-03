@@ -39,7 +39,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   final _cache = OfflineStoryCache();
   final _illustrationService =
       GeminiIllustrationService(); // Using Gemini Imagen 3.0 via backend
-  final _coloringService = MockColoringBookService(); // Use mock for now
+  final _coloringService =
+      GeminiColoringBookService(); // Using Gemini for therapeutic coloring pages
   bool _isFavorite = false;
   bool _isLoading = true;
   List<StoryIllustration>? _cachedIllustrations;
