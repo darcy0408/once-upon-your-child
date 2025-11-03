@@ -3,14 +3,11 @@
 import 'package:flutter/material.dart';
 import 'story_reader_screen.dart';
 import 'storage_service.dart';
-import 'adventure_progress_service.dart';
-import 'celebration_dialog.dart';
 import 'offline_story_cache.dart';
 import 'story_illustration_service.dart';
 import 'illustration_settings_dialog.dart';
 import 'illustrated_story_viewer.dart';
 import 'coloring_book_service.dart';
-import 'character_appearance.dart';
 import 'coloring_book_library_screen.dart';
 
 class StoryResultScreen extends StatefulWidget {
@@ -39,13 +36,12 @@ class StoryResultScreen extends StatefulWidget {
 
 class _StoryResultScreenState extends State<StoryResultScreen> {
   final _storage = StorageService();
-  final _progressService = AdventureProgressService();
   final _cache = OfflineStoryCache();
-  final _illustrationService = MockIllustrationService(); // Use mock for now, replace with real service when API key available
+  final _illustrationService =
+      GeminiIllustrationService(); // Using Gemini Imagen 3.0 via backend
   final _coloringService = MockColoringBookService(); // Use mock for now
   bool _isFavorite = false;
   bool _isLoading = true;
-  bool _hasRecordedProgress = false;
   List<StoryIllustration>? _cachedIllustrations;
   List<ColoringPage>? _cachedColoringPages;
 
@@ -53,7 +49,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   void initState() {
     super.initState();
     _loadFavoriteStatus();
-    _recordAdventureProgress();
     _cacheStoryForOffline();
     _loadCachedIllustrations();
     _loadCachedColoringPages();
@@ -78,7 +73,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   /// Load cached illustrations if they exist
   Future<void> _loadCachedIllustrations() async {
     if (widget.storyId != null) {
-      final illustrations = await _illustrationService.getCachedIllustrations(widget.storyId!);
+      final illustrations =
+          await _illustrationService.getCachedIllustrations(widget.storyId!);
       if (mounted) {
         setState(() {
           _cachedIllustrations = illustrations;
@@ -164,7 +160,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   /// Load cached coloring pages if they exist
   Future<void> _loadCachedColoringPages() async {
     if (widget.storyId != null) {
-      final pages = await _coloringService.getColoringPagesForStory(widget.storyId!);
+      final pages =
+          await _coloringService.getColoringPagesForStory(widget.storyId!);
       if (mounted) {
         setState(() {
           _cachedColoringPages = pages.isEmpty ? null : pages;
@@ -226,12 +223,14 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
               Text('Generating...'),
             ],
           ),
-          content: Text('Creating $numberOfPages coloring ${numberOfPages == 1 ? "page" : "pages"}...'),
+          content: Text(
+              'Creating $numberOfPages coloring ${numberOfPages == 1 ? "page" : "pages"}...'),
         ),
       );
 
       // Extract scenes from story
-      final sentences = widget.storyText.split(RegExp(r'[.!?]+'))
+      final sentences = widget.storyText
+          .split(RegExp(r'[.!?]+'))
           .where((s) => s.trim().isNotEmpty)
           .toList();
 
@@ -240,9 +239,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
       for (int i = 0; i < numberOfPages; i++) {
         final startIndex = i * segmentSize;
-        final endIndex = (i == numberOfPages - 1)
-            ? sentences.length
-            : (i + 1) * segmentSize;
+        final endIndex =
+            (i == numberOfPages - 1) ? sentences.length : (i + 1) * segmentSize;
 
         if (startIndex < sentences.length) {
           final segmentSentences = sentences.sublist(
@@ -255,7 +253,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
       // Generate coloring pages
       final pages = await _coloringService.generateColoringPagesFromStory(
-        storyId: widget.storyId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        storyId:
+            widget.storyId ?? DateTime.now().millisecondsSinceEpoch.toString(),
         storyTitle: widget.title,
         scenes: scenes,
         characterAppearance: null, // TODO: Get from character appearance
@@ -323,52 +322,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     }
   }
 
-  /// Record progress and show celebration if rewards earned
-  Future<void> _recordAdventureProgress() async {
-    if (_hasRecordedProgress || widget.storyId == null || widget.theme == null) {
-      return;
-    }
-
-    _hasRecordedProgress = true;
-
-    // Map theme to location ID
-    final locationId = _getLocationIdFromTheme(widget.theme!);
-    if (locationId == null) return;
-
-    try {
-      final result = await _progressService.completeStoryAtLocation(
-        locationId: locationId,
-        storyId: widget.storyId!,
-        characterId: widget.characterId,
-      );
-
-      // Show celebration if something was achieved
-      if (result.shouldCelebrate && mounted) {
-        // Wait a moment for the screen to fully load
-        await Future.delayed(const Duration(milliseconds: 500));
-        if (mounted) {
-          await CelebrationDialog.show(context, result);
-        }
-      }
-    } catch (e) {
-      // Silently fail - progress tracking shouldn't break the story experience
-      debugPrint('Failed to record adventure progress: $e');
-    }
-  }
-
-  /// Map theme to location ID
-  String? _getLocationIdFromTheme(String theme) {
-    final themeMap = {
-      'Magic': 'enchanted_forest',
-      'Adventure': 'crystal_caves',
-      'Castles': 'floating_castle',
-      'Dragons': 'dragon_peak',
-      'Ocean': 'underwater_kingdom',
-      'Space': 'star_realm',
-    };
-    return themeMap[theme];
-  }
-
   Future<void> _toggleFavorite() async {
     if (widget.storyId == null) return;
 
@@ -378,7 +331,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_isFavorite ? 'Added to favorites!' : 'Removed from favorites'),
+          content: Text(
+              _isFavorite ? 'Added to favorites!' : 'Removed from favorites'),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -399,7 +353,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                 _isFavorite ? Icons.favorite : Icons.favorite_border,
                 color: _isFavorite ? Colors.red : Colors.deepPurple,
               ),
-              tooltip: _isFavorite ? 'Remove from favorites' : 'Add to favorites',
+              tooltip:
+                  _isFavorite ? 'Remove from favorites' : 'Add to favorites',
               onPressed: _toggleFavorite,
             ),
         ],
@@ -428,7 +383,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                   ),
             ),
             const SizedBox(height: 32),
-            
+
             // Make the Wisdom Gem stand out
             if (widget.wisdomGem.isNotEmpty)
               Center(
@@ -471,14 +426,16 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                       color: _isFavorite ? Colors.red : Colors.deepPurple,
                       width: 2,
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
                 ),
               ),
-            if (widget.storyId != null && !_isLoading) const SizedBox(height: 16),
+            if (widget.storyId != null && !_isLoading)
+              const SizedBox(height: 16),
 
             // READ TO ME BUTTON
             Center(
@@ -502,7 +459,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
                   ),
@@ -518,7 +476,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                     ? () => _viewIllustratedStory(_cachedIllustrations!)
                     : _generateIllustrations,
                 icon: Icon(
-                  _cachedIllustrations != null ? Icons.auto_stories : Icons.image,
+                  _cachedIllustrations != null
+                      ? Icons.auto_stories
+                      : Icons.image,
                   size: 28,
                 ),
                 label: Text(
@@ -531,7 +491,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                   backgroundColor: _cachedIllustrations != null
                       ? Colors.purple
                       : Colors.orange,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
                   ),
@@ -547,7 +508,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                     ? _openColoringBook
                     : _generateColoringPages,
                 icon: Icon(
-                  _cachedColoringPages != null ? Icons.palette : Icons.color_lens,
+                  _cachedColoringPages != null
+                      ? Icons.palette
+                      : Icons.color_lens,
                   size: 28,
                 ),
                 label: Text(
@@ -557,10 +520,10 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                   style: const TextStyle(fontSize: 18),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _cachedColoringPages != null
-                      ? Colors.teal
-                      : Colors.pink,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  backgroundColor:
+                      _cachedColoringPages != null ? Colors.teal : Colors.pink,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
                   ),

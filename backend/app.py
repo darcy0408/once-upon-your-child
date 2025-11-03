@@ -794,6 +794,55 @@ Focus on the most visually interesting and important moments. Make descriptions 
             })
         return jsonify({"scenes": scenes}), 200
 
+@app.route("/generate-illustrations", methods=["POST"])
+def generate_illustrations():
+    """Generate actual illustrations for story scenes using Gemini Imagen."""
+    payload = request.get_json(silent=True) or {}
+    scenes = payload.get("scenes", [])
+    character_name = payload.get("character_name", "the hero")
+    style = payload.get("style", "children's book illustration")
+
+    if not scenes:
+        return jsonify({"error": "scenes are required"}), 400
+
+    try:
+        from gemini_image_generator import GeminiImageGenerator
+        generator = GeminiImageGenerator()
+
+        illustrations = []
+        for i, scene in enumerate(scenes):
+            scene_description = scene.get("description", scene.get("text", ""))
+            scene_title = scene.get("title", f"Scene {i+1}")
+
+            if not scene_description:
+                continue
+
+            # Generate one image per scene
+            images = generator.generate_story_illustration(
+                scene_description=scene_description,
+                character_name=character_name,
+                style=style,
+                num_images=1
+            )
+
+            if images:
+                illustrations.append({
+                    "scene_title": scene_title,
+                    "scene_description": scene_description,
+                    "image_data": images[0]["image_data"],  # base64 PNG
+                    "image_id": images[0]["id"],
+                    "format": "png"
+                })
+
+        if not illustrations:
+            return jsonify({"error": "Failed to generate any illustrations"}), 500
+
+        return jsonify({"illustrations": illustrations}), 200
+
+    except Exception as e:
+        logger.error(f"Illustration generation error: {e}")
+        return jsonify({"error": f"Failed to generate illustrations: {str(e)}"}), 500
+
 @app.route("/generate-coloring-prompt", methods=["POST"])
 def generate_coloring_prompt():
     """Generate a prompt for a coloring book page."""

@@ -342,6 +342,88 @@ class IllustrationCacheStats {
   });
 }
 
+/// Gemini-based illustration service using the backend API
+class GeminiIllustrationService extends StoryIllustrationService {
+  final String backendUrl;
+
+  GeminiIllustrationService({
+    this.backendUrl = 'http://localhost:5000',
+  }) : super(openAiApiKey: null);
+
+  @override
+  Future<List<StoryIllustration>> generateIllustrations({
+    required String storyText,
+    required String storyTitle,
+    required String characterName,
+    String? theme,
+    IllustrationStyle style = IllustrationStyle.childrenBook,
+    int numberOfImages = 3,
+  }) async {
+    try {
+      // Step 1: Extract scenes from the story using backend
+      final scenesResponse = await http.post(
+        Uri.parse('$backendUrl/extract-story-scenes'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'story_text': storyText,
+          'character_name': characterName,
+          'num_scenes': numberOfImages,
+        }),
+      );
+
+      if (scenesResponse.statusCode != 200) {
+        throw Exception('Failed to extract scenes: ${scenesResponse.statusCode}');
+      }
+
+      final scenesData = jsonDecode(scenesResponse.body);
+      final scenes = scenesData['scenes'] as List;
+
+      if (scenes.isEmpty) {
+        throw Exception('No scenes extracted from story');
+      }
+
+      // Step 2: Generate illustrations for the scenes
+      final illustrationsResponse = await http.post(
+        Uri.parse('$backendUrl/generate-illustrations'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'scenes': scenes,
+          'character_name': characterName,
+          'style': style.promptModifier,
+        }),
+      );
+
+      if (illustrationsResponse.statusCode != 200) {
+        throw Exception('Failed to generate illustrations: ${illustrationsResponse.statusCode}');
+      }
+
+      final illustrationsData = jsonDecode(illustrationsResponse.body);
+      final illustrations = illustrationsData['illustrations'] as List;
+
+      // Convert to StoryIllustration objects with base64 data URLs
+      return illustrations.asMap().entries.map((entry) {
+        final index = entry.key;
+        final illust = entry.value as Map<String, dynamic>;
+
+        // Convert base64 to data URL for display
+        final base64Data = illust['image_data'] as String;
+        final dataUrl = 'data:image/png;base64,$base64Data';
+
+        return StoryIllustration(
+          id: illust['image_id'] as String,
+          prompt: illust['scene_description'] as String,
+          imageUrl: dataUrl,
+          generatedAt: DateTime.now(),
+          segmentIndex: index,
+        );
+      }).toList();
+    } catch (e) {
+      print('Error generating illustrations with Gemini: $e');
+      rethrow;
+    }
+  }
+}
+
 /// Mock service for testing without API key
 class MockIllustrationService extends StoryIllustrationService {
   MockIllustrationService() : super(openAiApiKey: 'mock');
