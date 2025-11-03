@@ -192,18 +192,26 @@ class _CharacterManagementScreenV2State
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 4),
-                      if ((c.age != null && c.age! > 0) ||
-                          (c.gender != null && c.gender!.trim().isNotEmpty))
+                      Builder(
+                        builder: (_) {
+                          final genderDisplay = c.gender?.trim();
+                          final parts = <String>[];
+                          if (c.age > 0) {
+                            parts.add('Age ${c.age}');
+                          }
+                          if (genderDisplay != null &&
+                              genderDisplay.isNotEmpty) {
+                            parts.add(genderDisplay);
+                          }
+                          if (parts.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return Text(parts.join(' • '));
+                        },
+                      ),
+                      if (c.role != null && c.role!.trim().isNotEmpty)
                         Text(
-                          [
-                            if (c.age != null && c.age! > 0) 'Age ${c.age}',
-                            if (c.gender != null && c.gender!.trim().isNotEmpty)
-                              c.gender!.trim(),
-                          ].join(' • '),
-                        ),
-                      if (c.role != null && c.role!.isNotEmpty)
-                        Text(
-                          c.role!,
+                          c.role!.trim(),
                           style: TextStyle(
                             color: Colors.deepPurple.shade700,
                             fontStyle: FontStyle.italic,
