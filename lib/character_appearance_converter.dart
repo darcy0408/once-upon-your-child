@@ -3,6 +3,7 @@
 
 import 'models.dart';
 import 'character_appearance.dart';
+import 'story_illustration_service.dart';
 
 class CharacterAppearanceConverter {
   /// Convert a Character to CharacterAppearance for image generation
@@ -32,14 +33,30 @@ class CharacterAppearanceConverter {
       }
       return HairColor.blonde;
     }
-    if (normalized.contains('black')) return HairColor.black;
-    if (normalized.contains('red')) return HairColor.red;
-    if (normalized.contains('auburn')) return HairColor.auburn;
-    if (normalized.contains('dark brown')) return HairColor.darkBrown;
-    if (normalized.contains('light brown')) return HairColor.lightBrown;
-    if (normalized.contains('brown')) return HairColor.brown;
-    if (normalized.contains('gray') || normalized.contains('grey')) return HairColor.gray;
-    if (normalized.contains('white')) return HairColor.white;
+    if (normalized.contains('black')) {
+      return HairColor.black;
+    }
+    if (normalized.contains('red')) {
+      return HairColor.red;
+    }
+    if (normalized.contains('auburn')) {
+      return HairColor.auburn;
+    }
+    if (normalized.contains('dark brown')) {
+      return HairColor.darkBrown;
+    }
+    if (normalized.contains('light brown')) {
+      return HairColor.lightBrown;
+    }
+    if (normalized.contains('brown')) {
+      return HairColor.brown;
+    }
+    if (normalized.contains('gray') || normalized.contains('grey')) {
+      return HairColor.gray;
+    }
+    if (normalized.contains('white')) {
+      return HairColor.white;
+    }
 
     // Default
     return HairColor.brown;
@@ -114,12 +131,24 @@ class CharacterAppearanceConverter {
       }
       return EyeColor.blue;
     }
-    if (normalized.contains('green')) return EyeColor.green;
-    if (normalized.contains('hazel')) return EyeColor.hazel;
-    if (normalized.contains('gray') || normalized.contains('grey')) return EyeColor.gray;
-    if (normalized.contains('amber')) return EyeColor.amber;
-    if (normalized.contains('dark brown')) return EyeColor.darkBrown;
-    if (normalized.contains('brown')) return EyeColor.brown;
+    if (normalized.contains('green')) {
+      return EyeColor.green;
+    }
+    if (normalized.contains('hazel')) {
+      return EyeColor.hazel;
+    }
+    if (normalized.contains('gray') || normalized.contains('grey')) {
+      return EyeColor.gray;
+    }
+    if (normalized.contains('amber')) {
+      return EyeColor.amber;
+    }
+    if (normalized.contains('dark brown')) {
+      return EyeColor.darkBrown;
+    }
+    if (normalized.contains('brown')) {
+      return EyeColor.brown;
+    }
 
     // Default
     return EyeColor.brown;
@@ -138,13 +167,16 @@ class CharacterAppearanceConverter {
     if (normalized.contains('very deep')) return SkinTone.veryDark;
 
     // Compound matches
-    if (normalized.contains('light-medium') || normalized.contains('light medium')) {
+    if (normalized.contains('light-medium') ||
+        normalized.contains('light medium')) {
       return SkinTone.lightMedium;
     }
-    if (normalized.contains('medium-dark') || normalized.contains('medium dark')) {
+    if (normalized.contains('medium-dark') ||
+        normalized.contains('medium dark')) {
       return SkinTone.brown;
     }
-    if (normalized.contains('medium-tan') || normalized.contains('medium tan')) {
+    if (normalized.contains('medium-tan') ||
+        normalized.contains('medium tan')) {
       return SkinTone.mediumTan;
     }
 
@@ -176,7 +208,9 @@ class CharacterAppearanceConverter {
     if (normalized.contains('explorer') || normalized.contains('adventurer')) {
       return ClothingStyle.adventurer;
     }
-    if (normalized.contains('wizard') || normalized.contains('witch') || normalized.contains('magic')) {
+    if (normalized.contains('wizard') ||
+        normalized.contains('witch') ||
+        normalized.contains('magic')) {
       return ClothingStyle.fantasy;
     }
     if (normalized.contains('sport') || normalized.contains('athlete')) {
@@ -188,7 +222,8 @@ class CharacterAppearanceConverter {
   }
 
   /// Create a detailed prompt description for the character
-  static String createDetailedPrompt(Character character, {String? additionalContext}) {
+  static String createDetailedPrompt(Character character,
+      {String? additionalContext}) {
     final appearance = fromCharacter(character);
     final basePrompt = appearance.toPromptDescription();
 
@@ -243,7 +278,8 @@ REQUIREMENTS:
 - High contrast for easy printing
 
 STYLE: Classic children's coloring book, clean line art
-'''.trim();
+'''
+        .trim();
   }
 
   /// Create a prompt for story illustrations
@@ -274,7 +310,8 @@ REQUIREMENTS:
 - No scary or inappropriate elements
 
 STYLE: ${style.displayName} illustration
-'''.trim();
+'''
+        .trim();
   }
 
   /// Create a prompt for character portrait
@@ -300,6 +337,7 @@ PORTRAIT REQUIREMENTS:
 - Storybook illustration style
 
 STYLE: Children's book illustration, warm and inviting
-'''.trim();
+'''
+        .trim();
   }
 }

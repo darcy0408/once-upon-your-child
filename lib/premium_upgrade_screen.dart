@@ -83,7 +83,8 @@ class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
 
               // Billing toggle
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                margin:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade200,
@@ -95,7 +96,8 @@ class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
                       child: _buildBillingToggle('Monthly', !_isYearly),
                     ),
                     Expanded(
-                      child: _buildBillingToggle('Yearly (Save 33%)', _isYearly),
+                      child:
+                          _buildBillingToggle('Yearly (Save 33%)', _isYearly),
                     ),
                   ],
                 ),
@@ -359,14 +361,14 @@ class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
           ),
           const SizedBox(height: 16),
           _buildFeatureHighlight(
-            Icons.auto_awesome,
-            'Interactive Adventures',
-            'Choose-your-own-adventure stories that adapt to your child\'s choices',
+            Icons.psychology_alt,
+            'Therapeutic Superhero Missions',
+            'Unlock playful heroes that model brave, kind responses for tough moments.',
           ),
           _buildFeatureHighlight(
-            Icons.map,
-            'Adventure Map',
-            'Gamified progression system with rewards and achievements',
+            Icons.self_improvement,
+            'Guided Growth Quests',
+            'Access expanded therapeutic prompts and coping tools for each story session.',
           ),
           _buildFeatureHighlight(
             Icons.people,
@@ -388,7 +390,8 @@ class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
     );
   }
 
-  Widget _buildFeatureHighlight(IconData icon, String title, String description) {
+  Widget _buildFeatureHighlight(
+      IconData icon, String title, String description) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(

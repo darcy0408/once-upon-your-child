@@ -153,12 +153,8 @@ class SubscriptionService {
     final limits = subscription.limits;
 
     switch (featureName) {
-      case 'interactive_stories':
-        return limits.interactiveStories;
       case 'multi_character_stories':
         return limits.multiCharacterStories;
-      case 'adventure_map':
-        return limits.adventureMap;
       case 'export_stories':
         return limits.exportStories;
       case 'ad_free':
@@ -209,7 +205,8 @@ class SubscriptionService {
     final testerSubscription = UserSubscription(
       tier: SubscriptionTier.family,
       subscriptionStartDate: DateTime.now(),
-      subscriptionEndDate: DateTime.now().add(const Duration(days: 36500)), // 100 years
+      subscriptionEndDate:
+          DateTime.now().add(const Duration(days: 36500)), // 100 years
       isActive: true,
       subscriptionId: 'isabela_tester_profile',
     );

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'coloring_book_service.dart';
 import 'coloring_screen.dart';
-import 'character_appearance.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
@@ -13,7 +12,8 @@ class ColoringBookLibraryScreen extends StatefulWidget {
   const ColoringBookLibraryScreen({super.key});
 
   @override
-  State<ColoringBookLibraryScreen> createState() => _ColoringBookLibraryScreenState();
+  State<ColoringBookLibraryScreen> createState() =>
+      _ColoringBookLibraryScreenState();
 }
 
 class _ColoringBookLibraryScreenState extends State<ColoringBookLibraryScreen> {
@@ -363,7 +363,8 @@ class _ColoringBookLibraryScreenState extends State<ColoringBookLibraryScreen> {
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
                         color: Colors.grey.shade200,
-                        child: const Icon(Icons.error, size: 40, color: Colors.red),
+                        child: const Icon(Icons.error,
+                            size: 40, color: Colors.red),
                       );
                     },
                   ),
@@ -374,14 +375,16 @@ class _ColoringBookLibraryScreenState extends State<ColoringBookLibraryScreen> {
                     child: Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.print, color: Colors.white, size: 20),
+                          icon: const Icon(Icons.print,
+                              color: Colors.white, size: 20),
                           onPressed: () => _printPage(page),
                           style: IconButton.styleFrom(
                             backgroundColor: Colors.black.withOpacity(0.6),
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.white, size: 20),
+                          icon: const Icon(Icons.delete,
+                              color: Colors.white, size: 20),
                           onPressed: () => _deletePage(page),
                           style: IconButton.styleFrom(
                             backgroundColor: Colors.red.withOpacity(0.8),

@@ -1,4 +1,6 @@
 // lib/models.dart
+import 'avatar_models.dart';
+
 class Character {
   final String id;
   final String name;
@@ -18,6 +20,7 @@ class Character {
   final String? hairstyle;
   final String? currentEmotion;
   final String? currentEmotionCore;
+  final CharacterAvatar? avatar;
 
   Character({
     required this.id,
@@ -38,9 +41,15 @@ class Character {
     this.hairstyle,
     this.currentEmotion,
     this.currentEmotionCore,
+    this.avatar,
   });
 
   factory Character.fromJson(Map<String, dynamic> json) {
+    CharacterAvatar? avatar;
+    final avatarJson = json['avatar'];
+    if (avatarJson is Map<String, dynamic>) {
+      avatar = CharacterAvatar.fromJson(avatarJson);
+    }
     return Character(
       id: json['id'] ?? '',
       name: json['name'] ?? 'Unknown',
@@ -51,7 +60,8 @@ class Character {
       magicType: json['magic_type'],
       challenge: json['challenge'],
       likes: json['likes'] != null ? List<String>.from(json['likes']) : null,
-      dislikes: json['dislikes'] != null ? List<String>.from(json['dislikes']) : null,
+      dislikes:
+          json['dislikes'] != null ? List<String>.from(json['dislikes']) : null,
       fears: json['fears'] != null ? List<String>.from(json['fears']) : null,
       comfortItem: json['comfort_item'],
       hair: json['hair'],
@@ -60,6 +70,7 @@ class Character {
       hairstyle: json['hairstyle'],
       currentEmotion: json['current_emotion'],
       currentEmotionCore: json['current_emotion_core'],
+      avatar: avatar,
     );
   }
 
@@ -82,6 +93,7 @@ class Character {
         'hairstyle': hairstyle,
         'current_emotion': currentEmotion,
         'current_emotion_core': currentEmotionCore,
+        if (avatar != null) 'avatar': avatar!.toJson(),
       };
 }
 

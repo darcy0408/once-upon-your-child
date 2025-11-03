@@ -56,14 +56,16 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
 
     // Initialize with existing character data
     _nameController = TextEditingController(text: widget.character.name);
-    _ageController = TextEditingController(text: widget.character.age.toString());
+    _ageController =
+        TextEditingController(text: widget.character.age.toString());
     _isA = widget.character.gender ?? 'Girl'; // Load existing gender as "Is a:"
     _characterStyle = 'Regular Kid'; // Default character style
 
     _characterType = 'Everyday Kid'; // Default, will be overridden if available
 
     _superheroNameController = TextEditingController();
-    _superpowerController = TextEditingController(text: widget.character.magicType ?? '');
+    _superpowerController =
+        TextEditingController(text: widget.character.magicType ?? '');
     _missionController = TextEditingController();
 
     _hairColor = 'Brown';
@@ -72,35 +74,48 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
 
     _selectedTraits = {};
 
-    _likesController = TextEditingController(text: (widget.character.likes ?? []).join(', '));
-    _dislikesController = TextEditingController(text: (widget.character.dislikes ?? []).join(', '));
+    _likesController =
+        TextEditingController(text: (widget.character.likes ?? []).join(', '));
+    _dislikesController = TextEditingController(
+        text: (widget.character.dislikes ?? []).join(', '));
 
-    _fearsController = TextEditingController(text: (widget.character.fears ?? []).join(', '));
+    _fearsController =
+        TextEditingController(text: (widget.character.fears ?? []).join(', '));
     _strengthsController = TextEditingController();
     _goalsController = TextEditingController();
-    _challengesController = TextEditingController(text: widget.character.challenge ?? '');
-    _comfortItemController = TextEditingController(text: widget.character.comfortItem ?? '');
+    _challengesController =
+        TextEditingController(text: widget.character.challenge ?? '');
+    _comfortItemController =
+        TextEditingController(text: widget.character.comfortItem ?? '');
   }
 
   List<String> _splitCSV(String text) {
     if (text.trim().isEmpty) return <String>[];
-    return text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    return text
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
   }
 
   Future<void> _updateCharacter() async {
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all required fields'), backgroundColor: Colors.orange),
+        const SnackBar(
+            content: Text('Please fill in all required fields'),
+            backgroundColor: Colors.orange),
       );
       return;
     }
 
     setState(() => _isLoading = true);
-    final url = Uri.parse('http://127.0.0.1:5000/characters/${widget.character.id}');
+    final url =
+        Uri.parse('http://127.0.0.1:5000/characters/${widget.character.id}');
 
     // Build role based on character type
     String role = _characterType;
-    if (_characterType == 'Superhero' && _superheroNameController.text.isNotEmpty) {
+    if (_characterType == 'Superhero' &&
+        _superheroNameController.text.isNotEmpty) {
       role = 'Superhero (${_superheroNameController.text.trim()})';
     }
 
@@ -157,15 +172,18 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
       if (resp.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${_nameController.text.trim()} updated successfully!'),
+            content:
+                Text('${_nameController.text.trim()} updated successfully!'),
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.of(context).pop(true); // Return true to indicate changes were made
+        Navigator.of(context)
+            .pop(true); // Return true to indicate changes were made
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update character. Server error: ${resp.statusCode}'),
+            content: Text(
+                'Failed to update character. Server error: ${resp.statusCode}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -173,7 +191,9 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('An error occurred: $e'), backgroundColor: Colors.red),
+        SnackBar(
+            content: Text('An error occurred: $e'),
+            backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -185,7 +205,8 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Character?'),
-        content: Text('Are you sure you want to delete ${widget.character.name}? This cannot be undone.'),
+        content: Text(
+            'Are you sure you want to delete ${widget.character.name}? This cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -203,7 +224,8 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
     if (confirmed != true) return;
 
     setState(() => _isLoading = true);
-    final url = Uri.parse('http://127.0.0.1:5000/characters/${widget.character.id}');
+    final url =
+        Uri.parse('http://127.0.0.1:5000/characters/${widget.character.id}');
 
     try {
       final resp = await http.delete(url);
@@ -297,14 +319,16 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2),
                       )
                     : const Icon(Icons.save),
                 label: Text(_isLoading ? 'Saving...' : 'Save Changes'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  textStyle: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -372,7 +396,8 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
                 decoration: InputDecoration(
                   labelText: 'Age *',
                   hintText: '5-12',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
                   filled: true,
                   fillColor: Colors.grey[50],
                   prefixIcon: const Icon(Icons.cake),
@@ -391,7 +416,8 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
                 value: _isA,
                 decoration: InputDecoration(
                   labelText: 'Is a: *',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
                   filled: true,
                   fillColor: Colors.grey[50],
                 ),
@@ -420,17 +446,24 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
             DropdownMenuItem(value: 'Girly Girl', child: Text('Girly Girl')),
             DropdownMenuItem(value: 'Tomboy', child: Text('Tomboy')),
             DropdownMenuItem(value: 'Sporty Kid', child: Text('Sporty Kid')),
-            DropdownMenuItem(value: 'Couch Potato', child: Text('Couch Potato')),
-            DropdownMenuItem(value: 'Creative Artist', child: Text('Creative Artist')),
-            DropdownMenuItem(value: 'Young Scientist', child: Text('Young Scientist')),
-            DropdownMenuItem(value: 'Playful Puppy', child: Text('Playful Puppy')),
+            DropdownMenuItem(
+                value: 'Couch Potato', child: Text('Couch Potato')),
+            DropdownMenuItem(
+                value: 'Creative Artist', child: Text('Creative Artist')),
+            DropdownMenuItem(
+                value: 'Young Scientist', child: Text('Young Scientist')),
+            DropdownMenuItem(
+                value: 'Playful Puppy', child: Text('Playful Puppy')),
             DropdownMenuItem(value: 'Curious Cat', child: Text('Curious Cat')),
             DropdownMenuItem(value: 'Brave Bird', child: Text('Brave Bird')),
-            DropdownMenuItem(value: 'Gentle Bunny', child: Text('Gentle Bunny')),
+            DropdownMenuItem(
+                value: 'Gentle Bunny', child: Text('Gentle Bunny')),
             DropdownMenuItem(value: 'Wise Fox', child: Text('Wise Fox')),
-            DropdownMenuItem(value: 'Magical Dragon', child: Text('Magical Dragon')),
+            DropdownMenuItem(
+                value: 'Magical Dragon', child: Text('Magical Dragon')),
           ],
-          onChanged: (v) => setState(() => _characterStyle = v ?? 'Regular Kid'),
+          onChanged: (v) =>
+              setState(() => _characterStyle = v ?? 'Regular Kid'),
         ),
       ],
     );
@@ -441,7 +474,11 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
       {'name': 'Superhero', 'icon': Icons.flash_on, 'color': Colors.red},
       {'name': 'Princess/Prince', 'icon': Icons.castle, 'color': Colors.pink},
       {'name': 'Explorer', 'icon': Icons.explore, 'color': Colors.orange},
-      {'name': 'Wizard/Witch', 'icon': Icons.auto_fix_high, 'color': Colors.purple},
+      {
+        'name': 'Wizard/Witch',
+        'icon': Icons.auto_fix_high,
+        'color': Colors.purple
+      },
       {'name': 'Scientist', 'icon': Icons.science, 'color': Colors.blue},
       {'name': 'Animal Friend', 'icon': Icons.pets, 'color': Colors.green},
       {'name': 'Everyday Kid', 'icon': Icons.child_care, 'color': Colors.teal},
@@ -486,15 +523,24 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
   }
 
   void _generateRandomSuperhero() {
-    print('🎲 Generating random superhero...');
-    final idea = SuperheroNameGenerator.generateCompleteIdea();
-    print('Generated: ${idea.name}, ${idea.powerTheme}');
+    final focusHint = _challengesController.text.trim().isNotEmpty
+        ? _challengesController.text.trim()
+        : _goalsController.text.trim();
+    final idea =
+        SuperheroNameGenerator.generateCompleteIdea(challenge: focusHint);
     setState(() {
       _superheroNameController.text = idea.name;
       _superpowerController.text = idea.powerTheme;
-      _missionController.text = 'Protecting through ${idea.powerTheme.toLowerCase()}';
+      _missionController.text = idea.mission;
     });
-    print('Text fields updated!');
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('${idea.catchPhrase} ${idea.supportAction}'),
+        backgroundColor: Colors.purple.shade300,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   Widget _buildSuperheroSection() {
@@ -573,7 +619,8 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
                 value: _hairColor,
                 decoration: InputDecoration(
                   labelText: 'Hair Color',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
                   filled: true,
                   fillColor: Colors.grey[50],
                 ),
@@ -587,7 +634,9 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
                   DropdownMenuItem(value: 'Silver', child: Text('Silver')),
                   DropdownMenuItem(value: 'Gold', child: Text('Gold')),
                   DropdownMenuItem(value: 'Bronze', child: Text('Bronze')),
-                  DropdownMenuItem(value: 'Colorful', child: Text('Colorful (Rainbow/Fantasy)')),
+                  DropdownMenuItem(
+                      value: 'Colorful',
+                      child: Text('Colorful (Rainbow/Fantasy)')),
                 ],
                 onChanged: (v) => setState(() => _hairColor = v ?? 'Brown'),
               ),
@@ -598,7 +647,8 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
                 value: _eyeColor,
                 decoration: InputDecoration(
                   labelText: 'Eye Color',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
                   filled: true,
                   fillColor: Colors.grey[50],
                 ),
@@ -635,9 +685,21 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
 
   Widget _buildPersonalitySection() {
     final traits = [
-      'Brave', 'Shy', 'Creative', 'Curious', 'Kind',
-      'Funny', 'Thoughtful', 'Energetic', 'Patient', 'Determined',
-      'Friendly', 'Imaginative', 'Caring', 'Adventurous', 'Smart',
+      'Brave',
+      'Shy',
+      'Creative',
+      'Curious',
+      'Kind',
+      'Funny',
+      'Thoughtful',
+      'Energetic',
+      'Patient',
+      'Determined',
+      'Friendly',
+      'Imaginative',
+      'Caring',
+      'Adventurous',
+      'Smart',
     ];
 
     return _buildSectionCard(
@@ -645,7 +707,7 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
       Icons.psychology,
       [
         const Text('Select traits that describe this character:',
-          style: TextStyle(fontSize: 14, color: Colors.grey)),
+            style: TextStyle(fontSize: 14, color: Colors.grey)),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
@@ -716,7 +778,8 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
       [
         const Text(
           'These help create therapeutic stories that support emotional growth',
-          style: TextStyle(fontSize: 13, color: Colors.grey, fontStyle: FontStyle.italic),
+          style: TextStyle(
+              fontSize: 13, color: Colors.grey, fontStyle: FontStyle.italic),
         ),
         const SizedBox(height: 12),
         TextFormField(
@@ -751,7 +814,8 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
           controller: _goalsController,
           decoration: InputDecoration(
             labelText: 'Goals/What They Want to Achieve',
-            hintText: 'e.g., make more friends, overcome shyness, learn to swim',
+            hintText:
+                'e.g., make more friends, overcome shyness, learn to swim',
             helperText: 'Separate with commas',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,

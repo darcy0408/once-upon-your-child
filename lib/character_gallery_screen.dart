@@ -28,6 +28,9 @@ class CharacterGalleryScreen extends StatefulWidget {
 }
 
 class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
+  // Track each character's most recent feeling selection locally
+  final Map<String, SelectedFeeling> _characterFeelings = {};
+
   void _createCharacter() async {
     final result = await Navigator.push<EnhancedCharacter>(
       context,
@@ -89,6 +92,9 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
           ElevatedButton(
             onPressed: () {
               widget.onCharacterDeleted(character.id);
+              setState(() {
+                _characterFeelings.remove(character.id);
+              });
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -112,7 +118,7 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => FeelingsWheelScreen(
-          currentFeeling: character.currentFeeling,
+          currentFeeling: _characterFeelings[character.id],
         ),
       ),
     );
@@ -123,8 +129,10 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
           eyeType: result.eyeType,
           mouthType: result.mouthType,
         ),
-        currentFeeling: result,
       );
+      setState(() {
+        _characterFeelings[character.id] = result;
+      });
       widget.onCharacterUpdated(updatedCharacter);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -255,7 +263,7 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: ExpressiveAvatarWidget(
                 avatar: character.avatar,
-                feeling: character.currentFeeling,
+                feeling: _characterFeelings[character.id],
                 size: 200,
                 showLabel: true,
               ),

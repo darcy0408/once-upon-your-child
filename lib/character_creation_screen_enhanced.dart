@@ -2,15 +2,20 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'superhero_name_generator.dart';
+import 'avatar_builder_screen.dart';
+import 'avatar_models.dart';
+import 'customizable_avatar_widget.dart';
 
 class CharacterCreationScreenEnhanced extends StatefulWidget {
   const CharacterCreationScreenEnhanced({super.key});
 
   @override
-  State<CharacterCreationScreenEnhanced> createState() => _CharacterCreationScreenEnhancedState();
+  State<CharacterCreationScreenEnhanced> createState() =>
+      _CharacterCreationScreenEnhancedState();
 }
 
-class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScreenEnhanced> {
+class _CharacterCreationScreenEnhancedState
+    extends State<CharacterCreationScreenEnhanced> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
@@ -32,6 +37,7 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
   String _hairColor = 'Brown';
   String _eyeColor = 'Brown';
   final _outfitController = TextEditingController();
+  CharacterAvatar _avatar = CharacterAvatar.defaultAvatar;
 
   // Personality
   final Set<String> _selectedTraits = {};
@@ -49,13 +55,94 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
 
   List<String> _splitCSV(String text) {
     if (text.trim().isEmpty) return <String>[];
-    return text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    return text
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+  }
+
+  Future<void> _openAvatarBuilder() async {
+    final seedName = _nameController.text.trim().isEmpty
+        ? 'My Character'
+        : _nameController.text.trim();
+
+    final initial = EnhancedCharacter(
+      name: seedName,
+      avatar: _avatar,
+    );
+
+    final result = await Navigator.push<EnhancedCharacter>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AvatarBuilderScreen(
+          initialCharacter: initial,
+          isEdit: true,
+        ),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _avatar = result.avatar;
+        if (_nameController.text.trim().isEmpty) {
+          _nameController.text = result.name;
+        }
+        _hairColor = result.avatar.hairColor;
+      });
+    }
+  }
+
+  Widget _buildAvatarSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Text(
+            'Customize Avatar',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 16),
+          CustomizableAvatarWidget(
+            avatar: _avatar,
+            size: 140,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: _openAvatarBuilder,
+            icon: const Icon(Icons.brush),
+            label: const Text('Edit Avatar'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _createCharacter() async {
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all required fields'), backgroundColor: Colors.orange),
+        const SnackBar(
+            content: Text('Please fill in all required fields'),
+            backgroundColor: Colors.orange),
       );
       return;
     }
@@ -65,7 +152,8 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
 
     // Build role based on character type
     String role = _characterType;
-    if (_characterType == 'Superhero' && _superheroNameController.text.isNotEmpty) {
+    if (_characterType == 'Superhero' &&
+        _superheroNameController.text.isNotEmpty) {
       role = 'Superhero (${_superheroNameController.text.trim()})';
     }
 
@@ -77,6 +165,7 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
         'character_style': _characterStyle, // Character appearance/personality
         'role': role,
         'character_type': _characterType,
+        'avatar': _avatar.toJson(),
 
         // Superhero specific
         if (_characterType == 'Superhero') ...{
@@ -122,7 +211,8 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
       if (resp.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${_nameController.text.trim()} was created successfully!'),
+            content: Text(
+                '${_nameController.text.trim()} was created successfully!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -130,7 +220,8 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to create character. Server error: ${resp.statusCode}'),
+            content: Text(
+                'Failed to create character. Server error: ${resp.statusCode}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -138,7 +229,9 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('An error occurred: $e'), backgroundColor: Colors.red),
+        SnackBar(
+            content: Text('An error occurred: $e'),
+            backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -177,6 +270,8 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              _buildAvatarSection(),
+              const SizedBox(height: 20),
               _buildBasicInfoSection(),
               const SizedBox(height: 20),
               _buildCharacterTypeSection(),
@@ -199,14 +294,16 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2),
                       )
                     : const Icon(Icons.check_circle),
                 label: Text(_isLoading ? 'Creating...' : 'Create Character'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  textStyle: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -273,7 +370,8 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
                 decoration: InputDecoration(
                   labelText: 'Age *',
                   hintText: '5-12',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
                   filled: true,
                   fillColor: Colors.grey[50],
                   prefixIcon: const Icon(Icons.cake),
@@ -292,7 +390,8 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
                 value: _isA,
                 decoration: InputDecoration(
                   labelText: 'Is a: *',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
                   filled: true,
                   fillColor: Colors.grey[50],
                 ),
@@ -321,17 +420,24 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
             DropdownMenuItem(value: 'Girly Girl', child: Text('Girly Girl')),
             DropdownMenuItem(value: 'Tomboy', child: Text('Tomboy')),
             DropdownMenuItem(value: 'Sporty Kid', child: Text('Sporty Kid')),
-            DropdownMenuItem(value: 'Couch Potato', child: Text('Couch Potato')),
-            DropdownMenuItem(value: 'Creative Artist', child: Text('Creative Artist')),
-            DropdownMenuItem(value: 'Young Scientist', child: Text('Young Scientist')),
-            DropdownMenuItem(value: 'Playful Puppy', child: Text('Playful Puppy')),
+            DropdownMenuItem(
+                value: 'Couch Potato', child: Text('Couch Potato')),
+            DropdownMenuItem(
+                value: 'Creative Artist', child: Text('Creative Artist')),
+            DropdownMenuItem(
+                value: 'Young Scientist', child: Text('Young Scientist')),
+            DropdownMenuItem(
+                value: 'Playful Puppy', child: Text('Playful Puppy')),
             DropdownMenuItem(value: 'Curious Cat', child: Text('Curious Cat')),
             DropdownMenuItem(value: 'Brave Bird', child: Text('Brave Bird')),
-            DropdownMenuItem(value: 'Gentle Bunny', child: Text('Gentle Bunny')),
+            DropdownMenuItem(
+                value: 'Gentle Bunny', child: Text('Gentle Bunny')),
             DropdownMenuItem(value: 'Wise Fox', child: Text('Wise Fox')),
-            DropdownMenuItem(value: 'Magical Dragon', child: Text('Magical Dragon')),
+            DropdownMenuItem(
+                value: 'Magical Dragon', child: Text('Magical Dragon')),
           ],
-          onChanged: (v) => setState(() => _characterStyle = v ?? 'Regular Kid'),
+          onChanged: (v) =>
+              setState(() => _characterStyle = v ?? 'Regular Kid'),
         ),
       ],
     );
@@ -342,7 +448,11 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
       {'name': 'Superhero', 'icon': Icons.flash_on, 'color': Colors.red},
       {'name': 'Princess/Prince', 'icon': Icons.castle, 'color': Colors.pink},
       {'name': 'Explorer', 'icon': Icons.explore, 'color': Colors.orange},
-      {'name': 'Wizard/Witch', 'icon': Icons.auto_fix_high, 'color': Colors.purple},
+      {
+        'name': 'Wizard/Witch',
+        'icon': Icons.auto_fix_high,
+        'color': Colors.purple
+      },
       {'name': 'Scientist', 'icon': Icons.science, 'color': Colors.blue},
       {'name': 'Animal Friend', 'icon': Icons.pets, 'color': Colors.green},
       {'name': 'Everyday Kid', 'icon': Icons.child_care, 'color': Colors.teal},
@@ -387,15 +497,24 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
   }
 
   void _generateRandomSuperhero() {
-    print('🎲 Generating random superhero...');
-    final idea = SuperheroNameGenerator.generateCompleteIdea();
-    print('Generated: ${idea.name}, ${idea.powerTheme}');
+    final focusHint = _challengesController.text.trim().isNotEmpty
+        ? _challengesController.text.trim()
+        : _goalsController.text.trim();
+    final idea =
+        SuperheroNameGenerator.generateCompleteIdea(challenge: focusHint);
     setState(() {
       _superheroNameController.text = idea.name;
       _superpowerController.text = idea.powerTheme;
-      _missionController.text = 'Protecting through ${idea.powerTheme.toLowerCase()}';
+      _missionController.text = idea.mission;
     });
-    print('Text fields updated!');
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('${idea.catchPhrase} ${idea.supportAction}'),
+        backgroundColor: Colors.purple.shade300,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   Widget _buildSuperheroSection() {
@@ -474,7 +593,8 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
                 value: _hairColor,
                 decoration: InputDecoration(
                   labelText: 'Hair Color',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
                   filled: true,
                   fillColor: Colors.grey[50],
                 ),
@@ -488,7 +608,9 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
                   DropdownMenuItem(value: 'Silver', child: Text('Silver')),
                   DropdownMenuItem(value: 'Gold', child: Text('Gold')),
                   DropdownMenuItem(value: 'Bronze', child: Text('Bronze')),
-                  DropdownMenuItem(value: 'Colorful', child: Text('Colorful (Rainbow/Fantasy)')),
+                  DropdownMenuItem(
+                      value: 'Colorful',
+                      child: Text('Colorful (Rainbow/Fantasy)')),
                 ],
                 onChanged: (v) => setState(() => _hairColor = v ?? 'Brown'),
               ),
@@ -499,7 +621,8 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
                 value: _eyeColor,
                 decoration: InputDecoration(
                   labelText: 'Eye Color',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
                   filled: true,
                   fillColor: Colors.grey[50],
                 ),
@@ -536,9 +659,21 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
 
   Widget _buildPersonalitySection() {
     final traits = [
-      'Brave', 'Shy', 'Creative', 'Curious', 'Kind',
-      'Funny', 'Thoughtful', 'Energetic', 'Patient', 'Determined',
-      'Friendly', 'Imaginative', 'Caring', 'Adventurous', 'Smart',
+      'Brave',
+      'Shy',
+      'Creative',
+      'Curious',
+      'Kind',
+      'Funny',
+      'Thoughtful',
+      'Energetic',
+      'Patient',
+      'Determined',
+      'Friendly',
+      'Imaginative',
+      'Caring',
+      'Adventurous',
+      'Smart',
     ];
 
     return _buildSectionCard(
@@ -546,7 +681,7 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
       Icons.psychology,
       [
         const Text('Select traits that describe this character:',
-          style: TextStyle(fontSize: 14, color: Colors.grey)),
+            style: TextStyle(fontSize: 14, color: Colors.grey)),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
@@ -617,7 +752,8 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
       [
         const Text(
           'These help create therapeutic stories that support emotional growth',
-          style: TextStyle(fontSize: 13, color: Colors.grey, fontStyle: FontStyle.italic),
+          style: TextStyle(
+              fontSize: 13, color: Colors.grey, fontStyle: FontStyle.italic),
         ),
         const SizedBox(height: 12),
         TextFormField(
@@ -652,7 +788,8 @@ class _CharacterCreationScreenEnhancedState extends State<CharacterCreationScree
           controller: _goalsController,
           decoration: InputDecoration(
             labelText: 'Goals/What They Want to Achieve',
-            hintText: 'e.g., make more friends, overcome shyness, learn to swim',
+            hintText:
+                'e.g., make more friends, overcome shyness, learn to swim',
             helperText: 'Separate with commas',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,

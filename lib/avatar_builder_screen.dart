@@ -27,18 +27,30 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
 
   // Customization options matching React app with additional white/fair tones
   final List<SkinToneOption> _skinTones = [
-    SkinToneOption('PorcelainWhite', Color(0xFFFFF5E6)),
-    SkinToneOption('VeryPale', Color(0xFFFFE8D1)),
-    SkinToneOption('Light', Color(0xFFFFDFC4)),
-    SkinToneOption('Pale', Color(0xFFF0C8A0)),
-    SkinToneOption('Beige', Color(0xFFEECBA8)),
-    SkinToneOption('Tanned', Color(0xFFE0AC7E)),
-    SkinToneOption('Yellow', Color(0xFFD49A6A)),
-    SkinToneOption('Brown', Color(0xFFC68642)),
-    SkinToneOption('DarkBrown', Color(0xFFA67C52)),
-    SkinToneOption('Black', Color(0xFF8D5524)),
-    SkinToneOption('DeepBrown', Color(0xFF6D4C41)),
-    SkinToneOption('VeryDark', Color(0xFF4A2C12)),
+    const SkinToneOption(
+        value: 'PorcelainWhite', label: 'Porcelain', color: Color(0xFFFFF5E6)),
+    const SkinToneOption(
+        value: 'VeryPale', label: 'Very Pale', color: Color(0xFFFFE8D1)),
+    const SkinToneOption(
+        value: 'Light', label: 'Light', color: Color(0xFFFFDFC4)),
+    const SkinToneOption(
+        value: 'Pale', label: 'Pale', color: Color(0xFFF0C8A0)),
+    const SkinToneOption(
+        value: 'Beige', label: 'Beige', color: Color(0xFFEECBA8)),
+    const SkinToneOption(
+        value: 'Tanned', label: 'Tanned', color: Color(0xFFE0AC7E)),
+    const SkinToneOption(
+        value: 'Yellow', label: 'Golden', color: Color(0xFFD49A6A)),
+    const SkinToneOption(
+        value: 'Brown', label: 'Brown', color: Color(0xFFC68642)),
+    const SkinToneOption(
+        value: 'DarkBrown', label: 'Dark Brown', color: Color(0xFFA67C52)),
+    const SkinToneOption(
+        value: 'Black', label: 'Ebony', color: Color(0xFF8D5524)),
+    const SkinToneOption(
+        value: 'DeepBrown', label: 'Deep Brown', color: Color(0xFF6D4C41)),
+    const SkinToneOption(
+        value: 'VeryDark', label: 'Deepest', color: Color(0xFF4A2C12)),
   ];
 
   final List<HairStyleOption> _hairStyles = [
@@ -51,18 +63,35 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
     HairStyleOption('LongHairBun', 'Bun'),
     HairStyleOption('LongHairBraids', 'Braids'),
     HairStyleOption('LongHairPonytail', 'Ponytail'),
+    HairStyleOption('Hat', 'Hat 🎩'),
+    HairStyleOption('Hijab', 'Hijab 🧕'),
   ];
 
   final List<HairColorOption> _hairColors = [
-    HairColorOption('Blonde', Color(0xFFF4D03F)),
-    HairColorOption('Brown', Color(0xFF8B4513)),
-    HairColorOption('Black', Color(0xFF2C3E50)),
-    HairColorOption('Red', Color(0xFFC0392B)),
-    HairColorOption('Auburn', Color(0xFFA04000)),
-    HairColorOption('PastelPink', Color(0xFFFF6B9D)),
-    HairColorOption('BlondeGolden', Color(0xFFFFD700)),
-    HairColorOption('SilverGray', Color(0xFFBDC3C7)),
-    HairColorOption('Platinum', Color(0xFFE8E8E8)),
+    const HairColorOption(
+        value: 'Platinum', label: 'Platinum', color: Color(0xFFF5F5DC)),
+    const HairColorOption(
+        value: 'BlondeGolden',
+        label: 'Golden Blonde',
+        color: Color(0xFFFFD700)),
+    const HairColorOption(
+        value: 'Blonde', label: 'Honey Blonde', color: Color(0xFFF4D03F)),
+    const HairColorOption(
+        value: 'Auburn', label: 'Auburn', color: Color(0xFFA04000)),
+    const HairColorOption(
+        value: 'Brown', label: 'Brown', color: Color(0xFF8B4513)),
+    const HairColorOption(
+        value: 'Black', label: 'Black', color: Color(0xFF2C3E50)),
+    const HairColorOption(
+        value: 'Red', label: 'Fiery Red', color: Color(0xFFC0392B)),
+    const HairColorOption(
+        value: 'PastelPink', label: 'Pastel Pink', color: Color(0xFFFF6B9D)),
+    const HairColorOption(
+        value: 'SilverGray', label: 'Silver', color: Color(0xFFBDC3C7)),
+    const HairColorOption(
+        value: 'Blue', label: 'Midnight Blue', color: Color(0xFF6495ED)),
+    const HairColorOption(
+        value: 'Purple', label: 'Royal Purple', color: Color(0xFF9B59B6)),
   ];
 
   final Map<String, List<ClothingOption>> _clothingCategories = {
@@ -87,22 +116,48 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
   String _selectedClothingCategory = 'Casual 👕';
 
   final List<ClothingColorOption> _clothingColors = [
-    ClothingColorOption('White', Color(0xFFFFFFFF)),
-    ClothingColorOption('Pink', Color(0xFFFF69B4)),
-    ClothingColorOption('LightPink', Color(0xFFFFB6C1)),
-    ClothingColorOption('Purple', Color(0xFF9B59B6)),
-    ClothingColorOption('Lavender', Color(0xFFE6B3FF)),
-    ClothingColorOption('Coral', Color(0xFFFF6B6B)),
-    ClothingColorOption('Peach', Color(0xFFFFB88C)),
-    ClothingColorOption('Blue03', Color(0xFF5DADE2)),
-    ClothingColorOption('Red', Color(0xFFE74C3C)),
-    ClothingColorOption('Gray01', Color(0xFF95A5A6)),
-    ClothingColorOption('Black', Color(0xFF2C3E50)),
-    ClothingColorOption('PastelGreen', Color(0xFF58D68D)),
-    ClothingColorOption('PastelYellow', Color(0xFFF4D03F)),
-    ClothingColorOption('Mint', Color(0xFF98D8C8)),
-    ClothingColorOption('Turquoise', Color(0xFF40E0D0)),
-    ClothingColorOption('Heather', Color(0xFF3498DB)),
+    const ClothingColorOption(
+        value: 'White', label: 'White', color: Color(0xFFFFFFFF)),
+    const ClothingColorOption(
+        value: 'Black', label: 'Black', color: Color(0xFF2C3E50)),
+    const ClothingColorOption(
+        value: 'Gray01', label: 'Cool Gray', color: Color(0xFF95A5A6)),
+    const ClothingColorOption(
+        value: 'Gray02', label: 'Slate', color: Color(0xFF7F8C8D)),
+    const ClothingColorOption(
+        value: 'Blue01', label: 'Ocean', color: Color(0xFF3498DB)),
+    const ClothingColorOption(
+        value: 'Blue02', label: 'Sky', color: Color(0xFF5DADE2)),
+    const ClothingColorOption(
+        value: 'Blue03', label: 'Pastel Blue', color: Color(0xFF85C1E2)),
+    const ClothingColorOption(
+        value: 'Red', label: 'Red', color: Color(0xFFE74C3C)),
+    const ClothingColorOption(
+        value: 'PastelRed', label: 'Coral', color: Color(0xFFFF6B6B)),
+    const ClothingColorOption(
+        value: 'Pink', label: 'Hot Pink', color: Color(0xFFFF69B4)),
+    const ClothingColorOption(
+        value: 'PastelPink', label: 'Cotton Candy', color: Color(0xFFFFB6D9)),
+    const ClothingColorOption(
+        value: 'Purple', label: 'Purple', color: Color(0xFF9B59B6)),
+    const ClothingColorOption(
+        value: 'PastelPurple', label: 'Lavender', color: Color(0xFFC39BD3)),
+    const ClothingColorOption(
+        value: 'Green01', label: 'Forest', color: Color(0xFF27AE60)),
+    const ClothingColorOption(
+        value: 'PastelGreen', label: 'Mint', color: Color(0xFF58D68D)),
+    const ClothingColorOption(
+        value: 'Yellow', label: 'Sunshine', color: Color(0xFFF39C12)),
+    const ClothingColorOption(
+        value: 'PastelYellow', label: 'Lemon', color: Color(0xFFF4D03F)),
+    const ClothingColorOption(
+        value: 'Orange', label: 'Sunset', color: Color(0xFFE67E22)),
+    const ClothingColorOption(
+        value: 'PastelOrange', label: 'Peach', color: Color(0xFFFFB26B)),
+    const ClothingColorOption(
+        value: 'Brown', label: 'Warm Brown', color: Color(0xFF8B4513)),
+    const ClothingColorOption(
+        value: 'Heather', label: 'Heather Blue', color: Color(0xFF4DA3FF)),
   ];
 
   final List<ExpressionOption> _eyeExpressions = [
@@ -127,8 +182,8 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
     _nameController = TextEditingController(
       text: widget.initialCharacter?.name ?? '',
     );
-    _currentAvatar = widget.initialCharacter?.avatar ??
-        CharacterAvatar.defaultAvatar;
+    _currentAvatar =
+        widget.initialCharacter?.avatar ?? CharacterAvatar.defaultAvatar;
   }
 
   @override
@@ -256,6 +311,7 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
           return _buildColorSwatch(
             color: tone.color,
             isSelected: isSelected,
+            label: tone.label,
             onTap: () => _updateAvatar(
               _currentAvatar.copyWith(skinColor: tone.value),
             ),
@@ -297,6 +353,7 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
           return _buildColorSwatch(
             color: color.color,
             isSelected: isSelected,
+            label: color.label,
             onTap: () => _updateAvatar(
               _currentAvatar.copyWith(hairColor: color.value),
             ),
@@ -370,6 +427,7 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
           return _buildColorSwatch(
             color: color.color,
             isSelected: isSelected,
+            label: color.label,
             onTap: () => _updateAvatar(
               _currentAvatar.copyWith(clothingColor: color.value),
             ),
@@ -490,44 +548,67 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
     required Color color,
     required bool isSelected,
     required VoidCallback onTap,
+    String? label,
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSelected
-                ? SunsetJungleTheme.sunsetCoral
-                : Colors.transparent,
-            width: 2,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: isSelected ? 48 : 44,
+            height: isSelected ? 48 : 44,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isSelected
+                    ? SunsetJungleTheme.sunsetCoral
+                    : Colors.black.withOpacity(0.08),
+                width: isSelected ? 3 : 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isSelected ? 0.16 : 0.08),
+                  blurRadius: isSelected ? 10 : 4,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: isSelected
+                ? const Icon(
+                    Icons.check,
+                    color: Colors.white,
+                    size: 22,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black38,
+                        blurRadius: 4,
+                      ),
+                    ],
+                  )
+                : null,
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: SunsetJungleTheme.sunsetCoral.withOpacity(0.4),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: isSelected
-            ? const Icon(
-                Icons.check,
-                color: Colors.white,
-                size: 18,
-                shadows: [
-                  Shadow(
-                    color: Colors.black45,
-                    blurRadius: 3,
-                  ),
-                ],
-              )
-            : null,
+          if (label != null) ...[
+            const SizedBox(height: 6),
+            SizedBox(
+              width: 70,
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontFamily: 'Quicksand',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: SunsetJungleTheme.jungleForest,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -536,8 +617,13 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
 // Helper classes for customization options
 class SkinToneOption {
   final String value;
+  final String label;
   final Color color;
-  SkinToneOption(this.value, this.color);
+  const SkinToneOption({
+    required this.value,
+    required this.label,
+    required this.color,
+  });
 }
 
 class HairStyleOption {
@@ -548,8 +634,13 @@ class HairStyleOption {
 
 class HairColorOption {
   final String value;
+  final String label;
   final Color color;
-  HairColorOption(this.value, this.color);
+  const HairColorOption({
+    required this.value,
+    required this.label,
+    required this.color,
+  });
 }
 
 class ClothingOption {
@@ -560,8 +651,13 @@ class ClothingOption {
 
 class ClothingColorOption {
   final String value;
+  final String label;
   final Color color;
-  ClothingColorOption(this.value, this.color);
+  const ClothingColorOption({
+    required this.value,
+    required this.label,
+    required this.color,
+  });
 }
 
 class ExpressionOption {

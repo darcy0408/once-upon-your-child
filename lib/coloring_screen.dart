@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
-import 'dart:typed_data';
 import 'coloring_book_service.dart';
 
 class ColoringScreen extends StatefulWidget {
@@ -24,7 +23,6 @@ class _ColoringScreenState extends State<ColoringScreen> {
 
   Color _selectedColor = Colors.red;
   final List<DrawingPoint> _drawingPoints = [];
-  UserColoring? _savedColoring;
   bool _isLoading = true;
 
   static const List<Color> _colorPalette = [
@@ -53,9 +51,7 @@ class _ColoringScreenState extends State<ColoringScreen> {
   }
 
   Future<void> _loadSavedColoring() async {
-    final saved = await _userColoringService.getColoring(widget.coloringPage.id);
     setState(() {
-      _savedColoring = saved;
       _isLoading = false;
     });
   }
@@ -66,7 +62,8 @@ class _ColoringScreenState extends State<ColoringScreen> {
     for (int i = 0; i < _drawingPoints.length; i++) {
       final point = _drawingPoints[i];
       if (point.offset != null) {
-        coloredAreas['point_$i'] = '#${point.color.value.toRadixString(16).padLeft(8, '0')}';
+        coloredAreas['point_$i'] =
+            '#${point.color.value.toRadixString(16).padLeft(8, '0')}';
       }
     }
 
@@ -118,7 +115,8 @@ class _ColoringScreenState extends State<ColoringScreen> {
 
   Future<void> _exportImage() async {
     try {
-      final boundary = _paintKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      final boundary = _paintKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
       if (boundary == null) return;
 
       final image = await boundary.toImage(pixelRatio: 3.0);
@@ -257,9 +255,12 @@ class _ColoringScreenState extends State<ColoringScreen> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.error, size: 60, color: Colors.red),
+                                const Icon(Icons.error,
+                                    size: 60, color: Colors.red),
                                 const SizedBox(height: 16),
-                                Text('Failed to load image', style: TextStyle(color: Colors.grey.shade600)),
+                                Text('Failed to load image',
+                                    style:
+                                        TextStyle(color: Colors.grey.shade600)),
                               ],
                             ),
                           );
@@ -298,7 +299,8 @@ class _ColoringScreenState extends State<ColoringScreen> {
                           });
                         },
                         child: CustomPaint(
-                          painter: DrawingPainter(drawingPoints: _drawingPoints),
+                          painter:
+                              DrawingPainter(drawingPoints: _drawingPoints),
                           size: Size.infinite,
                         ),
                       ),
@@ -352,7 +354,8 @@ class DrawingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (int i = 0; i < drawingPoints.length - 1; i++) {
-      if (drawingPoints[i].offset != null && drawingPoints[i + 1].offset != null) {
+      if (drawingPoints[i].offset != null &&
+          drawingPoints[i + 1].offset != null) {
         final paint = Paint()
           ..color = drawingPoints[i].color
           ..strokeWidth = 15.0
