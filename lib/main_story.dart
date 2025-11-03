@@ -21,6 +21,8 @@ import 'coloring_book_library_screen.dart';
 import 'emotions_screen.dart';
 import 'customizable_avatar_widget.dart';
 import 'avatar_models.dart';
+import 'settings_screen.dart';
+import 'services/api_service_manager.dart';
 
 class StoryCreatorApp extends StatelessWidget {
   const StoryCreatorApp({super.key});
@@ -213,66 +215,45 @@ class _StoryScreenState extends State<StoryScreen> {
 
     setState(() => _isLoading = true);
 
-    // Use multi-character endpoint if additional characters are selected
-    final String apiUrl = _additionalCharacterIds.isEmpty
-        ? 'http://127.0.0.1:5000/generate-story'
-        : 'http://127.0.0.1:5000/generate-multi-character-story';
-
-    final Map<String, dynamic> requestBody = _additionalCharacterIds.isEmpty
-        ? {
-            'character': _selectedCharacter!.name,
-            'theme': _selectedTheme,
-            'companion': _selectedCompanion,
-            'character_age': _selectedCharacter!.age,
-            'character_details': {
-              'fears': _selectedCharacter!.fears,
-              'strengths': _selectedCharacter!.strengths,
-              'likes': _selectedCharacter!.likes,
-              'dislikes': _selectedCharacter!.dislikes,
-              'comfort_item': _selectedCharacter!.comfortItem ?? '',
-              'personality_traits': _selectedCharacter!.personalityTraits,
-            },
-            if (_therapeuticCustomization != null)
-              'therapeutic_prompt':
-                  _therapeuticCustomization!.toPromptAddition(),
-          }
-        : {
-            'character_ids': [
-              _selectedCharacter!.id,
-              ..._additionalCharacterIds.toList()
-            ],
-            'main_character_id': _selectedCharacter!.id,
-            'theme': _selectedTheme,
-            'companion': _selectedCompanion,
-            if (_therapeuticCustomization != null)
-              'therapeutic_prompt':
-                  _therapeuticCustomization!.toPromptAddition(),
-          };
-
     try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {'Content-Type': 'application/json; charset=UTF-8'},
-        body: jsonEncode(requestBody),
+      // Prepare character details
+      final characterDetails = {
+        'fears': _selectedCharacter!.fears,
+        'strengths': _selectedCharacter!.strengths,
+        'likes': _selectedCharacter!.likes,
+        'dislikes': _selectedCharacter!.dislikes,
+        'comfort_item': _selectedCharacter!.comfortItem ?? '',
+        'personality_traits': _selectedCharacter!.personalityTraits,
+      };
+
+      // Generate additional character names list if any
+      final List<String>? additionalCharacterNames = _additionalCharacterIds.isEmpty
+          ? null
+          : _characters
+              .where((c) => _additionalCharacterIds.contains(c.id))
+              .map((c) => c.name)
+              .toList();
+
+      // Use ApiServiceManager to generate story (handles backend vs direct API)
+      final String storyText = await ApiServiceManager.generateStory(
+        characterName: _selectedCharacter!.name,
+        theme: _selectedTheme,
+        age: _selectedCharacter!.age,
+        companion: _selectedCompanion,
+        characterDetails: characterDetails,
+        additionalCharacters: additionalCharacterNames,
       );
 
       if (!navContext.mounted) return;
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
+      // Generate title and wisdom gem
+      final String title = _additionalCharacterIds.isEmpty
+          ? '${_selectedCharacter!.name}\'s ${ _selectedTheme} Adventure'
+          : _generateMultiCharacterTitle();
 
-        // Handle different response formats (single vs multi-character)
-        final String title = _additionalCharacterIds.isEmpty
-            ? (data['title'] ?? 'Your Story') as String
-            : _generateMultiCharacterTitle();
-
-        final String storyText = _additionalCharacterIds.isEmpty
-            ? (data['story_text'] ?? '') as String
-            : (data['story'] ?? '') as String;
-
-        final String wisdomGem = _additionalCharacterIds.isEmpty
-            ? (data['wisdom_gem'] ?? '') as String
-            : 'Together, we are stronger than we are alone.';
+      final String wisdomGem = _additionalCharacterIds.isEmpty
+          ? 'Every adventure makes us stronger and wiser.'
+          : 'Together, we are stronger than we are alone.';
 
         // Save the story locally with all characters used
         final saved = SavedStory(
@@ -306,13 +287,7 @@ class _StoryScreenState extends State<StoryScreen> {
             ),
           ),
         );
-      } else {
-        ScaffoldMessenger.of(navContext).showSnackBar(
-          const SnackBar(
-              content: Text('Error: Could not get a story from the server.')),
-        );
-      }
-    } catch (_) {
+    } catch (e) {
       ScaffoldMessenger.of(navContext).showSnackBar(
         const SnackBar(
             content: Text('Network Error: Could not connect to the server.')),
@@ -447,6 +422,15 @@ class _StoryScreenState extends State<StoryScreen> {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const MultiCharacterScreen()),
+              );
+            },
+          ),
+          IconButton(
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
               );
             },
           ),

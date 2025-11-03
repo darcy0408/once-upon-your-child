@@ -40,8 +40,9 @@ dependencies:
   share_plus: ^11.0.0       # Share stories
   uuid: ^4.5.1              # Generate unique IDs
   path_provider: ^2.1.1     # File paths
+  google_generative_ai: ^0.4.6  # Direct Gemini API access for BYOK users
 
-  # Note: We do NOT need OpenAI package - the backend handles AI generation
+  # Note: Backend handles AI generation for free users, but BYOK users call Gemini directly
 
 dev_dependencies:
   flutter_test:
