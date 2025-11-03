@@ -381,7 +381,7 @@ class _CharacterCreationScreenEnhancedState
                   prefixIcon: const Icon(Icons.cake),
                 ),
                 keyboardType: TextInputType.number,
-                inputFormatters: const [
+                inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
                 ],
                 validator: (v) {
