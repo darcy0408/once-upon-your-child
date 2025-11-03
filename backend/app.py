@@ -221,6 +221,12 @@ class AdvancedStoryEngine:
 
         parts.extend([
             "\nSTORY LENGTH: Approximately 500-600 words.",
+            "\nSENSORY-RICH WRITING:",
+            "- Use SENSORY DETAILS: What does the character see, hear, feel, smell, taste?",
+            "- SHOW emotions through body language: 'heart racing', 'palms sweating', 'warm feeling spreading'",
+            "- Use VIVID DESCRIPTIONS: colors, sounds, textures, temperatures",
+            "- Create IMMERSIVE scenes that readers can picture clearly",
+            "- Example: Instead of 'Emma was scared', write 'Emma's heart pounded as shadows danced on the wall'",
             "\nFORMAT REQUIREMENTS:",
             "- Start with: [TITLE: A Creative and Engaging Title]",
             f"- End with: [WISDOM GEM: {wisdom}]",
@@ -243,6 +249,81 @@ def _safe_extract_title_and_gem(text: str, theme: str):
     story_body = _TITLE_RE.sub("", text or "").strip()
     story_body = _GEM_RE.sub("", story_body).strip()
     return title, wisdom_gem, story_body
+
+def _build_character_integration(character_name, fears, strengths, likes, dislikes, comfort_item, personality_traits):
+    """Build deep character integration for personalized, therapeutic storytelling"""
+
+    parts = [
+        "DEEP CHARACTER INTEGRATION:",
+        f"Character Name: {character_name}",
+    ]
+
+    # Personality
+    if personality_traits:
+        traits_str = ", ".join(personality_traits)
+        parts.append(f"Personality: {traits_str}")
+
+    # Fears (Critical for therapeutic stories)
+    if fears:
+        fears_str = ", ".join(fears)
+        parts.extend([
+            f"\nFEARS TO ADDRESS: {fears_str}",
+            "IMPORTANT: The story MUST help the character face and overcome one of these fears.",
+            "Show the character feeling scared at first, then discovering courage and strength.",
+            "Make the fear resolution realistic and empowering, not dismissive.",
+        ])
+
+    # Strengths (Use these to overcome challenges)
+    if strengths:
+        strengths_str = ", ".join(strengths)
+        parts.extend([
+            f"\nSTRENGTHS TO UTILIZE: {strengths_str}",
+            f"IMPORTANT: Show how {character_name} uses these strengths to solve problems.",
+            "Let the character discover that they already have what they need inside them.",
+        ])
+
+    # Comfort item (Emotional security)
+    if comfort_item:
+        parts.extend([
+            f"\nCOMFORT ITEM: {comfort_item}",
+            f"Include the {comfort_item} in the story as a source of courage and comfort.",
+            f"Perhaps {character_name} carries it during scary moments or it helps them feel brave.",
+        ])
+
+    # Likes (Make story engaging)
+    if likes:
+        likes_str = ", ".join(likes)
+        parts.extend([
+            f"\nLIKES: {likes_str}",
+            f"Incorporate elements related to {likes_str} to make the story personally engaging.",
+        ])
+
+    # Dislikes (Add realistic challenges)
+    if dislikes:
+        dislikes_str = ", ".join(dislikes)
+        parts.extend([
+            f"\nDISLIKES: {dislikes_str}",
+            f"Consider using one of these dislikes as a minor challenge or something {character_name} must face.",
+        ])
+
+    # Therapeutic structure
+    parts.extend([
+        "\nSTORY STRUCTURE (CRITICAL):",
+        f"1. BEGINNING: Introduce {character_name} in their normal world, showing their personality traits",
+        "2. CHALLENGE: Present a situation that involves one of their fears or growth areas",
+        "3. STRUGGLE: Show realistic difficulty - fears are real, challenges are hard",
+        "4. DISCOVERY: Character realizes they have inner strength (use their strengths list)",
+        "5. RESOLUTION: Character overcomes the challenge, grows emotionally, learns about themselves",
+        "6. REFLECTION: End with character feeling proud, more confident, emotionally stronger",
+        "\nNARRATIVE REQUIREMENTS:",
+        "- Use sensory details (what they see, hear, feel, smell) to make scenes vivid",
+        "- Show emotions, don't just tell (e.g., 'heart pounding' not 'felt scared')",
+        f"- Keep {character_name} as the main character who drives the action",
+        "- Make the therapeutic element natural, not preachy or obvious",
+        "- Create a clear emotional arc: vulnerable → challenged → growing → empowered",
+    ])
+
+    return "\n".join(parts)
 
 def _as_list(v):
     """Accept list, JSON string, comma string, or None; return list[str]."""
@@ -284,19 +365,38 @@ def generate_story_endpoint():
     user_api_key = payload.get("user_api_key")  # Optional user-provided API key
     character_age = payload.get("character_age", 7)  # For age-appropriate content
 
+    # Deep character integration - get full character details
+    character_details = payload.get("character_details", {})
+    fears = character_details.get("fears", [])
+    strengths = character_details.get("strengths", [])
+    likes = character_details.get("likes", [])
+    dislikes = character_details.get("dislikes", [])
+    comfort_item = character_details.get("comfort_item", "")
+    personality_traits = character_details.get("personality_traits", [])
+
     # Add age-appropriate context to the prompt
     if character_age <= 5:
         age_context = "Write for very young children (ages 3-5): simple language, short sentences, clear lessons."
+        story_length = "200-300 words"
     elif character_age <= 11:
         age_context = "Write for children (ages 6-11): engaging language, moderate complexity, relatable situations."
+        story_length = "400-600 words"
     elif character_age <= 17:
         age_context = "Write for teenagers (ages 12-17): sophisticated language, complex emotions, relatable teen experiences."
+        story_length = "600-800 words"
     else:
         age_context = "Write for adults (18+): mature themes, nuanced emotions, reflective and meaningful content."
+        story_length = "800-1000 words"
 
     prompt = story_engine.generate_enhanced_prompt(character, theme, companion, therapeutic_prompt)
-    # Add age-appropriate context to the prompt
-    prompt = f"{prompt}\n\nAGE-APPROPRIATE CONTENT:\n{age_context}\nCharacter age: {character_age} years old"
+
+    # Build deep character integration prompt
+    character_integration = _build_character_integration(
+        character, fears, strengths, likes, dislikes, comfort_item, personality_traits
+    )
+
+    # Add age-appropriate context and character integration
+    prompt = f"{prompt}\n\n{character_integration}\n\nAGE-APPROPRIATE CONTENT:\n{age_context}\nCharacter age: {character_age} years old\nTarget story length: {story_length}"
 
     # Decide which model to use
     using_user_key = False

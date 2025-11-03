@@ -223,6 +223,15 @@ class _StoryScreenState extends State<StoryScreen> {
             'character': _selectedCharacter!.name,
             'theme': _selectedTheme,
             'companion': _selectedCompanion,
+            'character_age': _selectedCharacter!.age,
+            'character_details': {
+              'fears': _selectedCharacter!.fears,
+              'strengths': _selectedCharacter!.strengths,
+              'likes': _selectedCharacter!.likes,
+              'dislikes': _selectedCharacter!.dislikes,
+              'comfort_item': _selectedCharacter!.comfortItem ?? '',
+              'personality_traits': _selectedCharacter!.personalityTraits,
+            },
             if (_therapeuticCustomization != null)
               'therapeutic_prompt':
                   _therapeuticCustomization!.toPromptAddition(),
