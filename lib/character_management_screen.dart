@@ -163,9 +163,9 @@ class _CharacterManagementScreenState extends State<CharacterManagementScreen> {
                           return Text(parts.join(' • '));
                         },
                       ),
-                      if (c.role != null && c.role!.trim().isNotEmpty)
+                      if (c.role.trim().isNotEmpty)
                         Text(
-                          c.role!.trim(),
+                          c.role.trim(),
                           style: TextStyle(
                             color: Colors.deepPurple.shade700,
                             fontStyle: FontStyle.italic,
