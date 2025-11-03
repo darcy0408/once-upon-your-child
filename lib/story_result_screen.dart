@@ -15,6 +15,8 @@ import 'coloring_book_service.dart';
 import 'coloring_book_library_screen.dart';
 import 'models.dart';
 import 'therapeutic_focus_options.dart';
+import 'services/progression_service.dart';
+import 'unlock_celebration_dialog.dart';
 
 class StoryResultScreen extends StatefulWidget {
   final String title;
@@ -47,6 +49,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       GeminiIllustrationService(); // Using Gemini Imagen 3.0 via backend
   final _coloringService =
       GeminiColoringBookService(); // Using Gemini for therapeutic coloring pages
+  final _progressionService = ProgressionService(); // Track user progress and unlocks
   bool _isFavorite = false;
   bool _isLoading = true;
   List<StoryIllustration>? _cachedIllustrations;
@@ -72,6 +75,17 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     _cacheStoryForOffline();
     _loadCachedIllustrations();
     _loadCachedColoringPages();
+    _trackStoryCreation(); // Track that user created a story, check for unlocks
+  }
+
+  /// Track that a story was created and show celebration if features unlocked
+  Future<void> _trackStoryCreation() async {
+    final newUnlocks = await _progressionService.incrementStoriesCreated();
+
+    // Show celebration dialog if any features were unlocked
+    if (mounted && newUnlocks.isNotEmpty) {
+      await UnlockCelebrationDialog.show(context, newUnlocks);
+    }
   }
 
   /// Automatically cache the story for offline access
@@ -298,8 +312,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
             widget.characterName!.trim().isNotEmpty)
         ? widget.characterName!.trim()
         : 'Your hero';
-    final focus = _activeTherapeuticFocus;
-    final hasFocus = focus != null && focus.isNotEmpty;
+    final focusText = _activeTherapeuticFocus?.trim() ?? '';
+    final hasFocus = focusText.isNotEmpty;
     final usingDefaultAge =
         _characterAge == null || _characterAge! < 3 || _characterAge! > 100;
 
@@ -321,7 +335,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
           avatar:
               const Icon(Icons.self_improvement, size: 18, color: Colors.teal),
           label: Text(
-            focus!,
+            focusText,
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
           backgroundColor: Colors.teal.shade50,
@@ -356,7 +370,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
           if (hasFocus) ...[
             const SizedBox(height: 8),
             Text(
-              'We\'ll gently emphasize themes about ${focus!.toLowerCase()}.',
+            'We\'ll gently emphasize themes about ${focusText.toLowerCase()}.',
               style: const TextStyle(
                 fontSize: 13,
                 fontStyle: FontStyle.italic,
