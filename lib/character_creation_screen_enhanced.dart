@@ -5,7 +5,10 @@ import 'package:http/http.dart' as http;
 import 'superhero_name_generator.dart';
 import 'avatar_builder_screen.dart';
 import 'avatar_models.dart';
+import 'character_traits_data.dart';
 import 'customizable_avatar_widget.dart';
+import 'widgets/multi_select_chip_field.dart';
+import 'services/progression_service.dart';
 
 class CharacterCreationScreenEnhanced extends StatefulWidget {
   const CharacterCreationScreenEnhanced({super.key});
@@ -18,7 +21,11 @@ class CharacterCreationScreenEnhanced extends StatefulWidget {
 class _CharacterCreationScreenEnhancedState
     extends State<CharacterCreationScreenEnhanced> {
   final _formKey = GlobalKey<FormState>();
+  final _progressionService = ProgressionService();
   bool _isLoading = false;
+  bool _hasFantasyMode = false;
+  bool _hasAnimalEarsTails = false;
+  bool _hasPremium = false;
 
   // Basic Info
   final _nameController = TextEditingController();
@@ -41,7 +48,10 @@ class _CharacterCreationScreenEnhancedState
   CharacterAvatar _avatar = CharacterAvatar.defaultAvatar;
 
   // Personality
-  final Set<String> _selectedTraits = {};
+  final Set<String> _selectedPersonalityTraits = <String>{};
+
+  // Strengths
+  final Set<String> _selectedStrengths = <String>{};
 
   // Interests & Preferences
   final _likesController = TextEditingController();
@@ -49,10 +59,40 @@ class _CharacterCreationScreenEnhancedState
 
   // Therapeutic Elements
   final _fearsController = TextEditingController();
-  final _strengthsController = TextEditingController();
   final _goalsController = TextEditingController();
   final _challengesController = TextEditingController();
   final _comfortItemController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController.addListener(_handleNameChanged);
+    _loadUnlocks();
+  }
+
+  Future<void> _loadUnlocks() async {
+    final hasFantasy = await _progressionService.hasAccessToFeature(
+      UnlockableFeatures.fantasyMode,
+    );
+    final hasAnimal = await _progressionService.hasAccessToFeature(
+      UnlockableFeatures.animalEarsTails,
+    );
+    final hasPremium = await _progressionService.hasPremiumAccess();
+
+    if (mounted) {
+      setState(() {
+        _hasFantasyMode = hasFantasy;
+        _hasAnimalEarsTails = hasAnimal;
+        _hasPremium = hasPremium;
+      });
+    }
+  }
+
+  void _handleNameChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
 
   List<String> _splitCSV(String text) {
     if (text.trim().isEmpty) return <String>[];
@@ -61,6 +101,17 @@ class _CharacterCreationScreenEnhancedState
         .map((e) => e.trim())
         .where((e) => e.isNotEmpty)
         .toList();
+  }
+
+  String _characterDisplayName() {
+    final name = _nameController.text.trim();
+    return name.isEmpty ? 'this character' : name;
+  }
+
+  String _characterPossessive() {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) return 'this character\'s';
+    return name.toLowerCase().endsWith('s') ? '$name\'' : '$name\'s';
   }
 
   Future<void> _openAvatarBuilder() async {
@@ -102,7 +153,7 @@ class _CharacterCreationScreenEnhancedState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -186,7 +237,8 @@ class _CharacterCreationScreenEnhancedState
         'outfit': _outfitController.text.trim(),
 
         // Personality
-        'traits': _selectedTraits.toList(),
+        'traits': _selectedPersonalityTraits.toList(),
+        'personality_traits': _selectedPersonalityTraits.toList(),
 
         // Interests
         'likes': _splitCSV(_likesController.text),
@@ -194,7 +246,7 @@ class _CharacterCreationScreenEnhancedState
 
         // Therapeutic
         'fears': _splitCSV(_fearsController.text),
-        'strengths': _splitCSV(_strengthsController.text),
+        'strengths': _selectedStrengths.toList(),
         'goals': _splitCSV(_goalsController.text),
         'challenge': _challengesController.text.trim().isEmpty
             ? null
@@ -244,6 +296,7 @@ class _CharacterCreationScreenEnhancedState
 
   @override
   void dispose() {
+    _nameController.removeListener(_handleNameChanged);
     _nameController.dispose();
     _ageController.dispose();
     _superheroNameController.dispose();
@@ -253,7 +306,6 @@ class _CharacterCreationScreenEnhancedState
     _likesController.dispose();
     _dislikesController.dispose();
     _fearsController.dispose();
-    _strengthsController.dispose();
     _goalsController.dispose();
     _challengesController.dispose();
     _comfortItemController.dispose();
@@ -456,17 +508,19 @@ class _CharacterCreationScreenEnhancedState
 
   Widget _buildCharacterTypeSection() {
     final types = [
-      {'name': 'Superhero', 'icon': Icons.flash_on, 'color': Colors.red},
-      {'name': 'Princess/Prince', 'icon': Icons.castle, 'color': Colors.pink},
-      {'name': 'Explorer', 'icon': Icons.explore, 'color': Colors.orange},
+      {'name': 'Superhero', 'icon': Icons.flash_on, 'color': Colors.red, 'locked': !_hasPremium, 'unlockMsg': 'Premium feature - Use BYOK or subscribe'},
+      {'name': 'Princess/Prince', 'icon': Icons.castle, 'color': Colors.pink, 'locked': false},
+      {'name': 'Explorer', 'icon': Icons.explore, 'color': Colors.orange, 'locked': false},
       {
         'name': 'Wizard/Witch',
         'icon': Icons.auto_fix_high,
-        'color': Colors.purple
+        'color': Colors.purple,
+        'locked': !_hasFantasyMode,
+        'unlockMsg': 'Unlock at 5 stories!'
       },
-      {'name': 'Scientist', 'icon': Icons.science, 'color': Colors.blue},
-      {'name': 'Animal Friend', 'icon': Icons.pets, 'color': Colors.green},
-      {'name': 'Everyday Kid', 'icon': Icons.child_care, 'color': Colors.teal},
+      {'name': 'Scientist', 'icon': Icons.science, 'color': Colors.blue, 'locked': false},
+      {'name': 'Animal Friend', 'icon': Icons.pets, 'color': Colors.green, 'locked': !_hasAnimalEarsTails, 'unlockMsg': 'Unlock at 10 stories!'},
+      {'name': 'Everyday Kid', 'icon': Icons.child_care, 'color': Colors.teal, 'locked': false},
     ];
 
     return _buildSectionCard(
@@ -477,28 +531,47 @@ class _CharacterCreationScreenEnhancedState
           spacing: 8,
           runSpacing: 8,
           children: types.map((type) {
-            final isSelected = _characterType == type['name'];
-            return ChoiceChip(
-              label: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    type['icon'] as IconData,
-                    size: 18,
-                    color: isSelected ? Colors.white : type['color'] as Color,
+            final typeName = type['name'] as String;
+            final isSelected = _characterType == typeName;
+            final isLocked = type['locked'] as bool;
+            final unlockMsg = type['unlockMsg'] as String?;
+
+            return GestureDetector(
+              onTap: isLocked && unlockMsg != null ? () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(unlockMsg),
+                    backgroundColor: Colors.orange,
+                    duration: const Duration(seconds: 3),
                   ),
-                  const SizedBox(width: 6),
-                  Text(type['name'] as String),
-                ],
-              ),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() => _characterType = type['name'] as String);
-              },
-              selectedColor: type['color'] as Color,
-              labelStyle: TextStyle(
-                color: isSelected ? Colors.white : Colors.black87,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                );
+              } : null,
+              child: ChoiceChip(
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isLocked)
+                      const Icon(Icons.lock, size: 16, color: Colors.grey)
+                    else
+                      Icon(
+                        type['icon'] as IconData,
+                        size: 18,
+                        color: isSelected ? Colors.white : type['color'] as Color,
+                      ),
+                    const SizedBox(width: 6),
+                    Text(typeName),
+                  ],
+                ),
+                selected: isSelected,
+                onSelected: isLocked ? null : (selected) {
+                  setState(() => _characterType = typeName);
+                },
+                selectedColor: type['color'] as Color,
+                backgroundColor: isLocked ? Colors.grey.shade200 : null,
+                labelStyle: TextStyle(
+                  color: isLocked ? Colors.grey : (isSelected ? Colors.white : Colors.black87),
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
               ),
             );
           }).toList(),
@@ -669,52 +742,26 @@ class _CharacterCreationScreenEnhancedState
   }
 
   Widget _buildPersonalitySection() {
-    final traits = [
-      'Brave',
-      'Shy',
-      'Creative',
-      'Curious',
-      'Kind',
-      'Funny',
-      'Thoughtful',
-      'Energetic',
-      'Patient',
-      'Determined',
-      'Friendly',
-      'Imaginative',
-      'Caring',
-      'Adventurous',
-      'Smart',
-    ];
-
+    final possessive = _characterPossessive();
     return _buildSectionCard(
       'Personality Traits',
       Icons.psychology,
       [
-        const Text('Select traits that describe this character:',
-            style: TextStyle(fontSize: 14, color: Colors.grey)),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: traits.map((trait) {
-            final isSelected = _selectedTraits.contains(trait);
-            return FilterChip(
-              label: Text(trait),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    _selectedTraits.add(trait);
-                  } else {
-                    _selectedTraits.remove(trait);
-                  }
-                });
-              },
-              selectedColor: Colors.deepPurple.shade100,
-              checkmarkColor: Colors.deepPurple,
-            );
-          }).toList(),
+        MultiSelectChipField(
+          title: 'Describe $possessive personality',
+          helperText:
+              'Choose up to five traits that capture how ${_characterDisplayName()} acts. Tap again to deselect.',
+          suggestions: CharacterTraitsData.personalityTraits,
+          initialSelection: _selectedPersonalityTraits,
+          maxSelection: 5,
+          fieldLabel: 'personality traits',
+          onChanged: (values) {
+            setState(() {
+              _selectedPersonalityTraits
+                ..clear()
+                ..addAll(values);
+            });
+          },
         ),
       ],
     );
@@ -767,20 +814,23 @@ class _CharacterCreationScreenEnhancedState
               fontSize: 13, color: Colors.grey, fontStyle: FontStyle.italic),
         ),
         const SizedBox(height: 12),
-        TextFormField(
-          controller: _strengthsController,
-          decoration: InputDecoration(
-            labelText: 'Strengths/What They\'re Good At',
-            hintText: 'e.g., making friends, solving puzzles, being brave',
-            helperText: 'Separate with commas',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            filled: true,
-            fillColor: Colors.blue[50],
-            prefixIcon: const Icon(Icons.star),
-          ),
-          maxLines: 2,
+        MultiSelectChipField(
+          title: 'What are ${_characterPossessive()} strengths?',
+          helperText:
+              'Pick up to five strengths that the story should highlight. Add custom ones if needed.',
+          suggestions: CharacterTraitsData.strengths,
+          initialSelection: _selectedStrengths,
+          maxSelection: 5,
+          fieldLabel: 'strengths',
+          onChanged: (values) {
+            setState(() {
+              _selectedStrengths
+                ..clear()
+                ..addAll(values);
+            });
+          },
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         TextFormField(
           controller: _fearsController,
           decoration: InputDecoration(
