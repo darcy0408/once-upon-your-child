@@ -13,6 +13,7 @@ import 'subscription_service.dart';
 import 'subscription_models.dart';
 import 'paywall_dialog.dart';
 import 'premium_upgrade_screen.dart';
+import 'interactive_story_screen.dart';
 import 'therapeutic_customization_screen.dart';
 import 'therapeutic_models.dart';
 import 'story_intent_card.dart';
@@ -61,6 +62,7 @@ class _StoryScreenState extends State<StoryScreen> {
 
   String _selectedTheme = 'Adventure';
   String _selectedCompanion = 'None';
+  bool _interactiveMode = false;
   bool _isLoading = false;
 
   final _subscriptionService = SubscriptionService();
@@ -141,21 +143,23 @@ class _StoryScreenState extends State<StoryScreen> {
     }
   }
 
-  Future<void> _createStory() async {
+  Future<bool> _validateStoryCreationPreconditions() async {
     final navContext = context;
+
     if (_selectedCharacter == null) {
       ScaffoldMessenger.of(navContext).showSnackBar(
         const SnackBar(content: Text('Please choose a character!')),
       );
-      return;
+      return false;
     }
 
-    // Check if user can create a story
     final canCreate = await _subscriptionService.canCreateStory();
     if (!canCreate) {
       final remaining = await _subscriptionService.getRemainingStoriesToday();
       final remainingMonth =
           await _subscriptionService.getRemainingStoriesThisMonth();
+      if (!mounted) return false;
+
       final upgraded = await PaywallDialog.showStoryLimitDialog(
         navContext,
         remainingToday: remaining,
@@ -164,48 +168,56 @@ class _StoryScreenState extends State<StoryScreen> {
       if (upgraded) {
         await _loadSubscriptionInfo();
       }
-      return;
+      return false;
     }
 
-    // Check if multi-character is available
     if (_additionalCharacterIds.isNotEmpty) {
       final hasMultiChar =
           await _subscriptionService.hasFeature('multi_character_stories');
       if (!hasMultiChar) {
+        if (!mounted) return false;
         await PaywallDialog.showFeatureLockedDialog(
           navContext,
           featureName: 'Multi-Character Stories',
           description: 'Include siblings and friends in stories together!',
         );
-        return;
+        return false;
       }
     }
 
-    // Check if theme is available
     final themeAvailable =
         await _subscriptionService.isThemeAvailable(_selectedTheme);
     if (!themeAvailable) {
+      if (!mounted) return false;
       await PaywallDialog.showContentLockedDialog(
         navContext,
         contentType: 'Theme',
         contentName: _selectedTheme,
       );
-      return;
+      return false;
     }
 
-    // Check if companion is available
     if (_selectedCompanion != 'None') {
       final companionAvailable =
           await _subscriptionService.isCompanionAvailable(_selectedCompanion);
       if (!companionAvailable) {
+        if (!mounted) return false;
         await PaywallDialog.showContentLockedDialog(
           navContext,
           contentType: 'Companion',
           contentName: _selectedCompanion,
         );
-        return;
+        return false;
       }
     }
+
+    return true;
+  }
+
+  Future<void> _createStory() async {
+    final navContext = context;
+    final allowed = await _validateStoryCreationPreconditions();
+    if (!allowed) return;
 
     // Get all selected characters
     final List<Character> allSelectedCharacters = [
@@ -227,12 +239,13 @@ class _StoryScreenState extends State<StoryScreen> {
       };
 
       // Generate additional character names list if any
-      final List<String>? additionalCharacterNames = _additionalCharacterIds.isEmpty
-          ? null
-          : _characters
-              .where((c) => _additionalCharacterIds.contains(c.id))
-              .map((c) => c.name)
-              .toList();
+      final List<String>? additionalCharacterNames =
+          _additionalCharacterIds.isEmpty
+              ? null
+              : _characters
+                  .where((c) => _additionalCharacterIds.contains(c.id))
+                  .map((c) => c.name)
+                  .toList();
 
       // Use ApiServiceManager to generate story (handles backend vs direct API)
       final String storyText = await ApiServiceManager.generateStory(
@@ -248,45 +261,45 @@ class _StoryScreenState extends State<StoryScreen> {
 
       // Generate title and wisdom gem
       final String title = _additionalCharacterIds.isEmpty
-          ? '${_selectedCharacter!.name}\'s ${ _selectedTheme} Adventure'
+          ? '${_selectedCharacter!.name}\'s ${_selectedTheme} Adventure'
           : _generateMultiCharacterTitle();
 
       final String wisdomGem = _additionalCharacterIds.isEmpty
           ? 'Every adventure makes us stronger and wiser.'
           : 'Together, we are stronger than we are alone.';
 
-        // Save the story locally with all characters used
-        final saved = SavedStory(
-          title: title,
-          storyText: storyText,
-          theme: _selectedTheme,
-          characters: allSelectedCharacters,
-          createdAt: DateTime.now(),
-          isInteractive: false,
-          wisdomGem: wisdomGem,
-        );
-        await StorageService().saveStory(saved);
+      // Save the story locally with all characters used
+      final saved = SavedStory(
+        title: title,
+        storyText: storyText,
+        theme: _selectedTheme,
+        characters: allSelectedCharacters,
+        createdAt: DateTime.now(),
+        isInteractive: false,
+        wisdomGem: wisdomGem,
+      );
+      await StorageService().saveStory(saved);
 
-        // Record story creation for usage tracking
-        await _subscriptionService.recordStoryCreation();
-        await _loadSubscriptionInfo(); // Refresh remaining count
+      // Record story creation for usage tracking
+      await _subscriptionService.recordStoryCreation();
+      await _loadSubscriptionInfo(); // Refresh remaining count
 
-        if (!navContext.mounted) return;
+      if (!navContext.mounted) return;
 
-        // Navigate to result screen
-        Navigator.of(navContext).push(
-          MaterialPageRoute(
-            builder: (_) => StoryResultScreen(
-              title: title,
-              storyText: storyText,
-              wisdomGem: wisdomGem,
-              characterName: _selectedCharacter?.name,
-              storyId: saved.id,
-              theme: _selectedTheme,
-              characterId: _selectedCharacter?.id,
-            ),
+      // Navigate to result screen
+      Navigator.of(navContext).push(
+        MaterialPageRoute(
+          builder: (_) => StoryResultScreen(
+            title: title,
+            storyText: storyText,
+            wisdomGem: wisdomGem,
+            characterName: _selectedCharacter?.name,
+            storyId: saved.id,
+            theme: _selectedTheme,
+            characterId: _selectedCharacter?.id,
           ),
-        );
+        ),
+      );
     } catch (e) {
       ScaffoldMessenger.of(navContext).showSnackBar(
         const SnackBar(
@@ -294,6 +307,43 @@ class _StoryScreenState extends State<StoryScreen> {
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _startInteractiveStory() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+
+    final allowed = await _validateStoryCreationPreconditions();
+    if (!allowed) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    final bool? storySaved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => InteractiveStoryScreen(
+          character: _selectedCharacter!,
+          theme: _selectedTheme,
+          companion: _selectedCompanion != 'None' ? _selectedCompanion : null,
+        ),
+      ),
+    );
+
+    if (storySaved == true) {
+      await _loadSubscriptionInfo();
+    }
+  }
+
+  Future<void> _onCreateButtonPressed() async {
+    if (_isLoading) return;
+    if (_interactiveMode) {
+      await _startInteractiveStory();
+    } else {
+      await _createStory();
     }
   }
 
@@ -503,19 +553,41 @@ class _StoryScreenState extends State<StoryScreen> {
                 },
               ),
               const SizedBox(height: 20),
+              Card(
+                child: SwitchListTile(
+                  title: const Text(
+                    'Interactive Story Mode',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: const Text(
+                    'Make choices that change the story!',
+                  ),
+                  value: _interactiveMode,
+                  activeColor: Colors.purple,
+                  secondary: const Icon(Icons.alt_route, color: Colors.purple),
+                  onChanged: (value) {
+                    setState(() => _interactiveMode = value);
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
               _buildSectionCard(
                   'Choose a Companion (Optional)', _buildCompanionSelector()),
               const SizedBox(height: 40),
               _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : ElevatedButton(
-                      onPressed: _createStory,
+                      onPressed: () async {
+                        await _onCreateButtonPressed();
+                      },
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         textStyle: const TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold),
                       ),
-                      child: const Text('Create My Story!'),
+                      child: Text(_interactiveMode
+                          ? 'Start Interactive Story'
+                          : 'Create My Story!'),
                     ),
             ],
           ),
