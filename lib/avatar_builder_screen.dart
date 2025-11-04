@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'sunset_jungle_theme.dart';
 import 'avatar_models.dart';
 import 'customizable_avatar_widget.dart';
+import 'services/progression_service.dart';
 
 class AvatarBuilderScreen extends StatefulWidget {
   final EnhancedCharacter? initialCharacter;
@@ -22,6 +23,8 @@ class AvatarBuilderScreen extends StatefulWidget {
 }
 
 class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
+  final _progressionService = ProgressionService();
+  bool _hasCustomColors = false;
   late TextEditingController _nameController;
   late CharacterAvatar _currentAvatar;
 
@@ -67,7 +70,8 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
     HairStyleOption('Hijab', 'Hijab 🧕'),
   ];
 
-  final List<HairColorOption> _hairColors = [
+  // Basic hair colors - always available
+  final List<HairColorOption> _basicHairColors = [
     const HairColorOption(
         value: 'Platinum', label: 'Platinum', color: Color(0xFFF5F5DC)),
     const HairColorOption(
@@ -85,13 +89,17 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
     const HairColorOption(
         value: 'Red', label: 'Fiery Red', color: Color(0xFFC0392B)),
     const HairColorOption(
-        value: 'PastelPink', label: 'Pastel Pink', color: Color(0xFFFF6B9D)),
-    const HairColorOption(
         value: 'SilverGray', label: 'Silver', color: Color(0xFFBDC3C7)),
+  ];
+
+  // Special/Custom colors - unlock at 15 stories
+  final List<HairColorOption> _specialHairColors = [
     const HairColorOption(
-        value: 'Blue', label: 'Midnight Blue', color: Color(0xFF6495ED)),
+        value: 'PastelPink', label: '✨ Pastel Pink', color: Color(0xFFFF6B9D)),
     const HairColorOption(
-        value: 'Purple', label: 'Royal Purple', color: Color(0xFF9B59B6)),
+        value: 'Blue', label: '✨ Midnight Blue', color: Color(0xFF6495ED)),
+    const HairColorOption(
+        value: 'Purple', label: '✨ Royal Purple', color: Color(0xFF9B59B6)),
   ];
 
   final Map<String, List<ClothingOption>> _clothingCategories = {
@@ -184,6 +192,19 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
     );
     _currentAvatar =
         widget.initialCharacter?.avatar ?? CharacterAvatar.defaultAvatar;
+    _loadUnlocks();
+  }
+
+  Future<void> _loadUnlocks() async {
+    final hasCustomColors = await _progressionService.hasAccessToFeature(
+      UnlockableFeatures.customColors,
+    );
+
+    if (mounted) {
+      setState(() {
+        _hasCustomColors = hasCustomColors;
+      });
+    }
   }
 
   @override
@@ -343,18 +364,35 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
   }
 
   Widget _buildHairColorSection() {
+    final allColors = [
+      ..._basicHairColors,
+      ..._specialHairColors,
+    ];
+
     return _buildOptionGroup(
       title: 'Hair Color',
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
-        children: _hairColors.map((color) {
+        children: allColors.map((color) {
+          final isSpecial = _specialHairColors.contains(color);
+          final isLocked = isSpecial && !_hasCustomColors;
           final isSelected = _currentAvatar.hairColor == color.value;
+
           return _buildColorSwatch(
-            color: color.color,
+            color: isLocked ? Colors.grey.shade300 : color.color,
             isSelected: isSelected,
             label: color.label,
-            onTap: () => _updateAvatar(
+            isLocked: isLocked,
+            onTap: isLocked ? () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Unlock special colors at 15 stories!'),
+                  backgroundColor: Colors.orange,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            } : () => _updateAvatar(
               _currentAvatar.copyWith(hairColor: color.value),
             ),
           );
@@ -549,6 +587,7 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
     required bool isSelected,
     required VoidCallback onTap,
     String? label,
+    bool isLocked = false,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -563,32 +602,41 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
               color: color,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isSelected
-                    ? SunsetJungleTheme.sunsetCoral
-                    : Colors.black.withOpacity(0.08),
+                color: isLocked
+                    ? Colors.grey
+                    : (isSelected
+                        ? SunsetJungleTheme.sunsetCoral
+                        : Colors.black.withValues(alpha: 0.08)),
                 width: isSelected ? 3 : 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isSelected ? 0.16 : 0.08),
+                  color: Colors.black
+                      .withValues(alpha: isSelected ? 0.16 : 0.08),
                   blurRadius: isSelected ? 10 : 4,
                   offset: const Offset(0, 3),
                 ),
               ],
             ),
-            child: isSelected
+            child: isLocked
                 ? const Icon(
-                    Icons.check,
-                    color: Colors.white,
+                    Icons.lock,
+                    color: Colors.grey,
                     size: 22,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black38,
-                        blurRadius: 4,
-                      ),
-                    ],
                   )
-                : null,
+                : (isSelected
+                    ? const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 22,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black38,
+                            blurRadius: 4,
+                          ),
+                        ],
+                      )
+                    : null),
           ),
           if (label != null) ...[
             const SizedBox(height: 6),
