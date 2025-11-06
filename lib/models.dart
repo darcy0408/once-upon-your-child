@@ -1,4 +1,6 @@
 // lib/models.dart
+import 'avatar_models.dart';
+
 class Character {
   final String id;
   final String name;
@@ -11,6 +13,8 @@ class Character {
   final List<String>? likes;
   final List<String>? dislikes;
   final List<String>? fears;
+  final List<String>? strengths;
+  final List<String>? personalityTraits;
   final String? comfortItem;
   final String? hair;
   final String? eyes;
@@ -18,6 +22,7 @@ class Character {
   final String? hairstyle;
   final String? currentEmotion;
   final String? currentEmotionCore;
+  final CharacterAvatar? avatar;
 
   Character({
     required this.id,
@@ -31,6 +36,8 @@ class Character {
     this.likes,
     this.dislikes,
     this.fears,
+    this.strengths,
+    this.personalityTraits,
     this.comfortItem,
     this.hair,
     this.eyes,
@@ -38,21 +45,36 @@ class Character {
     this.hairstyle,
     this.currentEmotion,
     this.currentEmotionCore,
+    this.avatar,
   });
 
   factory Character.fromJson(Map<String, dynamic> json) {
+    CharacterAvatar? avatar;
+    final avatarJson = json['avatar'];
+    if (avatarJson is Map<String, dynamic>) {
+      avatar = CharacterAvatar.fromJson(avatarJson);
+    }
+    final dynamic ageValue = json['age'];
+    final int parsedAge = ageValue is int
+        ? ageValue
+        : ageValue is num
+            ? ageValue.toInt()
+            : int.tryParse(ageValue?.toString() ?? '') ?? 0;
     return Character(
       id: json['id'] ?? '',
       name: json['name'] ?? 'Unknown',
-      age: json['age'] ?? 0,
+      age: parsedAge,
       role: json['role'] ?? 'Hero',
       gender: json['gender'],
       characterStyle: json['character_style'],
       magicType: json['magic_type'],
       challenge: json['challenge'],
       likes: json['likes'] != null ? List<String>.from(json['likes']) : null,
-      dislikes: json['dislikes'] != null ? List<String>.from(json['dislikes']) : null,
+      dislikes:
+          json['dislikes'] != null ? List<String>.from(json['dislikes']) : null,
       fears: json['fears'] != null ? List<String>.from(json['fears']) : null,
+      strengths: json['strengths'] != null ? List<String>.from(json['strengths']) : null,
+      personalityTraits: json['personality_traits'] != null ? List<String>.from(json['personality_traits']) : null,
       comfortItem: json['comfort_item'],
       hair: json['hair'],
       eyes: json['eyes'],
@@ -60,6 +82,7 @@ class Character {
       hairstyle: json['hairstyle'],
       currentEmotion: json['current_emotion'],
       currentEmotionCore: json['current_emotion_core'],
+      avatar: avatar,
     );
   }
 
@@ -75,6 +98,8 @@ class Character {
         'likes': likes,
         'dislikes': dislikes,
         'fears': fears,
+        'strengths': strengths,
+        'personality_traits': personalityTraits,
         'comfort_item': comfortItem,
         'hair': hair,
         'eyes': eyes,
@@ -82,6 +107,7 @@ class Character {
         'hairstyle': hairstyle,
         'current_emotion': currentEmotion,
         'current_emotion_core': currentEmotionCore,
+        if (avatar != null) 'avatar': avatar!.toJson(),
       };
 }
 

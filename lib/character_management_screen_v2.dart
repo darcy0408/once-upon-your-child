@@ -16,10 +16,12 @@ class CharacterManagementScreenV2 extends StatefulWidget {
   const CharacterManagementScreenV2({super.key});
 
   @override
-  State<CharacterManagementScreenV2> createState() => _CharacterManagementScreenV2State();
+  State<CharacterManagementScreenV2> createState() =>
+      _CharacterManagementScreenV2State();
 }
 
-class _CharacterManagementScreenV2State extends State<CharacterManagementScreenV2> {
+class _CharacterManagementScreenV2State
+    extends State<CharacterManagementScreenV2> {
   late Future<List<Character>> _charactersFuture;
   final _subscriptionService = SubscriptionService();
 
@@ -35,10 +37,12 @@ class _CharacterManagementScreenV2State extends State<CharacterManagementScreenV
 
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
-      final List list = (decoded is List) ? decoded : (decoded['items'] as List);
+      final List list =
+          (decoded is List) ? decoded : (decoded['items'] as List);
       return list.map((j) => Character.fromJson(j)).toList().cast<Character>();
     } else {
-      throw Exception('Failed to load characters. Status code: ${response.statusCode}');
+      throw Exception(
+          'Failed to load characters. Status code: ${response.statusCode}');
     }
   }
 
@@ -48,7 +52,8 @@ class _CharacterManagementScreenV2State extends State<CharacterManagementScreenV
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Character'),
-        content: Text('Are you sure you want to delete ${character.name}? This action cannot be undone.'),
+        content: Text(
+            'Are you sure you want to delete ${character.name}? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -122,7 +127,8 @@ class _CharacterManagementScreenV2State extends State<CharacterManagementScreenV
         onPressed: () async {
           final snapshot = await _charactersFuture;
           final currentCount = snapshot.length;
-          final canCreate = await _subscriptionService.canCreateCharacter(currentCount);
+          final canCreate =
+              await _subscriptionService.canCreateCharacter(currentCount);
 
           if (!canCreate) {
             final maxChars = await _subscriptionService.getMaxCharacters();
@@ -134,7 +140,8 @@ class _CharacterManagementScreenV2State extends State<CharacterManagementScreenV
           }
 
           final created = await Navigator.of(context).push<bool>(
-            MaterialPageRoute(builder: (_) => const CharacterCreationScreenEnhanced()),
+            MaterialPageRoute(
+                builder: (_) => const CharacterCreationScreenEnhanced()),
           );
           if (created == true) {
             _refreshCharacters();
@@ -170,22 +177,41 @@ class _CharacterManagementScreenV2State extends State<CharacterManagementScreenV
               final c = characters[i];
               return Card(
                 elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   leading: EnhancedCharacterAvatar(character: c, size: 50),
                   title: Text(
                     c.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 4),
-                      Text('Age ${c.age} • ${c.gender ?? ""}'),
-                      if (c.role != null && c.role!.isNotEmpty)
+                      Builder(
+                        builder: (_) {
+                          final genderDisplay = c.gender?.trim();
+                          final parts = <String>[];
+                          if (c.age > 0) {
+                            parts.add('Age ${c.age}');
+                          }
+                          if (genderDisplay != null &&
+                              genderDisplay.isNotEmpty) {
+                            parts.add(genderDisplay);
+                          }
+                          if (parts.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return Text(parts.join(' • '));
+                        },
+                      ),
+                      if (c.role.trim().isNotEmpty)
                         Text(
-                          c.role!,
+                          c.role.trim(),
                           style: TextStyle(
                             color: Colors.deepPurple.shade700,
                             fontStyle: FontStyle.italic,
@@ -200,9 +226,11 @@ class _CharacterManagementScreenV2State extends State<CharacterManagementScreenV
                         icon: const Icon(Icons.edit, color: Colors.deepPurple),
                         tooltip: 'Edit',
                         onPressed: () async {
-                          final updated = await Navigator.of(context).push<bool>(
+                          final updated =
+                              await Navigator.of(context).push<bool>(
                             MaterialPageRoute(
-                              builder: (_) => CharacterEditScreenEnhanced(character: c),
+                              builder: (_) =>
+                                  CharacterEditScreenEnhanced(character: c),
                             ),
                           );
                           if (updated == true) {
@@ -220,7 +248,8 @@ class _CharacterManagementScreenV2State extends State<CharacterManagementScreenV
                   onTap: () async {
                     final updated = await Navigator.of(context).push<bool>(
                       MaterialPageRoute(
-                        builder: (_) => CharacterEditScreenEnhanced(character: c),
+                        builder: (_) =>
+                            CharacterEditScreenEnhanced(character: c),
                       ),
                     );
                     if (updated == true) {

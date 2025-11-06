@@ -47,6 +47,26 @@ class CharacterAvatar {
         'clotheColor': clothingColor,
       };
 
+  /// Translate this avatar into an Avataaars URL for rich SVG rendering.
+  String toAvataaarsUrl({bool circleBackground = true}) {
+    final query = <String, String>{
+      'avatarStyle': circleBackground ? 'Circle' : 'Transparent',
+      'topType': _mapTopType(hairStyle),
+      'hairColor': _mapHairColor(hairColor),
+      'accessoriesType': 'Blank',
+      'facialHairType': 'Blank',
+      'facialHairColor': 'BrownDark',
+      'clotheType': clothingStyle,
+      'clotheColor': _mapClothingColor(clothingColor),
+      'eyeType': eyeType,
+      'mouthType': mouthType,
+      'skinColor': _mapSkinColor(skinColor),
+    };
+
+    query.removeWhere((_, value) => value.isEmpty);
+    return Uri.https('avataaars.io', '/', query).toString();
+  }
+
   /// Create a copy with optional parameter overrides
   CharacterAvatar copyWith({
     String? skinColor,
@@ -156,3 +176,123 @@ class EnhancedCharacter {
     return EnhancedCharacter.fromJson(jsonDecode(jsonString));
   }
 }
+
+String _mapSkinColor(String value) {
+  switch (value) {
+    case 'PorcelainWhite':
+    case 'VeryPale':
+      return 'Light';
+    case 'Beige':
+      return 'Pale';
+    case 'DeepBrown':
+      return 'DarkBrown';
+    case 'VeryDark':
+      return 'Black';
+    default:
+      return _validSkinColors.contains(value) ? value : 'Light';
+  }
+}
+
+String _mapHairColor(String value) {
+  if (_validHairColors.contains(value)) {
+    return value;
+  }
+  switch (value) {
+    case 'Blue':
+      return 'SilverGray';
+    case 'Purple':
+      return 'PastelPink';
+    default:
+      return 'Brown';
+  }
+}
+
+String _mapClothingColor(String value) {
+  if (_validClothingColors.contains(value)) {
+    return value;
+  }
+  switch (value) {
+    case 'PastelPink':
+      return 'Pink';
+    case 'PastelPurple':
+      return 'PastelBlue';
+    case 'PastelGreen':
+      return 'PastelGreen';
+    case 'PastelYellow':
+      return 'PastelYellow';
+    case 'PastelOrange':
+      return 'PastelOrange';
+    case 'Green01':
+      return 'PastelGreen';
+    case 'Yellow':
+      return 'PastelYellow';
+    case 'Orange':
+      return 'PastelOrange';
+    case 'Brown':
+      return 'Heather';
+    default:
+      return 'Blue03';
+  }
+}
+
+String _mapTopType(String value) {
+  if (_validTopTypes.contains(value)) {
+    return value;
+  }
+  return 'ShortHairShortFlat';
+}
+
+const Set<String> _validSkinColors = {
+  'Tanned',
+  'Yellow',
+  'Pale',
+  'Light',
+  'Brown',
+  'DarkBrown',
+  'Black',
+};
+
+const Set<String> _validClothingColors = {
+  'Black',
+  'Blue01',
+  'Blue02',
+  'Blue03',
+  'Gray01',
+  'Gray02',
+  'Heather',
+  'PastelBlue',
+  'PastelGreen',
+  'PastelOrange',
+  'PastelRed',
+  'PastelYellow',
+  'Pink',
+  'Red',
+  'White',
+};
+
+const Set<String> _validHairColors = {
+  'Auburn',
+  'Black',
+  'Blonde',
+  'BlondeGolden',
+  'Brown',
+  'BrownDark',
+  'PastelPink',
+  'Platinum',
+  'Red',
+  'SilverGray',
+};
+
+const Set<String> _validTopTypes = {
+  'ShortHairShortFlat',
+  'ShortHairShortCurly',
+  'ShortHairShortWaved',
+  'LongHairStraight',
+  'LongHairCurly',
+  'LongHairBigHair',
+  'LongHairBun',
+  'LongHairBraids',
+  'LongHairPonytail',
+  'Hijab',
+  'Hat',
+};

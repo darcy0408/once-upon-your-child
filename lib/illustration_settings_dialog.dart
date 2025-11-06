@@ -3,16 +3,32 @@
 import 'package:flutter/material.dart';
 import 'story_illustration_service.dart';
 
+import 'therapeutic_focus_options.dart';
+
 class IllustrationSettingsDialog extends StatefulWidget {
-  const IllustrationSettingsDialog({super.key});
+  final String? initialTherapeuticFocus;
+
+  const IllustrationSettingsDialog({super.key, this.initialTherapeuticFocus});
 
   @override
-  State<IllustrationSettingsDialog> createState() => _IllustrationSettingsDialogState();
+  State<IllustrationSettingsDialog> createState() =>
+      _IllustrationSettingsDialogState();
 }
 
-class _IllustrationSettingsDialogState extends State<IllustrationSettingsDialog> {
+class _IllustrationSettingsDialogState
+    extends State<IllustrationSettingsDialog> {
   IllustrationStyle _selectedStyle = IllustrationStyle.childrenBook;
   int _numberOfImages = 3;
+  late String _selectedTherapeuticFocus;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialTherapeuticFocus;
+    _selectedTherapeuticFocus = initial != null && initial.isNotEmpty
+        ? initial
+        : therapeuticFocusOptions.first;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +115,54 @@ class _IllustrationSettingsDialogState extends State<IllustrationSettingsDialog>
             const SizedBox(height: 8),
             Text(
               'More illustrations = longer generation time',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic),
+            ),
+
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 16),
+
+            const Text(
+              'Therapeutic focus (optional):',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _selectedTherapeuticFocus,
+              decoration: InputDecoration(
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+              ),
+              items: therapeuticFocusOptions
+                  .map(
+                    (focus) => DropdownMenuItem<String>(
+                      value: focus,
+                      child: Text(focus),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() {
+                  _selectedTherapeuticFocus = value;
+                });
+              },
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _selectedTherapeuticFocus == 'None'
+                  ? 'Keep the story illustrations general.'
+                  : 'We will gently emphasize themes about $_selectedTherapeuticFocus.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+                fontStyle: FontStyle.italic,
+              ),
             ),
 
             const SizedBox(height: 16),
@@ -112,12 +175,14 @@ class _IllustrationSettingsDialogState extends State<IllustrationSettingsDialog>
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                  const Icon(Icons.info_outline,
+                      color: Colors.orange, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Illustrations are generated with AI and may take 30-60 seconds',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade800),
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade800),
                     ),
                   ),
                 ],
@@ -136,6 +201,9 @@ class _IllustrationSettingsDialogState extends State<IllustrationSettingsDialog>
             Navigator.pop(context, {
               'style': _selectedStyle,
               'numberOfImages': _numberOfImages,
+              'therapeuticFocus': _selectedTherapeuticFocus == 'None'
+                  ? null
+                  : _selectedTherapeuticFocus,
             });
           },
           icon: const Icon(Icons.check),
@@ -162,7 +230,12 @@ class IllustrationGenerationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = currentImage / totalImages;
+    final double? progressValue = (totalImages <= 0 || currentImage <= 1)
+        ? null
+        : (currentImage / totalImages).clamp(0.0, 1.0);
+    final statusText = (progressValue != null)
+        ? 'Creating image $currentImage of $totalImages'
+        : 'Creating $totalImages ${totalImages == 1 ? "illustration" : "illustrations"}';
 
     return AlertDialog(
       title: Row(
@@ -176,19 +249,21 @@ class IllustrationGenerationDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           LinearProgressIndicator(
-            value: progress,
+            value: progressValue,
             backgroundColor: Colors.grey.shade300,
             valueColor: const AlwaysStoppedAnimation<Color>(Colors.deepPurple),
           ),
           const SizedBox(height: 16),
           Text(
-            'Creating image $currentImage of $totalImages',
+            statusText,
             style: const TextStyle(fontSize: 16),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
-            'This may take a minute...',
+            'This may take about 30-60 seconds. We\'ll let you know when it\'s ready!',
             style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

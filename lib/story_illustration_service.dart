@@ -1,5 +1,6 @@
 // lib/story_illustration_service.dart
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -122,6 +123,8 @@ class StoryIllustrationService {
     String? theme,
     IllustrationStyle style = IllustrationStyle.childrenBook,
     int numberOfImages = 3,
+    int age = 7,
+    String? therapeuticFocus,
   }) async {
     if (openAiApiKey == null || openAiApiKey!.isEmpty) {
       throw Exception('OpenAI API key not configured');
@@ -138,6 +141,8 @@ class StoryIllustrationService {
           characterName: characterName,
           theme: theme,
           style: style,
+          age: age,
+          therapeuticFocus: therapeuticFocus,
         );
 
         final imageUrl = await _callDallE(prompt);
@@ -182,7 +187,8 @@ class StoryIllustrationService {
       final data = jsonDecode(response.body);
       return data['data'][0]['url'] as String;
     } else {
-      throw Exception('DALL-E API error: ${response.statusCode} - ${response.body}');
+      throw Exception(
+          'DALL-E API error: ${response.statusCode} - ${response.body}');
     }
   }
 
@@ -192,6 +198,8 @@ class StoryIllustrationService {
     required String characterName,
     String? theme,
     required IllustrationStyle style,
+    required int age,
+    String? therapeuticFocus,
   }) {
     // Clean the scene text (limit to key details)
     final cleanScene = scene.length > 200 ? scene.substring(0, 200) : scene;
@@ -202,17 +210,20 @@ Scene: $cleanScene
 Main character: $characterName
 ${theme != null ? 'Theme: $theme' : ''}
 The image should be:
-- Appropriate for children ages 4-8
+- Appropriate for children around age $age
 - Colorful and engaging
 - Non-scary and positive
 - Clear and easy to understand
-'''.trim();
+${therapeuticFocus != null ? '- Support the therapeutic focus: $therapeuticFocus' : ''}
+'''
+        .trim();
   }
 
   /// Identify key scenes in the story for illustration
   List<String> _identifyKeyScenes(String storyText, int numberOfImages) {
     // Split story into sentences
-    final sentences = storyText.split(RegExp(r'[.!?]+'))
+    final sentences = storyText
+        .split(RegExp(r'[.!?]+'))
         .where((s) => s.trim().isNotEmpty)
         .toList();
 
@@ -224,9 +235,8 @@ The image should be:
 
     for (int i = 0; i < numberOfImages; i++) {
       final startIndex = i * segmentSize;
-      final endIndex = (i == numberOfImages - 1)
-          ? sentences.length
-          : (i + 1) * segmentSize;
+      final endIndex =
+          (i == numberOfImages - 1) ? sentences.length : (i + 1) * segmentSize;
 
       if (startIndex < sentences.length) {
         // Take 2-3 sentences from each segment as the scene
@@ -271,7 +281,8 @@ The image should be:
   }
 
   /// Get cached illustrations for a story
-  Future<List<StoryIllustration>?> getCachedIllustrations(String storyId) async {
+  Future<List<StoryIllustration>?> getCachedIllustrations(
+      String storyId) async {
     final illustratedStories = await getAllIllustratedStories();
 
     try {
@@ -294,7 +305,8 @@ The image should be:
     try {
       final jsonList = jsonDecode(jsonString) as List;
       return jsonList
-          .map((json) => IllustratedStory.fromJson(json as Map<String, dynamic>))
+          .map(
+              (json) => IllustratedStory.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
       print('Error loading illustrated stories: $e');
@@ -342,6 +354,100 @@ class IllustrationCacheStats {
   });
 }
 
+/// Gemini-based illustration service using the backend API
+class GeminiIllustrationService extends StoryIllustrationService {
+  final String backendUrl;
+
+  GeminiIllustrationService({
+    this.backendUrl = 'http://localhost:5000',
+  }) : super(openAiApiKey: null);
+
+  @override
+  Future<List<StoryIllustration>> generateIllustrations({
+    required String storyText,
+    required String storyTitle,
+    required String characterName,
+    String? theme,
+    IllustrationStyle style = IllustrationStyle.childrenBook,
+    int numberOfImages = 3,
+    int age = 7,
+    String? therapeuticFocus,
+  }) async {
+    try {
+      // Step 1: Extract scenes from the story using backend
+      final scenesResponse = await http
+          .post(
+            Uri.parse('$backendUrl/extract-story-scenes'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'story_text': storyText,
+              'character_name': characterName,
+              'num_scenes': numberOfImages,
+              'age': age,
+              'therapeutic_focus': therapeuticFocus,
+            }),
+          )
+          .timeout(const Duration(seconds: 45));
+
+      if (scenesResponse.statusCode != 200) {
+        throw Exception(
+            'Failed to extract scenes: ${scenesResponse.statusCode}');
+      }
+
+      final scenesData = jsonDecode(scenesResponse.body);
+      final scenes = scenesData['scenes'] as List;
+
+      if (scenes.isEmpty) {
+        throw Exception('No scenes extracted from story');
+      }
+
+      // Step 2: Generate illustrations for the scenes
+      final illustrationsResponse = await http
+          .post(
+            Uri.parse('$backendUrl/generate-illustrations'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'scenes': scenes,
+              'character_name': characterName,
+              'style': style.promptModifier,
+              'age': age,
+              'therapeutic_focus': therapeuticFocus,
+            }),
+          )
+          .timeout(const Duration(seconds: 65));
+
+      if (illustrationsResponse.statusCode != 200) {
+        throw Exception(
+            'Failed to generate illustrations: ${illustrationsResponse.statusCode}');
+      }
+
+      final illustrationsData = jsonDecode(illustrationsResponse.body);
+      final illustrations = illustrationsData['illustrations'] as List;
+
+      // Convert to StoryIllustration objects with base64 data URLs
+      return illustrations.asMap().entries.map((entry) {
+        final index = entry.key;
+        final illust = entry.value as Map<String, dynamic>;
+
+        // Convert base64 to data URL for display
+        final base64Data = illust['image_data'] as String;
+        final dataUrl = 'data:image/png;base64,$base64Data';
+
+        return StoryIllustration(
+          id: illust['image_id'] as String,
+          prompt: illust['scene_description'] as String,
+          imageUrl: dataUrl,
+          generatedAt: DateTime.now(),
+          segmentIndex: index,
+        );
+      }).toList();
+    } catch (e) {
+      print('Error generating illustrations with Gemini: $e');
+      rethrow;
+    }
+  }
+}
+
 /// Mock service for testing without API key
 class MockIllustrationService extends StoryIllustrationService {
   MockIllustrationService() : super(openAiApiKey: 'mock');
@@ -354,6 +460,8 @@ class MockIllustrationService extends StoryIllustrationService {
     String? theme,
     IllustrationStyle style = IllustrationStyle.childrenBook,
     int numberOfImages = 3,
+    int age = 7,
+    String? therapeuticFocus,
   }) async {
     // Generate mock illustrations with placeholder images
     final mockIllustrations = <StoryIllustration>[];
@@ -364,7 +472,8 @@ class MockIllustrationService extends StoryIllustrationService {
       mockIllustrations.add(StoryIllustration(
         id: '${DateTime.now().millisecondsSinceEpoch}_$i',
         prompt: 'Mock illustration $i for $storyTitle',
-        imageUrl: 'https://picsum.photos/seed/$characterName$i/400/400', // Placeholder service
+        imageUrl:
+            'https://picsum.photos/seed/$characterName$i/400/400', // Placeholder service
         generatedAt: DateTime.now(),
         segmentIndex: i,
       ));

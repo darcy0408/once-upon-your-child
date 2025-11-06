@@ -1,201 +1,309 @@
 // lib/superhero_name_generator.dart
+// Therapeutic superhero idea generator focused on playful emotional support.
 
 import 'dart:math';
+
+/// Represents a complete superhero concept tailored to a therapeutic focus.
+class SuperheroIdea {
+  final String name;
+  final String powerTheme;
+  final String mission;
+  final String catchPhrase;
+  final String supportAction;
+  final String focusArea;
+
+  const SuperheroIdea({
+    required this.name,
+    required this.powerTheme,
+    required this.mission,
+    required this.catchPhrase,
+    required this.supportAction,
+    required this.focusArea,
+  });
+
+  Map<String, String> toMap() => {
+        'name': name,
+        'powerTheme': powerTheme,
+        'mission': mission,
+        'catchPhrase': catchPhrase,
+        'supportAction': supportAction,
+        'focusArea': focusArea,
+      };
+}
 
 class SuperheroNameGenerator {
   static final Random _random = Random();
 
-  // Prefixes for superhero names
-  static const List<String> _prefixes = [
-    'The Amazing',
-    'The Incredible',
-    'The Mighty',
-    'The Fantastic',
-    'The Spectacular',
-    'The Marvelous',
-    'The Super',
-    'The Wonder',
-    'The Lightning',
-    'The Shadow',
-    'The Golden',
-    'The Silver',
-    'The Cosmic',
-    'The Thunder',
-    'The Star',
-    'Captain',
-    'Professor',
-    'Doctor',
-    'Master',
+  static final List<_SuperheroArchetype> _archetypes = [
+    _SuperheroArchetype(
+      id: 'friendship',
+      focusArea: 'Making Friends',
+      keywords: [
+        'friend',
+        'friendship',
+        'lonely',
+        'alone',
+        'social',
+        'shy',
+        'kindness',
+      ],
+      heroNames: [
+        'Captain High-Five',
+        'The Buddy Beam',
+        'Connector Comet',
+        'Giggle Guardian',
+        'Handshake Hurricane',
+        'Circle Maker',
+      ],
+      powers: [
+        'Super-charged icebreakers',
+        'Friendship radar that spots fellow kind kids',
+        'High-five force fields that welcome everyone in',
+        'Giggle-powered conversation starters',
+        'Confidence confetti that says “come play with us!”',
+      ],
+      missions: [
+        'turn awkward silences into laugh-out-loud moments',
+        'make sure every lunch table has room for one more friend',
+        'help shy heroes brave the first hello',
+        'spark buddy adventures on the playground',
+      ],
+      catchPhrases: [
+        'No kid sits alone on my watch!',
+        'Friendship powers: activate!',
+        'Let’s make the circle wider!',
+        'Capes are optional, kindness is mandatory!',
+      ],
+      supportActions: [
+        'Leads a “three compliments in three minutes” challenge.',
+        'Hands out bravery buttons for saying hello.',
+        'Teaches a secret handshake that anyone can learn in seconds.',
+        'Creates a shared joke jar to break the ice.',
+      ],
+    ),
+    _SuperheroArchetype(
+      id: 'calm',
+      focusArea: 'Big Worries & Anxiety',
+      keywords: [
+        'anxiety',
+        'worried',
+        'nervous',
+        'panic',
+        'stress',
+        'scared',
+        'overwhelm',
+        'overwhelmed',
+      ],
+      heroNames: [
+        'Captain Calm-Down',
+        'The Soothing Cyclone',
+        'Breath Blazer',
+        'Serenity Sprinter',
+        'Bubble-Barrier Buddy',
+        'Zen Zebra',
+      ],
+      powers: [
+        'Mega-deep-breath bubbles that float away worries',
+        'Calming sparkle shields that hush noisy thoughts',
+        'Mindful music waves that slow everything down',
+        'Grounding stomp boots that keep feet planted and hearts steady',
+      ],
+      missions: [
+        'shrink worry monsters down to cartoon-size',
+        'teach super breathing before big feelings burst',
+        'turn shaking knees into steady steps',
+        'help heroes feel safe before any quest',
+      ],
+      catchPhrases: [
+        'In through the nose, out through the cape!',
+        'Worry clouds don’t stand a chance.',
+        'One breath at a time, teammate.',
+        'Feelings are big, but we are bigger.',
+      ],
+      supportActions: [
+        'Blows a glitter bubble and asks kids to trace it with their breathing.',
+        'Hands out “calm cards” with silly grounding prompts.',
+        'Leads a “wiggle-wiggle-freeze” exercise to reset tense muscles.',
+        'Shows how to park a worry in an imaginary cloud locker for later.',
+      ],
+    ),
+    _SuperheroArchetype(
+      id: 'confidence',
+      focusArea: 'Confidence & Bravery',
+      keywords: [
+        'confidence',
+        'brave',
+        'courage',
+        'fear',
+        'presentation',
+        'test',
+        'stage',
+        'performance',
+      ],
+      heroNames: [
+        'Boost Brigade Leader',
+        'The Brave Beacon',
+        'Pep-Talk Paladin',
+        'Captain Can-Do',
+        'Super Spark Starter',
+        'Major Momentum',
+      ],
+      powers: [
+        'Pep-talk megaphones that blast encouragement',
+        'Armor made of past victories',
+        'Courage capes that grow brighter with every try',
+        'Positivity boomerangs that bounce doubts away',
+      ],
+      missions: [
+        'turn “I can’t” into “I’ll try”',
+        'remind heroes of the times they already showed courage',
+        'celebrate brave attempts louder than perfect scores',
+        'spot secret strengths hiding in plain sight',
+      ],
+      catchPhrases: [
+        'We don’t chase perfection—we celebrate progress!',
+        'Confidence mode: ON.',
+        'Every brave step counts!',
+        'You already have the spark—let’s turn it into fireworks!',
+      ],
+      supportActions: [
+        'Leads a power-pose parade before tough moments.',
+        'Hands out “I tried something new today” stickers.',
+        'Coaches kids to list three super skills they already have.',
+        'Scripts a silly cheer for every small win.',
+      ],
+    ),
+    _SuperheroArchetype(
+      id: 'big-feelings',
+      focusArea: 'Big Feelings & Anger',
+      keywords: [
+        'anger',
+        'mad',
+        'frustrated',
+        'meltdown',
+        'explode',
+        'rage',
+        'temper',
+        'big feelings',
+      ],
+      heroNames: [
+        'The Chill Volcano',
+        'Captain Cool-Down',
+        'Storm Tamer',
+        'Mood Moose',
+        'Lightning Listener',
+        'Tempest Tapper',
+      ],
+      powers: [
+        'Mood thermometers that glow when feelings rise',
+        'Silly stomp dances that shake out extra energy',
+        'Listening lightning bolts that zap cranky thoughts',
+        'Calm-down clouds that rain giggle drops',
+      ],
+      missions: [
+        'help big feelings speak without shouting',
+        'turn furious fists into creative fists-bumps',
+        'teach heroes how to press the pause button',
+        'make space where every feeling gets heard',
+      ],
+      catchPhrases: [
+        'Hot feelings, cool moves.',
+        'Pause. Breathe. Pow-wow.',
+        'Let’s listen to what the roar is really saying.',
+        'We can turn a volcano into a campfire.',
+      ],
+      supportActions: [
+        'Builds a feelings playlist—one song for each emotion.',
+        'Leads a “name it, tame it, reframe it” chant.',
+        'Hands out squish-stars for squeezing instead of shouting.',
+        'Helps create a calm corner packed with sensory tools.',
+      ],
+    ),
   ];
 
-  // Core hero names
-  static const List<String> _coreNames = [
-    'Reader',
-    'Scholar',
-    'Storyteller',
-    'Wordsmith',
-    'Bookworm',
-    'Narrator',
-    'Scribe',
-    'Champion',
-    'Guardian',
-    'Defender',
-    'Protector',
-    'Hero',
-    'Knight',
-    'Warrior',
-    'Adventurer',
+  static final List<String> _quirkyBoosters = [
+    'cape stitched from shimmering motivational posters',
+    'gadget belt filled with glitter glue and grounding cards',
+    'sidekick therapy llama named “Hugbug”',
+    'pocket full of glow-stick medals for bravery',
+    'hoverboard powered by belly laughs',
+    'utility pouch stocked with talking stress balls',
+    'boots that leave pep-talk footprints',
   ];
 
-  // Suffixes for names
-  static const List<String> _suffixes = [
-    'of Knowledge',
-    'of Wisdom',
-    'of Stories',
-    'of Tales',
-    'of Books',
-    'of Adventure',
-    'of Justice',
-    'of Truth',
-    'of Hope',
-    'of Dreams',
-    'the Brave',
-    'the Bold',
-    'the Wise',
-    'the Swift',
-    'the Strong',
-  ];
+  /// Generates a superhero concept tailored to the provided challenge.
+  /// If [challenge] is omitted, a random supportive archetype is used.
+  static SuperheroIdea generateCompleteIdea({String? challenge}) {
+    final archetype = _chooseArchetype(challenge);
+    final name = _pick(archetype.heroNames);
+    final power = _pick(archetype.powers);
+    final mission = _decorateWithQuirk(_pick(archetype.missions));
+    final catchPhrase = _pick(archetype.catchPhrases);
+    final supportAction = _pick(archetype.supportActions);
 
-  // Catchphrases/Mottos
-  static const List<String> _mottos = [
-    'With knowledge comes power!',
-    'Every story makes me stronger!',
-    'Reading saves the day!',
-    'Words are my superpower!',
-    'For truth and literacy!',
-    'One story at a time!',
-    'Books give me strength!',
-    'Knowledge is power!',
-    'Stories unite us all!',
-    'Reading changes everything!',
-    'Adventure awaits in every page!',
-    'The power of words!',
-    'Learning never stops!',
-    'Imagination is my weapon!',
-    'Heroes read!',
-    'Literacy for all!',
-    'Words can change the world!',
-    'Every choice matters!',
-    'Bravery through stories!',
-    'Reading makes heroes!',
-  ];
-
-  // Origin story themes
-  static const List<String> _originStories = [
-    'Gained powers from a magical library',
-    'Was struck by lightning while reading',
-    'Found a mystical book that changed everything',
-    'Made a wish on a falling star while reading',
-    'Discovered secret powers through storytelling',
-    'Born with the gift of bringing stories to life',
-    'Touched an ancient scroll and transformed',
-    'Chosen by the spirits of great authors',
-    'Inherited powers from a legendary librarian',
-    'Gained abilities from reading 1000 books',
-  ];
-
-  // Power themes
-  static const List<String> _powerThemes = [
-    'Speed and agility',
-    'Super strength',
-    'Mind reading',
-    'Time manipulation',
-    'Invisibility',
-    'Energy projection',
-    'Healing abilities',
-    'Telepathy',
-    'Shape-shifting',
-    'Force fields',
-  ];
-
-  /// Generate a random superhero name
-  static String generateName() {
-    final prefix = _prefixes[_random.nextInt(_prefixes.length)];
-    final core = _coreNames[_random.nextInt(_coreNames.length)];
-
-    // 50% chance to add a suffix
-    if (_random.nextBool()) {
-      final suffix = _suffixes[_random.nextInt(_suffixes.length)];
-      return '$prefix $core $suffix';
-    }
-
-    return '$prefix $core';
-  }
-
-  /// Generate multiple name options
-  static List<String> generateNameOptions({int count = 3}) {
-    final names = <String>{};
-    while (names.length < count) {
-      names.add(generateName());
-    }
-    return names.toList();
-  }
-
-  /// Generate a random motto/catchphrase
-  static String generateMotto() {
-    return _mottos[_random.nextInt(_mottos.length)];
-  }
-
-  /// Generate multiple motto options
-  static List<String> generateMottoOptions({int count = 3}) {
-    final mottos = <String>{};
-    while (mottos.length < count) {
-      mottos.add(generateMotto());
-    }
-    return mottos.toList();
-  }
-
-  /// Generate a random origin story
-  static String generateOriginStory() {
-    return _originStories[_random.nextInt(_originStories.length)];
-  }
-
-  /// Generate multiple origin story options
-  static List<String> generateOriginStoryOptions({int count = 3}) {
-    final origins = <String>{};
-    while (origins.length < count) {
-      origins.add(generateOriginStory());
-    }
-    return origins.toList();
-  }
-
-  /// Generate a random power theme
-  static String generatePowerTheme() {
-    return _powerThemes[_random.nextInt(_powerThemes.length)];
-  }
-
-  /// Generate a complete superhero concept
-  static SuperheroIdea generateCompleteIdea() {
     return SuperheroIdea(
-      name: generateName(),
-      motto: generateMotto(),
-      originStory: generateOriginStory(),
-      powerTheme: generatePowerTheme(),
+      name: name,
+      powerTheme: power,
+      mission: mission,
+      catchPhrase: catchPhrase,
+      supportAction: supportAction,
+      focusArea: archetype.focusArea,
     );
+  }
+
+  /// Returns multiple ideas that share the same focus area, useful for choice UIs.
+  static List<SuperheroIdea> generateIdeas({
+    String? challenge,
+    int count = 3,
+  }) {
+    final ideas = <SuperheroIdea>[];
+    for (var i = 0; i < count; i++) {
+      ideas.add(generateCompleteIdea(challenge: challenge));
+    }
+    return ideas;
+  }
+
+  static _SuperheroArchetype _chooseArchetype(String? challenge) {
+    if (challenge == null || challenge.trim().isEmpty) {
+      return _pick(_archetypes);
+    }
+    final lower = challenge.toLowerCase();
+    for (final archetype in _archetypes) {
+      final match = archetype.keywords.any(lower.contains);
+      if (match) return archetype;
+    }
+    return _pick(_archetypes);
+  }
+
+  static T _pick<T>(List<T> list) => list[_random.nextInt(list.length)];
+
+  static String _decorateWithQuirk(String mission) {
+    if (_random.nextBool()) {
+      final booster = _pick(_quirkyBoosters);
+      return '$mission using a $booster.';
+    }
+    return mission;
   }
 }
 
-/// A complete superhero idea/concept
-class SuperheroIdea {
-  final String name;
-  final String motto;
-  final String originStory;
-  final String powerTheme;
+class _SuperheroArchetype {
+  final String id;
+  final String focusArea;
+  final List<String> keywords;
+  final List<String> heroNames;
+  final List<String> powers;
+  final List<String> missions;
+  final List<String> catchPhrases;
+  final List<String> supportActions;
 
-  SuperheroIdea({
-    required this.name,
-    required this.motto,
-    required this.originStory,
-    required this.powerTheme,
+  const _SuperheroArchetype({
+    required this.id,
+    required this.focusArea,
+    required this.keywords,
+    required this.heroNames,
+    required this.powers,
+    required this.missions,
+    required this.catchPhrases,
+    required this.supportActions,
   });
 }

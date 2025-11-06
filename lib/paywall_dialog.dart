@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'subscription_service.dart';
-import 'subscription_models.dart';
 import 'premium_upgrade_screen.dart';
 
 /// Paywall dialog shown when user hits tier limits

@@ -48,10 +48,8 @@ class TierLimits {
   final int maxStoriesPerDay;
   final int maxStoriesPerMonth;
   final bool unlimitedStories;
-  final bool interactiveStories;
   final bool multiCharacterStories;
   final bool voiceNarration;
-  final bool adventureMap;
   final bool customCharacters;
   final bool exportStories;
   final bool adFree;
@@ -65,10 +63,8 @@ class TierLimits {
     required this.maxStoriesPerDay,
     required this.maxStoriesPerMonth,
     this.unlimitedStories = false,
-    this.interactiveStories = false,
     this.multiCharacterStories = false,
     this.voiceNarration = true,
-    this.adventureMap = false,
     this.customCharacters = true,
     this.exportStories = false,
     this.adFree = false,
@@ -86,10 +82,8 @@ class TierLimits {
           maxStoriesPerDay: 10, // Increased from 3
           maxStoriesPerMonth: 100, // Increased from 30
           unlimitedStories: false,
-          interactiveStories: false,
           multiCharacterStories: false,
           voiceNarration: true,
-          adventureMap: true, // Enable for all users
           customCharacters: true,
           exportStories: false,
           adFree: false,
@@ -105,10 +99,8 @@ class TierLimits {
           maxStoriesPerDay: 20,
           maxStoriesPerMonth: 300,
           unlimitedStories: false,
-          interactiveStories: true,
           multiCharacterStories: true,
           voiceNarration: true,
-          adventureMap: true,
           customCharacters: true,
           exportStories: true,
           adFree: true,
@@ -142,10 +134,8 @@ class TierLimits {
           maxStoriesPerDay: 0, // 0 means unlimited
           maxStoriesPerMonth: 0, // 0 means unlimited
           unlimitedStories: true,
-          interactiveStories: true,
           multiCharacterStories: true,
           voiceNarration: true,
-          adventureMap: true,
           customCharacters: true,
           exportStories: true,
           adFree: true,
@@ -198,7 +188,8 @@ class UserSubscription {
 
   TierLimits get limits => TierLimits.forTier(tier);
 
-  bool get isPremium => tier == SubscriptionTier.premium || tier == SubscriptionTier.family;
+  bool get isPremium =>
+      tier == SubscriptionTier.premium || tier == SubscriptionTier.family;
   bool get isFree => tier == SubscriptionTier.free;
 
   Map<String, dynamic> toJson() => {
@@ -235,7 +226,8 @@ class UserSubscription {
   }) {
     return UserSubscription(
       tier: tier ?? this.tier,
-      subscriptionStartDate: subscriptionStartDate ?? this.subscriptionStartDate,
+      subscriptionStartDate:
+          subscriptionStartDate ?? this.subscriptionStartDate,
       subscriptionEndDate: subscriptionEndDate ?? this.subscriptionEndDate,
       isActive: isActive ?? this.isActive,
       subscriptionId: subscriptionId ?? this.subscriptionId,
