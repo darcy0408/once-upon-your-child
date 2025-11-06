@@ -9,6 +9,8 @@ import 'character_traits_data.dart';
 import 'customizable_avatar_widget.dart';
 import 'widgets/multi_select_chip_field.dart';
 import 'services/progression_service.dart';
+import 'services/achievement_service.dart';
+import 'achievement_celebration_dialog.dart';
 
 class CharacterCreationScreenEnhanced extends StatefulWidget {
   const CharacterCreationScreenEnhanced({super.key});
@@ -22,6 +24,7 @@ class _CharacterCreationScreenEnhancedState
     extends State<CharacterCreationScreenEnhanced> {
   final _formKey = GlobalKey<FormState>();
   final _progressionService = ProgressionService();
+  final _achievementService = AchievementService();
   bool _isLoading = false;
   bool _hasFantasyMode = false;
   bool _hasAnimalEarsTails = false;
@@ -265,6 +268,13 @@ class _CharacterCreationScreenEnhancedState
       if (!mounted) return;
 
       if (resp.statusCode == 201) {
+        final achievements =
+            await _achievementService.recordCharacterCreated();
+        await _progressionService.incrementCharactersCreated();
+        if (mounted && achievements.isNotEmpty) {
+          await AchievementCelebrationDialog.show(context, achievements);
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

@@ -17,6 +17,8 @@ import 'models.dart';
 import 'therapeutic_focus_options.dart';
 import 'services/progression_service.dart';
 import 'unlock_celebration_dialog.dart';
+import 'services/achievement_service.dart';
+import 'achievement_celebration_dialog.dart';
 
 class StoryResultScreen extends StatefulWidget {
   final String title;
@@ -26,6 +28,9 @@ class StoryResultScreen extends StatefulWidget {
   final String? storyId;
   final String? theme;
   final String? characterId;
+  final AchievementService? achievementsService;
+  final DateTime? storyCreatedAt;
+  final bool trackStoryCreation;
 
   const StoryResultScreen({
     super.key,
@@ -36,7 +41,11 @@ class StoryResultScreen extends StatefulWidget {
     this.storyId,
     this.theme,
     this.characterId,
-  });
+    this.achievementsService,
+    this.storyCreatedAt,
+    this.trackStoryCreation = false,
+  }) : assert(!trackStoryCreation || achievementsService != null),
+        assert(!trackStoryCreation || storyCreatedAt != null);
 
   @override
   State<StoryResultScreen> createState() => _StoryResultScreenState();
@@ -75,16 +84,27 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     _cacheStoryForOffline();
     _loadCachedIllustrations();
     _loadCachedColoringPages();
-    _trackStoryCreation(); // Track that user created a story, check for unlocks
+    if (widget.trackStoryCreation) {
+      _trackStoryCreation(); // Track that user created a story, check for unlocks
+    }
   }
 
   /// Track that a story was created and show celebration if features unlocked
   Future<void> _trackStoryCreation() async {
-    final newUnlocks = await _progressionService.incrementStoriesCreated();
+    final achievementService = widget.achievementsService;
+    if (achievementService != null) {
+      final achievementUnlocks = await achievementService.recordStoryCreated(
+        theme: widget.theme ?? 'Adventure',
+        timestamp: widget.storyCreatedAt,
+      );
+      if (mounted && achievementUnlocks.isNotEmpty) {
+        await AchievementCelebrationDialog.show(context, achievementUnlocks);
+      }
+    }
 
-    // Show celebration dialog if any features were unlocked
-    if (mounted && newUnlocks.isNotEmpty) {
-      await UnlockCelebrationDialog.show(context, newUnlocks);
+    final newFeatureUnlocks = await _progressionService.incrementStoriesCreated();
+    if (mounted && newFeatureUnlocks.isNotEmpty) {
+      await UnlockCelebrationDialog.show(context, newFeatureUnlocks);
     }
   }
 

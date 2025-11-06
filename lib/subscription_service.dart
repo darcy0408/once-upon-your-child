@@ -177,9 +177,8 @@ class SubscriptionService {
 
   /// Check if companion is available
   Future<bool> isCompanionAvailable(String companion) async {
-    final subscription = await getSubscription();
-    final limits = subscription.limits;
-    return limits.availableCompanions.contains(companion);
+    // All companions are free for now
+    return true;
   }
 
   /// Check if user can create more characters

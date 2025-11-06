@@ -40,6 +40,7 @@ class ApiServiceManager {
     String? companion,
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
+    bool rhymeTimeMode = false,
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
 
@@ -52,6 +53,7 @@ class ApiServiceManager {
         companion: companion,
         characterDetails: characterDetails,
         additionalCharacters: additionalCharacters,
+        rhymeTimeMode: rhymeTimeMode,
       );
     } else {
       // Use local Flask backend
@@ -62,6 +64,7 @@ class ApiServiceManager {
         companion: companion,
         characterDetails: characterDetails,
         additionalCharacters: additionalCharacters,
+        rhymeTimeMode: rhymeTimeMode,
       );
     }
   }
@@ -74,6 +77,7 @@ class ApiServiceManager {
     String? companion,
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
+    bool rhymeTimeMode = false,
   }) async {
     final apiKey = await getUserApiKey();
     if (apiKey == null) throw Exception('No API key configured');
@@ -105,6 +109,7 @@ class ApiServiceManager {
     String? companion,
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
+    bool rhymeTimeMode = false,
   }) async {
     final endpoint = (additionalCharacters == null || additionalCharacters.isEmpty)
         ? '$_localBackendUrl/generate-story'
@@ -117,12 +122,14 @@ class ApiServiceManager {
             'companion': companion,
             'character_age': age,
             'character_details': characterDetails,
+            'rhyme_time_mode': rhymeTimeMode,
           }
         : {
             'main_character': characterName,
             'characters': additionalCharacters,
             'theme': theme,
             'character_age': age,
+            'rhyme_time_mode': rhymeTimeMode,
           };
 
     final response = await http.post(
