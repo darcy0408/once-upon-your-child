@@ -184,7 +184,14 @@ class AdvancedStoryEngine:
         self.companion_dynamics = CompanionDynamics()
         self.wisdom_gems = WisdomGems()
 
-    def generate_enhanced_prompt(self, character: str, theme: str, companion: str | None, therapeutic_prompt: str = ""):
+    def generate_enhanced_prompt(
+        self,
+        character: str,
+        theme: str,
+        companion: str | None,
+        therapeutic_prompt: str = "",
+        feelings_prompt: str | None = None,
+    ):
         story_structure = self.story_structures.get_random_structure(theme)
         companion_info = self.companion_dynamics.get_companion_info(companion)
         plot_twist = random.choice(self.story_structures.PLOT_TWISTS)
@@ -207,6 +214,11 @@ class AdvancedStoryEngine:
             parts.extend([
                 "\nTHERAPEUTIC ELEMENTS:",
                 therapeutic_prompt,
+            ])
+        if feelings_prompt:
+            parts.extend([
+                "\nFEELINGS-FOCUSED GUIDANCE:",
+                feelings_prompt,
             ])
 
         parts.extend([
@@ -344,6 +356,95 @@ def _as_list(v):
         return [part.strip() for part in s.split(",") if part.strip()]
     return [str(v)]
 
+def _extract_current_feeling(container):
+    """Return a normalized current feeling dictionary or None."""
+    if not isinstance(container, dict):
+        return None
+    feeling = container.get("current_feeling")
+    if feeling is None and "currentFeeling" in container:
+        feeling = container.get("currentFeeling")
+    if not isinstance(feeling, dict):
+        return None
+
+    def _clean(value):
+        if value is None:
+            return None
+        value_str = str(value).strip()
+        return value_str or None
+
+    intensity = feeling.get("intensity")
+    try:
+        intensity = int(intensity)
+    except (TypeError, ValueError):
+        intensity = None
+    else:
+        intensity = max(1, min(intensity, 5))
+
+    coping_value = feeling.get("coping_strategies")
+    if coping_value is None and "copingStrategies" in feeling:
+        coping_value = feeling.get("copingStrategies")
+    coping_strategies = [item for item in _as_list(coping_value) if item]
+
+    normalized = {
+        "emotion_id": _clean(feeling.get("emotion_id") or feeling.get("emotionId")),
+        "emotion_name": _clean(feeling.get("emotion_name") or feeling.get("emotionName")),
+        "emotion_emoji": _clean(feeling.get("emotion_emoji") or feeling.get("emotionEmoji")),
+        "emotion_description": _clean(feeling.get("emotion_description") or feeling.get("emotionDescription")),
+        "intensity": intensity,
+        "what_happened": _clean(feeling.get("what_happened") or feeling.get("whatHappened")),
+        "physical_signs": _clean(feeling.get("physical_signs") or feeling.get("physicalSigns")),
+        "coping_strategies": coping_strategies,
+    }
+
+    # If no meaningful data, return None
+    if not any(value for key, value in normalized.items() if key != "coping_strategies"):
+        if not normalized["coping_strategies"]:
+            return None
+    return normalized
+
+def _build_feelings_prompt(character_name: str, feeling: dict | None) -> str:
+    if not feeling:
+        return ""
+
+    emotion_name = feeling.get("emotion_name") or "a big feeling"
+    emoji = feeling.get("emotion_emoji") or ""
+    description = feeling.get("emotion_description")
+    what_happened = feeling.get("what_happened")
+    physical_signs = feeling.get("physical_signs")
+    intensity = feeling.get("intensity")
+    coping = feeling.get("coping_strategies") or []
+
+    lines = [
+        f"- Current emotion: {emotion_name} {emoji}".strip(),
+    ]
+    if intensity:
+        lines.append(f"- Intensity: {intensity} out of 5 (1=calm, 5=very strong).")
+    if description:
+        lines.append(f"- How it feels: {description}.")
+    if what_happened:
+        lines.append(f"- Recent situation: {what_happened}.")
+    if physical_signs:
+        lines.append(f"- Body clues: {physical_signs}.")
+    if coping:
+        strategies = ", ".join(coping)
+        lines.append(f"- Coping strategies to highlight: {strategies}.")
+
+    guidelines = [
+        f"1. Begin the story by acknowledging that {character_name} feels {emotion_name.lower()} and why.",
+        "2. Validate the feeling with compassionate language (all feelings are okay).",
+        "3. Describe the character's body sensations and thoughts tied to the emotion.",
+        "4. Weave coping strategies into the narrative in a natural, supportive way.",
+        "5. Show the character processing the feeling, using coping skills, and noticing a shift.",
+        "6. End with hopeful reflection—what the character learned about their feelings.",
+    ]
+
+    return "\n".join([
+        *lines,
+        "\nFEELINGS STORY REQUIREMENTS:",
+        *guidelines,
+        "7. Keep the tone gentle, therapeutic, and empowering throughout.",
+    ])
+
 # ----------------------
 # API Routes
 # ----------------------
@@ -364,6 +465,8 @@ def generate_story_endpoint():
     therapeutic_prompt = payload.get("therapeutic_prompt", "")
     user_api_key = payload.get("user_api_key")  # Optional user-provided API key
     character_age = payload.get("character_age", 7)  # For age-appropriate content
+    current_feeling = _extract_current_feeling(payload)
+    feelings_prompt = _build_feelings_prompt(character, current_feeling)
 
     # Deep character integration - get full character details
     character_details = payload.get("character_details", {})
@@ -388,7 +491,13 @@ def generate_story_endpoint():
         age_context = "Write for adults (18+): mature themes, nuanced emotions, reflective and meaningful content."
         story_length = "800-1000 words"
 
-    prompt = story_engine.generate_enhanced_prompt(character, theme, companion, therapeutic_prompt)
+    prompt = story_engine.generate_enhanced_prompt(
+        character,
+        theme,
+        companion,
+        therapeutic_prompt,
+        feelings_prompt if feelings_prompt else None,
+    )
 
     # Build deep character integration prompt
     character_integration = _build_character_integration(
@@ -396,7 +505,11 @@ def generate_story_endpoint():
     )
 
     # Add age-appropriate context and character integration
-    prompt = f"{prompt}\n\n{character_integration}\n\nAGE-APPROPRIATE CONTENT:\n{age_context}\nCharacter age: {character_age} years old\nTarget story length: {story_length}"
+    sections = [prompt, character_integration]
+    sections.append(
+        f"\nAGE-APPROPRIATE CONTENT:\n{age_context}\nCharacter age: {character_age} years old\nTarget story length: {story_length}"
+    )
+    prompt = "\n\n".join(sections)
 
     # Decide which model to use
     using_user_key = False
@@ -564,6 +677,7 @@ def generate_multi_character_story():
     character_ids = data.get("character_ids", [])
     main_character_id = data.get("main_character_id")
     theme = data.get("theme", "Friendship")
+    current_feeling = _extract_current_feeling(data)
 
     if not main_character_id or not character_ids:
         return jsonify({"error": "main_character_id and character_ids are required"}), 400
@@ -587,6 +701,13 @@ def generate_multi_character_story():
         prompt_parts.append("\nFRIENDS FEATURED IN THE STORY:")
         for friend in friends:
             prompt_parts.append(f"- Friend Name: {friend['name']} (Role: {friend.get('role','Friend')})")
+
+    feelings_prompt = _build_feelings_prompt(main_char["name"], current_feeling)
+    if feelings_prompt:
+        prompt_parts.extend([
+            "\nFEELINGS-FOCUSED CONTEXT:",
+            feelings_prompt,
+        ])
 
     prompt_parts.extend([
         "\nNARRATIVE REQUIREMENTS:",
