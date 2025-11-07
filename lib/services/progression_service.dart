@@ -72,6 +72,7 @@ class UnlockableFeatures {
   static const String fantasyMode = 'fantasy_mode';
   static const String animalEarsTails = 'animal_ears_tails';
   static const String customColors = 'custom_colors';
+  static const String rhymeTimeMode = 'rhyme_time_mode';
   static const String superheroMode = 'superhero_mode'; // Premium only
   static const String interactiveStories = 'interactive_stories'; // Premium only
 }
@@ -121,7 +122,22 @@ class ProgressionService {
 
     // Free progression features
     final progress = await getUserProgress();
-    return progress.hasUnlocked(featureKey);
+
+    // If already unlocked, return true
+    if (progress.hasUnlocked(featureKey)) {
+      return true;
+    }
+
+    // Check if user meets the unlock requirement
+    final requirement = getUnlockRequirement(featureKey);
+    if (requirement != null && progress.storiesCreated >= requirement) {
+      // Auto-unlock if requirement is met
+      progress.unlockedFeatures.add(featureKey);
+      await saveUserProgress(progress);
+      return true;
+    }
+
+    return false;
   }
 
   /// Get the story count required to unlock a feature
@@ -133,6 +149,8 @@ class ProgressionService {
         return 10;
       case UnlockableFeatures.customColors:
         return 15;
+      case UnlockableFeatures.rhymeTimeMode:
+        return 0;
       case UnlockableFeatures.superheroMode:
       case UnlockableFeatures.interactiveStories:
         return null; // Premium only, no story requirement
@@ -208,6 +226,13 @@ class ProgressionService {
       progress.unlockedFeatures.add(UnlockableFeatures.customColors);
     }
 
+    // Rhyme Time Mode at 0 stories (always unlocked for testing)
+    if (progress.storiesCreated >= 0 &&
+        !progress.hasUnlocked(UnlockableFeatures.rhymeTimeMode)) {
+      newUnlocks.add(UnlockableFeatures.rhymeTimeMode);
+      progress.unlockedFeatures.add(UnlockableFeatures.rhymeTimeMode);
+    }
+
     return newUnlocks;
   }
 
@@ -220,6 +245,8 @@ class ProgressionService {
         return 'Animal Ears & Tails Pack';
       case UnlockableFeatures.customColors:
         return 'Custom Color Picker';
+      case UnlockableFeatures.rhymeTimeMode:
+        return 'Rhyme Time Mode';
       case UnlockableFeatures.superheroMode:
         return 'Superhero Mode';
       case UnlockableFeatures.interactiveStories:
@@ -238,6 +265,8 @@ class ProgressionService {
         return 'Add cute animal ears and tails to your characters!';
       case UnlockableFeatures.customColors:
         return 'Choose any color you want for hair, clothes, and more!';
+      case UnlockableFeatures.rhymeTimeMode:
+        return 'Transform your stories into silly, rhyming adventures with playful verses!';
       case UnlockableFeatures.superheroMode:
         return 'Create superheroes with capes, masks, and special powers!';
       case UnlockableFeatures.interactiveStories:

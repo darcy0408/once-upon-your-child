@@ -24,8 +24,10 @@ import 'customizable_avatar_widget.dart';
 import 'avatar_models.dart';
 import 'settings_screen.dart';
 import 'services/api_service_manager.dart';
-import 'pre_story_feelings_dialog.dart';
-import 'emotions_learning_system.dart';
+import 'services/progression_service.dart';
+import 'achievements_screen.dart';
+import 'models/achievement.dart';
+import 'services/achievement_service.dart';
 
 class StoryCreatorApp extends StatelessWidget {
   const StoryCreatorApp({super.key});
@@ -72,6 +74,13 @@ class _StoryScreenState extends State<StoryScreen> {
   int _remainingStoriesToday = 0;
   TherapeuticStoryCustomization? _therapeuticCustomization;
 
+  bool _rhymeTimeMode = false;
+  final _progressionService = ProgressionService();
+  int _storiesCreated = 0;
+  bool _hasRhymeTime = false;
+  final _achievementService = AchievementService();
+  AchievementSummary? _achievementSummary;
+
   // Story intent (merged theme + therapeutic customization)
   StoryIntentData? _storyIntent;
 
@@ -91,18 +100,44 @@ class _StoryScreenState extends State<StoryScreen> {
     super.initState();
     _loadCharacters();
     _loadSubscriptionInfo();
+    _loadAchievementSummary();
   }
 
   Future<void> _loadSubscriptionInfo() async {
     final subscription = await _subscriptionService.getSubscription();
     final remaining = await _subscriptionService.getRemainingStoriesToday();
+    final progress = await _progressionService.getUserProgress();
+    final hasRhyme = await _progressionService.hasAccessToFeature(
+      UnlockableFeatures.rhymeTimeMode,
+    );
 
     if (mounted) {
       setState(() {
         _currentSubscription = subscription;
         _remainingStoriesToday = remaining;
+        _storiesCreated = progress.storiesCreated;
+        _hasRhymeTime = hasRhyme;
       });
     }
+  }
+
+  Future<void> _loadAchievementSummary() async {
+    try {
+      final summary = await _achievementService.getSummary();
+      if (!mounted) return;
+      setState(() {
+        _achievementSummary = summary;
+      });
+    } catch (_) {
+      // If achievements fail to load, leave the summary unchanged.
+    }
+  }
+
+  Future<void> _openAchievementsScreen() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+    );
+    await _loadAchievementSummary();
   }
 
   Future<void> _loadCharacters() async {
@@ -221,14 +256,6 @@ class _StoryScreenState extends State<StoryScreen> {
     final allowed = await _validateStoryCreationPreconditions();
     if (!allowed) return;
 
-    // SHOW FEELINGS CHECK-IN DIALOG
-    final CurrentFeeling? currentFeeling = await PreStoryFeelingsDialog.show(
-      context: navContext,
-      characterName: _selectedCharacter!.name,
-    );
-
-    // If user skipped the check-in, continue without emotion data
-
     // Get all selected characters
     final List<Character> allSelectedCharacters = [
       _selectedCharacter!,
@@ -257,23 +284,6 @@ class _StoryScreenState extends State<StoryScreen> {
                   .map((c) => c.name)
                   .toList();
 
-      // Prepare current feeling data for API
-      final Map<String, dynamic>? currentFeelingData =
-          currentFeeling?.toJson();
-
-      // Record emotion check-in if provided
-      if (currentFeeling != null) {
-        final emotionService = EmotionsLearningService();
-        await emotionService.recordCheckIn(
-          EmotionCheckIn(
-            emotionId: currentFeeling.emotion.id,
-            intensity: currentFeeling.intensity,
-            whatHappened: currentFeeling.whatHappened,
-            timestamp: DateTime.now(),
-          ),
-        );
-      }
-
       // Use ApiServiceManager to generate story (handles backend vs direct API)
       final String storyText = await ApiServiceManager.generateStory(
         characterName: _selectedCharacter!.name,
@@ -282,7 +292,7 @@ class _StoryScreenState extends State<StoryScreen> {
         companion: _selectedCompanion,
         characterDetails: characterDetails,
         additionalCharacters: additionalCharacterNames,
-        currentFeeling: currentFeelingData,
+        rhymeTimeMode: _rhymeTimeMode,
       );
 
       if (!navContext.mounted) return;
@@ -296,13 +306,15 @@ class _StoryScreenState extends State<StoryScreen> {
           ? 'Every adventure makes us stronger and wiser.'
           : 'Together, we are stronger than we are alone.';
 
+      final storyTimestamp = DateTime.now();
+
       // Save the story locally with all characters used
       final saved = SavedStory(
         title: title,
         storyText: storyText,
         theme: _selectedTheme,
         characters: allSelectedCharacters,
-        createdAt: DateTime.now(),
+        createdAt: storyTimestamp,
         isInteractive: false,
         wisdomGem: wisdomGem,
       );
@@ -315,7 +327,7 @@ class _StoryScreenState extends State<StoryScreen> {
       if (!navContext.mounted) return;
 
       // Navigate to result screen
-      Navigator.of(navContext).push(
+      await Navigator.of(navContext).push(
         MaterialPageRoute(
           builder: (_) => StoryResultScreen(
             title: title,
@@ -325,9 +337,15 @@ class _StoryScreenState extends State<StoryScreen> {
             storyId: saved.id,
             theme: _selectedTheme,
             characterId: _selectedCharacter?.id,
+            achievementsService: _achievementService,
+            storyCreatedAt: storyTimestamp,
+            trackStoryCreation: true,
           ),
         ),
       );
+      if (mounted) {
+        await _loadAchievementSummary();
+      }
     } catch (e) {
       ScaffoldMessenger.of(navContext).showSnackBar(
         const SnackBar(
@@ -377,6 +395,7 @@ class _StoryScreenState extends State<StoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final newAchievementCount = _achievementSummary?.newCount ?? 0;
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -425,7 +444,7 @@ class _StoryScreenState extends State<StoryScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -454,6 +473,40 @@ class _StoryScreenState extends State<StoryScreen> {
                 await _loadSubscriptionInfo();
               },
             ),
+          // Achievements
+          IconButton(
+            tooltip: 'Achievements',
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(Icons.emoji_events),
+                if (newAchievementCount > 0)
+                  Positioned(
+                    right: -4,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.deepOrange,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '$newAchievementCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            onPressed: _openAchievementsScreen,
+          ),
           // Offline Stories
           IconButton(
             tooltip: 'Offline Stories',
@@ -532,6 +585,10 @@ class _StoryScreenState extends State<StoryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (_achievementSummary != null) ...[
+                _buildAchievementsOverviewCard(),
+                const SizedBox(height: 20),
+              ],
               _buildSectionCard(
                   'Choose Main Character', _buildCharacterSelector()),
               const SizedBox(height: 20),
@@ -598,6 +655,29 @@ class _StoryScreenState extends State<StoryScreen> {
                   },
                 ),
               ),
+              const SizedBox(height: 12),
+              Card(
+                child: SwitchListTile(
+                  title: Row(
+                    children: [
+                      const Text('Rhyme Time Mode', style: TextStyle(fontWeight: FontWeight.bold)),
+                      if (!_hasRhymeTime) ...[
+                        const SizedBox(width: 8),
+                        const Icon(Icons.lock, size: 18, color: Colors.orange),
+                      ],
+                    ],
+                  ),
+                  subtitle: Text(_hasRhymeTime
+                      ? 'Silly rhyming stories with playful verses!'
+                      : 'Unlock at 0 stories! ($_storiesCreated/0)'),
+                  value: _rhymeTimeMode && _hasRhymeTime,
+                  activeColor: Colors.orange,
+                  secondary: const Icon(Icons.music_note, color: Colors.orange),
+                  onChanged: _hasRhymeTime ? (value) {
+                    setState(() => _rhymeTimeMode = value);
+                  } : null,
+                ),
+              ),
               const SizedBox(height: 20),
               _buildSectionCard(
                   'Choose a Companion (Optional)', _buildCompanionSelector()),
@@ -628,22 +708,22 @@ class _StoryScreenState extends State<StoryScreen> {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      color: Colors.white.withOpacity(0.95), // Semi-transparent white
+      color: Colors.white.withValues(alpha: 0.95), // Semi-transparent white
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color:
-                const Color(0xFF81C784).withOpacity(0.5), // Light green border
+            color: const Color(0xFF81C784)
+                .withValues(alpha: 0.5), // Light green border
             width: 2,
           ),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.white.withOpacity(0.95),
+              Colors.white.withValues(alpha: 0.95),
               const Color(0xFFF1F8E9)
-                  .withOpacity(0.95), // Very light green tint
+                  .withValues(alpha: 0.95), // Very light green tint
             ],
           ),
         ),
@@ -657,7 +737,8 @@ class _StoryScreenState extends State<StoryScreen> {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF4CAF50).withOpacity(0.2),
+                      color:
+                          const Color(0xFF4CAF50).withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: const Text('🍃', style: TextStyle(fontSize: 18)),
@@ -791,7 +872,8 @@ class _StoryScreenState extends State<StoryScreen> {
           MaterialPageRoute(
               builder: (context) => const CharacterCreationScreenEnhanced()),
         );
-        _loadCharacters();
+        await _loadCharacters();
+        await _loadAchievementSummary();
       },
       child: Container(
         width: 80,
@@ -845,7 +927,7 @@ class _StoryScreenState extends State<StoryScreen> {
         border: Border.all(color: Colors.white, width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -1238,6 +1320,114 @@ class _StoryScreenState extends State<StoryScreen> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildAchievementsOverviewCard() {
+    final summary = _achievementSummary;
+    if (summary == null) {
+      return const SizedBox.shrink();
+    }
+
+    final completionPercent =
+        (summary.completionPercent * 100).clamp(0, 100).toStringAsFixed(0);
+    final averageProgress =
+        (summary.averageProgress * 100).clamp(0, 100).toStringAsFixed(0);
+
+    return Card(
+      elevation: 5,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      color: Colors.white.withValues(alpha: 0.95),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.amber.withValues(alpha: 0.2),
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: const Icon(Icons.emoji_events, color: Colors.amber),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Achievement Journey',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2E7D32),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${summary.unlockedCount}/${summary.totalCount} unlocked so far',
+                        style: TextStyle(
+                          color:
+                              Colors.green.shade900.withValues(alpha: 0.75),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (summary.newCount > 0)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.deepOrange,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Text(
+                      '${summary.newCount} NEW',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                minHeight: 12,
+                value: summary.completionPercent.clamp(0.0, 1.0),
+                backgroundColor: Colors.green.shade100,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Colors.green.shade600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '$completionPercent% badges unlocked • '
+              '$averageProgress% average progress',
+              style: TextStyle(
+                color: Colors.green.shade900.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _openAchievementsScreen,
+                icon: const Icon(Icons.arrow_forward),
+                label: const Text('View Achievements'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

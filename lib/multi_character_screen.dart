@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import 'models.dart';
 import 'story_result_screen.dart';
+import 'services/achievement_service.dart';
 
 class MultiCharacterScreen extends StatefulWidget {
   const MultiCharacterScreen({super.key});
@@ -18,6 +19,7 @@ class _MultiCharacterScreenState extends State<MultiCharacterScreen> {
   String? _mainId;
   String _theme = 'Friendship';
   bool _loading = false;
+  final AchievementService _achievementService = AchievementService();
 
   @override
   void initState() {
@@ -85,6 +87,7 @@ class _MultiCharacterScreenState extends State<MultiCharacterScreen> {
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body) as Map<String, dynamic>;
         final storyText = (data['story'] ?? '') as String;
+        final storyTimestamp = DateTime.now();
 
         // Optional: Generate a title from the kids' names
         final main = _all.firstWhere((c) => c.id == _mainId);
@@ -93,12 +96,18 @@ class _MultiCharacterScreenState extends State<MultiCharacterScreen> {
             ? 'A ${_theme} Adventure with ${main.name}'
             : 'A ${_theme} Adventure with ${main.name} & ${others.join(", ")}';
 
-        Navigator.of(context).push(
+        await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => StoryResultScreen(
               title: title,
               storyText: storyText,
               wisdomGem: '', // multi-character endpoint returns just 'story'; you can add wisdom if you want
+              characterName: main.name,
+              characterId: main.id,
+              theme: _theme,
+              achievementsService: _achievementService,
+              storyCreatedAt: storyTimestamp,
+              trackStoryCreation: true,
             ),
           ),
         );
