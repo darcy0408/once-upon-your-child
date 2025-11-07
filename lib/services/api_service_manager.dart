@@ -40,6 +40,8 @@ class ApiServiceManager {
     String? companion,
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
+    bool rhymeTimeMode = false,
+    Map<String, dynamic>? currentFeeling,
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
 
@@ -52,6 +54,8 @@ class ApiServiceManager {
         companion: companion,
         characterDetails: characterDetails,
         additionalCharacters: additionalCharacters,
+        rhymeTimeMode: rhymeTimeMode,
+        currentFeeling: currentFeeling,
       );
     } else {
       // Use local Flask backend
@@ -62,6 +66,8 @@ class ApiServiceManager {
         companion: companion,
         characterDetails: characterDetails,
         additionalCharacters: additionalCharacters,
+        rhymeTimeMode: rhymeTimeMode,
+        currentFeeling: currentFeeling,
       );
     }
   }
@@ -74,6 +80,8 @@ class ApiServiceManager {
     String? companion,
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
+    bool rhymeTimeMode = false,
+    Map<String, dynamic>? currentFeeling,
   }) async {
     final apiKey = await getUserApiKey();
     if (apiKey == null) throw Exception('No API key configured');
@@ -91,6 +99,7 @@ class ApiServiceManager {
       companion: companion,
       characterDetails: characterDetails,
       additionalCharacters: additionalCharacters,
+      currentFeeling: currentFeeling,
     );
 
     final response = await model.generateContent([Content.text(prompt)]);
@@ -105,6 +114,8 @@ class ApiServiceManager {
     String? companion,
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
+    bool rhymeTimeMode = false,
+    Map<String, dynamic>? currentFeeling,
   }) async {
     final endpoint = (additionalCharacters == null || additionalCharacters.isEmpty)
         ? '$_localBackendUrl/generate-story'
@@ -117,12 +128,16 @@ class ApiServiceManager {
             'companion': companion,
             'character_age': age,
             'character_details': characterDetails,
+            'rhyme_time_mode': rhymeTimeMode,
+            'current_feeling': currentFeeling,
           }
         : {
             'main_character': characterName,
             'characters': additionalCharacters,
             'theme': theme,
             'character_age': age,
+            'rhyme_time_mode': rhymeTimeMode,
+            'current_feeling': currentFeeling,
           };
 
     final response = await http.post(
@@ -147,6 +162,7 @@ class ApiServiceManager {
     String? companion,
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
+    Map<String, dynamic>? currentFeeling,
   }) {
     // Determine story length based on age
     String lengthGuideline;
@@ -162,7 +178,55 @@ class ApiServiceManager {
       lengthGuideline = '800-1000 words';
     }
 
-    // Build character integration if available
+    // Build FEELINGS-CENTERED opening (PRIORITY #1)
+    String feelingsSection = '';
+    if (currentFeeling != null) {
+      final emotionName = currentFeeling['emotion_name'] as String?;
+      final emotionEmoji = currentFeeling['emotion_emoji'] as String?;
+      final emotionDescription = currentFeeling['emotion_description'] as String?;
+      final intensity = currentFeeling['intensity'] as int?;
+      final whatHappened = currentFeeling['what_happened'] as String?;
+      final physicalSigns = currentFeeling['physical_signs'] as String?;
+      final copingStrategies = currentFeeling['coping_strategies'] as List<dynamic>?;
+
+      String intensityText = '';
+      if (intensity != null) {
+        if (intensity <= 2) {
+          intensityText = 'a little bit ';
+        } else if (intensity == 3) {
+          intensityText = '';
+        } else if (intensity == 4) {
+          intensityText = 'quite ';
+        } else {
+          intensityText = 'very strongly ';
+        }
+      }
+
+      feelingsSection = '''
+
+🌟 === CURRENT EMOTIONAL STATE (MOST IMPORTANT) === 🌟
+
+$characterName is feeling ${intensityText}$emotionEmoji $emotionName right now.
+$emotionName means: $emotionDescription
+
+${whatHappened != null ? "Context: $whatHappened\n" : ""}
+Physical signs: $physicalSigns
+
+CRITICAL THERAPEUTIC REQUIREMENTS:
+1. START the story by acknowledging this feeling: "$characterName woke up feeling $emotionName today..." or "$characterName was feeling $emotionName because..."
+2. The story MUST help $characterName understand and work through this EXACT feeling
+3. Show $characterName experiencing the physical sensations: $physicalSigns
+4. Have $characterName use these coping strategies naturally in the story:
+${copingStrategies?.map((s) => '   - $s').join('\n') ?? ''}
+5. By the end, $characterName should feel better about the $emotionName feeling - not making it disappear, but learning to work with it
+6. Validate the emotion: "$emotionName is a normal, okay feeling to have"
+7. Show that feelings come and go, and we can handle them
+
+This is a FEELINGS-FIRST story. The emotion is the main character's journey.
+''';
+    }
+
+    // Build character integration if available (SECONDARY to feelings)
     String characterIntegration = '';
     if (characterDetails != null) {
       final fears = characterDetails['fears'] as List<String>?;
@@ -172,65 +236,67 @@ class ApiServiceManager {
       final comfortItem = characterDetails['comfort_item'] as String?;
 
       if (fears != null && fears.isNotEmpty) {
-        characterIntegration += '\n\nFEARS TO ADDRESS: ${fears.join(", ")}';
+        characterIntegration += '\n\nCHARACTER FEARS: ${fears.join(", ")}';
         characterIntegration +=
-            '\nIMPORTANT: The story MUST help the character face and overcome one of these fears.';
+            '\nIf relevant to the current feeling, you may weave in how the feeling relates to these fears.';
       }
 
       if (strengths != null && strengths.isNotEmpty) {
         characterIntegration +=
-            '\n\nSTRENGTHS: ${strengths.join(", ")}. Show the character using these strengths to overcome challenges.';
+            '\n\nCHARACTER STRENGTHS: ${strengths.join(", ")}. Show $characterName using these strengths to cope with the feeling.';
       }
 
       if (likes != null && likes.isNotEmpty) {
         characterIntegration +=
-            '\n\nLIKES: ${likes.join(", ")}. Incorporate these interests naturally into the story.';
-      }
-
-      if (dislikes != null && dislikes.isNotEmpty) {
-        characterIntegration +=
-            '\n\nDISLIKES: ${dislikes.join(", ")}. The character may need to face or work around these.';
+            '\n\nCHARACTER LIKES: ${likes.join(", ")}. These can be calming or comforting activities in the story.';
       }
 
       if (comfortItem != null && comfortItem.isNotEmpty) {
         characterIntegration +=
-            '\n\nCOMFORT ITEM: $comfortItem. This item provides emotional security and can help in difficult moments.';
+            '\n\nCOMFORT ITEM: $comfortItem. This item can help $characterName feel safe while processing the emotion.';
       }
     }
 
     String companionText = '';
     if (companion != null && companion.isNotEmpty) {
-      companionText = '\n\nCOMPANION: Include $companion as a helpful friend/guide in the story.';
+      companionText = '\n\nCOMPANION: Include $companion as an empathetic friend who helps $characterName understand and cope with their feelings.';
     }
 
     String multiCharacterText = '';
     if (additionalCharacters != null && additionalCharacters.isNotEmpty) {
       multiCharacterText =
-          '\n\nADDITIONAL CHARACTERS: ${additionalCharacters.join(", ")}. Include these characters in meaningful ways throughout the story.';
+          '\n\nADDITIONAL CHARACTERS: ${additionalCharacters.join(", ")}. These characters can support $characterName emotionally.';
     }
 
     return '''
-You are a therapeutic storyteller creating personalized stories for children and adults.
+You are a therapeutic storyteller specializing in EMOTION-FOCUSED stories for children and young people.
 
-Create a $lengthGuideline therapeutic story about a character named $characterName (age $age) with the theme: $theme.$companionText$multiCharacterText$characterIntegration
+Create a $lengthGuideline FEELINGS-CENTERED story about $characterName (age $age) with a $theme theme.$companionText$multiCharacterText$feelingsSection$characterIntegration
 
-STORY STRUCTURE:
-1. BEGINNING: Introduce $characterName in their normal world
-2. CHALLENGE: Present a situation that involves growth or facing fears
-3. STRUGGLE: Show realistic difficulty and emotion
-4. DISCOVERY: Character realizes their inner strength or learns something important
-5. RESOLUTION: Character overcomes the challenge using their strengths
-6. REFLECTION: Character feels proud, confident, and has grown
+FEELINGS-FIRST STORY STRUCTURE:
+1. FEELING ACKNOWLEDGMENT: Begin by showing $characterName experiencing their current emotion. "Today $characterName felt..." or "$characterName woke up feeling..."
+2. PHYSICAL AWARENESS: Show how the emotion feels in their body
+3. SITUATION: What's happening in their life that connects to this feeling
+4. COPING JOURNEY: Show $characterName trying healthy ways to cope (from the list above)
+5. EMOTIONAL PROCESSING: $characterName talks about the feeling, understands it better
+6. RESOLUTION: The feeling softens (not disappears) as $characterName learns they can handle it
+7. WISDOM: End with validation that all feelings are okay and temporary
 
-WRITING STYLE:
-- Use sensory-rich, vivid descriptions
-- Show emotions, don't just tell
-- Include internal thoughts and feelings
-- Make it age-appropriate for a $age-year-old
-- End with a positive, empowering message
-- Natural dialogue if characters interact
+CRITICAL WRITING GUIDELINES:
+✓ The emotion IS the story - make it central, not background
+✓ Use the child's actual current feeling, don't change it
+✓ Show physical sensations of emotions vividly
+✓ Validate the emotion: "It's okay to feel [emotion]"
+✓ Include self-talk: "$characterName thought to themselves..."
+✓ Show emotions as temporary: "After a while, the feeling started to feel smaller..."
+✓ End with empowerment: "$characterName felt proud for handling their feelings"
+✓ Age-appropriate language for a $age-year-old
+✓ Sensory details and vivid imagery
+✓ Natural, realistic dialogue
 
-Create an engaging, therapeutic story now:
+Remember: This is a story about FEELINGS, not just adventure. The emotional journey is the plot.
+
+Create the feelings-focused therapeutic story now:
 ''';
   }
 
