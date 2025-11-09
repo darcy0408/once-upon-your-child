@@ -25,7 +25,23 @@ load_dotenv(override=True)
 # Flask & DB setup
 # ----------------------
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+
+# IMPORTANT: Update CORS for production
+# Allow both localhost (for development) and your production domains
+ALLOWED_ORIGINS = [
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "https://story-weaver-app.netlify.app",  # Add your Netlify domain
+    "https://*.netlify.app",  # Allow Netlify preview deploys
+]
+
+CORS(app, resources={
+    r"/*": {
+        "origins": ALLOWED_ORIGINS,
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+    }
+})
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(basedir, 'characters.db')}"
@@ -1287,6 +1303,7 @@ def generate_speech():
 
 
 if __name__ == "__main__":
-    print("*** Enhanced Story Engine Starting...")
-    print("*** Now with advanced character development, plot structures, and companion dynamics!")
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    # Use PORT from environment (Railway sets this)
+    port = int(os.environ.get("PORT", 5000))
+    # Bind to 0.0.0.0 for Railway
+    app.run(host="0.0.0.0", port=port, debug=False)

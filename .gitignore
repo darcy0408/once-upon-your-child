@@ -47,3 +47,13 @@ app.*.map.json
 # Test images
 GenericButNotTurds.png
 turds.png
+
+# Secrets
+backend/.env
+
+# Claude Code
+.claude/
+
+# Database (local development only)
+backend/characters.db
+backend/*.db
