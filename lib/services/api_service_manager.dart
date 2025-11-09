@@ -4,11 +4,12 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import '../config/environment.dart';
 
 /// Manages API calls - routes to either local backend or direct Gemini API
 /// based on user's API key configuration
 class ApiServiceManager {
-  static const String _localBackendUrl = 'http://127.0.0.1:5000';
+  static String get _localBackendUrl => Environment.backendUrl;
 
   /// Check if user has configured their own API key
   static Future<bool> isUsingOwnApiKey() async {
