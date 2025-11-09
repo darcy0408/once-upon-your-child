@@ -459,6 +459,8 @@ def get_story_themes():
 @app.route("/generate-story", methods=["POST"])
 def generate_story_endpoint():
     payload = request.get_json(silent=True) or {}
+    # Add this line with the other payload.get calls
+    rhyme_time_mode = payload.get("rhyme_time_mode", False)
     character = payload.get("character", "a brave adventurer")
     theme = payload.get("theme", "Adventure")
     companion = payload.get("companion")
@@ -509,6 +511,13 @@ def generate_story_endpoint():
     sections.append(
         f"\nAGE-APPROPRIATE CONTENT:\n{age_context}\nCharacter age: {character_age} years old\nTarget story length: {story_length}"
     )
+    if rhyme_time_mode:
+        rhyme_instruction = (
+            "\nSTORY STYLE:\n"
+            "**This is extremely important:** Write the entire story in a playful, silly, rhyming verse, like a Dr. Seuss or Julia Donaldson book. "
+            "Use AABB or ABAB rhyme schemes. The story must rhyme."
+        )
+        sections.append(rhyme_instruction)
     prompt = "\n\n".join(sections)
 
     # Decide which model to use
@@ -548,7 +557,8 @@ def generate_story_endpoint():
     title, wisdom_gem, story_text = _safe_extract_title_and_gem(raw_text, theme)
     return jsonify({
         "title": title,
-        "story_text": story_text,
+        "story": story_text,  # Changed from story_text to story for Flutter compatibility
+        "story_text": story_text,  # Keep for backward compatibility
         "wisdom_gem": wisdom_gem,
         "used_user_key": using_user_key  # Let client know which mode was used
     }), 200

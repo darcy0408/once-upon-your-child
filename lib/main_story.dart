@@ -347,9 +347,10 @@ class _StoryScreenState extends State<StoryScreen> {
         await _loadAchievementSummary();
       }
     } catch (e) {
+      print('Story generation error: $e'); // Debug log
       ScaffoldMessenger.of(navContext).showSnackBar(
-        const SnackBar(
-            content: Text('Network Error: Could not connect to the server.')),
+        SnackBar(
+            content: Text('Error generating story: ${e.toString()}')),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
