@@ -273,6 +273,7 @@ class _StoryScreenState extends State<StoryScreen> {
         'dislikes': _selectedCharacter!.dislikes,
         'comfort_item': _selectedCharacter!.comfortItem ?? '',
         'personality_traits': _selectedCharacter!.personalityTraits,
+        'personality_sliders': _selectedCharacter!.personalitySliders,
       };
 
       // Generate additional character names list if any
