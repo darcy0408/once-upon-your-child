@@ -51,8 +51,9 @@ turds.png
 # Secrets
 backend/.env
 
-# Claude Code
-.claude/
+# Claude Code (ignore settings, keep commands)
+.claude/settings.local.json
+.claude/.cache/
 
 # Database (local development only)
 backend/characters.db
