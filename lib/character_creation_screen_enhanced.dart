@@ -203,7 +203,9 @@ class _CharacterCreationScreenEnhancedState
     }
 
     setState(() => _isLoading = true);
+    // Use centralized API endpoint (will use production URL when deployed)
     final url = Uri.parse('http://127.0.0.1:5000/create-character');
+    // TODO: Update to use ApiServiceManager or Environment.backendUrl after deployment
 
     // Build role based on character type
     String role = _characterType;
@@ -223,7 +225,8 @@ class _CharacterCreationScreenEnhancedState
         'character_style': _characterStyle, // Character appearance/personality
         'role': role,
         'character_type': _characterType,
-        'avatar': _avatar.toJson(),
+        // Note: avatar is stored locally, not sent to backend
+        // Backend uses character attributes to generate avatar via DiceBear
 
         // Superhero specific
         if (_characterType == 'Superhero') ...{

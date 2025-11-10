@@ -86,73 +86,75 @@ class _AchievementCelebrationDialogState
             ),
             padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Achievement Unlocked!',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    widget.achievements.length == 1
-                        ? 'You earned a new badge.'
-                        : 'You earned ${widget.achievements.length} new badges!',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color:
-                          theme.colorScheme.onSurface.withValues(alpha: 0.8),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    height: 220,
-                    child: PageView.builder(
-                      controller: _pageController,
-                      itemCount: widget.achievements.length,
-                      onPageChanged: (value) {
-                        setState(() => _currentPage = value);
-                      },
-                      itemBuilder: (context, index) {
-                        final progress = widget.achievements[index];
-                        return _AchievementSlide(
-                          progress: progress,
-                          animation: CurvedAnimation(
-                            parent: _animationController,
-                            curve: Curves.easeInOut,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (widget.achievements.length > 1)
-                    _PageDots(
-                      count: widget.achievements.length,
-                      activeIndex: _currentPage,
-                    ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(180, 48),
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: theme.colorScheme.onPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+              constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Achievement Unlocked!',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.6,
                       ),
                     ),
-                    child: const Text(
-                      'Keep Going!',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    const SizedBox(height: 12),
+                    Text(
+                      widget.achievements.length == 1
+                          ? 'You earned a new badge.'
+                          : 'You earned ${widget.achievements.length} new badges!',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      height: 220,
+                      child: PageView.builder(
+                        controller: _pageController,
+                        itemCount: widget.achievements.length,
+                        onPageChanged: (value) {
+                          setState(() => _currentPage = value);
+                        },
+                        itemBuilder: (context, index) {
+                          final progress = widget.achievements[index];
+                          return _AchievementSlide(
+                            progress: progress,
+                            animation: CurvedAnimation(
+                              parent: _animationController,
+                              curve: Curves.easeInOut,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (widget.achievements.length > 1)
+                      _PageDots(
+                        count: widget.achievements.length,
+                        activeIndex: _currentPage,
+                      ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(180, 48),
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'Keep Going!',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
