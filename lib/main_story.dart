@@ -301,9 +301,9 @@ class _StoryScreenState extends State<StoryScreen> {
         final emotionService = EmotionsLearningService();
         await emotionService.recordCheckIn(
           EmotionCheckIn(
-            emotion: currentFeeling.emotion,
+            emotionId: currentFeeling.emotion.id,
             intensity: currentFeeling.intensity,
-            context: currentFeeling.whatHappened ?? '',
+            whatHappened: currentFeeling.whatHappened ?? '',
             timestamp: DateTime.now(),
           ),
         );
