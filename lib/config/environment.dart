@@ -4,7 +4,7 @@ class Environment {
 
   // Backend URLs
   static const String developmentBackendUrl = 'http://127.0.0.1:5000';
-  static const String productionBackendUrl = 'https://your-app-name.up.railway.app'; // Placeholder, will be updated
+  static const String productionBackendUrl = 'https://story-weaver-app-production.up.railway.app';
 
   // Get current backend URL
   static String get backendUrl => isDevelopment ? developmentBackendUrl : productionBackendUrl;
