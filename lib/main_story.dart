@@ -28,6 +28,8 @@ import 'services/progression_service.dart';
 import 'achievements_screen.dart';
 import 'models/achievement.dart';
 import 'services/achievement_service.dart';
+import 'pre_story_feelings_dialog.dart';
+import 'emotions_learning_system.dart';
 
 class StoryCreatorApp extends StatelessWidget {
   const StoryCreatorApp({super.key});
@@ -256,6 +258,12 @@ class _StoryScreenState extends State<StoryScreen> {
     final allowed = await _validateStoryCreationPreconditions();
     if (!allowed) return;
 
+    // SHOW FEELINGS CHECK-IN DIALOG (skippable)
+    final CurrentFeeling? currentFeeling = await PreStoryFeelingsDialog.show(
+      context: navContext,
+      characterName: _selectedCharacter!.name,
+    );
+
     // Get all selected characters
     final List<Character> allSelectedCharacters = [
       _selectedCharacter!,
@@ -284,6 +292,23 @@ class _StoryScreenState extends State<StoryScreen> {
                   .map((c) => c.name)
                   .toList();
 
+      // Prepare current feeling data for API (can be null if skipped)
+      final Map<String, dynamic>? currentFeelingData =
+          currentFeeling?.toJson();
+
+      // Record emotion check-in if provided
+      if (currentFeeling != null) {
+        final emotionService = EmotionsLearningService();
+        await emotionService.recordCheckIn(
+          EmotionCheckIn(
+            emotion: currentFeeling.emotion,
+            intensity: currentFeeling.intensity,
+            context: currentFeeling.whatHappened ?? '',
+            timestamp: DateTime.now(),
+          ),
+        );
+      }
+
       // Use ApiServiceManager to generate story (handles backend vs direct API)
       final String storyText = await ApiServiceManager.generateStory(
         characterName: _selectedCharacter!.name,
@@ -293,6 +318,7 @@ class _StoryScreenState extends State<StoryScreen> {
         characterDetails: characterDetails,
         additionalCharacters: additionalCharacterNames,
         rhymeTimeMode: _rhymeTimeMode,
+        currentFeeling: currentFeelingData,
       );
 
       if (!navContext.mounted) return;

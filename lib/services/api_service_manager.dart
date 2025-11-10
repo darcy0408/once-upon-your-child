@@ -156,54 +156,40 @@ class ApiServiceManager {
   }
 
   /// Build the story generation prompt (matching backend logic)
-  static String _buildStoryPrompt({
+  static String _buildTherapeuticPrompt({
     required String characterName,
     required String theme,
     required int age,
+    required String lengthGuideline,
+    required Map<String, dynamic> currentFeeling,
     String? companion,
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
-    Map<String, dynamic>? currentFeeling,
   }) {
-    // Determine story length based on age
-    String lengthGuideline;
-    if (age <= 5) {
-      lengthGuideline = '200-300 words';
-    } else if (age <= 8) {
-      lengthGuideline = '300-500 words';
-    } else if (age <= 12) {
-      lengthGuideline = '500-700 words';
-    } else if (age <= 17) {
-      lengthGuideline = '700-900 words';
-    } else {
-      lengthGuideline = '800-1000 words';
-    }
-
     // Build FEELINGS-CENTERED opening (PRIORITY #1)
     String feelingsSection = '';
-    if (currentFeeling != null) {
-      final emotionName = currentFeeling['emotion_name'] as String?;
-      final emotionEmoji = currentFeeling['emotion_emoji'] as String?;
-      final emotionDescription = currentFeeling['emotion_description'] as String?;
-      final intensity = currentFeeling['intensity'] as int?;
-      final whatHappened = currentFeeling['what_happened'] as String?;
-      final physicalSigns = currentFeeling['physical_signs'] as String?;
-      final copingStrategies = currentFeeling['coping_strategies'] as List<dynamic>?;
+    final emotionName = currentFeeling['emotion_name'] as String?;
+    final emotionEmoji = currentFeeling['emotion_emoji'] as String?;
+    final emotionDescription = currentFeeling['emotion_description'] as String?;
+    final intensity = currentFeeling['intensity'] as int?;
+    final whatHappened = currentFeeling['what_happened'] as String?;
+    final physicalSigns = currentFeeling['physical_signs'] as String?;
+    final copingStrategies = currentFeeling['coping_strategies'] as List<dynamic>?;
 
-      String intensityText = '';
-      if (intensity != null) {
-        if (intensity <= 2) {
-          intensityText = 'a little bit ';
-        } else if (intensity == 3) {
-          intensityText = '';
-        } else if (intensity == 4) {
-          intensityText = 'quite ';
-        } else {
-          intensityText = 'very strongly ';
-        }
+    String intensityText = '';
+    if (intensity != null) {
+      if (intensity <= 2) {
+        intensityText = 'a little bit ';
+      } else if (intensity == 3) {
+        intensityText = '';
+      } else if (intensity == 4) {
+        intensityText = 'quite ';
+      } else {
+        intensityText = 'very strongly ';
       }
+    }
 
-      feelingsSection = '''
+    feelingsSection = '''
 
 🌟 === CURRENT EMOTIONAL STATE (MOST IMPORTANT) === 🌟
 
@@ -225,7 +211,6 @@ ${copingStrategies?.map((s) => '   - $s').join('\n') ?? ''}
 
 This is a FEELINGS-FIRST story. The emotion is the main character's journey.
 ''';
-    }
 
     // Build character integration if available (SECONDARY to feelings)
     String characterIntegration = '';
@@ -252,6 +237,11 @@ This is a FEELINGS-FIRST story. The emotion is the main character's journey.
             '\n\nCHARACTER LIKES: ${likes.join(", ")}. These can be calming or comforting activities in the story.';
       }
 
+      if (dislikes != null && dislikes.isNotEmpty) {
+        characterIntegration +=
+            '\n\nCHARACTER DISLIKES: ${dislikes.join(", ")}. These can be sources of discomfort connected to the feeling.';
+      }
+
       if (comfortItem != null && comfortItem.isNotEmpty) {
         characterIntegration +=
             '\n\nCOMFORT ITEM: $comfortItem. This item can help $characterName feel safe while processing the emotion.';
@@ -260,7 +250,8 @@ This is a FEELINGS-FIRST story. The emotion is the main character's journey.
 
     String companionText = '';
     if (companion != null && companion.isNotEmpty) {
-      companionText = '\n\nCOMPANION: Include $companion as an empathetic friend who helps $characterName understand and cope with their feelings.';
+      companionText =
+          '\n\nCOMPANION: Include $companion as an empathetic friend who helps $characterName understand and cope with their feelings.';
     }
 
     String multiCharacterText = '';
@@ -299,6 +290,136 @@ Remember: This is a story about FEELINGS, not just adventure. The emotional jour
 
 Create the feelings-focused therapeutic story now:
 ''';
+  }
+
+  static String _buildAdventurePrompt({
+    required String characterName,
+    required String theme,
+    required int age,
+    required String lengthGuideline,
+    String? companion,
+    Map<String, dynamic>? characterDetails,
+    List<String>? additionalCharacters,
+  }) {
+    // Build character integration
+    String characterIntegration = '';
+    if (characterDetails != null) {
+      final fears = characterDetails['fears'] as List<String>?;
+      final strengths = characterDetails['strengths'] as List<String>?;
+      final likes = characterDetails['likes'] as List<String>?;
+      final dislikes = characterDetails['dislikes'] as List<String>?;
+      final comfortItem = characterDetails['comfort_item'] as String?;
+
+      if (fears != null && fears.isNotEmpty) {
+        characterIntegration +=
+            '\n\nCHARACTER FEARS: ${fears.join(", ")}. The story can involve $characterName facing or learning about these fears.';
+      }
+      if (strengths != null && strengths.isNotEmpty) {
+        characterIntegration +=
+            '\n\nCHARACTER STRENGTHS: ${strengths.join(", ")}. Show $characterName using these strengths in the adventure.';
+      }
+      if (likes != null && likes.isNotEmpty) {
+        characterIntegration +=
+            '\n\nCHARACTER LIKES: ${likes.join(", ")}. Weave these interests into the story naturally.';
+      }
+      if (dislikes != null && dislikes.isNotEmpty) {
+        characterIntegration +=
+            '\n\nCHARACTER DISLIKES: ${dislikes.join(", ")}. These can appear as challenges to overcome with support.';
+      }
+      if (comfortItem != null && comfortItem.isNotEmpty) {
+        characterIntegration +=
+            '\n\nCOMFORT ITEM: $comfortItem. This special item can be part of the adventure.';
+      }
+    }
+
+    String companionText = '';
+    if (companion != null && companion.isNotEmpty) {
+      companionText =
+          '\n\nCOMPANION: Include $companion as $characterName\'s friend and adventure partner.';
+    }
+
+    String multiCharacterText = '';
+    if (additionalCharacters != null && additionalCharacters.isNotEmpty) {
+      multiCharacterText =
+          '\n\nADDITIONAL CHARACTERS: ${additionalCharacters.join(", ")}. These characters join the adventure.';
+    }
+
+    return '''
+You are an engaging storyteller creating fun, age-appropriate adventure stories for children.
+
+Create a $lengthGuideline adventure story about $characterName (age $age) with a $theme theme.$companionText$multiCharacterText$characterIntegration
+
+ADVENTURE STORY GUIDELINES:
+✓ Focus on exciting plot and engaging adventure
+✓ Include problem-solving and creative thinking
+✓ Show characters working together and supporting each other
+✓ Weave in emotional awareness naturally (characters notice feelings, support each other)
+✓ Positive messages about friendship, courage, kindness
+✓ Age-appropriate challenges and victories
+✓ Vivid sensory details and imagery
+✓ Natural, realistic dialogue
+✓ Fun and entertaining while being meaningful
+
+STORY STRUCTURE:
+1. EXCITING OPENING: Hook the reader with an interesting situation or discovery
+2. ADVENTURE BEGINS: $characterName faces a challenge or embarks on a quest
+3. OBSTACLES: Show creative problem-solving and teamwork
+4. EMOTIONAL MOMENTS: Characters naturally notice and support each other's feelings
+5. CLIMAX: The main challenge is overcome through effort and cooperation
+6. RESOLUTION: Satisfying ending that shows growth and friendship
+7. CLOSING: End with a sense of accomplishment and possibility
+
+Remember: This is primarily an ADVENTURE story. Make it fun, exciting, and engaging while including natural emotional intelligence.
+
+Create the adventure story now:
+''';
+  }
+
+  static String _buildStoryPrompt({
+    required String characterName,
+    required String theme,
+    required int age,
+    String? companion,
+    Map<String, dynamic>? characterDetails,
+    List<String>? additionalCharacters,
+    Map<String, dynamic>? currentFeeling,
+  }) {
+    // Determine story length based on age
+    String lengthGuideline;
+    if (age <= 5) {
+      lengthGuideline = '200-300 words';
+    } else if (age <= 8) {
+      lengthGuideline = '300-500 words';
+    } else if (age <= 12) {
+      lengthGuideline = '500-700 words';
+    } else if (age <= 17) {
+      lengthGuideline = '700-900 words';
+    } else {
+      lengthGuideline = '800-1000 words';
+    }
+
+    if (currentFeeling != null) {
+      return _buildTherapeuticPrompt(
+        characterName: characterName,
+        theme: theme,
+        age: age,
+        lengthGuideline: lengthGuideline,
+        currentFeeling: currentFeeling,
+        companion: companion,
+        characterDetails: characterDetails,
+        additionalCharacters: additionalCharacters,
+      );
+    } else {
+      return _buildAdventurePrompt(
+        characterName: characterName,
+        theme: theme,
+        age: age,
+        lengthGuideline: lengthGuideline,
+        companion: companion,
+        characterDetails: characterDetails,
+        additionalCharacters: additionalCharacters,
+      );
+    }
   }
 
   /// Generate interactive story opening
