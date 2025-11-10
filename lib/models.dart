@@ -1,5 +1,7 @@
 // lib/models.dart
+import 'package:flutter/material.dart';
 import 'avatar_models.dart';
+import 'services/avatar_service.dart';
 
 class Character {
   final String id;
@@ -109,6 +111,27 @@ class Character {
         'current_emotion_core': currentEmotionCore,
         if (avatar != null) 'avatar': avatar!.toJson(),
       };
+
+  /// Generate avatar URL for this character using DiceBear API
+  String get avatarUrl {
+    return AvatarService.generateAvatarUrl(
+      characterId: id,
+      hairColor: hair,
+      eyeColor: eyes,
+      outfit: null, // outfit field not currently used
+    );
+  }
+
+  /// Build avatar widget for this character
+  Widget buildAvatar({double size = 100}) {
+    return AvatarService.buildAvatarWidget(
+      characterId: id,
+      hairColor: hair,
+      eyeColor: eyes,
+      outfit: null, // outfit field not currently used
+      size: size,
+    );
+  }
 }
 
 // ---------------------
