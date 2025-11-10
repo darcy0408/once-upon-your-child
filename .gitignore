@@ -58,3 +58,6 @@ backend/.env
 # Database (local development only)
 backend/characters.db
 backend/*.db
+
+# Local Netlify folder
+.netlify
