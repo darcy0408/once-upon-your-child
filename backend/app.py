@@ -32,7 +32,9 @@ app = Flask(__name__)
 ALLOWED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:8080",
+    "http://localhost:*",  # Any localhost port
     "https://story-weaver-app.netlify.app",  # Add your Netlify domain
+    "https://reliable-sherbet-2352c4.netlify.app",  # Current production domain
     "https://*.netlify.app",  # Allow Netlify preview deploys
 ]
 
