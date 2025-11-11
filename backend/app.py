@@ -178,7 +178,7 @@ if not api_key:
 else:
     genai.configure(api_key=api_key)
 
-GEMINI_MODEL = "gemini-1.5-flash"
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 try:
     model = genai.GenerativeModel(GEMINI_MODEL) if api_key else None
 except Exception as e:
