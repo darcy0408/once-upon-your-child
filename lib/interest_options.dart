@@ -46,17 +46,12 @@ const List<InterestOption> commonGoalOptions = [
   InterestOption('Be Brave', Icons.shield_outlined),
   InterestOption('Try New Foods', Icons.restaurant),
   InterestOption('Sleep Alone', Icons.bedtime),
-  InterestOption('Learn to Swim', Icons.pool),
-  InterestOption('Share More', Icons.share),
-];
-
-const List<InterestOption> commonChallengeOptions = [
+  InterestOption('Learn to Share', Icons.share),
   InterestOption('Taking Turns', Icons.loop),
-  InterestOption('New Routines', Icons.schedule),
-  InterestOption('Being Patient', Icons.hourglass_bottom),
-  InterestOption('Losing Games', Icons.videogame_asset),
-  InterestOption('Going to School', Icons.school),
-  InterestOption('Trying Again After Failing', Icons.restart_alt),
+  InterestOption('Be Patient', Icons.hourglass_bottom),
+  InterestOption('Handle Losing Well', Icons.videogame_asset),
+  InterestOption('New School/Routines', Icons.school),
+  InterestOption('Keep Trying', Icons.restart_alt),
 ];
 
 const List<InterestOption> commonComfortOptions = [

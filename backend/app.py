@@ -448,6 +448,106 @@ def _build_character_integration(character_name, fears, strengths, likes, dislik
 
     return "\n".join(parts)
 
+
+def _get_age_guidelines(age: int) -> dict:
+    if age <= 5:
+        return {
+            "length_guideline": "100-150 words",
+            "vocabulary_level": "very simple vocabulary (CVC + sight words)",
+            "sentence_structure": "3-6 word sentences with repetition",
+            "vocabulary_examples": "cat, dog, hop, sun, play, happy",
+            "concepts": "tangible, concrete ideas only",
+            "special_instructions": "Use rhyme, rhythm, and repeatable frames.",
+        }
+    if age <= 8:
+        return {
+            "length_guideline": "150-250 words",
+            "vocabulary_level": "simple (sight words + basic phonics)",
+            "sentence_structure": "short, clear, mostly present-tense sentences",
+            "vocabulary_examples": "magic, brave, puzzle, curious",
+            "concepts": "simple cause/effect with predictable plots",
+            "special_instructions": "Include dialogue and phonics-friendly words.",
+        }
+    if age <= 12:
+        return {
+            "length_guideline": "250-400 words",
+            "vocabulary_level": "grade-level vocabulary",
+            "sentence_structure": "mix of short and complex sentences",
+            "vocabulary_examples": "determined, shimmering, mysterious, courageous",
+            "concepts": "character growth with layered plots and emotional arcs",
+            "special_instructions": "Highlight problem-solving and empathy.",
+        }
+    if age <= 15:
+        return {
+            "length_guideline": "400-600 words",
+            "vocabulary_level": "advanced / expressive vocabulary",
+            "sentence_structure": "sophisticated and varied sentences",
+            "vocabulary_examples": "contemplated, resilience, luminous, intricate",
+            "concepts": "identity exploration, moral dilemmas, nuanced relationships",
+            "special_instructions": "Use nuanced emotions and real-world parallels.",
+        }
+    return {
+        "length_guideline": "600-800 words",
+        "vocabulary_level": "mature / literary vocabulary",
+        "sentence_structure": "complex, literary prose",
+        "vocabulary_examples": "introspective, paradoxical, cathartic, transcendent",
+        "concepts": "philosophical questions and mature themes",
+        "special_instructions": "Employ literary devices, symbolism, and deep psychology.",
+    }
+
+
+def _build_age_instruction_block(age: int) -> str:
+    guidelines = _get_age_guidelines(age)
+    return (
+        f"AGE-APPROPRIATE GUIDELINES FOR {age}-YEAR-OLD:\n"
+        f"- LENGTH: {guidelines['length_guideline']} (strict requirement)\n"
+        f"- VOCABULARY: {guidelines['vocabulary_level']}\n"
+        f"- SENTENCE STYLE: {guidelines['sentence_structure']}\n"
+        f"- WORD EXAMPLES: {guidelines['vocabulary_examples']}\n"
+        f"- CONCEPTS: {guidelines['concepts']}\n"
+        f"- SPECIAL NOTES: {guidelines['special_instructions']}"
+    )
+
+
+def _build_learning_to_read_prompt(character_name, theme, age, character_details, companion=None, extra_characters=None):
+    def _format_list(label, values):
+        if not values:
+            return ""
+        clean = [v.strip() for v in values if isinstance(v, str) and v.strip()]
+        if not clean:
+            return ""
+        return f"\n{label}: {', '.join(clean[:5])}"
+
+    detail_section = ""
+    if character_details:
+        detail_section += _format_list("LIKES", character_details.get("likes"))
+        detail_section += _format_list("STRENGTHS", character_details.get("strengths"))
+        comfort_item = character_details.get("comfort_item")
+        if comfort_item:
+            detail_section += f"\nCOMFORT ITEM: {comfort_item}"
+
+    if extra_characters:
+        detail_section += f"\nFRIENDS IN STORY: {', '.join(extra_characters[:5])}"
+
+    companion_text = ""
+    if companion and companion != "None":
+        companion_text = f"\nCOMPANION: Include {companion} as a gentle helper."
+
+    return (
+        f"You are creating a LEARNING TO READ rhyming story for a {age}-year-old child named {character_name}.\n\n"
+        "STRICT REQUIREMENTS (NO EXCEPTIONS):\n"
+        "1. TOTAL LENGTH: 50-100 words only.\n"
+        "2. RHYME PATTERN: AABB (line 1 rhymes with line 2, line 3 with line 4, etc.).\n"
+        "3. LINE LENGTH: Each line must use only 4-6 simple words.\n"
+        "4. VOCABULARY: Only CVC words (cat, dog, hop, sun) and common sight words (the, and, can, see, like, play). "
+        "Avoid blends, silent letters, or complex spelling patterns.\n"
+        f"5. STRUCTURE: Repetition helps reading. Use predictable frames like \"Can {character_name} ___? Yes, {character_name} can ___!\".\n"
+        "6. TONE: Encouraging, musical, confident.\n"
+        "7. FORMAT: Place each short sentence or clause on its own line for easy finger tracking.\n\n"
+        f"THEME: {theme}{companion_text}{detail_section}\n\n"
+        f"Create the rhyming learning-to-read story about {character_name} now."
+    )
+
 def _as_list(v):
     """Accept list, JSON string, comma string, or None; return list[str]."""
     if isinstance(v, list):
@@ -570,8 +670,8 @@ def get_story_themes():
 @app.route("/generate-story", methods=["POST"])
 def generate_story_endpoint():
     payload = request.get_json(silent=True) or {}
-    # Add this line with the other payload.get calls
     rhyme_time_mode = payload.get("rhyme_time_mode", False)
+    learning_to_read_mode = payload.get("learning_to_read_mode", False)
     character = payload.get("character", "a brave adventurer")
     theme = payload.get("theme", "Adventure")
     companion = payload.get("companion")
@@ -580,6 +680,12 @@ def generate_story_endpoint():
     character_age = payload.get("character_age", 7)  # For age-appropriate content
     current_feeling = _extract_current_feeling(payload)
     feelings_prompt = _build_feelings_prompt(character, current_feeling)
+    supporting_characters = (
+        payload.get("characters") if isinstance(payload.get("characters"), list) else None
+    )
+
+    if learning_to_read_mode:
+        rhyme_time_mode = False  # learning mode already enforces rhyme/length
 
     # Deep character integration - get full character details
     character_details = payload.get("character_details") or {}
@@ -595,53 +701,47 @@ def generate_story_endpoint():
         character_details.get("personality_sliders", {})
     )
 
-    # Add age-appropriate context to the prompt
-    if character_age <= 5:
-        age_context = "Write for very young children (ages 3-5): simple language, short sentences, clear lessons."
-        story_length = "200-300 words"
-    elif character_age <= 11:
-        age_context = "Write for children (ages 6-11): engaging language, moderate complexity, relatable situations."
-        story_length = "400-600 words"
-    elif character_age <= 17:
-        age_context = "Write for teenagers (ages 12-17): sophisticated language, complex emotions, relatable teen experiences."
-        story_length = "600-800 words"
-    else:
-        age_context = "Write for adults (18+): mature themes, nuanced emotions, reflective and meaningful content."
-        story_length = "800-1000 words"
+    age_instruction_block = _build_age_instruction_block(character_age)
 
-    prompt = story_engine.generate_enhanced_prompt(
-        character,
-        theme,
-        companion,
-        therapeutic_prompt,
-        feelings_prompt if feelings_prompt else None,
-    )
-
-    # Build deep character integration prompt
-    character_integration = _build_character_integration(
-        character,
-        fears,
-        strengths,
-        likes,
-        dislikes,
-        comfort_item,
-        personality_traits,
-        personality_sliders,
-    )
-
-    # Add age-appropriate context and character integration
-    sections = [prompt, character_integration]
-    sections.append(
-        f"\nAGE-APPROPRIATE CONTENT:\n{age_context}\nCharacter age: {character_age} years old\nTarget story length: {story_length}"
-    )
-    if rhyme_time_mode:
-        rhyme_instruction = (
-            "\nSTORY STYLE:\n"
-            "**This is extremely important:** Write the entire story in a playful, silly, rhyming verse, like a Dr. Seuss or Julia Donaldson book. "
-            "Use AABB or ABAB rhyme schemes. The story must rhyme."
+    if learning_to_read_mode:
+        prompt = _build_learning_to_read_prompt(
+            character,
+            theme,
+            character_age,
+            character_details,
+            companion=companion,
+            extra_characters=supporting_characters,
         )
-        sections.append(rhyme_instruction)
-    prompt = "\n\n".join(sections)
+    else:
+        prompt = story_engine.generate_enhanced_prompt(
+            character,
+            theme,
+            companion,
+            therapeutic_prompt,
+            feelings_prompt if feelings_prompt else None,
+        )
+
+        character_integration = _build_character_integration(
+            character,
+            fears,
+            strengths,
+            likes,
+            dislikes,
+            comfort_item,
+            personality_traits,
+            personality_sliders,
+        )
+
+        sections = [prompt, character_integration]
+        sections.append(f"\n{age_instruction_block}")
+        if rhyme_time_mode:
+            rhyme_instruction = (
+                "\nSTORY STYLE:\n"
+                "**This is extremely important:** Write the entire story in a playful, silly, rhyming verse, like a Dr. Seuss or Julia Donaldson book. "
+                "Use AABB or ABAB rhyme schemes. The story must rhyme."
+            )
+            sections.append(rhyme_instruction)
+        prompt = "\n\n".join(sections)
 
     # Decide which model to use
     using_user_key = False

@@ -77,6 +77,7 @@ class _StoryScreenState extends State<StoryScreen> {
   TherapeuticStoryCustomization? _therapeuticCustomization;
 
   bool _rhymeTimeMode = false;
+  bool _learningToReadMode = false;
   final _progressionService = ProgressionService();
   int _storiesCreated = 0;
   bool _hasRhymeTime = false;
@@ -135,6 +136,14 @@ class _StoryScreenState extends State<StoryScreen> {
     }
   }
 
+  bool get _canUseLearningToReadMode {
+    final age = _selectedCharacter?.age;
+    if (age == null) return false;
+    return _isLearningToReadAge(age);
+  }
+
+  bool _isLearningToReadAge(int age) => age >= 4 && age <= 7;
+
   Future<void> _openAchievementsScreen() async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const AchievementsScreen()),
@@ -162,6 +171,10 @@ class _StoryScreenState extends State<StoryScreen> {
             if (!stillExists) _selectedCharacter = _characters.first;
           } else {
             _selectedCharacter = null;
+          }
+          if (_selectedCharacter == null ||
+              !_isLearningToReadAge(_selectedCharacter!.age)) {
+            _learningToReadMode = false;
           }
         });
       } else {
@@ -258,6 +271,17 @@ class _StoryScreenState extends State<StoryScreen> {
     final allowed = await _validateStoryCreationPreconditions();
     if (!allowed) return;
 
+    if (_learningToReadMode && !_canUseLearningToReadMode) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(navContext).showSnackBar(
+        const SnackBar(
+          content: Text('Learning to Read Mode is only available for ages 4-7.'),
+        ),
+      );
+      setState(() => _learningToReadMode = false);
+      return;
+    }
+
     // SHOW FEELINGS CHECK-IN DIALOG (skippable)
     final CurrentFeeling? currentFeeling = await PreStoryFeelingsDialog.show(
       context: navContext,
@@ -319,6 +343,7 @@ class _StoryScreenState extends State<StoryScreen> {
         characterDetails: characterDetails,
         additionalCharacters: additionalCharacterNames,
         rhymeTimeMode: _rhymeTimeMode,
+        learningToReadMode: _learningToReadMode,
         currentFeeling: currentFeelingData,
       );
 
@@ -686,6 +711,33 @@ class _StoryScreenState extends State<StoryScreen> {
               const SizedBox(height: 12),
               Card(
                 child: SwitchListTile(
+                  title: const Text(
+                    'Learning to Read Mode',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(_canUseLearningToReadMode
+                      ? '50-100 word rhyming story for early readers (ages 4-7)'
+                      : _selectedCharacter == null
+                          ? 'Select a character (ages 4-7) to enable this mode'
+                          : 'Only available when the character is ages 4-7.'),
+                  value: _learningToReadMode && _canUseLearningToReadMode,
+                  activeColor: Colors.blue,
+                  secondary: const Icon(Icons.menu_book, color: Colors.blue),
+                  onChanged: _canUseLearningToReadMode
+                      ? (value) {
+                          setState(() {
+                            _learningToReadMode = value;
+                            if (value) {
+                              _rhymeTimeMode = false;
+                            }
+                          });
+                        }
+                      : null,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: SwitchListTile(
                   title: Row(
                     children: [
                       const Text('Rhyme Time Mode', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -815,7 +867,12 @@ class _StoryScreenState extends State<StoryScreen> {
         children: [
           GestureDetector(
             onTap: () {
-              setState(() => _selectedCharacter = character);
+              setState(() {
+                _selectedCharacter = character;
+                if (!_isLearningToReadAge(character.age)) {
+                  _learningToReadMode = false;
+                }
+              });
             },
             child: Container(
               decoration: BoxDecoration(

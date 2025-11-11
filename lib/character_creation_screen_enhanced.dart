@@ -58,8 +58,7 @@ class _CharacterCreationScreenEnhancedState
   final Set<String> _selectedQuickLikes = <String>{};
   final Set<String> _selectedQuickDislikes = <String>{};
   final Set<String> _selectedFearOptions = <String>{};
-  final Set<String> _selectedGoalOptions = <String>{};
-  String? _selectedChallengeOption;
+  final Set<String> _selectedGoalChallengeOptions = <String>{};
   String? _selectedComfortOption;
 
   // Interests & Preferences
@@ -68,8 +67,7 @@ class _CharacterCreationScreenEnhancedState
 
   // Growth & Challenges
   final _fearsController = TextEditingController();
-  final _goalsController = TextEditingController();
-  final _challengesController = TextEditingController();
+  final _goalsChallengesController = TextEditingController();
   final _comfortItemController = TextEditingController();
 
   @override
@@ -146,14 +144,6 @@ class _CharacterCreationScreenEnhancedState
   List<String> _combinedGrowthSelections(
       Set<String> quickSelections, TextEditingController controller) {
     return _combinedInterests(quickSelections, controller);
-  }
-
-  String? _resolveChallengeValue() {
-    if (_selectedChallengeOption != null) {
-      return _selectedChallengeOption;
-    }
-    final text = _challengesController.text.trim();
-    return text.isEmpty ? null : text;
   }
 
   String? _resolveComfortItem() {
@@ -269,7 +259,6 @@ class _CharacterCreationScreenEnhancedState
       final ageValue = int.tryParse(_ageController.text.trim());
       final ageToSend =
           (ageValue == null || ageValue < 3 || ageValue > 100) ? 7 : ageValue;
-      final challengeValue = _resolveChallengeValue();
       final comfortValue = _resolveComfortItem();
       final body = {
         'name': _nameController.text.trim(),
@@ -303,8 +292,8 @@ class _CharacterCreationScreenEnhancedState
 
         // Growth & Challenges
         'fears': _combinedGrowthSelections(_selectedFearOptions, _fearsController),
-        'goals': _combinedGrowthSelections(_selectedGoalOptions, _goalsController),
-        if (challengeValue != null) 'challenge': challengeValue,
+        'goals': _combinedGrowthSelections(
+            _selectedGoalChallengeOptions, _goalsChallengesController),
         if (comfortValue != null) 'comfort_item': comfortValue,
       };
 
