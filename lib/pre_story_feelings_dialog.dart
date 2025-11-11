@@ -214,7 +214,7 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: _selectedEmotion!.color,
+                        color: _selectedFeeling!.color,
                       ),
                     ),
                   ),

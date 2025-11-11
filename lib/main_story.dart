@@ -299,14 +299,7 @@ class _StoryScreenState extends State<StoryScreen> {
 
       // Record emotion check-in if provided
       if (currentFeeling != null) {
-        final emotionService = EmotionsLearningService();
-        await emotionService.recordCheckIn(
-                  EmotionCheckIn(
-                    emotionId: currentFeeling.selectedFeeling.tertiary,            intensity: currentFeeling.intensity,
-            whatHappened: currentFeeling.whatHappened ?? '',
-            timestamp: DateTime.now(),
-          ),
-        );
+        
       }
 
       // Use ApiServiceManager to generate story (handles backend vs direct API)
