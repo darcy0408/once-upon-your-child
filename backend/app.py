@@ -170,7 +170,8 @@ api_key = os.getenv("GEMINI_API_KEY")
 # --- DEBUG LINES START ---
 print(f"API KEY EXISTS: {bool(api_key)}")
 print(f"API KEY LENGTH: {len(api_key) if api_key else 0}")
-print(f"MODEL: {os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')}")
+print(f"RAW GEMINI_MODEL ENV VAR: {os.getenv('GEMINI_MODEL')}")
+print(f"MODEL (after default): {os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')}")
 # --- DEBUG LINES END ---
 
 if not api_key:
