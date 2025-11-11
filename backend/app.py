@@ -32,8 +32,8 @@ app = Flask(__name__)
 ALLOWED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:8080",
-    "https://story-weaver-app.netlify.app",  # Add your Netlify domain
-    "https://*.netlify.app",  # Allow Netlify preview deploys
+    "https://story-weaver-app.netlify.app",
+    "https://reliable-sherbet-2352c4.netlify.app",  # Current production domain
 ]
 
 CORS(app, resources={
