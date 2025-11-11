@@ -58,8 +58,7 @@ class _CharacterCreationScreenEnhancedState
   final Set<String> _selectedQuickLikes = <String>{};
   final Set<String> _selectedQuickDislikes = <String>{};
   final Set<String> _selectedFearOptions = <String>{};
-  final Set<String> _selectedGoalOptions = <String>{};
-  String? _selectedChallengeOption;
+  final Set<String> _selectedGoalChallengeOptions = <String>{}; // Combined
   String? _selectedComfortOption;
 
   // Interests & Preferences
@@ -68,8 +67,7 @@ class _CharacterCreationScreenEnhancedState
 
   // Growth & Challenges
   final _fearsController = TextEditingController();
-  final _goalsController = TextEditingController();
-  final _challengesController = TextEditingController();
+  final _goalsChallengesController = TextEditingController();
   final _comfortItemController = TextEditingController();
 
   @override
@@ -146,14 +144,6 @@ class _CharacterCreationScreenEnhancedState
   List<String> _combinedGrowthSelections(
       Set<String> quickSelections, TextEditingController controller) {
     return _combinedInterests(quickSelections, controller);
-  }
-
-  String? _resolveChallengeValue() {
-    if (_selectedChallengeOption != null) {
-      return _selectedChallengeOption;
-    }
-    final text = _challengesController.text.trim();
-    return text.isEmpty ? null : text;
   }
 
   String? _resolveComfortItem() {
@@ -269,7 +259,6 @@ class _CharacterCreationScreenEnhancedState
       final ageValue = int.tryParse(_ageController.text.trim());
       final ageToSend =
           (ageValue == null || ageValue < 3 || ageValue > 100) ? 7 : ageValue;
-      final challengeValue = _resolveChallengeValue();
       final comfortValue = _resolveComfortItem();
       final body = {
         'name': _nameController.text.trim(),
@@ -303,8 +292,8 @@ class _CharacterCreationScreenEnhancedState
 
         // Growth & Challenges
         'fears': _combinedGrowthSelections(_selectedFearOptions, _fearsController),
-        'goals': _combinedGrowthSelections(_selectedGoalOptions, _goalsController),
-        if (challengeValue != null) 'challenge': challengeValue,
+        'goals': _combinedGrowthSelections(
+            _selectedGoalChallengeOptions, _goalsChallengesController),
         if (comfortValue != null) 'comfort_item': comfortValue,
       };
 
@@ -368,8 +357,7 @@ class _CharacterCreationScreenEnhancedState
     _likesController.dispose();
     _dislikesController.dispose();
     _fearsController.dispose();
-    _goalsController.dispose();
-    _challengesController.dispose();
+    _goalsChallengesController.dispose();
     _comfortItemController.dispose();
     super.dispose();
   }
@@ -1083,46 +1071,24 @@ class _CharacterCreationScreenEnhancedState
         ),
         const SizedBox(height: 20),
         _buildInterestChipGroup(
-          title: 'Goals or things they’re working on',
-          subtitle: 'Helps the story cheer them on',
+          title: 'What they\'re working on (goals or challenges)',
+          subtitle: 'Stories can help them grow and cheer them on',
           options: commonGoalOptions,
-          selections: _selectedGoalOptions,
+          selections: _selectedGoalChallengeOptions,
         ),
         const SizedBox(height: 12),
         TextFormField(
-          controller: _goalsController,
+          controller: _goalsChallengesController,
           decoration: InputDecoration(
-            labelText: 'Other goals',
-            hintText: 'e.g., be braver at night',
+            labelText: 'Other goals or challenges',
+            hintText: 'e.g., being braver, making new friends, learning to share',
             helperText: 'Separate with commas',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,
             fillColor: Colors.amber[50],
-            prefixIcon: const Icon(Icons.flag_outlined),
+            prefixIcon: const Icon(Icons.emoji_events),
           ),
           maxLines: 2,
-        ),
-        const SizedBox(height: 20),
-        _buildSingleChoiceChipGroup(
-          title: 'Current challenge',
-          subtitle: 'Pick the one that fits best',
-          options: commonChallengeOptions,
-          selectedValue: _selectedChallengeOption,
-          onSelected: (value) {
-            setState(() => _selectedChallengeOption = value);
-          },
-        ),
-        const SizedBox(height: 12),
-        TextFormField(
-          controller: _challengesController,
-          decoration: InputDecoration(
-            labelText: 'Describe their current challenge',
-            hintText: 'e.g., getting ready on time',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            filled: true,
-            fillColor: Colors.pink[50],
-            prefixIcon: const Icon(Icons.trending_up),
-          ),
         ),
         const SizedBox(height: 20),
         _buildSingleChoiceChipGroup(
