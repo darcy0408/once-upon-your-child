@@ -7,9 +7,11 @@ import 'avatar_builder_screen.dart';
 import 'avatar_models.dart';
 import 'character_traits_data.dart';
 import 'customizable_avatar_widget.dart';
-import 'widgets/multi_select_chip_field.dart';
+import 'appearance_options.dart';
+import 'interest_options.dart';
 import 'services/progression_service.dart';
 import 'services/achievement_service.dart';
+import 'services/avatar_service.dart';
 import 'achievement_celebration_dialog.dart';
 
 class CharacterCreationScreenEnhanced extends StatefulWidget {
@@ -49,18 +51,22 @@ class _CharacterCreationScreenEnhancedState
   String _eyeColor = 'Brown';
   final _outfitController = TextEditingController();
   CharacterAvatar _avatar = CharacterAvatar.defaultAvatar;
+  String? _selectedOutfitPreset;
 
-  // Personality
-  final Set<String> _selectedPersonalityTraits = <String>{};
-
-  // Strengths
-  final Set<String> _selectedStrengths = <String>{};
+  final Map<String, double> _personalitySliderValues =
+      CharacterTraitsData.defaultSliderValues();
+  final Set<String> _selectedQuickLikes = <String>{};
+  final Set<String> _selectedQuickDislikes = <String>{};
+  final Set<String> _selectedFearOptions = <String>{};
+  final Set<String> _selectedGoalOptions = <String>{};
+  String? _selectedChallengeOption;
+  String? _selectedComfortOption;
 
   // Interests & Preferences
   final _likesController = TextEditingController();
   final _dislikesController = TextEditingController();
 
-  // Therapeutic Elements
+  // Growth & Challenges
   final _fearsController = TextEditingController();
   final _goalsController = TextEditingController();
   final _challengesController = TextEditingController();
@@ -70,6 +76,7 @@ class _CharacterCreationScreenEnhancedState
   void initState() {
     super.initState();
     _nameController.addListener(_handleNameChanged);
+    _outfitController.addListener(_handleOutfitChanged);
     _loadUnlocks();
   }
 
@@ -97,6 +104,15 @@ class _CharacterCreationScreenEnhancedState
     }
   }
 
+  void _handleOutfitChanged() {
+    final trimmed = _outfitController.text.trim();
+    if (_selectedOutfitPreset != null &&
+        trimmed != _selectedOutfitPreset &&
+        mounted) {
+      setState(() => _selectedOutfitPreset = null);
+    }
+  }
+
   List<String> _splitCSV(String text) {
     if (text.trim().isEmpty) return <String>[];
     return text
@@ -106,9 +122,46 @@ class _CharacterCreationScreenEnhancedState
         .toList();
   }
 
-  String _characterDisplayName() {
-    final name = _nameController.text.trim();
-    return name.isEmpty ? 'this character' : name;
+  Map<String, int> _buildPersonalitySliderPayload() {
+    final payload = <String, int>{};
+    _personalitySliderValues.forEach((key, value) {
+      payload[key] = value.clamp(0, 100).round();
+    });
+    return payload;
+  }
+
+  List<String> _combinedInterests(
+      Set<String> quickSelections, TextEditingController controller) {
+    final manualEntries = _splitCSV(controller.text);
+    final combined = <String>[];
+    combined.addAll(quickSelections);
+    for (final entry in manualEntries) {
+      if (!quickSelections.contains(entry)) {
+        combined.add(entry);
+      }
+    }
+    return combined;
+  }
+
+  List<String> _combinedGrowthSelections(
+      Set<String> quickSelections, TextEditingController controller) {
+    return _combinedInterests(quickSelections, controller);
+  }
+
+  String? _resolveChallengeValue() {
+    if (_selectedChallengeOption != null) {
+      return _selectedChallengeOption;
+    }
+    final text = _challengesController.text.trim();
+    return text.isEmpty ? null : text;
+  }
+
+  String? _resolveComfortItem() {
+    if (_selectedComfortOption != null) {
+      return _selectedComfortOption;
+    }
+    final text = _comfortItemController.text.trim();
+    return text.isEmpty ? null : text;
   }
 
   String _characterPossessive() {
@@ -203,9 +256,7 @@ class _CharacterCreationScreenEnhancedState
     }
 
     setState(() => _isLoading = true);
-    // Use centralized API endpoint (will use production URL when deployed)
     final url = Uri.parse('http://127.0.0.1:5000/create-character');
-    // TODO: Update to use ApiServiceManager or Environment.backendUrl after deployment
 
     // Build role based on character type
     String role = _characterType;
@@ -218,6 +269,8 @@ class _CharacterCreationScreenEnhancedState
       final ageValue = int.tryParse(_ageController.text.trim());
       final ageToSend =
           (ageValue == null || ageValue < 3 || ageValue > 100) ? 7 : ageValue;
+      final challengeValue = _resolveChallengeValue();
+      final comfortValue = _resolveComfortItem();
       final body = {
         'name': _nameController.text.trim(),
         'age': ageToSend,
@@ -225,8 +278,7 @@ class _CharacterCreationScreenEnhancedState
         'character_style': _characterStyle, // Character appearance/personality
         'role': role,
         'character_type': _characterType,
-        // Note: avatar is stored locally, not sent to backend
-        // Backend uses character attributes to generate avatar via DiceBear
+        'avatar': _avatar.toJson(),
 
         // Superhero specific
         if (_characterType == 'Superhero') ...{
@@ -242,24 +294,18 @@ class _CharacterCreationScreenEnhancedState
         'eyes': _eyeColor,
         'outfit': _outfitController.text.trim(),
 
-        // Personality
-        'traits': _selectedPersonalityTraits.toList(),
-        'personality_traits': _selectedPersonalityTraits.toList(),
+        'personality_sliders': _buildPersonalitySliderPayload(),
 
         // Interests
-        'likes': _splitCSV(_likesController.text),
-        'dislikes': _splitCSV(_dislikesController.text),
+        'likes': _combinedInterests(_selectedQuickLikes, _likesController),
+        'dislikes':
+            _combinedInterests(_selectedQuickDislikes, _dislikesController),
 
-        // Therapeutic
-        'fears': _splitCSV(_fearsController.text),
-        'strengths': _selectedStrengths.toList(),
-        'goals': _splitCSV(_goalsController.text),
-        'challenge': _challengesController.text.trim().isEmpty
-            ? null
-            : _challengesController.text.trim(),
-        'comfort_item': _comfortItemController.text.trim().isEmpty
-            ? null
-            : _comfortItemController.text.trim(),
+        // Growth & Challenges
+        'fears': _combinedGrowthSelections(_selectedFearOptions, _fearsController),
+        'goals': _combinedGrowthSelections(_selectedGoalOptions, _goalsController),
+        if (challengeValue != null) 'challenge': challengeValue,
+        if (comfortValue != null) 'comfort_item': comfortValue,
       };
 
       final resp = await http.post(
@@ -278,6 +324,7 @@ class _CharacterCreationScreenEnhancedState
           await AchievementCelebrationDialog.show(context, achievements);
         }
 
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -285,6 +332,7 @@ class _CharacterCreationScreenEnhancedState
             backgroundColor: Colors.green,
           ),
         );
+        if (!mounted) return;
         Navigator.of(context).pop(true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -315,6 +363,7 @@ class _CharacterCreationScreenEnhancedState
     _superheroNameController.dispose();
     _superpowerController.dispose();
     _missionController.dispose();
+    _outfitController.removeListener(_handleOutfitChanged);
     _outfitController.dispose();
     _likesController.dispose();
     _dislikesController.dispose();
@@ -355,7 +404,7 @@ class _CharacterCreationScreenEnhancedState
               const SizedBox(height: 20),
               _buildInterestsSection(),
               const SizedBox(height: 20),
-              _buildTherapeuticSection(),
+              _buildGrowthSection(),
               const SizedBox(height: 30),
               ElevatedButton.icon(
                 onPressed: _isLoading ? null : _createCharacter,
@@ -431,6 +480,41 @@ class _CharacterCreationScreenEnhancedState
           validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
         ),
         const SizedBox(height: 12),
+        // Character Avatar Preview
+        Card(
+          elevation: 2,
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Text(
+                  'Character Preview',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                AvatarService.buildAvatarWidget(
+                  characterId:
+                      'preview-${_nameController.text.isEmpty ? "character" : _nameController.text}',
+                  hairColor: _hairColor,
+                  eyeColor: _eyeColor,
+                  outfit: null,
+                  size: 120,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _nameController.text.isEmpty
+                      ? 'Your Character'
+                      : _nameController.text,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
@@ -463,7 +547,7 @@ class _CharacterCreationScreenEnhancedState
             const SizedBox(width: 12),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _isA,
+                initialValue: _isA,
                 decoration: InputDecoration(
                   labelText: 'Is a: *',
                   border: OutlineInputBorder(
@@ -482,7 +566,7 @@ class _CharacterCreationScreenEnhancedState
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          value: _characterStyle,
+          initialValue: _characterStyle,
           decoration: InputDecoration(
             labelText: 'Character Style *',
             hintText: 'Choose appearance and personality',
@@ -594,11 +678,9 @@ class _CharacterCreationScreenEnhancedState
   }
 
   void _generateRandomSuperhero() {
-    final focusHint = _challengesController.text.trim().isNotEmpty
-        ? _challengesController.text.trim()
-        : _goalsController.text.trim();
-    final idea =
-        SuperheroNameGenerator.generateCompleteIdea(challenge: focusHint);
+    final idea = SuperheroNameGenerator.generateCompleteIdea(
+      challenge: _nameController.text.trim(),
+    );
     setState(() {
       _superheroNameController.text = idea.name;
       _superpowerController.text = idea.powerTheme;
@@ -683,67 +765,27 @@ class _CharacterCreationScreenEnhancedState
       'Appearance',
       Icons.face,
       [
-        Row(
-          children: [
-            Expanded(
-              child: DropdownButtonFormField<String>(
-                value: _hairColor,
-                decoration: InputDecoration(
-                  labelText: 'Hair Color',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  filled: true,
-                  fillColor: Colors.grey[50],
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'Brown', child: Text('Brown')),
-                  DropdownMenuItem(value: 'Black', child: Text('Black')),
-                  DropdownMenuItem(value: 'Blonde', child: Text('Blonde')),
-                  DropdownMenuItem(value: 'Red', child: Text('Red')),
-                  DropdownMenuItem(value: 'Auburn', child: Text('Auburn')),
-                  DropdownMenuItem(value: 'Gray', child: Text('Gray')),
-                  DropdownMenuItem(value: 'Silver', child: Text('Silver')),
-                  DropdownMenuItem(value: 'Gold', child: Text('Gold')),
-                  DropdownMenuItem(value: 'Bronze', child: Text('Bronze')),
-                  DropdownMenuItem(
-                      value: 'Colorful',
-                      child: Text('Colorful (Rainbow/Fantasy)')),
-                ],
-                onChanged: (v) => setState(() => _hairColor = v ?? 'Brown'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: DropdownButtonFormField<String>(
-                value: _eyeColor,
-                decoration: InputDecoration(
-                  labelText: 'Eye Color',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                  filled: true,
-                  fillColor: Colors.grey[50],
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'Brown', child: Text('Brown')),
-                  DropdownMenuItem(value: 'Blue', child: Text('Blue')),
-                  DropdownMenuItem(value: 'Green', child: Text('Green')),
-                  DropdownMenuItem(value: 'Hazel', child: Text('Hazel')),
-                  DropdownMenuItem(value: 'Gray', child: Text('Gray')),
-                  DropdownMenuItem(value: 'Amber', child: Text('Amber')),
-                  DropdownMenuItem(value: 'Silver', child: Text('Silver')),
-                  DropdownMenuItem(value: 'Gold', child: Text('Gold')),
-                ],
-                onChanged: (v) => setState(() => _eyeColor = v ?? 'Brown'),
-              ),
-            ),
-          ],
+        _buildColorChoiceRow(
+          title: 'Hair Color',
+          options: hairColorOptions,
+          selectedValue: _hairColor,
+          onSelected: (value) => setState(() => _hairColor = value),
         ),
+        const SizedBox(height: 12),
+        _buildColorChoiceRow(
+          title: 'Eye Color',
+          options: eyeColorOptions,
+          selectedValue: _eyeColor,
+          onSelected: (value) => setState(() => _eyeColor = value),
+        ),
+        const SizedBox(height: 12),
+        _buildOutfitPresetPicker(),
         const SizedBox(height: 12),
         TextFormField(
           controller: _outfitController,
           decoration: InputDecoration(
             labelText: 'Favorite Outfit/Costume',
-            hintText: 'e.g., Blue cape, Flower dress, Space suit',
+            hintText: 'Describe their outfit or costume idea',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,
             fillColor: Colors.grey[50],
@@ -757,24 +799,204 @@ class _CharacterCreationScreenEnhancedState
   Widget _buildPersonalitySection() {
     final possessive = _characterPossessive();
     return _buildSectionCard(
-      'Personality Traits',
+      'Personality Dials',
       Icons.psychology,
       [
-        MultiSelectChipField(
-          title: 'Describe $possessive personality',
-          helperText:
-              'Choose up to five traits that capture how ${_characterDisplayName()} acts. Tap again to deselect.',
-          suggestions: CharacterTraitsData.personalityTraits,
-          initialSelection: _selectedPersonalityTraits,
-          maxSelection: 5,
-          fieldLabel: 'personality traits',
-          onChanged: (values) {
-            setState(() {
-              _selectedPersonalityTraits
-                ..clear()
-                ..addAll(values);
-            });
-          },
+        Text(
+          'Slide to show how $possessive acts in real life. These dials teach the AI who they really are.',
+          style: const TextStyle(fontSize: 14, color: Colors.grey),
+        ),
+        const SizedBox(height: 16),
+        ...CharacterTraitsData.personalitySliders
+            .map((slider) => _buildPersonalitySlider(slider)),
+      ],
+    );
+  }
+
+  Widget _buildPersonalitySlider(PersonalitySliderDefinition slider) {
+    final value = _personalitySliderValues[slider.key] ?? 50;
+    final description = slider.describeValue(value);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  slider.label,
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+              ),
+              Text(
+                '${value.round()}/100',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.deepPurple,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            slider.helperText,
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _buildSliderEndpoint(slider.leftIcon, slider.leftLabel, true),
+              const SizedBox(width: 8),
+              _buildSliderEndpoint(slider.rightIcon, slider.rightLabel, false),
+            ],
+          ),
+          Slider(
+            value: value,
+            min: 0,
+            max: 100,
+            divisions: 100,
+            label: value.round().toString(),
+            activeColor: Colors.deepPurple,
+            onChanged: (newValue) {
+              setState(() {
+                _personalitySliderValues[slider.key] = newValue;
+              });
+            },
+          ),
+          Text(
+            description,
+            style: TextStyle(
+              color: Colors.deepPurple.shade700,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSliderEndpoint(
+      IconData icon, String label, bool isLeftAligned) {
+    return Expanded(
+      child: Row(
+        mainAxisAlignment:
+            isLeftAligned ? MainAxisAlignment.start : MainAxisAlignment.end,
+        children: [
+          Icon(icon, size: 18, color: Colors.deepPurple),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              textAlign: isLeftAligned ? TextAlign.start : TextAlign.end,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildColorChoiceRow({
+    required String title,
+    required List<AppearanceColorOption> options,
+    required String selectedValue,
+    required ValueChanged<String> onSelected,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options.map((option) {
+            final isSelected = option.label == selectedValue;
+            return ChoiceChip(
+              avatar: _buildColorSwatch(option.color),
+              label: Text(option.label),
+              selected: isSelected,
+              selectedColor: Colors.deepPurple,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.w600,
+              ),
+              onSelected: (value) {
+                if (value) onSelected(option.label);
+              },
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildColorSwatch(Color color) {
+    return Container(
+      width: 18,
+      height: 18,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        border: Border.all(color: Colors.black26),
+      ),
+    );
+  }
+
+  Widget _buildOutfitPresetPicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Outfit Ideas',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        Text(
+          'Tap a card to autofill an outfit',
+          style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: outfitPresetOptions.map((option) {
+            final isSelected = option.label == _selectedOutfitPreset;
+            return ChoiceChip(
+              avatar: Icon(
+                option.icon,
+                size: 18,
+                color: isSelected ? Colors.white : Colors.deepPurple,
+              ),
+              label: Text(option.label),
+              selected: isSelected,
+              selectedColor: Colors.deepPurple,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.w600,
+              ),
+              onSelected: (value) {
+                setState(() {
+                  if (value) {
+                    _selectedOutfitPreset = option.label;
+                    _outfitController.text = option.label;
+                  } else {
+                    _selectedOutfitPreset = null;
+                  }
+                });
+              },
+            );
+          }).toList(),
         ),
       ],
     );
@@ -785,12 +1007,19 @@ class _CharacterCreationScreenEnhancedState
       'Interests & Preferences',
       Icons.favorite,
       [
+        _buildInterestChipGroup(
+          title: 'Favorite things to include in stories',
+          subtitle: 'Tap all the things that light them up',
+          options: commonLikeOptions,
+          selections: _selectedQuickLikes,
+        ),
+        const SizedBox(height: 12),
         TextFormField(
           controller: _likesController,
           decoration: InputDecoration(
-            labelText: 'Likes',
+            labelText: 'Other favorite things',
             hintText: 'e.g., dinosaurs, painting, soccer',
-            helperText: 'Separate with commas',
+            helperText: 'Add custom likes, separated by commas',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,
             fillColor: Colors.green[50],
@@ -798,13 +1027,20 @@ class _CharacterCreationScreenEnhancedState
           ),
           maxLines: 2,
         ),
+        const SizedBox(height: 20),
+        _buildInterestChipGroup(
+          title: 'Things they try to avoid',
+          subtitle: 'Helps the story steer clear of no-go zones',
+          options: commonDislikeOptions,
+          selections: _selectedQuickDislikes,
+        ),
         const SizedBox(height: 12),
         TextFormField(
           controller: _dislikesController,
           decoration: InputDecoration(
-            labelText: 'Dislikes',
+            labelText: 'Other dislikes',
             hintText: 'e.g., loud noises, broccoli, being late',
-            helperText: 'Separate with commas',
+            helperText: 'Add custom dislikes, separated by commas',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,
             fillColor: Colors.orange[50],
@@ -816,39 +1052,23 @@ class _CharacterCreationScreenEnhancedState
     );
   }
 
-  Widget _buildTherapeuticSection() {
+  Widget _buildGrowthSection() {
     return _buildSectionCard(
-      'Growth & Challenges',
+      'Growth & Big Feelings',
       Icons.spa,
       [
-        const Text(
-          'These help create therapeutic stories that support emotional growth',
-          style: TextStyle(
-              fontSize: 13, color: Colors.grey, fontStyle: FontStyle.italic),
+        _buildInterestChipGroup(
+          title: 'What makes them worry?',
+          subtitle: 'Pick feelings the story should gently help with',
+          options: commonFearOptions,
+          selections: _selectedFearOptions,
         ),
         const SizedBox(height: 12),
-        MultiSelectChipField(
-          title: 'What are ${_characterPossessive()} strengths?',
-          helperText:
-              'Pick up to five strengths that the story should highlight. Add custom ones if needed.',
-          suggestions: CharacterTraitsData.strengths,
-          initialSelection: _selectedStrengths,
-          maxSelection: 5,
-          fieldLabel: 'strengths',
-          onChanged: (values) {
-            setState(() {
-              _selectedStrengths
-                ..clear()
-                ..addAll(values);
-            });
-          },
-        ),
-        const SizedBox(height: 16),
         TextFormField(
           controller: _fearsController,
           decoration: InputDecoration(
-            labelText: 'Fears/Worries',
-            hintText: 'e.g., the dark, being alone, trying new things',
+            labelText: 'Other fears/worries',
+            hintText: 'e.g., the dark, new schools',
             helperText: 'Separate with commas',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,
@@ -857,13 +1077,19 @@ class _CharacterCreationScreenEnhancedState
           ),
           maxLines: 2,
         ),
+        const SizedBox(height: 20),
+        _buildInterestChipGroup(
+          title: 'Goals or things they’re working on',
+          subtitle: 'Helps the story cheer them on',
+          options: commonGoalOptions,
+          selections: _selectedGoalOptions,
+        ),
         const SizedBox(height: 12),
         TextFormField(
           controller: _goalsController,
           decoration: InputDecoration(
-            labelText: 'Goals/What They Want to Achieve',
-            hintText:
-                'e.g., make more friends, overcome shyness, learn to swim',
+            labelText: 'Other goals',
+            hintText: 'e.g., be braver at night',
             helperText: 'Separate with commas',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,
@@ -872,24 +1098,44 @@ class _CharacterCreationScreenEnhancedState
           ),
           maxLines: 2,
         ),
+        const SizedBox(height: 20),
+        _buildSingleChoiceChipGroup(
+          title: 'Current challenge',
+          subtitle: 'Pick the one that fits best',
+          options: commonChallengeOptions,
+          selectedValue: _selectedChallengeOption,
+          onSelected: (value) {
+            setState(() => _selectedChallengeOption = value);
+          },
+        ),
         const SizedBox(height: 12),
         TextFormField(
           controller: _challengesController,
           decoration: InputDecoration(
-            labelText: 'Current Challenge',
-            hintText: 'e.g., Learning to be patient, dealing with change',
+            labelText: 'Describe their current challenge',
+            hintText: 'e.g., getting ready on time',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,
             fillColor: Colors.pink[50],
             prefixIcon: const Icon(Icons.trending_up),
           ),
         ),
+        const SizedBox(height: 20),
+        _buildSingleChoiceChipGroup(
+          title: 'Favorite comfort',
+          subtitle: 'Stories can include this when things feel big',
+          options: commonComfortOptions,
+          selectedValue: _selectedComfortOption,
+          onSelected: (value) {
+            setState(() => _selectedComfortOption = value);
+          },
+        ),
         const SizedBox(height: 12),
         TextFormField(
           controller: _comfortItemController,
           decoration: InputDecoration(
-            labelText: 'Comfort Item',
-            hintText: 'e.g., a teddy bear, special blanket, lucky charm',
+            labelText: 'Other comfort item',
+            hintText: 'e.g., Nana’s bracelet',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,
             fillColor: Colors.teal[50],
@@ -899,4 +1145,105 @@ class _CharacterCreationScreenEnhancedState
       ],
     );
   }
+
+  Widget _buildInterestChipGroup({
+    required String title,
+    required String subtitle,
+    required List<InterestOption> options,
+    required Set<String> selections,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        Text(
+          subtitle,
+          style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options.map((option) {
+            final isSelected = selections.contains(option.label);
+            return ChoiceChip(
+              avatar: Icon(
+                option.icon,
+                size: 18,
+                color: isSelected ? Colors.white : Colors.deepPurple,
+              ),
+              label: Text(option.label),
+              selected: isSelected,
+              selectedColor: Colors.deepPurple,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.w600,
+              ),
+              onSelected: (value) {
+                setState(() {
+                  if (value) {
+                    selections.add(option.label);
+                  } else {
+                    selections.remove(option.label);
+                  }
+                });
+              },
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSingleChoiceChipGroup({
+    required String title,
+    required String subtitle,
+    required List<InterestOption> options,
+    required String? selectedValue,
+    required ValueChanged<String?> onSelected,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        Text(
+          subtitle,
+          style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options.map((option) {
+            final isSelected = option.label == selectedValue;
+            return ChoiceChip(
+              avatar: Icon(
+                option.icon,
+                size: 18,
+                color: isSelected ? Colors.white : Colors.deepPurple,
+              ),
+              label: Text(option.label),
+              selected: isSelected,
+              selectedColor: Colors.deepPurple,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.w600,
+              ),
+              onSelected: (value) =>
+                  onSelected(value ? option.label : null),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
 }

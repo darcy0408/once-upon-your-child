@@ -6,8 +6,8 @@ import 'avatar_models.dart';
 import 'avatar_builder_screen.dart';
 import 'feelings_wheel_screen.dart';
 import 'feelings_wheel_data.dart';
-import 'expressive_avatar_widget.dart';
 import 'sunset_jungle_theme.dart';
+import 'services/avatar_service.dart';
 
 class CharacterGalleryScreen extends StatefulWidget {
   final List<EnhancedCharacter> characters;
@@ -39,6 +39,7 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
       ),
     );
 
+    if (!mounted) return;
     if (result != null) {
       widget.onCharacterAdded(result);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -61,6 +62,7 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
       ),
     );
 
+    if (!mounted) return;
     if (result != null) {
       widget.onCharacterUpdated(result);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -123,6 +125,7 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
       ),
     );
 
+    if (!mounted) return;
     if (result != null) {
       final updatedCharacter = character.copyWith(
         avatar: character.avatar.copyWith(
@@ -236,6 +239,10 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
   }
 
   Widget _buildCharacterCard(EnhancedCharacter character) {
+    final feeling = _characterFeelings[character.id];
+    final mappedHair = _mapAvatarHairColor(character.avatar);
+    final mappedOutfit = _mapAvatarOutfit(character.avatar);
+
     return Container(
       decoration: SunsetJungleTheme.cardDecoration,
       child: Column(
@@ -261,11 +268,29 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: ExpressiveAvatarWidget(
-                avatar: character.avatar,
-                feeling: _characterFeelings[character.id],
-                size: 200,
-                showLabel: true,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AvatarService.buildAvatarWidget(
+                    characterId: character.id,
+                    hairColor: mappedHair,
+                    eyeColor: null,
+                    outfit: mappedOutfit,
+                    size: 180,
+                  ),
+                  if (feeling != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Feeling ${feeling.tertiary}',
+                      style: const TextStyle(
+                        fontFamily: 'Quicksand',
+                        fontSize: 14,
+                        color: SunsetJungleTheme.jungleDeepGreen,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
@@ -340,5 +365,40 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
         ),
       ),
     );
+  }
+
+  String? _mapAvatarHairColor(CharacterAvatar avatar) {
+    final value = avatar.hairColor.toLowerCase();
+    if (value.contains('black')) return 'black';
+    if (value.contains('blonde') || value.contains('gold')) return 'blonde';
+    if (value.contains('platinum')) return 'white';
+    if (value.contains('auburn')) return 'auburn';
+    if (value.contains('red')) return 'red';
+    if (value.contains('brown')) return 'brown';
+    if (value.contains('pink')) return 'pink';
+    if (value.contains('purple')) return 'purple';
+    if (value.contains('blue')) return 'blue';
+    if (value.contains('green')) return 'green';
+    if (value.contains('silver') || value.contains('gray') || value.contains('grey')) {
+      return 'gray';
+    }
+    return null;
+  }
+
+  String? _mapAvatarOutfit(CharacterAvatar avatar) {
+    final value = avatar.clothingStyle.toLowerCase();
+    if (value.contains('hoodie') || value.contains('shirt') || value.contains('overall')) {
+      return 'casual';
+    }
+    if (value.contains('sweater') || value.contains('graphic')) {
+      return 'sporty';
+    }
+    if (value.contains('blazer') || value.contains('dress')) {
+      return 'fancy';
+    }
+    if (value.contains('cape') || value.contains('hero')) {
+      return 'superhero';
+    }
+    return null;
   }
 }

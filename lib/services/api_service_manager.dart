@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../config/environment.dart';
 
+import '../character_traits_data.dart';
+
 /// Manages API calls - routes to either local backend or direct Gemini API
 /// based on user's API key configuration
 class ApiServiceManager {
@@ -246,6 +248,20 @@ This is a FEELINGS-FIRST story. The emotion is the main character's journey.
         characterIntegration +=
             '\n\nCOMFORT ITEM: $comfortItem. This item can help $characterName feel safe while processing the emotion.';
       }
+
+      Map<String, dynamic>? sliderMap;
+      final rawSliderMap = characterDetails['personality_sliders'];
+      if (rawSliderMap is Map<String, dynamic>) {
+        sliderMap = rawSliderMap;
+      } else if (rawSliderMap is Map) {
+        sliderMap = rawSliderMap.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
+      }
+      final sliderText = _buildSliderSummary(sliderMap);
+      if (sliderText.isNotEmpty) {
+        characterIntegration += sliderText;
+      }
     }
 
     String companionText = '';
@@ -420,6 +436,41 @@ Create the adventure story now:
         additionalCharacters: additionalCharacters,
       );
     }
+  }
+
+  static String _buildSliderSummary(Map<String, dynamic>? sliderValues) {
+    if (sliderValues == null || sliderValues.isEmpty) {
+      return '';
+    }
+    final buffer = StringBuffer('\n\nPERSONALITY STYLE INSIGHTS:\n');
+    var hasData = false;
+    for (final slider in CharacterTraitsData.personalitySliders) {
+      final parsedValue = _parseSliderValue(sliderValues[slider.key]);
+      if (parsedValue == null) {
+        continue;
+      }
+      hasData = true;
+      final towardLabel =
+          parsedValue > 50 ? slider.rightLabel : slider.leftLabel;
+      buffer.writeln(
+        '- ${slider.label}: ${slider.describeValue(parsedValue)} '
+        '(${parsedValue}/100 toward ${towardLabel.toLowerCase()})',
+      );
+    }
+    return hasData ? buffer.toString() : '';
+  }
+
+  static int? _parseSliderValue(dynamic value) {
+    if (value is num) {
+      return value.clamp(0, 100).round();
+    }
+    if (value is String) {
+      final parsed = double.tryParse(value);
+      if (parsed != null) {
+        return parsed.clamp(0, 100).round();
+      }
+    }
+    return null;
   }
 
   /// Generate interactive story opening

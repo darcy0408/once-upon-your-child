@@ -16,6 +16,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import google.generativeai as genai
+from sqlalchemy import text
 from sqlalchemy.dialects.sqlite import JSON as SQLITE_JSON
 
 # Load environment variables from .env file
@@ -81,6 +82,7 @@ class Character(db.Model):
 
     # SQLite JSON (persists as TEXT)
     personality_traits = db.Column(SQLITE_JSON, default=list)
+    personality_sliders = db.Column(SQLITE_JSON, default=dict)
     siblings = db.Column(SQLITE_JSON, default=list)
     friends = db.Column(SQLITE_JSON, default=list)
     likes = db.Column(SQLITE_JSON, default=list)
@@ -108,6 +110,7 @@ class Character(db.Model):
             "eyes": self.eyes,
             "outfit": self.outfit,
             "personality_traits": self.personality_traits or [],
+            "personality_sliders": self.personality_sliders or {},
             "siblings": self.siblings or [],
             "friends": self.friends or [],
             "likes": self.likes or [],
@@ -119,8 +122,35 @@ class Character(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
+PERSONALITY_SLIDER_DEFINITIONS = {
+    "organization_planning": {"label": "Organization & Planning", "left_label": "Tidy Planner", "right_label": "Messy Freestyle"},
+    "assertiveness": {"label": "Voice Style", "left_label": "Bold Voice", "right_label": "Soft Voice"},
+    "sociability": {"label": "Social Energy", "left_label": "Jump-Right-In", "right_label": "Warm-Up-First"},
+    "adventure": {"label": "Adventure Level", "left_label": "Let's Explore!", "right_label": "Careful Steps"},
+    "expressiveness": {"label": "Energy Level", "left_label": "Mega Energy", "right_label": "Calm Breeze"},
+    "feelings_sharing": {"label": "Feelings Expression", "left_label": "Heart-On-Sleeve", "right_label": "Quiet Feelings"},
+    "problem_solving": {"label": "Problem-Solving Style", "left_label": "Brainy Builder", "right_label": "Imagination Wiz"},
+    "play_preference": {"label": "Play Preference", "left_label": "Caring & Nurturing", "right_label": "Building & Action"},
+}
+
+
+def _ensure_personality_slider_column():
+    """Add the JSON column if an existing SQLite file is missing it."""
+    table_name = Character.__tablename__ or "character"
+    try:
+        with db.engine.connect() as conn:
+            result = conn.execute(text(f"PRAGMA table_info({table_name})"))
+            columns = {row[1] for row in result}
+            if "personality_sliders" not in columns:
+                conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN personality_sliders TEXT"))
+                logger.info("Added missing column 'personality_sliders' to %s", table_name)
+    except Exception as exc:
+        logger.warning("Unable to ensure personality_sliders column exists: %s", exc)
+
+
 with app.app_context():
     db.create_all()
+    _ensure_personality_slider_column()
 
 # ----------------------
 # Gemini setup
@@ -278,7 +308,68 @@ def _safe_extract_title_and_gem(text: str, theme: str):
     story_body = _GEM_RE.sub("", story_body).strip()
     return title, wisdom_gem, story_body
 
-def _build_character_integration(character_name, fears, strengths, likes, dislikes, comfort_item, personality_traits):
+def _clamp_slider_value(value):
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return int(max(0, min(100, round(value))))
+    if isinstance(value, str):
+        try:
+            return _clamp_slider_value(float(value))
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+def _sanitize_personality_sliders(raw_value):
+    if not raw_value or not isinstance(raw_value, dict):
+        return {}
+    sanitized = {}
+    for key in PERSONALITY_SLIDER_DEFINITIONS:
+        if key not in raw_value:
+            continue
+        clamped = _clamp_slider_value(raw_value.get(key))
+        if clamped is not None:
+            sanitized[key] = clamped
+    return sanitized
+
+
+def _describe_slider_value(value, left_label, right_label):
+    if value is None:
+        return None
+    delta = abs(value - 50)
+    if delta <= 5:
+        return f"balanced between {left_label.lower()} and {right_label.lower()}"
+    direction = right_label if value > 50 else left_label
+    if delta >= 30:
+        qualifier = "strongly "
+    elif delta >= 15:
+        qualifier = "leans "
+    else:
+        qualifier = "slightly "
+    return f"{qualifier}{direction.lower()}"
+
+
+def _describe_personality_sliders(personality_sliders):
+    if not personality_sliders:
+        return []
+    lines = ["\nPERSONALITY STYLE DIALS: (0 = left trait, 100 = right trait)"]
+    for key, meta in PERSONALITY_SLIDER_DEFINITIONS.items():
+        value = personality_sliders.get(key)
+        if value is None:
+            continue
+        descriptor = _describe_slider_value(
+            value, meta["left_label"], meta["right_label"]
+        )
+        if descriptor:
+            toward = meta["right_label"] if value > 50 else meta["left_label"]
+            lines.append(
+                f"- {meta['label']}: {descriptor} ({value}/100 toward {toward.lower()})"
+            )
+    return lines
+
+
+def _build_character_integration(character_name, fears, strengths, likes, dislikes, comfort_item, personality_traits, personality_sliders):
     """Build deep character integration for personalized, therapeutic storytelling"""
 
     parts = [
@@ -290,6 +381,10 @@ def _build_character_integration(character_name, fears, strengths, likes, dislik
     if personality_traits:
         traits_str = ", ".join(personality_traits)
         parts.append(f"Personality: {traits_str}")
+
+    slider_lines = _describe_personality_sliders(personality_sliders)
+    if slider_lines:
+        parts.extend(slider_lines)
 
     # Fears (Critical for therapeutic stories)
     if fears:
@@ -487,13 +582,18 @@ def generate_story_endpoint():
     feelings_prompt = _build_feelings_prompt(character, current_feeling)
 
     # Deep character integration - get full character details
-    character_details = payload.get("character_details", {})
+    character_details = payload.get("character_details") or {}
+    if not isinstance(character_details, dict):
+        character_details = {}
     fears = character_details.get("fears", [])
     strengths = character_details.get("strengths", [])
     likes = character_details.get("likes", [])
     dislikes = character_details.get("dislikes", [])
     comfort_item = character_details.get("comfort_item", "")
     personality_traits = character_details.get("personality_traits", [])
+    personality_sliders = _sanitize_personality_sliders(
+        character_details.get("personality_sliders", {})
+    )
 
     # Add age-appropriate context to the prompt
     if character_age <= 5:
@@ -519,7 +619,14 @@ def generate_story_endpoint():
 
     # Build deep character integration prompt
     character_integration = _build_character_integration(
-        character, fears, strengths, likes, dislikes, comfort_item, personality_traits
+        character,
+        fears,
+        strengths,
+        likes,
+        dislikes,
+        comfort_item,
+        personality_traits,
+        personality_sliders,
     )
 
     # Add age-appropriate context and character integration
@@ -605,6 +712,7 @@ def create_character():
         eyes=data.get("eyes"),
         outfit=data.get("outfit"),
         personality_traits=_as_list(data.get("traits", [])),
+        personality_sliders=_sanitize_personality_sliders(data.get("personality_sliders")),
         likes=_as_list(data.get("likes", [])),
         dislikes=_as_list(data.get("dislikes", [])),
         fears=_as_list(data.get("fears", [])),
@@ -649,6 +757,12 @@ def update_character(char_id: str):
         char.fears = _as_list(data["fears"])
     if "personality_traits" in data or "traits" in data:
         char.personality_traits = _as_list(data.get("personality_traits", data.get("traits", [])))
+    if "personality_sliders" in data:
+        raw_sliders = data.get("personality_sliders")
+        if raw_sliders is None:
+            char.personality_sliders = {}
+        else:
+            char.personality_sliders = _sanitize_personality_sliders(raw_sliders)
     if "siblings" in data:
         char.siblings = _as_list(data["siblings"])
     if "friends" in data:

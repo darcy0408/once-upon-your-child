@@ -17,6 +17,7 @@ class Character {
   final List<String>? fears;
   final List<String>? strengths;
   final List<String>? personalityTraits;
+  final Map<String, int>? personalitySliders;
   final String? comfortItem;
   final String? hair;
   final String? eyes;
@@ -40,6 +41,7 @@ class Character {
     this.fears,
     this.strengths,
     this.personalityTraits,
+    this.personalitySliders,
     this.comfortItem,
     this.hair,
     this.eyes,
@@ -62,6 +64,20 @@ class Character {
         : ageValue is num
             ? ageValue.toInt()
             : int.tryParse(ageValue?.toString() ?? '') ?? 0;
+    Map<String, int>? sliderValues;
+    final sliderJson = json['personality_sliders'];
+    if (sliderJson is Map<String, dynamic>) {
+      final sanitized = <String, int>{};
+      sliderJson.forEach((key, value) {
+        final parsed = _parseSliderValue(value);
+        if (parsed != null) {
+          sanitized[key] = parsed;
+        }
+      });
+      if (sanitized.isNotEmpty) {
+        sliderValues = sanitized;
+      }
+    }
     return Character(
       id: json['id'] ?? '',
       name: json['name'] ?? 'Unknown',
@@ -77,6 +93,7 @@ class Character {
       fears: json['fears'] != null ? List<String>.from(json['fears']) : null,
       strengths: json['strengths'] != null ? List<String>.from(json['strengths']) : null,
       personalityTraits: json['personality_traits'] != null ? List<String>.from(json['personality_traits']) : null,
+      personalitySliders: sliderValues,
       comfortItem: json['comfort_item'],
       hair: json['hair'],
       eyes: json['eyes'],
@@ -102,6 +119,7 @@ class Character {
         'fears': fears,
         'strengths': strengths,
         'personality_traits': personalityTraits,
+        'personality_sliders': personalitySliders,
         'comfort_item': comfortItem,
         'hair': hair,
         'eyes': eyes,
@@ -132,6 +150,19 @@ class Character {
       size: size,
     );
   }
+}
+
+int? _parseSliderValue(dynamic value) {
+  if (value is num) {
+    return value.clamp(0, 100).round();
+  }
+  if (value is String) {
+    final parsed = double.tryParse(value);
+    if (parsed != null) {
+      return parsed.clamp(0, 100).round();
+    }
+  }
+  return null;
 }
 
 // ---------------------
