@@ -32,8 +32,8 @@ app = Flask(__name__)
 ALLOWED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:8080",
-    "https://story-weaver-app.netlify.app",
-    "https://reliable-sherbet-2352c4.netlify.app",  # Current production domain
+    "https://story-weaver-app.netlify.app",  # Add your Netlify domain
+    "https://*.netlify.app",  # Allow Netlify preview deploys
 ]
 
 CORS(app, resources={
@@ -775,6 +775,7 @@ def generate_story_endpoint():
         print(f"!!! API ERROR: {type(e).__name__}: {str(e)}")
         print(f"!!! Prompt length: {len(prompt)} characters")
         print(f"!!! Learning to read mode: {learning_to_read_mode}, Rhyme time mode: {rhyme_time_mode}")
+        print(f"!!! Character age: {character_age}, Theme: {theme}")
         logger.error("Model error, using fallback story. Error: %s", e, exc_info=True)
         raw_text = (
             "[TITLE: An Unexpected Adventure]\n"
