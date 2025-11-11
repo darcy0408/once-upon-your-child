@@ -47,14 +47,12 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
   final Set<String> _selectedQuickLikes = <String>{};
   final Set<String> _selectedQuickDislikes = <String>{};
   final Set<String> _selectedFearOptions = <String>{};
-  final Set<String> _selectedGoalOptions = <String>{};
-  String? _selectedChallengeOption;
+  final Set<String> _selectedGoalChallengeOptions = <String>{};
   String? _selectedComfortOption;
   late final TextEditingController _likesController;
   late final TextEditingController _dislikesController;
   final TextEditingController _fearsController = TextEditingController();
-  final TextEditingController _goalsController = TextEditingController();
-  final TextEditingController _challengesController = TextEditingController();
+  final TextEditingController _goalsChallengesController = TextEditingController();
   final TextEditingController _comfortItemController = TextEditingController();
 
   @override
@@ -122,16 +120,24 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
     _initializeGrowthSelections(
       widget.character.goals ?? const <String>[],
       commonGoalOptions,
-      _selectedGoalOptions,
-      _goalsController,
+      _selectedGoalChallengeOptions,
+      _goalsChallengesController,
     );
-    final existingChallenge = widget.character.challenge ?? '';
-    if (existingChallenge.isNotEmpty &&
-        commonChallengeOptions
-            .any((option) => option.label == existingChallenge)) {
-      _selectedChallengeOption = existingChallenge;
-    } else {
-      _challengesController.text = existingChallenge;
+    final existingChallenge = widget.character.challenge?.trim() ?? '';
+    if (existingChallenge.isNotEmpty) {
+      final matchesOption =
+          commonGoalOptions.any((option) => option.label == existingChallenge);
+      if (matchesOption) {
+        _selectedGoalChallengeOptions.add(existingChallenge);
+      } else {
+        final current = _goalsChallengesController.text.trim();
+        final entries = <String>[];
+        if (current.isNotEmpty) {
+          entries.add(current);
+        }
+        entries.add(existingChallenge);
+        _goalsChallengesController.text = entries.join(', ');
+      }
     }
     final existingComfort = widget.character.comfortItem ?? '';
     if (existingComfort.isNotEmpty &&
@@ -197,14 +203,6 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
     return _combinedInterests(quickSelections, controller);
   }
 
-  String? _resolveChallengeValue() {
-    if (_selectedChallengeOption != null) {
-      return _selectedChallengeOption;
-    }
-    final text = _challengesController.text.trim();
-    return text.isEmpty ? null : text;
-  }
-
   String? _resolveComfortItem() {
     if (_selectedComfortOption != null) {
       return _selectedComfortOption;
@@ -265,7 +263,6 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
     }
 
     try {
-      final challengeValue = _resolveChallengeValue();
       final comfortValue = _resolveComfortItem();
       final body = {
         'name': _nameController.text.trim(),
@@ -299,9 +296,8 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
         // Growth
         'fears':
             _combinedGrowthSelections(_selectedFearOptions, _fearsController),
-        'goals':
-            _combinedGrowthSelections(_selectedGoalOptions, _goalsController),
-        if (challengeValue != null) 'challenge': challengeValue,
+        'goals': _combinedGrowthSelections(
+            _selectedGoalChallengeOptions, _goalsChallengesController),
         if (comfortValue != null) 'comfort_item': comfortValue,
       };
 
@@ -414,8 +410,7 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
     _likesController.dispose();
     _dislikesController.dispose();
     _fearsController.dispose();
-    _goalsController.dispose();
-    _challengesController.dispose();
+    _goalsChallengesController.dispose();
     _comfortItemController.dispose();
     super.dispose();
   }
@@ -1067,45 +1062,24 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
         ),
         const SizedBox(height: 20),
         _buildInterestChipGroup(
-          title: 'Goals/Working on',
-          subtitle: 'Helps the story celebrate their progress',
+          title: 'What they\'re working on (goals or challenges)',
+          subtitle: 'Stories can help them grow and cheer them on',
           options: commonGoalOptions,
-          selections: _selectedGoalOptions,
+          selections: _selectedGoalChallengeOptions,
         ),
         const SizedBox(height: 12),
         TextFormField(
-          controller: _goalsController,
+          controller: _goalsChallengesController,
           decoration: InputDecoration(
-            labelText: 'Other goals',
-            hintText: 'Separate with commas',
+            labelText: 'Other goals or challenges',
+            hintText: 'e.g., being braver, making new friends, learning to share',
+            helperText: 'Separate with commas',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,
             fillColor: Colors.amber[50],
-            prefixIcon: const Icon(Icons.flag_outlined),
+            prefixIcon: const Icon(Icons.emoji_events),
           ),
           maxLines: 2,
-        ),
-        const SizedBox(height: 20),
-        _buildSingleChoiceChipGroup(
-          title: 'Current challenge',
-          subtitle: 'Pick the best match',
-          options: commonChallengeOptions,
-          selectedValue: _selectedChallengeOption,
-          onSelected: (value) {
-            setState(() => _selectedChallengeOption = value);
-          },
-        ),
-        const SizedBox(height: 12),
-        TextFormField(
-          controller: _challengesController,
-          decoration: InputDecoration(
-            labelText: 'Describe their challenge',
-            hintText: 'e.g., Trying new foods',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            filled: true,
-            fillColor: Colors.pink[50],
-            prefixIcon: const Icon(Icons.trending_up),
-          ),
         ),
         const SizedBox(height: 20),
         _buildSingleChoiceChipGroup(
