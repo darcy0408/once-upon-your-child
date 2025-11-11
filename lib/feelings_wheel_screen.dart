@@ -8,10 +8,12 @@ import 'sunset_jungle_theme.dart';
 
 class FeelingsWheelScreen extends StatefulWidget {
   final SelectedFeeling? currentFeeling;
+  final ValueChanged<SelectedFeeling>? onFeelingSelected;
 
   const FeelingsWheelScreen({
     super.key,
     this.currentFeeling,
+    this.onFeelingSelected,
   });
 
   @override
@@ -24,117 +26,24 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('🌈 How Are You Feeling?'),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: SunsetJungleTheme.headerGradient,
-          ),
-        ),
-      ),
-      backgroundColor: SunsetJungleTheme.creamLight,
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              // Header
-              _buildHeader(),
-              const SizedBox(height: 20),
+    return Column(
+      children: [
+        // Core Level
+        if (_selectedCore == null) _buildCoreLevel(),
 
-              // Current Feeling Display
-              if (widget.currentFeeling != null) _buildCurrentFeeling(),
+        // Secondary Level
+        if (_selectedCore != null && _selectedSecondary == null)
+          _buildSecondaryLevel(),
 
-              // Core Level
-              if (_selectedCore == null) _buildCoreLevel(),
-
-              // Secondary Level
-              if (_selectedCore != null && _selectedSecondary == null)
-                _buildSecondaryLevel(),
-
-              // Tertiary Level
-              if (_selectedSecondary != null) _buildTertiaryLevel(),
-
-              const SizedBox(height: 20),
-
-              // Footer
-              _buildFooter(),
-            ],
-          ),
-        ),
-      ),
+        // Tertiary Level
+        if (_selectedSecondary != null) _buildTertiaryLevel(),
+      ],
     );
   }
 
-  Widget _buildHeader() {
-    String subtitle;
-    if (_selectedCore == null) {
-      subtitle = "Pick a feeling to start";
-    } else if (_selectedSecondary == null) {
-      subtitle = "Now, be more specific...";
-    } else {
-      subtitle = "Choose the word that fits best";
-    }
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: SunsetJungleTheme.jungleDeepGreen.withOpacity(0.15),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(
-            subtitle,
-            style: SunsetJungleTheme.sectionTitleStyle.copyWith(fontSize: 18),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildCurrentFeeling() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: SunsetJungleTheme.mintCreamGradient,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: SunsetJungleTheme.jungleSage, width: 2),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            widget.currentFeeling!.emoji,
-            style: const TextStyle(fontSize: 32),
-          ),
-          const SizedBox(width: 12),
-          Flexible(
-            child: Text(
-              'Currently feeling: ${widget.currentFeeling!.tertiary}',
-              style: const TextStyle(
-                fontFamily: 'Quicksand',
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: SunsetJungleTheme.jungleForest,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildCoreLevel() {
     return Column(
@@ -247,7 +156,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
                   mouthType: _selectedSecondary!.mouthType,
                   color: _selectedCore!.color!,
                 );
-                Navigator.of(context).pop(selectedFeeling);
+                widget.onFeelingSelected?.call(selectedFeeling);
               },
             );
           },
@@ -354,27 +263,5 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
     );
   }
 
-  Widget _buildFooter() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: SunsetJungleTheme.jungleMint,
-            width: 2,
-          ),
-        ),
-      ),
-      child: const Text(
-        "✨ It's okay to feel any feeling! Feelings help us understand ourselves.",
-        style: TextStyle(
-          fontFamily: 'Quicksand',
-          fontSize: 14,
-          fontStyle: FontStyle.italic,
-          color: SunsetJungleTheme.jungleOlive,
-        ),
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
+
 }

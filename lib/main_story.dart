@@ -29,7 +29,7 @@ import 'achievements_screen.dart';
 import 'models/achievement.dart';
 import 'services/achievement_service.dart';
 import 'pre_story_feelings_dialog.dart';
-import 'emotions_learning_system.dart';
+
 
 class StoryCreatorApp extends StatelessWidget {
   const StoryCreatorApp({super.key});
@@ -301,9 +301,8 @@ class _StoryScreenState extends State<StoryScreen> {
       if (currentFeeling != null) {
         final emotionService = EmotionsLearningService();
         await emotionService.recordCheckIn(
-          EmotionCheckIn(
-            emotionId: currentFeeling.emotion.id,
-            intensity: currentFeeling.intensity,
+                  EmotionCheckIn(
+                    emotionId: currentFeeling.selectedFeeling.tertiary,            intensity: currentFeeling.intensity,
             whatHappened: currentFeeling.whatHappened ?? '',
             timestamp: DateTime.now(),
           ),

@@ -2,28 +2,28 @@
 // Dialog to check in on child's feelings before creating a story
 
 import 'package:flutter/material.dart';
-import 'emotions_learning_system.dart';
+
+import 'feelings_wheel_screen.dart';
+import 'feelings_wheel_data.dart';
 
 class CurrentFeeling {
-  final Emotion emotion;
+  final SelectedFeeling selectedFeeling;
   final int intensity;
   final String? whatHappened;
 
   CurrentFeeling({
-    required this.emotion,
+    required this.selectedFeeling,
     required this.intensity,
     this.whatHappened,
   });
 
   Map<String, dynamic> toJson() => {
-        'emotion_id': emotion.id,
-        'emotion_name': emotion.name,
-        'emotion_emoji': emotion.emoji,
-        'emotion_description': emotion.description,
+        'core_emotion': selectedFeeling.core,
+        'secondary_emotion': selectedFeeling.secondary,
+        'tertiary_emotion': selectedFeeling.tertiary,
+        'emotion_emoji': selectedFeeling.emoji,
         'intensity': intensity,
         'what_happened': whatHappened,
-        'physical_signs': emotion.physicalSigns,
-        'coping_strategies': emotion.copingStrategies,
       };
 }
 
@@ -52,8 +52,7 @@ class PreStoryFeelingsDialog extends StatefulWidget {
 }
 
 class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
-  final _service = EmotionsLearningService();
-  Emotion? _selectedEmotion;
+  SelectedFeeling? _selectedFeeling;
   int _intensity = 3;
   final TextEditingController _whatHappenedController = TextEditingController();
 
@@ -126,72 +125,25 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.all(12),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _service.getAllEmotions().map((emotion) {
-                      final isSelected = _selectedEmotion?.id == emotion.id;
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() => _selectedEmotion = emotion);
-                        },
-                        child: Container(
-                          width: 85,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? emotion.color.withOpacity(0.3)
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isSelected ? emotion.color : Colors.grey.shade300,
-                              width: isSelected ? 3 : 1,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                emotion.emoji,
-                                style: const TextStyle(fontSize: 28),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                emotion.name,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
+                FeelingsWheelScreen(
+                  currentFeeling: _selectedFeeling,
+                  onFeelingSelected: (feeling) {
+                    setState(() {
+                      _selectedFeeling = feeling;
+                    });
+                  },
                 ),
 
                 // Emotion Details
-                if (_selectedEmotion != null) ...[
+                if (_selectedFeeling != null) ...[
                   const SizedBox(height: 20),
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: _selectedEmotion!.color.withOpacity(0.15),
+                      color: _selectedFeeling!.color.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: _selectedEmotion!.color,
+                        color: _selectedFeeling!.color,
                         width: 2,
                       ),
                     ),
@@ -201,13 +153,13 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
                         Row(
                           children: [
                             Text(
-                              _selectedEmotion!.emoji,
+                              _selectedFeeling!.emoji,
                               style: const TextStyle(fontSize: 32),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                _selectedEmotion!.name,
+                                _selectedFeeling!.tertiary,
                                 style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -218,18 +170,11 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          _selectedEmotion!.description,
+                          'Core: ${_selectedFeeling!.core}, Secondary: ${_selectedFeeling!.secondary}',
                           style: const TextStyle(fontSize: 14),
                         ),
                         const SizedBox(height: 12),
-                        Text(
-                          'Body might feel: ${_selectedEmotion!.physicalSigns}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
+                        // You might want to add physical signs/coping strategies here if available in SelectedFeeling
                       ],
                     ),
                   ),
@@ -254,7 +199,7 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
                           max: 5,
                           divisions: 4,
                           label: _getIntensityLabel(_intensity),
-                          activeColor: _selectedEmotion!.color,
+                          activeColor: _selectedFeeling!.color,
                           onChanged: (value) {
                             setState(() => _intensity = value.toInt());
                           },
@@ -318,11 +263,11 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
                     Expanded(
                       flex: 2,
                       child: ElevatedButton(
-                        onPressed: _selectedEmotion == null
+                        onPressed: _selectedFeeling == null
                             ? null
                             : () {
                                 final feeling = CurrentFeeling(
-                                  emotion: _selectedEmotion!,
+                                  selectedFeeling: _selectedFeeling!,
                                   intensity: _intensity,
                                   whatHappened: _whatHappenedController.text.trim().isEmpty
                                       ? null
@@ -331,7 +276,7 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
                                 Navigator.of(context).pop(feeling);
                               },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _selectedEmotion?.color ?? Colors.purple,
+                          backgroundColor: _selectedFeeling?.color ?? Colors.purple,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
