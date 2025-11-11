@@ -38,9 +38,11 @@ ALLOWED_ORIGINS = [
     "https://*.netlify.app",  # Allow Netlify preview deploys
 ]
 
+# Temporarily allow all origins to fix CORS issues
+# TODO: Restrict this in production once we confirm it works
 CORS(app, resources={
     r"/*": {
-        "origins": ALLOWED_ORIGINS,
+        "origins": "*",  # Allow all origins
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
     }
