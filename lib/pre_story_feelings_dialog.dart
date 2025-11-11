@@ -10,20 +10,30 @@ class CurrentFeeling {
   final SelectedFeeling selectedFeeling;
   final int intensity;
   final String? whatHappened;
+  final List<String>? physicalSigns;
+  final List<String>? copingStrategies;
 
   CurrentFeeling({
     required this.selectedFeeling,
     required this.intensity,
     this.whatHappened,
+    this.physicalSigns,
+    this.copingStrategies,
   });
 
   Map<String, dynamic> toJson() => {
+        'emotion_name': selectedFeeling.tertiary,
+        'emotion_description':
+            '${selectedFeeling.core} → ${selectedFeeling.secondary}',
+        'emotion_emoji': selectedFeeling.emoji,
         'core_emotion': selectedFeeling.core,
         'secondary_emotion': selectedFeeling.secondary,
         'tertiary_emotion': selectedFeeling.tertiary,
-        'emotion_emoji': selectedFeeling.emoji,
         'intensity': intensity,
         'what_happened': whatHappened,
+        'physical_signs':
+            physicalSigns == null ? null : physicalSigns!.join(', '),
+        'coping_strategies': copingStrategies ?? const [],
       };
 }
 
@@ -53,6 +63,7 @@ class PreStoryFeelingsDialog extends StatefulWidget {
 
 class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
   SelectedFeeling? _selectedFeeling;
+  FeelingSupportInfo? _supportInfo;
   int _intensity = 3;
   final TextEditingController _whatHappenedController = TextEditingController();
 
@@ -118,7 +129,7 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
 
                 // Emotion Selection
                 const Text(
-                  'Choose the feeling:',
+                  'Explore the feelings wheel:',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -130,6 +141,8 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
                   onFeelingSelected: (feeling) {
                     setState(() {
                       _selectedFeeling = feeling;
+                      _supportInfo = FeelingSupportLibrary.findSupport(feeling);
+                      _intensity = 3;
                     });
                   },
                 ),
@@ -178,6 +191,23 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
                       ],
                     ),
                   ),
+
+                  if (_supportInfo != null) ...[
+                    const SizedBox(height: 16),
+                    _FeelingSupportSection(
+                      title: 'How this feeling shows up in the body',
+                      items: _supportInfo!.bodySignals,
+                      accent: _selectedFeeling!.color,
+                      icon: Icons.self_improvement,
+                    ),
+                    const SizedBox(height: 12),
+                    _FeelingSupportSection(
+                      title: 'Helpful things to try',
+                      items: _supportInfo!.copingIdeas,
+                      accent: _selectedFeeling!.color,
+                      icon: Icons.favorite_outline,
+                    ),
+                  ],
 
                   // Intensity Slider
                   const SizedBox(height: 20),
@@ -269,9 +299,13 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
                                 final feeling = CurrentFeeling(
                                   selectedFeeling: _selectedFeeling!,
                                   intensity: _intensity,
-                                  whatHappened: _whatHappenedController.text.trim().isEmpty
+                                  whatHappened: _whatHappenedController.text
+                                          .trim()
+                                          .isEmpty
                                       ? null
                                       : _whatHappenedController.text.trim(),
+                                  physicalSigns: _supportInfo?.bodySignals,
+                                  copingStrategies: _supportInfo?.copingIdeas,
                                 );
                                 Navigator.of(context).pop(feeling);
                               },
@@ -317,5 +351,79 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
       default:
         return 'Medium';
     }
+  }
+}
+
+class _FeelingSupportSection extends StatelessWidget {
+  final String title;
+  final List<String> items;
+  final Color accent;
+  final IconData icon;
+
+  const _FeelingSupportSection({
+    required this.title,
+    required this.items,
+    required this.accent,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: accent.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accent.withOpacity(0.4), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: accent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: accent.darken(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...items.map(
+            (item) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('• '),
+                  Expanded(
+                    child: Text(
+                      item,
+                      style: const TextStyle(fontSize: 13.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+extension on Color {
+  Color darken([double amount = .2]) {
+    final hsl = HSLColor.fromColor(this);
+    final adjusted = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
+    return adjusted.toColor();
   }
 }

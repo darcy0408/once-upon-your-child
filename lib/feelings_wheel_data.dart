@@ -105,6 +105,185 @@ class SelectedFeeling {
   }
 }
 
+class FeelingSupportInfo {
+  final List<String> bodySignals;
+  final List<String> copingIdeas;
+
+  const FeelingSupportInfo({
+    required this.bodySignals,
+    required this.copingIdeas,
+  });
+}
+
+class FeelingSupportLibrary {
+  static final Map<String, FeelingSupportInfo> _secondaryLevel = {
+    'Joyful': const FeelingSupportInfo(
+      bodySignals: [
+        'Big smiles',
+        'Lots of energy',
+        'Bouncing feet',
+      ],
+      copingIdeas: [
+        'Share good news with someone',
+        'Dance it out',
+        'Take a deep breath to enjoy the moment',
+      ],
+    ),
+    'Content': const FeelingSupportInfo(
+      bodySignals: [
+        'Loose shoulders',
+        'Soft breathing',
+        'Warm feeling in the chest',
+      ],
+      copingIdeas: [
+        'Keep enjoying the calm moment',
+        'Listen to quiet music',
+        'Do a gentle stretch',
+      ],
+    ),
+    'Proud': const FeelingSupportInfo(
+      bodySignals: [
+        'Standing tall',
+        'Bright eyes',
+        'Light, steady breathing',
+      ],
+      copingIdeas: [
+        'Tell someone what you accomplished',
+        'Write or draw the achievement',
+        'Help a friend using your new skill',
+      ],
+    ),
+    'Lonely': const FeelingSupportInfo(
+      bodySignals: [
+        'Heavy chest',
+        'Downcast eyes',
+        'Slow movements',
+      ],
+      copingIdeas: [
+        'Reach out to a friend or family member',
+        'Cuddle a favorite stuffed friend',
+        'Read or listen to a comforting story',
+      ],
+    ),
+    'Hurt': const FeelingSupportInfo(
+      bodySignals: [
+        'Tight throat',
+        'Watering eyes',
+        'Frowning mouth',
+      ],
+      copingIdeas: [
+        'Talk about what happened with a trusted adult',
+        'Place hands on heart and take deep breaths',
+        'Write down feelings and crumple the paper gently',
+      ],
+    ),
+    'Worried': const FeelingSupportInfo(
+      bodySignals: [
+        'Fluttering stomach',
+        'Fast thoughts',
+        'Fidgety hands',
+      ],
+      copingIdeas: [
+        'Name five things you can see to stay present',
+        'Breathe in for 4 counts, out for 4 counts',
+        'Create a “what helps me” list',
+      ],
+    ),
+    'Frustrated': const FeelingSupportInfo(
+      bodySignals: [
+        'Tight jaw',
+        'Clenched fists',
+        'Hot cheeks',
+      ],
+      copingIdeas: [
+        'Take a break and shake out hands',
+        'Count slowly to ten',
+        'Talk through the problem step by step',
+      ],
+    ),
+    'Mad': const FeelingSupportInfo(
+      bodySignals: [
+        'Fast heartbeat',
+        'Loud voice',
+        'Eyebrows pulled down',
+      ],
+      copingIdeas: [
+        'Stomp feet safely like a dinosaur, then pause',
+        'Blow big breaths into your hands',
+        'Draw your angry monster and then give it a hug',
+      ],
+    ),
+    'Scared': const FeelingSupportInfo(
+      bodySignals: [
+        'Cold hands',
+        'Wide eyes',
+        'Quick breathing',
+      ],
+      copingIdeas: [
+        'Hold a comfort item or blanket',
+        'Look around and name things that feel safe',
+        'Ask for a reassuring hug',
+      ],
+    ),
+    'Surprised': const FeelingSupportInfo(
+      bodySignals: [
+        'Raised eyebrows',
+        'Gasps of breath',
+        'Jumpy shoulders',
+      ],
+      copingIdeas: [
+        'Blink slowly and take a breath',
+        'Share the surprise with someone',
+        'Stretch arms wide to release the burst of energy',
+      ],
+    ),
+    'Calm': const FeelingSupportInfo(
+      bodySignals: [
+        'Soft muscles',
+        'Gentle breathing',
+        'Relaxed face',
+      ],
+      copingIdeas: [
+        'Enjoy a mindful moment',
+        'Listen to rain or nature sounds',
+        'Write down grateful thoughts',
+      ],
+    ),
+  };
+
+  static final Map<String, FeelingSupportInfo> _coreFallback = {
+    'Happy': const FeelingSupportInfo(
+      bodySignals: ['Light steps', 'Smile on face'],
+      copingIdeas: ['Share the joy', 'Capture the moment in a journal'],
+    ),
+    'Sad': const FeelingSupportInfo(
+      bodySignals: ['Slow movements', 'Quiet voice'],
+      copingIdeas: ['Talk to someone caring', 'Wrap up in a cozy blanket'],
+    ),
+    'Angry': const FeelingSupportInfo(
+      bodySignals: ['Hot face', 'Tense muscles'],
+      copingIdeas: ['Take a movement break', 'Squeeze a pillow or stress ball'],
+    ),
+    'Scared': const FeelingSupportInfo(
+      bodySignals: ['Tight tummy', 'Wide eyes'],
+      copingIdeas: ['Hold a comfort object', 'Breathe in for 4, out for 6'],
+    ),
+    'Surprised': const FeelingSupportInfo(
+      bodySignals: ['Raised eyebrows', 'Open mouth'],
+      copingIdeas: ['Talk about what happened', 'Do a grounding exercise'],
+    ),
+    'Calm': const FeelingSupportInfo(
+      bodySignals: ['Loose shoulders', 'Soft gaze'],
+      copingIdeas: ['Stay present and notice the peace', 'Share the calm feeling'],
+    ),
+  };
+
+  static FeelingSupportInfo? findSupport(SelectedFeeling feeling) {
+    return _secondaryLevel[feeling.secondary] ??
+        _coreFallback[feeling.core];
+  }
+}
+
 // Feelings Wheel Data
 class FeelingsWheelData {
   static const List<CoreEmotion> coreEmotions = [

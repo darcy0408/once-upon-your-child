@@ -27,26 +27,77 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Core Level
-        if (_selectedCore == null) _buildCoreLevel(),
-
-        // Secondary Level
-        if (_selectedCore != null && _selectedSecondary == null)
-          _buildSecondaryLevel(),
-
-        // Tertiary Level
-        if (_selectedSecondary != null) _buildTertiaryLevel(),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: SunsetJungleTheme.creamLight,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: SunsetJungleTheme.jungleMint, width: 1.5),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                'Step 1: Pick a core emotion',
+                style: TextStyle(
+                  fontFamily: 'Quicksand',
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Step 2: Choose a more specific feeling',
+                style: TextStyle(fontFamily: 'Quicksand'),
+              ),
+              SizedBox(height: 2),
+              Text(
+                'Step 3: Tap the exact feeling that fits',
+                style: TextStyle(fontFamily: 'Quicksand'),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          child: _buildActiveLevel(),
+        ),
+        if (_selectedCore != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _selectedCore = null;
+                  _selectedSecondary = null;
+                });
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Start over'),
+            ),
+          ),
       ],
     );
   }
 
+  Widget _buildActiveLevel() {
+    if (_selectedCore == null) {
+      return _buildCoreLevel();
+    }
+    if (_selectedSecondary == null) {
+      return _buildSecondaryLevel();
+    }
+    return _buildTertiaryLevel();
+  }
 
 
 
 
   Widget _buildCoreLevel() {
     return Column(
+      key: const ValueKey('core'),
       children: [
         GridView.builder(
           shrinkWrap: true,
@@ -79,6 +130,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
 
   Widget _buildSecondaryLevel() {
     return Column(
+      key: const ValueKey('secondary'),
       children: [
         _buildBreadcrumb(
           text: '${_selectedCore!.emoji} ${_selectedCore!.name}',
@@ -120,6 +172,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
 
   Widget _buildTertiaryLevel() {
     return Column(
+      key: const ValueKey('tertiary'),
       children: [
         _buildBreadcrumb(
           text:
@@ -143,9 +196,12 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
           itemCount: _selectedSecondary!.tertiary.length,
           itemBuilder: (context, index) {
             final feelingName = _selectedSecondary!.tertiary[index];
+            final isSelected =
+                widget.currentFeeling?.tertiary == feelingName;
             return _buildFeelingButton(
               name: feelingName,
               color: _selectedCore!.color!.withOpacity(0.6),
+              isSelected: isSelected,
               onTap: () {
                 final selectedFeeling = SelectedFeeling(
                   core: _selectedCore!.name,
@@ -170,9 +226,10 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
     required String name,
     required Color color,
     required VoidCallback onTap,
+    bool isSelected = false,
   }) {
     return Material(
-      color: color,
+      color: isSelected ? color.darken() : color,
       borderRadius: BorderRadius.circular(16),
       elevation: 4,
       child: InkWell(
@@ -207,6 +264,10 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
+              if (isSelected) ...[
+                const SizedBox(height: 6),
+                const Icon(Icons.check_circle, color: Colors.white, size: 20),
+              ],
             ],
           ),
         ),
@@ -264,4 +325,13 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
   }
 
 
+}
+
+extension on Color {
+  Color darken([double amount = .1]) {
+    final hsl = HSLColor.fromColor(this);
+    final adjusted =
+        hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
+    return adjusted.toColor();
+  }
 }

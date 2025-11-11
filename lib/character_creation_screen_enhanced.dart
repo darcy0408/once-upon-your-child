@@ -357,8 +357,7 @@ class _CharacterCreationScreenEnhancedState
     _likesController.dispose();
     _dislikesController.dispose();
     _fearsController.dispose();
-    _goalsController.dispose();
-    _challengesController.dispose();
+    _goalsChallengesController.dispose();
     _comfortItemController.dispose();
     super.dispose();
   }
@@ -1072,46 +1071,25 @@ class _CharacterCreationScreenEnhancedState
         ),
         const SizedBox(height: 20),
         _buildInterestChipGroup(
-          title: 'Goals or things they’re working on',
-          subtitle: 'Helps the story cheer them on',
+          title: 'What they\'re working on (goals or challenges)',
+          subtitle: 'Stories can help them grow and cheer them on',
           options: commonGoalOptions,
-          selections: _selectedGoalOptions,
+          selections: _selectedGoalChallengeOptions,
         ),
         const SizedBox(height: 12),
         TextFormField(
-          controller: _goalsController,
+          controller: _goalsChallengesController,
           decoration: InputDecoration(
-            labelText: 'Other goals',
-            hintText: 'e.g., be braver at night',
+            labelText: 'Other goals or challenges',
+            hintText:
+                'e.g., being braver, making new friends, learning to share',
             helperText: 'Separate with commas',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             filled: true,
             fillColor: Colors.amber[50],
-            prefixIcon: const Icon(Icons.flag_outlined),
+            prefixIcon: const Icon(Icons.emoji_events),
           ),
           maxLines: 2,
-        ),
-        const SizedBox(height: 20),
-        _buildSingleChoiceChipGroup(
-          title: 'Current challenge',
-          subtitle: 'Pick the one that fits best',
-          options: commonChallengeOptions,
-          selectedValue: _selectedChallengeOption,
-          onSelected: (value) {
-            setState(() => _selectedChallengeOption = value);
-          },
-        ),
-        const SizedBox(height: 12),
-        TextFormField(
-          controller: _challengesController,
-          decoration: InputDecoration(
-            labelText: 'Describe their current challenge',
-            hintText: 'e.g., getting ready on time',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            filled: true,
-            fillColor: Colors.pink[50],
-            prefixIcon: const Icon(Icons.trending_up),
-          ),
         ),
         const SizedBox(height: 20),
         _buildSingleChoiceChipGroup(
