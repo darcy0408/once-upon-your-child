@@ -3,12 +3,13 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models.dart';
+import '../config/environment.dart';
 
 /// Simple client for fetching interactive story segments from the backend.
 class InteractiveStoryService {
   const InteractiveStoryService();
 
-  static const String _baseUrl = 'http://127.0.0.1:5000';
+  static String get _baseUrl => Environment.backendUrl;
 
   /// Request the opening segment and choices.
   Future<StorySegment> fetchOpeningSegment({

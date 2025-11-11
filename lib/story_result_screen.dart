@@ -19,6 +19,7 @@ import 'services/progression_service.dart';
 import 'unlock_celebration_dialog.dart';
 import 'services/achievement_service.dart';
 import 'achievement_celebration_dialog.dart';
+import 'config/environment.dart';
 
 class StoryResultScreen extends StatefulWidget {
   final String title;
@@ -131,7 +132,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     try {
       final response = await http
           .get(
-            Uri.parse('http://127.0.0.1:5000/characters/${widget.characterId}'),
+        Uri.parse('${Environment.backendUrl}/characters/${widget.characterId}'),
           )
           .timeout(const Duration(seconds: 15));
 

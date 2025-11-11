@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from google import genai
+import google.generativeai as genai
 from sqlalchemy import text
 from sqlalchemy.dialects.sqlite import JSON as SQLITE_JSON
 
