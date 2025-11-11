@@ -596,9 +596,17 @@ def _extract_current_feeling(container):
         coping_value = feeling.get("copingStrategies")
     coping_strategies = [item for item in _as_list(coping_value) if item]
 
+    # Handle both old emotion structure and new feelings wheel structure
+    emotion_name = (
+        _clean(feeling.get("emotion_name") or feeling.get("emotionName"))
+        or _clean(feeling.get("tertiary_emotion"))  # New feelings wheel
+        or _clean(feeling.get("secondary_emotion"))  # Fallback to secondary
+        or _clean(feeling.get("core_emotion"))  # Fallback to core
+    )
+
     normalized = {
-        "emotion_id": _clean(feeling.get("emotion_id") or feeling.get("emotionId")),
-        "emotion_name": _clean(feeling.get("emotion_name") or feeling.get("emotionName")),
+        "emotion_id": _clean(feeling.get("emotion_id") or feeling.get("emotionId") or feeling.get("tertiary_emotion")),
+        "emotion_name": emotion_name,
         "emotion_emoji": _clean(feeling.get("emotion_emoji") or feeling.get("emotionEmoji")),
         "emotion_description": _clean(feeling.get("emotion_description") or feeling.get("emotionDescription")),
         "intensity": intensity,
@@ -765,7 +773,9 @@ def generate_story_endpoint():
 
     except Exception as e:
         print(f"!!! API ERROR: {type(e).__name__}: {str(e)}")
-        logger.warning("Model error, using fallback: %s", e)
+        print(f"!!! Prompt length: {len(prompt)} characters")
+        print(f"!!! Learning to read mode: {learning_to_read_mode}, Rhyme time mode: {rhyme_time_mode}")
+        logger.error("Model error, using fallback story. Error: %s", e, exc_info=True)
         raw_text = (
             "[TITLE: An Unexpected Adventure]\n"
             "Once upon a time, a brave hero discovered that the greatest adventures come from "
