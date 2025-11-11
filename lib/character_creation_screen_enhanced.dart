@@ -495,13 +495,17 @@ class _CharacterCreationScreenEnhancedState
                       ),
                 ),
                 const SizedBox(height: 12),
-                AvatarService.buildAvatarWidget(
-                  characterId:
-                      'preview-${_nameController.text.isEmpty ? "character" : _nameController.text}',
-                  hairColor: _hairColor,
-                  eyeColor: _eyeColor,
-                  outfit: null,
-                  size: 120,
+                // Use key to force rebuild when colors change
+                KeyedSubtree(
+                  key: ValueKey('$_hairColor-$_eyeColor-${_nameController.text}'),
+                  child: AvatarService.buildAvatarWidget(
+                    characterId:
+                        'preview-${_nameController.text.isEmpty ? "character" : _nameController.text}',
+                    hairColor: _hairColor,
+                    eyeColor: _eyeColor,
+                    outfit: null,
+                    size: 120,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
