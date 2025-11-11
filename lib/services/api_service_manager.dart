@@ -1,5 +1,6 @@
 // lib/services/api_service_manager.dart
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -47,6 +48,7 @@ class ApiServiceManager {
     bool rhymeTimeMode = false,
     bool learningToReadMode = false,
     Map<String, dynamic>? currentFeeling,
+    http.Client? client,
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
 
@@ -65,7 +67,7 @@ class ApiServiceManager {
       );
     } else {
       // Use local Flask backend
-      return await _generateStoryWithBackend(
+      return await _generateStoryWithBackendRetry(
         characterName: characterName,
         theme: theme,
         age: age,
@@ -75,6 +77,7 @@ class ApiServiceManager {
         rhymeTimeMode: rhymeTimeMode,
         learningToReadMode: learningToReadMode,
         currentFeeling: currentFeeling,
+        client: client,
       );
     }
   }
@@ -115,6 +118,51 @@ class ApiServiceManager {
     return response.text ?? '';
   }
 
+  static Future<String> _generateStoryWithBackendRetry({
+    required String characterName,
+    required String theme,
+    required int age,
+    String? companion,
+    Map<String, dynamic>? characterDetails,
+    List<String>? additionalCharacters,
+    bool rhymeTimeMode = false,
+    bool learningToReadMode = false,
+    Map<String, dynamic>? currentFeeling,
+    http.Client? client,
+    int maxAttempts = 3,
+    Duration initialDelay = const Duration(seconds: 2),
+  }) async {
+    var attempts = 0;
+    var delay = initialDelay;
+    late Object lastError;
+
+    while (attempts < maxAttempts) {
+      try {
+        return await _generateStoryWithBackend(
+          characterName: characterName,
+          theme: theme,
+          age: age,
+          companion: companion,
+          characterDetails: characterDetails,
+          additionalCharacters: additionalCharacters,
+          rhymeTimeMode: rhymeTimeMode,
+          learningToReadMode: learningToReadMode,
+          currentFeeling: currentFeeling,
+          client: client,
+        );
+      } catch (error) {
+        lastError = error;
+        attempts++;
+        if (attempts >= maxAttempts) break;
+        await Future.delayed(delay);
+        delay *= 2;
+      }
+    }
+    throw Exception(
+      'Failed to generate story after $maxAttempts attempts: $lastError',
+    );
+  }
+
   /// Generate story using local backend
   static Future<String> _generateStoryWithBackend({
     required String characterName,
@@ -126,7 +174,9 @@ class ApiServiceManager {
     bool rhymeTimeMode = false,
     bool learningToReadMode = false,
     Map<String, dynamic>? currentFeeling,
+    http.Client? client,
   }) async {
+    final httpClient = client ?? http.Client();
     final endpoint = (additionalCharacters == null || additionalCharacters.isEmpty)
         ? '$_localBackendUrl/generate-story'
         : '$_localBackendUrl/generate-multi-character-story';
@@ -152,17 +202,23 @@ class ApiServiceManager {
             'current_feeling': currentFeeling,
           };
 
-    final response = await http.post(
-      Uri.parse(endpoint),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    );
+    try {
+      final response = await httpClient.post(
+        Uri.parse(endpoint),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 30));
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data['story'] as String;
-    } else {
-      throw Exception('Failed to generate story: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['story'] as String;
+      } else {
+        throw Exception('Failed to generate story: ${response.statusCode}');
+      }
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
     }
   }
 
