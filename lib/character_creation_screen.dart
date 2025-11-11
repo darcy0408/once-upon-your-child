@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'config/environment.dart';
 
 class CharacterCreationScreen extends StatefulWidget {
   const CharacterCreationScreen({super.key});
@@ -38,7 +39,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-    final url = Uri.parse('http://127.0.0.1:5000/create-character');
+    final url = Uri.parse('${Environment.backendUrl}/create-character');
 
     try {
       final body = {

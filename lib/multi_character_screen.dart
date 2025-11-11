@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'models.dart';
 import 'story_result_screen.dart';
 import 'services/achievement_service.dart';
+import 'config/environment.dart';
 
 class MultiCharacterScreen extends StatefulWidget {
   const MultiCharacterScreen({super.key});
@@ -29,7 +30,7 @@ class _MultiCharacterScreenState extends State<MultiCharacterScreen> {
 
   Future<void> _loadCharacters() async {
     try {
-      final url = Uri.parse('http://127.0.0.1:5000/get-characters');
+      final url = Uri.parse('${Environment.backendUrl}/get-characters');
       final resp = await http.get(url);
       if (resp.statusCode == 200) {
         // Your backend may return either a list or {items:[...]}
@@ -69,7 +70,7 @@ class _MultiCharacterScreenState extends State<MultiCharacterScreen> {
 
     setState(() => _loading = true);
     try {
-      final url = Uri.parse('http://127.0.0.1:5000/generate-multi-character-story');
+      final url = Uri.parse('${Environment.backendUrl}/generate-multi-character-story');
       final body = {
         'character_ids': _selectedIds.toList(),
         'main_character_id': _mainId,

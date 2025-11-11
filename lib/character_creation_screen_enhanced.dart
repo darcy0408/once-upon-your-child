@@ -13,6 +13,7 @@ import 'services/progression_service.dart';
 import 'services/achievement_service.dart';
 import 'services/avatar_service.dart';
 import 'achievement_celebration_dialog.dart';
+import 'config/environment.dart';
 
 class CharacterCreationScreenEnhanced extends StatefulWidget {
   const CharacterCreationScreenEnhanced({super.key});
@@ -246,7 +247,7 @@ class _CharacterCreationScreenEnhancedState
     }
 
     setState(() => _isLoading = true);
-    final url = Uri.parse('http://127.0.0.1:5000/create-character');
+    final url = Uri.parse('${Environment.backendUrl}/create-character');
 
     // Build role based on character type
     String role = _characterType;

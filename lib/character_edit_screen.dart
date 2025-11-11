@@ -6,6 +6,7 @@ import 'superhero_name_generator.dart';
 import 'character_traits_data.dart';
 import 'appearance_options.dart';
 import 'interest_options.dart';
+import 'config/environment.dart';
 
 class CharacterEditScreen extends StatefulWidget {
   final Character character;
@@ -253,7 +254,7 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
 
     setState(() => _isLoading = true);
     final url =
-        Uri.parse('http://127.0.0.1:5000/characters/${widget.character.id}');
+        Uri.parse('${Environment.backendUrl}/characters/${widget.character.id}');
 
     // Build role based on character type
     String role = _characterType;
@@ -365,7 +366,7 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
 
     setState(() => _isLoading = true);
     final url =
-        Uri.parse('http://127.0.0.1:5000/characters/${widget.character.id}');
+        Uri.parse('${Environment.backendUrl}/characters/${widget.character.id}');
 
     try {
       final resp = await http.delete(url);

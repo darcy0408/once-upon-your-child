@@ -11,6 +11,7 @@ import 'character_edit_screen_enhanced.dart';
 import 'subscription_service.dart';
 import 'paywall_dialog.dart';
 import 'enhanced_character_avatar.dart';
+import 'config/environment.dart';
 
 class CharacterManagementScreenV2 extends StatefulWidget {
   const CharacterManagementScreenV2({super.key});
@@ -32,7 +33,7 @@ class _CharacterManagementScreenV2State
   }
 
   Future<List<Character>> _fetchCharacters() async {
-    final url = Uri.parse('http://127.0.0.1:5000/get-characters');
+    final url = Uri.parse('${Environment.backendUrl}/get-characters');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -71,7 +72,7 @@ class _CharacterManagementScreenV2State
     if (confirmed != true) return;
 
     try {
-      final url = Uri.parse('http://127.0.0.1:5000/characters/${character.id}');
+      final url = Uri.parse('${Environment.backendUrl}/characters/${character.id}');
       final response = await http.delete(url);
 
       if (!mounted) return;

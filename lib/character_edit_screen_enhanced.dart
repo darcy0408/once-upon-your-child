@@ -5,6 +5,7 @@ import 'models.dart';
 import 'emotion_models.dart';
 import 'emotion_picker_widget.dart';
 import 'enhanced_character_avatar.dart';
+import 'config/environment.dart';
 
 class CharacterEditScreenEnhanced extends StatefulWidget {
   final Character character;
@@ -90,7 +91,7 @@ class _CharacterEditScreenEnhancedState extends State<CharacterEditScreenEnhance
     }
 
     setState(() => _isLoading = true);
-    final url = Uri.parse('http://127.0.0.1:5000/characters/${widget.character.id}');
+    final url = Uri.parse('${Environment.backendUrl}/characters/${widget.character.id}');
 
     try {
       final body = {
@@ -175,7 +176,7 @@ class _CharacterEditScreenEnhancedState extends State<CharacterEditScreenEnhance
     if (confirmed != true) return;
 
     setState(() => _isLoading = true);
-    final url = Uri.parse('http://127.0.0.1:5000/characters/${widget.character.id}');
+    final url = Uri.parse('${Environment.backendUrl}/characters/${widget.character.id}');
 
     try {
       final resp = await http.delete(url);

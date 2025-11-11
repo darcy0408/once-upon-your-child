@@ -29,6 +29,7 @@ import 'achievements_screen.dart';
 import 'models/achievement.dart';
 import 'services/achievement_service.dart';
 import 'pre_story_feelings_dialog.dart';
+import 'config/environment.dart';
 
 
 class StoryCreatorApp extends StatelessWidget {
@@ -152,7 +153,7 @@ class _StoryScreenState extends State<StoryScreen> {
   }
 
   Future<void> _loadCharacters() async {
-    final url = Uri.parse('http://127.0.0.1:5000/get-characters');
+    final url = Uri.parse('${Environment.backendUrl}/get-characters');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -1181,7 +1182,7 @@ class _StoryScreenState extends State<StoryScreen> {
     // Delete from backend
     try {
       final response = await http.delete(
-        Uri.parse('http://127.0.0.1:5000/characters/$characterId'),
+        Uri.parse('${Environment.backendUrl}/characters/$characterId'),
       );
 
       if (response.statusCode == 200) {
