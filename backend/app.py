@@ -46,7 +46,16 @@ CORS(app, resources={
 })
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(basedir, 'characters.db')}"
+
+# Use PostgreSQL if DATABASE_URL is set (production), otherwise SQLite (local dev)
+database_url = os.getenv("DATABASE_URL")
+if database_url:
+    # Railway/production: use PostgreSQL
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+else:
+    # Local development: use SQLite
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(basedir, 'characters.db')}"
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["JSON_SORT_KEYS"] = False
 

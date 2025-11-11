@@ -17,9 +17,109 @@ You'll handle **8 major tasks** across the 21 days, focusing on:
 
 ---
 
-## 📋 Your Complete Task List
+## 🚀 START HERE: Your First Task
 
-### **TASK 1: Backend Testing Framework** ✅
+**TASK 1: Database Migration Script** is your first task (Day 1).
+Branch: `gemini/postgres-migration`
+
+---
+
+## 📋 Your Complete Task List (In Order)
+
+### **TASK 1: Database Migration Script** 💾
+**Day:** 1 (afternoon, alongside Claude)
+**Branch:** `gemini/postgres-migration`
+**Priority:** CRITICAL
+
+**What to do:**
+1. **Create migration script:**
+   ```python
+   # backend/migrate_sqlite_to_postgres.py
+   import sqlite3
+   import psycopg2
+   import os
+   import json
+   from datetime import datetime
+
+   # SQLite connection
+   sqlite_conn = sqlite3.connect('characters.db')
+   sqlite_cursor = sqlite_conn.cursor()
+
+   # PostgreSQL connection
+   pg_conn = psycopg2.connect(os.getenv('DATABASE_URL'))
+   pg_cursor = pg_conn.cursor()
+
+   # Migrate characters
+   print("Migrating characters...")
+   sqlite_cursor.execute("SELECT * FROM character")
+   characters = sqlite_cursor.fetchall()
+
+   for char in characters:
+       # Parse JSON fields
+       personality_traits = json.loads(char[13] or '[]')
+       personality_sliders = json.loads(char[14] or '{}')
+       siblings = json.loads(char[15] or '[]')
+       friends = json.loads(char[16] or '[]')
+       likes = json.loads(char[17] or '[]')
+       dislikes = json.loads(char[18] or '[]')
+       fears = json.loads(char[19] or '[]')
+       strengths = json.loads(char[20] or '[]')
+       goals = json.loads(char[21] or '[]')
+
+       # Insert into PostgreSQL
+       pg_cursor.execute("""
+           INSERT INTO character (
+               id, name, age, gender, role, magic_type, challenge,
+               character_type, superhero_name, mission, hair, eyes, outfit,
+               personality_traits, personality_sliders, siblings, friends,
+               likes, dislikes, fears, strengths, goals, comfort_item, created_at
+           ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+       """, (
+           char[0], char[1], char[2], char[3], char[4], char[5], char[6],
+           char[7], char[8], char[9], char[10], char[11], char[12],
+           json.dumps(personality_traits),
+           json.dumps(personality_sliders),
+           json.dumps(siblings),
+           json.dumps(friends),
+           json.dumps(likes),
+           json.dumps(dislikes),
+           json.dumps(fears),
+           json.dumps(strengths),
+           json.dumps(goals),
+           char[22],
+           datetime.fromisoformat(char[23]) if char[23] else datetime.utcnow()
+       ))
+
+   pg_conn.commit()
+   print(f"Migrated {len(characters)} characters")
+
+   # Close connections
+   sqlite_cursor.close()
+   sqlite_conn.close()
+   pg_cursor.close()
+   pg_conn.close()
+
+   print("Migration complete!")
+   ```
+
+2. **Test migration:**
+   ```bash
+   # Run against test database first
+   export DATABASE_URL="postgresql://test..."
+   python migrate_sqlite_to_postgres.py
+
+   # Verify data
+   psql $DATABASE_URL
+   SELECT COUNT(*) FROM character;
+   SELECT * FROM character LIMIT 1;
+   ```
+
+**Deliverable:** Working migration from SQLite to PostgreSQL
+
+---
+
+### **TASK 2: Backend Testing Framework** ✅
 **Days:** 3-4 (alongside Codex's frontend tests)
 **Branch:** `gemini/backend-tests`
 **Priority:** CRITICAL
@@ -221,7 +321,349 @@ You'll handle **8 major tasks** across the 21 days, focusing on:
 
 ---
 
-### **TASK 2: Backend Modularization - Part 1** 🏗️
+### **TASK 3: Developer Documentation** 📚
+**Day:** 11 (morning)
+**Branch:** `gemini/architecture-docs`
+**Priority:** HIGH
+
+**What to do:**
+1. **Create ARCHITECTURE.md:**
+   ```markdown
+   # Story Weaver Architecture
+
+   ## System Overview
+
+   Story Weaver is a full-stack application for creating personalized,
+   therapeutic stories for children.
+
+   ### Technology Stack
+   - **Frontend:** Flutter (Web, iOS, Android)
+   - **Backend:** Python Flask
+   - **Database:** PostgreSQL
+   - **AI:** Google Gemini API (gemini-1.5-flash)
+   - **Task Queue:** Celery + Redis
+   - **Hosting:** Netlify (frontend), Railway (backend)
+
+   ## Architecture Diagram
+
+   ```
+   ┌─────────────┐
+   │   Flutter   │
+   │   Frontend  │
+   └──────┬──────┘
+          │ HTTP/REST
+          ▼
+   ┌─────────────┐     ┌──────────┐
+   │    Flask    │────▶│   Redis  │
+   │   Backend   │     │  (Queue) │
+   └──────┬──────┘     └────┬─────┘
+          │                 │
+          │                 ▼
+          │           ┌──────────┐
+          │           │  Celery  │
+          │           │  Worker  │
+          │           └────┬─────┘
+          │                │
+          │                ▼
+          │           ┌──────────┐
+          │           │  Gemini  │
+          │           │   API    │
+          │           └──────────┘
+          ▼
+   ┌─────────────┐
+   │ PostgreSQL  │
+   └─────────────┘
+   ```
+
+   ## Database Schema
+
+   ### Character Model
+   ```python
+   class Character:
+       id: String (UUID)
+       user_id: String (FK to User)
+       name: String
+       age: Integer
+       gender: String
+       role: String
+
+       # Appearance
+       hair: String
+       eyes: String
+       outfit: String
+
+       # Personality
+       personality_sliders: JSON
+
+       # Interests & Growth
+       likes: JSON (List)
+       dislikes: JSON (List)
+       fears: JSON (List)
+       goals: JSON (List)
+
+       created_at: DateTime
+   ```
+
+   ### User Model
+   ```python
+   class User:
+       id: String (UUID)
+       email: String (unique)
+       password_hash: String
+       progression_data: JSON
+       created_at: DateTime
+
+       # Relationships
+       characters: List[Character]
+   ```
+
+   ## API Endpoints
+
+   ### Story Generation
+   ```
+   POST /generate-story
+   Body: {
+       "character": String,
+       "theme": String,
+       "character_age": Integer,
+       "current_feeling": Object (optional),
+       "rhyme_time_mode": Boolean,
+       "learning_to_read_mode": Boolean
+   }
+   Response: 202 Accepted
+   {
+       "task_id": String
+   }
+
+   GET /task-status/<task_id>
+   Response: {
+       "status": "pending" | "complete",
+       "result": {
+           "title": String,
+           "story": String,
+           "wisdom_gem": String
+       }
+   }
+   ```
+
+   ### Character Management
+   ```
+   POST /create-character
+   GET /get-characters
+   GET /characters/<id>
+   PATCH /characters/<id>
+   DELETE /characters/<id>
+   ```
+
+   ### Authentication
+   ```
+   POST /register
+   POST /login
+   GET /get-progression (requires auth)
+   POST /sync-progression (requires auth)
+   ```
+
+   ## Service Layer
+
+   ### StoryGenerationService
+   - Handles Gemini API calls
+   - Manages retries and errors
+   - Returns generated story text
+
+   ### PromptService
+   - Builds story generation prompts
+   - Applies age-appropriate guidelines
+   - Integrates feelings wheel data
+   - Adds mode-specific instructions
+
+   ### EmotionService
+   - Extracts feelings from requests
+   - Normalizes emotion data
+   - Builds feelings-focused prompts
+
+   ## Frontend Architecture
+
+   ### State Management (Riverpod)
+   ```dart
+   // Providers
+   - charactersProvider: StateNotifier<List<Character>>
+   - storyGenerationProvider: FutureProvider<String>
+   - subscriptionProvider: StateNotifier<UserSubscription>
+   ```
+
+   ### Key Screens
+   - **Main Story Screen:** Character selection, theme picker, story creation
+   - **Character Creation:** Form for building new characters
+   - **Feelings Wheel:** 72-emotion hierarchical selector
+   - **Story Result:** Display generated story
+   - **Insights Dashboard:** Emotion tracking over time
+
+   ## Deployment
+
+   ### Frontend (Netlify)
+   ```bash
+   flutter build web --release --dart-define=FLAVOR=production
+   netlify deploy --prod --dir=build/web
+   ```
+
+   ### Backend (Railway)
+   - Auto-deploys from `main` branch
+   - Environment variables configured in Railway dashboard
+   - Database auto-provisioned
+
+   ## Environment Variables
+
+   ### Backend (Railway)
+   ```
+   GEMINI_API_KEY=<your-key>
+   DATABASE_URL=<postgresql-url>
+   REDIS_URL=<redis-url>
+   JWT_SECRET_KEY=<secret>
+   FLASK_ENV=production
+   ```
+
+   ### Frontend (Build-time)
+   ```
+   FLAVOR=production
+   ```
+
+   ## Testing
+
+   ### Backend Tests
+   ```bash
+   cd backend
+   pytest --cov=. --cov-report=html
+   ```
+
+   ### Frontend Tests
+   ```bash
+   flutter test
+   flutter test --coverage
+   ```
+
+   ## Monitoring
+
+   - **Error Tracking:** Sentry
+   - **Analytics:** Firebase Analytics
+   - **Logs:** Railway dashboard
+   - **Uptime:** Railway monitoring
+
+   ## Security
+
+   - API keys stored in secure environment variables
+   - User passwords hashed with Werkzeug
+   - JWTs for authentication
+   - CORS configured for production domains
+   - Flutter secure storage for client-side secrets
+
+   ## Performance
+
+   - Async story generation (non-blocking)
+   - Redis caching for frequent requests
+   - Image optimization
+   - Lazy loading in Flutter
+   - Database indexes on frequently queried fields
+
+   ## Future Improvements
+
+   - Rate limiting per user
+   - Webhooks for real-time updates
+   - WebSocket for live story streaming
+   - CDN for static assets
+   - Horizontal scaling with load balancer
+   ```
+
+2. **Update README.md technical section:**
+   ```markdown
+   # For Developers
+
+   See [ARCHITECTURE.md](./ARCHITECTURE.md) for complete system documentation.
+
+   ## Quick Start
+
+   ### Backend
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   export GEMINI_API_KEY="your-key"
+   python app.py
+   ```
+
+   ### Frontend
+   ```bash
+   flutter pub get
+   flutter run
+   ```
+
+   ### Tests
+   ```bash
+   # Backend
+   cd backend && pytest
+
+   # Frontend
+   flutter test
+   ```
+
+   ## Contributing
+
+   See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+   ```
+
+**Deliverable:** Comprehensive technical documentation
+
+---
+
+### **TASK 4: Interactive Story Polish** 🎮
+**Day:** 11 (afternoon)
+**Branch:** `gemini/interactive-polish`
+**Priority:** MEDIUM
+
+**What to do:**
+1. **Review interactive story endpoints:**
+   ```python
+   # backend/routes/story_routes.py
+   @story_bp.route('/generate-interactive-story', methods=['POST'])
+   def generate_interactive_story():
+       # Verify this uses new modular services
+       # Update to use PromptService, StoryGenerationService
+
+   @story_bp.route('/continue-interactive-story', methods=['POST'])
+   def continue_interactive_story():
+       # Update to use modular architecture
+   ```
+
+2. **Ensure interactive stories use feelings wheel:**
+   ```python
+   # In generate_interactive_story
+   current_feeling = EmotionService.extract_current_feeling(payload)
+
+   # Include in prompt
+   if current_feeling:
+       feelings_section = EmotionService.build_feelings_prompt(
+           character, current_feeling
+       )
+       prompt_parts.append(feelings_section)
+   ```
+
+3. **Add interactive story tests:**
+   ```python
+   # tests/test_api.py
+   def test_interactive_story_generation(client):
+       response = client.post('/generate-interactive-story', json={
+           'character': 'Test',
+           'theme': 'Adventure'
+       })
+       assert response.status_code == 200
+       data = response.get_json()
+       assert 'story_segment' in data
+       assert 'choices' in data
+   ```
+
+**Deliverable:** Interactive stories work with new architecture
+
+---
+
+### **TASK 5: Backend Modularization - Part 1** 🏗️
 **Day:** 12
 **Branch:** `gemini/backend-modular`
 **Priority:** HIGH
@@ -369,7 +811,7 @@ You'll handle **8 major tasks** across the 21 days, focusing on:
    from flask_cors import CORS
    from extensions import db, init_app
    from routes.character_routes import character_bp
-   from routes.story_routes import story_bp  # Will create in Task 3
+   from routes.story_routes import story_bp  # Will create in Task 6
 
    app = Flask(__name__)
 
@@ -394,9 +836,9 @@ You'll handle **8 major tasks** across the 21 days, focusing on:
 
 ---
 
-### **TASK 3: Backend Modularization - Part 2** 🏗️
+### **TASK 6: Backend Modularization - Part 2** 🏗️
 **Day:** 13
-**Branch:** `gemini/backend-modular` (continue from Task 2)
+**Branch:** `gemini/backend-modular` (continue from Task 5)
 **Priority:** HIGH
 
 **What to do:**
@@ -719,7 +1161,7 @@ You'll handle **8 major tasks** across the 21 days, focusing on:
 
 ---
 
-### **TASK 4: Server-Side User Accounts** 👤
+### **TASK 7: Server-Side User Accounts** 👤
 **Day:** 14 (morning)
 **Branch:** `gemini/user-accounts`
 **Priority:** HIGH
@@ -916,441 +1358,6 @@ You'll handle **8 major tasks** across the 21 days, focusing on:
 
 ---
 
-### **TASK 5: Developer Documentation** 📚
-**Day:** 11
-**Branch:** `gemini/architecture-docs`
-**Priority:** HIGH
-
-**What to do:**
-1. **Create ARCHITECTURE.md:**
-   ```markdown
-   # Story Weaver Architecture
-
-   ## System Overview
-
-   Story Weaver is a full-stack application for creating personalized,
-   therapeutic stories for children.
-
-   ### Technology Stack
-   - **Frontend:** Flutter (Web, iOS, Android)
-   - **Backend:** Python Flask
-   - **Database:** PostgreSQL
-   - **AI:** Google Gemini API (gemini-1.5-flash)
-   - **Task Queue:** Celery + Redis
-   - **Hosting:** Netlify (frontend), Railway (backend)
-
-   ## Architecture Diagram
-
-   ```
-   ┌─────────────┐
-   │   Flutter   │
-   │   Frontend  │
-   └──────┬──────┘
-          │ HTTP/REST
-          ▼
-   ┌─────────────┐     ┌──────────┐
-   │    Flask    │────▶│   Redis  │
-   │   Backend   │     │  (Queue) │
-   └──────┬──────┘     └────┬─────┘
-          │                 │
-          │                 ▼
-          │           ┌──────────┐
-          │           │  Celery  │
-          │           │  Worker  │
-          │           └────┬─────┘
-          │                │
-          │                ▼
-          │           ┌──────────┐
-          │           │  Gemini  │
-          │           │   API    │
-          │           └──────────┘
-          ▼
-   ┌─────────────┐
-   │ PostgreSQL  │
-   └─────────────┘
-   ```
-
-   ## Database Schema
-
-   ### Character Model
-   ```python
-   class Character:
-       id: String (UUID)
-       user_id: String (FK to User)
-       name: String
-       age: Integer
-       gender: String
-       role: String
-
-       # Appearance
-       hair: String
-       eyes: String
-       outfit: String
-
-       # Personality
-       personality_sliders: JSON
-
-       # Interests & Growth
-       likes: JSON (List)
-       dislikes: JSON (List)
-       fears: JSON (List)
-       goals: JSON (List)
-
-       created_at: DateTime
-   ```
-
-   ### User Model
-   ```python
-   class User:
-       id: String (UUID)
-       email: String (unique)
-       password_hash: String
-       progression_data: JSON
-       created_at: DateTime
-
-       # Relationships
-       characters: List[Character]
-   ```
-
-   ## API Endpoints
-
-   ### Story Generation
-   ```
-   POST /generate-story
-   Body: {
-       "character": String,
-       "theme": String,
-       "character_age": Integer,
-       "current_feeling": Object (optional),
-       "rhyme_time_mode": Boolean,
-       "learning_to_read_mode": Boolean
-   }
-   Response: 202 Accepted
-   {
-       "task_id": String
-   }
-
-   GET /task-status/<task_id>
-   Response: {
-       "status": "pending" | "complete",
-       "result": {
-           "title": String,
-           "story": String,
-           "wisdom_gem": String
-       }
-   }
-   ```
-
-   ### Character Management
-   ```
-   POST /create-character
-   GET /get-characters
-   GET /characters/<id>
-   PATCH /characters/<id>
-   DELETE /characters/<id>
-   ```
-
-   ### Authentication
-   ```
-   POST /register
-   POST /login
-   GET /get-progression (requires auth)
-   POST /sync-progression (requires auth)
-   ```
-
-   ## Service Layer
-
-   ### StoryGenerationService
-   - Handles Gemini API calls
-   - Manages retries and errors
-   - Returns generated story text
-
-   ### PromptService
-   - Builds story generation prompts
-   - Applies age-appropriate guidelines
-   - Integrates feelings wheel data
-   - Adds mode-specific instructions
-
-   ### EmotionService
-   - Extracts feelings from requests
-   - Normalizes emotion data
-   - Builds feelings-focused prompts
-
-   ## Frontend Architecture
-
-   ### State Management (Riverpod)
-   ```dart
-   // Providers
-   - charactersProvider: StateNotifier<List<Character>>
-   - storyGenerationProvider: FutureProvider<String>
-   - subscriptionProvider: StateNotifier<UserSubscription>
-   ```
-
-   ### Key Screens
-   - **Main Story Screen:** Character selection, theme picker, story creation
-   - **Character Creation:** Form for building new characters
-   - **Feelings Wheel:** 72-emotion hierarchical selector
-   - **Story Result:** Display generated story
-   - **Insights Dashboard:** Emotion tracking over time
-
-   ## Deployment
-
-   ### Frontend (Netlify)
-   ```bash
-   flutter build web --release --dart-define=FLAVOR=production
-   netlify deploy --prod --dir=build/web
-   ```
-
-   ### Backend (Railway)
-   - Auto-deploys from `main` branch
-   - Environment variables configured in Railway dashboard
-   - Database auto-provisioned
-
-   ## Environment Variables
-
-   ### Backend (Railway)
-   ```
-   GEMINI_API_KEY=<your-key>
-   DATABASE_URL=<postgresql-url>
-   REDIS_URL=<redis-url>
-   JWT_SECRET_KEY=<secret>
-   FLASK_ENV=production
-   ```
-
-   ### Frontend (Build-time)
-   ```
-   FLAVOR=production
-   ```
-
-   ## Testing
-
-   ### Backend Tests
-   ```bash
-   cd backend
-   pytest --cov=. --cov-report=html
-   ```
-
-   ### Frontend Tests
-   ```bash
-   flutter test
-   flutter test --coverage
-   ```
-
-   ## Monitoring
-
-   - **Error Tracking:** Sentry
-   - **Analytics:** Firebase Analytics
-   - **Logs:** Railway dashboard
-   - **Uptime:** Railway monitoring
-
-   ## Security
-
-   - API keys stored in secure environment variables
-   - User passwords hashed with Werkzeug
-   - JWTs for authentication
-   - CORS configured for production domains
-   - Flutter secure storage for client-side secrets
-
-   ## Performance
-
-   - Async story generation (non-blocking)
-   - Redis caching for frequent requests
-   - Image optimization
-   - Lazy loading in Flutter
-   - Database indexes on frequently queried fields
-
-   ## Future Improvements
-
-   - Rate limiting per user
-   - Webhooks for real-time updates
-   - WebSocket for live story streaming
-   - CDN for static assets
-   - Horizontal scaling with load balancer
-   ```
-
-2. **Update README.md technical section:**
-   ```markdown
-   # For Developers
-
-   See [ARCHITECTURE.md](./ARCHITECTURE.md) for complete system documentation.
-
-   ## Quick Start
-
-   ### Backend
-   ```bash
-   cd backend
-   pip install -r requirements.txt
-   export GEMINI_API_KEY="your-key"
-   python app.py
-   ```
-
-   ### Frontend
-   ```bash
-   flutter pub get
-   flutter run
-   ```
-
-   ### Tests
-   ```bash
-   # Backend
-   cd backend && pytest
-
-   # Frontend
-   flutter test
-   ```
-
-   ## Contributing
-
-   See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
-   ```
-
-**Deliverable:** Comprehensive technical documentation
-
----
-
-### **TASK 6: Interactive Story Polish** 🎮
-**Day:** 11 (afternoon)
-**Branch:** `gemini/interactive-polish`
-**Priority:** MEDIUM
-
-**What to do:**
-1. **Review interactive story endpoints:**
-   ```python
-   # backend/routes/story_routes.py
-   @story_bp.route('/generate-interactive-story', methods=['POST'])
-   def generate_interactive_story():
-       # Verify this uses new modular services
-       # Update to use PromptService, StoryGenerationService
-
-   @story_bp.route('/continue-interactive-story', methods=['POST'])
-   def continue_interactive_story():
-       # Update to use modular architecture
-   ```
-
-2. **Ensure interactive stories use feelings wheel:**
-   ```python
-   # In generate_interactive_story
-   current_feeling = EmotionService.extract_current_feeling(payload)
-
-   # Include in prompt
-   if current_feeling:
-       feelings_section = EmotionService.build_feelings_prompt(
-           character, current_feeling
-       )
-       prompt_parts.append(feelings_section)
-   ```
-
-3. **Add interactive story tests:**
-   ```python
-   # tests/test_api.py
-   def test_interactive_story_generation(client):
-       response = client.post('/generate-interactive-story', json={
-           'character': 'Test',
-           'theme': 'Adventure'
-       })
-       assert response.status_code == 200
-       data = response.get_json()
-       assert 'story_segment' in data
-       assert 'choices' in data
-   ```
-
-**Deliverable:** Interactive stories work with new architecture
-
----
-
-### **TASK 7: Database Migration Script** 💾
-**Day:** 1 (afternoon, alongside Claude)
-**Branch:** `gemini/postgres-migration`
-**Priority:** CRITICAL
-
-**What to do:**
-1. **Create migration script:**
-   ```python
-   # backend/migrate_sqlite_to_postgres.py
-   import sqlite3
-   import psycopg2
-   import os
-   import json
-   from datetime import datetime
-
-   # SQLite connection
-   sqlite_conn = sqlite3.connect('characters.db')
-   sqlite_cursor = sqlite_conn.cursor()
-
-   # PostgreSQL connection
-   pg_conn = psycopg2.connect(os.getenv('DATABASE_URL'))
-   pg_cursor = pg_conn.cursor()
-
-   # Migrate characters
-   print("Migrating characters...")
-   sqlite_cursor.execute("SELECT * FROM character")
-   characters = sqlite_cursor.fetchall()
-
-   for char in characters:
-       # Parse JSON fields
-       personality_traits = json.loads(char[13] or '[]')
-       personality_sliders = json.loads(char[14] or '{}')
-       siblings = json.loads(char[15] or '[]')
-       friends = json.loads(char[16] or '[]')
-       likes = json.loads(char[17] or '[]')
-       dislikes = json.loads(char[18] or '[]')
-       fears = json.loads(char[19] or '[]')
-       strengths = json.loads(char[20] or '[]')
-       goals = json.loads(char[21] or '[]')
-
-       # Insert into PostgreSQL
-       pg_cursor.execute("""
-           INSERT INTO character (
-               id, name, age, gender, role, magic_type, challenge,
-               character_type, superhero_name, mission, hair, eyes, outfit,
-               personality_traits, personality_sliders, siblings, friends,
-               likes, dislikes, fears, strengths, goals, comfort_item, created_at
-           ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-       """, (
-           char[0], char[1], char[2], char[3], char[4], char[5], char[6],
-           char[7], char[8], char[9], char[10], char[11], char[12],
-           json.dumps(personality_traits),
-           json.dumps(personality_sliders),
-           json.dumps(siblings),
-           json.dumps(friends),
-           json.dumps(likes),
-           json.dumps(dislikes),
-           json.dumps(fears),
-           json.dumps(strengths),
-           json.dumps(goals),
-           char[22],
-           datetime.fromisoformat(char[23]) if char[23] else datetime.utcnow()
-       ))
-
-   pg_conn.commit()
-   print(f"Migrated {len(characters)} characters")
-
-   # Close connections
-   sqlite_cursor.close()
-   sqlite_conn.close()
-   pg_cursor.close()
-   pg_conn.close()
-
-   print("Migration complete!")
-   ```
-
-2. **Test migration:**
-   ```bash
-   # Run against test database first
-   export DATABASE_URL="postgresql://test..."
-   python migrate_sqlite_to_postgres.py
-
-   # Verify data
-   psql $DATABASE_URL
-   SELECT COUNT(*) FROM character;
-   SELECT * FROM character LIMIT 1;
-   ```
-
-**Deliverable:** Working migration from SQLite to PostgreSQL
-
----
-
 ### **TASK 8: Production Monitoring Setup** 📊
 **Day:** 21 (morning)
 **Branch:** Work on `main`
@@ -1434,14 +1441,16 @@ You'll handle **8 major tasks** across the 21 days, focusing on:
 
 ## 🗓️ Your Timeline at a Glance
 
-| Days | Task | Priority |
-|------|------|----------|
-| 1 | Database migration script | CRITICAL |
-| 3-4 | Backend testing framework | CRITICAL |
-| 11 | Architecture docs + Interactive polish | HIGH |
-| 12-13 | Backend modularization (2 days) | HIGH |
-| 14 | User accounts + progression sync | HIGH |
-| 21 | Production monitoring | HIGH |
+| Task # | Days | Task | Priority |
+|--------|------|------|----------|
+| 1 | 1 | Database migration script | CRITICAL |
+| 2 | 3-4 | Backend testing framework | CRITICAL |
+| 3 | 11 | Architecture docs | HIGH |
+| 4 | 11 | Interactive polish | MEDIUM |
+| 5 | 12 | Backend modularization Part 1 | HIGH |
+| 6 | 13 | Backend modularization Part 2 | HIGH |
+| 7 | 14 | User accounts + progression sync | HIGH |
+| 8 | 21 | Production monitoring | HIGH |
 
 **Total: 8 tasks across 7 work days**
 

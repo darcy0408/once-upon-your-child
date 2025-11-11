@@ -18,7 +18,14 @@ You'll handle **10 major tasks** across the 21 days, focusing on:
 
 ---
 
-## 📋 Your Complete Task List
+## 🚀 START HERE: Your First Task
+
+**TASK 1: Frontend Widget Tests** is your first task (Days 3-4).
+Branch: `codex/frontend-tests`
+
+---
+
+## 📋 Your Complete Task List (In Order)
 
 ### **TASK 1: Frontend Widget Tests** ✅
 **Days:** 3-4 (alongside Claude's backend tests)
@@ -187,7 +194,136 @@ You'll handle **10 major tasks** across the 21 days, focusing on:
 
 ---
 
-### **TASK 3: Offline Functionality (Isar Database)** 📱
+### **TASK 3: Build Flavors Configuration** ⚙️
+**Day:** 15
+**Branch:** `codex/build-flavors`
+**Priority:** MEDIUM
+
+**What to do:**
+1. **Set up flavor config:**
+   ```dart
+   // lib/config/flavor_config.dart
+   enum Flavor {
+     development,
+     staging,
+     production,
+   }
+
+   class FlavorConfig {
+     final Flavor flavor;
+     final String name;
+     final String backendUrl;
+     final Color primaryColor;
+
+     FlavorConfig._internal({
+       required this.flavor,
+       required this.name,
+       required this.backendUrl,
+       required this.primaryColor,
+     });
+
+     static FlavorConfig? _instance;
+
+     static FlavorConfig get instance {
+       return _instance ??= _getConfig();
+     }
+
+     static FlavorConfig _getConfig() {
+       const flavorString = String.fromEnvironment('FLAVOR', defaultValue: 'development');
+
+       switch (flavorString) {
+         case 'production':
+           return FlavorConfig._internal(
+             flavor: Flavor.production,
+             name: 'Story Weaver',
+             backendUrl: 'https://story-weaver-app-production.up.railway.app',
+             primaryColor: Colors.deepPurple,
+           );
+         case 'staging':
+           return FlavorConfig._internal(
+             flavor: Flavor.staging,
+             name: 'Story Weaver (Staging)',
+             backendUrl: 'https://story-weaver-staging.up.railway.app',
+             primaryColor: Colors.orange,
+           );
+         default:
+           return FlavorConfig._internal(
+             flavor: Flavor.development,
+             name: 'Story Weaver (Dev)',
+             backendUrl: 'http://127.0.0.1:5000',
+             primaryColor: Colors.green,
+           );
+       }
+     }
+   }
+   ```
+
+2. **Update Environment.dart:**
+   ```dart
+   // lib/config/environment.dart
+   class Environment {
+     static String get backendUrl => FlavorConfig.instance.backendUrl;
+     static bool get isProduction => FlavorConfig.instance.flavor == Flavor.production;
+     static String get appName => FlavorConfig.instance.name;
+   }
+   ```
+
+3. **Create launch configurations:**
+   ```json
+   // .vscode/launch.json
+   {
+     "version": "0.2.0",
+     "configurations": [
+       {
+         "name": "Development",
+         "request": "launch",
+         "type": "dart",
+         "program": "lib/main.dart",
+         "args": [
+           "--dart-define=FLAVOR=development"
+         ]
+       },
+       {
+         "name": "Staging",
+         "request": "launch",
+         "type": "dart",
+         "program": "lib/main.dart",
+         "args": [
+           "--dart-define=FLAVOR=staging"
+         ]
+       },
+       {
+         "name": "Production",
+         "request": "launch",
+         "type": "dart",
+         "program": "lib/main.dart",
+         "args": [
+           "--dart-define=FLAVOR=production"
+         ]
+       }
+     ]
+   }
+   ```
+
+4. **Update build commands:**
+   ```bash
+   # Development
+   flutter run --dart-define=FLAVOR=development
+
+   # Staging
+   flutter build web --dart-define=FLAVOR=staging
+
+   # Production
+   flutter build web --dart-define=FLAVOR=production --release
+   flutter build apk --dart-define=FLAVOR=production --release
+   flutter build ipa --dart-define=FLAVOR=production --release
+   ```
+
+**Deliverable:** Easy environment switching without code changes
+
+---
+
+### **TASK 4: Offline Functionality (Isar Database)** 📱
 **Day:** 16
 **Branch:** `codex/offline-isar`
 **Priority:** HIGH
@@ -338,7 +474,7 @@ You'll handle **10 major tasks** across the 21 days, focusing on:
 
 ---
 
-### **TASK 4: StoryResultScreen Polish** ✨
+### **TASK 5: StoryResultScreen Polish** ✨
 **Day:** 17 (morning)
 **Branch:** `codex/story-result-polish`
 **Priority:** MEDIUM
@@ -432,7 +568,7 @@ You'll handle **10 major tasks** across the 21 days, focusing on:
 
 ---
 
-### **TASK 5: Onboarding Flow** 📚
+### **TASK 6: Onboarding Flow** 📚
 **Day:** 17 (afternoon)
 **Branch:** `codex/onboarding`
 **Priority:** MEDIUM
@@ -525,9 +661,9 @@ You'll handle **10 major tasks** across the 21 days, focusing on:
 
 ---
 
-### **TASK 6: UI/UX Polish Pass** ✨
+### **TASK 7: UI/UX Polish Pass** ✨
 **Day:** 17 (continued)
-**Branch:** `codex/ui-polish` (same as Task 4-5)
+**Branch:** `codex/ui-polish` (same as Task 5-6)
 **Priority:** HIGH
 
 **What to do:**
@@ -617,136 +753,134 @@ You'll handle **10 major tasks** across the 21 days, focusing on:
 
 ---
 
-### **TASK 7: Build Flavors Configuration** ⚙️
-**Day:** 15
-**Branch:** `codex/build-flavors`
-**Priority:** MEDIUM
+### **TASK 8: Analytics Integration** 📊
+**Day:** 18
+**Branch:** `codex/analytics`
+**Priority:** HIGH
 
 **What to do:**
-1. **Set up flavor config:**
+1. **Set up Firebase Analytics:**
+   ```yaml
+   # pubspec.yaml
+   dependencies:
+     firebase_core: ^2.24.2
+     firebase_analytics: ^10.7.4
+   ```
+
+2. **Initialize in main.dart:**
    ```dart
-   // lib/config/flavor_config.dart
-   enum Flavor {
-     development,
-     staging,
-     production,
+   void main() async {
+     WidgetsFlutterBinding.ensureInitialized();
+     await Firebase.initializeApp();
+     runApp(MyApp());
    }
+   ```
 
-   class FlavorConfig {
-     final Flavor flavor;
-     final String name;
-     final String backendUrl;
-     final Color primaryColor;
+3. **Track key events:**
+   ```dart
+   // lib/services/analytics_service.dart
+   class AnalyticsService {
+     static final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
-     FlavorConfig._internal({
-       required this.flavor,
-       required this.name,
-       required this.backendUrl,
-       required this.primaryColor,
-     });
-
-     static FlavorConfig? _instance;
-
-     static FlavorConfig get instance {
-       return _instance ??= _getConfig();
+     // Character events
+     static Future<void> logCharacterCreated({
+       required int age,
+       required String characterType,
+     }) async {
+       await _analytics.logEvent(
+         name: 'character_created',
+         parameters: {
+           'age': age,
+           'character_type': characterType,
+           'timestamp': DateTime.now().toIso8601String(),
+         },
+       );
      }
 
-     static FlavorConfig _getConfig() {
-       const flavorString = String.fromEnvironment('FLAVOR', defaultValue: 'development');
+     // Story events
+     static Future<void> logStoryCreated({
+       required String theme,
+       required int characterAge,
+       required bool usedFeelingsWheel,
+       required String storyMode,
+     }) async {
+       await _analytics.logEvent(
+         name: 'story_created',
+         parameters: {
+           'theme': theme,
+           'character_age': characterAge,
+           'used_feelings_wheel': usedFeelingsWheel,
+           'story_mode': storyMode, // 'regular', 'learning', 'interactive'
+         },
+       );
+     }
 
-       switch (flavorString) {
-         case 'production':
-           return FlavorConfig._internal(
-             flavor: Flavor.production,
-             name: 'Story Weaver',
-             backendUrl: 'https://story-weaver-app-production.up.railway.app',
-             primaryColor: Colors.deepPurple,
-           );
-         case 'staging':
-           return FlavorConfig._internal(
-             flavor: Flavor.staging,
-             name: 'Story Weaver (Staging)',
-             backendUrl: 'https://story-weaver-staging.up.railway.app',
-             primaryColor: Colors.orange,
-           );
-         default:
-           return FlavorConfig._internal(
-             flavor: Flavor.development,
-             name: 'Story Weaver (Dev)',
-             backendUrl: 'http://127.0.0.1:5000',
-             primaryColor: Colors.green,
-           );
-       }
+     // Feelings wheel events
+     static Future<void> logFeelingSelected({
+       required String coreEmotion,
+       required String tertiaryEmotion,
+       required int intensity,
+     }) async {
+       await _analytics.logEvent(
+         name: 'feeling_selected',
+         parameters: {
+           'core_emotion': coreEmotion,
+           'tertiary_emotion': tertiaryEmotion,
+           'intensity': intensity,
+         },
+       );
+     }
+
+     // Paywall events
+     static Future<void> logPaywallShown(String location) async {
+       await _analytics.logEvent(
+         name: 'paywall_shown',
+         parameters: {'location': location},
+       );
+     }
+
+     static Future<void> logPurchaseCompleted({
+       required String productId,
+       required double price,
+     }) async {
+       await _analytics.logPurchase(
+         value: price,
+         currency: 'USD',
+         parameters: {'product_id': productId},
+       );
      }
    }
    ```
 
-2. **Update Environment.dart:**
+4. **Add tracking throughout app:**
    ```dart
-   // lib/config/environment.dart
-   class Environment {
-     static String get backendUrl => FlavorConfig.instance.backendUrl;
-     static bool get isProduction => FlavorConfig.instance.flavor == Flavor.production;
-     static String get appName => FlavorConfig.instance.name;
-   }
+   // In character_creation_screen_enhanced.dart
+   await AnalyticsService.logCharacterCreated(
+     age: age,
+     characterType: _characterType,
+   );
+
+   // In main_story.dart
+   await AnalyticsService.logStoryCreated(
+     theme: _selectedTheme,
+     characterAge: _selectedCharacter!.age,
+     usedFeelingsWheel: currentFeeling != null,
+     storyMode: _learningToReadMode ? 'learning' : 'regular',
+   );
+
+   // In pre_story_feelings_dialog.dart
+   await AnalyticsService.logFeelingSelected(
+     coreEmotion: selectedFeeling.core,
+     tertiaryEmotion: selectedFeeling.tertiary,
+     intensity: intensity,
+   );
    ```
 
-3. **Create launch configurations:**
-   ```json
-   // .vscode/launch.json
-   {
-     "version": "0.2.0",
-     "configurations": [
-       {
-         "name": "Development",
-         "request": "launch",
-         "type": "dart",
-         "program": "lib/main.dart",
-         "args": [
-           "--dart-define=FLAVOR=development"
-         ]
-       },
-       {
-         "name": "Staging",
-         "request": "launch",
-         "type": "dart",
-         "program": "lib/main.dart",
-         "args": [
-           "--dart-define=FLAVOR=staging"
-         ]
-       },
-       {
-         "name": "Production",
-         "request": "launch",
-         "type": "dart",
-         "program": "lib/main.dart",
-         "args": [
-           "--dart-define=FLAVOR=production"
-         ]
-       }
-     ]
-   }
-   ```
-
-4. **Update build commands:**
-   ```bash
-   # Development
-   flutter run --dart-define=FLAVOR=development
-
-   # Staging
-   flutter build web --dart-define=FLAVOR=staging
-
-   # Production
-   flutter build web --dart-define=FLAVOR=production --release
-   flutter build apk --dart-define=FLAVOR=production --release
-   flutter build ipa --dart-define=FLAVOR=production --release
-   ```
-
-**Deliverable:** Easy environment switching without code changes
+**Deliverable:** Comprehensive analytics for product decisions
 
 ---
 
-### **TASK 8: User-Facing Documentation** 📖
+### **TASK 9: User-Facing Documentation** 📖
 **Day:** 19
 **Branch:** `codex/user-docs`
 **Priority:** HIGH
@@ -888,133 +1022,6 @@ You'll handle **10 major tasks** across the 21 days, focusing on:
 
 ---
 
-### **TASK 9: Analytics Integration** 📊
-**Day:** 18
-**Branch:** `codex/analytics`
-**Priority:** HIGH
-
-**What to do:**
-1. **Set up Firebase Analytics:**
-   ```yaml
-   # pubspec.yaml
-   dependencies:
-     firebase_core: ^2.24.2
-     firebase_analytics: ^10.7.4
-   ```
-
-2. **Initialize in main.dart:**
-   ```dart
-   void main() async {
-     WidgetsFlutterBinding.ensureInitialized();
-     await Firebase.initializeApp();
-     runApp(MyApp());
-   }
-   ```
-
-3. **Track key events:**
-   ```dart
-   // lib/services/analytics_service.dart
-   class AnalyticsService {
-     static final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
-
-     // Character events
-     static Future<void> logCharacterCreated({
-       required int age,
-       required String characterType,
-     }) async {
-       await _analytics.logEvent(
-         name: 'character_created',
-         parameters: {
-           'age': age,
-           'character_type': characterType,
-           'timestamp': DateTime.now().toIso8601String(),
-         },
-       );
-     }
-
-     // Story events
-     static Future<void> logStoryCreated({
-       required String theme,
-       required int characterAge,
-       required bool usedFeelingsWheel,
-       required String storyMode,
-     }) async {
-       await _analytics.logEvent(
-         name: 'story_created',
-         parameters: {
-           'theme': theme,
-           'character_age': characterAge,
-           'used_feelings_wheel': usedFeelingsWheel,
-           'story_mode': storyMode, // 'regular', 'learning', 'interactive'
-         },
-       );
-     }
-
-     // Feelings wheel events
-     static Future<void> logFeelingSelected({
-       required String coreEmotion,
-       required String tertiaryEmotion,
-       required int intensity,
-     }) async {
-       await _analytics.logEvent(
-         name: 'feeling_selected',
-         parameters: {
-           'core_emotion': coreEmotion,
-           'tertiary_emotion': tertiaryEmotion,
-           'intensity': intensity,
-         },
-       );
-     }
-
-     // Paywall events
-     static Future<void> logPaywallShown(String location) async {
-       await _analytics.logEvent(
-         name: 'paywall_shown',
-         parameters: {'location': location},
-       );
-     }
-
-     static Future<void> logPurchaseCompleted({
-       required String productId,
-       required double price,
-     }) async {
-       await _analytics.logPurchase(
-         value: price,
-         currency: 'USD',
-         parameters: {'product_id': productId},
-       );
-     }
-   }
-   ```
-
-4. **Add tracking throughout app:**
-   ```dart
-   // In character_creation_screen_enhanced.dart
-   await AnalyticsService.logCharacterCreated(
-     age: age,
-     characterType: _characterType,
-   );
-
-   // In main_story.dart
-   await AnalyticsService.logStoryCreated(
-     theme: _selectedTheme,
-     characterAge: _selectedCharacter!.age,
-     usedFeelingsWheel: currentFeeling != null,
-     storyMode: _learningToReadMode ? 'learning' : 'regular',
-   );
-
-   // In pre_story_feelings_dialog.dart
-   await AnalyticsService.logFeelingSelected(
-     coreEmotion: selectedFeeling.core,
-     tertiaryEmotion: selectedFeeling.tertiary,
-     intensity: intensity,
-   );
-   ```
-
-**Deliverable:** Comprehensive analytics for product decisions
-
----
-
 ### **TASK 10: Final QA & Bug Bash** 🐛
 **Day:** 20
 **Branch:** Work on `main` (fix bugs directly)
@@ -1112,16 +1119,18 @@ You'll handle **10 major tasks** across the 21 days, focusing on:
 
 ## 🗓️ Your Timeline at a Glance
 
-| Days | Task | Priority |
-|------|------|----------|
-| 3-4 | Frontend tests | CRITICAL |
-| 9 | Backend resilience | HIGH |
-| 15 | Build flavors | MEDIUM |
-| 16 | Offline (Isar) | HIGH |
-| 17 | UX polish + onboarding | HIGH |
-| 18 | Analytics | HIGH |
-| 19 | User docs | HIGH |
-| 20 | Final QA | CRITICAL |
+| Task # | Days | Task | Priority |
+|--------|------|------|----------|
+| 1 | 3-4 | Frontend tests | CRITICAL |
+| 2 | 9 | Backend resilience | HIGH |
+| 3 | 15 | Build flavors | MEDIUM |
+| 4 | 16 | Offline (Isar) | HIGH |
+| 5 | 17 | Story result polish | MEDIUM |
+| 6 | 17 | Onboarding | MEDIUM |
+| 7 | 17 | UX polish | HIGH |
+| 8 | 18 | Analytics | HIGH |
+| 9 | 19 | User docs | HIGH |
+| 10 | 20 | Final QA | CRITICAL |
 
 **Total: 10 tasks across 8 work days**
 
