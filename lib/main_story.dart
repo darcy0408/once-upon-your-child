@@ -322,10 +322,8 @@ class _StoryScreenState extends State<StoryScreen> {
           currentFeeling?.toJson();
 
       // Record emotion check-in if provided
-      if (currentFeeling != null) {
-        
-      }
-
+            if (currentFeeling != null) {
+            }
       // Use ApiServiceManager to generate story (handles backend vs direct API)
       final String storyText = await ApiServiceManager.generateStory(
         characterName: _selectedCharacter!.name,
