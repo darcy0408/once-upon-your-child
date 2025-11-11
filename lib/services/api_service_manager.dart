@@ -7,6 +7,7 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import '../config/environment.dart';
 
 import '../character_traits_data.dart';
+import 'story_complexity_service.dart';
 
 /// Manages API calls - routes to either local backend or direct Gemini API
 /// based on user's API key configuration
@@ -44,6 +45,7 @@ class ApiServiceManager {
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
     bool rhymeTimeMode = false,
+    bool learningToReadMode = false,
     Map<String, dynamic>? currentFeeling,
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
@@ -58,6 +60,7 @@ class ApiServiceManager {
         characterDetails: characterDetails,
         additionalCharacters: additionalCharacters,
         rhymeTimeMode: rhymeTimeMode,
+        learningToReadMode: learningToReadMode,
         currentFeeling: currentFeeling,
       );
     } else {
@@ -70,6 +73,7 @@ class ApiServiceManager {
         characterDetails: characterDetails,
         additionalCharacters: additionalCharacters,
         rhymeTimeMode: rhymeTimeMode,
+        learningToReadMode: learningToReadMode,
         currentFeeling: currentFeeling,
       );
     }
@@ -84,6 +88,7 @@ class ApiServiceManager {
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
     bool rhymeTimeMode = false,
+    bool learningToReadMode = false,
     Map<String, dynamic>? currentFeeling,
   }) async {
     final apiKey = await getUserApiKey();
@@ -102,6 +107,7 @@ class ApiServiceManager {
       companion: companion,
       characterDetails: characterDetails,
       additionalCharacters: additionalCharacters,
+      learningToReadMode: learningToReadMode,
       currentFeeling: currentFeeling,
     );
 
@@ -118,6 +124,7 @@ class ApiServiceManager {
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
     bool rhymeTimeMode = false,
+    bool learningToReadMode = false,
     Map<String, dynamic>? currentFeeling,
   }) async {
     final endpoint = (additionalCharacters == null || additionalCharacters.isEmpty)
@@ -132,6 +139,7 @@ class ApiServiceManager {
             'character_age': age,
             'character_details': characterDetails,
             'rhyme_time_mode': rhymeTimeMode,
+            'learning_to_read_mode': learningToReadMode,
             'current_feeling': currentFeeling,
           }
         : {
@@ -140,6 +148,7 @@ class ApiServiceManager {
             'theme': theme,
             'character_age': age,
             'rhyme_time_mode': rhymeTimeMode,
+            'learning_to_read_mode': learningToReadMode,
             'current_feeling': currentFeeling,
           };
 
@@ -168,6 +177,7 @@ class ApiServiceManager {
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
   }) {
+    final ageInstructions = StoryComplexityService.buildAgeInstructions(age);
     // Build FEELINGS-CENTERED opening (PRIORITY #1)
     String feelingsSection = '';
     final emotionName = currentFeeling['emotion_name'] as String?;
@@ -281,6 +291,7 @@ You are a therapeutic storyteller specializing in EMOTION-FOCUSED stories for ch
 
 Create a $lengthGuideline FEELINGS-CENTERED story about $characterName (age $age) with a $theme theme.$companionText$multiCharacterText$feelingsSection$characterIntegration
 
+$ageInstructions
 FEELINGS-FIRST STORY STRUCTURE:
 1. FEELING ACKNOWLEDGMENT: Begin by showing $characterName experiencing their current emotion. "Today $characterName felt..." or "$characterName woke up feeling..."
 2. PHYSICAL AWARENESS: Show how the emotion feels in their body
@@ -317,6 +328,7 @@ Create the feelings-focused therapeutic story now:
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
   }) {
+    final ageInstructions = StoryComplexityService.buildAgeInstructions(age);
     // Build character integration
     String characterIntegration = '';
     if (characterDetails != null) {
@@ -365,6 +377,7 @@ You are an engaging storyteller creating fun, age-appropriate adventure stories 
 
 Create a $lengthGuideline adventure story about $characterName (age $age) with a $theme theme.$companionText$multiCharacterText$characterIntegration
 
+$ageInstructions
 ADVENTURE STORY GUIDELINES:
 ✓ Focus on exciting plot and engaging adventure
 ✓ Include problem-solving and creative thinking
@@ -391,6 +404,67 @@ Create the adventure story now:
 ''';
   }
 
+  static String _buildLearningToReadPrompt({
+    required String characterName,
+    required String theme,
+    required int age,
+    String? companion,
+    Map<String, dynamic>? characterDetails,
+    List<String>? additionalCharacters,
+  }) {
+    String detailSection = '';
+    List<String>? _extractStringList(dynamic raw) {
+      if (raw is List) {
+        return raw.whereType<String>().map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+      }
+      return null;
+    }
+
+    String _formatDetail(String label, List<String>? values) {
+      if (values == null || values.isEmpty) return '';
+      return '\n$label: ${values.take(5).join(", ")}';
+    }
+
+    if (characterDetails != null) {
+      final likes = _extractStringList(characterDetails['likes']);
+      final strengths = _extractStringList(characterDetails['strengths']);
+      final comfortItem = characterDetails['comfort_item'] as String?;
+
+      detailSection += _formatDetail('LIKES', likes);
+      detailSection += _formatDetail('STRENGTHS', strengths);
+      if (comfortItem != null && comfortItem.isNotEmpty) {
+        detailSection += '\nCOMFORT ITEM: $comfortItem';
+      }
+    }
+
+    if (additionalCharacters != null && additionalCharacters.isNotEmpty) {
+      detailSection +=
+          '\nFRIENDS IN STORY: ${additionalCharacters.join(", ")}';
+    }
+
+    String companionText = '';
+    if (companion != null && companion.isNotEmpty && companion != 'None') {
+      companionText = '\nCOMPANION: Include $companion as a gentle helper.';
+    }
+
+    return '''
+You are creating a LEARNING TO READ rhyming story for a ${age}-year-old named $characterName.
+
+STRICT REQUIREMENTS (NO EXCEPTIONS):
+1. TOTAL LENGTH: 50-100 words (stop inside this range).
+2. RHYME PATTERN: Simple AABB scheme (line 1 rhymes with 2, line 3 rhymes with 4, etc.).
+3. LINE LENGTH: 4-6 short words per line (keep it punchy).
+4. VOCABULARY: Only CVC words (cat, dog, hop, sun) and common sight words (the, and, can, see, like, play). No tricky spellings, blends, or silent letters.
+5. STRUCTURE: Repetition helps reading. Use predictable frames like "Can $characterName ___? Yes! $characterName can ___!".
+6. TONE: Encouraging, musical, and confidence-building.
+7. FORMAT: Each sentence or phrase on its own line for easy finger-tracking.
+
+THEME: $theme$companionText$detailSection
+
+Create the rhyming learning-to-read story about $characterName now:
+''';
+  }
+
   static String _buildStoryPrompt({
     required String characterName,
     required String theme,
@@ -398,20 +472,22 @@ Create the adventure story now:
     String? companion,
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
+    bool learningToReadMode = false,
     Map<String, dynamic>? currentFeeling,
   }) {
-    // Determine story length based on age
-    String lengthGuideline;
-    if (age <= 5) {
-      lengthGuideline = '200-300 words';
-    } else if (age <= 8) {
-      lengthGuideline = '300-500 words';
-    } else if (age <= 12) {
-      lengthGuideline = '500-700 words';
-    } else if (age <= 17) {
-      lengthGuideline = '700-900 words';
-    } else {
-      lengthGuideline = '800-1000 words';
+    final guidelines = StoryComplexityService.getAgeGuidelines(age);
+    final lengthGuideline =
+        (guidelines['length_guideline'] as String?) ?? '200-300 words';
+
+    if (learningToReadMode) {
+      return _buildLearningToReadPrompt(
+        characterName: characterName,
+        theme: theme,
+        age: age,
+        companion: companion,
+        characterDetails: characterDetails,
+        additionalCharacters: additionalCharacters,
+      );
     }
 
     if (currentFeeling != null) {
