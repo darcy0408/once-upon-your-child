@@ -59,5 +59,16 @@ backend/.env
 backend/characters.db
 backend/*.db
 
+# Python virtual environment
+backend/.venv/
+**/.venv/
+**/venv/
+
+# Flutter tooling
+.tooling/
+
 # Local Netlify folder
 .netlify
+
+# Windows artifacts
+nul
