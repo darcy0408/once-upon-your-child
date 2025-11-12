@@ -2,6 +2,8 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
@@ -49,6 +51,9 @@ class ApiServiceManager {
     bool learningToReadMode = false,
     Map<String, dynamic>? currentFeeling,
     http.Client? client,
+    int maxAttempts = 3,
+    Duration retryInitialDelay = const Duration(seconds: 2),
+    Duration requestTimeout = const Duration(seconds: 30),
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
 
@@ -78,6 +83,9 @@ class ApiServiceManager {
         learningToReadMode: learningToReadMode,
         currentFeeling: currentFeeling,
         client: client,
+        maxAttempts: maxAttempts,
+        initialDelay: retryInitialDelay,
+        requestTimeout: requestTimeout,
       );
     }
   }
@@ -129,12 +137,12 @@ class ApiServiceManager {
     bool learningToReadMode = false,
     Map<String, dynamic>? currentFeeling,
     http.Client? client,
-    int maxAttempts = 3,
-    Duration initialDelay = const Duration(seconds: 2),
+    required int maxAttempts,
+    required Duration initialDelay,
+    required Duration requestTimeout,
   }) async {
     var attempts = 0;
     var delay = initialDelay;
-    late Object lastError;
 
     while (attempts < maxAttempts) {
       try {
@@ -149,18 +157,17 @@ class ApiServiceManager {
           learningToReadMode: learningToReadMode,
           currentFeeling: currentFeeling,
           client: client,
+          requestTimeout: requestTimeout,
         );
       } catch (error) {
-        lastError = error;
         attempts++;
-        if (attempts >= maxAttempts) break;
+        print('Story generation attempt $attempts failed: $error');
+        if (attempts >= maxAttempts) rethrow;
         await Future.delayed(delay);
         delay *= 2;
       }
     }
-    throw Exception(
-      'Failed to generate story after $maxAttempts attempts: $lastError',
-    );
+    throw Exception('Story generation retry handler exhausted unexpectedly');
   }
 
   /// Generate story using local backend
@@ -175,11 +182,13 @@ class ApiServiceManager {
     bool learningToReadMode = false,
     Map<String, dynamic>? currentFeeling,
     http.Client? client,
+    required Duration requestTimeout,
   }) async {
     final httpClient = client ?? http.Client();
     final endpoint = (additionalCharacters == null || additionalCharacters.isEmpty)
         ? '$_localBackendUrl/generate-story'
         : '$_localBackendUrl/generate-multi-character-story';
+    final uri = Uri.parse(endpoint);
 
     final body = (additionalCharacters == null || additionalCharacters.isEmpty)
         ? {
@@ -204,16 +213,22 @@ class ApiServiceManager {
 
     try {
       final response = await httpClient.post(
-        Uri.parse(endpoint),
+        uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
-      ).timeout(const Duration(seconds: 30));
+      ).timeout(
+        requestTimeout,
+        onTimeout: () => throw TimeoutException('Story generation timed out'),
+      );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data['story'] as String;
       } else {
-        throw Exception('Failed to generate story: ${response.statusCode}');
+        throw HttpException(
+          'Failed to generate story: ${response.statusCode}',
+          uri: uri,
+        );
       }
     } finally {
       if (client == null) {

@@ -1,6 +1,9 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 import 'storage_service.dart';
 import 'story_result_screen.dart';
@@ -389,11 +392,12 @@ class _StoryScreenState extends State<StoryScreen> {
       if (mounted) {
         await _loadAchievementSummary();
       }
-    } catch (e) {
-      print('Story generation error: $e'); // Debug log
+    } catch (e, stackTrace) {
+      print('Story generation error: $e');
+      print(stackTrace);
+      final message = _storyGenerationErrorMessage(e);
       ScaffoldMessenger.of(navContext).showSnackBar(
-        SnackBar(
-            content: Text('Error generating story: ${e.toString()}')),
+        SnackBar(content: Text(message)),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -435,6 +439,17 @@ class _StoryScreenState extends State<StoryScreen> {
     } else {
       await _createStory();
     }
+  }
+
+  String _storyGenerationErrorMessage(Object error) {
+    if (error is SocketException) {
+      return 'Check your internet connection and try again.';
+    } else if (error is TimeoutException) {
+      return 'This is taking longer than usual. Try again?';
+    } else if (error is HttpException) {
+      return 'Our story engine is taking a break. Try again soon!';
+    }
+    return 'Something went wrong. Please try again.';
   }
 
   @override
