@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
-import 'main_story.dart';
+import 'package:path_provider/path_provider.dart';
 
-void main() {
+import 'main_story.dart';
+import 'services/isar_service.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final docsDir = await getApplicationDocumentsDirectory();
+  await IsarService.initialize(directoryPath: docsDir.path);
   runApp(const StoryWeaverApp());
 }
 
