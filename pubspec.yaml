@@ -43,6 +43,8 @@ dependencies:
   isar: ^3.1.0              # Offline cache database
   isar_flutter_libs: ^3.1.0
   google_generative_ai: ^0.4.6  # Direct Gemini API access for BYOK users
+  firebase_core: ^3.6.0        # Firebase core
+  firebase_analytics: ^11.3.3  # Real User Monitoring and analytics
 
   # Note: Backend handles AI generation for free users, but BYOK users call Gemini directly
 

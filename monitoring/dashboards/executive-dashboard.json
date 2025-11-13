@@ -1,0 +1,169 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Story Weaver Executive Dashboard",
+    "tags": ["story-weaver", "executive", "business-intelligence"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Total Stories Generated",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(increase(story_generation_requests_total[30d]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Active Users (Daily)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "count(count by (user_id) (increase(api_requests_total[1d])))",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "Stories by Age Group",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (age_group) (increase(stories_by_age_total[7d]))",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "id": 4,
+        "title": "Therapeutic Outcomes - Feelings Explored",
+        "type": "barchart",
+        "targets": [
+          {
+            "expr": "sum by (emotion) (increase(emotion_explored_total[7d]))",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        }
+      },
+      {
+        "id": 5,
+        "title": "User Engagement Trend",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(api_requests_total[1h]))",
+            "refId": "A",
+            "legendFormat": "API Requests"
+          },
+          {
+            "expr": "sum(rate(story_generation_requests_total[1h]))",
+            "refId": "B",
+            "legendFormat": "Stories Generated"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 16
+        }
+      },
+      {
+        "id": 6,
+        "title": "Story Themes Popularity",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "sum by (theme) (increase(stories_by_theme_total[30d]))",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 24
+        }
+      },
+      {
+        "id": 7,
+        "title": "Subscription Conversion Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "(sum(increase(premium_subscriptions_total[30d])) / sum(increase(user_registrations_total[30d]))) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 24
+        }
+      }
+    ],
+    "time": {
+      "from": "now-30d",
+      "to": "now"
+    },
+    "timepicker": {},
+    "templating": {
+      "list": []
+    },
+    "annotations": {
+      "list": []
+    },
+    "refresh": "5m",
+    "schemaVersion": 27,
+    "version": 0,
+    "links": []
+  }
+}

@@ -51,12 +51,26 @@ The backend has been instrumented with:
 - Only aggregated, anonymized metrics
 - Logs are retained for 30 days
 
+## Dashboards
+
+### Executive Business Intelligence Dashboard
+- **File**: `monitoring/dashboards/executive-dashboard.json`
+- **Import**: In Grafana, go to Dashboards → Import, upload the JSON file
+- **Metrics**:
+  - Total stories generated (30-day sum)
+  - Daily active users
+  - Stories by age group (pie chart)
+  - Therapeutic outcomes - feelings explored
+  - User engagement trends (API requests vs stories)
+  - Story themes popularity
+  - Subscription conversion rate
+
 ## Testing
 
 1. Start the monitoring stack
 2. Make requests to the backend /metrics endpoint
 3. Verify metrics appear in Prometheus
-4. Create Grafana dashboard with the metrics
+4. Import the executive dashboard in Grafana
 5. Test alerts by triggering high error rates
 
 ## Railway Deployment
