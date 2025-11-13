@@ -1,0 +1,351 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Story Weaver Production Health Dashboard",
+    "tags": ["production", "health", "executive", "monitoring"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "System Health Score",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "(up{job='story-weaver'} == 1) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 95
+                },
+                {
+                  "color": "green",
+                  "value": 99
+                }
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Active Users (Last 24h)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(increase(user_sessions_total[24h]))",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 6,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "Stories Generated Today",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(increase(story_generation_requests_total[24h]))",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 4,
+        "title": "Average Response Time",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(story_generation_duration_seconds_bucket[5m]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 18,
+          "y": 0
+        }
+      },
+      {
+        "id": 5,
+        "title": "Error Rate (Last Hour)",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(api_requests_total{status='error'}[1h]) / rate(api_requests_total[1h]) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 1
+                },
+                {
+                  "color": "red",
+                  "value": 5
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "id": 6,
+        "title": "Database Connection Pool Usage",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "sqlalchemy_pool_size / sqlalchemy_pool_max_overflow",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 8,
+          "y": 8
+        }
+      },
+      {
+        "id": 7,
+        "title": "Cache Hit Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m])) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 16,
+          "y": 8
+        }
+      },
+      {
+        "id": 8,
+        "title": "System Resource Usage",
+        "type": "bargauge",
+        "targets": [
+          {
+            "expr": "100 - (avg by(instance) (irate(node_cpu_seconds_total{mode='idle'}[5m])) * 100)",
+            "legendFormat": "CPU Usage",
+            "refId": "A"
+          },
+          {
+            "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+            "legendFormat": "Memory Usage",
+            "refId": "B"
+          },
+          {
+            "expr": "(node_filesystem_size_bytes{mountpoint='/'} - node_filesystem_free_bytes{mountpoint='/'}) / node_filesystem_size_bytes{mountpoint='/'} * 100",
+            "legendFormat": "Disk Usage",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 16
+        }
+      },
+      {
+        "id": 9,
+        "title": "User Engagement Trends",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(user_sessions_total[1h]))",
+            "legendFormat": "Active Sessions",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(story_generation_requests_total[1h]))",
+            "legendFormat": "Stories Generated",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(emotion_explored_total[1h]))",
+            "legendFormat": "Emotions Explored",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 24
+        }
+      },
+      {
+        "id": 10,
+        "title": "Business KPIs",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "sum(increase(user_registrations_total[7d]))",
+            "legendFormat": "New Users (7d)",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(increase(premium_subscriptions_total[7d]))",
+            "legendFormat": "Premium Signups (7d)",
+            "refId": "B"
+          },
+          {
+            "expr": "avg(rate(story_completion_rate[7d])) * 100",
+            "legendFormat": "Story Completion Rate (%)",
+            "refId": "C"
+          },
+          {
+            "expr": "avg(rate(user_satisfaction_score[7d]))",
+            "legendFormat": "Avg User Satisfaction",
+            "refId": "D"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 24
+        }
+      },
+      {
+        "id": 11,
+        "title": "Cost Analysis",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(infrastructure_cost_total[1h]))",
+            "legendFormat": "Infrastructure Cost ($/hour)",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(api_cost_total[1h]))",
+            "legendFormat": "API Cost ($/hour)",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(storage_cost_total[1h]))",
+            "legendFormat": "Storage Cost ($/hour)",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 32
+        }
+      },
+      {
+        "id": 12,
+        "title": "Security Alerts",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "sum(increase(security_violations_total[1h]))",
+            "legendFormat": "Security Violations",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(increase(failed_auth_attempts_total[1h]))",
+            "legendFormat": "Failed Auth Attempts",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(increase(suspicious_activity_total[1h]))",
+            "legendFormat": "Suspicious Activity",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 32
+        }
+      }
+    ],
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "timepicker": {},
+    "templating": {
+      "list": []
+    },
+    "annotations": {
+      "list": []
+    },
+    "refresh": "30s",
+    "schemaVersion": 27,
+    "version": 0,
+    "links": []
+  }
+}

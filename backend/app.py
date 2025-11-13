@@ -1003,6 +1003,9 @@ def generate_multi_character_story():
     ])
     prompt = "\n".join(prompt_parts)
 
+    # Truncate prompt if it exceeds token limits
+    prompt = _truncate_prompt_if_needed(prompt)
+
     try:
         if model is None:
             raise RuntimeError("Model unavailable")
@@ -1091,6 +1094,9 @@ _build_feelings_prompt(character_name, current_feeling)
         "before or after."
     ])
     prompt = "\n".join(prompt_parts)
+
+    # Truncate prompt if it exceeds token limits
+    prompt = _truncate_prompt_if_needed(prompt)
 
     try:
         if model is None:
@@ -1210,6 +1216,9 @@ def continue_interactive_story():
     prompt_parts.append("\nIMPORTANT: Return ONLY valid JSON. No extra text before or after.")
     prompt = "\n".join(prompt_parts)
 
+    # Truncate prompt if it exceeds token limits
+    prompt = _truncate_prompt_if_needed(prompt)
+
     try:
         if model is None:
             raise RuntimeError("Model unavailable")
@@ -1319,11 +1328,14 @@ Return ONLY valid JSON in this format:
 
 Focus on the most visually interesting and important moments. Make descriptions child-friendly and colorful.
 """
-    
+
+    # Truncate prompt if it exceeds token limits
+    prompt = _truncate_prompt_if_needed(prompt)
+
     try:
         if model is None:
             raise RuntimeError("Model unavailable")
-        
+
         response = model.generate_content(prompt)
         raw_text = getattr(response, "text", "").strip()
         

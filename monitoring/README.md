@@ -50,6 +50,41 @@ The backend has been instrumented with:
 - Business metrics (stories by theme, age group)
 - Error rates and response times
 
+## Production Health Dashboard
+
+### Real-time Health Monitoring
+- **File**: `monitoring/dashboards/production-health-dashboard.json`
+- **Import**: In Grafana, go to Dashboards → Import, upload the JSON file
+- **Key Metrics**:
+  - System health score and uptime percentage
+  - Active users and stories generated (last 24h)
+  - Average response time and error rates
+  - Database connection pool usage
+  - Cache hit rate and performance
+  - System resource utilization (CPU, memory, disk)
+  - User engagement trends over time
+  - Business KPIs (registrations, subscriptions, completion rates)
+  - Real-time cost analysis
+  - Security alerts and violations
+
+### Automated Maintenance Scripts
+- **File**: `monitoring/automated_maintenance.py`
+- **Features**:
+  - Database cleanup (expired sessions, old stories)
+  - Log rotation and compression
+  - Cache invalidation and optimization
+  - Database performance optimization
+  - Automated backup coordination
+
+### Cost Monitoring & Optimization
+- **File**: `monitoring/cost_monitor.py`
+- **Capabilities**:
+  - Real-time cost analysis across all services
+  - Budget alerts and threshold monitoring
+  - Cost optimization recommendations
+  - Infrastructure cost tracking
+  - API and storage cost analysis
+
 ## GDPR Compliance
 
 - **Automated Compliance Monitoring**: `compliance_monitor.py` provides GDPR compliance checks
