@@ -1,3 +1,4 @@
+```python
 """
 Basic tests for Story Weaver backend API
 """
@@ -130,9 +131,10 @@ def test_generate_interactive_story_with_feelings(client):
     # Optional: More advanced assertion to check if feelings are mentioned in text
     # assert "nervous" in data['text'].lower() or "deep breaths" in data['text'].lower()
 
+
 def test_continue_interactive_story(client):
     """Test interactive story continuation logic"""
-    # 1. Generate initial story
+    # 1. Generate initial interactive story
     initial_payload = {
         "character": "Mia",
         "theme": "Discovery",
@@ -201,3 +203,4 @@ def test_continue_interactive_story(client):
     assert ending_data['choices'] is None # Should be null for ending
     assert 'is_ending' in ending_data
     assert ending_data['is_ending'] is True
+```
