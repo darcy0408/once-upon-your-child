@@ -12,8 +12,21 @@ import uuid
 from datetime import datetime
 
 class GeminiImageGenerator:
+    """
+    A service for generating images using Google's Imagen 3.0 via the Gemini API.
+
+    This class provides methods to create story illustrations and coloring pages
+    with age-appropriate details and therapeutic focus.
+    """
     def __init__(self, api_key=None):
-        """Initialize with Gemini API key"""
+        """
+        Initializes the GeminiImageGenerator.
+
+        Args:
+            api_key (str, optional): Your Google Gemini API key. If not provided,
+                                     it will attempt to load from the GEMINI_API_KEY
+                                     environment variable.
+        """
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         if self.api_key:
             genai.configure(api_key=self.api_key)
@@ -31,18 +44,27 @@ class GeminiImageGenerator:
         therapeutic_focus: str = None
     ) -> list:
         """
-        Generate therapeutic story illustrations using Gemini Imagen
+        Generates therapeutic story illustrations using Google's Imagen 3.0 model.
+
+        The illustrations are customized based on scene, character, style, age,
+        and an optional therapeutic focus.
 
         Args:
-            scene_description: Description of the scene to illustrate
-            character_name: Name of the main character
-            style: Art style (default: children's book illustration)
-            num_images: Number of variations to generate (1-4)
-            age: User's age for appropriate detail level
-            therapeutic_focus: Optional therapeutic theme (e.g., "overcoming fear")
+            scene_description (str): A detailed description of the scene to illustrate.
+            character_name (str): The name of the main character in the scene.
+            style (str): The artistic style for the illustration (e.g., "watercolor", "cartoon").
+            num_images (int): The number of image variations to generate (1-4).
+            age (int): The target age of the audience, influencing detail and complexity.
+            therapeutic_focus (str, optional): An optional therapeutic theme to emphasize
+                                               in the imagery (e.g., "overcoming fear").
 
         Returns:
-            List of dicts with image data
+            list: A list of dictionaries, where each dictionary contains:
+                  - 'id': A unique ID for the generated image.
+                  - 'prompt': The full prompt used for image generation.
+                  - 'image_data': Base64 encoded PNG image data.
+                  - 'format': The format of the image data (e.g., 'png').
+                  - 'generated_at': Timestamp of image generation.
         """
         # Determine detail level based on age
         if age <= 5:
@@ -126,17 +148,27 @@ Style: {style}, optimized for {age_descriptor}
         therapeutic_focus: str = None
     ) -> list:
         """
-        Generate therapeutic coloring book pages with black and white line art
+        Generates therapeutic coloring book pages (black and white line art)
+        using Google's Imagen 3.0 model.
+
+        The coloring pages are customized based on scene, character, age,
+        and an optional therapeutic focus, with varying intricacy levels.
 
         Args:
-            scene_description: Description of the scene from the story
-            character_name: Name of the main character
-            num_images: Number of variations
-            age: User's age for appropriate complexity
-            therapeutic_focus: Optional therapeutic theme (e.g., "relaxation")
+            scene_description (str): A detailed description of the scene for the coloring page.
+            character_name (str): The name of the main character in the scene.
+            num_images (int): The number of image variations to generate.
+            age (int): The target age of the audience, influencing the intricacy of the line art.
+            therapeutic_focus (str, optional): An optional therapeutic theme to incorporate
+                                               into the design (e.g., "relaxation").
 
         Returns:
-            List of dicts with image data
+            list: A list of dictionaries, where each dictionary contains:
+                  - 'id': A unique ID for the generated image.
+                  - 'prompt': The full prompt used for image generation.
+                  - 'image_data': Base64 encoded PNG image data (black lines on white background).
+                  - 'format': The format of the image data (e.g., 'png').
+                  - 'generated_at': Timestamp of image generation.
         """
         # Determine intricacy based on age
         if age <= 5:

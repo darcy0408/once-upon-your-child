@@ -16,8 +16,17 @@ except ImportError:
     texttospeech = None  # Placeholder for type hints
 
 class TTSService:
+    """
+    A service for interacting with Google Cloud Text-to-Speech to generate
+    high-quality audio narration.
+    """
     def __init__(self):
-        """Initialize Google Cloud TTS client"""
+        """
+        Initializes the TTSService client.
+
+        Raises:
+            ImportError: If Google Cloud Text-to-Speech library is not available.
+        """
         if not GOOGLE_TTS_AVAILABLE:
             raise ImportError(
                 "Google Cloud Text-to-Speech is not available. "
@@ -27,8 +36,17 @@ class TTSService:
 
     def add_natural_pauses(self, text: str) -> str:
         """
-        Add SSML markup for natural pauses and emphasis
-        Makes the narration sound more human
+        Adds SSML (Speech Synthesis Markup Language) markup to the text
+        to create more natural-sounding pauses and emphasis.
+
+        Specifically, it adds breaks after punctuation and moderate emphasis
+        to text enclosed in double quotes.
+
+        Args:
+            text (str): The input text to which SSML markup will be added.
+
+        Returns:
+            str: The text with SSML markup for natural pauses and emphasis.
         """
         # Add longer pause after periods (end of sentences)
         text = re.sub(r'\.(\s+)', '.<break time="800ms"/>\\1', text)
@@ -57,18 +75,18 @@ class TTSService:
         output_path: Optional[str] = None
     ) -> bytes:
         """
-        Generate speech audio from text
+        Generates speech audio from the provided text using Google Cloud Text-to-Speech.
 
         Args:
-            text: The story text to narrate
-            voice_name: Google Cloud voice name (e.g., "en-US-Neural2-F" for female)
-            speaking_rate: Speed (0.25 to 4.0, default 1.0)
-            pitch: Voice pitch (-20.0 to 20.0, default 0.0)
-            use_ssml: Whether to add natural pauses and emphasis
-            output_path: Optional path to save MP3 file
+            text (str): The story text to be converted to speech.
+            voice_name (str): The name of the voice to use (e.g., "en-US-Neural2-F").
+            speaking_rate (float): The speed of the speech (0.25 to 4.0).
+            pitch (float): The pitch of the speech (-20.0 to 20.0).
+            use_ssml (bool): If True, SSML markup will be added for natural pauses and emphasis.
+            output_path (str, optional): If provided, the generated audio will be saved to this path.
 
         Returns:
-            Audio content as bytes (MP3 format)
+            bytes: The audio content as bytes (MP3 format).
         """
         # Prepare input
         if use_ssml:
@@ -107,9 +125,13 @@ class TTSService:
     @staticmethod
     def get_available_voices() -> List[dict]:
         """
-        Get list of recommended voices for storytelling
+        Retrieves a list of recommended voices suitable for storytelling.
 
-        Returns list of voice options with details
+        Each voice entry includes details such as ID, name, gender,
+        description, and a recommendation flag.
+
+        Returns:
+            List[dict]: A list of dictionaries, each representing an available voice.
         """
         return [
             {
@@ -166,18 +188,48 @@ class TTSService:
 
 # Mock TTS service for testing without API key
 class MockTTSService:
-    """Mock service that returns placeholder audio"""
+    """
+    A mock Text-to-Speech service for testing purposes.
+
+    This service simulates the behavior of TTSService without actually
+    interacting with the Google Cloud TTS API, returning placeholder data.
+    """
 
     def generate_speech(self, text: str, **kwargs) -> bytes:
-        """Return empty bytes as placeholder"""
+        """
+        Simulates speech generation by returning empty bytes.
+
+        Logs a message indicating that speech would have been generated for the given text.
+
+        Args:
+            text (str): The input text for which speech would be generated.
+            **kwargs: Additional keyword arguments, ignored in the mock implementation.
+
+        Returns:
+            bytes: An empty bytes object, representing no audio content.
+        """
         print(f"[MockTTS] Would generate speech for {len(text)} characters")
         return b""  # Empty audio
 
     @staticmethod
     def get_available_voices() -> List[dict]:
-        """Return mock voice list"""
+        """
+        Returns a predefined list of mock voices, mirroring the structure
+        of the real TTSService.
+
+        Returns:
+            List[dict]: A list of dictionaries, each representing a mock voice.
+        """
         return TTSService.get_available_voices()
 
     def add_natural_pauses(self, text: str) -> str:
-        """Mock method"""
+        """
+        Mocks the SSML processing by simply wrapping the text in <speak> tags.
+
+        Args:
+            text (str): The input text.
+
+        Returns:
+            str: The input text wrapped in <speak> tags.
+        """
         return f"<speak>{text}</speak>"
