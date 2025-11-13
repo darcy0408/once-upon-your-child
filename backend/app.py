@@ -1,7 +1,4 @@
-"""
-Enhanced Interactive Children's Adventure Engine – API v2.0 (Refactor, fixed)
-- Single update route, fixed /get-characters, safer parsing, same behavior.
-"""
+
 
 import os
 import uuid
@@ -297,7 +294,7 @@ class AdvancedStoryEngine:
             "- Create IMMERSIVE scenes that readers can picture clearly",
             "- Example: Instead of 'Emma was scared', write 'Emma's heart pounded as shadows danced on the wall'",
             "\nFORMAT REQUIREMENTS:",
-            "- Start with: [TITLE: A Creative and Engaging Title]",
+            f"- Start with: [TITLE: A Creative and Engaging Title]",
             f"- End with: [WISDOM GEM: {wisdom}]",
         ])
         return "\n".join(parts)
@@ -375,8 +372,7 @@ def _describe_personality_sliders(personality_sliders):
         if descriptor:
             toward = meta["right_label"] if value > 50 else meta["left_label"]
             lines.append(
-                f"- {meta['label']}: {descriptor} ({value}/100 toward {toward.lower()})"
-            )
+                f"- {meta['label']}: {descriptor} ({value}/100 toward {toward.lower()})")
     return lines
 
 
@@ -684,7 +680,7 @@ def health():
 
 @app.route("/get-story-themes", methods=["GET"])
 def get_story_themes():
-    return jsonify(["Adventure", "Friendship", "Magic", "Dragons", "Castles", "Unicorns", "Space", "Ocean"]), 200
+    return jsonify(["Adventure", "Friendship", "Magic", "Dragons", "Castles", "Unicorns", "Space", "Ocean"])
 
 @app.route("/generate-story", methods=["POST"])
 def generate_story_endpoint():
@@ -995,24 +991,38 @@ def generate_multi_character_story():
 
 @app.route("/generate-interactive-story", methods=["POST"])
 def generate_interactive_story():
-    """Generate the opening segment of an interactive, choice-based story."""
+    """Generate the opening segment of an interactive,
+choice-based story."""
     payload = request.get_json(silent=True) or {}
-    character = payload.get("character", "a brave adventurer")
+    character_name = payload.get("character", "a brave adventurer")
+    character_age = payload.get("character_age", 7)
     theme = payload.get("theme", "Adventure")
     companion = payload.get("companion")
     friends = payload.get("friends", [])
     therapeutic_prompt = payload.get("therapeutic_prompt", "")
 
+    # Extract feelings using the helper function
+    current_feeling = _extract_current_feeling(payload)
+
     prompt_parts = [
-        "You are a master storyteller creating an interactive choose-your-own-adventure story for children.",
+        "You are a master storyteller creating an interactive "
+        "choose-your-own-adventure story for children.",
         f"\nSTORY DETAILS:",
-        f"- Main Character: {character}",
+        f"- Main Character: {character_name}",
+        f"- Character Age: {character_age}",
         f"- Theme: {theme}",
     ]
     if companion and companion != "None":
         prompt_parts.append(f"- Companion: {companion}")
     if friends:
-        prompt_parts.append(f"- Friends/Siblings in story: {', '.join(friends)}")
+        prompt_parts.append(f"- Friends/Siblings in story: "
+                            f"{', '.join(friends)}")
+
+    # Build and add feelings section if a feeling was provided
+    if current_feeling:
+        feelings_section = \
+_build_feelings_prompt(character_name, current_feeling)
+        prompt_parts.append(feelings_section)
 
     # Add therapeutic elements if provided
     if therapeutic_prompt:
@@ -1022,25 +1032,37 @@ def generate_interactive_story():
             "IMPORTANT: Weave these elements naturally into the story and choices (not preachy).",
         ])
 
+    # Add age-appropriate guidelines
+    age_guidelines = _build_age_instruction_block(character_age)
+    prompt_parts.append(age_guidelines)
+
     prompt_parts.extend([
-        "\nTASK: Create the OPENING segment of an engaging story (150-200 words).",
-        "Set the scene and introduce a situation where the character must make a choice.",
+        "\nTASK: Create the OPENING segment of an engaging story "
+        "(150-200 words).",
+        "Set the scene and introduce a situation where the "
+        "character must make a choice.",
     ])
     if friends:
-        prompt_parts.append(f"IMPORTANT: Include {', '.join(friends)} as friends/siblings who appear in the story and can help with choices.")
+        prompt_parts.append(f"IMPORTANT: Include {', '.join(friends)} "
+                            f"as friends/siblings who appear in the story and "
+                            f"can help with choices.")
 
     prompt_parts.extend([
         "\nFORMAT YOUR RESPONSE EXACTLY AS JSON:",
         "{",
         '  "text": "The story text here...",',
         '  "choices": [',
-        '    {"id": "choice1", "text": "First option (short)", "description": "What happens if they choose this"},',
-        '    {"id": "choice2", "text": "Second option (short)", "description": "What happens if they choose this"},',
-        '    {"id": "choice3", "text": "Third option (short)", "description": "What happens if they choose this"}',
-        '  ],',
-        '  "is_ending": false',
-        "}",
-        "\nIMPORTANT: Return ONLY valid JSON. No extra text before or after."
+        '    {"id": "choice1", "text": "First option (short)", '
+        '"description": "What happens if they choose this"},',
+        '    {"id": "choice2", "text": "Second option (short)", '
+        '"description": "What happens if they choose this"},',
+        '    {"id": "choice3", "text": "Third option (short)", '
+        '"description": "What happens if they choose this"}',
+        '],',
+        '  "is_ending": false,',
+        '}',
+        "\nIMPORTANT: Return ONLY valid JSON. No extra text "
+        "before or after."
     ])
     prompt = "\n".join(prompt_parts)
 
@@ -1063,11 +1085,17 @@ def generate_interactive_story():
         # Fallback response
         friends_text = f" with {', '.join(friends)}" if friends else ""
         return jsonify({
-            "text": f"{character}{friends_text} stood at the edge of a mysterious forest, hearing strange sounds within. The {companion if companion and companion != 'None' else 'wind'} seemed to whisper of adventure ahead.",
+            "text": f"{character_name}{friends_text} stood at the "
+                    f"edge of a mysterious forest, hearing strange sounds within. The "
+                    f"{companion if companion and companion != 'None' else 'wind'} "
+                    f"seemed to whisper of adventure ahead.",
             "choices": [
-                {"id": "choice1", "text": "Enter the forest bravely", "description": "Face the unknown with courage"},
-                {"id": "choice2", "text": "Look for another path", "description": "Search for a safer route"},
-                {"id": "choice3", "text": "Call out to see if anyone is there", "description": "Try to make friends first"}
+                {"id": "choice1", "text": "Enter the forest "
+                                          "bravely", "description": "Face the unknown with courage"},
+                {"id": "choice2", "text": "Look for another "
+                                          "path", "description": "Search for a safer route"},
+                {"id": "choice3", "text": "Call out to see if "
+                                          "anyone is there", "description": "Try to make friends first"}
             ],
             "is_ending": False
         }), 200
@@ -1113,7 +1141,7 @@ def continue_interactive_story():
 
     if should_end:
         prompt_parts.extend([
-            "\nTASK: Create the FINAL segment that brings the story to a satisfying conclusion (150-200 words).",
+            "\nTASK: Create the FINAL segment that brings the story to a satisfying conclusion (150-200 words).\n",
             "Resolve the adventure positively and show what the character learned.",
         ])
         if friends:
@@ -1123,13 +1151,16 @@ def continue_interactive_story():
             "\nFORMAT YOUR RESPONSE EXACTLY AS JSON:",
             "{",
             '  "text": "The concluding story text...",',
-            '  "choices": null,',
-            '  "is_ending": true',
-            "}",
+            '  "choices": [],',
+            '  "is_ending": true,',
+            '}',
         ])
     else:
         prompt_parts.extend([
-            "\nTASK: Continue the story based on their choice (150-200 words) and present new options.",
+            "\nTASK: Create the NEXT story segment (150-200 "
+            "words) that continues from the last choice.",
+            "Introduce a new situation where the character must "
+            "make another choice.",
         ])
         if friends:
             prompt_parts.append(f"Include interactions with {', '.join(friends)} to show friendship and teamwork.")
@@ -1137,17 +1168,20 @@ def continue_interactive_story():
         prompt_parts.extend([
             "\nFORMAT YOUR RESPONSE EXACTLY AS JSON:",
             "{",
-            '  "text": "The continuation text here...",',
+            '  "text": "The story text here...",',
             '  "choices": [',
-            '    {"id": "choice1", "text": "Option 1", "description": "Brief description"},',
-            '    {"id": "choice2", "text": "Option 2", "description": "Brief description"},',
-            '    {"id": "choice3", "text": "Option 3", "description": "Brief description"}',
-            '  ],',
-            '  "is_ending": false',
-            "}",
+            '    {"id": "choice1", "text": "First option", '
+            '"description": "What happens next"},',
+            '    {"id": "choice2", "text": "Second option", '
+            '"description": "What happens next"},',
+            '    {"id": "choice3", "text": "Third option", '
+            '"description": "What happens next"}',
+            '],',
+            '  "is_ending": false,',
+            '}',
         ])
 
-    prompt_parts.append("\nIMPORTANT: Return ONLY valid JSON. No extra text.")
+    prompt_parts.append("\nIMPORTANT: Return ONLY valid JSON. No extra text before or after.")
     prompt = "\n".join(prompt_parts)
 
     try:
@@ -1171,7 +1205,7 @@ def continue_interactive_story():
         if should_end:
             return jsonify({
                 "text": f"Thanks to their brave choices, {character}{friends_text} completed the adventure successfully and returned home with wonderful memories and new confidence!",
-                "choices": None,
+                "choices": [],
                 "is_ending": True
             }), 200
         else:
@@ -1265,10 +1299,10 @@ Focus on the most visually interesting and important moments. Make descriptions 
             raise RuntimeError("Model unavailable")
         
         response = model.generate_content(prompt)
-        raw_text = getattr(response, "text", "")
+        raw_text = getattr(response, "text", "").strip()
         
         # Try to extract JSON from response
-        json_match = re.search(r'\{.*\}', raw_text, re.DOTALL)
+        json_match = re.search(r'\{{.*\}}', raw_text, re.DOTALL)
         if json_match:
             raw_text = json_match.group(0)
         

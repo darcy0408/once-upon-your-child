@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:isar/isar.dart';
+
 import 'models.dart';
 import 'models/cached_story.dart';
 import 'services/isar_service.dart';
