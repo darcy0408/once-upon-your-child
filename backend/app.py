@@ -1074,7 +1074,76 @@ def generate_interactive_story():
 
 @app.route("/continue-interactive-story", methods=["POST"])
 def continue_interactive_story():
-    """Continue an interactive story based on the user's choice."""
+    """
+    Continue an interactive story
+    ---
+    tags:
+      - Interactive Story
+    summary: Continue an interactive story
+    description: Continues an interactive story based on a user's choice, generating the next segment or a conclusion.
+    parameters:
+      - in: body
+        name: body
+        schema:
+          id: ContinueInteractiveStoryRequest
+          type: object
+          required:
+            - character
+            - theme
+            - choice
+            - story_so_far
+            - choices_made
+          properties:
+            character:
+              type: string
+              description: The main character's name or description.
+              example: "Lily"
+            theme:
+              type: string
+              description: The theme of the interactive story.
+              example: "Mystery"
+            companion:
+              type: string
+              description: An optional companion for the character.
+              example: "Wise Owl"
+            friends:
+              type: array
+              items:
+                type: string
+              description: A list of friends or siblings included in the story.
+              example: ["Tom", "Mia"]
+            choice:
+              type: string
+              description: The user's chosen option from the previous story segment.
+              example: "Enter the dark cave"
+            story_so_far:
+              type: string
+              description: The complete story text generated up to this point.
+              example: "Lily stood at the entrance of a dark cave..."
+            choices_made:
+              type: array
+              items:
+                type: string
+              description: A list of all choices made so far in the story.
+              example: ["choice1", "choiceA"]
+            therapeutic_prompt:
+              type: string
+              description: An optional therapeutic element to weave into the story.
+              example: "Reinforce courage."
+    responses:
+      200:
+        description: Successfully generated next interactive story segment or conclusion.
+        schema:
+          $ref: '#/definitions/InteractiveStoryResponse'
+      500:
+        description: Internal server error or model generation failed.
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              description: Error message.
+    """
     payload = request.get_json(silent=True) or {}
     character = payload.get("character", "the hero")
     theme = payload.get("theme", "Adventure")
@@ -1187,7 +1256,32 @@ def continue_interactive_story():
 
 @app.route("/generate-superhero", methods=["GET"])
 def generate_superhero():
-    """Generate a random superhero name, superpower, and mission."""
+    """
+    Generate a random superhero
+    ---
+    tags:
+      - Character Management
+    summary: Generate a random superhero
+    description: Generates a random superhero name, superpower, and mission.
+    responses:
+      200:
+        description: Successfully generated superhero details.
+        schema:
+          type: object
+          properties:
+            superhero_name:
+              type: string
+              description: The generated superhero name.
+              example: "Mighty Guardian"
+            superpower:
+              type: string
+              description: The generated superpower.
+              example: "Flight"
+            mission:
+              type: string
+              description: The generated superhero mission.
+              example: "Protect the city from villains"
+    """
     import random
     
     # Superhero name components

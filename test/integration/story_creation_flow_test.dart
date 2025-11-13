@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -76,10 +78,77 @@ void main() {
         theme: 'Adventure',
         age: 8,
         client: mockClient,
+        retryInitialDelay: const Duration(milliseconds: 20),
       );
 
       expect(story, 'Retried story!');
       expect(attempts, 3);
+    });
+
+    test('verifies exponential backoff timing', () async {
+      int attempts = 0;
+      final stopwatch = Stopwatch()..start();
+      final mockClient = MockClient((request) async {
+        attempts++;
+        if (attempts < 3) {
+          return http.Response('server busy', 500);
+        }
+        return http.Response(jsonEncode({'story': 'Timing story'}), 200);
+      });
+
+      final story = await ApiServiceManager.generateStory(
+        characterName: 'Timing Tester',
+        theme: 'Patience',
+        age: 6,
+        client: mockClient,
+        maxAttempts: 3,
+        retryInitialDelay: const Duration(milliseconds: 20),
+      );
+
+      stopwatch.stop();
+
+      expect(story, 'Timing story');
+      expect(attempts, 3);
+      expect(
+        stopwatch.elapsed,
+        greaterThanOrEqualTo(const Duration(milliseconds: 60)),
+      );
+    });
+
+    test('throws HttpException after retries exhausted', () async {
+      final mockClient = MockClient(
+        (request) async => http.Response('server busy', 503),
+      );
+
+      await expectLater(
+        ApiServiceManager.generateStory(
+          characterName: 'Retry Hero',
+          theme: 'Adventure',
+          age: 8,
+          client: mockClient,
+          retryInitialDelay: const Duration(milliseconds: 10),
+          maxAttempts: 2,
+        ),
+        throwsA(isA<HttpException>()),
+      );
+    });
+
+    test('throws TimeoutException when backend stalls', () async {
+      final mockClient = MockClient((request) async {
+        await Future.delayed(const Duration(milliseconds: 100));
+        return http.Response(jsonEncode({'story': 'Too late'}), 200);
+      });
+
+      await expectLater(
+        ApiServiceManager.generateStory(
+          characterName: 'Slow Hero',
+          theme: 'Adventure',
+          age: 8,
+          client: mockClient,
+          requestTimeout: const Duration(milliseconds: 20),
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
     });
   });
 }
