@@ -14,6 +14,7 @@ import 'illustrated_story_viewer.dart';
 import 'coloring_book_service.dart';
 import 'coloring_book_library_screen.dart';
 import 'models.dart';
+import 'models/cached_story.dart';
 import 'therapeutic_focus_options.dart';
 import 'services/progression_service.dart';
 import 'unlock_celebration_dialog.dart';
@@ -111,16 +112,19 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   /// Automatically cache the story for offline access
   Future<void> _cacheStoryForOffline() async {
-    final cachedStory = CachedStory(
-      id: widget.storyId ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      title: widget.title,
-      storyText: widget.storyText,
-      characterName: widget.characterName ?? 'Unknown',
-      theme: widget.theme ?? 'Adventure',
-      companion: null, // You can add companion if available
-      cachedAt: DateTime.now(),
-      isFavorite: false,
-    );
+    final cachedStory = CachedStory()
+      ..storyId =
+          widget.storyId ?? DateTime.now().millisecondsSinceEpoch.toString()
+      ..title = widget.title
+      ..storyText = widget.storyText
+      ..characterName = widget.characterName ?? 'Unknown'
+      ..theme = widget.theme ?? 'Adventure'
+      ..companion = null
+      ..wisdomGem = widget.wisdomGem
+      ..createdAt = widget.storyCreatedAt ?? DateTime.now()
+      ..cachedAt = DateTime.now()
+      ..characterId = widget.characterId
+      ..isFavorite = false;
 
     await _cache.cacheStory(cachedStory);
   }
