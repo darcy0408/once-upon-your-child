@@ -1003,12 +1003,24 @@ def generate_interactive_story():
     friends = payload.get("friends", [])
     therapeutic_prompt = payload.get("therapeutic_prompt", "")
 
+    # Extract and build feelings prompt
+    current_feeling = _extract_current_feeling(payload)
+    feelings_section = _build_feelings_prompt(character, current_feeling) if current_feeling else ""
+
     prompt_parts = [
         "You are a master storyteller creating an interactive choose-your-own-adventure story for children.",
         f"\nSTORY DETAILS:",
         f"- Main Character: {character}",
         f"- Theme: {theme}",
     ]
+
+    # Add feelings section if available
+    if feelings_section:
+        prompt_parts.extend([
+            "\nFEELINGS-FOCUSED GUIDANCE:",
+            feelings_section,
+            "IMPORTANT: Weave these emotional elements naturally into the story and choices.",
+        ])
     if companion and companion != "None":
         prompt_parts.append(f"- Companion: {companion}")
     if friends:
@@ -1085,6 +1097,10 @@ def continue_interactive_story():
     choices_made = payload.get("choices_made", [])
     therapeutic_prompt = payload.get("therapeutic_prompt", "")
 
+    # Extract and build feelings prompt
+    current_feeling = _extract_current_feeling(payload)
+    feelings_section = _build_feelings_prompt(character, current_feeling) if current_feeling else ""
+
     # Determine if this should be an ending (after 3-4 choices)
     should_end = len(choices_made) >= 3
 
@@ -1094,6 +1110,14 @@ def continue_interactive_story():
         f"- Character: {character}",
         f"- Theme: {theme}",
     ]
+
+    # Add feelings section if available
+    if feelings_section:
+        prompt_parts.extend([
+            "\nFEELINGS-FOCUSED GUIDANCE:",
+            feelings_section,
+            "IMPORTANT: Weave these emotional elements naturally into the story and choices.",
+        ])
     if companion and companion != "None":
         prompt_parts.append(f"- Companion: {companion}")
     if friends:
