@@ -72,3 +72,4 @@ backend/.venv/
 
 # Windows artifacts
 nul
+worktrees/
