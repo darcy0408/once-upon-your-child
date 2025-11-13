@@ -85,6 +85,36 @@ void main() {
       expect(attempts, 3);
     });
 
+    test('verifies exponential backoff timing', () async {
+      int attempts = 0;
+      final stopwatch = Stopwatch()..start();
+      final mockClient = MockClient((request) async {
+        attempts++;
+        if (attempts < 3) {
+          return http.Response('server busy', 500);
+        }
+        return http.Response(jsonEncode({'story': 'Timing story'}), 200);
+      });
+
+      final story = await ApiServiceManager.generateStory(
+        characterName: 'Timing Tester',
+        theme: 'Patience',
+        age: 6,
+        client: mockClient,
+        maxAttempts: 3,
+        retryInitialDelay: const Duration(milliseconds: 20),
+      );
+
+      stopwatch.stop();
+
+      expect(story, 'Timing story');
+      expect(attempts, 3);
+      expect(
+        stopwatch.elapsed,
+        greaterThanOrEqualTo(const Duration(milliseconds: 60)),
+      );
+    });
+
     test('throws HttpException after retries exhausted', () async {
       final mockClient = MockClient(
         (request) async => http.Response('server busy', 503),

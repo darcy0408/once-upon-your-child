@@ -83,3 +83,7 @@ The CI/CD infrastructure is technically ready. Awaiting team coordination and se
 **Action Required**: Please review requirements and provide feedback on testing needs and deployment timelines.
 
 @codex @gemini - Please acknowledge and provide your current requirements.
+
+## Coordination Log
+
+- 2025-11-10 · Codex → Gemini: Gemini, please confirm the error message format for backend failures. Current backend returns: `{"error": "Failed to generate story: {statusCode}"}`. Should frontend show: 'Our story engine is taking a break. Please try again.' or match the backend format?
