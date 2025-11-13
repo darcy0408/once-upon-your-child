@@ -18,6 +18,7 @@ from flask_sqlalchemy import SQLAlchemy
 import google.generativeai as genai
 from sqlalchemy import text
 from sqlalchemy.dialects.sqlite import JSON as SQLITE_JSON
+from flasgger import Swagger
 
 # Load environment variables from .env file
 load_dotenv(override=True)
@@ -26,6 +27,26 @@ load_dotenv(override=True)
 # Flask & DB setup
 # ----------------------
 app = Flask(__name__)
+
+# Configure Flasgger for API documentation
+app.config['SWAGGER'] = {
+    'title': 'Story Weaver API',
+    'uiversion': 3,
+    "specs": [
+        {
+            "endpoint": 'apispec_1',
+            "route": '/apispec_1.json',
+            "rule_filter": lambda rule: True,  # all in
+            "model_filter": lambda tag: True,  # all in
+        }
+    ],
+    "static_url_path": "/flasgger_static",
+    "swagger_ui": True,
+    "converters": [
+        ("uuid", "string"),
+    ]
+}
+swagger = Swagger(app)
 
 # IMPORTANT: Update CORS for production
 # Allow both localhost (for development) and your production domains
@@ -71,7 +92,35 @@ logger = logging.getLogger("story_engine")
 # Database model
 # ----------------------
 class Character(db.Model):
-    """Stores character information, traits, relationships, and metadata."""
+    """
+    SQLAlchemy model for storing character information.
+
+    Attributes:
+        id (str): Primary key, unique UUID for the character.
+        name (str): The name of the character.
+        age (int): The age of the character.
+        gender (str): The gender of the character.
+        role (str): The role of the character (e.g., Hero, Sidekick).
+        magic_type (str): The type of magic the character possesses.
+        challenge (str): A challenge the character is currently facing.
+        character_type (str): The type of character (e.g., Everyday Kid, Superhero).
+        superhero_name (str): The superhero name if applicable.
+        mission (str): The superhero mission if applicable.
+        hair (str): Description of the character's hair.
+        eyes (str): Description of the character's eyes.
+        outfit (str): Description of the character's outfit.
+        personality_traits (list): JSON list of personality traits.
+        personality_sliders (dict): JSON dictionary of personality slider values (0-100).
+        siblings (list): JSON list of sibling names.
+        friends (list): JSON list of friend names.
+        likes (list): JSON list of things the character likes.
+        dislikes (list): JSON list of things the character dislikes.
+        fears (list): JSON list of the character's fears.
+        strengths (list): JSON list of the character's strengths.
+        goals (list): JSON list of the character's goals.
+        comfort_item (str): A comfort item the character possesses.
+        created_at (datetime): Timestamp of when the character was created.
+    """
     id = db.Column(db.String(36), primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     age = db.Column(db.Integer, nullable=False)
@@ -105,6 +154,13 @@ class Character(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now, index=True)
 
     def to_dict(self):
+        """
+        Converts the Character object to a dictionary.
+
+        Returns:
+            dict: A dictionary representation of the character,
+                  including all its attributes.
+        """
         return {
             "id": self.id,
             "name": self.name,
@@ -145,7 +201,14 @@ PERSONALITY_SLIDER_DEFINITIONS = {
 
 
 def _ensure_personality_slider_column():
-    """Add the JSON column if an existing SQLite file is missing it."""
+    """
+    Ensures that the 'personality_sliders' column exists in the Character table.
+
+    This function is a migration helper. If an existing SQLite database file
+    (e.g., 'characters.db') is loaded and the 'personality_sliders' column
+    is missing from the 'Character' table, it adds the column as TEXT.
+    This prevents errors when loading older database schemas.
+    """
     table_name = Character.__tablename__ or "character"
     try:
         with db.engine.connect() as conn:
@@ -190,6 +253,9 @@ except Exception as e:
 # Story components
 # ----------------------
 class StoryStructures:
+    """
+    Provides predefined story structures and plot twists for story generation.
+    """
     ADVENTURE_TEMPLATES = [
         {"name": "The Quest", "structure": "Hero receives mission -> Faces obstacles -> Finds strength -> Achieves goal"},
         {"name": "The Discovery", "structure": "Hero finds something unusual -> Investigates -> Uncovers truth -> Shares wisdom"},
@@ -204,6 +270,15 @@ class StoryStructures:
 
     @classmethod
     def get_random_structure(cls, theme: str | None = None):
+        """
+        Retrieves a random story structure, optionally filtered by theme.
+
+        Args:
+            theme (str | None): An optional theme to prioritize specific structures.
+
+        Returns:
+            dict: A dictionary containing the name and structure of the chosen story template.
+        """
         if theme:
             t = theme.lower()
             if "friend" in t:
@@ -213,6 +288,9 @@ class StoryStructures:
         return random.choice(cls.ADVENTURE_TEMPLATES)
 
 class CompanionDynamics:
+    """
+    Manages information about story companions and their contributions.
+    """
     COMPANION_ROLES = {
         "Loyal Dog": {"contribution": "sniffs out clues and warns of danger"},
         "Mysterious Cat": {"contribution": "guides through dark places and senses magic"},
@@ -221,11 +299,24 @@ class CompanionDynamics:
     }
     @classmethod
     def get_companion_info(cls, companion_name: str | None):
+        """
+        Retrieves the contribution of a specified companion.
+
+        Args:
+            companion_name (str | None): The name of the companion.
+
+        Returns:
+            dict | None: A dictionary describing the companion's contribution,
+                         or None if the companion is not found or not provided.
+        """
         if not companion_name:
             return None
         return cls.COMPANION_ROLES.get(companion_name, {"contribution": "provides emotional support"})
 
 class WisdomGems:
+    """
+    Provides a collection of wisdom gems/morals for story conclusions.
+    """
     THEME_WISDOM = {
         "Adventure": ["The greatest adventures begin with a single brave step"],
         "Friendship": ["True friends accept you exactly as you are"],
@@ -233,10 +324,26 @@ class WisdomGems:
     }
     @classmethod
     def get_wisdom(cls, theme: str | None):
+        """
+        Retrieves a random wisdom gem, optionally filtered by theme.
+
+        Args:
+            theme (str | None): An optional theme to prioritize specific wisdom.
+
+        Returns:
+            str: A wisdom gem string.
+        """
         return random.choice(cls.THEME_WISDOM.get(theme, cls.THEME_WISDOM["Adventure"]))
 
 class AdvancedStoryEngine:
+    """
+    Orchestrates the generation of enhanced story prompts using various components.
+    """
     def __init__(self):
+        """
+        Initializes the AdvancedStoryEngine with instances of StoryStructures,
+        CompanionDynamics, and WisdomGems.
+        """
         self.story_structures = StoryStructures()
         self.companion_dynamics = CompanionDynamics()
         self.wisdom_gems = WisdomGems()
@@ -249,6 +356,19 @@ class AdvancedStoryEngine:
         therapeutic_prompt: str = "",
         feelings_prompt: str | None = None,
     ):
+        """
+        Generates an enhanced story prompt for the Gemini model.
+
+        Args:
+            character (str): The main character's name or description.
+            theme (str): The theme of the story.
+            companion (str | None): An optional companion for the character.
+            therapeutic_prompt (str): Optional therapeutic elements to include.
+            feelings_prompt (str | None): Optional feelings-focused guidance.
+
+        Returns:
+            str: The complete, formatted story prompt.
+        """
         story_structure = self.story_structures.get_random_structure(theme)
         companion_info = self.companion_dynamics.get_companion_info(companion)
         plot_twist = random.choice(self.story_structures.PLOT_TWISTS)
@@ -311,6 +431,17 @@ _TITLE_RE = re.compile(r"\[TITLE:\s*(.*?)\s*\]", re.DOTALL)
 _GEM_RE = re.compile(r"\[WISDOM GEM:\s*(.*?)\s*\]", re.DOTALL)
 
 def _safe_extract_title_and_gem(text: str, theme: str):
+    """
+    Safely extracts the title and wisdom gem from a generated story text.
+
+    Args:
+        text (str): The raw story text generated by the model.
+        theme (str): The theme of the story, used as a fallback for the wisdom gem.
+
+    Returns:
+        tuple[str, str, str]: A tuple containing the extracted title,
+                              wisdom gem, and the story body.
+    """
     title_match = _TITLE_RE.search(text or "")
     gem_match = _GEM_RE.search(text or "")
     title = title_match.group(1).strip() if title_match and title_match.group(1).strip() else "A Brave Little Adventure"
@@ -320,6 +451,16 @@ def _safe_extract_title_and_gem(text: str, theme: str):
     return title, wisdom_gem, story_body
 
 def _clamp_slider_value(value):
+    """
+    Clamps a given slider value to be within the range of 0 to 100.
+
+    Args:
+        value: The raw slider value, which can be an int, float, or string.
+
+    Returns:
+        int | None: The clamped integer value (0-100), or None if the input
+                    cannot be converted to a number.
+    """
     if value is None:
         return None
     if isinstance(value, (int, float)):
@@ -333,6 +474,18 @@ def _clamp_slider_value(value):
 
 
 def _sanitize_personality_sliders(raw_value):
+    """
+    Sanitizes a dictionary of personality slider values.
+
+    Ensures that only valid slider keys are present and their values are
+    clamped between 0 and 100.
+
+    Args:
+        raw_value (dict): A dictionary of raw personality slider values.
+
+    Returns:
+        dict: A sanitized dictionary with clamped slider values.
+    """
     if not raw_value or not isinstance(raw_value, dict):
         return {}
     sanitized = {}
@@ -346,6 +499,18 @@ def _sanitize_personality_sliders(raw_value):
 
 
 def _describe_slider_value(value, left_label, right_label):
+    """
+    Generates a human-readable description for a single personality slider value.
+
+    Args:
+        value (int | None): The clamped slider value (0-100).
+        left_label (str): The label for the left extreme of the slider.
+        right_label (str): The label for the right extreme of the slider.
+
+    Returns:
+        str | None: A descriptive string (e.g., "strongly leans Bold Voice"),
+                    or None if the value is None.
+    """
     if value is None:
         return None
     delta = abs(value - 50)
@@ -362,6 +527,15 @@ def _describe_slider_value(value, left_label, right_label):
 
 
 def _describe_personality_sliders(personality_sliders):
+    """
+    Generates a list of human-readable descriptions for all personality slider values.
+
+    Args:
+        personality_sliders (dict): A dictionary of personality slider values.
+
+    Returns:
+        list[str]: A list of descriptive strings for each slider.
+    """
     if not personality_sliders:
         return []
     lines = ["\nPERSONALITY STYLE DIALS: (0 = left trait, 100 = right trait)"]
