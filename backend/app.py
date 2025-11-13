@@ -555,7 +555,26 @@ def _describe_personality_sliders(personality_sliders):
 
 
 def _build_character_integration(character_name, fears, strengths, likes, dislikes, comfort_item, personality_traits, personality_sliders):
-    """Build deep character integration for personalized, therapeutic storytelling"""
+    """
+    Builds a detailed character integration prompt for personalized, therapeutic storytelling.
+
+    This prompt incorporates various character attributes like fears, strengths, likes,
+    dislikes, comfort items, personality traits, and slider values to guide the
+    story generation towards a therapeutic and engaging narrative.
+
+    Args:
+        character_name (str): The name of the main character.
+        fears (list): A list of the character's fears.
+        strengths (list): A list of the character's strengths.
+        likes (list): A list of things the character likes.
+        dislikes (list): A list of things the character dislikes.
+        comfort_item (str): The character's comfort item.
+        personality_traits (list): A list of the character's personality traits.
+        personality_sliders (dict): A dictionary of the character's personality slider values.
+
+    Returns:
+        str: A formatted string containing deep character integration details for the story prompt.
+    """
 
     parts = [
         "DEEP CHARACTER INTEGRATION:",
@@ -635,6 +654,16 @@ def _build_character_integration(character_name, fears, strengths, likes, dislik
 
 
 def _get_age_guidelines(age: int) -> dict:
+    """
+    Retrieves age-appropriate guidelines for story generation.
+
+    Args:
+        age (int): The age of the target audience.
+
+    Returns:
+        dict: A dictionary containing guidelines for story length, vocabulary,
+              sentence structure, concepts, and special instructions.
+    """
     if age <= 5:
         return {
             "length_guideline": "100-150 words",
@@ -682,6 +711,15 @@ def _get_age_guidelines(age: int) -> dict:
 
 
 def _build_age_instruction_block(age: int) -> str:
+    """
+    Constructs a formatted instruction block based on age-appropriate guidelines.
+
+    Args:
+        age (int): The age of the target audience.
+
+    Returns:
+        str: A multi-line string detailing age-specific story requirements.
+    """
     guidelines = _get_age_guidelines(age)
     return (
         f"AGE-APPROPRIATE GUIDELINES FOR {age}-YEAR-OLD:\n"
@@ -695,6 +733,23 @@ def _build_age_instruction_block(age: int) -> str:
 
 
 def _build_learning_to_read_prompt(character_name, theme, age, character_details, companion=None, extra_characters=None):
+    """
+    Builds a specialized prompt for generating a rhyming, learning-to-read story.
+
+    This prompt includes strict requirements for length, rhyme scheme, vocabulary,
+    and sentence structure suitable for young readers.
+
+    Args:
+        character_name (str): The name of the main character.
+        theme (str): The theme of the story.
+        age (int): The age of the target reader.
+        character_details (dict): Additional details about the character.
+        companion (str | None): Optional companion for the character.
+        extra_characters (list | None): Optional list of extra characters.
+
+    Returns:
+        str: The formatted prompt for a learning-to-read story.
+    """
     def _format_list(label, values):
         if not values:
             return ""
@@ -734,6 +789,16 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
     )
 
 def _as_list(v):
+    """
+    Converts various input types (list, JSON string, comma-separated string, None)
+    into a list of strings.
+
+    Args:
+        v (any): The input value to convert.
+
+    Returns:
+        list[str]: A list of strings.
+    """
     """Accept list, JSON string, comma string, or None; return list[str]."""
     if isinstance(v, list):
         return [str(x) for x in v]
@@ -753,6 +818,19 @@ def _as_list(v):
     return [str(v)]
 
 def _extract_current_feeling(container):
+    """
+    Extracts and normalizes current feeling data from a request payload.
+
+    Handles variations in key naming (e.g., "current_feeling" vs "currentFeeling")
+    and ensures intensity and coping strategies are correctly formatted.
+
+    Args:
+        container (dict): The request payload dictionary.
+
+    Returns:
+        dict | None: A normalized dictionary of feeling data, or None if no
+                     meaningful feeling data is present.
+    """
     """Return a normalized current feeling dictionary or None."""
     if not isinstance(container, dict):
         return None
@@ -807,6 +885,19 @@ def _extract_current_feeling(container):
     return normalized
 
 def _build_feelings_prompt(character_name: str, feeling: dict | None) -> str:
+    """
+    Builds a feelings-focused prompt section for story generation.
+
+    This prompt guides the story to acknowledge, validate, and help the character
+    process their emotions, incorporating coping strategies.
+
+    Args:
+        character_name (str): The name of the main character.
+        feeling (dict | None): A dictionary of normalized feeling data, or None.
+
+    Returns:
+        str: A formatted string containing feelings-focused guidance for the story prompt.
+    """
     if not feeling:
         return ""
 
@@ -854,14 +945,186 @@ def _build_feelings_prompt(character_name: str, feeling: dict | None) -> str:
 # ----------------------
 @app.route("/health", methods=["GET"])
 def health():
+    """
+    Check API health and model status
+    ---
+    tags:
+      - Health
+    summary: Check API health and model status
+    description: Returns the current status of the API, the Gemini model being used, and whether an API key is configured.
+    responses:
+      200:
+        description: API is healthy
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              description: Status of the API (e.g., "ok")
+            model:
+              type: string
+              description: Name of the Gemini model in use
+            has_api_key:
+              type: boolean
+              description: True if a Gemini API key is configured, false otherwise
+    """
     return {"status": "ok", "model": GEMINI_MODEL, "has_api_key": bool(api_key)}, 200
 
 @app.route("/get-story-themes", methods=["GET"])
 def get_story_themes():
+    """
+    Get available story themes
+    ---
+    tags:
+      - Story Generation
+    summary: Get available story themes
+    description: Returns a list of predefined themes that can be used for story generation.
+    responses:
+      200:
+        description: A list of available story themes.
+        schema:
+          type: array
+          items:
+            type: string
+            example: "Adventure"
+    """
     return jsonify(["Adventure", "Friendship", "Magic", "Dragons", "Castles", "Unicorns", "Space", "Ocean"]), 200
 
 @app.route("/generate-story", methods=["POST"])
 def generate_story_endpoint():
+    """
+    Generate a new story
+    ---
+    tags:
+      - Story Generation
+    summary: Generate a new story
+    description: Generates a new story based on character details, theme, and optional parameters like therapeutic prompts or learning-to-read mode.
+    parameters:
+      - in: body
+        name: body
+        schema:
+          id: StoryGenerationRequest
+          type: object
+          required:
+            - character
+            - theme
+            - character_age
+          properties:
+            character:
+              type: string
+              description: The main character's name or description.
+              example: "Luna"
+            theme:
+              type: string
+              description: The theme of the story (e.g., "Adventure", "Friendship").
+              example: "Adventure"
+            companion:
+              type: string
+              description: An optional companion for the character.
+              example: "Sparky the dog"
+            therapeutic_prompt:
+              type: string
+              description: An optional therapeutic element to weave into the story.
+              example: "Help the character overcome shyness."
+            user_api_key:
+              type: string
+              description: Optional user-provided Gemini API key for premium generation.
+            character_age:
+              type: integer
+              description: The age of the character, used for age-appropriate content.
+              example: 7
+            current_feeling:
+              type: object
+              description: Optional current feeling data for emotional integration.
+              properties:
+                emotion_name:
+                  type: string
+                  example: "nervous"
+                intensity:
+                  type: integer
+                  example: 3
+                what_happened:
+                  type: string
+                  example: "He has a big presentation tomorrow."
+                coping_strategies:
+                  type: array
+                  items:
+                    type: string
+                  example: ["deep breaths", "talking to a friend"]
+            rhyme_time_mode:
+              type: boolean
+              description: If true, generates a rhyming story.
+              default: false
+            learning_to_read_mode:
+              type: boolean
+              description: If true, generates a simplified story for learning to read.
+              default: false
+            character_details:
+              type: object
+              description: Detailed character traits for deeper integration.
+              properties:
+                fears:
+                  type: array
+                  items:
+                    type: string
+                strengths:
+                  type: array
+                  items:
+                    type: string
+                likes:
+                  type: array
+                  items:
+                    type: string
+                dislikes:
+                  type: array
+                  items:
+                    type: string
+                comfort_item:
+                  type: string
+                personality_traits:
+                  type: array
+                  items:
+                    type: string
+                personality_sliders:
+                  type: object
+                  additionalProperties:
+                    type: integer
+            characters:
+              type: array
+              items:
+                type: string
+              description: List of supporting character names.
+    responses:
+      200:
+        description: Successfully generated story.
+        schema:
+          id: StoryResponse
+          type: object
+          properties:
+            title:
+              type: string
+              description: The title of the generated story.
+            story:
+              type: string
+              description: The full text of the generated story.
+            story_text:
+              type: string
+              description: (Deprecated) The full text of the generated story.
+            wisdom_gem:
+              type: string
+              description: A wisdom gem or moral from the story.
+            used_user_key:
+              type: boolean
+              description: True if a user-provided API key was used, false otherwise.
+      500:
+        description: Internal server error or model generation failed.
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              description: Error message.
+    """
     payload = request.get_json(silent=True) or {}
     rhyme_time_mode = payload.get("rhyme_time_mode", False)
     learning_to_read_mode = payload.get("learning_to_read_mode", False)
@@ -984,6 +1247,199 @@ def generate_story_endpoint():
 
 @app.route("/create-character", methods=["POST"])
 def create_character():
+    """
+    Create a new character
+    ---
+    tags:
+      - Character Management
+    summary: Create a new character
+    description: Creates a new character profile with various customizable attributes.
+    parameters:
+      - in: body
+        name: body
+        schema:
+          id: CharacterCreationRequest
+          type: object
+          required:
+            - name
+            - age
+          properties:
+            name:
+              type: string
+              description: The name of the character.
+              example: "Alice"
+            age:
+              type: integer
+              description: The age of the character.
+              example: 7
+            gender:
+              type: string
+              description: The gender of the character.
+              example: "Female"
+            role:
+              type: string
+              description: The role of the character (e.g., "Hero", "Sidekick").
+              example: "Hero"
+            magic_type:
+              type: string
+              description: The type of magic the character possesses.
+              example: "Elemental"
+            challenge:
+              type: string
+              description: A challenge the character is facing.
+              example: "Learning to share"
+            character_type:
+              type: string
+              description: The type of character (e.g., "Everyday Kid", "Superhero").
+              example: "Everyday Kid"
+            superhero_name:
+              type: string
+              description: The superhero name if character_type is "Superhero".
+              example: "Captain Courage"
+            mission:
+              type: string
+              description: The character's mission if character_type is "Superhero".
+              example: "Protect the city"
+            hair:
+              type: string
+              description: Description of the character's hair.
+              example: "Brown, curly"
+            eyes:
+              type: string
+              description: Description of the character's eyes.
+              example: "Blue"
+            outfit:
+              type: string
+              description: Description of the character's outfit.
+              example: "Red cape and boots"
+            traits:
+              type: array
+              items:
+                type: string
+              description: A list of personality traits.
+              example: ["Brave", "Curious"]
+            personality_sliders:
+              type: object
+              description: Key-value pairs for personality slider values (0-100).
+              example: {"adventure": 75, "sociability": 50}
+            likes:
+              type: array
+              items:
+                type: string
+              description: A list of things the character likes.
+              example: ["Reading", "Playing outside"]
+            dislikes:
+              type: array
+              items:
+                type: string
+              description: A list of things the character dislikes.
+              example: ["Spiders", "Loud noises"]
+            fears:
+              type: array
+              items:
+                type: string
+              description: A list of the character's fears.
+              example: ["Darkness", "Being alone"]
+            strengths:
+              type: array
+              items:
+                type: string
+              description: A list of the character's strengths.
+              example: ["Kindness", "Problem-solving"]
+            goals:
+              type: array
+              items:
+                type: string
+              description: A list of the character's goals.
+              example: ["Learn to fly", "Make new friends"]
+            comfort_item:
+              type: string
+              description: A comfort item the character has.
+              example: "A teddy bear"
+    responses:
+      201:
+        description: Character created successfully.
+        schema:
+          id: CharacterResponse
+          type: object
+          properties:
+            id:
+              type: string
+              description: The unique ID of the created character.
+            name:
+              type: string
+            age:
+              type: integer
+            gender:
+              type: string
+            role:
+              type: string
+            magic_type:
+              type: string
+            challenge:
+              type: string
+            character_type:
+              type: string
+            superhero_name:
+              type: string
+            mission:
+              type: string
+            hair:
+              type: string
+            eyes:
+              type: string
+            outfit:
+              type: string
+            personality_traits:
+              type: array
+              items:
+                type: string
+            personality_sliders:
+              type: object
+              additionalProperties:
+                type: integer
+            siblings:
+              type: array
+              items:
+                type: string
+            friends:
+              type: array
+              items:
+                type: string
+            likes:
+              type: array
+              items:
+                type: string
+            dislikes:
+              type: array
+              items:
+                type: string
+            fears:
+              type: array
+              items:
+                type: string
+            strengths:
+              type: array
+              items:
+                type: string
+            goals:
+              type: array
+              items:
+                type: string
+            comfort_item:
+              type: string
+            created_at:
+              type: string
+              format: date-time
+      400:
+        description: Missing required fields or invalid age.
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              description: Error message.
+    """
     data = request.get_json(silent=True) or {}
     missing = [k for k in ("name", "age") if not data.get(k)]
     if missing:
@@ -1023,7 +1479,140 @@ def create_character():
 # ---- SINGLE update route (PATCH/PUT) ----
 @app.route("/characters/<string:char_id>", methods=["PATCH", "PUT"])
 def update_character(char_id: str):
-    """Partial update allowed."""
+    """
+    Update an existing character
+    ---
+    tags:
+      - Character Management
+    summary: Update an existing character
+    description: Updates an existing character profile with partial data. Only provided fields will be updated.
+    parameters:
+      - in: path
+        name: char_id
+        type: string
+        required: true
+        description: The unique ID of the character to update.
+        example: "some-uuid-string"
+      - in: body
+        name: body
+        schema:
+          id: CharacterUpdateRequest
+          type: object
+          properties:
+            name:
+              type: string
+              description: The name of the character.
+              example: "Alice"
+            age:
+              type: integer
+              description: The age of the character.
+              example: 8
+            gender:
+              type: string
+              description: The gender of the character.
+              example: "Female"
+            role:
+              type: string
+              description: The role of the character (e.g., "Hero", "Sidekick").
+              example: "Hero"
+            magic_type:
+              type: string
+              description: The type of magic the character possesses.
+              example: "Elemental"
+            challenge:
+              type: string
+              description: A challenge the character is facing.
+              example: "Learning to be brave"
+            character_type:
+              type: string
+              description: The type of character (e.g., "Everyday Kid", "Superhero").
+              example: "Superhero"
+            superhero_name:
+              type: string
+              description: The superhero name if character_type is "Superhero".
+              example: "Captain Courage"
+            mission:
+              type: string
+              description: The character's mission if character_type is "Superhero".
+              example: "Protect the city"
+            hair:
+              type: string
+              description: Description of the character's hair.
+              example: "Blonde, straight"
+            eyes:
+              type: string
+              description: Description of the character's eyes.
+              example: "Green"
+            outfit:
+              type: string
+              description: Description of the character's outfit.
+              example: "Blue suit with a lightning bolt"
+            personality_traits:
+              type: array
+              items:
+                type: string
+              description: A list of personality traits.
+              example: ["Confident", "Strong"]
+            personality_sliders:
+              type: object
+              description: Key-value pairs for personality slider values (0-100).
+              example: {"adventure": 90, "sociability": 60}
+            likes:
+              type: array
+              items:
+                type: string
+              description: A list of things the character likes.
+              example: ["Flying", "Helping others"]
+            dislikes:
+              type: array
+              items:
+                type: string
+              description: A list of things the character dislikes.
+              example: ["Villains", "Being late"]
+            fears:
+              type: array
+              items:
+                type: string
+              description: A list of the character's fears.
+              example: ["Losing friends"]
+            strengths:
+              type: array
+              items:
+                type: string
+              description: A list of the character's strengths.
+              example: ["Super strength", "Flight"]
+            goals:
+              type: array
+              items:
+                type: string
+              description: A list of the character's goals.
+              example: ["Save the world"]
+            comfort_item:
+              type: string
+              description: A comfort item the character has.
+              example: "A lucky charm"
+    responses:
+      200:
+        description: Character updated successfully.
+        schema:
+          $ref: '#/definitions/CharacterResponse'
+      400:
+        description: Invalid age provided.
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              description: Error message.
+      404:
+        description: Character not found.
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              description: Error message.
+    """
     char = db.session.get(Character, char_id)
     if not char:
         return jsonify({"error": "Character not found"}), 404
@@ -1087,6 +1676,41 @@ def update_character(char_id: str):
 
 @app.route("/characters/<string:char_id>", methods=["DELETE"])
 def delete_character(char_id: str):
+    """
+    Delete a character
+    ---
+    tags:
+      - Character Management
+    summary: Delete a character
+    description: Deletes a character profile by its unique ID.
+    parameters:
+      - in: path
+        name: char_id
+        type: string
+        required: true
+        description: The unique ID of the character to delete.
+        example: "some-uuid-string"
+    responses:
+      200:
+        description: Character deleted successfully.
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              description: Status of the deletion (e.g., "deleted").
+            id:
+              type: string
+              description: The ID of the deleted character.
+      404:
+        description: Character not found.
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              description: Error message.
+    """
     char = db.session.get(Character, char_id)
     if not char:
         return jsonify({"error": "Character not found"}), 404
@@ -1096,12 +1720,54 @@ def delete_character(char_id: str):
 
 @app.route("/get-characters", methods=["GET"])
 def get_characters():
-    """Return a simple LIST to match the Flutter code that expects a list."""
+    """
+    Get all characters
+    ---
+    tags:
+      - Character Management
+    summary: Get all characters
+    description: Returns a list of all character profiles stored in the database, ordered by creation date (newest first).
+    responses:
+      200:
+        description: A list of character profiles.
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/CharacterResponse'
+    """
     chars = Character.query.order_by(Character.created_at.desc()).all()
     return jsonify([c.to_dict() for c in chars]), 200
 
 @app.route("/characters/<string:char_id>", methods=["GET"])
 def get_character(char_id: str):
+    """
+    Get a single character by ID
+    ---
+    tags:
+      - Character Management
+    summary: Get a single character by ID
+    description: Returns a single character profile based on its unique ID.
+    parameters:
+      - in: path
+        name: char_id
+        type: string
+        required: true
+        description: The unique ID of the character to retrieve.
+        example: "some-uuid-string"
+    responses:
+      200:
+        description: Character retrieved successfully.
+        schema:
+          $ref: '#/definitions/CharacterResponse'
+      404:
+        description: Character not found.
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              description: Error message.
+    """
     char = db.session.get(Character, char_id)
     if not char:
         return jsonify({"error": "Character not found"}), 404
@@ -1109,6 +1775,74 @@ def get_character(char_id: str):
 
 @app.route("/generate-multi-character-story", methods=["POST"])
 def generate_multi_character_story():
+    """
+    Generate a multi-character story
+    ---
+    tags:
+      - Story Generation
+    summary: Generate a multi-character story
+    description: Generates a story featuring multiple characters, with a focus on a main character and their friends.
+    parameters:
+      - in: body
+        name: body
+        schema:
+          id: MultiCharacterStoryRequest
+          type: object
+          required:
+            - character_ids
+            - main_character_id
+          properties:
+            character_ids:
+              type: array
+              items:
+                type: string
+              description: A list of character IDs to include in the story.
+              example: ["uuid1", "uuid2"]
+            main_character_id:
+              type: string
+              description: The ID of the main character for the story.
+              example: "uuid1"
+            theme:
+              type: string
+              description: The theme of the story.
+              default: "Friendship"
+              example: "Friendship"
+            current_feeling:
+              type: object
+              description: Optional current feeling data for emotional integration.
+              properties:
+                emotion_name:
+                  type: string
+                  example: "happy"
+                intensity:
+                  type: integer
+                  example: 4
+    responses:
+      200:
+        description: Successfully generated multi-character story.
+        schema:
+          type: object
+          properties:
+            story:
+              type: string
+              description: The full text of the generated story.
+      400:
+        description: Missing required fields or main character not found.
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              description: Error message.
+      500:
+        description: Internal server error or model generation failed.
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              description: Error message.
+    """
     data = request.get_json(silent=True) or {}
     character_ids = data.get("character_ids", [])
     main_character_id = data.get("main_character_id")
@@ -1169,13 +1903,102 @@ def generate_multi_character_story():
 
 @app.route("/generate-interactive-story", methods=["POST"])
 def generate_interactive_story():
-    """Generate the opening segment of an interactive, choice-based story."""
+    """
+    Generate the beginning of an interactive story
+    ---
+    tags:
+      - Interactive Story
+    summary: Generate the beginning of an interactive story
+    description: Generates the initial segment of a choose-your-own-adventure story, including choices for the user.
+    parameters:
+      - in: body
+        name: body
+        schema:
+          id: InteractiveStoryRequest
+          type: object
+          required:
+            - character
+            - character_age
+            - theme
+          properties:
+            character:
+              type: string
+              description: The main character's name or description.
+              example: "Lily"
+            character_age:
+              type: integer
+              description: The age of the character, used for age-appropriate content.
+              example: 8
+            theme:
+              type: string
+              description: The theme of the interactive story.
+              example: "Mystery"
+            companion:
+              type: string
+              description: An optional companion for the character.
+              example: "Wise Owl"
+            friends:
+              type: array
+              items:
+                type: string
+              description: A list of friends or siblings to include in the story.
+              example: ["Tom", "Mia"]
+            therapeutic_prompt:
+              type: string
+              description: An optional therapeutic element to weave into the story.
+              example: "Focus on problem-solving skills."
+            current_feeling:
+              type: object
+              description: Optional current feeling data for emotional integration.
+              properties:
+                emotion_name:
+                  type: string
+                  example: "curious"
+                intensity:
+                  type: integer
+                  example: 3
+    responses:
+      200:
+        description: Successfully generated interactive story segment.
+        schema:
+          id: InteractiveStoryResponse
+          type: object
+          properties:
+            text:
+              type: string
+              description: The story text for the current segment.
+            choices:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  text:
+                    type: string
+                  description:
+                    type: string
+            is_ending:
+              type: boolean
+              description: True if this is the final segment of the story, false otherwise.
+      500:
+        description: Internal server error or model generation failed.
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              description: Error message.
+    """
     payload = request.get_json(silent=True) or {}
     character = payload.get("character", "a brave adventurer")
     theme = payload.get("theme", "Adventure")
     companion = payload.get("companion")
     friends = payload.get("friends", [])
     therapeutic_prompt = payload.get("therapeutic_prompt", "")
+
+    # Extract feelings using the helper function
+    current_feeling = _extract_current_feeling(payload)
 
     prompt_parts = [
         "You are a master storyteller creating an interactive choose-your-own-adventure story for children.",
@@ -1186,7 +2009,14 @@ def generate_interactive_story():
     if companion and companion != "None":
         prompt_parts.append(f"- Companion: {companion}")
     if friends:
-        prompt_parts.append(f"- Friends/Siblings in story: {', '.join(friends)}")
+        prompt_parts.append(f"- Friends/Siblings in story: "
+                            f"{', '.join(friends)}")
+
+    # Build and add feelings section if a feeling was provided
+    if current_feeling:
+        feelings_section = \
+_build_feelings_prompt(character, current_feeling)
+        prompt_parts.append(feelings_section)
 
     # Add therapeutic elements if provided
     if therapeutic_prompt:
@@ -1196,25 +2026,37 @@ def generate_interactive_story():
             "IMPORTANT: Weave these elements naturally into the story and choices (not preachy).",
         ])
 
+    # Add age-appropriate guidelines
+    age_guidelines = _build_age_instruction_block(character_age)
+    prompt_parts.append(age_guidelines)
+
     prompt_parts.extend([
-        "\nTASK: Create the OPENING segment of an engaging story (150-200 words).",
-        "Set the scene and introduce a situation where the character must make a choice.",
+        "\nTASK: Create the OPENING segment of an engaging story "
+        "(150-200 words).",
+        "Set the scene and introduce a situation where the "
+        "character must make a choice.",
     ])
     if friends:
-        prompt_parts.append(f"IMPORTANT: Include {', '.join(friends)} as friends/siblings who appear in the story and can help with choices.")
+        prompt_parts.append(f"IMPORTANT: Include {', '.join(friends)} "
+                            f"as friends/siblings who appear in the story and "
+                            f"can help with choices.")
 
     prompt_parts.extend([
         "\nFORMAT YOUR RESPONSE EXACTLY AS JSON:",
         "{",
         '  "text": "The story text here...",',
         '  "choices": [',
-        '    {"id": "choice1", "text": "First option (short)", "description": "What happens if they choose this"},',
-        '    {"id": "choice2", "text": "Second option (short)", "description": "What happens if they choose this"},',
-        '    {"id": "choice3", "text": "Third option (short)", "description": "What happens if they choose this"}',
-        '  ],',
+        '    {"id": "choice1", "text": "First option (short)", '
+        '"description": "What happens if they choose this"},',
+        '    {"id": "choice2", "text": "Second option (short)", '
+        '"description": "What happens if they choose this"},',
+        '    {"id": "choice3", "text": "Third option (short)", '
+        '"description": "What happens if they choose this"}',
+        '],',
         '  "is_ending": false',
         "}",
-        "\nIMPORTANT: Return ONLY valid JSON. No extra text before or after."
+        "\nIMPORTANT: Return ONLY valid JSON. No extra text "
+        "before or after."
     ])
     prompt = "\n".join(prompt_parts)
 
@@ -1237,11 +2079,17 @@ def generate_interactive_story():
         # Fallback response
         friends_text = f" with {', '.join(friends)}" if friends else ""
         return jsonify({
-            "text": f"{character}{friends_text} stood at the edge of a mysterious forest, hearing strange sounds within. The {companion if companion and companion != 'None' else 'wind'} seemed to whisper of adventure ahead.",
+            "text": f"{character_name}{friends_text} stood at the "
+                    f"edge of a mysterious forest, hearing strange sounds within. The "
+                    f"{companion if companion and companion != 'None' else 'wind'} "
+                    f"seemed to whisper of adventure ahead.",
             "choices": [
-                {"id": "choice1", "text": "Enter the forest bravely", "description": "Face the unknown with courage"},
-                {"id": "choice2", "text": "Look for another path", "description": "Search for a safer route"},
-                {"id": "choice3", "text": "Call out to see if anyone is there", "description": "Try to make friends first"}
+                {"id": "choice1", "text": "Enter the forest "
+                                          "bravely", "description": "Face the unknown with courage"},
+                {"id": "choice2", "text": "Look for another "
+                                          "path", "description": "Search for a safer route"},
+                {"id": "choice3", "text": "Call out to see if "
+                                          "anyone is there", "description": "Try to make friends first"}
             ],
             "is_ending": False
         }), 200
