@@ -9,6 +9,9 @@ This directory contains the self-hosted monitoring stack for the Story Weaver ap
 - **Loki**: Log aggregation
 - **Promtail**: Log shipping to Loki
 - **Alertmanager**: Alert routing and notifications
+- **Elasticsearch**: Search and analytics engine
+- **Logstash**: Log processing and enrichment
+- **Kibana**: Log visualization and exploration
 
 ## Backend Integration
 
@@ -20,19 +23,21 @@ The backend has been instrumented with:
 ## Setup Instructions
 
 1. **Deploy Monitoring Stack**:
-   ```bash
-   cd monitoring
-   docker-compose up -d
-   ```
+    ```bash
+    cd monitoring
+    docker-compose up -d
+    ```
 
 2. **Configure New Relic**:
-   - Set `NEW_RELIC_LICENSE_KEY` environment variable in Railway
-   - The `newrelic.ini` is configured for production
+    - Set `NEW_RELIC_LICENSE_KEY` environment variable in Railway
+    - The `newrelic.ini` is configured for production
 
-3. **Access Dashboards**:
-   - Grafana: http://localhost:3000 (admin/admin)
-   - Prometheus: http://localhost:9090
-   - Alertmanager: http://localhost:9093
+3. **Access Services**:
+    - **Grafana**: http://localhost:3000 (admin/admin)
+    - **Prometheus**: http://localhost:9090
+    - **Alertmanager**: http://localhost:9093
+    - **Kibana**: http://localhost:5601
+    - **Elasticsearch**: http://localhost:9200
 
 4. **Configure Alerts**:
    - Update `alertmanager.yml` with actual Slack webhook and email credentials
@@ -47,9 +52,19 @@ The backend has been instrumented with:
 
 ## GDPR Compliance
 
-- No personal user data is tracked
-- Only aggregated, anonymized metrics
-- Logs are retained for 30 days
+- **Automated Compliance Monitoring**: `compliance_monitor.py` provides GDPR compliance checks
+- **Data Export**: API endpoints for user data export (Article 15)
+- **Right to Erasure**: Data deletion endpoints (Article 17)
+- **Data Retention**: 7-year retention policy with automated cleanup
+- **Anonymization**: Personal data is anonymized in logs and metrics
+- **Consent Management**: Framework for consent tracking (to be implemented)
+- **Compliance Reports**: Monthly automated compliance reporting
+
+### GDPR API Endpoints
+- `GET /compliance-check` - Run compliance checks
+- `GET /data-export/<user_id>` - Export user data
+- `DELETE /data-deletion/<user_id>` - Delete user data
+- `GET /compliance-report` - Generate compliance report
 
 ## Dashboards
 
