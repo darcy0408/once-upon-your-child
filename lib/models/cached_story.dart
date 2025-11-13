@@ -12,6 +12,7 @@ class CachedStory {
   late String theme;
   String? wisdomGem;
   late DateTime createdAt;
+  @Index()
   late DateTime cachedAt;
   String? companion;
   String? characterId;

@@ -9,13 +9,13 @@ class IsarService {
 
   static Isar get isar {
     final instance = _isar;
-    if (instance == null) {
+    if (instance == null || !instance.isOpen) {
       throw StateError('IsarService.initialize must be called before use.');
     }
     return instance;
   }
 
-  static bool get isInitialized => _isar != null;
+  static bool get isInitialized => _isar != null && _isar!.isOpen;
 
   static Future<void> initialize({String? directoryPath}) async {
     if (isInitialized) return;
@@ -30,11 +30,10 @@ class IsarService {
   }
 
   static Future<void> close() async {
-    final instance = _isar;
-    if (instance != null) {
-      await instance.close();
-      _isar = null;
+    if (_isar != null && _isar!.isOpen) {
+      await _isar!.close();
     }
+    _isar = null;
   }
 
   static Future<void> cacheStory(SavedStory story) async {
@@ -174,7 +173,6 @@ class IsarService {
     final cachedCharacters = characters.map(_mapCharacter).toList();
     await isar.cachedCharacters.putAll(cachedCharacters);
     story.characters.addAll(cachedCharacters);
-    await story.characters.save();
   }
 
   static Future<void> _deleteCharacters(CachedStory story) async {
@@ -182,7 +180,6 @@ class IsarService {
     if (story.characters.isEmpty) return;
     final ids = story.characters.map((c) => c.id).toList();
     await story.characters.reset();
-    await story.characters.save();
     await isar.cachedCharacters.deleteAll(ids);
   }
 

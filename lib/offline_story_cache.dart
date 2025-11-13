@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:isar/isar.dart';
-
 import 'models.dart';
 import 'models/cached_story.dart';
 import 'services/isar_service.dart';
@@ -19,19 +17,14 @@ class OfflineStoryCache {
     await _enforceLimit();
   }
 
-  Future<List<CachedStory>> getAllCachedStories() {
-    return IsarService.isar.cachedStorys
-        .where()
-        .sortByCachedAtDesc()
-        .findAll();
+  Future<List<CachedStory>> getAllCachedStories() async {
+    final query = IsarService.isar.cachedStorys.buildQuery<CachedStory>();
+    return await query.findAll() as List<CachedStory>;
   }
 
-  Future<List<CachedStory>> getFavoriteStories() {
-    return IsarService.isar.cachedStorys
-        .filter()
-        .isFavoriteEqualTo(true)
-        .sortByCachedAtDesc()
-        .findAll();
+  Future<List<CachedStory>> getFavoriteStories() async {
+    final allStories = await getAllCachedStories();
+    return allStories.where((story) => story.isFavorite).toList();
   }
 
   Future<CachedStory?> getCachedStory(String storyId) {

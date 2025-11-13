@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'services/isar_service.dart';
 import 'main_story.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await IsarService.initialize();
   runApp(const StoryWeaverApp());
 }
 
