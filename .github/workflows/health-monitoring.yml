@@ -1,0 +1,95 @@
+name: Health Monitoring
+
+on:
+  schedule:
+    # Run every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Frontend Health (Netlify)
+        run: |
+          echo "Checking frontend health..."
+          if curl -f -s --max-time 10 ${{ secrets.FRONTEND_URL }}/ | head -n 1 | grep -q "Story Weaver"; then
+            echo "✅ Frontend is healthy"
+          else
+            echo "❌ Frontend health check failed"
+            exit 1
+          fi
+
+      - name: Check Backend Health (Railway)
+        run: |
+          echo "Checking backend health..."
+          if curl -f -s --max-time 10 ${{ secrets.BACKEND_URL }}/health | grep -q "ok"; then
+            echo "✅ Backend is healthy"
+          else
+            echo "❌ Backend health check failed"
+            exit 1
+          fi
+
+      - name: Check API Endpoints
+        run: |
+          echo "Checking API endpoints..."
+          # Test story themes endpoint
+          if curl -f -s --max-time 10 ${{ secrets.BACKEND_URL }}/get-story-themes | grep -q "Adventure"; then
+            echo "✅ Story themes endpoint working"
+          else
+            echo "❌ Story themes endpoint failed"
+            exit 1
+          fi
+
+      - name: Performance Check
+        run: |
+          echo "Checking response times..."
+          # Measure response time for health endpoint
+          response_time=$(curl -s -w "%{time_total}" -o /dev/null ${{ secrets.BACKEND_URL }}/health)
+          if (( $(echo "$response_time < 2.0" | bc -l) )); then
+            echo "✅ Backend response time: ${response_time}s"
+          else
+            echo "⚠️  Slow backend response: ${response_time}s"
+          fi
+
+      - name: Send Slack Alert on Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "🚨 Story Weaver Health Check Failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Health Check Failed*\nEnvironment: ${{ github.event_name == 'schedule' && 'Production' || 'Manual Check' }}\nTime: $(date)\n\n*Failed Services:*\n- Frontend: ${{ secrets.FRONTEND_URL }}\n- Backend: ${{ secrets.BACKEND_URL }}\n\nPlease check deployment status and logs immediately."
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Dashboard"
+                      },
+                      "url": "${{ secrets.DASHBOARD_URL }}"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "Rollback"
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/workflows/rollback.yml"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
