@@ -7,6 +7,7 @@ import json
 import logging
 import random
 import re
+import time
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -16,6 +17,8 @@ from flask_sqlalchemy import SQLAlchemy
 import google.generativeai as genai
 from sqlalchemy import text
 from sqlalchemy.dialects.sqlite import JSON as SQLITE_JSON
+from sqlalchemy.exc import OperationalError
+import redis
 
 # Load environment variables from .env file
 load_dotenv(override=True)
@@ -50,6 +53,14 @@ database_url = os.getenv("DATABASE_URL")
 if database_url:
     # Railway/production: use PostgreSQL
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    # Connection pooling for PostgreSQL
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_size": 10,
+        "max_overflow": 20,
+        "pool_timeout": 30,
+        "pool_recycle": 3600,
+        "pool_pre_ping": True,
+    }
 else:
     # Local development: use SQLite
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(basedir, 'characters.db')}"
@@ -58,6 +69,24 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["JSON_SORT_KEYS"] = False
 
 db = SQLAlchemy(app)
+
+# Redis client for caching
+redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+redis_client = redis.from_url(redis_url, decode_responses=True)
+
+# Database connection retry logic
+def db_operation_with_retry(operation, max_retries=3, base_delay=0.1):
+    """Execute database operation with exponential backoff retry"""
+    for attempt in range(max_retries):
+        try:
+            return operation()
+        except OperationalError as e:
+            if attempt == max_retries - 1:
+                raise e
+            delay = base_delay * (2 ** attempt)
+            app.logger.warning(f"Database operation failed (attempt {attempt + 1}/{max_retries}), retrying in {delay}s: {e}")
+            time.sleep(delay)
+    return None
 
 # ----------------------
 # Logging
@@ -378,81 +407,39 @@ def _describe_personality_sliders(personality_sliders):
 
 
 def _build_character_integration(character_name, fears, strengths, likes, dislikes, comfort_item, personality_traits, personality_sliders):
-    """Build deep character integration for personalized, therapeutic storytelling"""
+    """Build concise character integration for personalized storytelling"""
+
+    # Limit array lengths to prevent token explosion
+    fears = fears[:3] if fears else []  # Max 3 fears
+    strengths = strengths[:3] if strengths else []  # Max 3 strengths
+    likes = likes[:3] if likes else []  # Max 3 likes
+    dislikes = dislikes[:2] if dislikes else []  # Max 2 dislikes
+    personality_traits = personality_traits[:4] if personality_traits else []  # Max 4 traits
 
     parts = [
-        "DEEP CHARACTER INTEGRATION:",
-        f"Character Name: {character_name}",
+        f"CHARACTER: {character_name}",
     ]
 
-    # Personality
+    # Personality (condensed)
     if personality_traits:
         traits_str = ", ".join(personality_traits)
-        parts.append(f"Personality: {traits_str}")
+        parts.append(f"TRAITS: {traits_str}")
 
-    slider_lines = _describe_personality_sliders(personality_sliders)
-    if slider_lines:
-        parts.extend(slider_lines)
-
-    # Fears (Critical for therapeutic stories)
+    # Key therapeutic elements (much shorter)
     if fears:
         fears_str = ", ".join(fears)
-        parts.extend([
-            f"\nFEARS TO ADDRESS: {fears_str}",
-            "IMPORTANT: The story MUST help the character face and overcome one of these fears.",
-            "Show the character feeling scared at first, then discovering courage and strength.",
-            "Make the fear resolution realistic and empowering, not dismissive.",
-        ])
+        parts.append(f"FEARS: {fears_str} - help character overcome these naturally")
 
-    # Strengths (Use these to overcome challenges)
     if strengths:
         strengths_str = ", ".join(strengths)
-        parts.extend([
-            f"\nSTRENGTHS TO UTILIZE: {strengths_str}",
-            f"IMPORTANT: Show how {character_name} uses these strengths to solve problems.",
-            "Let the character discover that they already have what they need inside them.",
-        ])
+        parts.append(f"STRENGTHS: {strengths_str} - use these to solve problems")
 
-    # Comfort item (Emotional security)
     if comfort_item:
-        parts.extend([
-            f"\nCOMFORT ITEM: {comfort_item}",
-            f"Include the {comfort_item} in the story as a source of courage and comfort.",
-            f"Perhaps {character_name} carries it during scary moments or it helps them feel brave.",
-        ])
+        parts.append(f"COMFORT: {comfort_item}")
 
-    # Likes (Make story engaging)
     if likes:
         likes_str = ", ".join(likes)
-        parts.extend([
-            f"\nLIKES: {likes_str}",
-            f"Incorporate elements related to {likes_str} to make the story personally engaging.",
-        ])
-
-    # Dislikes (Add realistic challenges)
-    if dislikes:
-        dislikes_str = ", ".join(dislikes)
-        parts.extend([
-            f"\nDISLIKES: {dislikes_str}",
-            f"Consider using one of these dislikes as a minor challenge or something {character_name} must face.",
-        ])
-
-    # Therapeutic structure
-    parts.extend([
-        "\nSTORY STRUCTURE (CRITICAL):",
-        f"1. BEGINNING: Introduce {character_name} in their normal world, showing their personality traits",
-        "2. CHALLENGE: Present a situation that involves one of their fears or growth areas",
-        "3. STRUGGLE: Show realistic difficulty - fears are real, challenges are hard",
-        "4. DISCOVERY: Character realizes they have inner strength (use their strengths list)",
-        "5. RESOLUTION: Character overcomes the challenge, grows emotionally, learns about themselves",
-        "6. REFLECTION: End with character feeling proud, more confident, emotionally stronger",
-        "\nNARRATIVE REQUIREMENTS:",
-        "- Use sensory details (what they see, hear, feel, smell) to make scenes vivid",
-        "- Show emotions, don't just tell (e.g., 'heart pounding' not 'felt scared')",
-        f"- Keep {character_name} as the main character who drives the action",
-        "- Make the therapeutic element natural, not preachy or obvious",
-        "- Create a clear emotional arc: vulnerable → challenged → growing → empowered",
-    ])
+        parts.append(f"LIKES: {likes_str}")
 
     return "\n".join(parts)
 
