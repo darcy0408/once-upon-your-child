@@ -1,25 +1,38 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:story_weaver_app/models/cached_story.dart';
 import 'package:story_weaver_app/offline_story_cache.dart';
+import 'package:story_weaver_app/services/isar_service.dart';
 
 CachedStory createStory(String id, {bool favorite = false}) {
-  return CachedStory(
-    id: id,
-    title: 'Story $id',
-    storyText: 'Once upon a time $id',
-    characterName: 'Hero',
-    theme: 'Adventure',
-    cachedAt: DateTime.now(),
-    isFavorite: favorite,
-  );
+  return CachedStory()
+    ..storyId = id
+    ..title = 'Story $id'
+    ..storyText = 'Once upon a time $id'
+    ..characterName = 'Hero'
+    ..theme = 'Adventure'
+    ..cachedAt = DateTime.now()
+    ..createdAt = DateTime.now()
+    ..isFavorite = favorite;
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late OfflineStoryCache cache;
+  late Directory tempDir;
 
-  setUp(() {
-    SharedPreferences.setMockInitialValues({});
+  setUp(() async {
+    tempDir = await Directory.systemTemp.createTemp('isar_test_');
+    await IsarService.initialize(directoryPath: tempDir.path);
     cache = OfflineStoryCache();
+  });
+
+  tearDown(() async {
+    await IsarService.close();
+    if (await tempDir.exists()) {
+      await tempDir.delete(recursive: true);
+    }
   });
 
   test('cacheStory persists and getCachedStory returns it', () async {
@@ -49,7 +62,7 @@ void main() {
     final leftovers = await cache.getAllCachedStories();
 
     expect(favorites.length, 1);
-    expect(favorites.first.id, 'keep');
+    expect(favorites.first.storyId, 'keep');
     expect(leftovers.length, 1);
   });
 }
