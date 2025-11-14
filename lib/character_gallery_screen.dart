@@ -1,13 +1,19 @@
 // lib/character_gallery_screen.dart
-// Character Gallery with Edit, Delete, and Feelings Wheel integration
+// Character gallery polished with shared theming and analytics
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'avatar_models.dart';
+
 import 'avatar_builder_screen.dart';
-import 'feelings_wheel_screen.dart';
+import 'avatar_models.dart';
 import 'feelings_wheel_data.dart';
-import 'sunset_jungle_theme.dart';
+import 'feelings_wheel_screen.dart';
 import 'services/avatar_service.dart';
+import 'services/character_analytics.dart';
+import 'theme/app_theme.dart';
+import 'widgets/app_button.dart';
+import 'widgets/app_card.dart';
 
 class CharacterGalleryScreen extends StatefulWidget {
   final List<EnhancedCharacter> characters;
@@ -31,6 +37,33 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
   // Track each character's most recent feeling selection locally
   final Map<String, SelectedFeeling> _characterFeelings = {};
 
+  void _trackInteraction(
+    String action,
+    EnhancedCharacter character, {
+    SelectedFeeling? feeling,
+  }) {
+    unawaited(
+      CharacterAnalytics.trackGalleryInteraction(
+        action: action,
+        characterId: character.id,
+        characterName: character.name,
+        age: character.age,
+        gender: character.gender,
+        feeling: feeling?.tertiary,
+      ),
+    );
+  }
+
+  void _showSnack(String message, {Color? color}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color ?? AppColors.primary,
+      ),
+    );
+  }
+
   void _createCharacter() async {
     final result = await Navigator.push<EnhancedCharacter>(
       context,
@@ -42,12 +75,8 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
     if (!mounted) return;
     if (result != null) {
       widget.onCharacterAdded(result);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${result.name} created!'),
-          backgroundColor: SunsetJungleTheme.jungleLeaf,
-        ),
-      );
+      _trackInteraction('created', result);
+      _showSnack('${result.name} created!');
     }
   }
 
@@ -65,12 +94,8 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
     if (!mounted) return;
     if (result != null) {
       widget.onCharacterUpdated(result);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${result.name} updated!'),
-          backgroundColor: SunsetJungleTheme.jungleLeaf,
-        ),
-      );
+      _trackInteraction('edited', result);
+      _showSnack('${result.name} updated!');
     }
   }
 
@@ -80,12 +105,9 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
       builder: (context) => AlertDialog(
         title: const Text(
           'Delete Character?',
-          style: TextStyle(fontFamily: 'Quicksand'),
+          style: Theme.of(context).textTheme.titleLarge,
         ),
-        content: Text(
-          'Are you sure you want to delete ${character.name}? This cannot be undone.',
-          style: const TextStyle(fontFamily: 'Quicksand'),
-        ),
+        content: Text('Delete ${character.name}? This cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -98,15 +120,11 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
                 _characterFeelings.remove(character.id);
               });
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${character.name} deleted'),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              _trackInteraction('deleted', character);
+              _showSnack('${character.name} deleted', color: AppColors.error);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
             child: const Text('Delete'),
           ),
@@ -137,25 +155,17 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
         _characterFeelings[character.id] = result;
       });
       widget.onCharacterUpdated(updatedCharacter);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${character.name} is feeling ${result.tertiary}!'),
-          backgroundColor: SunsetJungleTheme.jungleLeaf,
-        ),
-      );
+      _trackInteraction('feeling_updated', character, feeling: result);
+      _showSnack('${character.name} is feeling ${result.tertiary}!');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final hasCharacters = widget.characters.isNotEmpty;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Your Characters'),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: SunsetJungleTheme.headerGradient,
-          ),
-        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -164,66 +174,58 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
           ),
         ],
       ),
-      backgroundColor: SunsetJungleTheme.creamLight,
-      body: widget.characters.isEmpty
-          ? _buildEmptyState()
-          : _buildCharacterGrid(),
+      backgroundColor: AppColors.surface,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: hasCharacters ? _buildCharacterGrid() : _buildEmptyState(),
+        ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _createCharacter,
-        backgroundColor: SunsetJungleTheme.sunsetCoral,
+        backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add),
-        label: const Text(
-          'New Character',
-          style: TextStyle(fontFamily: 'Quicksand', fontWeight: FontWeight.w600),
-        ),
+        label: const Text('New Character'),
       ),
     );
   }
 
   Widget _buildEmptyState() {
+    final theme = Theme.of(context);
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text(
-            '🌳',
-            style: TextStyle(fontSize: 80),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'No Characters Yet!',
-            style: TextStyle(
-              fontFamily: 'Quicksand',
-              fontSize: 24,
-              fontWeight: FontWeight.w600,
-              color: SunsetJungleTheme.jungleDeepGreen,
+      child: AppCard(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('🌱', style: TextStyle(fontSize: 56)),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'No characters yet',
+              style: theme.textTheme.titleLarge,
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Create your first character to start\nyour emotional learning adventure!',
-            style: TextStyle(
-              fontFamily: 'Quicksand',
-              fontSize: 16,
-              color: SunsetJungleTheme.jungleOlive,
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Create a character to start your emotional learning adventure.',
+              style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 30),
-          ElevatedButton.icon(
-            onPressed: _createCharacter,
-            style: SunsetJungleTheme.primaryButtonStyle,
-            icon: const Icon(Icons.add),
-            label: const Text('Create Character'),
-          ),
-        ],
+            const SizedBox(height: AppSpacing.lg),
+            AppButton.primary(
+              label: 'Create Character',
+              icon: Icons.add,
+              onPressed: _createCharacter,
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildCharacterGrid() {
     return GridView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.zero,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.7,
@@ -239,100 +241,73 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
   }
 
   Widget _buildCharacterCard(EnhancedCharacter character) {
+    final theme = Theme.of(context);
     final feeling = _characterFeelings[character.id];
     final mappedHair = _mapAvatarHairColor(character.avatar);
     final mappedOutfit = _mapAvatarOutfit(character.avatar);
 
-    return Container(
-      decoration: SunsetJungleTheme.cardDecoration,
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Character name
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Text(
-              character.name,
-              style: const TextStyle(
-                fontFamily: 'Quicksand',
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: SunsetJungleTheme.jungleDeepGreen,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+          Text(
+            character.name,
+            style: theme.textTheme.titleMedium,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
           ),
-
-          // Big expressive avatar
+          const SizedBox(height: AppSpacing.sm),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  AvatarService.buildAvatarWidget(
-                    characterId: character.id,
-                    hairColor: mappedHair,
-                    eyeColor: null,
-                    outfit: mappedOutfit,
-                    size: 180,
-                  ),
-                  if (feeling != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      'Feeling ${feeling.tertiary}',
-                      style: const TextStyle(
-                        fontFamily: 'Quicksand',
-                        fontSize: 14,
-                        color: SunsetJungleTheme.jungleDeepGreen,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-
-          // Action buttons
-          Padding(
-            padding: const EdgeInsets.all(8),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildActionButton(
-                        icon: Icons.emoji_emotions,
-                        label: 'Feeling',
-                        color: const Color(0xFFFFD93D),
-                        onTap: () => _showFeelingsWheel(character),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildActionButton(
-                        icon: Icons.edit,
-                        label: 'Edit',
-                        color: SunsetJungleTheme.jungleLeaf,
-                        onTap: () => _editCharacter(character),
-                      ),
-                    ),
-                  ],
+                AvatarService.buildAvatarWidget(
+                  characterId: character.id,
+                  hairColor: mappedHair,
+                  eyeColor: null,
+                  outfit: mappedOutfit,
+                  size: 160,
                 ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: _buildActionButton(
-                    icon: Icons.delete,
-                    label: 'Delete',
-                    color: const Color(0xFFFF6B6B),
-                    onTap: () => _deleteCharacter(character),
+                if (feeling != null) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Chip(
+                    label: Text('Feeling ${feeling.tertiary}'),
+                    backgroundColor: AppColors.accent.withOpacity(0.15),
                   ),
-                ),
+                ],
               ],
             ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionButton(
+                  icon: Icons.emoji_emotions,
+                  label: 'Feeling',
+                  backgroundColor: AppColors.secondary,
+                  onTap: () => _showFeelingsWheel(character),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: _buildActionButton(
+                  icon: Icons.edit,
+                  label: 'Edit',
+                  backgroundColor: AppColors.primary,
+                  onTap: () => _editCharacter(character),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          _buildActionButton(
+            icon: Icons.delete_outline,
+            label: 'Delete',
+            backgroundColor: AppColors.error,
+            onTap: () => _deleteCharacter(character),
           ),
         ],
       ),
@@ -342,27 +317,23 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
   Widget _buildActionButton({
     required IconData icon,
     required String label,
-    required Color color,
+    required Color backgroundColor,
     required VoidCallback onTap,
   }) {
     return ElevatedButton.icon(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
-        backgroundColor: color,
+        backgroundColor: backgroundColor,
         foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(14),
         ),
       ),
       icon: Icon(icon, size: 18),
       label: Text(
         label,
-        style: const TextStyle(
-          fontFamily: 'Quicksand',
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
+        style: const TextStyle(fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -379,7 +350,9 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
     if (value.contains('purple')) return 'purple';
     if (value.contains('blue')) return 'blue';
     if (value.contains('green')) return 'green';
-    if (value.contains('silver') || value.contains('gray') || value.contains('grey')) {
+    if (value.contains('silver') ||
+        value.contains('gray') ||
+        value.contains('grey')) {
       return 'gray';
     }
     return null;
@@ -387,7 +360,9 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
 
   String? _mapAvatarOutfit(CharacterAvatar avatar) {
     final value = avatar.clothingStyle.toLowerCase();
-    if (value.contains('hoodie') || value.contains('shirt') || value.contains('overall')) {
+    if (value.contains('hoodie') ||
+        value.contains('shirt') ||
+        value.contains('overall')) {
       return 'casual';
     }
     if (value.contains('sweater') || value.contains('graphic')) {

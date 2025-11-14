@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'character_evolution.dart';
 import 'models.dart';
 import 'emotion_recognition_game.dart';
+import 'empathy_building_exercises.dart';
 
 class CharacterEvolutionScreen extends StatefulWidget {
   final Character character;
@@ -154,6 +155,8 @@ class _CharacterEvolutionScreenState extends State<CharacterEvolutionScreen> {
             ),
             const SizedBox(height: 16),
             EmotionGameLauncher(characterId: widget.character.id),
+            const SizedBox(height: 16),
+            EmpathyExercisesLauncher(characterId: widget.character.id),
           ],
         ),
       ),

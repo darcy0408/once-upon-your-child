@@ -28,6 +28,9 @@ import 'config/environment.dart';
 import 'services/story_feedback_service.dart';
 import 'services/story_analytics.dart';
 import 'services/therapeutic_analytics.dart';
+import 'theme/app_theme.dart';
+import 'widgets/app_button.dart';
+import 'widgets/app_card.dart';
 
 class StoryResultScreen extends StatefulWidget {
   final String title;
@@ -88,6 +91,23 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   bool _isSubmittingFeedback = false;
   double _storyRating = 4.0;
   bool _isStoryHovered = false;
+
+  String get _analyticsStoryId =>
+      widget.storyId ?? widget.title.hashCode.toString();
+
+  void _trackResultAction(
+    String action, {
+    Map<String, Object?> extra = const <String, Object?>{},
+  }) {
+    unawaited(
+      StoryAnalytics.trackStoryResultAction(
+        storyId: _analyticsStoryId,
+        action: action,
+        theme: widget.theme,
+        extra: extra,
+      ),
+    );
+  }
 
   int get _effectiveAge {
     final age = _characterAge;
@@ -272,6 +292,15 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         _cachedIllustrations = illustrations;
       });
 
+      _trackResultAction(
+        'illustrations_generated',
+        extra: {
+          'count': illustrations.length,
+          if (therapeuticFocus != null && therapeuticFocus.isNotEmpty)
+            'therapeutic_focus': therapeuticFocus,
+        },
+      );
+
       // Show illustrated story
       _viewIllustratedStory(illustrations);
     } on TimeoutException {
@@ -311,6 +340,10 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
           characterName: widget.characterName,
         ),
       ),
+    );
+    _trackResultAction(
+      'illustrations_viewed',
+      extra: {'count': illustrations.length},
     );
   }
 
@@ -442,47 +475,45 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   }
 
   Widget _buildAccessibilityPanel() {
-    return Card(
-      color: _highContrastMode ? Colors.black : Colors.white,
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Reading comfort',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            Row(
-              children: [
-                const Text('Text size'),
-                Expanded(
-                  child: Slider(
-                    value: _textScale,
-                    min: 0.9,
-                    max: 1.6,
-                    divisions: 7,
-                    label: _textScale.toStringAsFixed(1),
-                    onChanged: (value) => setState(() => _textScale = value),
-                  ),
+    final theme = Theme.of(context);
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Reading comfort',
+            style: theme.textTheme.titleMedium,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              const Text('Text size'),
+              Expanded(
+                child: Slider(
+                  value: _textScale,
+                  min: 0.9,
+                  max: 1.6,
+                  divisions: 7,
+                  label: _textScale.toStringAsFixed(1),
+                  onChanged: (value) => setState(() => _textScale = value),
                 ),
-              ],
-            ),
-            SwitchListTile.adaptive(
-              title: const Text('High contrast mode'),
-              dense: true,
-              value: _highContrastMode,
-              onChanged: (value) => setState(() => _highContrastMode = value),
-            ),
-            SwitchListTile.adaptive(
-              title: const Text('Screen reader hints'),
-              dense: true,
-              value: _screenReaderHints,
-              onChanged: (value) => setState(() => _screenReaderHints = value),
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+          SwitchListTile.adaptive(
+            title: const Text('High contrast mode'),
+            dense: true,
+            value: _highContrastMode,
+            onChanged: (value) => setState(() => _highContrastMode = value),
+          ),
+          SwitchListTile.adaptive(
+            title: const Text('Screen reader hints'),
+            dense: true,
+            value: _screenReaderHints,
+            onChanged: (value) => setState(() => _screenReaderHints = value),
+          ),
+        ],
       ),
     );
   }
@@ -637,39 +668,27 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.orange.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange.shade200),
-      ),
+    final theme = Theme.of(context);
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Story for $heroName',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.deepPurple,
-            ),
+            style: theme.textTheme.titleMedium,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: AppSpacing.xs,
+            runSpacing: AppSpacing.xs,
             children: chips,
           ),
           if (hasFocus) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
-            'We\'ll gently emphasize themes about ${focusText.toLowerCase()}.',
-              style: const TextStyle(
-                fontSize: 13,
-                fontStyle: FontStyle.italic,
-                color: Colors.black87,
-              ),
+              'We\'ll gently highlight themes about ${focusText.toLowerCase()}.',
+              style: theme.textTheme.bodySmall,
             ),
           ],
         ],
@@ -733,6 +752,15 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         _cachedColoringPages = pages;
       });
 
+      _trackResultAction(
+        'coloring_generated',
+        extra: {
+          'count': pages.length,
+          if (therapeuticFocus != null && therapeuticFocus.isNotEmpty)
+            'therapeutic_focus': therapeuticFocus,
+        },
+      );
+
       _showSnackBar(
         '✨ Created ${pages.length} coloring ${pages.length == 1 ? "page" : "pages"}!',
         backgroundColor: Colors.green,
@@ -767,6 +795,10 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   /// Open the coloring book library
   void _openColoringBook() {
+    _trackResultAction(
+      'coloring_opened',
+      extra: {'count': _cachedColoringPages?.length ?? 0},
+    );
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -825,6 +857,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       _formatShareText(includeMetadata: true),
       subject: widget.title,
     );
+    _trackResultAction('share', extra: {'method': 'system_share'});
   }
 
   Future<void> _exportStory() async {
@@ -838,6 +871,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       text: 'Story export ready to download or print.',
       subject: widget.title,
     );
+    _trackResultAction('share', extra: {'method': 'export_txt'});
   }
 
   Future<void> _copyShareData() async {
@@ -848,39 +882,58 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       _showSnackBar('Story data copied for Gemini coordination.',
           backgroundColor: Colors.green);
     }
+    _trackResultAction('share', extra: {'method': 'copy_json'});
   }
 
   Widget _buildShareActions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Share this story',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          children: [
-            ElevatedButton.icon(
-              onPressed: _shareStory,
-              icon: const Icon(Icons.share),
-              label: const Text('Share'),
-            ),
-            OutlinedButton.icon(
-              onPressed: _exportStory,
-              icon: const Icon(Icons.file_download),
-              label: const Text('Export .txt'),
-            ),
-            OutlinedButton.icon(
-              onPressed: _copyShareData,
-              icon: const Icon(Icons.code),
-              label: const Text('Copy JSON'),
-            ),
-          ],
-        ),
-      ],
+    final theme = Theme.of(context);
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Share this story',
+            style: theme.textTheme.titleMedium,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Send the adventure to family, export a text copy, or grab the JSON payload for coordination.',
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              SizedBox(
+                width: 200,
+                child: AppButton.primary(
+                  label: 'Share',
+                  icon: Icons.share,
+                  onPressed: _shareStory,
+                ),
+              ),
+              SizedBox(
+                width: 200,
+                child: AppButton.secondary(
+                  label: 'Export .txt',
+                  icon: Icons.file_download,
+                  onPressed: _exportStory,
+                ),
+              ),
+              SizedBox(
+                width: 200,
+                child: AppButton.secondary(
+                  label: 'Copy JSON',
+                  icon: Icons.code,
+                  onPressed: _copyShareData,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -901,6 +954,13 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         rating: _storyRating.round(),
         feedbackText: _feedbackController.text.trim(),
       );
+      _trackResultAction(
+        'feedback_submitted',
+        extra: {
+          'rating': _storyRating.round(),
+          'has_text': _feedbackController.text.trim().isNotEmpty,
+        },
+      );
       if (mounted) {
         _feedbackController.clear();
         _showSnackBar(
@@ -920,117 +980,108 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   }
 
   Widget _buildFeedbackCard() {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'How helpful was this story?',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: Slider(
-                    value: _storyRating,
-                    min: 1,
-                    max: 5,
-                    divisions: 8,
-                    label: _storyRating.toStringAsFixed(1),
-                    onChanged: (value) => setState(() => _storyRating = value),
-                  ),
+    final theme = Theme.of(context);
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'How helpful was this story?',
+            style: theme.textTheme.titleMedium,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: Slider(
+                  value: _storyRating,
+                  min: 1,
+                  max: 5,
+                  divisions: 8,
+                  label: _storyRating.toStringAsFixed(1),
+                  onChanged: (value) => setState(() => _storyRating = value),
                 ),
-                Text('${_storyRating.toStringAsFixed(1)}/5'),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _feedbackController,
-              maxLength: 240,
-              minLines: 2,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Share anything the story helped with',
-                border: OutlineInputBorder(),
               ),
+              Text('${_storyRating.toStringAsFixed(1)}/5'),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          TextField(
+            controller: _feedbackController,
+            maxLength: 240,
+            minLines: 2,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              labelText: 'Share anything the story helped with',
             ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton.icon(
-                onPressed: _isSubmittingFeedback ? null : _submitFeedback,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Align(
+            alignment: Alignment.centerRight,
+            child: SizedBox(
+              width: 220,
+              child: AppButton.primary(
+                label: _isSubmittingFeedback ? 'Sending...' : 'Send feedback',
                 icon: _isSubmittingFeedback
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.send),
-                label: Text(_isSubmittingFeedback ? 'Sending...' : 'Send'),
+                    ? Icons.hourglass_bottom
+                    : Icons.send,
+                onPressed: _isSubmittingFeedback ? null : _submitFeedback,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildWisdomGemCard() {
-    return InkWell(
-      onTap: () => setState(() => _showWisdomDetails = !_showWisdomDetails),
-      borderRadius: BorderRadius.circular(12),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: _showWisdomDetails
-              ? Colors.deepPurple
-              : Colors.deepPurple.shade50,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            if (_showWisdomDetails)
-              BoxShadow(
-                color: Colors.deepPurple.shade200,
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Text(
-              'Wisdom Gem',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: _showWisdomDetails ? Colors.white : Colors.deepPurple,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              widget.wisdomGem,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontStyle: FontStyle.italic,
-                color: _showWisdomDetails ? Colors.white : Colors.deepPurple,
-              ),
-            ),
-            if (_showWisdomDetails) ...[
-              const SizedBox(height: 12),
-              Text(
-                'Tap to hide. Share this gem with your child to reinforce the lesson.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 12,
+    final theme = Theme.of(context);
+    final isExpanded = _showWisdomDetails;
+    final cardColor = isExpanded ? AppColors.primary : Colors.white;
+    final textColor = isExpanded ? Colors.white : AppColors.primary;
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => setState(() => _showWisdomDetails = !isExpanded),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          child: AppCard(
+            color: cardColor,
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              children: [
+                Text(
+                  'Wisdom Gem',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: textColor,
+                  ),
                 ),
-              ),
-            ],
-          ],
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  widget.wisdomGem,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: textColor,
+                  ),
+                ),
+                if (isExpanded) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Tap to hide. Share this gem to reinforce the lesson.',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1055,6 +1106,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
     await _storage.toggleFavorite(widget.storyId!);
     setState(() => _isFavorite = !_isFavorite);
+    _trackResultAction(
+      _isFavorite ? 'favorite_added' : 'favorite_removed',
+    );
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1069,17 +1123,16 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.deepPurple),
+        title: const Text('Story Summary'),
         actions: [
           if (widget.storyId != null && !_isLoading)
             IconButton(
               icon: Icon(
                 _isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: _isFavorite ? Colors.red : Colors.deepPurple,
               ),
               tooltip:
                   _isFavorite ? 'Remove from favorites' : 'Add to favorites',
@@ -1087,106 +1140,84 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Display the title prominently
-            Text(
-              widget.title,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-            ),
-            const SizedBox(height: 12),
-            if (_shouldShowMetaCard) _buildStoryMetaCard(),
-            if (_shouldShowMetaCard) const SizedBox(height: 12),
-            if (!_shouldShowMetaCard) const SizedBox(height: 12),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.title,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              if (_shouldShowMetaCard) _buildStoryMetaCard(),
+              if (_shouldShowMetaCard) const SizedBox(height: AppSpacing.sm),
+              if (!_shouldShowMetaCard) const SizedBox(height: AppSpacing.sm),
 
-            LayoutBuilder(
+              LayoutBuilder(
               builder: (context, constraints) =>
                   _buildStoryPager(MediaQuery.of(context).size.height),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             _buildAccessibilityPanel(),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
 
             // Make the Wisdom Gem stand out
             if (widget.wisdomGem.isNotEmpty)
               Center(child: _buildWisdomGemCard()),
-            if (widget.wisdomGem.isNotEmpty) const SizedBox(height: 24),
+            if (widget.wisdomGem.isNotEmpty)
+              const SizedBox(height: AppSpacing.lg),
 
             _buildShareActions(),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
 
             _buildFeedbackCard(),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
 
             // Favorite button if story is saved
             if (widget.storyId != null && !_isLoading)
               Center(
-                child: OutlinedButton.icon(
-                  onPressed: _toggleFavorite,
-                  icon: Icon(
-                    _isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color: _isFavorite ? Colors.red : Colors.deepPurple,
-                  ),
-                  label: Text(
-                    _isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: _isFavorite ? Colors.red : Colors.deepPurple,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                      color: _isFavorite ? Colors.red : Colors.deepPurple,
-                      width: 2,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
+                child: SizedBox(
+                  width: 280,
+                  child: AppButton.secondary(
+                    label: _isFavorite
+                        ? 'Remove from favorites'
+                        : 'Add to favorites',
+                    icon: _isFavorite ? Icons.favorite : Icons.favorite_border,
+                    onPressed: _toggleFavorite,
                   ),
                 ),
               ),
             if (widget.storyId != null && !_isLoading)
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
 
             // READ TO ME BUTTON
             Center(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => StoryReaderScreen(
-                        title: widget.title,
-                        storyText: widget.storyText,
-                        characterName: widget.characterName,
+              child: SizedBox(
+                width: 360,
+                child: AppButton.primary(
+                  label: 'Read to Me',
+                  icon: Icons.volume_up,
+                  onPressed: () {
+                    _trackResultAction('read_to_me');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => StoryReaderScreen(
+                          title: widget.title,
+                          storyText: widget.storyText,
+                          characterName: widget.characterName,
+                        ),
                       ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.volume_up, size: 28),
-                label: const Text(
-                  'Read to Me!',
-                  style: TextStyle(fontSize: 18),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
+                    );
+                  },
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
 
             // ILLUSTRATION BUTTON
             Center(
@@ -1213,18 +1244,16 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                   style: const TextStyle(fontSize: 18),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _cachedIllustrations != null
-                      ? Colors.purple
-                      : Colors.orange,
+                  backgroundColor: AppColors.primary,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
 
             // COLORING BOOK BUTTON
             Center(
@@ -1251,17 +1280,16 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                   style: const TextStyle(fontSize: 18),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      _cachedColoringPages != null ? Colors.teal : Colors.pink,
+                  backgroundColor: AppColors.secondary,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
           ],
         ),
       ),
