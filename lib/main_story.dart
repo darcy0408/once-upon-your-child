@@ -1643,11 +1643,65 @@ class _StoryScreenState extends State<StoryScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+               ),
+             ),
+           ],
+         ),
+       ),
+     );
+   }
+
+  /// Update character evolution based on therapeutic story elements
+  Future<void> _updateCharacterEvolution(
+    List<Character> characters,
+    TherapeuticStoryCustomization? therapeuticCustomization,
+  ) async {
+    if (therapeuticCustomization == null) return;
+
+    // Update evolution for each character in the story
+    for (final character in characters) {
+      try {
+        // Update based on primary therapeutic goal
+        if (therapeuticCustomization.primaryGoal != null) {
+          await character.updateEvolution(
+            goal: therapeuticCustomization.primaryGoal,
+            progressIncrease: 5, // Base progress for story completion
+          );
+        }
+
+        // Update based on emotions explored in the story
+        if (currentFeeling != null && currentFeeling!.emotionId.isNotEmpty) {
+          await character.updateEvolution(
+            emotionId: currentFeeling!.emotionId,
+            progressIncrease: 3, // Progress for emotion exploration
+          );
+        }
+
+        // Additional progress for coping strategies highlighted
+        if (therapeuticCustomization.copingStrategiesToHighlight.isNotEmpty) {
+          // Give extra progress for practicing coping strategies
+          if (therapeuticCustomization.primaryGoal != null) {
+            await character.updateEvolution(
+              goal: therapeuticCustomization.primaryGoal,
+              progressIncrease: 2,
+            );
+          }
+        }
+
+        // Progress for custom therapeutic wishes
+        if (therapeuticCustomization.wishes.isNotEmpty) {
+          // Give progress for achieving story wishes
+          if (therapeuticCustomization.primaryGoal != null) {
+            await character.updateEvolution(
+              goal: therapeuticCustomization.primaryGoal,
+              progressIncrease: therapeuticCustomization.wishes.length,
+            );
+          }
+        }
+      } catch (e) {
+        // Log error but don't fail story generation
+        debugPrint('Error updating character evolution: $e');
+      }
+    }
   }
 }

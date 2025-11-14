@@ -50,6 +50,7 @@ class ApiServiceManager {
     bool rhymeTimeMode = false,
     bool learningToReadMode = false,
     Map<String, dynamic>? currentFeeling,
+    Map<String, dynamic>? characterEvolution,
     http.Client? client,
     int maxAttempts = 3,
     Duration retryInitialDelay = const Duration(seconds: 2),
