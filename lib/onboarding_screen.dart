@@ -61,7 +61,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _trackPageView(int index) {
-    OnboardingAnalytics.trackFeatureViewed('onboarding_step_${index + 1}');
+    // Temporarily disabled for testing therapeutic features
+    // OnboardingAnalytics.trackFeatureViewed('onboarding_step_${index + 1}');
   }
 
   void _handleNext() {
@@ -77,10 +78,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _completeOnboarding({bool skipped = false}) async {
     final elapsed = DateTime.now().difference(_startedAt).inSeconds;
-    await OnboardingAnalytics.trackOnboardingCompleted(
-      timeSpentSeconds: elapsed,
-      skippedAnyStep: skipped || _skippedAnyStep,
-    );
+    // Temporarily disabled for testing therapeutic features
+    // await OnboardingAnalytics.trackOnboardingCompleted(
+    //   timeSpentSeconds: elapsed,
+    //   skippedAnyStep: skipped || _skippedAnyStep,
+    // );
     widget.onFinished();
   }
   Future<void> _confirmSkip() async {

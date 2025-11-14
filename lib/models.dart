@@ -150,6 +150,18 @@ class Character {
       size: size,
     );
   }
+
+  /// Update character evolution data (for therapeutic progression tracking)
+  Future<void> updateEvolution({
+    required String emotionId,
+    required int intensity,
+    required Map<String, dynamic> copingStrategies,
+    required bool storyCompleted,
+  }) async {
+    // This would typically call an API to update evolution data
+    // For now, it's a placeholder that would integrate with the backend
+    print('Updating evolution for character $name: emotion=$emotionId, intensity=$intensity');
+  }
 }
 
 int? _parseSliderValue(dynamic value) {

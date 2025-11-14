@@ -19,6 +19,9 @@ import 'premium_upgrade_screen.dart';
 import 'interactive_story_screen.dart';
 import 'therapeutic_customization_screen.dart';
 import 'therapeutic_models.dart';
+import 'character_evolution.dart';
+import 'pre_story_feelings_dialog.dart';
+import 'services/character_analytics.dart';
 import 'story_intent_card.dart';
 import 'offline_stories_screen.dart';
 import 'coloring_book_library_screen.dart';
@@ -332,6 +335,9 @@ class _StoryScreenState extends State<StoryScreen> {
           copingStrategies: currentFeeling.copingStrategies ?? const [],
         );
       }
+      // Get character evolution data for personalized story generation
+      final characterEvolution = await _getCharacterEvolutionData(_selectedCharacter!);
+
       // Use ApiServiceManager to generate story (handles backend vs direct API)
       final String storyText = await ApiServiceManager.generateStory(
         characterName: _selectedCharacter!.name,
@@ -343,6 +349,7 @@ class _StoryScreenState extends State<StoryScreen> {
         rhymeTimeMode: _rhymeTimeMode,
         learningToReadMode: _learningToReadMode,
         currentFeeling: currentFeelingData,
+        characterEvolution: characterEvolution,
       );
 
       if (!navContext.mounted) return;
@@ -369,6 +376,10 @@ class _StoryScreenState extends State<StoryScreen> {
         wisdomGem: wisdomGem,
       );
       await StorageService().saveStory(saved);
+
+      // Update character evolution based on therapeutic story elements
+      await _updateCharacterEvolution(allSelectedCharacters, _therapeuticCustomization, currentFeeling);
+
       await StoryAnalytics.trackStoryCreation(
         theme: _selectedTheme,
         characterName: _selectedCharacter!.name,
@@ -1648,10 +1659,30 @@ class _StoryScreenState extends State<StoryScreen> {
      );
    }
 
+  /// Get character evolution data for story personalization
+  Future<Map<String, dynamic>?> _getCharacterEvolutionData(Character character) async {
+    try {
+      final evolution = await CharacterEvolutionService().getCharacterEvolution(character.id);
+      if (evolution == null) return null;
+
+      return {
+        'development_stage': evolution.developmentStage.name,
+        'overall_score': evolution.overallDevelopmentScore.round(),
+        'therapeutic_progress': evolution.therapeuticProgress,
+        'emotion_mastery': evolution.emotionMastery,
+        'evolved_traits': evolution.evolvedTraits,
+      };
+    } catch (e) {
+      debugPrint('Error getting character evolution data: $e');
+      return null;
+    }
+  }
+
   /// Update character evolution based on therapeutic story elements
   Future<void> _updateCharacterEvolution(
     List<Character> characters,
     TherapeuticStoryCustomization? therapeuticCustomization,
+    CurrentFeeling? currentFeeling,
   ) async {
     if (therapeuticCustomization == null) return;
 
@@ -1660,17 +1691,21 @@ class _StoryScreenState extends State<StoryScreen> {
       try {
         // Update based on primary therapeutic goal
         if (therapeuticCustomization.primaryGoal != null) {
-          await character.updateEvolution(
-            goal: therapeuticCustomization.primaryGoal,
-            progressIncrease: 5, // Base progress for story completion
+          await CharacterEvolutionService().updateCharacterEvolution(
+            character.id,
+            therapeuticCustomization.primaryGoal,
+            null, // no emotion
+            5, // Base progress for story completion
           );
         }
 
         // Update based on emotions explored in the story
-        if (currentFeeling != null && currentFeeling!.emotionId.isNotEmpty) {
-          await character.updateEvolution(
-            emotionId: currentFeeling!.emotionId,
-            progressIncrease: 3, // Progress for emotion exploration
+        if (currentFeeling != null && currentFeeling.selectedFeeling.tertiary.isNotEmpty) {
+          await CharacterEvolutionService().updateCharacterEvolution(
+            character.id,
+            null, // no goal
+            currentFeeling.selectedFeeling.tertiary,
+            3, // Progress for emotion exploration
           );
         }
 
@@ -1678,9 +1713,11 @@ class _StoryScreenState extends State<StoryScreen> {
         if (therapeuticCustomization.copingStrategiesToHighlight.isNotEmpty) {
           // Give extra progress for practicing coping strategies
           if (therapeuticCustomization.primaryGoal != null) {
-            await character.updateEvolution(
-              goal: therapeuticCustomization.primaryGoal,
-              progressIncrease: 2,
+            await CharacterEvolutionService().updateCharacterEvolution(
+              character.id,
+              therapeuticCustomization.primaryGoal,
+              null,
+              2,
             );
           }
         }
@@ -1689,9 +1726,11 @@ class _StoryScreenState extends State<StoryScreen> {
         if (therapeuticCustomization.wishes.isNotEmpty) {
           // Give progress for achieving story wishes
           if (therapeuticCustomization.primaryGoal != null) {
-            await character.updateEvolution(
-              goal: therapeuticCustomization.primaryGoal,
-              progressIncrease: therapeuticCustomization.wishes.length,
+            await CharacterEvolutionService().updateCharacterEvolution(
+              character.id,
+              therapeuticCustomization.primaryGoal,
+              null,
+              therapeuticCustomization.wishes.length,
             );
           }
         }

@@ -255,6 +255,7 @@ class ApiServiceManager {
     String? companion,
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
+    Map<String, dynamic>? characterEvolution,
   }) {
     final ageInstructions = StoryComplexityService.buildAgeInstructions(age);
     // Build FEELINGS-CENTERED opening (PRIORITY #1)
@@ -365,10 +366,72 @@ This is a FEELINGS-FIRST story. The emotion is the main character's journey.
           '\n\nADDITIONAL CHARACTERS: ${additionalCharacters.join(", ")}. These characters can support $characterName emotionally.';
     }
 
+    // Build character evolution context
+    String evolutionContext = '';
+    if (characterEvolution != null) {
+      final developmentStage = characterEvolution['development_stage'] as String?;
+      final overallScore = characterEvolution['overall_score'] as int?;
+      final therapeuticProgress = characterEvolution['therapeutic_progress'] as Map<String, dynamic>?;
+      final emotionMastery = characterEvolution['emotion_mastery'] as Map<String, dynamic>?;
+      final evolvedTraits = characterEvolution['evolved_traits'] as Map<String, dynamic>?;
+      if (developmentStage != null) {
+        evolutionContext += '\n\nCHARACTER DEVELOPMENT STAGE: $characterName is at the "$developmentStage" stage of emotional development.';
+
+        // Adapt story complexity based on development stage
+        switch (developmentStage.toLowerCase()) {
+          case 'novice':
+          case 'beginner':
+            evolutionContext += '\nCreate a simpler story with basic emotional learning. Focus on naming feelings and simple coping strategies.';
+            break;
+          case 'intermediate':
+            evolutionContext += '\nCreate a moderately complex story. Include emotional regulation techniques and some problem-solving.';
+            break;
+          case 'advanced':
+            evolutionContext += '\nCreate a complex story with deeper emotional processing. Include perspective-taking and helping others.';
+            break;
+          case 'master':
+            evolutionContext += '\nCreate an advanced story focused on emotional leadership. Include teaching others and complex emotional situations.';
+            break;
+        }
+      }
+
+      if (therapeuticProgress != null && therapeuticProgress.isNotEmpty) {
+        evolutionContext += '\n\nTHERAPEUTIC STRENGTHS: $characterName has experience with: ${therapeuticProgress.keys.join(", ")}.';
+        evolutionContext += '\nBuild upon these existing therapeutic skills in the story.';
+      }
+
+      if (emotionMastery != null && emotionMastery.isNotEmpty) {
+        final masteredEmotions = emotionMastery.entries
+            .where((e) => (e.value as int) >= 50)
+            .map((e) => e.key)
+            .toList();
+        if (masteredEmotions.isNotEmpty) {
+          evolutionContext += '\n\nEMOTION MASTERY: $characterName is skilled with these emotions: ${masteredEmotions.join(", ")}.';
+          evolutionContext += '\nChallenge them with new emotional experiences or reinforce their mastery.';
+        }
+      }
+
+      if (evolvedTraits != null) {
+        final confidence = evolvedTraits['confidence'] as int?;
+        final empathy = evolvedTraits['empathy'] as int?;
+        final emotionalIntelligence = evolvedTraits['emotional_intelligence'] as int?;
+
+        if (confidence != null && confidence > 50) {
+          evolutionContext += '\n\nCHARACTER TRAIT: $characterName has grown confident (${confidence}%). Show them taking brave actions.';
+        }
+        if (empathy != null && empathy > 50) {
+          evolutionContext += '\n\nCHARACTER TRAIT: $characterName has developed empathy (${empathy}%). Include opportunities to understand others\' feelings.';
+        }
+        if (emotionalIntelligence != null && emotionalIntelligence > 50) {
+          evolutionContext += '\n\nCHARACTER TRAIT: $characterName has strong emotional intelligence (${emotionalIntelligence}%). Create nuanced emotional challenges.';
+        }
+      }
+    }
+
     return '''
 You are a therapeutic storyteller specializing in EMOTION-FOCUSED stories for children and young people.
 
-Create a $lengthGuideline FEELINGS-CENTERED story about $characterName (age $age) with a $theme theme.$companionText$multiCharacterText$feelingsSection$characterIntegration
+Create a $lengthGuideline FEELINGS-CENTERED story about $characterName (age $age) with a $theme theme.$companionText$multiCharacterText$feelingsSection$characterIntegration$evolutionContext
 
 $ageInstructions
 FEELINGS-FIRST STORY STRUCTURE:
@@ -406,6 +469,7 @@ Create the feelings-focused therapeutic story now:
     String? companion,
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
+    Map<String, dynamic>? characterEvolution,
   }) {
     final ageInstructions = StoryComplexityService.buildAgeInstructions(age);
     // Build character integration
@@ -451,10 +515,57 @@ Create the feelings-focused therapeutic story now:
           '\n\nADDITIONAL CHARACTERS: ${additionalCharacters.join(", ")}. These characters join the adventure.';
     }
 
+    // Build character evolution context for adventure stories
+    String evolutionContext = '';
+    if (characterEvolution != null) {
+      final developmentStage = characterEvolution['development_stage'] as String?;
+      final therapeuticProgress = characterEvolution['therapeutic_progress'] as Map<String, dynamic>?;
+      final emotionMastery = characterEvolution['emotion_mastery'] as Map<String, dynamic>?;
+      final evolvedTraits = characterEvolution['evolved_traits'] as Map<String, dynamic>?;
+
+      if (developmentStage != null) {
+        evolutionContext += '\n\nCHARACTER DEVELOPMENT STAGE: $characterName is at the "$developmentStage" stage of emotional development.';
+
+        // Adapt adventure complexity based on development stage
+        switch (developmentStage.toLowerCase()) {
+          case 'novice':
+          case 'beginner':
+            evolutionContext += '\nCreate a simple adventure with clear emotional lessons. Focus on basic feelings and simple friendships.';
+            break;
+          case 'intermediate':
+            evolutionContext += '\nCreate a moderately challenging adventure. Include teamwork, emotional awareness, and helping others.';
+            break;
+          case 'advanced':
+            evolutionContext += '\nCreate a complex adventure with emotional depth. Include leadership, empathy, and complex social situations.';
+            break;
+          case 'master':
+            evolutionContext += '\nCreate an epic adventure focused on emotional wisdom. Include mentoring others and profound emotional insights.';
+            break;
+        }
+      }
+
+      if (therapeuticProgress != null && therapeuticProgress.isNotEmpty) {
+        evolutionContext += '\n\nTHERAPEUTIC STRENGTHS: $characterName has experience with: ${therapeuticProgress.keys.join(", ")}.';
+        evolutionContext += '\nIncorporate these therapeutic themes naturally into the adventure.';
+      }
+
+      if (evolvedTraits != null) {
+        final confidence = evolvedTraits['confidence'] as int?;
+        final empathy = evolvedTraits['empathy'] as int?;
+
+        if (confidence != null && confidence > 50) {
+          evolutionContext += '\n\nCHARACTER TRAIT: $characterName has grown confident (${confidence}%). Show them taking leadership in the adventure.';
+        }
+        if (empathy != null && empathy > 50) {
+          evolutionContext += '\n\nCHARACTER TRAIT: $characterName has developed empathy (${empathy}%). Include moments where they understand and help others emotionally.';
+        }
+      }
+    }
+
     return '''
 You are an engaging storyteller creating fun, age-appropriate adventure stories for children.
 
-Create a $lengthGuideline adventure story about $characterName (age $age) with a $theme theme.$companionText$multiCharacterText$characterIntegration
+Create a $lengthGuideline adventure story about $characterName (age $age) with a $theme theme.$companionText$multiCharacterText$characterIntegration$evolutionContext
 
 $ageInstructions
 ADVENTURE STORY GUIDELINES:

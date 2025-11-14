@@ -30,12 +30,12 @@ class AppTheme {
         error: AppColors.error,
       ),
       textTheme: _textTheme(base.textTheme),
-      cardTheme: CardTheme(
+      cardTheme: const CardThemeData(
         color: Colors.white,
         elevation: 4,
-        margin: const EdgeInsets.all(AppSpacing.md),
+        margin: EdgeInsets.all(16),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(

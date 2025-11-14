@@ -5,8 +5,14 @@ import 'package:flutter/services.dart';
 
 import 'models.dart';
 import 'storage_service.dart';
+import 'services/interactive_story_analytics.dart';
 import 'services/interactive_story_service.dart';
 import 'subscription_service.dart';
+import 'theme/app_theme.dart';
+import 'widgets/app_button.dart';
+import 'widgets/app_card.dart';
+import 'widgets/error_message.dart';
+import 'widgets/loading_spinner.dart';
 
 class InteractiveStoryScreen extends StatefulWidget {
   const InteractiveStoryScreen({
@@ -64,6 +70,9 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
   String get _fullStoryText =>
       _segments.map((segment) => segment.text.trim()).join('\n\n');
 
+  int get _wordCount =>
+      _fullStoryText.split(RegExp(r'\s+')).where((word) => word.isNotEmpty).length;
+
   Future<void> _loadOpeningSegment() async {
     setState(() {
       _isLoading = true;
@@ -85,6 +94,15 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
           ..add(segment);
         _isLoading = false;
       });
+      unawaited(
+        InteractiveStoryAnalytics.trackStoryStarted(
+          characterId: widget.character.id,
+          characterName: widget.character.name,
+          characterAge: widget.character.age,
+          theme: widget.theme,
+          hasCompanion: widget.companion?.isNotEmpty ?? false,
+        ),
+      );
       _scrollToBottom();
     } on InteractiveStoryException catch (e) {
       _handleError(e.message, _loadOpeningSegment);
@@ -114,6 +132,7 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
   Future<void> _handleChoiceSelected(StoryChoice choice) async {
     if (_isContinuing || _storyEnded) return;
 
+    final nextChoiceNumber = _choiceIds.length + 1;
     HapticFeedback.selectionClick();
     setState(() {
       _isContinuing = true;
@@ -140,6 +159,15 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
         _isContinuing = false;
         _pendingChoice = null;
       });
+      unawaited(
+        InteractiveStoryAnalytics.trackChoiceSelected(
+          characterId: widget.character.id,
+          theme: widget.theme,
+          choiceId: choice.id,
+          choiceNumber: nextChoiceNumber,
+          choiceTextLength: choice.text.length,
+        ),
+      );
       _scrollToBottom();
     } on InteractiveStoryException catch (e) {
       _handleError(e.message, () => _retryPendingChoice());
@@ -191,6 +219,15 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
         _storySaved = true;
         _isSaving = false;
       });
+      unawaited(
+        InteractiveStoryAnalytics.trackStorySaved(
+          characterId: widget.character.id,
+          theme: widget.theme,
+          choiceCount: _choiceIds.length,
+          segmentCount: _segments.length,
+          wordCount: _wordCount,
+        ),
+      );
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Story saved to your library!')),
@@ -235,32 +272,79 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
           ),
         ),
         body: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                Colors.deepPurple.shade50,
-                Colors.deepPurple.shade100,
-              ],
+              colors: [AppColors.surface, Colors.white],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
           ),
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              _buildHeaderCard(),
-              if (_choiceHistory.isNotEmpty) _buildChoiceHistoryChips(),
-              if (_errorMessage != null) _buildErrorBanner(),
-              Expanded(child: _buildStoryList()),
-              if (_isContinuing)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: CircularProgressIndicator(),
+          child: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildHeaderCard(),
+                      if (_choiceHistory.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        _buildChoiceHistoryChips(),
+                      ],
+                      if (_errorMessage != null) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        _buildErrorBanner(),
+                      ],
+                    ],
+                  ),
                 ),
-              if (_storyEnded) _buildEndingCard(),
-              if (_storyEnded) _buildSaveButton(),
-              const SizedBox(height: 16),
-            ],
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                    ),
+                    child: _buildStoryList(),
+                  ),
+                ),
+                if (_isContinuing) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  const Center(
+                    child: LoadingSpinner(
+                      message: 'Continuing the adventure...',
+                      size: 36,
+                    ),
+                  ),
+                ],
+                if (_storyEnded) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                      AppSpacing.sm,
+                    ),
+                    child: _buildEndingCard(),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                    ),
+                    child: _buildSaveButton(),
+                  ),
+                ] else
+                  const SizedBox(height: AppSpacing.lg),
+              ],
+            ),
           ),
         ),
       ),
@@ -268,131 +352,132 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
   }
 
   Widget _buildHeaderCard() {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: Colors.deepPurple.shade200,
-              child: Text(
-                widget.character.name.isNotEmpty
-                    ? widget.character.name[0].toUpperCase()
-                    : '?',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+    final theme = Theme.of(context);
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: AppColors.primary.withOpacity(0.2),
+            child: Text(
+              widget.character.name.isNotEmpty
+                  ? widget.character.name[0].toUpperCase()
+                  : '?',
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${widget.character.name} • ${widget.theme}',
+                  style: theme.textTheme.titleMedium,
                 ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${widget.character.name} • ${widget.theme}',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                const SizedBox(height: 4),
+                Text(
+                  _storyEnded
+                      ? 'Adventure complete!'
+                      : 'Choice $_currentChoiceNumber of 4',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: _storyEnded ? AppColors.secondary : AppColors.primary,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _storyEnded
-                        ? 'Adventure complete!'
-                        : 'Choice $_currentChoiceNumber of 4',
-                    style: TextStyle(
-                      color: _storyEnded
-                          ? Colors.teal.shade700
-                          : Colors.deepPurple.shade400,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildChoiceHistoryChips() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: List.generate(_choiceHistory.length, (index) {
-          final choice = _choiceHistory[index];
-          return Chip(
-            backgroundColor: Colors.deepPurple.shade100,
-            label: Text('${index + 1}. ${choice.text}'),
-          );
-        }),
+    final theme = Theme.of(context);
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Your choices so far',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: List.generate(_choiceHistory.length, (index) {
+              final choice = _choiceHistory[index];
+              return Chip(
+                backgroundColor: AppColors.accent.withOpacity(0.2),
+                labelStyle: theme.textTheme.labelLarge,
+                label: Text('${index + 1}. ${choice.text}'),
+              );
+            }),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildErrorBanner() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Card(
-        color: Colors.red.shade50,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return ErrorMessage(
+      title: 'Connection hiccup',
+      message: _errorMessage ?? 'Something unexpected happened.',
+      onRetry: _retryAction,
+    );
+  }
+
+  Widget _buildStoryList() {
+    final theme = Theme.of(context);
+    if (_isLoading) {
+      return const Center(
+        child: LoadingSpinner(
+          message: 'Summoning your adventure...',
+        ),
+      );
+    }
+
+    if (_segments.isEmpty) {
+      return Center(
+        child: AppCard(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, color: Colors.redAccent),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _errorMessage!,
-                      style: const TextStyle(
-                        color: Colors.redAccent,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: OutlinedButton.icon(
-                        onPressed: _retryAction,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Retry'),
-                      ),
-                    ),
-                  ],
+              const Icon(Icons.auto_stories, color: AppColors.primary, size: 32),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Your story will appear here',
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Tap retry above to try loading the adventure again.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.black54,
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildStoryList() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
       );
     }
 
-    return ListView.builder(
+    return ListView.separated(
       controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+      physics: const BouncingScrollPhysics(),
       itemCount: _segments.length,
       itemBuilder: (context, index) {
         final segment = _segments[index];
@@ -400,143 +485,142 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
         final bool showChoices =
             isLatest && !_storyEnded && (segment.choices?.isNotEmpty ?? false);
 
-        return AnimatedOpacity(
-          duration: const Duration(milliseconds: 300),
-          opacity: 1,
-          child: Card(
-            margin: const EdgeInsets.only(bottom: 16),
-            elevation: 3,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(18),
+        return AppCard(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                segment.text,
+                style: theme.textTheme.bodyLarge,
+              ),
+              if (showChoices) ...[
+                const SizedBox(height: AppSpacing.md),
+                ...segment.choices!.map(_buildChoiceButton),
+              ],
+            ],
+          ),
+        );
+      },
+      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+    );
+  }
+
+  Widget _buildChoiceButton(StoryChoice choice) {
+    final theme = Theme.of(context);
+    final isPending = _pendingChoice?.id == choice.id && _isContinuing;
+    final isDisabled = _isContinuing;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: isDisabled ? 0.6 : 1,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: isDisabled ? null : () => _handleChoiceSelected(choice),
+            borderRadius: BorderRadius.circular(18),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.04),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isPending ? AppColors.primary : Colors.grey.shade200,
+                  width: 1.5,
+                ),
+              ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    segment.text,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      height: 1.5,
-                    ),
+                  Row(
+                    children: [
+                      Icon(
+                        isPending ? Icons.hourglass_bottom : Icons.alt_route,
+                        color: isPending ? AppColors.primary : AppColors.secondary,
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          choice.text,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                      ),
+                    ],
                   ),
-                  if (showChoices) ...[
-                    const SizedBox(height: 16),
-                    const Divider(),
-                    const SizedBox(height: 12),
-                    ...segment.choices!.map(_buildChoiceButton),
+                  if (choice.description.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      choice.description,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.black54,
+                      ),
+                    ),
                   ],
                 ],
               ),
             ),
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildChoiceButton(StoryChoice choice) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: ElevatedButton(
-        onPressed: _isContinuing ? null : () => _handleChoiceSelected(choice),
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-          backgroundColor: Colors.deepPurple.shade400,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              choice.text,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (choice.description.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(
-                choice.description,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.deepPurple.shade50,
-                ),
-              ),
-            ],
-          ],
         ),
       ),
     );
   }
 
   Widget _buildEndingCard() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 8,
-                runSpacing: 8,
-                children: List.generate(
-                  12,
-                  (index) => Icon(
-                    Icons.celebration,
-                    color: Colors
-                        .primaries[index % Colors.primaries.length].shade300,
-                    size: 20 + ((index % 3) * 4),
-                  ),
-                ),
+    final theme = Theme.of(context);
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        children: [
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: List.generate(
+              12,
+              (index) => Icon(
+                Icons.celebration,
+                color:
+                    Colors.primaries[index % Colors.primaries.length].shade300,
+                size: 20 + ((index % 3) * 4),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'The End',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'What an adventure! Tap save so you can read it again anytime.',
-                textAlign: TextAlign.center,
-              ),
-            ],
+            ),
           ),
-        ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            'The End',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'What an adventure! Tap save so you can read it again anytime.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium,
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildSaveButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-      child: ElevatedButton.icon(
-        onPressed: _storySaved || _isSaving ? null : _saveStory,
-        icon: _isSaving
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.bookmark_added_outlined),
-        label: Text(_storySaved ? 'Story Saved!' : 'Save Story'),
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-      ),
+    final icon = _storySaved
+        ? Icons.check_circle
+        : _isSaving
+            ? Icons.hourglass_bottom
+            : Icons.bookmark_added_outlined;
+
+    return AppButton.primary(
+      label: _storySaved
+          ? 'Story Saved!'
+          : _isSaving
+              ? 'Saving...'
+              : 'Save Story',
+      icon: icon,
+      onPressed: _storySaved || _isSaving ? null : _saveStory,
     );
   }
 }

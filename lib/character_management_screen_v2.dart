@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'models.dart';
 import 'character_creation_screen_enhanced.dart';
 import 'character_edit_screen_enhanced.dart';
+import 'character_evolution_screen.dart';
 import 'subscription_service.dart';
 import 'paywall_dialog.dart';
 import 'enhanced_character_avatar.dart';
@@ -220,32 +221,43 @@ class _CharacterManagementScreenV2State
                         ),
                     ],
                   ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.deepPurple),
-                        tooltip: 'Edit',
-                        onPressed: () async {
-                          final updated =
-                              await Navigator.of(context).push<bool>(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  CharacterEditScreenEnhanced(character: c),
-                            ),
-                          );
-                          if (updated == true) {
-                            _refreshCharacters();
-                          }
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        tooltip: 'Delete',
-                        onPressed: () => _deleteCharacter(c),
-                      ),
-                    ],
-                  ),
+                   trailing: Row(
+                     mainAxisSize: MainAxisSize.min,
+                     children: [
+                       IconButton(
+                         icon: const Icon(Icons.trending_up, color: Colors.green),
+                         tooltip: 'View Growth',
+                         onPressed: () {
+                           Navigator.of(context).push(
+                             MaterialPageRoute(
+                               builder: (_) => CharacterEvolutionScreen(character: c),
+                             ),
+                           );
+                         },
+                       ),
+                       IconButton(
+                         icon: const Icon(Icons.edit, color: Colors.deepPurple),
+                         tooltip: 'Edit',
+                         onPressed: () async {
+                           final updated =
+                               await Navigator.of(context).push<bool>(
+                             MaterialPageRoute(
+                               builder: (_) =>
+                                   CharacterEditScreenEnhanced(character: c),
+                             ),
+                           );
+                           if (updated == true) {
+                             _refreshCharacters();
+                           }
+                         },
+                       ),
+                       IconButton(
+                         icon: const Icon(Icons.delete, color: Colors.red),
+                         tooltip: 'Delete',
+                         onPressed: () => _deleteCharacter(c),
+                       ),
+                     ],
+                   ),
                   onTap: () async {
                     final updated = await Navigator.of(context).push<bool>(
                       MaterialPageRoute(

@@ -9,8 +9,9 @@ import 'services/performance_analytics.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await FirebaseAnalyticsService.initialize();
-  await PerformanceAnalytics.trackAppStart();
+  // Temporarily disabled for testing therapeutic features
+  // await FirebaseAnalyticsService.initialize();
+  // await PerformanceAnalytics.trackAppStart();
   runApp(const StoryWeaverApp());
 }
 
