@@ -33,7 +33,11 @@ import 'models/achievement.dart';
 import 'services/achievement_service.dart';
 import 'pre_story_feelings_dialog.dart';
 import 'config/environment.dart';
-
+import 'theme/app_theme.dart';
+import 'widgets/app_card.dart';
+import 'widgets/app_button.dart';
+import 'widgets/loading_spinner.dart';
+import 'widgets/error_message.dart';
 
 class StoryCreatorApp extends StatelessWidget {
   const StoryCreatorApp({super.key});
@@ -41,17 +45,8 @@ class StoryCreatorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Story Creator',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        primaryColor: const Color(0xFF2E7D32), // Dark jungle green
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4CAF50),
-          primary: const Color(0xFF2E7D32),
-          secondary: const Color(0xFF81C784),
-        ),
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
+      title: 'Story Weaver',
+      theme: AppTheme.light(),
       home: const StoryScreen(),
       debugShowCheckedModeBanner: false,
     );
@@ -627,36 +622,35 @@ class _StoryScreenState extends State<StoryScreen> {
         ],
       ),
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              const Color(0xFF81C784), // Light green
-              const Color(0xFF66BB6A), // Medium green
-              const Color(0xFF4CAF50), // Vibrant green
-              const Color(0xFFAED581), // Light lime green
+              AppColors.accent,
+              AppColors.secondary,
+              AppColors.primary,
             ],
           ),
         ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (_achievementSummary != null) ...[
                 _buildAchievementsOverviewCard(),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.lg),
               ],
               _buildSectionCard(
                   'Choose Main Character', _buildCharacterSelector()),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.lg),
               if (_selectedCharacter != null)
                 _buildSectionCard('Add Friends/Siblings (Optional)',
                     _buildAdditionalCharactersSelector()),
               if (_selectedCharacter != null &&
                   _additionalCharacterIds.isNotEmpty)
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.lg),
               // Story Intent Card (merged theme + support focus)
               StoryIntentCard(
                 initialData: _storyIntent,
@@ -696,9 +690,13 @@ class _StoryScreenState extends State<StoryScreen> {
                   });
                 },
               ),
-              const SizedBox(height: 20),
-              Card(
+              const SizedBox(height: AppSpacing.lg),
+              AppCard(
                 child: SwitchListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.xs,
+                  ),
                   title: const Text(
                     'Interactive Story Mode',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -707,7 +705,7 @@ class _StoryScreenState extends State<StoryScreen> {
                     'Make choices that change the story!',
                   ),
                   value: _interactiveMode,
-                  activeColor: Colors.purple,
+                  activeColor: AppColors.primary,
                   secondary: const Icon(Icons.alt_route, color: Colors.purple),
                   onChanged: (value) {
                     setState(() => _interactiveMode = value);
@@ -715,8 +713,12 @@ class _StoryScreenState extends State<StoryScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              Card(
+              AppCard(
                 child: SwitchListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.xs,
+                  ),
                   title: const Text(
                     'Learning to Read Mode',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -727,7 +729,7 @@ class _StoryScreenState extends State<StoryScreen> {
                           ? 'Select a character (ages 4-7) to enable this mode'
                           : 'Only available when the character is ages 4-7.'),
                   value: _learningToReadMode && _canUseLearningToReadMode,
-                  activeColor: Colors.blue,
+                  activeColor: AppColors.secondary,
                   secondary: const Icon(Icons.menu_book, color: Colors.blue),
                   onChanged: _canUseLearningToReadMode
                       ? (value) {
@@ -742,8 +744,12 @@ class _StoryScreenState extends State<StoryScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              Card(
+              AppCard(
                 child: SwitchListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.xs,
+                  ),
                   title: Row(
                     children: [
                       const Text('Rhyme Time Mode', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -757,7 +763,7 @@ class _StoryScreenState extends State<StoryScreen> {
                       ? 'Silly rhyming stories with playful verses!'
                       : 'Unlock at 0 stories! ($_storiesCreated/0)'),
                   value: _rhymeTimeMode && _hasRhymeTime,
-                  activeColor: Colors.orange,
+                  activeColor: AppColors.warning,
                   secondary: const Icon(Icons.music_note, color: Colors.orange),
                   onChanged: _hasRhymeTime ? (value) {
                     setState(() => _rhymeTimeMode = value);
@@ -767,21 +773,18 @@ class _StoryScreenState extends State<StoryScreen> {
               const SizedBox(height: 20),
               _buildSectionCard(
                   'Choose a Companion (Optional)', _buildCompanionSelector()),
-              const SizedBox(height: 40),
+              const SizedBox(height: AppSpacing.xl),
               _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : ElevatedButton(
+                  ? const Center(
+                      child: LoadingSpinner(message: 'Preparing your story...'),
+                    )
+                  : AppButton.primary(
+                      label: _interactiveMode
+                          ? 'Start Interactive Story'
+                          : 'Create My Story!',
                       onPressed: () async {
                         await _onCreateButtonPressed();
                       },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        textStyle: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      child: Text(_interactiveMode
-                          ? 'Start Interactive Story'
-                          : 'Create My Story!'),
                     ),
             ],
           ),
@@ -790,69 +793,46 @@ class _StoryScreenState extends State<StoryScreen> {
     );
   }
 
-  Card _buildSectionCard(String title, Widget content) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      color: Colors.white.withValues(alpha: 0.95), // Semi-transparent white
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: const Color(0xFF81C784)
-                .withValues(alpha: 0.5), // Light green border
-            width: 2,
-          ),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.white.withValues(alpha: 0.95),
-              const Color(0xFFF1F8E9)
-                  .withValues(alpha: 0.95), // Very light green tint
-            ],
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  AppCard _buildSectionCard(String title, Widget content) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color:
-                          const Color(0xFF4CAF50).withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Text('🍃', style: TextStyle(fontSize: 18)),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2E7D32), // Dark green text
-                      ),
-                    ),
-                  ),
-                  const Text('🌿', style: TextStyle(fontSize: 16)),
-                ],
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Text('🍃', style: TextStyle(fontSize: 18)),
               ),
-              const SizedBox(height: 12),
-              content,
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              const Text('🌿', style: TextStyle(fontSize: 16)),
             ],
           ),
-        ),
+          const SizedBox(height: AppSpacing.sm),
+          content,
+        ],
       ),
     );
   }
 
   Widget _buildCharacterSelector() {
+    if (_characters.isEmpty) {
+      return ErrorMessage(
+        title: 'No characters yet',
+        message: 'Create your first character to begin crafting stories.',
+        onRetry: _loadCharacters,
+      );
+    }
     return Wrap(
       spacing: 12.0,
       runSpacing: 12.0,
@@ -883,7 +863,7 @@ class _StoryScreenState extends State<StoryScreen> {
             child: Container(
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: isSelected ? Colors.deepPurple : Colors.grey.shade300,
+                  color: isSelected ? AppColors.primary : Colors.grey.shade300,
                   width: isSelected ? 3 : 1,
                 ),
                 borderRadius: BorderRadius.circular(12),
@@ -970,9 +950,9 @@ class _StoryScreenState extends State<StoryScreen> {
         width: 80,
         decoration: BoxDecoration(
           border: Border.all(
-              color: Colors.deepPurple, width: 2, style: BorderStyle.solid),
+              color: AppColors.primary, width: 2, style: BorderStyle.solid),
           borderRadius: BorderRadius.circular(12),
-          color: Colors.deepPurple.shade50,
+          color: AppColors.primary.withOpacity(0.08),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -982,10 +962,10 @@ class _StoryScreenState extends State<StoryScreen> {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: Colors.deepPurple.shade100,
+                color: AppColors.primary.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.add, size: 30, color: Colors.deepPurple),
+              child: const Icon(Icons.add, size: 30, color: AppColors.primary),
             ),
             const SizedBox(height: 4),
             const Padding(
