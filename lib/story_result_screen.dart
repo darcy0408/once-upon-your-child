@@ -534,7 +534,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         TextSpan(
           text: pageText.substring(match.start, match.end),
           style: TextStyle(
-            backgroundColor: Colors.yellow.withOpacity(0.4),
+            backgroundColor: Colors.yellow.withValues(alpha: 0.4),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -853,9 +853,11 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   }
 
   Future<void> _shareStory() async {
-    await Share.share(
-      _formatShareText(includeMetadata: true),
-      subject: widget.title,
+    await SharePlus.instance.share(
+      ShareParams(
+        text: _formatShareText(includeMetadata: true),
+        subject: widget.title,
+      ),
     );
     _trackResultAction('share', extra: {'method': 'system_share'});
   }
@@ -866,10 +868,12 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         widget.title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
     final file = File('${directory.path}/$fileName.txt');
     await file.writeAsString(_formatShareText(includeMetadata: true));
-    await Share.shareXFiles(
-      [XFile(file.path)],
-      text: 'Story export ready to download or print.',
-      subject: widget.title,
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path)],
+        text: 'Story export ready to download or print.',
+        subject: widget.title,
+      ),
     );
     _trackResultAction('share', extra: {'method': 'export_txt'});
   }
@@ -1075,7 +1079,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                     'Tap to hide. Share this gem to reinforce the lesson.',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
                 ],
@@ -1293,7 +1297,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 }
 
@@ -1397,7 +1402,7 @@ class _ColoringSettingsDialogState extends State<ColoringSettingsDialog> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _selectedTherapeuticFocus,
+              initialValue: _selectedTherapeuticFocus,
               decoration: InputDecoration(
                 border:
                     OutlineInputBorder(borderRadius: BorderRadius.circular(8)),

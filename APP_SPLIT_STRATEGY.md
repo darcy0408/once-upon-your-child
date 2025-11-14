@@ -285,15 +285,116 @@ git push origin [agent]/[feature-name]
 
 ---
 
-## 🚀 Immediate Next Steps
+## 🚀 Immediate Next Steps (Updated)
 
-1. **Today**: Set up new Flutter projects and shared package structure
-2. **This Week**: Extract shared components and set up CI/CD
-3. **Next Week**: Begin Story Weaver MVP development
-4. **Week 3**: Deploy Story Weaver MVP
-5. **Month 2**: Launch marketing, start Therapy Companion development
+**🔥 PRIORITY 1 (Today): Fix Critical Code Issues**
+1. Fix `character_gallery_screen.dart:108` - Methods can't be invoked in constant expressions
+2. Fix `story_result_screen.dart:1296` - Expected to find ')' syntax error
+3. Address deprecated method warnings (withOpacity → withValues, Share API → SharePlus)
+4. Run `flutter analyze` and `flutter test` to ensure clean codebase
+
+**📦 PHASE 1: Foundation Setup**
+4. **This Week**: Set up new Flutter projects and shared package structure
+5. **This Week**: Extract shared components and set up CI/CD
+6. **Next Week**: Begin Story Weaver MVP development
+7. **Week 3**: Deploy Story Weaver MVP
+8. **Month 2**: Launch marketing, start Therapy Companion development
 
 **The split will actually make deployment FASTER** - removing therapeutic complexity will result in a cleaner, more focused product that deploys quicker and converts better.
+
+---
+
+## ⏳ **2-Day Holding Pattern Tasks (Until Claude Consultation)**
+
+### **Day 1: Code Quality & Critical Fixes**
+#### **👑 Orchestrator - Coordination**
+- Monitor progress on critical error fixes
+- Update TEAM_COORDINATION.md with current status
+- Coordinate between agents for non-conflicting tasks
+
+#### **⚙️ Grok - Infrastructure & Performance**
+- **Task**: `grok/performance-monitoring-setup`
+- Set up Firebase Performance Monitoring
+- Configure app startup time tracking
+- Add story generation performance metrics
+- **Deliverables**: Performance dashboard, baseline metrics
+
+#### **🧠 Gemini - Backend Improvements**
+- **Task**: `gemini/backend-modularization-step1`
+- **DO NOT** break down app.py yet - that's too complex
+- **Instead**: Create modular structure foundation
+- Step 1: Create `backend/models/`, `backend/routes/`, `backend/services/` folders with `__init__.py`
+- Step 2: Move database models to `models/character.py`
+- Step 3: Create basic route structure in `routes/__init__.py`
+- Step 4: Test that imports work before proceeding
+- **Deliverables**: Basic folder structure, working imports, documentation of next steps
+
+#### **📱 Codex - Frontend Polish & Testing**
+- **Task**: `codex/code-quality-fixes`
+- Fix the 2 critical Flutter analyze errors
+- Address deprecation warnings (withOpacity, Share API)
+- Expand widget tests for key components
+- **Deliverables**: Clean flutter analyze output, improved test coverage
+
+### **Day 2: Feature Enhancements & Documentation**
+#### **👑 Orchestrator - Planning & Documentation**
+- Create detailed Claude consultation brief
+- Document current app strengths/weaknesses
+- Prepare questions for split vs deploy decision
+
+#### **⚙️ Grok - Security & Reliability**
+- **Task**: `grok/security-hardening`
+- Implement flutter_secure_storage for API keys
+- Add error reporting (Sentry/Crashlytics integration)
+- Set up automated health checks
+- **Deliverables**: Secure key storage, error reporting
+
+#### **🧠 Gemini - Database & Async**
+- **Task**: `gemini/database-migration-plan`
+- Plan PostgreSQL migration from SQLite
+- Design async task queue architecture (Celery/Redis)
+- Create migration scripts and documentation
+- **Deliverables**: Migration plan, async architecture design
+
+#### **📱 Codex - UX Improvements**
+- **Task**: `codex/personalization-completion`
+- Complete StoryResultScreen personalization (hydrate avatars)
+- Improve wisdom gem system
+- Enhance celebration dialogs
+- **Deliverables**: Personalized story results, improved UX flow
+
+### **🎯 Success Criteria for 2-Day Period**
+- ✅ Zero critical Flutter analyze errors
+- ✅ Modular backend structure started
+- ✅ Security improvements implemented
+- ✅ Performance monitoring active
+- ✅ Documentation updated for Claude consultation
+- ✅ App remains fully functional
+
+### **📋 Non-Goals (Save for Post-Consultation)**
+- ❌ Start app split process
+- ❌ Major architectural changes
+- ❌ New feature development
+- ❌ Deployment preparations
+
+---
+
+## 🔧 Critical Code Issues to Fix (Priority 1)
+
+### Flutter Analyze Results (11 issues found)
+**2 Errors (Must Fix):**
+1. `character_gallery_screen.dart:108` - Methods can't be invoked in constant expressions
+2. `story_result_screen.dart:1296` - Expected to find ')'
+
+**9 Warnings (Should Fix):**
+- Multiple `withOpacity` deprecation warnings → Use `withValues()`
+- Share API deprecation warnings → Use SharePlus
+- Form field `value` deprecation → Use `initialValue`
+
+### Flutter SDK Cache Issue
+- **Main Environment**: ✅ Working (cache permissions OK)
+- **Codex Sandbox**: ❌ Restricted (can't write to /home/darcy/flutter/bin/cache/)
+- **Solution**: Codex should work in main environment or use local Flutter install
 
 ---
 
@@ -305,6 +406,12 @@ git push origin [agent]/[feature-name]
 - [ ] Extract shared components
 - [ ] Configure CI/CD pipelines
 - [ ] Set up git workflow automation
+
+### Current Progress (Codex Updates)
+- ✅ **Character Gallery Screen**: Applied AppTheme (AppCard, AppButton), added CharacterAnalytics tracking
+- ✅ **Story Result Screen**: Applied theming and comprehensive analytics tracking
+- ✅ **Analytics Services**: Added character_analytics.dart and enhanced story_analytics.dart
+- ⚠️ **Blocking Issue**: Flutter SDK cache permissions preventing analysis/testing
 
 ### Phase 2 Story Weaver MVP ✅
 - [ ] Migrate core storytelling features

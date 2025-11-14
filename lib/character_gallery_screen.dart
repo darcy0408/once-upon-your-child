@@ -103,7 +103,7 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text(
+        title: Text(
           'Delete Character?',
           style: Theme.of(context).textTheme.titleLarge,
         ),
@@ -274,7 +274,8 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
                   const SizedBox(height: AppSpacing.sm),
                   Chip(
                     label: Text('Feeling ${feeling.tertiary}'),
-                    backgroundColor: AppColors.accent.withOpacity(0.15),
+                    backgroundColor:
+                        AppColors.accent.withValues(alpha: 0.15),
                   ),
                 ],
               ],
