@@ -70,6 +70,7 @@ class ApiServiceManager {
         rhymeTimeMode: rhymeTimeMode,
         learningToReadMode: learningToReadMode,
         currentFeeling: currentFeeling,
+        characterEvolution: characterEvolution,
       );
     } else {
       // Use local Flask backend
@@ -83,6 +84,7 @@ class ApiServiceManager {
         rhymeTimeMode: rhymeTimeMode,
         learningToReadMode: learningToReadMode,
         currentFeeling: currentFeeling,
+        characterEvolution: characterEvolution,
         client: client,
         maxAttempts: maxAttempts,
         initialDelay: retryInitialDelay,
@@ -102,6 +104,7 @@ class ApiServiceManager {
     bool rhymeTimeMode = false,
     bool learningToReadMode = false,
     Map<String, dynamic>? currentFeeling,
+    Map<String, dynamic>? characterEvolution,
   }) async {
     final apiKey = await getUserApiKey();
     if (apiKey == null) throw Exception('No API key configured');
@@ -121,6 +124,7 @@ class ApiServiceManager {
       additionalCharacters: additionalCharacters,
       learningToReadMode: learningToReadMode,
       currentFeeling: currentFeeling,
+      characterEvolution: characterEvolution,
     );
 
     final response = await model.generateContent([Content.text(prompt)]);
@@ -137,6 +141,7 @@ class ApiServiceManager {
     bool rhymeTimeMode = false,
     bool learningToReadMode = false,
     Map<String, dynamic>? currentFeeling,
+    Map<String, dynamic>? characterEvolution,
     http.Client? client,
     required int maxAttempts,
     required Duration initialDelay,
@@ -157,6 +162,7 @@ class ApiServiceManager {
           rhymeTimeMode: rhymeTimeMode,
           learningToReadMode: learningToReadMode,
           currentFeeling: currentFeeling,
+          characterEvolution: characterEvolution,
           client: client,
           requestTimeout: requestTimeout,
         );
@@ -182,6 +188,7 @@ class ApiServiceManager {
     bool rhymeTimeMode = false,
     bool learningToReadMode = false,
     Map<String, dynamic>? currentFeeling,
+    Map<String, dynamic>? characterEvolution,
     http.Client? client,
     required Duration requestTimeout,
   }) async {
@@ -546,6 +553,7 @@ Create the rhyming learning-to-read story about $characterName now:
     List<String>? additionalCharacters,
     bool learningToReadMode = false,
     Map<String, dynamic>? currentFeeling,
+    Map<String, dynamic>? characterEvolution,
   }) {
     final guidelines = StoryComplexityService.getAgeGuidelines(age);
     final lengthGuideline =
