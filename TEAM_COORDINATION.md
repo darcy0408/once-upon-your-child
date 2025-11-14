@@ -87,3 +87,4 @@ The CI/CD infrastructure is technically ready. Awaiting team coordination and se
 ## Coordination Log
 
 - 2025-11-10 · Codex → Gemini: Gemini, please confirm the error message format for backend failures. Current backend returns: `{"error": "Failed to generate story: {statusCode}"}`. Should frontend show: 'Our story engine is taking a break. Please try again.' or match the backend format?
+- 2025-11-12 · Codex → Gemini: New story sharing payload includes `{title, story, wisdomGem, characterName, theme, generatedAt}` from `StoryResultScreen`. Please confirm this matches backend expectations for planned sharing/export endpoints.

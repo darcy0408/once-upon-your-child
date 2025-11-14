@@ -5,6 +5,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'theme/app_theme.dart';
+import 'widgets/app_card.dart';
+import 'widgets/app_button.dart';
+import 'widgets/loading_spinner.dart';
+import 'widgets/error_message.dart';
+import 'widgets/app_switch.dart';
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -26,6 +33,168 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadSettings();
   }
 
+  Widget _buildHeaderCard(BuildContext context) {
+    return AppCard(
+      color: AppColors.primary.withOpacity(0.05),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.vpn_key, color: AppColors.primary),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  'Bring Your Own API Key',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Use your free Gemini API key to unlock all premium features!',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildApiToggleCard() {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSwitch(
+            value: _useOwnApiKey,
+            onChanged: (value) {
+              setState(() => _useOwnApiKey = value);
+              _saveSettings();
+            },
+            label: 'Use my own Gemini API key',
+            subtitle: 'Unlock unlimited stories and features',
+            icon: Icons.api,
+          ),
+          if (_useOwnApiKey) ...[
+            const SizedBox(height: AppSpacing.md),
+            _buildApiKeyField(),
+            const SizedBox(height: AppSpacing.sm),
+            if (_validationMessage != null)
+              _isValid == false
+                  ? ErrorMessage(
+                      title: 'Validation failed',
+                      message: _validationMessage!,
+                      onRetry: _validateApiKey,
+                    )
+                  : AppCard(
+                      color: AppColors.accent.withOpacity(0.15),
+                      child: Text(
+                        _validationMessage!,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(color: AppColors.primary),
+                      ),
+                    ),
+            const SizedBox(height: AppSpacing.md),
+            AppButton.primary(
+              label: _isValidating ? 'Validating...' : 'Validate & Save',
+              onPressed: _isValidating ? null : _validateApiKey,
+              icon: _isValidating ? null : Icons.verified_user,
+            ),
+            if (_isValidating)
+              const Padding(
+                padding: EdgeInsets.only(top: AppSpacing.sm),
+                child: LoadingSpinner(size: 32),
+              ),
+            TextButton.icon(
+              onPressed: _launchApiKeyHelp,
+              icon: const Icon(Icons.help_outline),
+              label: const Text('How do I get an API key?'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildApiKeyField() {
+    return TextField(
+      controller: _apiKeyController,
+      decoration: InputDecoration(
+        labelText: 'Gemini API Key',
+        hintText: 'AIza...',
+        prefixIcon: const Icon(Icons.key),
+        suffixIcon: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Icon(
+                _obscureApiKey ? Icons.visibility : Icons.visibility_off,
+              ),
+              onPressed: () => setState(() => _obscureApiKey = !_obscureApiKey),
+            ),
+            if (_apiKeyController.text.isNotEmpty)
+              IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: _clearApiKey,
+              ),
+          ],
+        ),
+      ),
+      obscureText: _obscureApiKey,
+      maxLines: 1,
+    );
+  }
+
+  Widget _buildBenefitsCard() {
+    const benefits = [
+      'Unlimited story generation',
+      'Interactive adventures',
+      'Superhero mode',
+      'All avatar customizations',
+      'Advanced therapeutic tools',
+      'No subscription needed',
+    ];
+    return AppCard(
+      color: AppColors.secondary.withOpacity(0.08),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.star, color: AppColors.secondary),
+              SizedBox(width: AppSpacing.sm),
+              Text(
+                'Benefits',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          ...benefits.map((b) => _buildBenefitRow('✓ $b')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPrivacyCard() {
+    return AppCard(
+      color: Colors.blue.shade50,
+      child: Row(
+        children: const [
+          Icon(Icons.lock, color: Colors.blue),
+          SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              'Your API key is stored securely on your device and never sent to our servers.',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
   @override
   void dispose() {
     _apiKeyController.dispose();
@@ -237,230 +406,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
-        backgroundColor: Colors.deepPurple,
-        foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Card
-            Card(
-              color: Colors.deepPurple.shade50,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.vpn_key, color: Colors.deepPurple.shade700),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            'Bring Your Own API Key',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Use your free Gemini API key to unlock all premium features!',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Toggle Switch
-            SwitchListTile(
-              title: const Text(
-                'Use my own Gemini API key',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: const Text('Unlock unlimited stories and features'),
-              value: _useOwnApiKey,
-              activeColor: Colors.deepPurple,
-              onChanged: (value) {
-                setState(() => _useOwnApiKey = value);
-                _saveSettings();
-              },
-            ),
-
+            _buildHeaderCard(context),
+            const SizedBox(height: AppSpacing.lg),
+            _buildApiToggleCard(),
             if (_useOwnApiKey) ...[
-              const SizedBox(height: 16),
-
-              // API Key Input
-              TextField(
-                controller: _apiKeyController,
-                decoration: InputDecoration(
-                  labelText: 'Gemini API Key',
-                  hintText: 'AIza...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  prefixIcon: const Icon(Icons.key),
-                  suffixIcon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          _obscureApiKey ? Icons.visibility : Icons.visibility_off,
-                        ),
-                        onPressed: () {
-                          setState(() => _obscureApiKey = !_obscureApiKey);
-                        },
-                      ),
-                      if (_apiKeyController.text.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: _clearApiKey,
-                        ),
-                    ],
-                  ),
-                ),
-                obscureText: _obscureApiKey,
-                maxLines: 1,
-              ),
-
-              const SizedBox(height: 12),
-
-              // Validation Message
-              if (_validationMessage != null)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: _isValid == true
-                        ? Colors.green.shade50
-                        : Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: _isValid == true
-                          ? Colors.green.shade200
-                          : Colors.red.shade200,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _isValid == true ? Icons.check_circle : Icons.error,
-                        color:
-                            _isValid == true ? Colors.green : Colors.red,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _validationMessage!,
-                          style: TextStyle(
-                            color: _isValid == true
-                                ? Colors.green.shade900
-                                : Colors.red.shade900,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-              const SizedBox(height: 16),
-
-              // Validate Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _isValidating ? null : _validateApiKey,
-                  icon: _isValidating
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Icon(Icons.verified_user),
-                  label: Text(_isValidating ? 'Validating...' : 'Validate & Save'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Help Button
-              TextButton.icon(
-                onPressed: _launchApiKeyHelp,
-                icon: const Icon(Icons.help_outline),
-                label: const Text('How do I get an API key?'),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Benefits Card
-              Card(
-                color: Colors.green.shade50,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.star, color: Colors.green.shade700),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Benefits',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      _buildBenefitRow('✓ Unlimited story generation'),
-                      _buildBenefitRow('✓ Interactive choose-your-own-adventure'),
-                      _buildBenefitRow('✓ Superhero mode'),
-                      _buildBenefitRow('✓ All avatar customizations'),
-                      _buildBenefitRow('✓ Advanced therapeutic features'),
-                      _buildBenefitRow('✓ No subscription needed'),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Privacy Note
-              Card(
-                color: Colors.blue.shade50,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      Icon(Icons.lock, color: Colors.blue.shade700, size: 20),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text(
-                          'Your API key is stored securely on your device and never sent to our servers.',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              const SizedBox(height: AppSpacing.lg),
+              _buildBenefitsCard(),
+              const SizedBox(height: AppSpacing.md),
+              _buildPrivacyCard(),
             ],
           ],
         ),
@@ -470,10 +429,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildBenefitRow(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
       child: Text(
         text,
-        style: TextStyle(color: Colors.green.shade900),
+        style: Theme.of(context)
+            .textTheme
+            .bodyMedium
+            ?.copyWith(color: Colors.green.shade900),
       ),
     );
   }

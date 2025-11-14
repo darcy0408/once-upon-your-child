@@ -2,9 +2,14 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'story_reader_screen.dart';
 import 'storage_service.dart';
 import 'offline_story_cache.dart';
@@ -20,6 +25,9 @@ import 'unlock_celebration_dialog.dart';
 import 'services/achievement_service.dart';
 import 'achievement_celebration_dialog.dart';
 import 'config/environment.dart';
+import 'services/story_feedback_service.dart';
+import 'services/story_analytics.dart';
+import 'services/therapeutic_analytics.dart';
 
 class StoryResultScreen extends StatefulWidget {
   final String title;
@@ -60,6 +68,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   final _coloringService =
       GeminiColoringBookService(); // Using Gemini for therapeutic coloring pages
   final _progressionService = ProgressionService(); // Track user progress and unlocks
+  final _feedbackService = StoryFeedbackService();
+  final TextEditingController _feedbackController = TextEditingController();
   bool _isFavorite = false;
   bool _isLoading = true;
   List<StoryIllustration>? _cachedIllustrations;
@@ -68,6 +78,16 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   String? _activeTherapeuticFocus;
   bool _isGeneratingIllustrations = false;
   bool _isGeneratingColoringPages = false;
+  late final PageController _pageController;
+  late List<String> _storyPages;
+  int _currentPageIndex = 0;
+  double _textScale = 1.0;
+  bool _highContrastMode = false;
+  bool _showWisdomDetails = false;
+  bool _screenReaderHints = true;
+  bool _isSubmittingFeedback = false;
+  double _storyRating = 4.0;
+  bool _isStoryHovered = false;
 
   int get _effectiveAge {
     final age = _characterAge;
@@ -80,6 +100,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   @override
   void initState() {
     super.initState();
+    _storyPages = _paginateStory(widget.storyText);
+    _pageController = PageController();
     _loadCharacterDetails();
     _loadFavoriteStatus();
     _cacheStoryForOffline();
@@ -88,6 +110,14 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     if (widget.trackStoryCreation) {
       _trackStoryCreation(); // Track that user created a story, check for unlocks
     }
+    _trackStoryView();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _feedbackController.dispose();
+    super.dispose();
   }
 
   /// Track that a story was created and show celebration if features unlocked
@@ -107,6 +137,19 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     if (mounted && newFeatureUnlocks.isNotEmpty) {
       await UnlockCelebrationDialog.show(context, newFeatureUnlocks);
     }
+  }
+
+  Future<void> _trackStoryView() async {
+    final wordCount = widget.storyText
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty)
+        .length;
+    final estimatedSeconds = max(30, (wordCount / 3).round());
+    await StoryAnalytics.trackStoryCompletion(
+      storyId: widget.storyId ?? widget.title.hashCode.toString(),
+      wordCount: wordCount,
+      readingTime: Duration(seconds: estimatedSeconds),
+    );
   }
 
   /// Automatically cache the story for offline access
@@ -320,6 +363,236 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     return scenes;
   }
 
+  List<String> _paginateStory(String text, {int wordsPerPage = 120}) {
+    final words = text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    if (words.isEmpty) {
+      return [text];
+    }
+    final pages = <String>[];
+    final buffer = StringBuffer();
+    var count = 0;
+    for (final word in words) {
+      buffer.write(word);
+      buffer.write(' ');
+      count++;
+      if (count >= wordsPerPage) {
+        pages.add(buffer.toString().trim());
+        buffer.clear();
+        count = 0;
+      }
+    }
+    if (buffer.isNotEmpty) {
+      pages.add(buffer.toString().trim());
+    }
+    return pages.isEmpty ? [text] : pages;
+  }
+
+  int get _totalWords =>
+      widget.storyText.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+
+  int get _estimatedMinutes => max(1, (_totalWords / 150).ceil());
+
+  double get _pageProgress =>
+      _storyPages.isEmpty ? 0 : (_currentPageIndex + 1) / _storyPages.length;
+
+  Color get _storyTextColor =>
+      _highContrastMode ? Colors.white : Colors.black87;
+
+  Color get _storyBackgroundColor =>
+      _highContrastMode ? Colors.black : Colors.white;
+
+  Widget _buildReadingProgressHeader() {
+    return Semantics(
+      label:
+          'Reading progress ${(100 * _pageProgress).toStringAsFixed(0)} percent, about $_estimatedMinutes minute read',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: LinearProgressIndicator(
+                  value: _pageProgress,
+                  backgroundColor: Colors.grey.shade200,
+                  color: Colors.deepPurple,
+                  minHeight: 10,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '${(_pageProgress * 100).toStringAsFixed(0)}%',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Page ${_currentPageIndex + 1} of ${_storyPages.length} · ≈ $_estimatedMinutes min read',
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.black54,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccessibilityPanel() {
+    return Card(
+      color: _highContrastMode ? Colors.black : Colors.white,
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Reading comfort',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            Row(
+              children: [
+                const Text('Text size'),
+                Expanded(
+                  child: Slider(
+                    value: _textScale,
+                    min: 0.9,
+                    max: 1.6,
+                    divisions: 7,
+                    label: _textScale.toStringAsFixed(1),
+                    onChanged: (value) => setState(() => _textScale = value),
+                  ),
+                ),
+              ],
+            ),
+            SwitchListTile.adaptive(
+              title: const Text('High contrast mode'),
+              dense: true,
+              value: _highContrastMode,
+              onChanged: (value) => setState(() => _highContrastMode = value),
+            ),
+            SwitchListTile.adaptive(
+              title: const Text('Screen reader hints'),
+              dense: true,
+              value: _screenReaderHints,
+              onChanged: (value) => setState(() => _screenReaderHints = value),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<InlineSpan> _buildStorySpans(String pageText) {
+    final heroName = widget.characterName;
+    if (heroName == null || heroName.trim().isEmpty) {
+      return [TextSpan(text: pageText)];
+    }
+    final pattern = RegExp(RegExp.escape(heroName), caseSensitive: false);
+    final spans = <InlineSpan>[];
+    int lastIndex = 0;
+    for (final match in pattern.allMatches(pageText)) {
+      if (match.start > lastIndex) {
+        spans.add(TextSpan(text: pageText.substring(lastIndex, match.start)));
+      }
+      spans.add(
+        TextSpan(
+          text: pageText.substring(match.start, match.end),
+          style: TextStyle(
+            backgroundColor: Colors.yellow.withOpacity(0.4),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+      lastIndex = match.end;
+    }
+    if (lastIndex < pageText.length) {
+      spans.add(TextSpan(text: pageText.substring(lastIndex)));
+    }
+    return spans;
+  }
+
+  Widget _buildStoryPager(double maxHeight) {
+    final pageHeight = max(320.0, min(maxHeight * 0.55, 520.0));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildReadingProgressHeader(),
+        const SizedBox(height: 12),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            color: _storyBackgroundColor,
+            child: SizedBox(
+              height: pageHeight,
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: _storyPages.length,
+                onPageChanged: (index) {
+                  setState(() => _currentPageIndex = index);
+                },
+                itemBuilder: (context, index) {
+                  final page = _storyPages[index];
+                  return Semantics(
+                    label: _screenReaderHints
+                        ? 'Story page ${index + 1}'
+                        : null,
+                    child: MouseRegion(
+                      onEnter: (_) => setState(() => _isStoryHovered = true),
+                      onExit: (_) => setState(() => _isStoryHovered = false),
+                      cursor: SystemMouseCursors.click,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: _isStoryHovered
+                              ? (_highContrastMode
+                                  ? Colors.grey.shade900
+                                  : Colors.deepPurple.shade50)
+                              : Colors.transparent,
+                          border: Border(
+                            left: BorderSide(
+                              color: Colors.deepPurple.shade100,
+                              width: 4,
+                            ),
+                          ),
+                        ),
+                        child: SingleChildScrollView(
+                          child: SelectableText.rich(
+                            TextSpan(
+                              style: TextStyle(
+                                fontSize: 18 * _textScale,
+                                height: 1.5,
+                                color: _storyTextColor,
+                              ),
+                              children: _buildStorySpans(page),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Swipe horizontally or use arrow keys to turn the page.',
+          style: TextStyle(
+            fontSize: 12,
+            color: _highContrastMode ? Colors.white70 : Colors.black54,
+          ),
+        ),
+      ],
+    );
+  }
+
   bool get _shouldShowMetaCard {
     final hasName =
         widget.characterName != null && widget.characterName!.trim().isNotEmpty;
@@ -516,6 +789,253 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     );
   }
 
+  Map<String, dynamic> _buildSharePayload() => {
+        'title': widget.title,
+        'story': widget.storyText,
+        'wisdomGem': widget.wisdomGem,
+        'characterName': widget.characterName,
+        'theme': widget.theme,
+        'generatedAt': widget.storyCreatedAt?.toIso8601String(),
+      };
+
+  String _formatShareText({bool includeMetadata = false}) {
+    final buffer = StringBuffer()
+      ..writeln(widget.title)
+      ..writeln()
+      ..writeln(widget.storyText);
+    if (widget.wisdomGem.isNotEmpty) {
+      buffer
+        ..writeln()
+        ..writeln('Wisdom Gem: ${widget.wisdomGem}');
+    }
+
+    if (includeMetadata) {
+      buffer
+        ..writeln()
+        ..writeln('--- Story Metadata ---')
+        ..writeln('Hero: ${widget.characterName ?? 'Unknown'}')
+        ..writeln('Theme: ${widget.theme ?? 'Adventure'}')
+        ..writeln('Created: ${widget.storyCreatedAt ?? DateTime.now()}');
+    }
+    return buffer.toString();
+  }
+
+  Future<void> _shareStory() async {
+    await Share.share(
+      _formatShareText(includeMetadata: true),
+      subject: widget.title,
+    );
+  }
+
+  Future<void> _exportStory() async {
+    final directory = await getTemporaryDirectory();
+    final fileName =
+        widget.title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+    final file = File('${directory.path}/$fileName.txt');
+    await file.writeAsString(_formatShareText(includeMetadata: true));
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      text: 'Story export ready to download or print.',
+      subject: widget.title,
+    );
+  }
+
+  Future<void> _copyShareData() async {
+    await Clipboard.setData(ClipboardData(
+      text: jsonEncode(_buildSharePayload()),
+    ));
+    if (mounted) {
+      _showSnackBar('Story data copied for Gemini coordination.',
+          backgroundColor: Colors.green);
+    }
+  }
+
+  Widget _buildShareActions() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Share this story',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          children: [
+            ElevatedButton.icon(
+              onPressed: _shareStory,
+              icon: const Icon(Icons.share),
+              label: const Text('Share'),
+            ),
+            OutlinedButton.icon(
+              onPressed: _exportStory,
+              icon: const Icon(Icons.file_download),
+              label: const Text('Export .txt'),
+            ),
+            OutlinedButton.icon(
+              onPressed: _copyShareData,
+              icon: const Icon(Icons.code),
+              label: const Text('Copy JSON'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submitFeedback() async {
+    if (_isSubmittingFeedback) return;
+    setState(() => _isSubmittingFeedback = true);
+    try {
+      final feedback = StoryFeedback(
+        storyId: widget.storyId ?? widget.title.hashCode.toString(),
+        title: widget.title,
+        rating: _storyRating,
+        feedback: _feedbackController.text.trim(),
+        therapeuticFocus: _activeTherapeuticFocus,
+        submittedAt: DateTime.now(),
+      );
+      await _feedbackService.submitFeedback(feedback);
+      await TherapeuticAnalytics.trackTherapeuticFeedback(
+        rating: _storyRating.round(),
+        feedbackText: _feedbackController.text.trim(),
+      );
+      if (mounted) {
+        _feedbackController.clear();
+        _showSnackBar(
+          'Thanks for helping us improve stories!',
+          backgroundColor: Colors.green,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        _showSnackBar('Could not save feedback: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmittingFeedback = false);
+      }
+    }
+  }
+
+  Widget _buildFeedbackCard() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'How helpful was this story?',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Slider(
+                    value: _storyRating,
+                    min: 1,
+                    max: 5,
+                    divisions: 8,
+                    label: _storyRating.toStringAsFixed(1),
+                    onChanged: (value) => setState(() => _storyRating = value),
+                  ),
+                ),
+                Text('${_storyRating.toStringAsFixed(1)}/5'),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _feedbackController,
+              maxLength: 240,
+              minLines: 2,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Share anything the story helped with',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton.icon(
+                onPressed: _isSubmittingFeedback ? null : _submitFeedback,
+                icon: _isSubmittingFeedback
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.send),
+                label: Text(_isSubmittingFeedback ? 'Sending...' : 'Send'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWisdomGemCard() {
+    return InkWell(
+      onTap: () => setState(() => _showWisdomDetails = !_showWisdomDetails),
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: _showWisdomDetails
+              ? Colors.deepPurple
+              : Colors.deepPurple.shade50,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            if (_showWisdomDetails)
+              BoxShadow(
+                color: Colors.deepPurple.shade200,
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Text(
+              'Wisdom Gem',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: _showWisdomDetails ? Colors.white : Colors.deepPurple,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              widget.wisdomGem,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontStyle: FontStyle.italic,
+                color: _showWisdomDetails ? Colors.white : Colors.deepPurple,
+              ),
+            ),
+            if (_showWisdomDetails) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Tap to hide. Share this gem with your child to reinforce the lesson.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _loadFavoriteStatus() async {
     if (widget.storyId != null) {
       final story = await _storage.findStoryById(widget.storyId!);
@@ -585,36 +1105,24 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
             if (_shouldShowMetaCard) const SizedBox(height: 12),
             if (!_shouldShowMetaCard) const SizedBox(height: 12),
 
-            // Use a larger, more readable font for the story
-            Text(
-              widget.storyText,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontSize: 18,
-                    height: 1.5,
-                  ),
+            LayoutBuilder(
+              builder: (context, constraints) =>
+                  _buildStoryPager(MediaQuery.of(context).size.height),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
+            _buildAccessibilityPanel(),
+            const SizedBox(height: 24),
 
             // Make the Wisdom Gem stand out
             if (widget.wisdomGem.isNotEmpty)
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.deepPurple.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'Wisdom Gem: ${widget.wisdomGem}',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontStyle: FontStyle.italic,
-                          color: Colors.deepPurple,
-                        ),
-                  ),
-                ),
-              ),
+              Center(child: _buildWisdomGemCard()),
             if (widget.wisdomGem.isNotEmpty) const SizedBox(height: 24),
+
+            _buildShareActions(),
+            const SizedBox(height: 24),
+
+            _buildFeedbackCard(),
+            const SizedBox(height: 24),
 
             // Favorite button if story is saved
             if (widget.storyId != null && !_isLoading)
