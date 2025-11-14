@@ -19,6 +19,7 @@ import 'premium_upgrade_screen.dart';
 import 'interactive_story_screen.dart';
 import 'therapeutic_customization_screen.dart';
 import 'therapeutic_models.dart';
+import 'character_evolution.dart';
 import 'story_intent_card.dart';
 import 'offline_stories_screen.dart';
 import 'coloring_book_library_screen.dart';
@@ -365,6 +366,9 @@ class _StoryScreenState extends State<StoryScreen> {
         wisdomGem: wisdomGem,
       );
       await StorageService().saveStory(saved);
+
+      // Update character evolution based on therapeutic elements
+      await _updateCharacterEvolution(allSelectedCharacters, _therapeuticCustomization);
 
       // Record story creation for usage tracking
       await _subscriptionService.recordStoryCreation();
