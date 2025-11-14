@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'character_evolution.dart';
 import 'models.dart';
+import 'emotion_recognition_game.dart';
 
 class CharacterEvolutionScreen extends StatefulWidget {
   final Character character;
@@ -115,8 +116,46 @@ class _CharacterEvolutionScreenState extends State<CharacterEvolutionScreen> {
           // Milestones
           if (_evolution!.milestones.isNotEmpty) ...[
             _buildMilestonesSection(),
+            const SizedBox(height: 24),
           ],
+
+          // Therapeutic Activities
+          _buildTherapeuticActivitiesSection(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTherapeuticActivitiesSection() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Therapeutic Activities',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Practice emotional skills through interactive games and exercises',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 16),
+            EmotionGameLauncher(characterId: widget.character.id),
+          ],
+        ),
       ),
     );
   }

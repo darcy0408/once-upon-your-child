@@ -1,6 +1,6 @@
 import pytest
 from backend.app import create_app
-from models import db
+from backend.models import db
 
 @pytest.fixture(scope='module')
 def app():
