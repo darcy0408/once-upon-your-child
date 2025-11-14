@@ -4,7 +4,6 @@ Additional comprehensive tests for Story Weaver backend
 import pytest
 import json
 from unittest.mock import patch, MagicMock
-from app import app, db
 
 
 def test_generate_story_with_feelings_wheel(client):
