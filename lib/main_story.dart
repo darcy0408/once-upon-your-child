@@ -37,6 +37,10 @@ import 'theme/app_theme.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_button.dart';
 import 'widgets/loading_spinner.dart';
+import 'services/firebase_analytics_service.dart';
+import 'services/story_analytics.dart';
+import 'services/therapeutic_analytics.dart';
+import 'services/performance_analytics.dart';
 import 'widgets/error_message.dart';
 
 class StoryCreatorApp extends StatelessWidget {
@@ -47,6 +51,7 @@ class StoryCreatorApp extends StatelessWidget {
     return MaterialApp(
       title: 'Story Weaver',
       theme: AppTheme.light(),
+      navigatorObservers: [FirebaseAnalyticsService.observer],
       home: const StoryScreen(),
       debugShowCheckedModeBanner: false,
     );
@@ -320,9 +325,13 @@ class _StoryScreenState extends State<StoryScreen> {
       final Map<String, dynamic>? currentFeelingData =
           currentFeeling?.toJson();
 
-      // Record emotion check-in if provided
-            if (currentFeeling != null) {
-            }
+      if (currentFeeling != null) {
+        await TherapeuticAnalytics.trackFeelingsCheckIn(
+          emotionName: currentFeeling.selectedFeeling.tertiary,
+          intensity: currentFeeling.intensity,
+          copingStrategies: currentFeeling.copingStrategies ?? const [],
+        );
+      }
       // Use ApiServiceManager to generate story (handles backend vs direct API)
       final String storyText = await ApiServiceManager.generateStory(
         characterName: _selectedCharacter!.name,
@@ -360,6 +369,13 @@ class _StoryScreenState extends State<StoryScreen> {
         wisdomGem: wisdomGem,
       );
       await StorageService().saveStory(saved);
+      await StoryAnalytics.trackStoryCreation(
+        theme: _selectedTheme,
+        characterName: _selectedCharacter!.name,
+        characterAge: _selectedCharacter!.age,
+        interactiveMode: _interactiveMode,
+        rhymeMode: _rhymeTimeMode,
+      );
 
       // Record story creation for usage tracking
       await _subscriptionService.recordStoryCreation();
@@ -394,6 +410,7 @@ class _StoryScreenState extends State<StoryScreen> {
       ScaffoldMessenger.of(navContext).showSnackBar(
         SnackBar(content: Text(message)),
       );
+      await PerformanceAnalytics.trackError('story_generation', e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

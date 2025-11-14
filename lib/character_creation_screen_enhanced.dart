@@ -14,6 +14,7 @@ import 'services/achievement_service.dart';
 import 'services/avatar_service.dart';
 import 'achievement_celebration_dialog.dart';
 import 'config/environment.dart';
+import 'services/character_analytics.dart';
 
 class CharacterCreationScreenEnhanced extends StatefulWidget {
   const CharacterCreationScreenEnhanced({super.key});
@@ -310,6 +311,12 @@ class _CharacterCreationScreenEnhancedState
         final achievements =
             await _achievementService.recordCharacterCreated();
         await _progressionService.incrementCharactersCreated();
+        await CharacterAnalytics.trackCharacterCreation(
+          characterName: _nameController.text.trim(),
+          age: ageToSend,
+          gender: _isA,
+          traits: _selectedQuickLikes.toList(),
+        );
         if (mounted && achievements.isNotEmpty) {
           await AchievementCelebrationDialog.show(context, achievements);
         }

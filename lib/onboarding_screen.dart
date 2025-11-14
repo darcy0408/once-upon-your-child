@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'theme/app_theme.dart';
+import 'services/onboarding_analytics.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onFinished;
@@ -23,6 +24,8 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   late final PageController _pageController;
   int _currentIndex = 0;
+  late final DateTime _startedAt;
+  bool _skippedAnyStep = false;
 
   final Color _primary = const Color(0xFF2E7D32);
   final Color _accent = const Color(0xFF4CAF50);
@@ -33,12 +36,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    _startedAt = DateTime.now();
     _pages = _OnboardingPageContent.buildPages(
       primary: _primary,
       accent: _accent,
       onTryCharacterDemo: widget.onTryCharacterDemo,
       onPreviewStoryDemo: widget.onPreviewStoryDemo,
     );
+    _trackPageView(0);
   }
 
   @override
@@ -55,15 +60,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return '$minutes min left';
   }
 
+  void _trackPageView(int index) {
+    OnboardingAnalytics.trackFeatureViewed('onboarding_step_${index + 1}');
+  }
+
   void _handleNext() {
     if (_isLastPage) {
-      widget.onFinished();
+      _completeOnboarding();
     } else {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
     }
+  }
+
+  Future<void> _completeOnboarding({bool skipped = false}) async {
+    final elapsed = DateTime.now().difference(_startedAt).inSeconds;
+    await OnboardingAnalytics.trackOnboardingCompleted(
+      timeSpentSeconds: elapsed,
+      skippedAnyStep: skipped || _skippedAnyStep,
+    );
+    widget.onFinished();
   }
   Future<void> _confirmSkip() async {
     final result = await showDialog<bool>(
@@ -86,8 +104,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       ),
     );
     if (result ?? false) {
+      _skippedAnyStep = true;
       widget.onSkipConfirmed?.call();
-      widget.onFinished();
+      await _completeOnboarding(skipped: true);
     }
   }
 
@@ -164,7 +183,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: _pages.length,
-                onPageChanged: (index) => setState(() => _currentIndex = index),
+                onPageChanged: (index) {
+                  setState(() => _currentIndex = index);
+                  _trackPageView(index);
+                },
                 itemBuilder: (_, index) => _buildPage(_pages[index]),
               ),
             ),

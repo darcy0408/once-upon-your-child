@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+
 import 'main_story.dart';
 import 'theme/app_theme.dart';
 import 'onboarding_screen.dart';
 import 'services/onboarding_service.dart';
+import 'services/firebase_analytics_service.dart';
+import 'services/performance_analytics.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await FirebaseAnalyticsService.initialize();
+  await PerformanceAnalytics.trackAppStart();
   runApp(const StoryWeaverApp());
 }
 
