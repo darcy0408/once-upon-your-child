@@ -119,8 +119,9 @@ The CI/CD infrastructure is technically ready. Awaiting team coordination and se
 - `lib/family_relationship_stories.dart` - Family dynamics stories covering communication, roles, and relationships
 - `lib/conflict_resolution_stories.dart` - Interactive conflict resolution training with problem-solving scenarios
 - `lib/coping_strategy_library.dart` - Comprehensive coping strategy library with practice mode
+- `lib/quick_story_screen.dart` - Simplified story creation for instant storytelling
 - `lib/services/api_service_manager.dart` - Updated for evolution-aware prompts
-- `lib/main_story.dart` - Added evolution updates to story generation
+- `lib/main_story.dart` - Added quick story access and evolution updates
 - `monitoring/therapeutic_outcomes.py` - Fixed bug in trend analysis
 
 #### 🤝 Team Coordination Needs

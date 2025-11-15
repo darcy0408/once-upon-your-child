@@ -19,6 +19,7 @@ import 'premium_upgrade_screen.dart';
 import 'interactive_story_screen.dart';
 import 'therapeutic_customization_screen.dart';
 import 'therapeutic_models.dart';
+import 'quick_story_screen.dart';
 import 'character_evolution.dart';
 import 'pre_story_feelings_dialog.dart';
 import 'services/character_analytics.dart';
@@ -56,7 +57,7 @@ class StoryCreatorApp extends StatelessWidget {
       theme: AppTheme.light(
         primaryColor: Environment.primaryColor,
       ),
-      navigatorObservers: [FirebaseAnalyticsService.observer],
+      navigatorObservers: FirebaseAnalyticsService.observer != null ? [FirebaseAnalyticsService.observer!] : [],
       home: const StoryScreen(),
       debugShowCheckedModeBanner: !Environment.isProduction,
       builder: (context, child) {
@@ -533,6 +534,18 @@ class _StoryScreenState extends State<StoryScreen> {
           ],
         ),
         actions: [
+          // Quick Story Button
+          IconButton(
+            tooltip: 'Quick Story',
+            icon: const Icon(Icons.flash),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const QuickStoryScreen(),
+                ),
+              );
+            },
+          ),
           // Stories remaining indicator
           if (_currentSubscription != null &&
               !_currentSubscription!.limits.unlimitedStories)
@@ -683,6 +696,10 @@ class _StoryScreenState extends State<StoryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Quick Story - Most Prominent Option
+              _buildQuickStoryCard(),
+              const SizedBox(height: AppSpacing.lg),
+
               if (_achievementSummary != null) ...[
                 _buildAchievementsOverviewCard(),
                 const SizedBox(height: AppSpacing.lg),
@@ -864,6 +881,105 @@ class _StoryScreenState extends State<StoryScreen> {
                     ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickStoryCard() {
+    return AppCard(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.primary.withOpacity(0.1), AppColors.accent.withOpacity(0.1)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.flash,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Quick Story',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Create a magical story in seconds - no setup required!',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const QuickStoryScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.auto_stories),
+                label: const Text('Create Quick Story'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.all(16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Center(
+              child: TextButton(
+                onPressed: () {
+                  // Scroll to advanced options or show hint
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Scroll down for character customization and therapeutic features!'),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                },
+                child: Text(
+                  'Want advanced features?',
+                  style: TextStyle(color: AppColors.primary),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
