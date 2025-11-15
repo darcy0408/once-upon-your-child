@@ -21,6 +21,24 @@ class StoryWeaverMVP extends StatelessWidget {
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
+  static final Character _sampleCharacter = Character(
+    id: 'demo-character',
+    name: 'Kai the Explorer',
+    age: 7,
+    role: 'Explorer',
+    hair: 'brown',
+    eyes: 'green',
+    characterStyle: 'Adventurous',
+    likes: const ['Rivers', 'Fireflies', 'New worlds'],
+    strengths: const ['Curious', 'Kind'],
+    personalityTraits: const ['Curious', 'Playful'],
+    personalitySliders: const {
+      'adventure': 75,
+      'sociability': 60,
+      'organization_planning': 45,
+    },
+  );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,12 +63,41 @@ class HomePage extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
             AppCard(
-              child: const Padding(
-                padding: EdgeInsets.all(AppSpacing.md),
-                child: Text(
-                  'AI-powered storytelling for families. Create amazing stories with your favorite characters!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    AvatarService.buildAvatarWidget(
+                      characterId: _sampleCharacter.id,
+                      hairColor: _sampleCharacter.hair,
+                      eyeColor: _sampleCharacter.eyes,
+                      size: 96,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      _sampleCharacter.name,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Age ${_sampleCharacter.age} • ${_sampleCharacter.role}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.secondary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    const Text(
+                      'AI-powered storytelling for families. Create amazing stories with your favorite characters!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ],
                 ),
               ),
             ),

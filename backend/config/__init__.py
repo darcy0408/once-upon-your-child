@@ -13,6 +13,7 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     DEBUG = False
 config_by_name = {
+    'dev': DevelopmentConfig,
     'development': DevelopmentConfig,
     'production': ProductionConfig,
     'default': DevelopmentConfig

@@ -1,20 +1,33 @@
 import pytest
 from backend.app import create_app
-from backend.database import db
+from backend.database import db as _db
+from backend.routes.auth_routes import auth_bp
+from backend.routes.progression_routes import progression_bp
+from backend.routes.story_routes import story_bp
+from backend.routes.character_routes import character_bp
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def app():
-    """Instance of Main flask app"""
+    """Create and configure a new app instance for each test."""
+    # create a temporary file to isolate the database for each test
     app = create_app('development')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-    return app
+    app.config['TESTING'] = True
 
-@pytest.fixture(scope='module')
+    with app.app_context():
+        app.register_blueprint(auth_bp, url_prefix='/auth')
+        app.register_blueprint(progression_bp, url_prefix='/progression')
+        app.register_blueprint(story_bp, url_prefix='/story')
+        app.register_blueprint(character_bp, url_prefix='/character')
+
+        _db.create_all()
+
+        yield app
+
+        _db.drop_all()
+
+
+@pytest.fixture
 def client(app):
-    """Flask test client"""
-    with app.test_client() as client:
-        with app.app_context():
-            db.create_all()
-        yield client
-        with app.app_context():
-            db.drop_all()
+    """A test client for the app."""
+    return app.test_client()

@@ -72,14 +72,14 @@ class EmotionService:
         if what_happened:
             lines.append(f"- Context: {what_happened}")
 
-        lines.append(
+        lines.extend([
             f"\nSTORY REQUIREMENTS:",
             f"1. Acknowledge {character_name} feels {emotion_name}",
             f"2. Validate the feeling (all feelings are okay)",
             f"3. Show character processing the emotion",
             f"4. Include coping strategies naturally",
             f"5. End with hopeful reflection"
-        )
+        ])
 
         return "\n".join(lines)
 

@@ -14,22 +14,21 @@ logger = logging.getLogger("story_engine")
 
 story_generation_service = StoryGenerationService()
 
-_TITLE_RE = re.compile(r"[TITLE:\s*(.*?)\s*]", re.DOTALL)
-_GEM_RE = re.compile(r"[WISDOM GEM:\s*(.*?)\s*]", re.DOTALL)
+_TITLE_RE = re.compile(r'\[TITLE:\s*(.*?)\s*\]', re.DOTALL)
+_GEM_RE = re.compile(r'\[WISDOM GEM:\s*(.*?)\s*\]', re.DOTALL)
 
 def _safe_extract_title_and_gem(text: str, theme: str):
     title_match = _TITLE_RE.search(text or "")
     gem_match = _GEM_RE.search(text or "")
-    title = title_match.group(1).strip() if title_match and title_match.group(1).strip() else "A Brave Little Adventure"
-    # Assuming get_wisdom is now part of PromptService or a separate utility
-    wisdom_gem = gem_match.group(1).strip() if gem_match and gem_match.group(1).strip() else "Always be kind." # Fallback
+    title = title_match.group(1).strip() if title_match and title_match.group(1) else "A Brave Little Adventure"
+    wisdom_gem = gem_match.group(1).strip() if gem_match and gem_match.group(1) else "Always be kind." # Fallback
     story_body = _TITLE_RE.sub("", text or "").strip()
     story_body = _GEM_RE.sub("", story_body).strip()
     return title, wisdom_gem, story_body
 
 @story_bp.route("/get-story-themes", methods=["GET"])
 def get_story_themes():
-    return jsonify(["Adventure", "Friendship", "Magic", "Dragons", "Castles", "Unicorns", "Space", "Ocean"]),
+    return jsonify(["Adventure", "Friendship", "Magic", "Dragons", "Castles", "Unicorns", "Space", "Ocean"])
 
 @story_bp.route("/generate-story", methods=["POST"])
 def generate_story_endpoint():
@@ -60,7 +59,7 @@ def generate_story_endpoint():
             "[TITLE: An Unexpected Adventure]\n"
             "Once upon a time, a brave hero discovered that the greatest adventures come from "
             "facing our fears with courage and kindness.\n"
-            f"[WISDOM GEM: Always be kind.]" # Fallback
+            "[WISDOM GEM: Always be kind.]"
         )
         title, wisdom_gem, story_body = _safe_extract_title_and_gem(raw_text, theme)
         return jsonify({"title": title, "story_text": story_body, "wisdom_gem": wisdom_gem}), 200

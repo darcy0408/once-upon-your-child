@@ -1,7 +1,7 @@
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 import os
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 import logging
 from logging.handlers import RotatingFileHandler
 import google.generativeai as genai
@@ -15,6 +15,7 @@ from backend.routes.story_routes import story_bp
 from backend.routes.character_routes import character_bp
 
 def create_app(config_name):
+    print(f"Creating app with config: {config_name}")
     sentry_sdk.init(
         dsn=os.getenv('SENTRY_DSN'),
         integrations=[FlaskIntegration()],
@@ -65,16 +66,11 @@ def create_app(config_name):
     with app.app_context():
         db.create_all()
 
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(progression_bp)
-    app.register_blueprint(story_bp)
-    app.register_blueprint(character_bp) # Register the character blueprint
-
     @app.route('/health', methods=['GET'])
     def health():
         health_status = {
             'status': 'ok',
-            'timestamp': datetime.now(datetime.UTC).isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'version': '1.0.0',
         }
 
@@ -85,14 +81,6 @@ def create_app(config_name):
         except Exception as e:
             health_status['database'] = 'error'
             health_status['database_error'] = str(e)
-            health_status['status'] = 'degraded'
-
-        # Check Redis
-        try:
-            # Ping Redis
-            health_status['redis'] = 'ok'
-        except Exception as e:
-            health_status['redis'] = 'error'
             health_status['status'] = 'degraded'
 
         # Check Gemini API

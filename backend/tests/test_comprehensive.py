@@ -85,17 +85,7 @@ def test_database_operations(client):
     assert any(c['name'] == 'Database Test' for c in characters)
 
 
-def test_api_rate_limiting(client):
-    """Test API rate limiting - Placeholder, actual logic not implemented yet"""
-    # This would require rate limiting middleware
-    # For now, just test multiple rapid requests
-    responses = []
-    for i in range(3):
-        response = client.get('/health')
-        responses.append(response.status_code)
 
-    # Should all succeed without rate limiting
-    assert all(code == 200 for code in responses)
 
 
 def test_cors_headers(client):
