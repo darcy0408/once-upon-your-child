@@ -38,9 +38,10 @@ class FirebaseAnalyticsService {
     String userId,
     Map<String, dynamic> properties,
   ) async {
-    await analytics.setUserId(id: userId);
+    if (analytics == null) return;
+    await analytics!.setUserId(id: userId);
     for (final entry in properties.entries) {
-      await analytics.setUserProperty(
+      await analytics!.setUserProperty(
         name: entry.key,
         value: entry.value?.toString(),
       );

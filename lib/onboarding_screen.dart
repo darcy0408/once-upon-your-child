@@ -748,7 +748,7 @@ class _StepTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return Container(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -778,30 +778,11 @@ class _StepTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(description),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        Center(
-          child: TextButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const PrivacyPolicyScreen(),
-                ),
-              );
-            },
-            child: Text(
-              'Read Our Privacy Policy',
-              style: TextStyle(
-                color: primary,
-                decoration: TextDecoration.underline,
-              ),
+              ],
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
-}
 }

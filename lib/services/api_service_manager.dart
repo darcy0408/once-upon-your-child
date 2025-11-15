@@ -592,25 +592,25 @@ Remember: This is primarily an ADVENTURE story. Make it fun, exciting, and engag
 
 Create the adventure story now:
 ''';
-  }
+   }
 
-  static String _buildLearningToReadPrompt({
-    required String characterName,
-    required String theme,
-    required int age,
-    String? companion,
-    Map<String, dynamic>? characterDetails,
-    List<String>? additionalCharacters,
-  }) {
-    String detailSection = '';
-    List<String>? _extractStringList(dynamic raw) {
-      if (raw is List) {
-        return raw.whereType<String>().map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
-      }
-      return null;
-    }
+   static String _buildLearningToReadPrompt({
+     required String characterName,
+     required String theme,
+     required int age,
+     String? companion,
+     Map<String, dynamic>? characterDetails,
+     List<String>? additionalCharacters,
+   }) {
+     String detailSection = '';
+     List<String>? _extractStringList(dynamic raw) {
+       if (raw is List) {
+         return raw.whereType<String>().map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+       }
+       return null;
+     }
 
-    String _formatDetail(String label, List<String>? values) {
+     String _formatDetail(String label, List<String>? values) {
       if (values == null || values.isEmpty) return '';
       return '\n$label: ${values.take(5).join(", ")}';
     }
@@ -653,68 +653,7 @@ THEME: $theme$companionText$detailSection
 
 Create the rhyming learning-to-read story about $characterName now:
 ''';
-  }
-
-  static String _buildLearningToReadPrompt({
-    required String characterName,
-    required String theme,
-    required int age,
-    String? companion,
-    Map<String, dynamic>? characterDetails,
-    List<String>? additionalCharacters,
-  }) {
-    String detailSection = '';
-    List<String>? _extractStringList(dynamic raw) {
-      if (raw is List) {
-        return raw.whereType<String>().map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
-      }
-      return null;
-    }
-
-    String _formatDetail(String label, List<String>? values) {
-      if (values == null || values.isEmpty) return '';
-      return '\n$label: ${values.take(5).join(", ")}';
-    }
-
-    if (characterDetails != null) {
-      final likes = _extractStringList(characterDetails['likes']);
-      final strengths = _extractStringList(characterDetails['strengths']);
-      final comfortItem = characterDetails['comfort_item'] as String?;
-
-      detailSection += _formatDetail('LIKES', likes);
-      detailSection += _formatDetail('STRENGTHS', strengths);
-      if (comfortItem != null && comfortItem.isNotEmpty) {
-        detailSection += '\nCOMFORT ITEM: $comfortItem';
-      }
-    }
-
-    if (additionalCharacters != null && additionalCharacters.isNotEmpty) {
-      detailSection +=
-          '\nFRIENDS IN STORY: ${additionalCharacters.join(", ")}';
-    }
-
-    String companionText = '';
-    if (companion != null && companion.isNotEmpty && companion != 'None') {
-      companionText = '\nCOMPANION: Include $companion as a gentle helper.';
-    }
-
-    return '''
-You are creating a LEARNING TO READ rhyming story for a ${age}-year-old named $characterName.
-
-STRICT REQUIREMENTS (NO EXCEPTIONS):
-1. TOTAL LENGTH: 50-100 words (stop inside this range).
-2. RHYME PATTERN: Simple AABB scheme (line 1 rhymes with 2, line 3 rhymes with 4, etc.).
-3. LINE LENGTH: 4-6 short words per line (keep it punchy).
-4. VOCABULARY: Only CVC words (cat, dog, hop, sun) and common sight words (the, and, can, see, like, play). No tricky spellings, blends, or silent letters.
-5. STRUCTURE: Repetition helps reading. Use predictable frames like "Can $characterName ___? Yes! $characterName can ___!".
-6. TONE: Encouraging, musical, and confidence-building.
-7. FORMAT: Each sentence or phrase on its own line for easy finger-tracking.
-
-THEME: $theme$companionText$detailSection
-
-Create the rhyming learning-to-read story about $characterName now:
-''';
-  }
+   }
 
   static String _buildStoryPrompt({
     required String characterName,
