@@ -1,7 +1,8 @@
-from backend.app import db
+from backend.database import db
 
 class Character(db.Model):
     """Stores character information, traits, relationships, and metadata."""
+        user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=True)
     id = db.Column(db.String(36), primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     age = db.Column(db.Integer, nullable=False)

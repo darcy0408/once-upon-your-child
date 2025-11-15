@@ -6,6 +6,7 @@ import 'models.dart';
 import 'emotion_recognition_game.dart';
 import 'empathy_building_exercises.dart';
 import 'peer_interaction_stories.dart';
+import 'family_relationship_stories.dart';
 
 class CharacterEvolutionScreen extends StatefulWidget {
   final Character character;
@@ -160,6 +161,8 @@ class _CharacterEvolutionScreenState extends State<CharacterEvolutionScreen> {
             EmpathyExercisesLauncher(characterId: widget.character.id),
             const SizedBox(height: 16),
             PeerInteractionStoriesLauncher(characterId: widget.character.id),
+            const SizedBox(height: 16),
+            FamilyRelationshipStoriesLauncher(characterId: widget.character.id),
           ],
         ),
       ),

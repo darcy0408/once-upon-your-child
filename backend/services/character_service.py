@@ -1,15 +1,15 @@
 
 import uuid
 import json
-from repositories.character_repository import (
-    add_character,
+from backend.repositories.character_repository import (
+    create_character,
     get_all_characters,
     get_character_by_id,
     update_character,
     delete_character,
     get_characters_by_ids,
 )
-from models import Character
+from backend.models import Character
 
 PERSONALITY_SLIDER_DEFINITIONS = {
     "organization_planning": {"label": "Organization & Planning", "left_label": "Tidy Planner", "right_label": "Messy Freestyle"},
@@ -98,7 +98,7 @@ def create_character(data: dict):
         goals=_as_list(data.get("goals", [])),
         comfort_item=data.get("comfort_item"),
     )
-    add_character(new_character)
+    create_character(new_character)
     return new_character.to_dict(), 201
 
 def get_characters():
