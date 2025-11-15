@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'theme/app_theme.dart';
 import 'services/onboarding_analytics.dart';
+import 'privacy_policy_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onFinished;
@@ -61,8 +62,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _trackPageView(int index) {
-    // Temporarily disabled for testing therapeutic features
-    // OnboardingAnalytics.trackFeatureViewed('onboarding_step_${index + 1}');
+    OnboardingAnalytics.trackFeatureViewed('onboarding_step_${index + 1}');
   }
 
   void _handleNext() {
@@ -78,11 +78,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _completeOnboarding({bool skipped = false}) async {
     final elapsed = DateTime.now().difference(_startedAt).inSeconds;
-    // Temporarily disabled for testing therapeutic features
-    // await OnboardingAnalytics.trackOnboardingCompleted(
-    //   timeSpentSeconds: elapsed,
-    //   skippedAnyStep: skipped || _skippedAnyStep,
-    // );
+    await OnboardingAnalytics.trackOnboardingCompleted(
+      timeSpentSeconds: elapsed,
+      skippedAnyStep: skipped || _skippedAnyStep,
+    );
     widget.onFinished();
   }
   Future<void> _confirmSkip() async {
@@ -250,6 +249,7 @@ abstract class _OnboardingPageContent {
         onPreview: onPreviewStoryDemo,
       ),
       _FeaturesPage(primary: primary, accent: accent),
+      _SafetyPage(primary: primary, accent: accent),
       _GettingStartedPage(primary: primary, accent: accent),
     ];
   }
@@ -278,7 +278,7 @@ class _WelcomePage extends _OnboardingPageContent {
         ),
         const SizedBox(height: 8),
         Text(
-          'Create Magical Stories Together',
+          'Build Emotional Intelligence Through Stories',
           style: Theme.of(context)
               .textTheme
               .titleMedium
@@ -294,9 +294,9 @@ class _WelcomePage extends _OnboardingPageContent {
           spacing: 12,
           runSpacing: 12,
           children: const [
-            _FeaturePill(text: 'Personalized tales'),
-            _FeaturePill(text: 'Kid-friendly design'),
-            _FeaturePill(text: 'Therapeutic focus'),
+            _FeaturePill(text: 'Emotional learning'),
+            _FeaturePill(text: 'Therapeutic stories'),
+            _FeaturePill(text: 'Character growth'),
           ],
         ),
       ],
@@ -460,10 +460,10 @@ class _FeaturesPage extends _OnboardingPageContent {
   @override
   Widget build(BuildContext context) {
     final features = [
-      ('Achievements', 'Earn badges for healthy habits', Icons.emoji_events),
-      ('Offline Stories', 'Save bedtime favorites', Icons.cloud_off),
-      ('Feelings Helper', 'Tap emotions & coping tools', Icons.favorite),
-      ('Coloring Pages', 'Print scenes from stories', Icons.palette),
+      ('Emotional Learning', 'Interactive games teaching feelings & empathy', Icons.favorite),
+      ('Therapeutic Stories', 'Personalized stories for emotional growth', Icons.auto_stories),
+      ('Coping Strategies', 'Tools for managing big emotions', Icons.self_improvement),
+      ('Character Evolution', 'Watch emotional growth over time', Icons.trending_up),
     ];
 
     return Column(
@@ -583,6 +583,136 @@ class _GettingStartedPage extends _OnboardingPageContent {
   }
 }
 
+class _SafetyPage extends _OnboardingPageContent {
+  final Color primary;
+  final Color accent;
+
+  const _SafetyPage({required this.primary, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.shield,
+          size: 48,
+          color: primary,
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Important Safety Information',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Using Story Weaver safely and effectively',
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(color: primary),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.amber.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.amber.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.info, color: Colors.amber.shade700),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Professional Support',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber.shade700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Story Weaver is a therapeutic tool, not a replacement for professional mental health care. If your child experiences severe emotional distress, please consult a qualified mental health professional.',
+                style: TextStyle(height: 1.4),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.blue.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.phone, color: Colors.blue.shade700),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Crisis Resources',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'If you or your child needs immediate help:\n• Call emergency services (911)\n• National Suicide Prevention Lifeline: 988\n• Crisis Text Line: Text HOME to 741741',
+                style: TextStyle(height: 1.4),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.green.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.verified, color: Colors.green.shade700),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Age Appropriateness',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green.shade700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Story Weaver is designed for children ages 4-12. Content is carefully crafted to be age-appropriate and supportive of emotional development.',
+                style: TextStyle(height: 1.4),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _FeaturePill extends StatelessWidget {
   final String text;
 
@@ -648,11 +778,30 @@ class _StepTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(description),
-              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: TextButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const PrivacyPolicyScreen(),
+                ),
+              );
+            },
+            child: Text(
+              'Read Our Privacy Policy',
+              style: TextStyle(
+                color: primary,
+                decoration: TextDecoration.underline,
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
+}
 }

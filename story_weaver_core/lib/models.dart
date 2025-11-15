@@ -1,6 +1,7 @@
 // lib/models.dart
 import 'package:flutter/material.dart';
 import 'avatar_models.dart';
+import 'services/avatar_service.dart';
 
 class Character {
   final String id;

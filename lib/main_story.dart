@@ -52,11 +52,28 @@ class StoryCreatorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Story Weaver',
-      theme: AppTheme.light(),
+      title: Environment.appName,
+      theme: AppTheme.light(
+        primaryColor: Environment.primaryColor,
+      ),
       navigatorObservers: [FirebaseAnalyticsService.observer],
       home: const StoryScreen(),
-      debugShowCheckedModeBanner: false,
+      debugShowCheckedModeBanner: !Environment.isProduction,
+      builder: (context, child) {
+        if (child == null || !Environment.showFlavorBanner) {
+          return child ?? const SizedBox.shrink();
+        }
+        return Banner(
+          message: Environment.bannerLabel,
+          location: BannerLocation.topStart,
+          color: Environment.bannerColor,
+          textStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
+          child: child,
+        );
+      },
     );
   }
 }
@@ -738,6 +755,37 @@ class _StoryScreenState extends State<StoryScreen> {
                   onChanged: (value) {
                     setState(() => _interactiveMode = value);
                   },
+                ),
+              ),
+              const SizedBox(height: 12),
+              AppCard(
+                child: SwitchListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.xs,
+                  ),
+                  title: const Text(
+                    'Learning to Read Mode',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(_canUseLearningToReadMode
+                      ? '50-100 word rhyming story for early readers (ages 4-7)'
+                      : _selectedCharacter == null
+                          ? 'Select a character (ages 4-7) to enable this mode'
+                          : 'Only available when the character is ages 4-7.'),
+                  value: _learningToReadMode && _canUseLearningToReadMode,
+                  activeColor: AppColors.secondary,
+                  secondary: const Icon(Icons.menu_book, color: Colors.blue),
+                  onChanged: _canUseLearningToReadMode
+                      ? (value) {
+                          setState(() {
+                            _learningToReadMode = value;
+                            if (value) {
+                              _rhymeTimeMode = false;
+                            }
+                          });
+                        }
+                      : null,
                 ),
               ),
               const SizedBox(height: 12),

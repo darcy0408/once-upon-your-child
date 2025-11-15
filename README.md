@@ -69,12 +69,19 @@ backend/
 
 ## ⚙️ Environment Configuration
 
-Environment switching lives in `lib/config/environment.dart`. For production builds, either:
+The app now uses build flavors defined in `lib/config/flavor_config.dart`. Pick the backend + branding at build time with `--dart-define=FLAVOR=...`:
 
-- flip `isDevelopment` to `false`, **or**
-- override via `--dart-define BACKEND_URL=https://your-railway-app.up.railway.app` and use `String.fromEnvironment` inside `Environment`.
+| Flavor | Command | Backend | Banner |
+|--------|---------|---------|--------|
+| Development | `flutter run --dart-define=FLAVOR=development` | `http://127.0.0.1:5000` | `DEV` |
+| Staging | `flutter run --dart-define=FLAVOR=staging` | `https://story-weaver-staging.up.railway.app` | `STAGING` |
+| Production | `flutter build web --release --dart-define=FLAVOR=production` | `https://story-weaver-app-production.up.railway.app` | none |
 
-Every direct HTTP call is routed through `Environment.backendUrl`. Avoid hardcoding localhost URLs outside that class.
+Additional defines:
+- `--dart-define=CUSTOM_BACKEND_URL=https://...` overrides any flavor backend (handy for feature branches).
+- `--dart-define=DEV_GEMINI_API_KEY=...` / `STAGING_GEMINI_API_KEY` / `PROD_GEMINI_API_KEY` inject managed Gemini keys if desired.
+
+`Environment.backendUrl` and the rest of the helpers automatically read the active flavor—avoid hardcoding URLs outside that helper.
 
 ## 🌐 Building & Deployment
 

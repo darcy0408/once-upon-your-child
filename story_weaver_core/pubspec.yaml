@@ -1,0 +1,27 @@
+name: story_weaver_core
+description: Shared components for Story Weaver and Therapy Companion apps
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ^3.8.1
+  flutter: ^3.22.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  http: ^1.2.1
+  shared_preferences: ^2.2.2
+  uuid: ^4.5.1
+  firebase_core: ^2.24.2
+  firebase_analytics: ^10.8.0
+  package_info_plus: ^8.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

@@ -1,7 +1,7 @@
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 import os
-from datetime import datetime
+from datetime import datetime, UTC
 import logging
 from logging.handlers import RotatingFileHandler
 import google.generativeai as genai
@@ -11,6 +11,8 @@ from backend.config import config_by_name
 from backend.database import db
 from backend.routes.auth_routes import auth_bp
 from backend.routes.progression_routes import progression_bp
+from backend.routes.story_routes import story_bp
+from backend.routes.character_routes import character_bp
 
 def create_app(config_name):
     sentry_sdk.init(
@@ -65,12 +67,14 @@ def create_app(config_name):
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(progression_bp)
+    app.register_blueprint(story_bp)
+    app.register_blueprint(character_bp) # Register the character blueprint
 
     @app.route('/health', methods=['GET'])
     def health():
         health_status = {
             'status': 'ok',
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': datetime.now(datetime.UTC).isoformat(),
             'version': '1.0.0',
         }
 

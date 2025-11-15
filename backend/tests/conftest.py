@@ -1,11 +1,11 @@
 import pytest
 from backend.app import create_app
-from backend.models import db
+from backend.database import db
 
 @pytest.fixture(scope='module')
 def app():
     """Instance of Main flask app"""
-    app = create_app('dev')
+    app = create_app('development')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
     return app
 

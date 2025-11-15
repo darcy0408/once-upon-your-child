@@ -3,21 +3,6 @@ Basic tests for Story Weaver backend API
 """
 import pytest
 import json
-from app import app, db
-
-
-@pytest.fixture
-def client():
-    """Test client fixture"""
-    app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-    with app.test_client() as client:
-        with app.app_context():
-            db.create_all()
-        yield client
-
 
 def test_health_endpoint(client):
     """Test the health endpoint"""
@@ -30,7 +15,7 @@ def test_health_endpoint(client):
 
 def test_get_story_themes(client):
     """Test getting story themes"""
-    response = client.get('/get-story-themes')
+    response = client.get('/story/get-story-themes') # Updated route
     assert response.status_code == 200
     data = json.loads(response.data)
     assert isinstance(data, list)
@@ -47,7 +32,7 @@ def test_create_character(client):
         'traits': ['Brave', 'Curious']
     }
 
-    response = client.post('/create-character',
+    response = client.post('/character/create-character', # Updated route
                           data=json.dumps(character_data),
                           content_type='application/json')
     assert response.status_code == 201
@@ -59,7 +44,7 @@ def test_create_character(client):
 
 def test_get_characters_empty(client):
     """Test getting characters when none exist"""
-    response = client.get('/get-characters')
+    response = client.get('/character/get-characters') # Updated route
     assert response.status_code == 200
     data = json.loads(response.data)
     assert isinstance(data, list)
@@ -67,19 +52,19 @@ def test_get_characters_empty(client):
 
 def test_generate_story_missing_data(client):
     """Test story generation with missing data"""
-    response = client.post('/generate-story',
+    response = client.post('/story/generate-story', # Updated route
                           data=json.dumps({}),
                           content_type='application/json')
     # Should still work with defaults
     assert response.status_code == 200
     data = json.loads(response.data)
-    assert 'story' in data
+    assert 'story_text' in data # Updated key
     assert 'title' in data
 
 
 def test_setup_test_account(client):
     """Test setting up test account"""
-    response = client.post('/setup-test-account')
+    response = client.post('/auth/setup-test-account') # Updated route
     assert response.status_code in [200, 201]
     data = json.loads(response.data)
     assert 'status' in data

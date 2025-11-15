@@ -18,16 +18,21 @@ class AppSpacing {
 }
 
 class AppTheme {
-  static ThemeData light() {
+  static ThemeData light({Color? primaryColor, Color? accentColor}) {
+    final effectivePrimary = primaryColor ?? AppColors.primary;
+    final effectiveAccent = accentColor ?? AppColors.accent;
+    final surface = AppColors.surface;
+    final error = AppColors.error;
+
     final base = ThemeData.light();
     return base.copyWith(
       scaffoldBackgroundColor: Colors.white,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.secondary,
-        primary: AppColors.primary,
-        secondary: AppColors.accent,
-        surface: AppColors.surface,
-        error: AppColors.error,
+        seedColor: effectiveAccent,
+        primary: effectivePrimary,
+        secondary: effectiveAccent,
+        surface: surface,
+        error: error,
       ),
       textTheme: _textTheme(base.textTheme),
       cardTheme: const CardThemeData(
@@ -40,7 +45,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: effectivePrimary,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
@@ -74,29 +79,29 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: effectivePrimary, width: 2),
         ),
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         elevation: 0,
         backgroundColor: Colors.white,
-        foregroundColor: AppColors.primary,
+        foregroundColor: effectivePrimary,
         titleTextStyle: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: AppColors.primary,
+          color: effectivePrimary,
         ),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.primary,
+        backgroundColor: effectivePrimary,
         contentTextStyle: const TextStyle(color: Colors.white),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
       ),
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.primary,
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: effectivePrimary,
       ),
     );
   }

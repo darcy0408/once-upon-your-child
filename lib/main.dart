@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'config/environment.dart';
 import 'main_story.dart';
 import 'theme/app_theme.dart';
 import 'onboarding_screen.dart';
@@ -9,9 +10,14 @@ import 'services/performance_analytics.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Temporarily disabled for testing therapeutic features
-  // await FirebaseAnalyticsService.initialize();
-  // await PerformanceAnalytics.trackAppStart();
+
+  // Initialize Firebase with graceful degradation
+  try {
+    await FirebaseAnalyticsService.initialize();
+  } catch (e) {
+    // Firebase initialization failed - continue without analytics
+  }
+
   runApp(const StoryWeaverApp());
 }
 
@@ -72,12 +78,28 @@ class _StoryWeaverAppState extends State<StoryWeaverApp> {
     }
 
     return MaterialApp(
-      title: 'Story Weaver Onboarding',
-      theme: AppTheme.light(),
+      title: Environment.appName,
+      theme: AppTheme.light(primaryColor: Environment.primaryColor),
+      debugShowCheckedModeBanner: !Environment.isProduction,
       home: OnboardingScreen(
         onFinished: _handleOnboardingFinished,
         onSkipConfirmed: _handleOnboardingFinished,
       ),
+      builder: (context, child) {
+        if (child == null || !Environment.showFlavorBanner) {
+          return child ?? const SizedBox.shrink();
+        }
+        return Banner(
+          message: Environment.bannerLabel,
+          location: BannerLocation.topStart,
+          color: Environment.bannerColor,
+          textStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
+          child: child,
+        );
+      },
     );
   }
 }
