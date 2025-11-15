@@ -36,6 +36,12 @@ def create_app(config_name):
         }
     })
 
+    @app.after_request
+    def add_cors_headers(response):
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        return response
+
     # Logging setup
     if not app.debug:
         if not os.path.exists('logs'):
@@ -76,7 +82,8 @@ def create_app(config_name):
 
         # Check database
         try:
-            db.session.execute('SELECT 1')
+            from backend.models.user import User
+            User.query.first() # Simple query to check database connection
             health_status['database'] = 'ok'
         except Exception as e:
             health_status['database'] = 'error'

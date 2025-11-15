@@ -15,15 +15,23 @@ def app():
     app.config['TESTING'] = True
 
     with app.app_context():
+        _db.create_all()
         app.register_blueprint(auth_bp, url_prefix='/auth')
         app.register_blueprint(progression_bp, url_prefix='/progression')
         app.register_blueprint(story_bp, url_prefix='/story')
         app.register_blueprint(character_bp, url_prefix='/character')
-
-        _db.create_all()
+        
+        # Ensure database is accessible for health check
+        try:
+            _db.session.execute(_db.text('SELECT 1'))
+            _db.session.commit()
+        except Exception as e:
+            print(f"Error during database setup in test fixture: {e}")
+            _db.session.rollback()
 
         yield app
 
+        _db.session.remove()
         _db.drop_all()
 
 
