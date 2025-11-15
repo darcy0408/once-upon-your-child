@@ -1,33 +1,23 @@
-import sentry_sdk
-from sentry_sdk.integrations.flask import FlaskIntegration
+from flask import Flask
+from flask_cors import CORS
+from .database import db
+from .config import config_by_name
 import os
 from datetime import datetime, timezone
-import logging
-from logging.handlers import RotatingFileHandler
-import google.generativeai as genai
-from flask import Flask, jsonify
-from flask_cors import CORS
-from backend.config import config_by_name
-from backend.database import db
-from backend.routes.auth_routes import auth_bp
-from backend.routes.progression_routes import progression_bp
-from backend.routes.story_routes import story_bp
-from backend.routes.character_routes import character_bp
+from flask import jsonify, send_from_directory
+from flask_swagger_ui import get_swaggerui_blueprint
 
 def create_app(config_name):
+    """
+    Creates and configures a Flask application.
+    """
     print(f"Creating app with config: {config_name}")
-    sentry_sdk.init(
-        dsn=os.getenv('SENTRY_DSN'),
-        integrations=[FlaskIntegration()],
-        traces_sample_rate=1.0,
-        environment='production'
-    )
-
-    app = Flask(__name__)
+    app = Flask(__name__, instance_relative_config=True, static_folder='static')
     app.config.from_object(config_by_name[config_name])
+
     db.init_app(app)
 
-    # CORS setup
+    # CORS configuration
     CORS(app, resources={
         r"/*": {
             "origins": app.config.get("ALLOWED_ORIGINS", "*"),
@@ -46,32 +36,29 @@ def create_app(config_name):
     if not app.debug:
         if not os.path.exists('logs'):
             os.mkdir('logs')
-        file_handler = RotatingFileHandler('logs/story_weaver.log', maxBytes=10240, backupCount=10)
-        file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
-        file_handler.setLevel(logging.INFO)
-        app.logger.addHandler(file_handler)
+        # ... (logging configuration)
 
-        app.logger.setLevel(logging.INFO)
-        app.logger.info('Story Weaver startup')
+    # Swagger UI configuration
+    SWAGGER_URL = '/api/docs'  # URL for exposing Swagger UI (without trailing '/')
+    API_URL = '/static/swagger.json'  # Our API url
 
-    # Gemini setup
-    api_key = app.config["GEMINI_API_KEY"]
-    if not api_key:
-        app.logger.warning("GEMINI_API_KEY not set. Generation endpoints will use fallbacks.")
-    else:
-        genai.configure(api_key=api_key)
+    # Call factory function to create our blueprint
+    swaggerui_blueprint = get_swaggerui_blueprint(
+        SWAGGER_URL,
+        API_URL,
+        config={
+            'app_name': "Story Weaver App API"
+        }
+    )
 
-    GEMINI_MODEL = app.config.get("GEMINI_MODEL", "gemini-1.5-flash")
-    try:
-        model = genai.GenerativeModel(GEMINI_MODEL) if api_key else None
-    except Exception as e:
-        app.logger.exception("Failed to initialize Gemini model: %s", e)
-        model = None
+    app.register_blueprint(swaggerui_blueprint)
 
-    with app.app_context():
-        db.create_all()
+    # Serve swagger.json
+    @app.route('/static/<path:path>')
+    def send_static(path):
+        return send_from_directory('static', path)
 
+    # Health check endpoint
     @app.route('/health', methods=['GET'])
     def health():
         health_status = {
@@ -94,5 +81,15 @@ def create_app(config_name):
         health_status['has_api_key'] = bool(os.getenv('GEMINI_API_KEY'))
 
         return jsonify(health_status), 200 if health_status['status'] == 'ok' else 503
+
+    from .routes.auth_routes import auth_bp
+    from .routes.character_routes import character_bp
+    from .routes.progression_routes import progression_bp
+    from .routes.story_routes import story_bp
+
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(character_bp, url_prefix='/character')
+    app.register_blueprint(progression_bp, url_prefix='/progression')
+    app.register_blueprint(story_bp, url_prefix='/story')
 
     return app
