@@ -8,6 +8,7 @@ import 'empathy_building_exercises.dart';
 import 'peer_interaction_stories.dart';
 import 'family_relationship_stories.dart';
 import 'conflict_resolution_stories.dart';
+import 'coping_strategy_library.dart';
 
 class CharacterEvolutionScreen extends StatefulWidget {
   final Character character;
@@ -166,6 +167,8 @@ class _CharacterEvolutionScreenState extends State<CharacterEvolutionScreen> {
             FamilyRelationshipStoriesLauncher(characterId: widget.character.id),
             const SizedBox(height: 16),
             ConflictResolutionStoriesLauncher(characterId: widget.character.id),
+            const SizedBox(height: 16),
+            CopingStrategyLibraryLauncher(characterId: widget.character.id),
           ],
         ),
       ),

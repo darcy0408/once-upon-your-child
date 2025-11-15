@@ -42,6 +42,7 @@ void main() {
           characterName: story.characters.first.name,
           storyId: story.id,
           trackStoryCreation: false, // Disable achievement tracking in test
+          trackAnalytics: false, // Disable analytics tracking in test
         ),
       ),
     );

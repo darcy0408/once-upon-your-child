@@ -43,6 +43,7 @@ class StoryResultScreen extends StatefulWidget {
   final AchievementService? achievementsService;
   final DateTime? storyCreatedAt;
   final bool trackStoryCreation;
+  final bool trackAnalytics;
 
   const StoryResultScreen({
     super.key,
@@ -56,6 +57,7 @@ class StoryResultScreen extends StatefulWidget {
     this.achievementsService,
     this.storyCreatedAt,
     this.trackStoryCreation = false,
+    this.trackAnalytics = true,
   }) : assert(!trackStoryCreation || achievementsService != null),
         assert(!trackStoryCreation || storyCreatedAt != null);
 
@@ -130,7 +132,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     if (widget.trackStoryCreation) {
       _trackStoryCreation(); // Track that user created a story, check for unlocks
     }
-    _trackStoryView();
+    if (widget.trackAnalytics) {
+      _trackStoryView();
+    }
   }
 
   @override
