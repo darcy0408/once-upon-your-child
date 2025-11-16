@@ -8,6 +8,7 @@ class Config:
     
     # Add other basic config from app.py
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+    GEMINI_MODEL = os.environ.get('GEMINI_MODEL') or 'gemini-1.5-flash'
 class DevelopmentConfig(Config):
     DEBUG = True
 class ProductionConfig(Config):
