@@ -1,5 +1,8 @@
 """
 WSGI entry point for production deployment (Railway, Gunicorn, etc.)
+
+This module must be imported as 'backend.wsgi' from the project root.
+Railway configuration: gunicorn backend.wsgi:app --bind 0.0.0.0:$PORT
 """
 import os
 from backend.app import create_app
