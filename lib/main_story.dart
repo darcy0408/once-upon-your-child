@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'storage_service.dart';
 import 'story_result_screen.dart';
@@ -368,7 +369,7 @@ class _StoryScreenState extends State<StoryScreen> {
       await StorageService().saveStory(saved);
 
       // Update character evolution based on therapeutic elements
-      await _updateCharacterEvolution(allSelectedCharacters, _therapeuticCustomization);
+      await _updateCharacterEvolution(allSelectedCharacters, _therapeuticCustomization, currentFeeling);
 
       // Record story creation for usage tracking
       await _subscriptionService.recordStoryCreation();
@@ -1653,5 +1654,116 @@ class _StoryScreenState extends State<StoryScreen> {
         ),
       ),
     );
+  }
+
+  /// Update character evolution based on therapeutic story elements
+  Future<void> _updateCharacterEvolution(
+    List<Character> characters,
+    TherapeuticStoryCustomization? therapeuticCustomization,
+    CurrentFeeling? currentFeeling,
+  ) async {
+    if (therapeuticCustomization == null && currentFeeling == null) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    const String evolutionKey = 'character_evolution_data';
+
+    for (final character in characters) {
+      try {
+        // Get existing evolution data
+        final String? existingDataJson = prefs.getString('$evolutionKey-${character.id}');
+        CharacterEvolution oldEvolution;
+        if (existingDataJson != null) {
+          oldEvolution = CharacterEvolution.fromJson(json.decode(existingDataJson));
+        } else {
+          oldEvolution = CharacterEvolution(
+            characterId: character.id,
+            therapeuticProgress: {},
+            emotionMastery: {},
+            milestones: [],
+            evolvedTraits: {},
+            lastUpdated: DateTime.now(),
+          );
+        }
+
+        int totalProgressIncrease = 0;
+        String milestoneDescription = "Completed a story";
+        final newTherapeuticProgress = Map<TherapeuticGoal, int>.from(oldEvolution.therapeuticProgress);
+        final newEmotionMastery = Map<String, int>.from(oldEvolution.emotionMastery);
+        final newMilestones = List<CharacterMilestone>.from(oldEvolution.milestones);
+
+        // Update based on primary therapeutic goal
+        if (therapeuticCustomization?.primaryGoal != null) {
+          final goal = therapeuticCustomization!.primaryGoal!;
+          final currentProgress = newTherapeuticProgress[goal] ?? 0;
+          final progressIncrease = 5;
+          newTherapeuticProgress[goal] = (currentProgress + progressIncrease).clamp(0, 100);
+          totalProgressIncrease += progressIncrease;
+          milestoneDescription += " focusing on ${goal.displayName}";
+        }
+
+        // Update based on emotions explored
+        if (currentFeeling != null && currentFeeling.selectedFeeling.tertiary.isNotEmpty) {
+          final emotionId = currentFeeling.selectedFeeling.tertiary;
+          final currentMastery = newEmotionMastery[emotionId] ?? 0;
+          final progressIncrease = 3;
+          newEmotionMastery[emotionId] = (currentMastery + progressIncrease).clamp(0, 100);
+          totalProgressIncrease += progressIncrease;
+          milestoneDescription += " exploring the feeling of $emotionId";
+        }
+
+        // Additional progress for coping strategies
+        if (therapeuticCustomization?.copingStrategiesToHighlight.isNotEmpty ?? false) {
+          final progressIncrease = 2;
+          totalProgressIncrease += progressIncrease;
+          milestoneDescription += " using coping strategies";
+          if (therapeuticCustomization!.primaryGoal != null) {
+            final goal = therapeuticCustomization.primaryGoal!;
+            final currentProgress = newTherapeuticProgress[goal] ?? 0;
+            newTherapeuticProgress[goal] = (currentProgress + progressIncrease).clamp(0, 100);
+          }
+        }
+
+        // Progress for custom therapeutic wishes
+        if (therapeuticCustomization?.wishes.isNotEmpty ?? false) {
+          final progressIncrease = therapeuticCustomization!.wishes.length;
+          totalProgressIncrease += progressIncrease;
+          milestoneDescription += " and fulfilling wishes";
+           if (therapeuticCustomization.primaryGoal != null) {
+            final goal = therapeuticCustomization.primaryGoal!;
+            final currentProgress = newTherapeuticProgress[goal] ?? 0;
+            newTherapeuticProgress[goal] = (currentProgress + progressIncrease).clamp(0, 100);
+          }
+        }
+
+        // Add a milestone for this story
+        if (totalProgressIncrease > 0) {
+          final milestone = CharacterMilestone(
+            id: 'story-${DateTime.now().millisecondsSinceEpoch}',
+            title: 'New Story Completed!',
+            description: milestoneDescription,
+            goal: therapeuticCustomization?.primaryGoal,
+            emotionId: currentFeeling?.selectedFeeling.tertiary,
+            achievedAt: DateTime.now(),
+            progressIncrease: totalProgressIncrease,
+          );
+          newMilestones.add(milestone);
+        }
+
+        final newEvolution = CharacterEvolution(
+          characterId: oldEvolution.characterId,
+          therapeuticProgress: newTherapeuticProgress,
+          emotionMastery: newEmotionMastery,
+          milestones: newMilestones,
+          evolvedTraits: oldEvolution.evolvedTraits, // Not changing traits here
+          lastUpdated: DateTime.now(),
+        );
+
+        // Save updated evolution data
+        await prefs.setString('$evolutionKey-${character.id}', json.encode(newEvolution.toJson()));
+
+      } catch (e) {
+        debugPrint('Error updating character evolution: $e');
+      }
+    }
   }
 }
