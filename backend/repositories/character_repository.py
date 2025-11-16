@@ -1,4 +1,7 @@
-from ..models import db, Character
+try:
+    from ..models import db, Character
+except ImportError:
+    from models import db, Character
 
 def add_character(character: Character):
     db.session.add(character)
