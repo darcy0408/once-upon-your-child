@@ -35,7 +35,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildHeaderCard(BuildContext context) {
     return AppCard(
-      color: AppColors.primary.withOpacity(0.05),
+      color: AppColors.primary.withValues(alpha: 0.05),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -88,7 +88,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onRetry: _validateApiKey,
                     )
                   : AppCard(
-                      color: AppColors.accent.withOpacity(0.15),
+                      color: AppColors.accent.withValues(alpha: 0.15),
                       child: Text(
                         _validationMessage!,
                         style: Theme.of(context)
@@ -158,7 +158,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       'No subscription needed',
     ];
     return AppCard(
-      color: AppColors.secondary.withOpacity(0.08),
+      color: AppColors.secondary.withValues(alpha: 0.08),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

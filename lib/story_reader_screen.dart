@@ -279,7 +279,7 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> {
               ? null
               : TextStyle(
                   backgroundColor: isHighlighted
-                      ? theme.colorScheme.secondary.withOpacity(0.4)
+                      ? theme.colorScheme.secondary.withValues(alpha: 0.4)
                       : null,
                   fontWeight:
                       isHighlighted ? FontWeight.w700 : FontWeight.normal,

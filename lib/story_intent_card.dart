@@ -110,7 +110,7 @@ class _StoryIntentCardState extends State<StoryIntentCard> {
             end: Alignment.bottomRight,
             colors: [
               const Color(0xFFFFF8F0), // Cream light
-              const Color(0xFFA8D5A3).withOpacity(0.1), // Jungle mint hint
+              const Color(0xFFA8D5A3).withValues(alpha: 0.1), // Jungle mint hint
             ],
           ),
         ),
@@ -234,7 +234,7 @@ class _StoryIntentCardState extends State<StoryIntentCard> {
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: const Color(0xFF6B9F4A).withOpacity(0.3),
+                            color: const Color(0xFF6B9F4A).withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           )
@@ -332,7 +332,7 @@ class _StoryIntentCardState extends State<StoryIntentCard> {
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: const Color(0xFF9B59B6).withOpacity(0.3),
+                            color: const Color(0xFF9B59B6).withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           )

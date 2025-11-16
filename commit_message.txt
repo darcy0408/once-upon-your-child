@@ -1,0 +1,20 @@
+feat: Implement asynchronous story generation with Celery and Redis
+
+This commit introduces asynchronous story generation using Celery and Redis to improve responsiveness and scalability of the application.
+
+- **Backend:**
+  - Installed `celery` and `redis` dependencies.
+  - Created `backend/celery_config.py` to define the Celery application and the `generate_story_task`.
+  - Refactored `backend/routes/story_routes.py`:
+    - The `/generate-story` endpoint now initiates a Celery task and returns a `task_id`.
+    - A new `/task-status/<task_id>` endpoint was added to allow the frontend to poll for task completion.
+    - The story generation logic, including title and wisdom gem extraction, was moved into the Celery task.
+  - Updated `backend/config/__init__.py` to correctly load `GEMINI_MODEL` from environment variables.
+
+- **Frontend:**
+  - Modified `lib/services/api_service_manager.dart` to:
+    - Initiate the asynchronous story generation task.
+    - Poll the `/task-status/<task_id>` endpoint for task completion.
+    - Handle pending, complete, and failed task states.
+
+This change addresses the "Day 2: Async Task Queue" item in the 21-Day Master Production Launch Plan.

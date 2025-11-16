@@ -1,6 +1,7 @@
 // lib/subscription_service.dart
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'subscription_models.dart';
 
@@ -213,6 +214,6 @@ class SubscriptionService {
     await setSubscription(testerSubscription);
     await resetUsageStats();
 
-    print('Isabela tester profile activated with all features!');
+    debugPrint('Isabela tester profile activated with all features!');
   }
 }

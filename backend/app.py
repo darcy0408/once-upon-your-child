@@ -202,7 +202,7 @@ def create_app(config_name):
     
     return app
 
-app = create_app(os.getenv('FLASK_ENV') or 'prod')
+app = create_app(os.getenv('FLASK_ENV') or 'production')
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

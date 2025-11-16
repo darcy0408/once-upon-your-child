@@ -1,4 +1,4 @@
-from .models import db, Character
+from ..models import db, Character
 
 def add_character(character: Character):
     db.session.add(character)

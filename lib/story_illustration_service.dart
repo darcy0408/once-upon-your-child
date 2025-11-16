@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -158,7 +159,7 @@ class StoryIllustrationService {
         // Small delay to avoid rate limiting
         await Future.delayed(const Duration(seconds: 1));
       } catch (e) {
-        print('Error generating illustration $i: $e');
+        debugPrint('Error generating illustration $i: $e');
         // Continue with other images even if one fails
       }
     }
@@ -309,7 +310,7 @@ ${therapeuticFocus != null ? '- Support the therapeutic focus: $therapeuticFocus
               (json) => IllustratedStory.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      print('Error loading illustrated stories: $e');
+      debugPrint('Error loading illustrated stories: $e');
       return [];
     }
   }
@@ -442,7 +443,7 @@ class GeminiIllustrationService extends StoryIllustrationService {
         );
       }).toList();
     } catch (e) {
-      print('Error generating illustrations with Gemini: $e');
+      debugPrint('Error generating illustrations with Gemini: $e');
       rethrow;
     }
   }

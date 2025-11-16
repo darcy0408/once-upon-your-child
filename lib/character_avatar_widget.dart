@@ -63,33 +63,10 @@ class CharacterAvatarWidget extends StatelessWidget {
     }
   }
 
-  IconData _getHairstyleIcon() {
-    final hairstyle = character.hairstyle?.toLowerCase() ?? 'short';
-
-    switch (hairstyle) {
-      case 'curly':
-        return Icons.water_drop; // Represents curls
-      case 'braids':
-        return Icons.format_line_spacing; // Represents braided pattern
-      case 'ponytail':
-        return Icons.arrow_upward; // Represents pulled up hair
-      case 'buns':
-        return Icons.circle; // Represents bun shape
-      case 'afro':
-        return Icons.cloud; // Represents fluffy afro
-      case 'straight':
-      case 'long':
-      case 'short':
-      default:
-        return Icons.person;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final skinColor = _getSkinToneColor();
     final hairColor = _getHairColor();
-    final hairstyleIcon = _getHairstyleIcon();
 
     return Container(
       width: size,
@@ -98,7 +75,7 @@ class CharacterAvatarWidget extends StatelessWidget {
         shape: BoxShape.circle,
         gradient: RadialGradient(
           colors: [
-            skinColor.withOpacity(0.8),
+            skinColor.withValues(alpha: 0.8),
             skinColor,
           ],
         ),
@@ -108,7 +85,7 @@ class CharacterAvatarWidget extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -231,7 +208,7 @@ class CharacterAvatarEnhanced extends StatelessWidget {
               color: skinColor,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
+                  color: Colors.black.withValues(alpha: 0.15),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
