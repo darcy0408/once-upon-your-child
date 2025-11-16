@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'therapeutic_models.dart';
 import 'emotions_learning_system.dart';
+import 'models.dart';
 
 /// Represents a character's emotional growth and development
 class CharacterEvolution {
@@ -12,17 +13,24 @@ class CharacterEvolution {
   final Map<TherapeuticGoal, int> therapeuticProgress; // 0-100 progress per goal
   final Map<String, int> emotionMastery; // emotion_id -> mastery level (0-100)
   final List<CharacterMilestone> milestones;
-  final Map<String, dynamic> evolvedTraits; // Dynamic traits that change with growth
-  final DateTime lastUpdated;
+  Map<String, dynamic> _evolvedTraits; // Dynamic traits that change with growth
+  DateTime _lastUpdated;
+
+  Map<String, dynamic> get evolvedTraits => _evolvedTraits;
+  set evolvedTraits(Map<String, dynamic> value) => _evolvedTraits = value;
+
+  DateTime get lastUpdated => _lastUpdated;
+  set lastUpdated(DateTime value) => _lastUpdated = value;
 
   CharacterEvolution({
     required this.characterId,
     required this.therapeuticProgress,
     required this.emotionMastery,
     required this.milestones,
-    required this.evolvedTraits,
-    required this.lastUpdated,
-  });
+    required Map<String, dynamic> evolvedTraits,
+    required DateTime lastUpdated,
+  })  : _evolvedTraits = evolvedTraits,
+        _lastUpdated = lastUpdated;
 
   /// Calculate overall character development score
   double get overallDevelopmentScore {
