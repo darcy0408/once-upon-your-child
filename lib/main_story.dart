@@ -167,7 +167,7 @@ class _StoryScreenState extends State<StoryScreen> {
     return _isLearningToReadAge(age);
   }
 
-  bool _isLearningToReadAge(int age) => age >= 4 && age <= 7;
+  bool _isLearningToReadAge(int age) => true; // Available for all ages
 
   Future<void> _openAchievementsScreen() async {
     await Navigator.of(context).push(
@@ -296,16 +296,7 @@ class _StoryScreenState extends State<StoryScreen> {
     final allowed = await _validateStoryCreationPreconditions();
     if (!allowed) return;
 
-    if (_learningToReadMode && !_canUseLearningToReadMode) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(navContext).showSnackBar(
-        const SnackBar(
-          content: Text('Learning to Read Mode is only available for ages 4-7.'),
-        ),
-      );
-      setState(() => _learningToReadMode = false);
-      return;
-    }
+    // Learning to Read Mode is now available for all ages - removed restriction
 
     // SHOW FEELINGS CHECK-IN DIALOG (skippable)
     final CurrentFeeling? currentFeeling = await PreStoryFeelingsDialog.show(
@@ -782,27 +773,21 @@ class _StoryScreenState extends State<StoryScreen> {
                     vertical: AppSpacing.xs,
                   ),
                   title: const Text(
-                    'Learning to Read Mode',
+                    'Easy Readers: Learn to Read Mode',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: Text(_canUseLearningToReadMode
-                      ? '50-100 word rhyming story for early readers (ages 4-7)'
-                      : _selectedCharacter == null
-                          ? 'Select a character (ages 4-7) to enable this mode'
-                          : 'Only available when the character is ages 4-7.'),
-                  value: _learningToReadMode && _canUseLearningToReadMode,
+                  subtitle: const Text('50-100 word rhyming story with simple vocabulary for early readers'),
+                  value: _learningToReadMode,
                   activeColor: AppColors.secondary,
                   secondary: const Icon(Icons.menu_book, color: Colors.blue),
-                  onChanged: _canUseLearningToReadMode
-                      ? (value) {
-                          setState(() {
-                            _learningToReadMode = value;
-                            if (value) {
-                              _rhymeTimeMode = false;
-                            }
-                          });
-                        }
-                      : null,
+                  onChanged: (value) {
+                    setState(() {
+                      _learningToReadMode = value;
+                      if (value) {
+                        _rhymeTimeMode = false;
+                      }
+                    });
+                  },
                 ),
               ),
               const SizedBox(height: 12),
@@ -813,27 +798,21 @@ class _StoryScreenState extends State<StoryScreen> {
                     vertical: AppSpacing.xs,
                   ),
                   title: const Text(
-                    'Learning to Read Mode',
+                    'Easy Readers: Learn to Read Mode',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: Text(_canUseLearningToReadMode
-                      ? '50-100 word rhyming story for early readers (ages 4-7)'
-                      : _selectedCharacter == null
-                          ? 'Select a character (ages 4-7) to enable this mode'
-                          : 'Only available when the character is ages 4-7.'),
-                  value: _learningToReadMode && _canUseLearningToReadMode,
+                  subtitle: const Text('50-100 word rhyming story with simple vocabulary for early readers'),
+                  value: _learningToReadMode,
                   activeColor: AppColors.secondary,
                   secondary: const Icon(Icons.menu_book, color: Colors.blue),
-                  onChanged: _canUseLearningToReadMode
-                      ? (value) {
-                          setState(() {
-                            _learningToReadMode = value;
-                            if (value) {
-                              _rhymeTimeMode = false;
-                            }
-                          });
-                        }
-                      : null,
+                  onChanged: (value) {
+                    setState(() {
+                      _learningToReadMode = value;
+                      if (value) {
+                        _rhymeTimeMode = false;
+                      }
+                    });
+                  },
                 ),
               ),
               const SizedBox(height: 12),

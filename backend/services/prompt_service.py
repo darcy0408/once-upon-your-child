@@ -40,7 +40,7 @@ class PromptService:
         if learning_to_read_mode:
             sections.append(PromptService._get_learning_to_read_instructions(character, theme, age, companion, character_details))
         elif rhyme_time_mode:
-            sections.append(PromptService._get_rhyme_time_instructions())
+            sections.append(PromptService._get_rhyme_time_instructions(age))
 
         # Character details
         if character_details:
@@ -63,44 +63,49 @@ class PromptService:
         """Return age-appropriate content guidelines"""
         if age <= 5:
             return """
-            AGE-APPROPRIATE GUIDELINES (Ages 3-5):
-            - Length: 100-150 words maximum
-            - Vocabulary: Very simple (cat, dog, run, happy)
-            - Sentences: 3-6 words each
-            - Concepts: Concrete, tangible only
-            - Use repetition for learning
+            CRITICAL AGE-APPROPRIATE REQUIREMENTS (Ages 3-5):
+            ⚠️ MAXIMUM LENGTH: 100-150 words TOTAL. DO NOT EXCEED 150 WORDS.
+            - Count your words carefully and STOP at 150 words maximum
+            - Vocabulary: ONLY very simple words (cat, dog, run, happy, sun, play)
+            - Sentences: 3-6 words each (short and simple)
+            - Concepts: Concrete, tangible only (things they can see/touch)
+            - Use repetition for learning (repeat key phrases)
             """
         elif age <= 8:
             return """
-            AGE-APPROPRIATE GUIDELINES (Ages 6-8):
-            - Length: 150-250 words
-            - Vocabulary: Sight words + basic phonics
-            - Sentences: Short and clear
-            - Concepts: Simple cause and effect
+            CRITICAL AGE-APPROPRIATE REQUIREMENTS (Ages 6-8):
+            ⚠️ MAXIMUM LENGTH: 150-250 words TOTAL. DO NOT EXCEED 250 WORDS.
+            - Count your words carefully and STOP at 250 words maximum
+            - Vocabulary: Sight words + basic phonics (simple words young readers know)
+            - Sentences: Short and clear (under 10 words per sentence)
+            - Concepts: Simple cause and effect (what happens and why)
             """
         elif age <= 12:
             return """
-            AGE-APPROPRIATE GUIDELINES (Ages 9-12):
-            - Length: 250-400 words
-            - Vocabulary: Grade-level
-            - Sentences: Varied, some complex
-            - Concepts: Multiple plot layers, character growth
+            CRITICAL AGE-APPROPRIATE REQUIREMENTS (Ages 9-12):
+            ⚠️ MAXIMUM LENGTH: 250-400 words TOTAL. DO NOT EXCEED 400 WORDS.
+            - Count your words carefully and STOP at 400 words maximum
+            - Vocabulary: Grade-level appropriate
+            - Sentences: Varied length, some complex structures allowed
+            - Concepts: Multiple plot layers, character growth, lessons learned
             """
         elif age <= 15:
             return """
-            AGE-APPROPRIATE GUIDELINES (Ages 13-15):
-            - Length: 400-600 words
-            - Vocabulary: Advanced
-            - Sentences: Sophisticated
-            - Concepts: Complex themes, moral dilemmas, identity
+            CRITICAL AGE-APPROPRIATE REQUIREMENTS (Ages 13-15):
+            ⚠️ MAXIMUM LENGTH: 400-600 words TOTAL. DO NOT EXCEED 600 WORDS.
+            - Count your words carefully and STOP at 600 words maximum
+            - Vocabulary: Advanced but not overly academic
+            - Sentences: Sophisticated structure and varied rhythm
+            - Concepts: Complex themes, moral dilemmas, identity exploration
             """
         else:
             return """
-            AGE-APPROPRIATE GUIDELINES (Ages 16+):
-            - Length: 600-800 words
-            - Vocabulary: Adult
-            - Sentences: Complex and literary
-            - Concepts: Mature themes, philosophical questions
+            CRITICAL AGE-APPROPRIATE REQUIREMENTS (Ages 16+):
+            ⚠️ MAXIMUM LENGTH: 600-800 words TOTAL. DO NOT EXCEED 800 WORDS.
+            - Count your words carefully and STOP at 800 words maximum
+            - Vocabulary: Adult vocabulary allowed
+            - Sentences: Complex and literary style
+            - Concepts: Mature themes, philosophical questions, nuanced emotions
             """
 
     @staticmethod
@@ -124,13 +129,15 @@ Create the rhyming learning-to-read story about {character_name} now:
 """
 
     @staticmethod
-    def _get_rhyme_time_instructions() -> str:
-        """Instructions for rhyme time mode"""
-        return """
-        RHYME TIME MODE:
-        - Story should have a consistent rhyme scheme (AABB or ABAB)
-        - Playful and musical tone
-        - Focus on rhythm and flow
+    def _get_rhyme_time_instructions(age: int = 7) -> str:
+        """Instructions for rhyme time mode - age-appropriate rhyming"""
+        return f"""
+        RHYME TIME MODE (Age-Appropriate for {age} year old):
+        - Story MUST follow the age-appropriate length requirements above
+        - Use consistent rhyme scheme (AABB or ABAB)
+        - Playful and musical tone with rhythm and flow
+        - Vocabulary must match the child's age level
+        - Keep it silly and fun while staying within word count limits
         """
 
     @staticmethod
