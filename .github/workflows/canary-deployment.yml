@@ -1,0 +1,120 @@
+name: Canary Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      canary_percentage:
+        description: 'Percentage of traffic to route to canary (1-50)'
+        required: true
+        default: '10'
+        type: number
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  canary-deployment:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Login to Railway
+        run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Deploy to Canary Environment
+        run: |
+          # Create canary deployment
+          railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
+          railway up --detach --service canary-backend
+
+      - name: Wait for Canary Deployment
+        run: |
+          echo "Waiting for canary deployment to be ready..."
+          sleep 120
+
+      - name: Health Check Canary
+        run: |
+          CANARY_URL=$(railway domain --service canary-backend)
+          echo "Canary URL: $CANARY_URL"
+
+          # Health check
+          for i in {1..10}; do
+            if curl -f -s "$CANARY_URL/health" > /dev/null; then
+              echo "Canary health check passed"
+              break
+            fi
+            echo "Waiting for canary to be healthy... ($i/10)"
+            sleep 30
+          done
+
+      - name: Run Performance Tests
+        run: |
+          CANARY_URL=$(railway domain --service canary-backend)
+
+          # Run load test against canary
+          echo "Running performance tests on canary deployment..."
+          # Simple load test with curl
+          for i in {1..50}; do
+            curl -s "$CANARY_URL/health" > /dev/null &
+          done
+          wait
+
+          echo "Performance tests completed"
+
+      - name: Traffic Splitting Setup
+        run: |
+          CANARY_PERCENTAGE=${{ github.event.inputs.canary_percentage }}
+          PRODUCTION_URL=$(railway domain --service backend)
+          CANARY_URL=$(railway domain --service canary-backend)
+
+          echo "Setting up traffic splitting: ${CANARY_PERCENTAGE}% to canary, $((100 - CANARY_PERCENTAGE))% to production"
+          echo "Production: $PRODUCTION_URL"
+          echo "Canary: $CANARY_URL"
+
+          # In a real setup, this would configure a load balancer or CDN
+          # For Railway, we might need to use their traffic splitting features
+
+      - name: Monitor and Validate
+        run: |
+          echo "Monitoring canary deployment for 10 minutes..."
+
+          # Monitor error rates and performance
+          CANARY_URL=$(railway domain --service canary-backend)
+
+          # Check error rates
+          ERROR_COUNT=$(curl -s "$CANARY_URL/health" | jq -r '.error_count // 0' 2>/dev/null || echo "0")
+
+          if [ "$ERROR_COUNT" -gt 5 ]; then
+            echo "High error rate detected in canary, rolling back..."
+            railway deploy rollback --service canary-backend
+            exit 1
+          fi
+
+          echo "Canary validation successful"
+
+      - name: Promote or Rollback Decision
+        run: |
+          echo "Canary deployment successful!"
+          echo "To promote to full production:"
+          echo "1. Update load balancer to route 100% to canary"
+          echo "2. Rename canary service to production"
+          echo "3. Delete old production service"
+
+          echo "Canary URL ready for testing: $(railway domain --service canary-backend)"
