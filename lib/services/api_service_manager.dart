@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
@@ -175,7 +176,7 @@ class ApiServiceManager {
         );
       } catch (error) {
         attempts++;
-        print('Story generation attempt $attempts failed: $error');
+        debugPrint('Story generation attempt $attempts failed: $error');
         if (attempts >= maxAttempts) rethrow;
         await Future.delayed(delay);
         delay *= 2;
@@ -401,7 +402,6 @@ This is a FEELINGS-FIRST story. The emotion is the main character's journey.
     String evolutionContext = '';
     if (characterEvolution != null) {
       final developmentStage = characterEvolution['development_stage'] as String?;
-      final overallScore = characterEvolution['overall_score'] as int?;
       final therapeuticProgress = characterEvolution['therapeutic_progress'] as Map<String, dynamic>?;
       final emotionMastery = characterEvolution['emotion_mastery'] as Map<String, dynamic>?;
       final evolvedTraits = characterEvolution['evolved_traits'] as Map<String, dynamic>?;
@@ -634,25 +634,25 @@ Create the adventure story now:
      List<String>? additionalCharacters,
    }) {
      String detailSection = '';
-     List<String>? _extractStringList(dynamic raw) {
-       if (raw is List) {
-         return raw.whereType<String>().map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
-       }
-       return null;
-     }
+    List<String>? extractStringList(dynamic raw) {
+      if (raw is List) {
+        return raw.whereType<String>().map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+      }
+      return null;
+    }
 
-     String _formatDetail(String label, List<String>? values) {
+    String formatDetail(String label, List<String>? values) {
       if (values == null || values.isEmpty) return '';
       return '\n$label: ${values.take(5).join(", ")}';
     }
 
     if (characterDetails != null) {
-      final likes = _extractStringList(characterDetails['likes']);
-      final strengths = _extractStringList(characterDetails['strengths']);
+      final likes = extractStringList(characterDetails['likes']);
+      final strengths = extractStringList(characterDetails['strengths']);
       final comfortItem = characterDetails['comfort_item'] as String?;
 
-      detailSection += _formatDetail('LIKES', likes);
-      detailSection += _formatDetail('STRENGTHS', strengths);
+      detailSection += formatDetail('LIKES', likes);
+      detailSection += formatDetail('STRENGTHS', strengths);
       if (comfortItem != null && comfortItem.isNotEmpty) {
         detailSection += '\nCOMFORT ITEM: $comfortItem';
       }
