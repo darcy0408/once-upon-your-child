@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
+// lib/offline_stories_screen.dart
 
-import 'models/cached_story.dart';
+import 'package:flutter/material.dart';
 import 'offline_story_cache.dart';
-import 'storage_service.dart';
 import 'story_reader_screen.dart';
 
 class OfflineStoriesScreen extends StatefulWidget {
@@ -12,17 +11,12 @@ class OfflineStoriesScreen extends StatefulWidget {
   State<OfflineStoriesScreen> createState() => _OfflineStoriesScreenState();
 }
 
-class _OfflineStoriesScreenState extends State<OfflineStoriesScreen>
-    with SingleTickerProviderStateMixin {
+class _OfflineStoriesScreenState extends State<OfflineStoriesScreen> with SingleTickerProviderStateMixin {
   final _cache = OfflineStoryCache();
-  final _storage = StorageService();
   List<CachedStory> _allStories = [];
   List<CachedStory> _favoriteStories = [];
   CacheStatistics? _stats;
   bool _isLoading = true;
-  bool _isSyncing = false;
-  bool _isOnline = true;
-  String? _syncError;
   late TabController _tabController;
 
   @override
@@ -33,69 +27,20 @@ class _OfflineStoriesScreenState extends State<OfflineStoriesScreen>
   }
 
   Future<void> _loadStories() async {
-    await _refreshFromCache(initialLoad: true);
-    _syncStories();
-  }
-
-  Future<void> _refreshFromCache({bool initialLoad = false}) async {
-    if (initialLoad) {
-      setState(() => _isLoading = true);
-    }
+    setState(() => _isLoading = true);
 
     final all = await _cache.getAllCachedStories();
     final favorites = await _cache.getFavoriteStories();
     final stats = await _cache.getCacheStatistics();
 
-    if (!mounted) return;
-    setState(() {
-      _allStories = all;
-      _favoriteStories = favorites;
-      _stats = stats;
-      if (initialLoad) {
+    if (mounted) {
+      setState(() {
+        _allStories = all;
+        _favoriteStories = favorites;
+        _stats = stats;
         _isLoading = false;
-      }
-    });
-  }
-
-  Future<void> _syncStories() async {
-    if (!mounted) return;
-    setState(() {
-      _isSyncing = true;
-      _syncError = null;
-    });
-
-    try {
-      final freshStories = await _storage.loadStories();
-      if (freshStories.isNotEmpty) {
-        for (final story in freshStories) {
-          await _cache.cacheSavedStory(story);
-        }
-        await _refreshFromCache();
-      }
-      if (!mounted) return;
-      setState(() {
-        _isOnline = true;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isOnline = false;
-        _syncError = 'Could not sync stories. Showing cached data.';
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_syncError!)),
-      );
-    } finally {
-      if (!mounted) return;
-      setState(() {
-        _isSyncing = false;
       });
     }
-  }
-
-  Future<void> _handleRefresh() async {
-    await _refreshFromCache();
-    await _syncStories();
   }
 
   @override
@@ -124,20 +69,6 @@ class _OfflineStoriesScreenState extends State<OfflineStoriesScreen>
           ],
         ),
         actions: [
-          if (_isSyncing)
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-              ),
-            ),
-          if (!_isOnline)
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: Icon(Icons.cloud_off, color: Colors.orange),
-            ),
           IconButton(
             icon: const Icon(Icons.info_outline),
             onPressed: _showCacheInfo,
@@ -160,72 +91,44 @@ class _OfflineStoriesScreenState extends State<OfflineStoriesScreen>
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
+          : TabBarView(
+              controller: _tabController,
               children: [
-                if (_syncError != null)
-                  Container(
-                    width: double.infinity,
-                    color: Colors.orange.shade100,
-                    padding: const EdgeInsets.all(8),
-                    child: Text(
-                      _syncError!,
-                      style: const TextStyle(color: Colors.orange),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildRefreshableList(_allStories),
-                      _buildRefreshableList(_favoriteStories),
-                    ],
-                  ),
-                ),
+                _buildStoryList(_allStories),
+                _buildStoryList(_favoriteStories),
               ],
             ),
     );
   }
 
-  Widget _buildRefreshableList(List<CachedStory> stories) {
-    return RefreshIndicator(
-      onRefresh: _handleRefresh,
-      child: _buildStoryList(stories),
-    );
-  }
-
   Widget _buildStoryList(List<CachedStory> stories) {
     if (stories.isEmpty) {
-      return ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(32),
-        children: [
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.cloud_off, size: 80, color: Colors.grey.shade300),
-              const SizedBox(height: 16),
-              Text(
-                'No offline stories yet',
-                style: TextStyle(fontSize: 20, color: Colors.grey.shade600),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Stories will be automatically cached for offline reading',
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ],
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.cloud_off, size: 80, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            Text(
+              'No offline stories yet',
+              style: TextStyle(fontSize: 20, color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Stories will be automatically cached for offline reading',
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       );
     }
 
+    // Sort by most recent first
     final sortedStories = List<CachedStory>.from(stories)
       ..sort((a, b) => b.cachedAt.compareTo(a.cachedAt));
 
     return ListView.builder(
-      physics: const AlwaysScrollableScrollPhysics(),
       itemCount: sortedStories.length,
       padding: const EdgeInsets.all(8),
       itemBuilder: (context, index) {
@@ -274,7 +177,7 @@ class _OfflineStoriesScreenState extends State<OfflineStoriesScreen>
                       story.isFavorite ? Icons.favorite : Icons.favorite_border,
                       color: story.isFavorite ? Colors.red : Colors.grey,
                     ),
-                    onPressed: () => _toggleFavorite(story.storyId),
+                    onPressed: () => _toggleFavorite(story.id),
                   ),
                 ],
               ),
@@ -315,21 +218,18 @@ class _OfflineStoriesScreenState extends State<OfflineStoriesScreen>
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.access_time,
-                          size: 14, color: Colors.grey.shade600),
+                      Icon(Icons.access_time, size: 14, color: Colors.grey.shade600),
                       const SizedBox(width: 4),
                       Text(
                         timeAgo,
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade600),
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                       ),
                     ],
                   ),
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.green.shade100,
                           borderRadius: BorderRadius.circular(12),
@@ -337,13 +237,11 @@ class _OfflineStoriesScreenState extends State<OfflineStoriesScreen>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: const [
-                            Icon(Icons.offline_pin,
-                                size: 14, color: Colors.green),
+                            Icon(Icons.offline_pin, size: 14, color: Colors.green),
                             SizedBox(width: 4),
                             Text(
                               'Offline',
-                              style:
-                                  TextStyle(fontSize: 12, color: Colors.green),
+                              style: TextStyle(fontSize: 12, color: Colors.green),
                             ),
                           ],
                         ),
@@ -378,7 +276,7 @@ class _OfflineStoriesScreenState extends State<OfflineStoriesScreen>
 
   Future<void> _toggleFavorite(String storyId) async {
     await _cache.toggleFavorite(storyId);
-    await _refreshFromCache();
+    await _loadStories();
   }
 
   Future<void> _deleteStory(CachedStory story) async {
@@ -386,8 +284,7 @@ class _OfflineStoriesScreenState extends State<OfflineStoriesScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Story?'),
-        content: Text(
-            'Are you sure you want to delete "${story.title}"? This cannot be undone.'),
+        content: Text('Are you sure you want to delete "${story.title}"? This cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -403,8 +300,8 @@ class _OfflineStoriesScreenState extends State<OfflineStoriesScreen>
     );
 
     if (confirm == true) {
-      await _cache.deleteCachedStory(story.storyId);
-      await _refreshFromCache();
+      await _cache.deleteCachedStory(story.id);
+      await _loadStories();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -487,7 +384,7 @@ class _OfflineStoriesScreenState extends State<OfflineStoriesScreen>
 
     if (confirm == true) {
       await _cache.clearCache(includeFavorites: false);
-      await _refreshFromCache();
+      await _loadStories();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

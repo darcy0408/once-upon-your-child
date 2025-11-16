@@ -12,21 +12,8 @@ from datetime import datetime
 import time
 
 class OpenRouterImageGenerator:
-    """
-    A service for generating images using Stable Diffusion via the OpenRouter API.
-
-    This class provides methods to create story illustrations and coloring pages
-    leveraging OpenRouter's access to various image generation models.
-    """
     def __init__(self, api_key=None):
-        """
-        Initializes the OpenRouterImageGenerator.
-
-        Args:
-            api_key (str, optional): Your OpenRouter API key. If not provided,
-                                     it will attempt to load from the OPENROUTER_API_KEY
-                                     environment variable.
-        """
+        """Initialize with OpenRouter API key"""
         self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
         self.base_url = "https://openrouter.ai/api/v1"
 
@@ -38,21 +25,16 @@ class OpenRouterImageGenerator:
         num_images: int = 1
     ) -> list:
         """
-        Generates story illustrations using Stable Diffusion via OpenRouter.
+        Generate story illustrations using Stable Diffusion via OpenRouter
 
         Args:
-            scene_description (str): A detailed description of the scene to illustrate.
-            character_name (str): The name of the main character in the scene.
-            style (str): The artistic style for the illustration (e.g., "watercolor", "cartoon").
-            num_images (int): The number of image variations to generate (currently generates 1 at a time).
+            scene_description: Description of the scene to illustrate
+            character_name: Name of the main character
+            style: Art style
+            num_images: Number of images (note: generates 1 at a time)
 
         Returns:
-            list: A list of dictionaries, where each dictionary contains:
-                  - 'id': A unique ID for the generated image.
-                  - 'prompt': The full prompt used for image generation.
-                  - 'image_url': The URL of the generated image.
-                  - 'format': The format of the image (e.g., 'png').
-                  - 'generated_at': Timestamp of image generation.
+            List of dicts with image URLs or base64 data
         """
         prompt = f"""
 {style}, high quality digital art:
@@ -114,20 +96,15 @@ Style: colorful, vibrant, child-friendly, professional illustration, ages 4-8, e
         num_images: int = 1
     ) -> list:
         """
-        Generates black and white line art for coloring pages using Stable Diffusion via OpenRouter.
+        Generate black and white line art for coloring
 
         Args:
-            scene_description (str): A detailed description of the scene for the coloring page.
-            character_name (str): The name of the main character in the scene.
-            num_images (int): The number of image variations to generate (currently generates 1 at a time).
+            scene_description: Description of the scene
+            character_name: Name of the main character
+            num_images: Number of images
 
         Returns:
-            list: A list of dictionaries, where each dictionary contains:
-                  - 'id': A unique ID for the generated image.
-                  - 'prompt': The full prompt used for image generation.
-                  - 'image_url': The URL of the generated image.
-                  - 'format': The format of the image (e.g., 'png').
-                  - 'generated_at': Timestamp of image generation.
+            List of dicts with image URLs
         """
         prompt = f"""
 black and white line art coloring book page, children's coloring book style:

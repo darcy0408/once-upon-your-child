@@ -40,11 +40,10 @@ dependencies:
   share_plus: ^11.0.0       # Share stories
   uuid: ^4.5.1              # Generate unique IDs
   path_provider: ^2.1.1     # File paths
-  isar: ^3.1.0              # Offline cache database
-  isar_flutter_libs: ^3.1.0
   google_generative_ai: ^0.4.6  # Direct Gemini API access for BYOK users
-  firebase_core: ^3.6.0        # Firebase core
-  firebase_analytics: ^11.3.3  # Real User Monitoring and analytics
+  firebase_core: ^2.24.2       # Firebase core functionality
+  firebase_analytics: ^10.8.0  # User analytics and tracking
+  package_info_plus: ^8.0.0    # App version information
 
   # Note: Backend handles AI generation for free users, but BYOK users call Gemini directly
 
@@ -58,8 +57,6 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
-  isar_generator: ^3.1.0
-  build_runner: ^2.4.6
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
