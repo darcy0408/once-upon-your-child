@@ -24,6 +24,7 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
   String _selectedTheme = 'Adventure';
   bool _isGenerating = false;
   String? _generatedStory;
+  SavedStory? _lastSavedStory;
 
   final List<String> _quickThemes = [
     'Adventure',
@@ -145,8 +146,7 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
   void _saveStory() {
     if (_generatedStory == null) return;
 
-    // Create a basic saved story
-    final savedStory = SavedStory(
+    _lastSavedStory = SavedStory(
       title: '$_selectedTheme with ${_characterNameController.text}',
       storyText: _generatedStory!,
       theme: _selectedTheme,
@@ -166,9 +166,11 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
       isInteractive: false,
     );
 
-    // TODO: Save to storage
+    final lastTitle = _lastSavedStory!.title;
+
+    // TODO: Persist _lastSavedStory to storage
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Story saved!')),
+      SnackBar(content: Text('$lastTitle saved!')),
     );
   }
 
@@ -219,7 +221,10 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.primary.withOpacity(0.1), AppColors.accent.withOpacity(0.1)],
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.1),
+                  AppColors.accent.withValues(alpha: 0.1),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -339,7 +344,7 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
                   });
                 },
                 backgroundColor: Colors.grey.shade100,
-                selectedColor: AppColors.primary.withOpacity(0.2),
+                selectedColor: AppColors.primary.withValues(alpha: 0.2),
                 checkmarkColor: AppColors.primary,
               );
             }).toList(),
@@ -430,7 +435,7 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
         // Story Header
         Container(
           padding: const EdgeInsets.all(20),
-          color: AppColors.primary.withOpacity(0.1),
+          color: AppColors.primary.withValues(alpha: 0.1),
           child: Row(
             children: [
               CircleAvatar(
@@ -460,7 +465,7 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
                       ),
                     ),
                     Text(
-                      'Age ${_selectedAge} • Just created',
+                      'Age $_selectedAge • Just created',
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 14,
