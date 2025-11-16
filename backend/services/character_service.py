@@ -2,7 +2,7 @@
 import uuid
 import json
 from backend.repositories.character_repository import (
-    create_character,
+    add_character,
     get_all_characters,
     get_character_by_id,
     update_character,
@@ -98,23 +98,23 @@ def create_character(data: dict):
         goals=_as_list(data.get("goals", [])),
         comfort_item=data.get("comfort_item"),
     )
-    create_character(new_character)
+    character_repository.add_character(new_character)
     return new_character.to_dict(), 201
 
 def get_characters():
     """Return a simple LIST to match the Flutter code that expects a list."""
-    chars = get_all_characters()
+    chars = character_repository.get_all_characters()
     return [c.to_dict() for c in chars], 200
 
 def get_character(char_id: str):
-    char = get_character_by_id(char_id)
+    char = character_repository.get_character_by_id(char_id)
     if not char:
         return {"error": "Character not found"}, 404
     return char.to_dict(), 200
 
 def update_character(char_id: str, data: dict):
     """Partial update allowed."""
-    char = get_character_by_id(char_id)
+    char = character_repository.get_character_by_id(char_id)
     if not char:
         return {"error": "Character not found"}, 404
 
@@ -170,12 +170,12 @@ def update_character(char_id: str, data: dict):
     if "goals" in data:
         char.goals = _as_list(data["goals"])
 
-    update_character(char)
+    character_repository.update_character(char)
     return char.to_dict(), 200
 
 def delete_character(char_id: str):
-    char = get_character_by_id(char_id)
+    char = character_repository.get_character_by_id(char_id)
     if not char:
         return {"error": "Character not found"}, 404
-    delete_character(char)
+    character_repository.delete_character(char)
     return {"status": "deleted", "id": char_id}, 200

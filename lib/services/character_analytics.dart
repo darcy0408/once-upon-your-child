@@ -21,27 +21,4 @@ class CharacterAnalytics {
       },
     );
   }
-
-  static Future<void> trackGalleryInteraction({
-    required String action,
-    required String characterId,
-    required String characterName,
-    int? age,
-    String? gender,
-    String? feeling,
-  }) async {
-    final parameters = <String, Object?>{
-      'action': action,
-      'character_id': characterId,
-      'name_length': characterName.length,
-      if (age != null) 'age': age,
-      if (gender != null && gender.isNotEmpty) 'gender': gender,
-      if (feeling != null && feeling.isNotEmpty) 'feeling': feeling,
-    }..removeWhere((_, value) => value == null);
-
-    await _analytics.logEvent(
-      name: 'character_gallery_action',
-      parameters: parameters,
-    );
-  }
 }

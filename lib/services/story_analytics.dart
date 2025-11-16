@@ -38,23 +38,4 @@ class StoryAnalytics {
       },
     );
   }
-
-  static Future<void> trackStoryResultAction({
-    required String storyId,
-    required String action,
-    String? theme,
-    Map<String, Object?> extra = const <String, Object?>{},
-  }) async {
-    final parameters = <String, Object?>{
-      'story_id': storyId,
-      'action': action,
-      if (theme != null && theme.isNotEmpty) 'theme': theme,
-      ...extra,
-    }..removeWhere((_, value) => value == null);
-
-    await _analytics.logEvent(
-      name: 'story_result_action',
-      parameters: parameters,
-    );
-  }
 }

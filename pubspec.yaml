@@ -41,9 +41,9 @@ dependencies:
   uuid: ^4.5.1              # Generate unique IDs
   path_provider: ^2.1.1     # File paths
   google_generative_ai: ^0.4.6  # Direct Gemini API access for BYOK users
-  firebase_core: ^2.24.2       # Firebase core functionality
-  firebase_analytics: ^10.8.0  # User analytics and tracking
-  package_info_plus: ^8.0.0    # App version information
+  firebase_core: ^2.24.2
+  firebase_analytics: ^10.8.0
+  package_info_plus: ^8.0.2
 
   # Note: Backend handles AI generation for free users, but BYOK users call Gemini directly
 

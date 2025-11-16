@@ -124,8 +124,8 @@ story_engine = AdvancedStoryEngine()
 # ----------------------
 # Helpers
 # ----------------------
-_TITLE_RE = re.compile(r'\[TITLE:\s*(.*?)\s*\]', re.DOTALL)
-_GEM_RE = re.compile(r'\[WISDOM GEM:\s*(.*?)\s*\]', re.DOTALL)
+_TITLE_RE = re.compile(r"[TITLE:\s*(.*?)\s*]", re.DOTALL)
+_GEM_RE = re.compile(r"[WISDOM GEM:\s*(.*?)\s*]", re.DOTALL)
 
 def _safe_extract_title_and_gem(text: str, theme: str):
     title_match = _TITLE_RE.search(text or "")

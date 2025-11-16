@@ -19,10 +19,7 @@ import 'premium_upgrade_screen.dart';
 import 'interactive_story_screen.dart';
 import 'therapeutic_customization_screen.dart';
 import 'therapeutic_models.dart';
-import 'quick_story_screen.dart';
 import 'character_evolution.dart';
-import 'pre_story_feelings_dialog.dart';
-import 'services/character_analytics.dart';
 import 'story_intent_card.dart';
 import 'offline_stories_screen.dart';
 import 'coloring_book_library_screen.dart';
@@ -37,15 +34,7 @@ import 'models/achievement.dart';
 import 'services/achievement_service.dart';
 import 'pre_story_feelings_dialog.dart';
 import 'config/environment.dart';
-import 'theme/app_theme.dart';
-import 'widgets/app_card.dart';
-import 'widgets/app_button.dart';
-import 'widgets/loading_spinner.dart';
-import 'services/firebase_analytics_service.dart';
-import 'services/story_analytics.dart';
-import 'services/therapeutic_analytics.dart';
-import 'services/performance_analytics.dart';
-import 'widgets/error_message.dart';
+
 
 class StoryCreatorApp extends StatelessWidget {
   const StoryCreatorApp({super.key});
@@ -53,28 +42,19 @@ class StoryCreatorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: Environment.appName,
-      theme: AppTheme.light(
-        primaryColor: Environment.primaryColor,
+      title: 'Story Creator',
+      theme: ThemeData(
+        primarySwatch: Colors.green,
+        primaryColor: const Color(0xFF2E7D32), // Dark jungle green
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF4CAF50),
+          primary: const Color(0xFF2E7D32),
+          secondary: const Color(0xFF81C784),
+        ),
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      navigatorObservers: FirebaseAnalyticsService.observer != null ? [FirebaseAnalyticsService.observer!] : [],
       home: const StoryScreen(),
-      debugShowCheckedModeBanner: !Environment.isProduction,
-      builder: (context, child) {
-        if (child == null || !Environment.showFlavorBanner) {
-          return child ?? const SizedBox.shrink();
-        }
-        return Banner(
-          message: Environment.bannerLabel,
-          location: BannerLocation.topStart,
-          color: Environment.bannerColor,
-          textStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
-          child: child,
-        );
-      },
+      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -346,16 +326,9 @@ class _StoryScreenState extends State<StoryScreen> {
       final Map<String, dynamic>? currentFeelingData =
           currentFeeling?.toJson();
 
-      if (currentFeeling != null) {
-        await TherapeuticAnalytics.trackFeelingsCheckIn(
-          emotionName: currentFeeling.selectedFeeling.tertiary,
-          intensity: currentFeeling.intensity,
-          copingStrategies: currentFeeling.copingStrategies ?? const [],
-        );
-      }
-      // Get character evolution data for personalized story generation
-      final characterEvolution = await _getCharacterEvolutionData(_selectedCharacter!);
-
+      // Record emotion check-in if provided
+            if (currentFeeling != null) {
+            }
       // Use ApiServiceManager to generate story (handles backend vs direct API)
       final String storyText = await ApiServiceManager.generateStory(
         characterName: _selectedCharacter!.name,
@@ -367,7 +340,6 @@ class _StoryScreenState extends State<StoryScreen> {
         rhymeTimeMode: _rhymeTimeMode,
         learningToReadMode: _learningToReadMode,
         currentFeeling: currentFeelingData,
-        characterEvolution: characterEvolution,
       );
 
       if (!navContext.mounted) return;
@@ -395,16 +367,8 @@ class _StoryScreenState extends State<StoryScreen> {
       );
       await StorageService().saveStory(saved);
 
-      // Update character evolution based on therapeutic story elements
-      await _updateCharacterEvolution(allSelectedCharacters, _therapeuticCustomization, currentFeeling);
-
-      await StoryAnalytics.trackStoryCreation(
-        theme: _selectedTheme,
-        characterName: _selectedCharacter!.name,
-        characterAge: _selectedCharacter!.age,
-        interactiveMode: _interactiveMode,
-        rhymeMode: _rhymeTimeMode,
-      );
+      // Update character evolution based on therapeutic elements
+      await _updateCharacterEvolution(allSelectedCharacters, _therapeuticCustomization);
 
       // Record story creation for usage tracking
       await _subscriptionService.recordStoryCreation();
@@ -439,7 +403,6 @@ class _StoryScreenState extends State<StoryScreen> {
       ScaffoldMessenger.of(navContext).showSnackBar(
         SnackBar(content: Text(message)),
       );
-      await PerformanceAnalytics.trackError('story_generation', e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -534,18 +497,6 @@ class _StoryScreenState extends State<StoryScreen> {
           ],
         ),
         actions: [
-          // Quick Story Button
-          IconButton(
-            tooltip: 'Quick Story',
-            icon: const Icon(Icons.flash),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const QuickStoryScreen(),
-                ),
-              );
-            },
-          ),
           // Stories remaining indicator
           if (_currentSubscription != null &&
               !_currentSubscription!.limits.unlimitedStories)
@@ -680,39 +631,36 @@ class _StoryScreenState extends State<StoryScreen> {
         ],
       ),
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              AppColors.accent,
-              AppColors.secondary,
-              AppColors.primary,
+              const Color(0xFF81C784), // Light green
+              const Color(0xFF66BB6A), // Medium green
+              const Color(0xFF4CAF50), // Vibrant green
+              const Color(0xFFAED581), // Light lime green
             ],
           ),
         ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Quick Story - Most Prominent Option
-              _buildQuickStoryCard(),
-              const SizedBox(height: AppSpacing.lg),
-
               if (_achievementSummary != null) ...[
                 _buildAchievementsOverviewCard(),
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: 20),
               ],
               _buildSectionCard(
                   'Choose Main Character', _buildCharacterSelector()),
-              const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: 20),
               if (_selectedCharacter != null)
                 _buildSectionCard('Add Friends/Siblings (Optional)',
                     _buildAdditionalCharactersSelector()),
               if (_selectedCharacter != null &&
                   _additionalCharacterIds.isNotEmpty)
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: 20),
               // Story Intent Card (merged theme + support focus)
               StoryIntentCard(
                 initialData: _storyIntent,
@@ -752,13 +700,9 @@ class _StoryScreenState extends State<StoryScreen> {
                   });
                 },
               ),
-              const SizedBox(height: AppSpacing.lg),
-              AppCard(
+              const SizedBox(height: 20),
+              Card(
                 child: SwitchListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.xs,
-                  ),
                   title: const Text(
                     'Interactive Story Mode',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -767,7 +711,7 @@ class _StoryScreenState extends State<StoryScreen> {
                     'Make choices that change the story!',
                   ),
                   value: _interactiveMode,
-                  activeColor: AppColors.primary,
+                  activeColor: Colors.purple,
                   secondary: const Icon(Icons.alt_route, color: Colors.purple),
                   onChanged: (value) {
                     setState(() => _interactiveMode = value);
@@ -775,12 +719,8 @@ class _StoryScreenState extends State<StoryScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              AppCard(
+              Card(
                 child: SwitchListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.xs,
-                  ),
                   title: const Text(
                     'Learning to Read Mode',
                     style: TextStyle(fontWeight: FontWeight.bold),
@@ -791,7 +731,7 @@ class _StoryScreenState extends State<StoryScreen> {
                           ? 'Select a character (ages 4-7) to enable this mode'
                           : 'Only available when the character is ages 4-7.'),
                   value: _learningToReadMode && _canUseLearningToReadMode,
-                  activeColor: AppColors.secondary,
+                  activeColor: Colors.blue,
                   secondary: const Icon(Icons.menu_book, color: Colors.blue),
                   onChanged: _canUseLearningToReadMode
                       ? (value) {
@@ -806,43 +746,8 @@ class _StoryScreenState extends State<StoryScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              AppCard(
+              Card(
                 child: SwitchListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.xs,
-                  ),
-                  title: const Text(
-                    'Learning to Read Mode',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(_canUseLearningToReadMode
-                      ? '50-100 word rhyming story for early readers (ages 4-7)'
-                      : _selectedCharacter == null
-                          ? 'Select a character (ages 4-7) to enable this mode'
-                          : 'Only available when the character is ages 4-7.'),
-                  value: _learningToReadMode && _canUseLearningToReadMode,
-                  activeColor: AppColors.secondary,
-                  secondary: const Icon(Icons.menu_book, color: Colors.blue),
-                  onChanged: _canUseLearningToReadMode
-                      ? (value) {
-                          setState(() {
-                            _learningToReadMode = value;
-                            if (value) {
-                              _rhymeTimeMode = false;
-                            }
-                          });
-                        }
-                      : null,
-                ),
-              ),
-              const SizedBox(height: 12),
-              AppCard(
-                child: SwitchListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.xs,
-                  ),
                   title: Row(
                     children: [
                       const Text('Rhyme Time Mode', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -856,7 +761,7 @@ class _StoryScreenState extends State<StoryScreen> {
                       ? 'Silly rhyming stories with playful verses!'
                       : 'Unlock at 0 stories! ($_storiesCreated/0)'),
                   value: _rhymeTimeMode && _hasRhymeTime,
-                  activeColor: AppColors.warning,
+                  activeColor: Colors.orange,
                   secondary: const Icon(Icons.music_note, color: Colors.orange),
                   onChanged: _hasRhymeTime ? (value) {
                     setState(() => _rhymeTimeMode = value);
@@ -866,18 +771,21 @@ class _StoryScreenState extends State<StoryScreen> {
               const SizedBox(height: 20),
               _buildSectionCard(
                   'Choose a Companion (Optional)', _buildCompanionSelector()),
-              const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: 40),
               _isLoading
-                  ? const Center(
-                      child: LoadingSpinner(message: 'Preparing your story...'),
-                    )
-                  : AppButton.primary(
-                      label: _interactiveMode
-                          ? 'Start Interactive Story'
-                          : 'Create My Story!',
+                  ? const Center(child: CircularProgressIndicator())
+                  : ElevatedButton(
                       onPressed: () async {
                         await _onCreateButtonPressed();
                       },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        textStyle: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      child: Text(_interactiveMode
+                          ? 'Start Interactive Story'
+                          : 'Create My Story!'),
                     ),
             ],
           ),
@@ -886,145 +794,69 @@ class _StoryScreenState extends State<StoryScreen> {
     );
   }
 
-  Widget _buildQuickStoryCard() {
-    return AppCard(
+  Card _buildSectionCard(String title, Widget content) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      color: Colors.white.withValues(alpha: 0.95), // Semi-transparent white
       child: Container(
-        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFF81C784)
+                .withValues(alpha: 0.5), // Light green border
+            width: 2,
+          ),
           gradient: LinearGradient(
-            colors: [AppColors.primary.withOpacity(0.1), AppColors.accent.withOpacity(0.1)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.flash,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Quick Story',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Create a magical story in seconds - no setup required!',
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const QuickStoryScreen(),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.auto_stories),
-                label: const Text('Create Quick Story'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.all(16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Center(
-              child: TextButton(
-                onPressed: () {
-                  // Scroll to advanced options or show hint
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Scroll down for character customization and therapeutic features!'),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                },
-                child: Text(
-                  'Want advanced features?',
-                  style: TextStyle(color: AppColors.primary),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  AppCard _buildSectionCard(String title, Widget content) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Text('🍃', style: TextStyle(fontSize: 18)),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-              const Text('🌿', style: TextStyle(fontSize: 16)),
+            colors: [
+              Colors.white.withValues(alpha: 0.95),
+              const Color(0xFFF1F8E9)
+                  .withValues(alpha: 0.95), // Very light green tint
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-          content,
-        ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color:
+                          const Color(0xFF4CAF50).withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Text('🍃', style: TextStyle(fontSize: 18)),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2E7D32), // Dark green text
+                      ),
+                    ),
+                  ),
+                  const Text('🌿', style: TextStyle(fontSize: 16)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              content,
+            ],
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildCharacterSelector() {
-    if (_characters.isEmpty) {
-      return ErrorMessage(
-        title: 'No characters yet',
-        message: 'Create your first character to begin crafting stories.',
-        onRetry: _loadCharacters,
-      );
-    }
     return Wrap(
       spacing: 12.0,
       runSpacing: 12.0,
@@ -1055,7 +887,7 @@ class _StoryScreenState extends State<StoryScreen> {
             child: Container(
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: isSelected ? AppColors.primary : Colors.grey.shade300,
+                  color: isSelected ? Colors.deepPurple : Colors.grey.shade300,
                   width: isSelected ? 3 : 1,
                 ),
                 borderRadius: BorderRadius.circular(12),
@@ -1142,9 +974,9 @@ class _StoryScreenState extends State<StoryScreen> {
         width: 80,
         decoration: BoxDecoration(
           border: Border.all(
-              color: AppColors.primary, width: 2, style: BorderStyle.solid),
+              color: Colors.deepPurple, width: 2, style: BorderStyle.solid),
           borderRadius: BorderRadius.circular(12),
-          color: AppColors.primary.withOpacity(0.08),
+          color: Colors.deepPurple.shade50,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1154,10 +986,10 @@ class _StoryScreenState extends State<StoryScreen> {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.2),
+                color: Colors.deepPurple.shade100,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.add, size: 30, color: AppColors.primary),
+              child: const Icon(Icons.add, size: 30, color: Colors.deepPurple),
             ),
             const SizedBox(height: 4),
             const Padding(
@@ -1815,93 +1647,11 @@ class _StoryScreenState extends State<StoryScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,
-               ),
-             ),
-           ],
-         ),
-       ),
-     );
-   }
-
-  /// Get character evolution data for story personalization
-  Future<Map<String, dynamic>?> _getCharacterEvolutionData(Character character) async {
-    try {
-      final evolution = await CharacterEvolutionService().getCharacterEvolution(character.id);
-      if (evolution == null) return null;
-
-      return {
-        'development_stage': evolution.developmentStage.name,
-        'overall_score': evolution.overallDevelopmentScore.round(),
-        'therapeutic_progress': evolution.therapeuticProgress,
-        'emotion_mastery': evolution.emotionMastery,
-        'evolved_traits': evolution.evolvedTraits,
-      };
-    } catch (e) {
-      debugPrint('Error getting character evolution data: $e');
-      return null;
-    }
-  }
-
-  /// Update character evolution based on therapeutic story elements
-  Future<void> _updateCharacterEvolution(
-    List<Character> characters,
-    TherapeuticStoryCustomization? therapeuticCustomization,
-    CurrentFeeling? currentFeeling,
-  ) async {
-    if (therapeuticCustomization == null) return;
-
-    // Update evolution for each character in the story
-    for (final character in characters) {
-      try {
-        // Update based on primary therapeutic goal
-        if (therapeuticCustomization.primaryGoal != null) {
-          await CharacterEvolutionService().updateCharacterEvolution(
-            character.id,
-            therapeuticCustomization.primaryGoal,
-            null, // no emotion
-            5, // Base progress for story completion
-          );
-        }
-
-        // Update based on emotions explored in the story
-        if (currentFeeling != null && currentFeeling.selectedFeeling.tertiary.isNotEmpty) {
-          await CharacterEvolutionService().updateCharacterEvolution(
-            character.id,
-            null, // no goal
-            currentFeeling.selectedFeeling.tertiary,
-            3, // Progress for emotion exploration
-          );
-        }
-
-        // Additional progress for coping strategies highlighted
-        if (therapeuticCustomization.copingStrategiesToHighlight.isNotEmpty) {
-          // Give extra progress for practicing coping strategies
-          if (therapeuticCustomization.primaryGoal != null) {
-            await CharacterEvolutionService().updateCharacterEvolution(
-              character.id,
-              therapeuticCustomization.primaryGoal,
-              null,
-              2,
-            );
-          }
-        }
-
-        // Progress for custom therapeutic wishes
-        if (therapeuticCustomization.wishes.isNotEmpty) {
-          // Give progress for achieving story wishes
-          if (therapeuticCustomization.primaryGoal != null) {
-            await CharacterEvolutionService().updateCharacterEvolution(
-              character.id,
-              therapeuticCustomization.primaryGoal,
-              null,
-              therapeuticCustomization.wishes.length,
-            );
-          }
-        }
-      } catch (e) {
-        // Log error but don't fail story generation
-        debugPrint('Error updating character evolution: $e');
-      }
-    }
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

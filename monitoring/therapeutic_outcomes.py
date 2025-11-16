@@ -343,6 +343,7 @@ class TherapeuticOutcomeTracker:
                 weekly_avg_reductions.append(avg_reduction)
 
         trend = 'stable'
+        recent_avg = 0
         if len(weekly_avg_reductions) >= 3:
             recent_avg = statistics.mean(weekly_avg_reductions[-3:])
             earlier_avg = statistics.mean(weekly_avg_reductions[:-3])
@@ -354,7 +355,7 @@ class TherapeuticOutcomeTracker:
 
         return {
             'trend': trend,
-            'recent_performance': round(recent_avg, 2) if 'recent_avg' in locals() else 0,
+            'recent_performance': round(recent_avg, 2),
             'data_points': len(weekly_avg_reductions)
         }
 
