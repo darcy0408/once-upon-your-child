@@ -1,5 +1,9 @@
-from backend.services.emotion_service import EmotionService
-from backend.config import config_by_name # Assuming config is needed for GEMINI_MODEL
+try:
+    from .emotion_service import EmotionService
+    from ..config import config_by_name
+except ImportError:
+    from services.emotion_service import EmotionService
+    from config import config_by_name
 
 class PromptService:
     @staticmethod

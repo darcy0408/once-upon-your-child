@@ -6,7 +6,7 @@ try:
     from ..repositories import character_repository
     from ..models import Character
 except ImportError:
-    from repositories import character_repository
+    import repositories.character_repository as character_repository
     from models import Character
 
 PERSONALITY_SLIDER_DEFINITIONS = {
