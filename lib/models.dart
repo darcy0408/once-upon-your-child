@@ -18,11 +18,13 @@ class Character {
   final List<String>? strengths;
   final List<String>? personalityTraits;
   final Map<String, int>? personalitySliders;
+  final List<String>? goals;
   final String? comfortItem;
   final String? hair;
   final String? eyes;
   final String? skinTone;
   final String? hairstyle;
+  final String? outfit;
   final String? currentEmotion;
   final String? currentEmotionCore;
   final CharacterAvatar? avatar;
@@ -42,11 +44,13 @@ class Character {
     this.strengths,
     this.personalityTraits,
     this.personalitySliders,
+    this.goals,
     this.comfortItem,
     this.hair,
     this.eyes,
     this.skinTone,
     this.hairstyle,
+    this.outfit,
     this.currentEmotion,
     this.currentEmotionCore,
     this.avatar,
@@ -94,11 +98,13 @@ class Character {
       strengths: json['strengths'] != null ? List<String>.from(json['strengths']) : null,
       personalityTraits: json['personality_traits'] != null ? List<String>.from(json['personality_traits']) : null,
       personalitySliders: sliderValues,
+      goals: json['goals'] != null ? List<String>.from(json['goals']) : null,
       comfortItem: json['comfort_item'],
       hair: json['hair'],
       eyes: json['eyes'],
       skinTone: json['skin_tone'],
       hairstyle: json['hairstyle'],
+      outfit: json['outfit'],
       currentEmotion: json['current_emotion'],
       currentEmotionCore: json['current_emotion_core'],
       avatar: avatar,
@@ -120,11 +126,13 @@ class Character {
         'strengths': strengths,
         'personality_traits': personalityTraits,
         'personality_sliders': personalitySliders,
+        'goals': goals,
         'comfort_item': comfortItem,
         'hair': hair,
         'eyes': eyes,
         'skin_tone': skinTone,
         'hairstyle': hairstyle,
+        'outfit': outfit,
         'current_emotion': currentEmotion,
         'current_emotion_core': currentEmotionCore,
         if (avatar != null) 'avatar': avatar!.toJson(),

@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'character_evolution.dart';
 import 'emotions_learning_system.dart';
+import 'therapeutic_models.dart';
 
 /// Types of coping strategies organized by approach
 enum CopingStrategyType {
@@ -1495,58 +1496,58 @@ class CopingStrategyLibraryLauncher extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
-      ),
-      child: Column(
-        children: [
-          const Icon(
-            Icons.self_improvement,
-            size: 48,
-            color: Colors.teal,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Coping Strategies',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+        child: Column(
+          children: [
+            const Icon(
+              Icons.self_improvement,
+              size: 48,
+              color: Colors.teal,
             ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Learn healthy ways to handle emotions and stress',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 14,
+            const SizedBox(height: 16),
+            const Text(
+              'Coping Strategies',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => CopingStrategyLibrary(
-                      characterId: characterId,
+            const SizedBox(height: 8),
+            const Text(
+              'Learn healthy ways to handle emotions and stress',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => CopingStrategyLibrary(
+                        characterId: characterId,
+                      ),
                     ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal.shade400,
+                  padding: const EdgeInsets.all(16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal.shade400,
-                padding: const EdgeInsets.all(16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'Explore Strategies',
+                  style: TextStyle(fontSize: 16),
                 ),
               ),
-              child: const Text(
-                'Explore Strategies',
-                style: TextStyle(fontSize: 16),
-              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -5,9 +5,7 @@ import 'package:flutter/material.dart';
 import 'main_story.dart';
 import 'models.dart';
 import 'services/api_service_manager.dart';
-import 'services/subscription_service.dart';
-import 'widgets/app_button.dart';
-import 'widgets/app_card.dart';
+import 'subscription_service.dart';
 import 'theme/app_theme.dart';
 
 class QuickStoryScreen extends StatefulWidget {
@@ -73,7 +71,7 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
     try {
       // Check subscription for story generation
       final subscriptionService = SubscriptionService();
-      final canGenerate = await subscriptionService.canGenerateStory();
+      final canGenerate = await subscriptionService.canCreateStory();
 
       if (!canGenerate) {
         if (mounted) {
@@ -157,10 +155,11 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
           id: 'quick_${_characterNameController.text}',
           name: _characterNameController.text,
           age: int.parse(_selectedAge),
+          role: 'Explorer',
           gender: 'neutral',
-          appearance: {},
-          personality: [],
-          abilities: [],
+          characterStyle: 'quick_story',
+          likes: [_selectedTheme],
+          strengths: const ['Imagination'],
         ),
       ],
       createdAt: DateTime.now(),

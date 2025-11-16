@@ -21,4 +21,25 @@ class CharacterAnalytics {
       },
     );
   }
+
+  static Future<void> trackGalleryInteraction({
+    required String action,
+    required String characterId,
+    required String characterName,
+    required int age,
+    String? gender,
+    String? feeling,
+  }) async {
+    await _analytics.logEvent(
+      name: 'character_gallery_action',
+      parameters: {
+        'action': action,
+        'character_id': characterId,
+        'character_name_length': characterName.length,
+        'age': age,
+        if (gender != null) 'gender': gender,
+        if (feeling != null) 'feeling': feeling,
+      },
+    );
+  }
 }

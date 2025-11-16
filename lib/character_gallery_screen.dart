@@ -47,7 +47,7 @@ class _CharacterGalleryScreenState extends State<CharacterGalleryScreen> {
         action: action,
         characterId: character.id,
         characterName: character.name,
-        age: character.age,
+        age: character.age ?? 0,
         gender: character.gender,
         feeling: feeling?.tertiary,
       ),

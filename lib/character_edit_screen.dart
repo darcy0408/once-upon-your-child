@@ -109,8 +109,8 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
       commonDislikeOptions,
       _selectedQuickDislikes,
     );
-    _likesController = TextEditingController(manualLikes.join(', '));
-    _dislikesController = TextEditingController(manualDislikes.join(', '));
+    _likesController = TextEditingController(text: manualLikes.join(', '));
+    _dislikesController = TextEditingController(text: manualDislikes.join(', '));
 
     _initializeGrowthSelections(
       widget.character.fears ?? const <String>[],

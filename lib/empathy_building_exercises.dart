@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'character_evolution.dart';
 import 'emotions_learning_system.dart';
+import 'therapeutic_models.dart';
 
 /// Types of empathy building exercises
 enum EmpathyExerciseType {
