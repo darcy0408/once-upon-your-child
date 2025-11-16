@@ -3,10 +3,19 @@ import logging
 import google.generativeai as genai
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from .config import config, config_by_name
-from .models import db
-from .services import character_service, story_service
-from .repositories import character_repository
+
+# Use try/except for imports to support both package and direct execution
+try:
+    from .config import config, config_by_name
+    from .models import db
+    from .services import character_service, story_service
+    from .repositories import character_repository
+except ImportError:
+    # Fallback for direct execution (Railway, local dev)
+    from config import config, config_by_name
+    from models import db
+    from services import character_service, story_service
+    from repositories import character_repository
 
 def create_app(config_name):
     app = Flask(__name__)

@@ -1,17 +1,14 @@
 """
-WSGI entry point for production deployment (Railway, Gunicorn, etc.)
-
-This module must be imported as 'backend.wsgi' from the project root.
-Railway configuration: gunicorn backend.wsgi:app --bind 0.0.0.0:$PORT
+WSGI entry point for Railway deployment.
+Railway copies backend/ contents to /app/, so we import directly.
 """
 import os
-from backend.app import create_app
+from app import create_app
 
-# Determine config based on environment
+# Create the application instance
 config_name = os.getenv('FLASK_ENV', 'production')
-
-# Create the Flask app instance
 app = create_app(config_name)
 
 if __name__ == "__main__":
-    app.run()
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
