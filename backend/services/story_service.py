@@ -1,4 +1,3 @@
-
 import random
 import re
 import json
@@ -366,7 +365,7 @@ def _as_list(v):
     """Accept list, JSON string, comma string, or None; return list[str]."""
     if isinstance(v, list):
         return [str(x) for x in v]
-    if v in (None, "", []) :
+    if v in (None, "", []):
         return []
     if isinstance(v, str):
         s = v.strip()

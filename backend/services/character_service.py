@@ -1,15 +1,8 @@
 
 import uuid
 import json
-from backend.repositories.character_repository import (
-    add_character,
-    get_all_characters,
-    get_character_by_id,
-    update_character,
-    delete_character,
-    get_characters_by_ids,
-)
-from backend.models import Character
+from ..repositories import character_repository
+from ..models import Character
 
 PERSONALITY_SLIDER_DEFINITIONS = {
     "organization_planning": {"label": "Organization & Planning", "left_label": "Tidy Planner", "right_label": "Messy Freestyle"},

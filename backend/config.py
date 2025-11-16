@@ -1,4 +1,3 @@
-
 import os
 from dotenv import load_dotenv
 
@@ -37,7 +36,7 @@ class ProductionConfig(Config):
 
 config_by_name = dict(
     dev=DevelopmentConfig,
-    production=ProductionConfig
+    prod=ProductionConfig
 )
 
 key = os.environ.get("FLASK_ENV", "prod")
