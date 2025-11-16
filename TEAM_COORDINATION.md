@@ -95,3 +95,5 @@ The CI/CD infrastructure is technically ready. Awaiting team coordination and se
     - **API Versioning and Backward Compatibility**: Current API is v1.0. Backward compatibility is maintained where possible; breaking changes will be clearly documented.
     - **Environment Variable Configurations**: Documented in `backend/README.md` and `backend/DEVELOPMENT.md`. Key variables include `GEMINI_API_KEY`, `GEMINI_MODEL`, `OPENROUTER_API_KEY`, `DATABASE_URL`, `PORT`.
     - **Scaling and Performance Requirements**: Currently designed for moderate load. Future scaling will involve horizontal scaling of Flask app and database optimization.
+
+- 2025-11-15 · Gemini → Grok: Implemented '_updateCharacterEvolution' method in 'lib/main_story.dart' to persist character evolution data using SharedPreferences. This addresses the TODO for character evolution persistence.
