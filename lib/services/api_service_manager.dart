@@ -16,6 +16,12 @@ import 'story_complexity_service.dart';
 /// based on user's API key configuration
 class ApiServiceManager {
   static String get _localBackendUrl => Environment.backendUrl;
+  static http.Client? _testClient;
+
+  /// Allow tests to inject a mock HTTP client.
+  static void setTestClient(http.Client? client) {
+    _testClient = client;
+  }
 
   /// Check if user has configured their own API key
   static Future<bool> isUsingOwnApiKey() async {
@@ -57,6 +63,7 @@ class ApiServiceManager {
     Duration requestTimeout = const Duration(seconds: 30),
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
+    final http.Client? effectiveClient = client ?? _testClient;
 
     if (useOwnKey) {
       // Use direct Gemini API
@@ -85,7 +92,7 @@ class ApiServiceManager {
         learningToReadMode: learningToReadMode,
         currentFeeling: currentFeeling,
         characterEvolution: characterEvolution,
-        client: client,
+        client: effectiveClient,
         maxAttempts: maxAttempts,
         initialDelay: retryInitialDelay,
         requestTimeout: requestTimeout,
@@ -192,7 +199,7 @@ class ApiServiceManager {
     http.Client? client,
     required Duration requestTimeout,
   }) async {
-    final httpClient = client ?? http.Client();
+    final httpClient = client ?? _testClient ?? http.Client();
     final endpoint = (additionalCharacters == null || additionalCharacters.isEmpty)
         ? '$_localBackendUrl/generate-story'
         : '$_localBackendUrl/generate-multi-character-story';

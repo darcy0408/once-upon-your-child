@@ -1,2 +1,1 @@
-from .character import Character
-__all__ = ['Character']
+from .models import db

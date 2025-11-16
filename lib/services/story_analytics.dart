@@ -48,10 +48,11 @@ class StoryAnalytics {
     final parameters = <String, Object?>{
       'story_id': storyId,
       'action': action,
-      if (theme != null && theme.isNotEmpty) 'theme': theme,
-      ...extra,
-    }..removeWhere((_, value) => value == null);
-
+    };
+    if (theme != null) {
+      parameters['theme'] = theme;
+    }
+    parameters.addAll(extra);
     await _analytics.logEvent(
       name: 'story_result_action',
       parameters: parameters,

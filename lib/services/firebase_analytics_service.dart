@@ -6,42 +6,28 @@ import '../firebase_options.dart';
 class FirebaseAnalyticsService {
   FirebaseAnalyticsService._();
 
-  static FirebaseAnalytics? _analytics;
-  static FirebaseAnalyticsObserver? _observer;
-  static bool _initialized = false;
-  static bool _firebaseAvailable = false;
+  static final FirebaseAnalytics analytics = FirebaseAnalytics.instance;
+  static final FirebaseAnalyticsObserver observer =
+      FirebaseAnalyticsObserver(analytics: analytics);
 
-  static FirebaseAnalytics? get analytics => _analytics;
-  static FirebaseAnalyticsObserver? get observer => _observer;
-  static bool get isInitialized => _initialized && _firebaseAvailable;
+  static bool _initialized = false;
 
   static Future<void> initialize() async {
     if (_initialized) return;
-
-    try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      _analytics = FirebaseAnalytics.instance;
-      _observer = FirebaseAnalyticsObserver(analytics: _analytics!);
-      await _analytics!.setAnalyticsCollectionEnabled(true);
-      _firebaseAvailable = true;
-      _initialized = true;
-    } catch (e) {
-      // Firebase not available or configured - graceful degradation
-      _firebaseAvailable = false;
-      _initialized = true;
-    }
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    await analytics.setAnalyticsCollectionEnabled(true);
+    _initialized = true;
   }
 
   static Future<void> setUserProperties(
     String userId,
     Map<String, dynamic> properties,
   ) async {
-    if (analytics == null) return;
-    await analytics!.setUserId(id: userId);
+    await analytics.setUserId(id: userId);
     for (final entry in properties.entries) {
-      await analytics!.setUserProperty(
+      await analytics.setUserProperty(
         name: entry.key,
         value: entry.value?.toString(),
       );

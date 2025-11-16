@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'character_evolution.dart';
 import 'emotions_learning_system.dart';
+import 'therapeutic_models.dart';
 
 /// Types of family relationship story themes
 enum FamilyRelationshipTheme {
@@ -773,58 +774,58 @@ class FamilyRelationshipStoriesLauncher extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
-      ),
-      child: Column(
-        children: [
-          const Icon(
-            Icons.family_restroom,
-            size: 48,
-            color: Colors.green,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Family Relationship Stories',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+        child: Column(
+          children: [
+            const Icon(
+              Icons.family_restroom,
+              size: 48,
+              color: Colors.green,
             ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Learn about family communication, roles, and supporting each other',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 14,
+            const SizedBox(height: 16),
+            const Text(
+              'Family Relationship Stories',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => FamilyRelationshipStories(
-                      characterId: characterId,
+            const SizedBox(height: 8),
+            const Text(
+              'Learn about family communication, roles, and supporting each other',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => FamilyRelationshipStories(
+                        characterId: characterId,
+                      ),
                     ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.shade400,
+                  padding: const EdgeInsets.all(16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green.shade400,
-                padding: const EdgeInsets.all(16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'Explore Family Stories',
+                  style: TextStyle(fontSize: 16),
                 ),
               ),
-              child: const Text(
-                'Explore Family Stories',
-                style: TextStyle(fontSize: 16),
-              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

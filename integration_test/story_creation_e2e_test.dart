@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:story_weaver/main.dart' as app;
-import 'package:story_weaver/services/api_service_manager.dart';
+import 'package:story_weaver_app/main.dart' as app;
+import 'package:story_weaver_app/services/api_service_manager.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
@@ -33,7 +33,11 @@ void main() {
       });
 
       // Override the API service to use our mock
-      ApiServiceManager.instance = ApiServiceManager.test(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
+    });
+
+    tearDown(() {
+      ApiServiceManager.setTestClient(null);
     });
 
     testWidgets('Complete story creation journey', (tester) async {

@@ -20,15 +20,15 @@ class PerformanceAnalytics {
     );
   }
 
-  static Future<void> trackError(String errorType, String errorMessage) async {
-    final truncated = errorMessage.length > 100
-        ? errorMessage.substring(0, 100)
-        : errorMessage;
+  static Future<void> trackError(
+    String errorType,
+    String errorMessage,
+  ) async {
     await _analytics.logEvent(
       name: 'error_occurred',
       parameters: {
         'error_type': errorType,
-        'error_message': truncated,
+        'error_message': errorMessage.substring(0, 100),
       },
     );
   }

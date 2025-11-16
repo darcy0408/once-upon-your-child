@@ -1,39 +1,27 @@
-import 'firebase_analytics_service.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class OnboardingAnalytics {
-  static Future<void> trackFeatureViewed(String featureName) async {
-    if (!FirebaseAnalyticsService.isInitialized || FirebaseAnalyticsService.analytics == null) {
-      return; // Graceful degradation when Firebase unavailable
-    }
+  OnboardingAnalytics._();
 
-    try {
-      await FirebaseAnalyticsService.analytics!.logEvent(
-        name: 'feature_viewed',
-        parameters: {'feature_name': featureName},
-      );
-    } catch (e) {
-      // Silently fail if analytics logging fails
-    }
-  }
+  static FirebaseAnalytics get _analytics => FirebaseAnalytics.instance;
 
   static Future<void> trackOnboardingCompleted({
     required int timeSpentSeconds,
     required bool skippedAnyStep,
   }) async {
-    if (!FirebaseAnalyticsService.isInitialized || FirebaseAnalyticsService.analytics == null) {
-      return; // Graceful degradation when Firebase unavailable
-    }
+    await _analytics.logEvent(
+      name: 'onboarding_completed',
+      parameters: {
+        'time_spent_seconds': timeSpentSeconds,
+        'skipped_any_step': skippedAnyStep,
+      },
+    );
+  }
 
-    try {
-      await FirebaseAnalyticsService.analytics!.logEvent(
-        name: 'onboarding_completed',
-        parameters: {
-          'time_spent_seconds': timeSpentSeconds,
-          'skipped_any_step': skippedAnyStep,
-        },
-      );
-    } catch (e) {
-      // Silently fail if analytics logging fails
-    }
+  static Future<void> trackFeatureViewed(String featureName) async {
+    await _analytics.logEvent(
+      name: 'feature_viewed',
+      parameters: {'feature_name': featureName},
+    );
   }
 }
