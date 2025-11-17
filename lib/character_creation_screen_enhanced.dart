@@ -547,7 +547,7 @@ class _CharacterCreationScreenEnhancedState
             const SizedBox(width: 12),
             Expanded(
               child: DropdownButtonFormField<String>(
-                initialValue: _isA,
+                value: _isA,
                 decoration: InputDecoration(
                   labelText: 'Is a: *',
                   border: OutlineInputBorder(
