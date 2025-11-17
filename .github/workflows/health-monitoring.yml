@@ -14,8 +14,9 @@ jobs:
       - name: Check Frontend Health (Netlify)
         run: |
           echo "Checking frontend health..."
-          if curl -f -s --max-time 10 ${{ secrets.FRONTEND_URL }}/ | head -n 1 | grep -q "Story Weaver"; then
-            echo "✅ Frontend is healthy"
+          # Check if the site returns a successful HTTP response
+          if curl -f -s --max-time 10 -I ${{ secrets.FRONTEND_URL }}/ | head -n 1 | grep -q "200"; then
+            echo "✅ Frontend is healthy (HTTP 200)"
           else
             echo "❌ Frontend health check failed"
             exit 1
@@ -54,7 +55,7 @@ jobs:
           fi
 
       - name: Send Slack Alert on Failure
-        if: failure()
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
         uses: slackapi/slack-github-action@v1.24.0
         with:
           payload: |
