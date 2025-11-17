@@ -1,7 +1,6 @@
 [build]
   publish = "build/web"
-  # Build already done locally/in CI - just deploy the files
-  command = "echo 'Using pre-built files from build/web'"
+  command = "flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true --dart-define=FLAVOR=production"
 
 [[redirects]]
   from = "/*"
