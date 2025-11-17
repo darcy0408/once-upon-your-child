@@ -18,9 +18,12 @@ except ImportError:
     from repositories import character_repository
 
 def create_app(config_name):
+    print(f"=== Creating Flask app with config: {config_name} ===")
     app = Flask(__name__)
     app.config.from_object(config_by_name[config_name])
+    print(f"=== Config loaded, initializing database ===")
     db.init_app(app)
+    print(f"=== Database initialized ===")
     
     # CORS setup
     CORS(app, resources={
@@ -49,12 +52,16 @@ def create_app(config_name):
         logger.exception("Failed to initialize Gemini model: %s", e)
         model = None
 
+    print(f"=== Creating database tables ===")
     with app.app_context():
         db.create_all()
+    print(f"=== Database tables created ===")
 
     # API Routes
+    print(f"=== Registering routes ===")
     @app.route("/health", methods=["GET"])
     def health():
+        print(f"=== Health endpoint called ===")
         return {"status": "ok", "model": GEMINI_MODEL, "has_api_key": bool(api_key)}, 200
 
     @app.route("/get-story-themes", methods=["GET"])
@@ -209,6 +216,8 @@ def create_app(config_name):
         response, status_code = character_service.get_character(char_id)
         return jsonify(response), status_code
     
+    print(f"=== All routes registered successfully ===")
+    print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
     return app
 
 app = create_app(os.getenv('FLASK_ENV') or 'production')
