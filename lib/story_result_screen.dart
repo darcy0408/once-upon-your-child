@@ -1406,7 +1406,7 @@ class _ColoringSettingsDialogState extends State<ColoringSettingsDialog> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              initialValue: _selectedTherapeuticFocus,
+              value: _selectedTherapeuticFocus,
               decoration: InputDecoration(
                 border:
                     OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
