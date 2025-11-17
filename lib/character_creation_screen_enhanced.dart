@@ -262,41 +262,31 @@ class _CharacterCreationScreenEnhancedState
       final ageToSend =
           (ageValue == null || ageValue < 3 || ageValue > 100) ? 7 : ageValue;
       final comfortValue = _resolveComfortItem();
+      // Simplified character creation - only send essential data
       final body = {
         'name': _nameController.text.trim(),
         'age': ageToSend,
         'gender': _isA, // Send Boy/Girl for story pronouns
-        'character_style': _characterStyle, // Character appearance/personality
-        'role': role,
         'character_type': _characterType,
-        'avatar': _avatar.toJson(),
 
-        // Superhero specific
+        // Only include superhero fields if selected
         if (_characterType == 'Superhero') ...{
-          'magic_type': _superpowerController.text.trim().isEmpty
-              ? 'Super Strength'
-              : _superpowerController.text.trim(),
-          'superhero_name': _superheroNameController.text.trim(),
-          'mission': _missionController.text.trim(),
+          'superhero_name': _superheroNameController.text.trim().isNotEmpty
+              ? _superheroNameController.text.trim()
+              : 'Super ${_nameController.text.trim()}',
+          'magic_type': _superpowerController.text.trim().isNotEmpty
+              ? _superpowerController.text.trim()
+              : 'Super Strength',
         },
 
-        // Appearance
-        'hair': _hairColor,
-        'eyes': _eyeColor,
-        'outfit': _outfitController.text.trim(),
+        // Basic appearance (optional)
+        if (_hairColor != 'Brown') 'hair': _hairColor,
+        if (_eyeColor != 'Brown') 'eyes': _eyeColor,
+        if (_outfitController.text.trim().isNotEmpty) 'outfit': _outfitController.text.trim(),
 
-        'personality_sliders': _buildPersonalitySliderPayload(),
-
-        // Interests
-        'likes': _combinedInterests(_selectedQuickLikes, _likesController),
-        'dislikes':
-            _combinedInterests(_selectedQuickDislikes, _dislikesController),
-
-        // Growth & Challenges
-        'fears': _combinedGrowthSelections(_selectedFearOptions, _fearsController),
-        'goals': _combinedGrowthSelections(
-            _selectedGoalChallengeOptions, _goalsChallengesController),
-        if (comfortValue != null) 'comfort_item': comfortValue,
+        // Only include likes/dislikes if specified
+        if (_selectedQuickLikes.isNotEmpty) 'likes': _selectedQuickLikes.toList(),
+        if (_selectedQuickDislikes.isNotEmpty) 'dislikes': _selectedQuickDislikes.toList(),
       };
 
       final resp = await http.post(
@@ -384,8 +374,6 @@ class _CharacterCreationScreenEnhancedState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildAvatarSection(),
-              const SizedBox(height: 20),
               _buildBasicInfoSection(),
               const SizedBox(height: 20),
               _buildCharacterTypeSection(),
@@ -394,13 +382,6 @@ class _CharacterCreationScreenEnhancedState
                 _buildSuperheroSection(),
                 const SizedBox(height: 20),
               ],
-              _buildAppearanceSection(),
-              const SizedBox(height: 20),
-              _buildPersonalitySection(),
-              const SizedBox(height: 20),
-              _buildInterestsSection(),
-              const SizedBox(height: 20),
-              _buildGrowthSection(),
               const SizedBox(height: 30),
               ElevatedButton.icon(
                 onPressed: _isLoading ? null : _createCharacter,
@@ -473,7 +454,46 @@ class _CharacterCreationScreenEnhancedState
             fillColor: Colors.grey[50],
             prefixIcon: const Icon(Icons.badge),
           ),
-          validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+          validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _ageController,
+          decoration: InputDecoration(
+            labelText: 'Age *',
+            hintText: '3-17',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            filled: true,
+            fillColor: Colors.grey[50],
+            prefixIcon: const Icon(Icons.cake),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) {
+            if (v == null || v.trim().isEmpty) return 'Age is required';
+            final age = int.tryParse(v.trim());
+            if (age == null) return 'Please enter a valid age';
+            if (age < 3 || age > 17) return 'Age must be between 3-17';
+            return null;
+          },
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          value: _isA,
+          decoration: InputDecoration(
+            labelText: 'Gender *',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            filled: true,
+            fillColor: Colors.grey[50],
+          ),
+          items: ['Boy', 'Girl', 'They']
+              .map((gender) => DropdownMenuItem(
+                    value: gender,
+                    child: Text(gender),
+                  ))
+              .toList(),
+          onChanged: (value) => setState(() => _isA = value!),
+          validator: (v) => v == null ? 'Please select gender' : null,
         ),
         const SizedBox(height: 12),
         // Character Avatar Preview

@@ -717,11 +717,11 @@ class _StoryScreenState extends State<StoryScreen> {
                     'Easy Readers: Learn to Read Mode',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: Text(_canUseLearningToReadMode
-                      ? '50-100 word rhyming story for early readers (ages 4-7)'
-                      : _selectedCharacter == null
-                          ? 'Select a character (ages 4-7) to enable this mode'
-                          : 'Only available when the character is ages 4-7.'),
+                   subtitle: Text(_canUseLearningToReadMode
+                       ? '50-100 word rhyming story for early readers (all ages)'
+                       : _selectedCharacter == null
+                           ? 'Select a character to enable this mode'
+                           : 'Select a character to enable this mode.'),
                   value: _learningToReadMode && _canUseLearningToReadMode,
                   activeColor: Colors.blue,
                   secondary: const Icon(Icons.menu_book, color: Colors.blue),
