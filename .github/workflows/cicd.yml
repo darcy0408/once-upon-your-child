@@ -80,7 +80,6 @@ jobs:
 
       - name: Run backend tests
         run: |
-          cd backend
           PYTHONPATH=/home/runner/work/story-weaver-app/story-weaver-app/backend pytest --cov=. --cov-report=xml --cov-report=term-missing
 
       - name: Upload coverage to Codecov
