@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  FLUTTER_VERSION: '3.22.x'
+  FLUTTER_VERSION: '3.27.x'
   PYTHON_VERSION: '3.11'
 
 jobs:
@@ -79,7 +79,9 @@ jobs:
           pip install pytest pytest-cov
 
       - name: Run backend tests
-        run: pytest --cov=. --cov-report=xml --cov-report=term-missing
+        run: |
+          cd backend
+          PYTHONPATH=/home/runner/work/story-weaver-app/story-weaver-app/backend pytest --cov=. --cov-report=xml --cov-report=term-missing
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
