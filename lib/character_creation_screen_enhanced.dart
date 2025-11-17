@@ -566,7 +566,7 @@ class _CharacterCreationScreenEnhancedState
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          initialValue: _characterStyle,
+          value: _characterStyle,
           decoration: InputDecoration(
             labelText: 'Character Style *',
             hintText: 'Choose appearance and personality',
