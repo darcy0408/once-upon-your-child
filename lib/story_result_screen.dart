@@ -146,6 +146,19 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   /// Track that a story was created and show celebration if features unlocked
   Future<void> _trackStoryCreation() async {
+    // Track story creation analytics
+    try {
+      await StoryAnalytics.trackStoryCreation(
+        theme: widget.theme ?? 'Adventure',
+        characterName: widget.characterName ?? 'Unknown',
+        characterAge: widget.characterAge ?? 7,
+        interactiveMode: widget.isInteractive ?? false,
+        rhymeMode: widget.isRhyming ?? false,
+      );
+    } catch (e) {
+      print('Failed to track story creation analytics: $e');
+    }
+
     final achievementService = widget.achievementsService;
     if (achievementService != null) {
       final achievementUnlocks = await achievementService.recordStoryCreated(
