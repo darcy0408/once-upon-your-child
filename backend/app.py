@@ -70,12 +70,7 @@ def create_app(config_name):
     jwt = JWTManager(app)
     app.config['JWT_SECRET_KEY'] = app.config.get('JWT_SECRET_KEY', 'dev-secret-key')
 
-    # Register blueprints
-    app.register_blueprint(stripe_routes.stripe_routes)
-    app.register_blueprint(subscription_routes.subscription_routes)
-    app.register_blueprint(webhook_handler.webhook_handler)
-    app.register_blueprint(user_routes.user_routes)
-    app.register_blueprint(achievement_routes.achievement_bp, url_prefix='/achievement')
+    # Blueprints removed - routes defined directly in app.py
 
     # API Routes
     print(f"=== Registering routes ===")
