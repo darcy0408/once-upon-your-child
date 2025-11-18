@@ -15,6 +15,7 @@ import 'services/avatar_service.dart';
 import 'achievement_celebration_dialog.dart';
 import 'config/environment.dart';
 import 'services/character_analytics.dart';
+import 'theme/app_theme.dart';
 
 class CharacterCreationScreenEnhanced extends StatefulWidget {
   const CharacterCreationScreenEnhanced({super.key});
@@ -517,7 +518,7 @@ class _CharacterCreationScreenEnhancedState
                         fontWeight: FontWeight.bold,
                       ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.sm),
                 // Use key to force rebuild when colors change
                 KeyedSubtree(
                   key: ValueKey('$_hairColor-$_eyeColor-${_nameController.text}'),
