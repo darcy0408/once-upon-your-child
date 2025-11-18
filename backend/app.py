@@ -4,7 +4,7 @@ import google.generativeai as genai
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-from backend.config import config, config_by_name
+
 from backend.database import db
 from backend.models.user import User
 from backend.models.character import Character
@@ -13,6 +13,7 @@ from backend.repositories import character_repository
 from backend.routes import stripe_routes, subscription_routes
 
 def create_app(config_name):
+    from backend.config import config_by_name
     print(f"=== Creating Flask app with config: {config_name} ===")
     app = Flask(__name__)
     app.config.from_object(config_by_name[config_name])
@@ -219,8 +220,8 @@ def create_app(config_name):
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
     return app
 
-app = create_app(os.getenv('FLASK_ENV') or 'production')
-
 if __name__ == "__main__":
+    key = os.getenv("FLASK_ENV", "dev")
+    config = config_by_name[key]
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
