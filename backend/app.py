@@ -6,7 +6,11 @@ from flask_cors import CORS
 
 from backend.config import config, config_by_name
 from backend.database import db
-# Models will be imported inside create_app to ensure proper registration order
+# Import models in dependency order (User first, then dependent models)
+from backend.models.user import User
+from backend.models.character import Character
+from backend.models.achievement import UserAchievement, AchievementStats
+
 from backend.services import character_service, story_service
 from backend.repositories import character_repository
 from backend.routes import stripe_routes, subscription_routes, webhook_handler, user_routes, achievement_routes

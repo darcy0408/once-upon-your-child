@@ -5,12 +5,17 @@ import os
 # Add project root to path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from backend.app import create_app
+# Import models to ensure they are registered
+from backend.models.user import User
+from backend.models.character import Character
+from backend.models.achievement import UserAchievement, AchievementStats
+
 from backend.database import db
 
 @pytest.fixture(scope='session')
 def app():
     """Instance of Main flask app"""
+    from backend.app import create_app
     app = create_app('testing')
     with app.app_context():
         db.create_all()
