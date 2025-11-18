@@ -22,6 +22,10 @@ class SubscriptionService {
   static final SubscriptionSyncService _syncService = SubscriptionSyncService();
   static StreamSubscription<SubscriptionStatus>? _syncSubscription;
 
+  Stream<SubscriptionStatus> get statusStream =>
+      _syncService.subscriptionStream;
+  SubscriptionStatus? get currentStatus => _syncService.currentStatus;
+
   static const String _kSubscriptionKey = 'user_subscription';
   static const String _kUsageStatsKey = 'usage_stats';
 
@@ -243,6 +247,11 @@ class SubscriptionService {
 
   Future<void> _handleRemoteStatus(SubscriptionStatus status) async {
     await setSubscription(status.toUserSubscription());
+  }
+
+  void dispose() {
+    _syncSubscription?.cancel();
+    _syncSubscription = null;
   }
 }
 
