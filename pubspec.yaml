@@ -74,10 +74,9 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # Assets for Story Weaver
+  # Assets for Story Weaver - minimize to essential only
   assets:
     - assets/images/
-    - assets/sounds/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

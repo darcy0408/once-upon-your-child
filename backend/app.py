@@ -15,6 +15,8 @@ from backend.services import character_service, story_service
 from backend.repositories import character_repository
 from backend.routes import stripe_routes, subscription_routes, webhook_handler, user_routes, achievement_routes
 from flask_jwt_extended import JWTManager
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 def create_app(config_name):
     print(f"=== Creating Flask app with config: {config_name} ===")
@@ -32,6 +34,14 @@ def create_app(config_name):
             "allow_headers": ["Content-Type", "Authorization"],
         }
     })
+
+    # Rate limiting setup
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri="memory://"
+    )
 
     # Logging setup
     logging.basicConfig(level=logging.INFO)
@@ -78,6 +88,7 @@ def create_app(config_name):
     def get_story_themes():
         return jsonify(["Adventure", "Friendship", "Magic", "Dragons", "Castles", "Unicorns", "Space", "Ocean"])
 
+    @limiter.limit("10 per minute")
     @app.route("/generate-story", methods=["POST"])
     def generate_story_endpoint():
         payload = request.get_json(silent=True) or {}
@@ -199,6 +210,7 @@ def create_app(config_name):
             "used_user_key": using_user_key
         }), 200
 
+    @limiter.limit("20 per hour")
     @app.route("/create-character", methods=["POST"])
     def create_character_endpoint():
         data = request.get_json(silent=True) or {}
@@ -264,6 +276,7 @@ def create_app(config_name):
     return app
 
 if __name__ == "__main__":
-    app = create_app(os.getenv('FLASK_ENV') or 'production')
+    env = os.getenv('FLASK_ENV') or 'production'
+    app = create_app(env)
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)

@@ -4,7 +4,7 @@ from datetime import datetime
 
 class Story(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False, index=True)
     title = db.Column(db.String(200))
     created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
 
