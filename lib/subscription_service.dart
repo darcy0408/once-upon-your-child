@@ -1,29 +1,37 @@
 // lib/subscription_service.dart
 
+import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'models/subscription_status.dart';
+import 'services/subscription_sync_service.dart';
 import 'subscription_models.dart';
 
 class SubscriptionService {
+  factory SubscriptionService() => _instance;
+
+  SubscriptionService._internal() {
+    _syncSubscription ??=
+        _syncService.statusStream.listen(_handleRemoteStatus);
+  }
+
+  static final SubscriptionService _instance = SubscriptionService._internal();
+  static final SubscriptionSyncService _syncService = SubscriptionSyncService();
+  static StreamSubscription<SubscriptionStatus>? _syncSubscription;
+
   static const String _kSubscriptionKey = 'user_subscription';
   static const String _kUsageStatsKey = 'usage_stats';
 
   /// Get current user subscription
   Future<UserSubscription> getSubscription() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_kSubscriptionKey);
-
-    if (raw != null && raw.isNotEmpty) {
-      try {
-        final json = jsonDecode(raw) as Map<String, dynamic>;
-        return UserSubscription.fromJson(json);
-      } catch (e) {
-        return UserSubscription();
-      }
+    final latest = _syncService.currentStatus;
+    if (latest != null) {
+      return latest.toUserSubscription();
     }
-
-    return UserSubscription();
+    return _getCachedSubscription();
   }
 
   /// Update user subscription
@@ -60,7 +68,7 @@ class SubscriptionService {
       try {
         final json = jsonDecode(raw) as Map<String, dynamic>;
         stats = UsageStats.fromJson(json);
-      } catch (e) {
+      } catch (_) {
         stats = UsageStats();
       }
     } else {
@@ -215,5 +223,25 @@ class SubscriptionService {
     await resetUsageStats();
 
     debugPrint('Isabela tester profile activated with all features!');
+  }
+
+  Future<UserSubscription> _getCachedSubscription() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kSubscriptionKey);
+
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final json = jsonDecode(raw) as Map<String, dynamic>;
+        return UserSubscription.fromJson(json);
+      } catch (_) {
+        debugPrint('Failed to decode cached subscription');
+      }
+    }
+
+    return UserSubscription();
+  }
+
+  Future<void> _handleRemoteStatus(SubscriptionStatus status) async {
+    await setSubscription(status.toUserSubscription());
   }
 }

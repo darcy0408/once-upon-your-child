@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'config/environment.dart';
@@ -7,6 +9,7 @@ import 'onboarding_screen.dart';
 import 'services/onboarding_service.dart';
 import 'services/firebase_analytics_service.dart';
 import 'services/performance_analytics.dart';
+import 'services/subscription_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,11 +33,13 @@ class StoryWeaverApp extends StatefulWidget {
 
 class _StoryWeaverAppState extends State<StoryWeaverApp> {
   final OnboardingService _onboardingService = const OnboardingService();
+  final SubscriptionService _subscriptionService = SubscriptionService();
   bool? _hasCompletedOnboarding;
 
   @override
   void initState() {
     super.initState();
+    unawaited(_subscriptionService.initialize());
     _loadOnboardingStatus();
   }
 

@@ -155,13 +155,13 @@ class _SubscribeButtonState extends State<SubscribeButton> {
                         size: 20,
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        'Subscribe to ${widget.tier.name}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                       Text(
+                         'Subscribe to ${widget.tier.name[0].toUpperCase()}${widget.tier.name.substring(1)}',
+                         style: const TextStyle(
+                           fontSize: 16,
+                           fontWeight: FontWeight.w600,
+                         ),
+                       ),
                     ],
                   ),
           ),

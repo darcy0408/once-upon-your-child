@@ -4,18 +4,13 @@ import google.generativeai as genai
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-# Use try/except for imports to support both package and direct execution
-try:
-    from .config import config, config_by_name
-    from .models import db
-    from .services import character_service, story_service
-    from .repositories import character_repository
-except ImportError:
-    # Fallback for direct execution (Railway, local dev)
-    from config import config, config_by_name
-    from models import db
-    from services import character_service, story_service
-    from repositories import character_repository
+from backend.config import config, config_by_name
+from backend.database import db
+from backend.models.user import User
+from backend.models.character import Character
+from backend.services import character_service, story_service
+from backend.repositories import character_repository
+from backend.routes import stripe_routes, subscription_routes
 
 def create_app(config_name):
     print(f"=== Creating Flask app with config: {config_name} ===")
@@ -56,6 +51,10 @@ def create_app(config_name):
     with app.app_context():
         db.create_all()
     print(f"=== Database tables created ===")
+
+    # Register blueprints
+    app.register_blueprint(stripe_routes.stripe_routes)
+    app.register_blueprint(subscription_routes.subscription_routes)
 
     # API Routes
     print(f"=== Registering routes ===")
