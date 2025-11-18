@@ -1,4 +1,4 @@
-from backend.database import db
+from ..database import db
 from datetime import datetime
 import uuid
 
@@ -7,7 +7,7 @@ class UserAchievement(db.Model):
     __tablename__ = 'user_achievements'
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
     achievement_type = db.Column(db.String(50), nullable=False)  # AchievementType enum name
     current_value = db.Column(db.Integer, default=0, nullable=False)
     target_value = db.Column(db.Integer, nullable=False)
@@ -41,7 +41,7 @@ class AchievementStats(db.Model):
     __tablename__ = 'achievement_stats'
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False, unique=True)
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False, unique=True)
 
     # Story tracking
     total_stories = db.Column(db.Integer, default=0, nullable=False)

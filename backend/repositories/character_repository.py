@@ -1,5 +1,5 @@
-from backend.database import db
-from backend.models.character import Character
+from ..database import db
+from ..models.character import Character
 
 def add_character(character: Character):
     db.session.add(character)

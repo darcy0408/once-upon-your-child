@@ -2,8 +2,8 @@
 import uuid
 import json
 
-from backend.repositories import character_repository
-from backend.models.character import Character
+from ..repositories import character_repository
+from ..models.character import Character
 
 PERSONALITY_SLIDER_DEFINITIONS = {
     "organization_planning": {"label": "Organization & Planning", "left_label": "Tidy Planner", "right_label": "Messy Freestyle"},

@@ -263,8 +263,7 @@ def create_app(config_name):
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
     return app
 
-app = create_app(os.getenv('FLASK_ENV') or 'production')
-
 if __name__ == "__main__":
+    app = create_app(os.getenv('FLASK_ENV') or 'production')
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)

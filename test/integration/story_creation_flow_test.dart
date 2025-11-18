@@ -37,17 +37,14 @@ void main() {
       expect(story, 'Mock backend story');
     });
 
-    test('sends multi-character payload when additional characters present', () async {
-      bool sawMultiCharacterEndpoint = false;
+    test('includes additional characters in payload when present', () async {
       final mockClient = MockClient((request) async {
-        if (request.url.path.contains('generate-multi-character-story')) {
-          sawMultiCharacterEndpoint = true;
-          final body = jsonDecode(request.body) as Map<String, dynamic>;
-          expect(body['main_character'], 'Kai');
-          expect(body['characters'], contains('Maya'));
-          return http.Response(jsonEncode({'story': 'Group adventure'}), 200);
-        }
-        return http.Response('{}', 500);
+        expect(request.url.path, contains('generate-story'));
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        final extras = body['additional_characters'] as List<dynamic>?;
+        expect(extras, isNotNull);
+        expect(extras, contains('Maya'));
+        return http.Response(jsonEncode({'story': 'Group adventure'}), 200);
       });
 
       final story = await ApiServiceManager.generateStory(
@@ -60,7 +57,6 @@ void main() {
       );
 
       expect(story, 'Group adventure');
-      expect(sawMultiCharacterEndpoint, isTrue);
     });
 
     test('retries failed backend calls before succeeding', () async {

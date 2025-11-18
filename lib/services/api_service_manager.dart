@@ -265,38 +265,20 @@ class ApiServiceManager {
     required Duration requestTimeout,
   }) async {
     final httpClient = client ?? _testClient ?? http.Client();
-    final hasAdditionalCharacters =
-        additionalCharacters != null && additionalCharacters.isNotEmpty;
-    final endpoint = hasAdditionalCharacters
-        ? 'generate-multi-character-story'
-        : 'generate-story';
-    final generateUri = Uri.parse('$_localBackendUrl/$endpoint');
+    final generateUri = Uri.parse('$_localBackendUrl/generate-story');
 
-    final body = hasAdditionalCharacters
-        ? {
-            'main_character': characterName,
-            'characters': additionalCharacters,
-            'theme': theme,
-            'companion': companion,
-            'character_age': age,
-            'character_details': characterDetails,
-            'rhyme_time_mode': rhymeTimeMode,
-            'learning_to_read_mode': learningToReadMode,
-            'current_feeling': currentFeeling,
-            'character_evolution': characterEvolution,
-          }
-        : {
-            'character': characterName,
-            'theme': theme,
-            'companion': companion,
-            'character_age': age,
-            'character_details': characterDetails,
-            'rhyme_time_mode': rhymeTimeMode,
-            'learning_to_read_mode': learningToReadMode,
-            'current_feeling': currentFeeling,
-            'character_evolution': characterEvolution,
-            'additional_characters': additionalCharacters,
-          };
+    final body = {
+      'character': characterName,
+      'theme': theme,
+      'companion': companion,
+      'character_age': age,
+      'character_details': characterDetails,
+      'rhyme_time_mode': rhymeTimeMode,
+      'learning_to_read_mode': learningToReadMode,
+      'current_feeling': currentFeeling,
+      'character_evolution': characterEvolution,
+      'additional_characters': additionalCharacters,
+    };
 
     try {
       // 1. Start the task

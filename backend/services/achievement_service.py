@@ -1,6 +1,6 @@
-from backend.database import db
-from backend.models.achievement import UserAchievement, AchievementStats
-from backend.models.user import User
+from ..database import db
+from ..models.achievement import UserAchievement, AchievementStats
+from ..models.user import User
 from datetime import datetime
 import logging
 

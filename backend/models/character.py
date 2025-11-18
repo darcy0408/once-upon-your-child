@@ -1,4 +1,4 @@
-from backend.database import db
+from ..database import db
 
 class Character(db.Model):
     """Stores character information, traits, relationships, and metadata."""

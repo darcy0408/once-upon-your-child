@@ -157,13 +157,7 @@ class _StoryScreenState extends State<StoryScreen> {
     }
   }
 
-  bool get _canUseLearningToReadMode {
-    final age = _selectedCharacter?.age;
-    if (age == null) return false;
-    return _isLearningToReadAge(age);
-  }
-
-  bool _isLearningToReadAge(int age) => true; // Available for all ages
+  bool get _canUseLearningToReadMode => _selectedCharacter != null;
 
   Future<void> _openAchievementsScreen() async {
     await Navigator.of(context).push(
@@ -193,8 +187,7 @@ class _StoryScreenState extends State<StoryScreen> {
           } else {
             _selectedCharacter = null;
           }
-          if (_selectedCharacter == null ||
-              !_isLearningToReadAge(_selectedCharacter!.age)) {
+          if (_selectedCharacter == null) {
             _learningToReadMode = false;
           }
         });
@@ -287,18 +280,19 @@ class _StoryScreenState extends State<StoryScreen> {
     return true;
   }
 
-  Future<void> _createStory() async {
+  Future<void> _createStory({bool guidedByFeeling = false}) async {
     final navContext = context;
     final allowed = await _validateStoryCreationPreconditions();
     if (!allowed) return;
 
-    // Learning to Read Mode is now available for all ages - removed restriction
-
-    // SHOW FEELINGS CHECK-IN DIALOG (skippable)
-    final CurrentFeeling? currentFeeling = await PreStoryFeelingsDialog.show(
-      context: navContext,
-      characterName: _selectedCharacter!.name,
-    );
+    CurrentFeeling? currentFeeling;
+    if (guidedByFeeling) {
+      currentFeeling = await PreStoryFeelingsDialog.show(
+        context: navContext,
+        characterName: _selectedCharacter!.name,
+      );
+      if (!mounted) return;
+    }
 
     // Get all selected characters
     final List<Character> allSelectedCharacters = [
@@ -732,22 +726,23 @@ class _StoryScreenState extends State<StoryScreen> {
                     'Easy Readers: Learn to Read Mode',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                   subtitle: Text(_canUseLearningToReadMode
-                       ? '50-100 word rhyming story for early readers (all ages)'
-                       : _selectedCharacter == null
-                           ? 'Select a character to enable this mode'
-                           : 'Select a character to enable this mode.'),
-                  value: _learningToReadMode && _canUseLearningToReadMode,
+                  subtitle: Text(_canUseLearningToReadMode
+                      ? '50-100 word rhyming story for early readers (all ages)'
+                      : 'Select a character to enable this mode'),
+                  value:
+                      _canUseLearningToReadMode ? _learningToReadMode : false,
                   activeColor: Colors.blue,
                   secondary: const Icon(Icons.menu_book, color: Colors.blue),
-                  onChanged: (value) {
-                    setState(() {
-                      _learningToReadMode = value;
-                      if (value) {
-                        _rhymeTimeMode = false;
-                      }
-                    });
-                  },
+                  onChanged: _canUseLearningToReadMode
+                      ? (value) {
+                          setState(() {
+                            _learningToReadMode = value;
+                            if (value) {
+                              _rhymeTimeMode = false;
+                            }
+                          });
+                        }
+                      : null,
                 ),
               ),
               const SizedBox(height: 12),
@@ -777,21 +772,41 @@ class _StoryScreenState extends State<StoryScreen> {
               _buildSectionCard(
                   'Choose a Companion (Optional)', _buildCompanionSelector()),
               const SizedBox(height: 40),
-              _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : ElevatedButton(
-                      onPressed: () async {
-                        await _onCreateButtonPressed();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        textStyle: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
+              if (_isLoading) ...[
+                const Center(child: CircularProgressIndicator()),
+              ] else ...[
+                ElevatedButton(
+                  onPressed: () async {
+                    await _onCreateButtonPressed();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  child: Text(_interactiveMode
+                      ? 'Start Interactive Story'
+                      : 'Quick Story'),
+                ),
+                if (!_interactiveMode) ...[
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: () async {
+                      await _createStory(guidedByFeeling: true);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: const BorderSide(color: Colors.deepPurple),
+                      foregroundColor: Colors.deepPurple,
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
-                      child: Text(_interactiveMode
-                          ? 'Start Interactive Story'
-                          : 'Create My Story!'),
                     ),
+                    child: const Text('Create Story About a Feeling'),
+                  ),
+                ],
+              ],
             ],
           ),
         ),
@@ -884,9 +899,6 @@ class _StoryScreenState extends State<StoryScreen> {
             onTap: () {
               setState(() {
                 _selectedCharacter = character;
-                if (!_isLearningToReadAge(character.age)) {
-                  _learningToReadMode = false;
-                }
               });
             },
             child: Container(

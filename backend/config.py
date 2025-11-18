@@ -18,6 +18,10 @@ class Config:
     ALLOWED_ORIGINS = [
         "http://localhost:8080",
         "http://127.0.0.1:8080",
+        "http://localhost:3000",  # Flutter web development
+        "http://127.0.0.1:3000",  # Flutter web development
+        "http://localhost:5000",  # Direct access
+        "http://127.0.0.1:5000",  # Direct access
         "https://story-weaver-app.netlify.app",
         "https://reliable-sherbet-2352c4.netlify.app",  # Production Netlify domain
         "https://*.netlify.app",  # Allow Netlify preview deploys
