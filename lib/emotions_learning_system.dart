@@ -414,6 +414,21 @@ class EmotionsLearningService {
 
     // Mark emotion as learned
     await _markEmotionLearned(checkIn.emotionId);
+
+    // Track analytics
+    try {
+      final emotion = await getEmotionById(checkIn.emotionId);
+      if (emotion != null) {
+        await TherapeuticAnalytics.trackFeelingsCheckIn(
+          emotionName: emotion.name,
+          intensity: checkIn.intensity,
+          copingStrategies: checkIn.copingStrategies ?? [],
+        );
+      }
+    } catch (e) {
+      // Analytics failure shouldn't break check-in
+      print('Failed to track feelings check-in analytics: $e');
+    }
   }
 
   /// Get all check-ins
