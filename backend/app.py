@@ -13,7 +13,7 @@ from backend.models.achievement import UserAchievement, AchievementStats
 
 from backend.services import character_service, story_service
 from backend.repositories import character_repository
-from backend.routes import stripe_routes, subscription_routes, webhook_handler, user_routes, achievement_routes
+# Route imports removed - routes defined directly in app.py
 from flask_jwt_extended import JWTManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address

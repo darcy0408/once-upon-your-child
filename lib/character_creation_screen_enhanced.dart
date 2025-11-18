@@ -16,7 +16,6 @@ import 'services/performance_analytics.dart';
 import 'achievement_celebration_dialog.dart';
 import 'config/environment.dart';
 import 'services/character_analytics.dart';
-import 'services/performance_analytics.dart';
 import 'theme/app_theme.dart';
 
 class CharacterCreationScreenEnhanced extends StatefulWidget {

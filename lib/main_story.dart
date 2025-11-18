@@ -27,10 +27,10 @@ import 'coloring_book_library_screen.dart';
 import 'emotions_screen.dart';
 import 'customizable_avatar_widget.dart';
 import 'avatar_models.dart';
-import 'settings_screen.dart';
+import 'settings_screen.dart' deferred as settings_screen;
 import 'services/api_service_manager.dart';
 import 'services/progression_service.dart';
-import 'achievements_screen.dart';
+import 'achievements_screen.dart' deferred as achievements_screen;
 import 'models/achievement.dart';
 import 'services/achievement_service.dart';
 import 'pre_story_feelings_dialog.dart';
@@ -160,8 +160,10 @@ class _StoryScreenState extends State<StoryScreen> {
   bool get _canUseLearningToReadMode => _selectedCharacter != null;
 
   Future<void> _openAchievementsScreen() async {
+    // Lazy load achievements screen
+    await achievements_screen.loadLibrary();
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+      MaterialPageRoute(builder: (_) => const achievements_screen.AchievementsScreen()),
     );
     await _loadAchievementSummary();
   }
@@ -620,10 +622,13 @@ class _StoryScreenState extends State<StoryScreen> {
           IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              );
+            onPressed: () async {
+              await settings_screen.loadLibrary();
+              if (mounted) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const settings_screen.SettingsScreen()),
+                );
+              }
             },
           ),
         ],
