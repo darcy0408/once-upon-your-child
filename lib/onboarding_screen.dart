@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'theme/app_theme.dart';
 import 'services/onboarding_analytics.dart';
-import 'privacy_policy_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onFinished;
@@ -238,6 +237,7 @@ abstract class _OnboardingPageContent {
   }) {
     return [
       _WelcomePage(primary: primary, accent: accent),
+      _UserProfileSetupPage(primary: primary, accent: accent),
       _CharacterDemoPage(
         primary: primary,
         accent: accent,
@@ -249,6 +249,8 @@ abstract class _OnboardingPageContent {
         onPreview: onPreviewStoryDemo,
       ),
       _FeaturesPage(primary: primary, accent: accent),
+      _SubscriptionIntroPage(primary: primary, accent: accent),
+      _AchievementsIntroPage(primary: primary, accent: accent),
       _SafetyPage(primary: primary, accent: accent),
       _GettingStartedPage(primary: primary, accent: accent),
     ];
@@ -298,6 +300,115 @@ class _WelcomePage extends _OnboardingPageContent {
             _FeaturePill(text: 'Therapeutic stories'),
             _FeaturePill(text: 'Character growth'),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+class _UserProfileSetupPage extends _OnboardingPageContent {
+  final Color primary;
+  final Color accent;
+
+  const _UserProfileSetupPage({required this.primary, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.person_add,
+          size: 48,
+          color: primary,
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Tell us about yourself',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Help us personalize your experience',
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(color: primary),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'This information helps us create better stories and recommendations for your family.',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: accent.withOpacity(0.08),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'What brings you to Story Weaver?',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: const [
+                  _GoalChip(text: 'Emotional support'),
+                  _GoalChip(text: 'Learning empathy'),
+                  _GoalChip(text: 'Family bonding'),
+                  _GoalChip(text: 'Therapeutic tool'),
+                  _GoalChip(text: 'Fun stories'),
+                  _GoalChip(text: 'Other'),
+                ],
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Child\'s age range:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: const [
+                  _AgeChip(text: '3-5 years'),
+                  _AgeChip(text: '6-8 years'),
+                  _AgeChip(text: '9-12 years'),
+                  _AgeChip(text: '13+ years'),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.blue.shade50,
+            border: Border.all(color: Colors.blue.shade200),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info, color: Colors.blue.shade700),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Your information is stored locally and never shared. You can update preferences anytime in Settings.',
+                  style: TextStyle(
+                    color: Colors.blue.shade700,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -512,6 +623,254 @@ class _FeaturesPage extends _OnboardingPageContent {
                 ),
               ],
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SubscriptionIntroPage extends _OnboardingPageContent {
+  final Color primary;
+  final Color accent;
+
+  const _SubscriptionIntroPage({required this.primary, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.star,
+          size: 48,
+          color: primary,
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Unlock Premium Features',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Get the most out of Story Weaver',
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(color: primary),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Colors.amber.shade50,
+            border: Border.all(color: Colors.amber.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.free_breakfast, color: Colors.amber.shade700),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Free Plan',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber.shade700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '• 10 stories per month\n• 2 characters\n• Basic features\n• Community support',
+                style: TextStyle(height: 1.4),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Colors.purple.shade50,
+            border: Border.all(color: Colors.purple.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.workspace_premium, color: Colors.purple.shade700),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Premium Plan - \$7.99/month',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.purple.shade700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '• 100 stories per month\n• 5 characters\n• Advanced customization\n• Priority support\n• Export stories\n• Ad-free experience',
+                style: TextStyle(height: 1.4),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Colors.blue.shade50,
+            border: Border.all(color: Colors.blue.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.family_restroom, color: Colors.blue.shade700),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Family Plan - \$14.99/month',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '• Unlimited stories\n• 10 characters\n• Family sharing\n• All Premium features\n• Multiple user profiles',
+                style: TextStyle(height: 1.4),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.green.shade50,
+            border: Border.all(color: Colors.green.shade200),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info, color: Colors.green.shade700),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'You can upgrade anytime from Settings. Free plan is perfect for trying Story Weaver!',
+                  style: TextStyle(
+                    color: Colors.green.shade700,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AchievementsIntroPage extends _OnboardingPageContent {
+  final Color primary;
+  final Color accent;
+
+  const _AchievementsIntroPage({required this.primary, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.emoji_events,
+          size: 48,
+          color: primary,
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Earn Achievements',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Celebrate your storytelling journey',
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(color: primary),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Unlock badges and celebrate milestones as you create stories and explore emotions together.',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 24),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: const [
+            _AchievementCard(
+              icon: Icons.auto_stories,
+              title: 'Storyteller',
+              description: 'Create your first story',
+              color: Colors.blue,
+            ),
+            _AchievementCard(
+              icon: Icons.favorite,
+              title: 'Emotion Explorer',
+              description: 'Use 5 different feelings',
+              color: Colors.red,
+            ),
+            _AchievementCard(
+              icon: Icons.people,
+              title: 'Character Creator',
+              description: 'Build 3 unique characters',
+              color: Colors.green,
+            ),
+            _AchievementCard(
+              icon: Icons.celebration,
+              title: 'Family Time',
+              description: 'Complete 10 stories together',
+              color: Colors.orange,
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.pink.shade50,
+            border: Border.all(color: Colors.pink.shade200),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.celebration, color: Colors.pink.shade700),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Achievements make learning fun! Check your progress in the Achievements section.',
+                  style: TextStyle(
+                    color: Colors.pink.shade700,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -780,6 +1139,96 @@ class _StepTile extends StatelessWidget {
                 Text(description),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GoalChip extends StatelessWidget {
+  final String text;
+
+  const _GoalChip({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return FilterChip(
+      label: Text(text),
+      selected: false, // For now, just display - could be made interactive later
+      onSelected: (_) {},
+      backgroundColor: Colors.white,
+      selectedColor: AppColors.primary.withOpacity(0.1),
+      checkmarkColor: AppColors.primary,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: Colors.grey),
+      ),
+    );
+  }
+}
+
+class _AgeChip extends StatelessWidget {
+  final String text;
+
+  const _AgeChip({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      label: Text(text),
+      selected: false, // For now, just display - could be made interactive later
+      onSelected: (_) {},
+      backgroundColor: Colors.white,
+      selectedColor: AppColors.primary.withValues(alpha: 0.1),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: Colors.grey),
+      ),
+    );
+  }
+}
+
+class _AchievementCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+  final Color color;
+
+  const _AchievementCard({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 160,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: color.withValues(alpha: 0.1),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 32),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            description,
+            style: const TextStyle(fontSize: 12),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
