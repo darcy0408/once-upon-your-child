@@ -11,13 +11,16 @@ class StoryGenerationService:
             raise ValueError("GEMINI_API_KEY not set")
 
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-pro-latest')
+        self.model = genai.GenerativeModel('gemini-1.5-pro')
 
     def generate_story(self, prompt: str) -> str:
         """Generate story from prompt"""
         try:
             response = self.model.generate_content(prompt)
-            return getattr(response, 'text', '')
+            if response and hasattr(response, 'text'):
+                return response.text
+            else:
+                return "Sorry, I couldn't generate a story right now. Please try again."
         except Exception as e:
             logger.error(f"Story generation failed: {e}", exc_info=True)
-            raise
+            return "Sorry, there was an error generating your story. Please try again."
