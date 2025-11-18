@@ -15,6 +15,7 @@ class User(db.Model):
     subscription_status = db.Column(db.String(50), default='active', nullable=False)
     current_period_end = db.Column(db.DateTime)
     cancel_at_period_end = db.Column(db.Boolean, default=False)
+    stripe_customer_id = db.Column(db.String(255))
 
     # Relationships
     characters = db.relationship('Character', backref='user', lazy=True)
@@ -36,4 +37,5 @@ class User(db.Model):
             'subscription_status': self.subscription_status,
             'current_period_end': self.current_period_end.isoformat() if self.current_period_end else None,
             'cancel_at_period_end': self.cancel_at_period_end,
+            'stripe_customer_id': self.stripe_customer_id,
         }

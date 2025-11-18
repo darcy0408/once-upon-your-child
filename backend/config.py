@@ -18,7 +18,7 @@ class Config:
     ALLOWED_ORIGINS = [
         "http://localhost:8080",
         "http://127.0.0.1:8080",
-        "https.story-weaver-app.netlify.app",
+        "https://story-weaver-app.netlify.app",
         "https://reliable-sherbet-2352c4.netlify.app",  # Production Netlify domain
         "https://*.netlify.app",  # Allow Netlify preview deploys
     ]
@@ -29,12 +29,6 @@ class DevelopmentConfig(Config):
     basedir = os.path.abspath(os.path.dirname(__file__))
     SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(basedir, 'characters.db')}"
 
-class TestingConfig(Config):
-    """Testing configuration."""
-    TESTING = True
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(basedir, 'test.db')}"
-
 class ProductionConfig(Config):
     """Production configuration."""
     DEBUG = False
@@ -42,9 +36,8 @@ class ProductionConfig(Config):
 
 config_by_name = dict(
     dev=DevelopmentConfig,
-    prod=ProductionConfig,
-    testing=TestingConfig
+    prod=ProductionConfig
 )
 
-key = os.environ.get("FLASK_ENV", "dev")
+key = os.environ.get("FLASK_ENV", "prod")
 config = config_by_name[key]
