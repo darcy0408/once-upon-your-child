@@ -38,7 +38,7 @@ The project is in active development with deployment preparation underway.
 
 ### Bug Fixes
 - 🔨 Bottom overflow on certain screen sizes (see BottomOverflow.png)
-- 🔨 Character creation failures (see CreateCharFail.png)
+- ✅ Character creation failures - FIXED (consolidated conflicting Character models)
 
 ### Deployment
 - 🔨 Production deployment to Netlify
