@@ -163,7 +163,7 @@ class _StoryScreenState extends State<StoryScreen> {
     // Lazy load achievements screen
     await achievements_screen.loadLibrary();
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const achievements_screen.AchievementsScreen()),
+      MaterialPageRoute(builder: (_) => achievements_screen.AchievementsScreen()),
     );
     await _loadAchievementSummary();
   }
@@ -626,7 +626,7 @@ class _StoryScreenState extends State<StoryScreen> {
               await settings_screen.loadLibrary();
               if (mounted) {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const settings_screen.SettingsScreen()),
+                  MaterialPageRoute(builder: (_) => settings_screen.SettingsScreen()),
                 );
               }
             },

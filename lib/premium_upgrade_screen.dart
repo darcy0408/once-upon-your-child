@@ -171,13 +171,16 @@ class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const settings_screen.SettingsScreen(),
-                              ),
-                            );
+                          onPressed: () async {
+                            await settings_screen.loadLibrary();
+                            if (context.mounted) {
+                              Navigator.push(
+                                context,
+                                 MaterialPageRoute(
+                                   builder: (_) => settings_screen.SettingsScreen(),
+                                 ),
+                              );
+                            }
                           },
                           icon: const Icon(Icons.settings),
                           label: const Text(
