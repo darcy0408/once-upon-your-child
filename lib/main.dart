@@ -18,6 +18,8 @@ Future<void> main() async {
   // Initialize Firebase with graceful degradation
   try {
     await FirebaseAnalyticsService.initialize();
+    // Track app start after Firebase initialization
+    await PerformanceAnalytics.trackAppStart();
   } catch (e) {
     // Firebase initialization failed - continue without analytics
   }
