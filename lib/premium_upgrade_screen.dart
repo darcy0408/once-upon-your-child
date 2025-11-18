@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'subscription_models.dart';
 import 'subscription_service.dart';
-import 'settings_screen.dart';
+import 'settings_screen.dart' deferred as settings_screen;
 
 class PremiumUpgradeScreen extends StatefulWidget {
   final String? requiredFeature;
@@ -175,7 +175,7 @@ class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const SettingsScreen(),
+                                builder: (_) => const settings_screen.SettingsScreen(),
                               ),
                             );
                           },
