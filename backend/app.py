@@ -10,7 +10,7 @@ from backend.models.user import User
 from backend.models.character import Character
 from backend.services import character_service, story_service
 from backend.repositories import character_repository
-from backend.routes import stripe_routes, subscription_routes, webhook_handler
+from backend.routes import stripe_routes, subscription_routes, webhook_handler, user_routes
 
 def create_app(config_name):
     print(f"=== Creating Flask app with config: {config_name} ===")
@@ -56,6 +56,7 @@ def create_app(config_name):
     app.register_blueprint(stripe_routes.stripe_routes)
     app.register_blueprint(subscription_routes.subscription_routes)
     app.register_blueprint(webhook_handler.webhook_handler)
+    app.register_blueprint(user_routes.user_routes)
 
     # API Routes
     print(f"=== Registering routes ===")
