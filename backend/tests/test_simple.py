@@ -4,7 +4,7 @@ print(sys.path)
 import pytest
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from app import create_app
+from backend.app import create_app
 
 def test_app_creation():
     app = create_app('dev')

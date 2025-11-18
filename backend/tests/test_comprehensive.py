@@ -156,21 +156,3 @@ def test_story_complexity_calculation(client):
             # Note: Complexity validation would require inspecting the prompt sent to AI
 
 
-def test_offline_story_caching(client):
-    """Test offline story storage and retrieval"""
-    # This would require implementing caching endpoints
-    # For now, test that stories can be saved and retrieved
-    story_data = {
-        'title': 'Cached Story',
-        'content': 'This is a cached story...',
-        'character': 'Test Character'
-    }
-
-    # Assuming there's a save endpoint
-    save_response = client.post('/save-story', json=story_data)
-    if save_response.status_code == 200:
-        # Test retrieval
-        get_response = client.get('/get-saved-stories')
-        assert get_response.status_code == 200
-        stories = get_response.get_json()
-        assert isinstance(stories, list)

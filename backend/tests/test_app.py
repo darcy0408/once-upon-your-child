@@ -15,7 +15,7 @@ def test_health_endpoint(client):
 
 def test_get_story_themes(client):
     """Test getting story themes"""
-    response = client.get('/story/get-story-themes') # Updated route
+    response = client.get('/get-story-themes')
     assert response.status_code == 200
     data = json.loads(response.data)
     assert isinstance(data, list)
@@ -32,7 +32,7 @@ def test_create_character(client):
         'traits': ['Brave', 'Curious']
     }
 
-    response = client.post('/character/create-character', # Updated route
+    response = client.post('/create-character',
                           data=json.dumps(character_data),
                           content_type='application/json')
     assert response.status_code == 201
@@ -44,7 +44,7 @@ def test_create_character(client):
 
 def test_get_characters_empty(client):
     """Test getting characters when none exist"""
-    response = client.get('/character/get-characters') # Updated route
+    response = client.get('/get-characters')
     assert response.status_code == 200
     data = json.loads(response.data)
     assert isinstance(data, list)
@@ -52,7 +52,7 @@ def test_get_characters_empty(client):
 
 def test_generate_story_missing_data(client):
     """Test story generation with missing data"""
-    response = client.post('/story/generate-story', # Updated route
+    response = client.post('/generate-story',
                           data=json.dumps({}),
                           content_type='application/json')
     # Should still work with defaults
@@ -64,7 +64,7 @@ def test_generate_story_missing_data(client):
 
 def test_setup_test_account(client):
     """Test setting up test account"""
-    response = client.post('/auth/setup-test-account') # Updated route
+    response = client.post('/setup-test-account')
     assert response.status_code in [200, 201]
     data = json.loads(response.data)
     assert 'status' in data

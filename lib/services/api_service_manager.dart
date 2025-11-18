@@ -201,20 +201,38 @@ class ApiServiceManager {
     required Duration requestTimeout,
   }) async {
     final httpClient = client ?? _testClient ?? http.Client();
-    final generateUri = Uri.parse('$_localBackendUrl/generate-story');
+    final hasAdditionalCharacters =
+        additionalCharacters != null && additionalCharacters.isNotEmpty;
+    final endpoint = hasAdditionalCharacters
+        ? 'generate-multi-character-story'
+        : 'generate-story';
+    final generateUri = Uri.parse('$_localBackendUrl/$endpoint');
 
-    final body = {
-      'character': characterName,
-      'theme': theme,
-      'companion': companion,
-      'character_age': age,
-      'character_details': characterDetails,
-      'rhyme_time_mode': rhymeTimeMode,
-      'learning_to_read_mode': learningToReadMode,
-      'current_feeling': currentFeeling,
-      'character_evolution': characterEvolution,
-      'additional_characters': additionalCharacters,
-    };
+    final body = hasAdditionalCharacters
+        ? {
+            'main_character': characterName,
+            'characters': additionalCharacters,
+            'theme': theme,
+            'companion': companion,
+            'character_age': age,
+            'character_details': characterDetails,
+            'rhyme_time_mode': rhymeTimeMode,
+            'learning_to_read_mode': learningToReadMode,
+            'current_feeling': currentFeeling,
+            'character_evolution': characterEvolution,
+          }
+        : {
+            'character': characterName,
+            'theme': theme,
+            'companion': companion,
+            'character_age': age,
+            'character_details': characterDetails,
+            'rhyme_time_mode': rhymeTimeMode,
+            'learning_to_read_mode': learningToReadMode,
+            'current_feeling': currentFeeling,
+            'character_evolution': characterEvolution,
+            'additional_characters': additionalCharacters,
+          };
 
     try {
       // 1. Start the task
@@ -224,6 +242,18 @@ class ApiServiceManager {
         body: jsonEncode(body),
       ).timeout(requestTimeout);
 
+      if (generateResponse.statusCode == 200) {
+        final payload = jsonDecode(generateResponse.body) as Map<String, dynamic>;
+        final story = payload['story'] ?? payload['story_text'];
+        if (story is String && story.isNotEmpty) {
+          return story;
+        }
+        throw HttpException(
+          'Backend returned 200 without story content',
+          uri: generateUri,
+        );
+      }
+
       if (generateResponse.statusCode != 202) {
         throw HttpException(
           'Failed to start story generation task: ${generateResponse.statusCode}',
@@ -231,7 +261,7 @@ class ApiServiceManager {
         );
       }
 
-      final generateData = jsonDecode(generateResponse.body);
+      final generateData = jsonDecode(generateResponse.body) as Map<String, dynamic>;
       final taskId = generateData['task_id'] as String;
 
       // 2. Poll for the result
