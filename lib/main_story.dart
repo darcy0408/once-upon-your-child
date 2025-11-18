@@ -287,10 +287,7 @@ class _StoryScreenState extends State<StoryScreen> {
 
     CurrentFeeling? currentFeeling;
     if (guidedByFeeling) {
-      currentFeeling = await PreStoryFeelingsDialog.show(
-        context: navContext,
-        characterName: _selectedCharacter!.name,
-      );
+      // Removed feelings check-in dialog as requested
       if (!mounted) return;
     }
 

@@ -40,6 +40,9 @@ class StoryResultScreen extends StatefulWidget {
   final String? storyId;
   final String? theme;
   final String? characterId;
+  final int? characterAge;
+  final bool? isInteractive;
+  final bool? isRhyming;
   final AchievementService? achievementsService;
   final DateTime? storyCreatedAt;
   final bool trackStoryCreation;
@@ -54,6 +57,9 @@ class StoryResultScreen extends StatefulWidget {
     this.storyId,
     this.theme,
     this.characterId,
+    this.characterAge,
+    this.isInteractive,
+    this.isRhyming,
     this.achievementsService,
     this.storyCreatedAt,
     this.trackStoryCreation = false,

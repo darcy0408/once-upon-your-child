@@ -3,6 +3,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'services/therapeutic_analytics.dart';
 
 /// Emotion categories for kids to learn
 enum EmotionCategory {
@@ -77,6 +78,7 @@ class EmotionCheckIn {
   final int intensity; // 1-5
   final String? whatHappened; // Optional context
   final String? whatHelped; // What they tried
+  final List<String> copingStrategies;
   final DateTime timestamp;
 
   EmotionCheckIn({
@@ -84,6 +86,7 @@ class EmotionCheckIn {
     required this.intensity,
     this.whatHappened,
     this.whatHelped,
+    this.copingStrategies = const [],
     required this.timestamp,
   });
 
@@ -92,6 +95,7 @@ class EmotionCheckIn {
         'intensity': intensity,
         'what_happened': whatHappened,
         'what_helped': whatHelped,
+        'coping_strategies': copingStrategies,
         'timestamp': timestamp.toIso8601String(),
       };
 
@@ -100,6 +104,10 @@ class EmotionCheckIn {
         intensity: json['intensity'],
         whatHappened: json['what_happened'],
         whatHelped: json['what_helped'],
+        copingStrategies: (json['coping_strategies'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            const [],
         timestamp: DateTime.parse(json['timestamp']),
       );
 }
