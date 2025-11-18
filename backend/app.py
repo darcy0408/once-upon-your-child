@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import os
 import logging
 import google.generativeai as genai
@@ -21,6 +22,28 @@ def create_app(config_name):
     print(f"=== Database initialized ===")
     
     # CORS setup
+=======
+from flask import Flask
+from flask_cors import CORS
+from .database import db
+from .config import config_by_name
+import os
+from datetime import datetime, timezone
+from flask import jsonify, send_from_directory
+from flask_swagger_ui import get_swaggerui_blueprint
+
+def create_app(config_name):
+    """
+    Creates and configures a Flask application.
+    """
+    print(f"Creating app with config: {config_name}")
+    app = Flask(__name__, instance_relative_config=True, static_folder='static')
+    app.config.from_object(config_by_name[config_name])
+
+    db.init_app(app)
+
+    # CORS configuration
+>>>>>>> merge-phase1-independent
     CORS(app, resources={
         r"/*": {
             "origins": app.config["ALLOWED_ORIGINS"],
@@ -30,6 +53,7 @@ def create_app(config_name):
     })
 
     # Logging setup
+<<<<<<< HEAD
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger("story_engine")
 
@@ -61,6 +85,35 @@ def create_app(config_name):
     # API Routes
     print(f"=== Registering routes ===")
     @app.route("/health", methods=["GET"])
+=======
+    if not app.debug:
+        if not os.path.exists('logs'):
+            os.mkdir('logs')
+        # ... (logging configuration)
+
+    # Swagger UI configuration
+    SWAGGER_URL = '/api/docs'  # URL for exposing Swagger UI (without trailing '/')
+    API_URL = '/static/swagger.json'  # Our API url
+
+    # Call factory function to create our blueprint
+    swaggerui_blueprint = get_swaggerui_blueprint(
+        SWAGGER_URL,
+        API_URL,
+        config={
+            'app_name': "Story Weaver App API"
+        }
+    )
+
+    app.register_blueprint(swaggerui_blueprint)
+
+    # Serve swagger.json
+    @app.route('/static/<path:path>')
+    def send_static(path):
+        return send_from_directory('static', path)
+
+    # Health check endpoint
+    @app.route('/health', methods=['GET'])
+>>>>>>> merge-phase1-independent
     def health():
         print(f"=== Health endpoint called ===")
         return {"status": "ok", "model": GEMINI_MODEL, "has_api_key": bool(api_key)}, 200
@@ -196,6 +249,7 @@ def create_app(config_name):
         response, status_code = character_service.create_character(data)
         return jsonify(response), status_code
 
+<<<<<<< HEAD
     @app.route("/characters/<string:char_id>", methods=["PATCH", "PUT"])
     def update_character_endpoint(char_id: str):
         data = request.get_json(silent=True) or {}
@@ -219,6 +273,18 @@ def create_app(config_name):
     
     print(f"=== All routes registered successfully ===")
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
+=======
+    from .routes.auth_routes import auth_bp
+    from .routes.character_routes import character_bp
+    from .routes.progression_routes import progression_bp
+    from .routes.story_routes import story_bp
+
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(character_bp, url_prefix='/character')
+    app.register_blueprint(progression_bp, url_prefix='/progression')
+    app.register_blueprint(story_bp, url_prefix='/story')
+
+>>>>>>> merge-phase1-independent
     return app
 
 app = create_app(os.getenv('FLASK_ENV') or 'production')
