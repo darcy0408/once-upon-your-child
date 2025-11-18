@@ -35,7 +35,7 @@ Flask-Limiter==3.5.0
 
 # API Documentation
 apispec==6.3.0
-apispec-webframeworks==0.10.0
+apispec-webframeworks==1.2.0
 marshmallow==3.20.1
 
 # Load Testing
