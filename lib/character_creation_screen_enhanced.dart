@@ -331,6 +331,13 @@ class _CharacterCreationScreenEnhancedState
         );
       }
     } catch (e) {
+      // Track error analytics
+      try {
+        await PerformanceAnalytics.trackError('character_creation', e.toString());
+      } catch (_) {
+        // Don't let analytics failure break error handling
+      }
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
