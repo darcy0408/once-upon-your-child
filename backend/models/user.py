@@ -19,6 +19,7 @@ class User(db.Model):
 
     # Relationships
     characters = db.relationship('Character', backref='user', lazy=True)
+    stories = db.relationship('Story', backref='user', lazy=True)
     progression_data = db.Column(db.JSON, default=dict)
 
     def set_password(self, password):

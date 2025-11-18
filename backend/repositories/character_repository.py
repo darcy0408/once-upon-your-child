@@ -1,7 +1,5 @@
-try:
-    from ..models import db, Character
-except ImportError:
-    from models import db, Character
+from backend.database import db
+from backend.models.character import Character
 
 def add_character(character: Character):
     db.session.add(character)

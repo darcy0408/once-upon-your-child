@@ -35,6 +35,7 @@ import 'models/achievement.dart';
 import 'services/achievement_service.dart';
 import 'pre_story_feelings_dialog.dart';
 import 'config/environment.dart';
+import 'screens/subscription_success_screen.dart';
 
 
 class StoryCreatorApp extends StatelessWidget {
@@ -55,6 +56,9 @@ class StoryCreatorApp extends StatelessWidget {
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: const StoryScreen(),
+      routes: {
+        '/subscription-success': (context) => const SubscriptionSuccessScreen(),
+      },
       debugShowCheckedModeBanner: false,
     );
   }
@@ -110,6 +114,17 @@ class _StoryScreenState extends State<StoryScreen> {
     _loadCharacters();
     _loadSubscriptionInfo();
     _loadAchievementSummary();
+    _handleInitialRoute();
+  }
+
+  void _handleInitialRoute() {
+    // Handle Stripe success URL routing
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final uri = Uri.base;
+      if (uri.fragment == '/subscription-success') {
+        Navigator.of(context).pushNamed('/subscription-success');
+      }
+    });
   }
 
   Future<void> _loadSubscriptionInfo() async {

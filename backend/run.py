@@ -1,13 +1,10 @@
-"""Wrapper to run app.py with proper UTF-8 encoding"""
-import sys
+"""Simple Flask run script for development"""
 import os
+from app import create_app
 
-# Set UTF-8 encoding for stdout and stderr
-sys.stdout.reconfigure(encoding='utf-8')
-sys.stderr.reconfigure(encoding='utf-8')
+env = os.environ.get('FLASK_ENV', 'dev')
+app = create_app(env)
 
-# Change to the backend directory
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
-# Import and run the app
-import app
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)

@@ -2,12 +2,8 @@
 import uuid
 import json
 
-try:
-    from ..repositories import character_repository
-    from ..models import Character
-except ImportError:
-    import repositories.character_repository as character_repository
-    from models import Character
+from backend.repositories import character_repository
+from backend.models.character import Character
 
 PERSONALITY_SLIDER_DEFINITIONS = {
     "organization_planning": {"label": "Organization & Planning", "left_label": "Tidy Planner", "right_label": "Messy Freestyle"},

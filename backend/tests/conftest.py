@@ -1,25 +1,24 @@
-
 import pytest
 import sys
 import os
 
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add project root to path for imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from app import create_app
-from models import db
+from backend.app import create_app
+from backend.database import db
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def app():
     """Instance of Main flask app"""
-    return create_app('dev')
+    app = create_app('testing')
+    with app.app_context():
+        db.create_all()
+        yield app
+        db.drop_all()
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def client(app):
     """Flask test client"""
     with app.test_client() as client:
-        with app.app_context():
-            db.create_all()
         yield client
-        with app.app_context():
-            db.drop_all()

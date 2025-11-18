@@ -1,13 +1,7 @@
 import os
-from datetime import datetime, timedelta
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify
 import stripe
 from dotenv import load_dotenv
-
-try:
-    from ..models.user import User
-except ImportError:
-    from models.user import User
 
 load_dotenv()
 
