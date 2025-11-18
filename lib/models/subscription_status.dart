@@ -1,32 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:story_weaver_app/subscription_models.dart' show SubscriptionTier;
 
-enum SubscriptionTier {
-  free,
-  premium,
-  family;
-
-  String get displayName {
-    switch (this) {
-      case SubscriptionTier.premium:
-        return 'Premium';
-      case SubscriptionTier.family:
-        return 'Family';
-      default:
-        return 'Free';
-    }
-  }
-
-  Color get color {
-    switch (this) {
-      case SubscriptionTier.premium:
-        return Colors.purple;
-      case SubscriptionTier.family:
-        return Colors.amber;
-      default:
-        return Colors.grey;
-    }
-  }
-}
+export 'package:story_weaver_app/subscription_models.dart' show SubscriptionTier;
 
 class SubscriptionStatus {
   final String userId;

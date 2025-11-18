@@ -103,5 +103,5 @@ def test_cancel_subscription_success(client, setup_data):
 
     # Verify in DB
     with client.application.app_context():
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         assert user.cancel_at_period_end is True

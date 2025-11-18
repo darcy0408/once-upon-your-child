@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'models/subscription_status.dart';
+import 'models/subscription_status.dart' show SubscriptionStatus;
 import 'services/subscription_sync_service.dart';
 import 'subscription_models.dart';
 
@@ -15,7 +15,7 @@ class SubscriptionService {
 
   SubscriptionService._internal() {
     _syncSubscription ??=
-        _syncService.statusStream.listen(_handleRemoteStatus);
+        _syncService.subscriptionStream.listen(_handleRemoteStatus);
   }
 
   static final SubscriptionService _instance = SubscriptionService._internal();
@@ -243,5 +243,17 @@ class SubscriptionService {
 
   Future<void> _handleRemoteStatus(SubscriptionStatus status) async {
     await setSubscription(status.toUserSubscription());
+  }
+}
+
+extension SubscriptionStatusMapper on SubscriptionStatus {
+  UserSubscription toUserSubscription() {
+    return UserSubscription(
+      tier: tier,
+      subscriptionStartDate: DateTime.now(),
+      subscriptionEndDate: currentPeriodEnd,
+      isActive: isActive,
+      subscriptionId: userId,
+    );
   }
 }

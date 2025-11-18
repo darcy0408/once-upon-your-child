@@ -52,7 +52,7 @@ def _format_timestamp(value):
 @user_routes.route('/api/user/<user_id>/usage-stats', methods=['GET'])
 def get_usage_stats(user_id):
     try:
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
@@ -88,7 +88,7 @@ def get_usage_stats(user_id):
 @user_routes.route('/api/user/<user_id>/cancel-subscription', methods=['POST'])
 def cancel_subscription(user_id):
     try:
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
