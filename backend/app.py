@@ -6,11 +6,11 @@ from flask_cors import CORS
 
 from backend.config import config, config_by_name
 from backend.database import db
-from backend.models.user import User
-from backend.models.character import Character
+# Models will be imported inside create_app to ensure proper registration order
 from backend.services import character_service, story_service
 from backend.repositories import character_repository
-from backend.routes import stripe_routes, subscription_routes, webhook_handler, user_routes
+from backend.routes import stripe_routes, subscription_routes, webhook_handler, user_routes, achievement_routes
+from flask_jwt_extended import JWTManager
 
 def create_app(config_name):
     print(f"=== Creating Flask app with config: {config_name} ===")
@@ -52,11 +52,16 @@ def create_app(config_name):
         db.create_all()
     print(f"=== Database tables created ===")
 
+    # JWT setup
+    jwt = JWTManager(app)
+    app.config['JWT_SECRET_KEY'] = app.config.get('JWT_SECRET_KEY', 'dev-secret-key')
+
     # Register blueprints
     app.register_blueprint(stripe_routes.stripe_routes)
     app.register_blueprint(subscription_routes.subscription_routes)
     app.register_blueprint(webhook_handler.webhook_handler)
     app.register_blueprint(user_routes.user_routes)
+    app.register_blueprint(achievement_routes.achievement_bp, url_prefix='/achievement')
 
     # API Routes
     print(f"=== Registering routes ===")
@@ -234,6 +239,21 @@ def create_app(config_name):
             status = "created"
         db.session.commit()
         return jsonify({"status": status, "username": username}), 201 if status == "created" else 200
+
+    @app.route("/auth/login", methods=["POST"])
+    def login():
+        """Simple login endpoint for testing."""
+        data = request.get_json(silent=True) or {}
+        username = data.get('username')
+        password = data.get('password')
+
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
+            from flask_jwt_extended import create_access_token
+            token = create_access_token(identity=user.id)
+            return jsonify({'token': token}), 200
+
+        return jsonify({'message': 'Invalid credentials'}), 401
 
     print(f"=== All routes registered successfully ===")
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")

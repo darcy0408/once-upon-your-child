@@ -6,7 +6,8 @@ import 'dart:async';
 
 // A mock subscription service for testing
 class MockSubscriptionService extends SubscriptionService {
-  final _controller = StreamController<SubscriptionStatus>();
+  final _controller =
+      StreamController<SubscriptionStatus>.broadcast(sync: true);
 
   @override
   Stream<SubscriptionStatus> get statusStream => _controller.stream;

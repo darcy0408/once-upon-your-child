@@ -60,7 +60,7 @@ class StoryComplexityService {
       maxWords: 600,
       vocabularyLevel: 'Advanced vocabulary',
       exampleWords: ['extraordinary', 'challenging', 'responsibility', 'determination', 'perspective', 'significant'],
-      complexityDescription: 'Complex themes with advanced vocabulary and character development',
+      complexityDescription: 'Complex themes about identity with advanced vocabulary and character development',
     ),
     AgeGroup(
       name: 'Late Teen/Adult',

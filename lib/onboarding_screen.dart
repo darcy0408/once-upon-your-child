@@ -822,7 +822,7 @@ class _AchievementsIntroPage extends _OnboardingPageContent {
         Wrap(
           spacing: 12,
           runSpacing: 12,
-          children: const [
+          children: [
             _AchievementCard(
               icon: Icons.auto_stories,
               title: 'Storyteller',

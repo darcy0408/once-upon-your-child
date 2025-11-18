@@ -19,6 +19,48 @@ class ApiServiceManager {
   static String get _localBackendUrl => Environment.backendUrl;
   static http.Client? _testClient;
 
+  Future<Map<String, dynamic>> post(
+    String path,
+    Map<String, dynamic> payload, {
+    Duration timeout = const Duration(seconds: 15),
+    http.Client? client,
+  }) async {
+    final httpClient = client ?? _testClient ?? http.Client();
+    final uri = Uri.parse('$_localBackendUrl$path');
+    try {
+      final response = await httpClient
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(payload),
+          )
+          .timeout(timeout);
+      return _decodeJsonResponse(response, uri);
+    } finally {
+      if (client == null && _testClient == null) {
+        httpClient.close();
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>> get(
+    String path, {
+    Duration timeout = const Duration(seconds: 15),
+    http.Client? client,
+  }) async {
+    final httpClient = client ?? _testClient ?? http.Client();
+    final uri = Uri.parse('$_localBackendUrl$path');
+    try {
+      final response =
+          await httpClient.get(uri).timeout(timeout);
+      return _decodeJsonResponse(response, uri);
+    } finally {
+      if (client == null && _testClient == null) {
+        httpClient.close();
+      }
+    }
+  }
+
   /// Allow tests to inject a mock HTTP client.
   static void setTestClient(http.Client? client) {
     _testClient = client;
@@ -99,6 +141,28 @@ class ApiServiceManager {
         requestTimeout: requestTimeout,
       );
     }
+  }
+
+  Map<String, dynamic> _decodeJsonResponse(
+    http.Response response,
+    Uri uri,
+  ) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw HttpException(
+        'Request failed (${response.statusCode})',
+        uri: uri,
+      );
+    }
+
+    if (response.body.isEmpty) {
+      return const {};
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+    return {'data': decoded};
   }
 
   /// Generate story using direct Gemini API

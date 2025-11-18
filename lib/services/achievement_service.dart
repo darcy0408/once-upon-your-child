@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../emotions_learning_system.dart';
 import '../models/achievement.dart';
+import 'api_service_manager.dart';
 
 class AchievementState {
   AchievementState({
@@ -74,8 +75,10 @@ class AchievementService {
   factory AchievementService() => _instance;
 
   static const String _prefsKey = 'achievement_state_v1';
+  static const String _lastSyncKey = 'achievement_last_sync';
 
   final EmotionsLearningService _emotionsService = EmotionsLearningService();
+  final ApiServiceManager _apiService = ApiServiceManager();
 
   static const Map<String, String> _themeAliases = {
     'adventure': 'Adventure',
@@ -157,6 +160,12 @@ class AchievementService {
         await _updateRecords(state, now: now, persist: false);
 
     await _saveState(state);
+
+    // Try to sync with backend in background
+    if (await shouldSync()) {
+      await syncWithBackend();
+    }
+
     return newUnlocks;
   }
 
@@ -167,11 +176,22 @@ class AchievementService {
     final newUnlocks =
         await _updateRecords(state, persist: false);
     await _saveState(state);
+
+    // Try to sync with backend in background
+    if (await shouldSync()) {
+      await syncWithBackend();
+    }
+
     return newUnlocks;
   }
 
   /// Retrieve all achievements with current progress.
   Future<List<AchievementProgress>> getAllAchievements() async {
+    // Try to load from backend first if needed
+    if (await shouldSync()) {
+      await loadFromBackend();
+    }
+
     final state = await _loadState();
     await _updateRecords(state, persist: true);
 
@@ -369,4 +389,125 @@ class AchievementService {
     // Return capitalised version for unknown themes so we can still track stats.
     return trimmed[0].toUpperCase() + trimmed.substring(1);
   }
+
+  /// Sync achievement data with the backend
+  Future<bool> syncWithBackend() async {
+    try {
+      final state = await _loadState();
+
+      // Prepare data for sync
+      final syncData = {
+        'achievements': state.records.values.map((record) => {
+          'type': record.type.name,
+          'current_value': record.currentValue,
+          'target_value': record.targetValue,
+          'is_unlocked': record.isUnlocked,
+          'unlocked_at': record.unlockedAt?.toIso8601String(),
+          'is_new': record.isNew,
+        }).toList(),
+        'stats': {
+          'total_stories': state.totalStories,
+          'theme_counts': state.themeCounts,
+          'characters_created': state.charactersCreated,
+          'current_streak': state.currentStreak,
+          'longest_streak': state.longestStreak,
+          'last_story_date_iso': state.lastStoryDateIso,
+          'earned_early_bird': state.earnedEarlyBird,
+          'earned_night_owl': state.earnedNightOwl,
+          'unique_emotions_logged': await _emotionsService.getLearnedEmotions().then((emotions) => emotions.toSet().length),
+        }
+      };
+
+      final response = await _apiService.post('/achievement/sync', syncData);
+
+      if (response['status'] == 'success') {
+        // Update last sync timestamp
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_lastSyncKey, DateTime.now().toIso8601String());
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      print('Failed to sync achievements with backend: $e');
+      return false;
+    }
+  }
+
+  /// Load achievement data from backend and merge with local data
+  Future<bool> loadFromBackend() async {
+    try {
+      final response = await _apiService.get('/achievement/data');
+
+      if (response.containsKey('achievements') && response.containsKey('stats')) {
+        final achievements = response['achievements'] as List<dynamic>;
+        final stats = response['stats'] as Map<String, dynamic>;
+
+        // Load current local state
+        final localState = await _loadState();
+
+        // Merge backend data with local data (backend takes precedence for most things)
+        for (final achievement in achievements) {
+          final type = AchievementType.values.byName(achievement['type']);
+          final record = AchievementRecord(
+            type: type,
+            isUnlocked: achievement['is_unlocked'] ?? false,
+            unlockedAt: achievement['unlocked_at'] != null
+                ? DateTime.tryParse(achievement['unlocked_at'])
+                : null,
+            currentValue: achievement['current_value'] ?? 0,
+            targetValue: achievement['target_value'] ?? AchievementCatalog.getByType(type).targetValue,
+            isNew: achievement['is_new'] ?? false,
+          );
+          localState.records[type] = record;
+        }
+
+        // Update stats
+        localState.totalStories = stats['total_stories'] ?? localState.totalStories;
+        localState.themeCounts = Map<String, int>.from(stats['theme_counts'] ?? localState.themeCounts);
+        localState.charactersCreated = stats['characters_created'] ?? localState.charactersCreated;
+        localState.currentStreak = stats['current_streak'] ?? localState.currentStreak;
+        localState.longestStreak = stats['longest_streak'] ?? localState.longestStreak;
+        localState.lastStoryDateIso = stats['last_story_date_iso'] ?? localState.lastStoryDateIso;
+        localState.earnedEarlyBird = stats['earned_early_bird'] ?? localState.earnedEarlyBird;
+        localState.earnedNightOwl = stats['earned_night_owl'] ?? localState.earnedNightOwl;
+
+        // Save merged state
+        await _saveState(localState);
+
+        // Update last sync timestamp
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_lastSyncKey, DateTime.now().toIso8601String());
+
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      print('Failed to load achievements from backend: $e');
+      return false;
+    }
+  }
+
+  /// Check if data needs to be synced (based on time since last sync)
+  Future<bool> shouldSync() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastSyncStr = prefs.getString(_lastSyncKey);
+
+      if (lastSyncStr == null) return true;
+
+      final lastSync = DateTime.tryParse(lastSyncStr);
+      if (lastSync == null) return true;
+
+      // Sync if more than 1 hour has passed
+      final now = DateTime.now();
+      final diff = now.difference(lastSync);
+      return diff.inHours >= 1;
+    } catch (e) {
+      return true; // If there's an error, better to sync
+    }
+  }
+
+
 }
