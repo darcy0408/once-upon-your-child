@@ -2,6 +2,7 @@
 // Comprehensive avatar widget with proper facial features and emotion support
 
 import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
 import 'models.dart';
 import 'emotion_models.dart';
 import 'dart:math' as math;
