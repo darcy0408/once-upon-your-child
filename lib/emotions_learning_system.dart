@@ -427,11 +427,12 @@ class EmotionsLearningService {
     try {
       final emotion = await getEmotionById(checkIn.emotionId);
       if (emotion != null) {
-        await TherapeuticAnalytics.trackFeelingsCheckIn(
-          emotionName: emotion.name,
-          intensity: checkIn.intensity,
-          copingStrategies: checkIn.copingStrategies ?? [],
-        );
+        // TODO: Add TherapeuticAnalytics tracking
+        // await TherapeuticAnalytics.trackFeelingsCheckIn(
+        //   emotionName: checkIn.selectedFeeling.tertiary,
+        //   intensity: checkIn.intensity,
+        //   copingStrategies: checkIn.copingStrategies ?? [],
+        // );
       }
     } catch (e) {
       // Analytics failure shouldn't break check-in
