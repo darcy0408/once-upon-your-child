@@ -1,6 +1,7 @@
 // lib/illustration_settings_dialog.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'story_illustration_service.dart';
 
 import 'therapeutic_focus_options.dart';
@@ -58,9 +59,11 @@ class _IllustrationSettingsDialogState
                 value: style,
                 groupValue: _selectedStyle,
                 onChanged: (value) {
-                  setState(() {
-                    _selectedStyle = value!;
-                  });
+                  if (mounted) {
+                    setState(() {
+                      _currentValue = value;
+                    });
+                  }
                 },
                 activeColor: Colors.deepPurple,
               );

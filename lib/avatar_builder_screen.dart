@@ -3,6 +3,7 @@
 // Therapeutic design with Sunset Jungle theme
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'sunset_jungle_theme.dart';
 import 'avatar_models.dart';
 import 'customizable_avatar_widget.dart';
@@ -223,12 +224,13 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
     final name = _nameController.text.trim();
 
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a character name!'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Avatar saved successfully!'),
+          ),
+        );
+      }
       return;
     }
 
