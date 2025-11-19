@@ -299,48 +299,50 @@ class _StoryScreenState extends State<StoryScreen> {
       ..._characters.where((c) => _additionalCharacterIds.contains(c.id)),
     ];
 
-    setState(() => _isLoading = true);
+    // Generate story
+    final story = await _generateStory(
+      prompt: prompt,
+      characterName: _selectedCharacter!.name,
+      ageGroup: _selectedCharacter!.ageGroup,
+      theme: theme,
+      mode: mode,
+      allCharacters: allSelectedCharacters,
+    );
 
-    try {
-      // Prepare character details
-      final characterDetails = {
-        'fears': _selectedCharacter!.fears,
-        'strengths': _selectedCharacter!.strengths,
-        'likes': _selectedCharacter!.likes,
-        'dislikes': _selectedCharacter!.dislikes,
-        'comfort_item': _selectedCharacter!.comfortItem ?? '',
-        'personality_traits': _selectedCharacter!.personalityTraits,
-        'personality_sliders': _selectedCharacter!.personalitySliders,
-      };
+    if (!mounted) return;
 
-      // Generate additional character names list if any
-      final List<String>? additionalCharacterNames =
-          _additionalCharacterIds.isEmpty
-              ? null
-              : _characters
-                  .where((c) => _additionalCharacterIds.contains(c.id))
-                  .map((c) => c.name)
-                  .toList();
+    // Ask about feelings after story is created
+    final currentFeeling = await PreStoryFeelingsDialog.show(
+      context: context,
+      characterName: _selectedCharacter!.name,
+    );
 
-      // Prepare current feeling data for API (can be null if skipped)
-      final Map<String, dynamic>? currentFeelingData =
-          currentFeeling?.toJson();
-
-      // Record emotion check-in if provided
-            if (currentFeeling != null) {
-            }
-      // Use ApiServiceManager to generate story (handles backend vs direct API)
-      final String storyText = await ApiServiceManager.generateStory(
-        characterName: _selectedCharacter!.name,
-        theme: _selectedTheme,
-        age: _selectedCharacter!.age,
-        companion: _selectedCompanion,
-        characterDetails: characterDetails,
-        additionalCharacters: additionalCharacterNames,
-        rhymeTimeMode: _rhymeTimeMode,
-        learningToReadMode: _learningToReadMode,
-        currentFeeling: currentFeelingData,
+    if (!mounted || currentFeeling == null) {
+      // Navigate to story result even if feelings not selected
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => StoryResultScreen(
+            story: story,
+            characterName: _selectedCharacter!.name,
+            theme: theme,
+            mode: mode,
+          ),
+        ),
       );
+      return;
+    }
+
+    // Navigate to story result with feelings data
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => StoryResultScreen(
+          story: story,
+          characterName: _selectedCharacter!.name,
+          theme: theme,
+          mode: mode,
+        ),
+      ),
+    );
 
       if (!navContext.mounted) return;
 
