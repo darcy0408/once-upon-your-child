@@ -19,7 +19,8 @@ Future<void> main() async {
   try {
     await FirebaseAnalyticsService.initialize();
     // Track app start after Firebase initialization
-    await PerformanceAnalytics.trackAppStart();
+    // TODO: Add PerformanceAnalytics tracking
+    // await PerformanceAnalytics.trackAppStart();
   } catch (e) {
     // Firebase initialization failed - continue without analytics
   }
