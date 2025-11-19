@@ -13,8 +13,7 @@ import 'models.dart';
 import 'multi_character_screen.dart';
 import 'character_creation_screen_enhanced.dart';
 import 'character_edit_screen_enhanced.dart';
-import 'subscription_service.dart';
-import 'subscription_models.dart';
+import 'services/subscription_service.dart';
 import 'paywall_dialog.dart';
 import 'premium_upgrade_screen.dart';
 import 'interactive_story_screen.dart';
@@ -330,7 +329,9 @@ class _StoryScreenState extends State<StoryScreen> {
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => StoryResultScreen(
+            title: '${_selectedCharacter!.name}\'s $theme Adventure',
             storyText: story,
+            wisdomGem: 'Every adventure makes us stronger and wiser.',
             characterName: _selectedCharacter!.name,
             theme: theme,
             isInteractive: _interactiveMode,
@@ -345,7 +346,9 @@ class _StoryScreenState extends State<StoryScreen> {
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => StoryResultScreen(
+            title: '${_selectedCharacter!.name}\'s $theme Adventure',
             storyText: story,
+            wisdomGem: 'Every adventure makes us stronger and wiser.',
             characterName: _selectedCharacter!.name,
             theme: theme,
             isInteractive: _interactiveMode,
@@ -370,7 +373,7 @@ class _StoryScreenState extends State<StoryScreen> {
       // Save the story locally with all characters used
       final saved = SavedStory(
         title: title,
-        storyText: storyText,
+        storyText: story,
         theme: _selectedTheme,
         characters: allSelectedCharacters,
         createdAt: storyTimestamp,
@@ -393,7 +396,7 @@ class _StoryScreenState extends State<StoryScreen> {
         MaterialPageRoute(
           builder: (_) => StoryResultScreen(
             title: title,
-            storyText: storyText,
+            storyText: story,
             wisdomGem: wisdomGem,
             characterName: _selectedCharacter?.name,
             storyId: saved.id,
