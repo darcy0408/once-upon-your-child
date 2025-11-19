@@ -4,16 +4,20 @@ import google.generativeai as genai
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-from backend.config import config, config_by_name
-from backend.database import db
+from .config import config, config_by_name
+from .database import db
 # Import models in dependency order (User first, then dependent models)
-from backend.models.user import User
-from backend.models.character import Character
-from backend.models.achievement import UserAchievement, AchievementStats
+from .models.user import User
+from .models.character import Character
+from .models.achievement import UserAchievement, AchievementStats
 
-from backend.services import character_service, story_service
-from backend.repositories import character_repository
+# from .services import character_service, story_service
+# from .repositories import character_repository
+from .gemini_image_generator import GeminiImageGenerator
 # Route imports removed - routes defined directly in app.py
+
+# Global image generator instance
+image_generator = None
 from flask_jwt_extended import JWTManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -60,6 +64,13 @@ def create_app(config_name):
     except Exception as e:
         logger.exception("Failed to initialize Gemini model: %s", e)
         model = None
+
+    # Initialize image generator
+    try:
+        image_generator = GeminiImageGenerator() if api_key else None
+    except Exception as e:
+        logger.exception("Failed to initialize image generator: %s", e)
+        image_generator = None
 
     print(f"=== Creating database tables ===")
     with app.app_context():
@@ -204,6 +215,78 @@ def create_app(config_name):
             "wisdom_gem": wisdom_gem,
             "used_user_key": using_user_key
         }), 200
+
+    @limiter.limit("10 per hour")
+    @app.route("/generate-illustrations", methods=["POST"])
+    def generate_illustrations_endpoint():
+        """Generate illustrations for a story scene"""
+        if image_generator is None:
+            return jsonify({"error": "Image generation not available"}), 503
+
+        try:
+            data = request.get_json(silent=True) or {}
+            scene_description = data.get("scene_description", "")
+            character_name = data.get("character_name", "the hero")
+            style = data.get("style", "children's book illustration")
+            num_images = min(int(data.get("num_images", 1)), 4)  # Max 4 images
+            age = int(data.get("age", 7))
+            therapeutic_focus = data.get("therapeutic_focus")
+
+            if not scene_description.strip():
+                return jsonify({"error": "Scene description is required"}), 400
+
+            illustrations = image_generator.generate_story_illustration(
+                scene_description=scene_description,
+                character_name=character_name,
+                style=style,
+                num_images=num_images,
+                age=age,
+                therapeutic_focus=therapeutic_focus
+            )
+
+            return jsonify({
+                "illustrations": illustrations,
+                "count": len(illustrations)
+            }), 200
+
+        except Exception as e:
+            print(f"!!! Illustration generation failed: {e}")
+            return jsonify({"error": "Failed to generate illustrations"}), 500
+
+    @limiter.limit("10 per hour")
+    @app.route("/generate-coloring-pages", methods=["POST"])
+    def generate_coloring_pages_endpoint():
+        """Generate coloring book pages for a story scene"""
+        if image_generator is None:
+            return jsonify({"error": "Image generation not available"}), 503
+
+        try:
+            data = request.get_json(silent=True) or {}
+            scene_description = data.get("scene_description", "")
+            character_name = data.get("character_name", "the hero")
+            num_images = min(int(data.get("num_images", 1)), 3)  # Max 3 pages
+            age = int(data.get("age", 7))
+            therapeutic_focus = data.get("therapeutic_focus")
+
+            if not scene_description.strip():
+                return jsonify({"error": "Scene description is required"}), 400
+
+            coloring_pages = image_generator.generate_coloring_page(
+                scene_description=scene_description,
+                character_name=character_name,
+                num_images=num_images,
+                age=age,
+                therapeutic_focus=therapeutic_focus
+            )
+
+            return jsonify({
+                "coloring_pages": coloring_pages,
+                "count": len(coloring_pages)
+            }), 200
+
+        except Exception as e:
+            print(f"!!! Coloring page generation failed: {e}")
+            return jsonify({"error": "Failed to generate coloring pages"}), 500
 
     @limiter.limit("20 per hour")
     @app.route("/create-character", methods=["POST"])

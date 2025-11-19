@@ -69,29 +69,28 @@ def create_character(data: dict):
     except (ValueError, TypeError):
         return {"error": "'age' must be an integer"}, 400
 
-    new_character = Character(
-        id=str(uuid.uuid4()),
-        name=str(data.get("name")).strip(),
-        age=age,
-        gender=data.get("gender"),
-        role=data.get("role"),
-        magic_type=data.get("magic_type"),
-        challenge=data.get("challenge"),
-        character_type=data.get("character_type", "Everyday Kid"),
-        superhero_name=data.get("superhero_name"),
-        mission=data.get("mission"),
-        hair=data.get("hair"),
-        eyes=data.get("eyes"),
-        outfit=data.get("outfit"),
-        personality_traits=_as_list(data.get("traits", [])),
-        personality_sliders=_sanitize_personality_sliders(data.get("personality_sliders")),
-        likes=_as_list(data.get("likes", [])),
-        dislikes=_as_list(data.get("dislikes", [])),
-        fears=_as_list(data.get("fears", [])),
-        strengths=_as_list(data.get("strengths", [])),
-        goals=_as_list(data.get("goals", [])),
-        comfort_item=data.get("comfort_item"),
-    )
+    new_character = Character()
+    new_character.id = str(uuid.uuid4())
+    new_character.name = str(data.get("name")).strip()
+    new_character.age = age
+    new_character.gender = data.get("gender")
+    new_character.role = data.get("role")
+    new_character.magic_type = data.get("magic_type")
+    new_character.challenge = data.get("challenge")
+    new_character.character_type = data.get("character_type", "Everyday Kid")
+    new_character.superhero_name = data.get("superhero_name")
+    new_character.mission = data.get("mission")
+    new_character.hair = data.get("hair")
+    new_character.eyes = data.get("eyes")
+    new_character.outfit = data.get("outfit")
+    new_character.personality_traits = _as_list(data.get("traits", []))
+    new_character.personality_sliders = _sanitize_personality_sliders(data.get("personality_sliders"))
+    new_character.likes = _as_list(data.get("likes", []))
+    new_character.dislikes = _as_list(data.get("dislikes", []))
+    new_character.fears = _as_list(data.get("fears", []))
+    new_character.strengths = _as_list(data.get("strengths", []))
+    new_character.goals = _as_list(data.get("goals", []))
+    new_character.comfort_item = data.get("comfort_item")
     character_repository.add_character(new_character)
     return new_character.to_dict(), 201
 

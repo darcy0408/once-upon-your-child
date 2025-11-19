@@ -28,7 +28,7 @@ class GeminiImageGenerator:
         style: str = "children's book illustration",
         num_images: int = 1,
         age: int = 7,
-        therapeutic_focus: str = None
+        therapeutic_focus: str | None = None
     ) -> list:
         """
         Generate therapeutic story illustrations using Gemini Imagen
@@ -123,7 +123,7 @@ Style: {style}, optimized for {age_descriptor}
         character_name: str = "the hero",
         num_images: int = 1,
         age: int = 7,
-        therapeutic_focus: str = None
+        therapeutic_focus: str | None = None
     ) -> list:
         """
         Generate therapeutic coloring book pages with black and white line art

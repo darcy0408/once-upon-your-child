@@ -6,8 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'config/environment.dart';
 
 class StoryIllustration {
   final String id;
@@ -119,7 +118,7 @@ class StoryIllustrationService {
   // For production, store in secure environment variable
   StoryIllustrationService({this.openAiApiKey});
 
-  /// Generate illustrations for a story using DALL-E
+  /// Generate illustrations for a story using backend API
   Future<List<StoryIllustration>> generateIllustrations({
     required String storyText,
     required String storyTitle,
@@ -130,10 +129,6 @@ class StoryIllustrationService {
     int age = 7,
     String? therapeuticFocus,
   }) async {
-    if (openAiApiKey == null || openAiApiKey!.isEmpty) {
-      throw Exception('OpenAI API key not configured');
-    }
-
     // Split story into segments for illustration
     final segments = _identifyKeyScenes(storyText, numberOfImages);
     final illustrations = <StoryIllustration>[];
@@ -149,7 +144,14 @@ class StoryIllustrationService {
           therapeuticFocus: therapeuticFocus,
         );
 
-        final imageUrl = await _callDallE(prompt);
+        // Call backend API instead of OpenAI
+        final imageUrl = await _callBackendIllustrationAPI(
+          sceneDescription: segments[i],
+          characterName: characterName,
+          style: _styleToString(style),
+          age: age,
+          therapeuticFocus: therapeuticFocus,
+        );
 
         illustrations.add(StoryIllustration(
           id: '${DateTime.now().millisecondsSinceEpoch}_$i',
@@ -170,29 +172,51 @@ class StoryIllustrationService {
     return illustrations;
   }
 
-  /// Call DALL-E API to generate an image
-  Future<String> _callDallE(String prompt) async {
+  String _styleToString(IllustrationStyle style) {
+    return style.displayName.toLowerCase();
+  }
+
+  /// Call backend API to generate an illustration
+  Future<String> _callBackendIllustrationAPI({
+    required String sceneDescription,
+    required String characterName,
+    required String style,
+    required int age,
+    String? therapeuticFocus,
+  }) async {
     final response = await http.post(
-      Uri.parse('https://api.openai.com/v1/images/generations'),
+      Uri.parse('${Environment.backendUrl}/generate-illustrations'),
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer $openAiApiKey',
       },
       body: jsonEncode({
-        'model': 'dall-e-3',
-        'prompt': prompt,
-        'n': 1,
-        'size': '1024x1024',
-        'quality': 'standard',
+        'scene_description': sceneDescription,
+        'character_name': characterName,
+        'style': style,
+        'num_images': 1,
+        'age': age,
+        'therapeutic_focus': therapeuticFocus,
       }),
     );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return data['data'][0]['url'] as String;
+      final illustrations = data['illustrations'] as List;
+      if (illustrations.isNotEmpty) {
+        final illustration = illustrations[0];
+        // Check if it's base64 or URL
+        if (illustration['image_data'] != null) {
+          // Convert base64 to data URL
+          final base64Data = illustration['image_data'];
+          return 'data:image/png;base64,$base64Data';
+        } else if (illustration['image_url'] != null) {
+          return illustration['image_url'];
+        }
+      }
+      throw Exception('No image data in response');
     } else {
       throw Exception(
-          'DALL-E API error: ${response.statusCode} - ${response.body}');
+          'Backend API error: ${response.statusCode} - ${response.body}');
     }
   }
 

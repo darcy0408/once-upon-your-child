@@ -5,8 +5,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'character_appearance.dart';
+import 'config/environment.dart';
 
 /// Model for a coloring book page
 class ColoringPage {
@@ -74,20 +74,13 @@ class ColoringBookService {
     int age = 7,
     String? therapeuticFocus,
   }) async {
-    if (openAiApiKey == null || openAiApiKey!.isEmpty) {
-      throw Exception('OpenAI API key not configured');
-    }
-
-    // Generate line art prompt
-    final prompt = _generateLineArtPrompt(
-      scene: scene,
-      characterAppearance: characterAppearance,
+    // Call backend API to generate coloring page
+    final imageUrl = await _callBackendColoringAPI(
+      sceneDescription: scene,
+      characterName: characterAppearance?.characterName ?? 'the character',
       age: age,
       therapeuticFocus: therapeuticFocus,
     );
-
-    // Call DALL-E to generate line art
-    final imageUrl = await _callDallE(prompt);
 
     return ColoringPage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -135,29 +128,45 @@ Style: Clean line art, coloring book page, black outlines on white background
         .trim();
   }
 
-  /// Call DALL-E API to generate image
-  Future<String> _callDallE(String prompt) async {
+  /// Call backend API to generate coloring page
+  Future<String> _callBackendColoringAPI({
+    required String sceneDescription,
+    required String characterName,
+    required int age,
+    String? therapeuticFocus,
+  }) async {
     final response = await http.post(
-      Uri.parse('https://api.openai.com/v1/images/generations'),
+      Uri.parse('${Environment.backendUrl}/generate-coloring-pages'),
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer $openAiApiKey',
       },
       body: jsonEncode({
-        'model': 'dall-e-3',
-        'prompt': prompt,
-        'n': 1,
-        'size': '1024x1024',
-        'quality': 'standard',
+        'scene_description': sceneDescription,
+        'character_name': characterName,
+        'num_images': 1,
+        'age': age,
+        'therapeutic_focus': therapeuticFocus,
       }),
     );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return data['data'][0]['url'] as String;
+      final coloringPages = data['coloring_pages'] as List;
+      if (coloringPages.isNotEmpty) {
+        final page = coloringPages[0];
+        // Check if it's base64 or URL
+        if (page['image_data'] != null) {
+          // Convert base64 to data URL
+          final base64Data = page['image_data'];
+          return 'data:image/png;base64,$base64Data';
+        } else if (page['image_url'] != null) {
+          return page['image_url'];
+        }
+      }
+      throw Exception('No image data in response');
     } else {
       throw Exception(
-          'DALL-E API error: ${response.statusCode} - ${response.body}');
+          'Backend API error: ${response.statusCode} - ${response.body}');
     }
   }
 
