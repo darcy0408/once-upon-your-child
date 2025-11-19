@@ -1,29 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../models/usage_stats.dart';
 import 'user_identity_service.dart';
-
-class UsageStats {
-  final int storiesCreated;
-  final int storiesRemaining;
-  final bool isSubscribed;
-  final String tier;
-
-  UsageStats({
-    required this.storiesCreated,
-    required this.storiesRemaining,
-    required this.isSubscribed,
-    required this.tier,
-  });
-
-  factory UsageStats.fromJson(Map<String, dynamic> json) {
-    return UsageStats(
-      storiesCreated: json['stories_created'] ?? 0,
-      storiesRemaining: json['stories_remaining'] ?? 3,
-      isSubscribed: json['is_subscribed'] ?? false,
-      tier: json['tier'] ?? 'free',
-    );
-  }
-}
 
 class UsageStatsService {
   static const String _baseUrl = 'http://127.0.0.1:5000';
@@ -41,20 +19,24 @@ class UsageStatsService {
       } else {
         // Return default stats if backend fails
         return UsageStats(
-          storiesCreated: 0,
-          storiesRemaining: 3,
-          isSubscribed: false,
-          tier: 'free',
+          storiesThisMonth: 0,
+          storiesLimit: 3,
+          charactersCount: 0,
+          charactersLimit: 5,
+          periodStart: DateTime.now(),
+          periodEnd: DateTime.now().add(const Duration(days: 30)),
         );
       }
     } catch (e) {
       print('Error fetching usage stats: $e');
       // Return default stats on error
       return UsageStats(
-        storiesCreated: 0,
-        storiesRemaining: 3,
-        isSubscribed: false,
-        tier: 'free',
+        storiesThisMonth: 0,
+        storiesLimit: 3,
+        charactersCount: 0,
+        charactersLimit: 5,
+        periodStart: DateTime.now(),
+        periodEnd: DateTime.now().add(const Duration(days: 30)),
       );
     }
   }
@@ -62,7 +44,7 @@ class UsageStatsService {
   Future<bool> canCreateStory() async {
     try {
       final stats = await getUsageStats();
-      return stats.isSubscribed || stats.storiesRemaining > 0;
+      return stats.storiesThisMonth < stats.storiesLimit;
     } catch (e) {
       print('Error checking if can create story: $e');
       // Default to true to not block users
