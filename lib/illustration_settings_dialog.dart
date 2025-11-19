@@ -58,13 +58,13 @@ class _IllustrationSettingsDialogState
                 title: Text(style.displayName),
                 value: style,
                 groupValue: _selectedStyle,
-                onChanged: (value) {
-                  if (mounted) {
-                    setState(() {
-                      _currentValue = value;
-                    });
-                  }
-                },
+                 onChanged: (value) {
+                   if (mounted) {
+                     setState(() {
+                       _selectedStyle = value!;
+                     });
+                   }
+                 },
                 activeColor: Colors.deepPurple,
               );
             }),
