@@ -1,5 +1,7 @@
 // lib/offline_story_cache.dart
 
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
