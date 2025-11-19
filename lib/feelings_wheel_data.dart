@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 
+
 class Feeling {
   final String id;
   final String name;
@@ -286,7 +287,7 @@ class FeelingSupportLibrary {
 
 // Feelings Wheel Data
 class FeelingsWheelData {
-  static const List<CoreEmotion> coreEmotions = [
+  static final List<CoreEmotion> coreEmotions = [
     CoreEmotion(
       id: 'happy',
       name: 'Happy',

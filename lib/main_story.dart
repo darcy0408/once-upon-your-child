@@ -300,11 +300,18 @@ class _StoryScreenState extends State<StoryScreen> {
       ..._characters.where((c) => _additionalCharacterIds.contains(c.id)),
     ];
 
-    // Generate story
-    final story = await _generateStory(
+    // Define story parameters
+    final theme = _selectedTheme;
+    final mode = _interactiveMode ? 'interactive' : 'standard';
+    final prompt = 'Create a story for ${_selectedCharacter!.name} with theme $theme';
+    final ageGroup = StoryComplexityService.getAgeGroup(_selectedCharacter!.age).name;
+
+    try {
+      // Generate story
+      final story = await _generateStory(
       prompt: prompt,
       characterName: _selectedCharacter!.name,
-      ageGroup: _selectedCharacter!.ageGroup,
+      ageGroup: ageGroup,
       theme: theme,
       mode: mode,
       allCharacters: allSelectedCharacters,
@@ -323,27 +330,29 @@ class _StoryScreenState extends State<StoryScreen> {
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => StoryResultScreen(
-            story: story,
+            storyText: story,
             characterName: _selectedCharacter!.name,
             theme: theme,
-            mode: mode,
+            isInteractive: _interactiveMode,
+            isRhyming: _rhymeTimeMode,
           ),
         ),
       );
       return;
     }
 
-    // Navigate to story result with feelings data
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => StoryResultScreen(
-          story: story,
-          characterName: _selectedCharacter!.name,
-          theme: theme,
-          mode: mode,
+      // Navigate to story result with feelings data
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => StoryResultScreen(
+            storyText: story,
+            characterName: _selectedCharacter!.name,
+            theme: theme,
+            isInteractive: _interactiveMode,
+            isRhyming: _rhymeTimeMode,
+          ),
         ),
-      ),
-    );
+      );
 
       if (!navContext.mounted) return;
 
@@ -446,6 +455,33 @@ class _StoryScreenState extends State<StoryScreen> {
     } else {
       await _createStory();
     }
+  }
+
+  Future<String> _generateStory({
+    required String prompt,
+    required String characterName,
+    required String ageGroup,
+    required String theme,
+    required String mode,
+    required List<Character> allCharacters,
+  }) async {
+    return await ApiServiceManager.generateStory(
+      characterName: characterName,
+      theme: theme,
+      age: _selectedCharacter!.age,
+      companion: _selectedCharacter != null && _additionalCharacterIds.isNotEmpty
+          ? _additionalCharacterIds.first
+          : null,
+      characterDetails: {
+        'name': _selectedCharacter!.name,
+        'age': _selectedCharacter!.age,
+        'gender': _selectedCharacter!.gender,
+      },
+      additionalCharacters: allCharacters.skip(1).map((c) => c.name).toList(),
+      rhymeTimeMode: _rhymeTimeMode,
+      learningToReadMode: _learningToReadMode,
+      currentFeeling: null, // Could be added later
+    );
   }
 
   String _storyGenerationErrorMessage(Object error) {
