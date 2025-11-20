@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -98,6 +99,16 @@ class _StoryScreenState extends State<StoryScreen> {
 
   // Story intent (merged theme + therapeutic customization)
   StoryIntentData? _storyIntent;
+
+  // Loading messages for story generation
+  final List<String> _loadingMessages = [
+    'Weaving your magical story...',
+    'Sprinkling in some wonder...',
+    'Adding a dash of adventure...',
+    'Almost there...',
+  ];
+  int _loadingMessageIndex = 0;
+  Timer? _loadingTimer;
 
   final List<Map<String, String>> _companions = const [
     {'name': 'None', 'image': 'assets/images/none.png'},
@@ -289,6 +300,10 @@ class _StoryScreenState extends State<StoryScreen> {
     final allowed = await _validateStoryCreationPreconditions();
     if (!allowed) return;
 
+    // Start loading state
+    if (mounted) setState(() => _isLoading = true);
+    _startLoadingMessageRotation();
+
     CurrentFeeling? currentFeeling;
     if (guidedByFeeling) {
       // Removed feelings check-in dialog as requested
@@ -416,11 +431,11 @@ class _StoryScreenState extends State<StoryScreen> {
     } catch (e, stackTrace) {
       print('Story generation error: $e');
       print(stackTrace);
-      final message = _storyGenerationErrorMessage(e);
-      ScaffoldMessenger.of(navContext).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      if (mounted) {
+        _showStoryErrorDialog();
+      }
     } finally {
+      _stopLoadingMessageRotation();
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -498,6 +513,40 @@ class _StoryScreenState extends State<StoryScreen> {
       return 'Our story engine is taking a break. Try again soon!';
     }
     return 'Something went wrong. Please try again.';
+  }
+
+  void _startLoadingMessageRotation() {
+    _loadingMessageIndex = 0;
+    _loadingTimer?.cancel();
+    _loadingTimer = Timer.periodic(Duration(seconds: 3), (timer) {
+      if (mounted) {
+        setState(() {
+          _loadingMessageIndex = (_loadingMessageIndex + 1) % _loadingMessages.length;
+        });
+      }
+    });
+  }
+
+  void _stopLoadingMessageRotation() {
+    _loadingTimer?.cancel();
+  }
+
+  void _showStoryErrorDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Story Generation Failed'),
+        content: Text(
+          'We had trouble creating your story. Please check your internet connection and try again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -820,6 +869,18 @@ class _StoryScreenState extends State<StoryScreen> {
               const SizedBox(height: 40),
               if (_isLoading) ...[
                 const Center(child: CircularProgressIndicator()),
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    _loadingMessages[_loadingMessageIndex],
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.deepPurple,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               ] else ...[
                 ElevatedButton(
                   onPressed: () async {

@@ -171,11 +171,24 @@ class _CharacterManagementScreenV2State
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(12),
-            itemCount: characters.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (_, i) {
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'You have ${characters.length}/5 characters',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: characters.length >= 5 ? Colors.red : Colors.grey[700],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: characters.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (_, i) {
               final c = characters[i];
               return Card(
                 elevation: 2,
@@ -272,7 +285,10 @@ class _CharacterManagementScreenV2State
                 ),
               );
             },
-          );
+          ),
+                ),
+              ],
+            );
         },
       ),
     );
