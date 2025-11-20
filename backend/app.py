@@ -11,7 +11,7 @@ from .models.user import User
 from .models.character import Character
 from .models.achievement import UserAchievement, AchievementStats
 
-# from .services import character_service, story_service
+from .services import character_service, story_service
 # from .repositories import character_repository
 from .gemini_image_generator import GeminiImageGenerator
 # Route imports removed - routes defined directly in app.py
@@ -53,10 +53,13 @@ def create_app(config_name):
 
     # Gemini setup
     api_key = app.config["GEMINI_API_KEY"]
+    print(f"DEBUG: api_key from config = {api_key}")
+    print(f"DEBUG: bool(api_key) = {bool(api_key)}")
     if not api_key:
         logger.warning("GEMINI_API_KEY not set. Generation endpoints will use fallbacks.")
     else:
         genai.configure(api_key=api_key)
+        print(f"DEBUG: Gemini configured with API key")
 
     GEMINI_MODEL = app.config["GEMINI_MODEL"]
     try:
