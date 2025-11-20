@@ -1,9 +1,8 @@
 """
 WSGI entry point for Railway deployment.
-Railway copies backend/ contents to /app/, so we import directly.
 """
 import os
-from app import create_app
+from backend.app import create_app
 
 # Create the application instance
 config_name = os.getenv('FLASK_ENV', 'production')
