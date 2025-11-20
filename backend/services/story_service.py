@@ -129,8 +129,27 @@ _GEM_RE = re.compile(r"\[WISDOM GEM:\s*(.*?)\s*\]", re.DOTALL)
 def _safe_extract_title_and_gem(text: str, theme: str):
     title_match = _TITLE_RE.search(text or "")
     gem_match = _GEM_RE.search(text or "")
-    title = title_match.group(1).strip() if title_match and title_match.group(1).strip() else "A Brave Little Adventure"
-    wisdom_gem = gem_match.group(1).strip() if gem_match and gem_match.group(1).strip() else WisdomGems.get_wisdom(theme)
+
+    # Extract title safely
+    if title_match:
+        try:
+            title_text = title_match.group(1).strip()
+            title = title_text if title_text else "A Brave Little Adventure"
+        except (IndexError, AttributeError):
+            title = "A Brave Little Adventure"
+    else:
+        title = "A Brave Little Adventure"
+
+    # Extract wisdom gem safely
+    if gem_match:
+        try:
+            gem_text = gem_match.group(1).strip()
+            wisdom_gem = gem_text if gem_text else WisdomGems.get_wisdom(theme)
+        except (IndexError, AttributeError):
+            wisdom_gem = WisdomGems.get_wisdom(theme)
+    else:
+        wisdom_gem = WisdomGems.get_wisdom(theme)
+
     story_body = _TITLE_RE.sub("", text or "").strip()
     story_body = _GEM_RE.sub("", story_body).strip()
     return title, wisdom_gem, story_body
