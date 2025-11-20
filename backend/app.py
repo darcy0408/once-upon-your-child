@@ -92,7 +92,23 @@ def create_app(config_name):
     @app.route("/health", methods=["GET"])
     def health():
         print(f"=== Health endpoint called ===")
-        return {"status": "ok", "model": GEMINI_MODEL, "has_api_key": bool(api_key)}, 200
+
+        # Add database check
+        db_status = "ok"
+        try:
+            # Simple query to verify database connection
+            from .models.user import User
+            User.query.limit(1).all()
+        except Exception as e:
+            db_status = f"error: {str(e)}"
+
+        return {
+            "status": "ok",
+            "model": GEMINI_MODEL,
+            "has_api_key": bool(api_key),
+            "database": db_status,
+            "environment": app.config.get("ENV", "unknown")
+        }, 200
 
     @app.route("/get-story-themes", methods=["GET"])
     def get_story_themes():
@@ -196,8 +212,19 @@ def create_app(config_name):
                 raise ValueError("Empty model response")
 
         except Exception as e:
-            print(f"!!! API ERROR: {type(e).__name__}: {str(e)}")
+            error_type = type(e).__name__
+            error_msg = str(e)
+            print(f"!!! API ERROR: {error_type}: {error_msg}")
             print(f"!!! Prompt length: {len(prompt)} characters")
+
+            # Add helpful hints for common errors
+            if "404" in error_msg and "model" in error_msg.lower():
+                print("!!! HINT: The Gemini model name may be incorrect. Check GEMINI_MODEL in config.")
+            elif "quota" in error_msg.lower():
+                print("!!! HINT: API quota exceeded. Check your Gemini API usage limits.")
+            elif "api key" in error_msg.lower():
+                print("!!! HINT: API key may be invalid. Check GEMINI_API_KEY in .env file.")
+
             print(f"!!! Learning to read mode: {learning_to_read_mode}, Rhyme time mode: {rhyme_time_mode}")
             print(f"!!! Character age: {character_age}, Theme: {theme}")
             logger.error("Model error, using fallback story. Error: %s", e, exc_info=True)
@@ -295,29 +322,39 @@ def create_app(config_name):
     @limiter.limit("20 per hour")
     @app.route("/create-character", methods=["POST"])
     def create_character_endpoint():
+        logger.info(f"POST /create-character called")
         data = request.get_json(silent=True) or {}
         response, status_code = character_service.create_character(data)
+        logger.info(f"Character creation result: {status_code}")
         return jsonify(response), status_code
 
     @app.route("/characters/<string:char_id>", methods=["PATCH", "PUT"])
     def update_character_endpoint(char_id: str):
+        logger.info(f"PATCH/PUT /characters/{char_id} called")
         data = request.get_json(silent=True) or {}
         response, status_code = character_service.update_character(char_id, data)
+        logger.info(f"Character update result: {status_code}")
         return jsonify(response), status_code
 
     @app.route("/characters/<string:char_id>", methods=["DELETE"])
     def delete_character_endpoint(char_id: str):
+        logger.info(f"DELETE /characters/{char_id} called")
         response, status_code = character_service.delete_character(char_id)
+        logger.info(f"Character deletion result: {status_code}")
         return jsonify(response), status_code
 
     @app.route("/get-characters", methods=["GET"])
     def get_characters_endpoint():
+        logger.info(f"GET /get-characters called")
         response, status_code = character_service.get_characters()
+        logger.info(f"Get characters result: {status_code}")
         return jsonify(response), status_code
 
     @app.route("/characters/<string:char_id>", methods=["GET"])
     def get_character_endpoint(char_id: str):
+        logger.info(f"GET /characters/{char_id} called")
         response, status_code = character_service.get_character(char_id)
+        logger.info(f"Get character result: {status_code}")
         return jsonify(response), status_code
 
     @app.route("/setup-test-account", methods=["POST"])

@@ -81,7 +81,8 @@ class FlavorConfig {
           ),
         );
       default:
-        const devBackend = 'http://127.0.0.1:5000';
+        const devBackend = 'https://story-weaver-app-production.up.railway.app'; // Temporarily using Railway
+        // const devBackend = 'http://127.0.0.1:5000'; // Switch back for local testing
         final backendUrl = customBackendOverride.isNotEmpty
             ? customBackendOverride
             : devBackend;
