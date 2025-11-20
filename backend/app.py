@@ -6,10 +6,11 @@ from flask_cors import CORS
 
 from .config import config, config_by_name
 from .database import db
-# Import models in dependency order (User first, then dependent models)
-from .models.user import User
+# Import models in dependency order (Story and Character first, then User which references them)
+from .models.story import Story
 from .models.character import Character
 from .models.achievement import UserAchievement, AchievementStats
+from .models.user import User
 
 from .services import character_service, story_service
 # from .repositories import character_repository
