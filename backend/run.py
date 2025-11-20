@@ -1,6 +1,6 @@
 """Simple Flask run script for development"""
 import os
-from app import create_app
+from backend.app import create_app
 
 env = os.environ.get('FLASK_ENV', 'dev')
 app = create_app(env)

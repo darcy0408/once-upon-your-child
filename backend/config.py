@@ -2,7 +2,11 @@ import os
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-load_dotenv(override=True)
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+print(f"Loading .env from: {dotenv_path}")
+print(f"File exists: {os.path.exists(dotenv_path)}")
+load_dotenv(dotenv_path=dotenv_path, override=True)
+print(f"GEMINI_API_KEY loaded: {bool(os.environ.get('GEMINI_API_KEY'))}")
 
 class Config:
     """Base configuration."""
