@@ -2,8 +2,10 @@ import sys
 import os
 import logging
 
-# Add the project root to sys.path to ensure backend is discoverable
-sys.path.insert(0, os.path.abspath('.'))
+# Ensure we always add the directory containing this file (project root) to sys.path
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 # Debugging: Print environment variable status
 api_key_exists = bool(os.getenv("GEMINI_API_KEY"))
