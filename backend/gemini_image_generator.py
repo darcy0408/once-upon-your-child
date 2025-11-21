@@ -18,8 +18,8 @@ class GeminiImageGenerator:
         if self.api_key:
             genai.configure(api_key=self.api_key)
 
-        # Imagen 3.0 model for image generation
-        self.image_model = genai.ImageGenerationModel("imagen-3.0-generate-001")
+        # Gemini multimodal model for image generation
+        self.image_model = genai.GenerativeModel("gemini-1.5-flash-latest")
 
     def generate_story_illustration(
         self,
