@@ -32,10 +32,3 @@ except Exception as e:
             print(f"wsgi.py: Fallback error creating app: {inner_e}")
             # If even fallback fails, we can't proceed
             sys.exit(1) # Exit if app cannot be created
-
-
-if __name__ == "__main__":
-    # Set the port, default to 5000 if not specified
-    port = int(os.environ.get("PORT", 5000))
-    print(f"wsgi.py: Running on port {port}")
-    app.run(host="0.0.0.0", port=port, debug=False)
