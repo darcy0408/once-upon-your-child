@@ -1,9 +1,4 @@
-[build]
-builder = "nixpacks"
-buildCommand = "pip install -r backend/requirements.txt"
-
 [deploy]
-startCommand = "gunicorn wsgi:app --bind 0.0.0.0:$PORT --timeout 120 --workers 2"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
