@@ -107,7 +107,8 @@ def create_app(config_name):
             "model": GEMINI_MODEL,
             "has_api_key": bool(api_key),
             "database": db_status,
-            "environment": app.config.get("ENV", "unknown")
+            "environment": app.config.get("ENV", "unknown"),
+            "version": "2"
         }, 200
 
     @app.route("/get-story-themes", methods=["GET"])
