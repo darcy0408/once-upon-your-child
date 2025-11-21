@@ -1,6 +1,6 @@
 """
 Gemini Image Generation Service
-Uses Google's Imagen 3.0 via Gemini API (FREE with your existing key!)
+Uses Google's Gemini 1.5 Pro via the Gemini API
 """
 
 import os
@@ -18,8 +18,25 @@ class GeminiImageGenerator:
         if self.api_key:
             genai.configure(api_key=self.api_key)
 
-        # Gemini multimodal model for image generation
-        self.image_model = genai.GenerativeModel("gemini-1.5-flash-latest")
+        # Use a Gemini 1.5 Pro model for multimodal capabilities
+        self.image_model = genai.GenerativeModel("gemini-1.5-pro-latest")
+
+    def _process_image_response(self, response, prompt) -> list:
+        """Helper to process the response from generate_content and extract images."""
+        images = []
+        if response.candidates:
+            for i, candidate in enumerate(response.candidates):
+                for part in candidate.content.parts:
+                    if part.mime_type and part.mime_type.startswith('image/'):
+                        image_data = part.inline_data.data
+                        images.append({
+                            'id': f"{uuid.uuid4()}_{i}",
+                            'prompt': prompt,
+                            'image_data': base64.b64encode(image_data).decode('utf-8'),
+                            'format': 'png',
+                            'generated_at': datetime.now().isoformat(),
+                        })
+        return images
 
     def generate_story_illustration(
         self,
@@ -31,18 +48,7 @@ class GeminiImageGenerator:
         therapeutic_focus: str | None = None
     ) -> list:
         """
-        Generate therapeutic story illustrations using Gemini Imagen
-
-        Args:
-            scene_description: Description of the scene to illustrate
-            character_name: Name of the main character
-            style: Art style (default: children's book illustration)
-            num_images: Number of variations to generate (1-4)
-            age: User's age for appropriate detail level
-            therapeutic_focus: Optional therapeutic theme (e.g., "overcoming fear")
-
-        Returns:
-            List of dicts with image data
+        Generate therapeutic story illustrations using Gemini 1.5 Pro.
         """
         # Determine detail level based on age
         if age <= 5:
@@ -64,7 +70,7 @@ class GeminiImageGenerator:
             therapeutic_context = f"\nTherapeutic focus: Emphasize {therapeutic_focus} through positive, empowering imagery"
 
         prompt = f"""
-Create a vibrant, engaging {style} that depicts this scene from a therapeutic story.
+Create {num_images} vibrant, engaging {style} that depicts this scene from a therapeutic story.
 
 Scene: {scene_description}
 Main character: {character_name}
@@ -84,35 +90,12 @@ Visual requirements:
 - Respectful, safe, and appropriate for the intended age group
 
 Style: {style}, optimized for {age_descriptor}
-""".strip()
+"""
 
         try:
             # Generate images with Gemini
-            response = self.image_model.generate_images(
-                prompt=prompt,
-                number_of_images=num_images,
-                safety_filter_level="block_some",  # Child-appropriate
-                person_generation="allow_adult",  # Allow characters
-                aspect_ratio="1:1",  # Square format
-            )
-
-            images = []
-            for i, image in enumerate(response.images):
-                # Convert to base64 for easy storage/transmission
-                img_byte_arr = io.BytesIO()
-                image._pil_image.save(img_byte_arr, format='PNG')
-                img_byte_arr = img_byte_arr.getvalue()
-
-                images.append({
-                    'id': f"{uuid.uuid4()}_{i}",
-                    'prompt': prompt,
-                    'image_data': base64.b64encode(img_byte_arr).decode('utf-8'),
-                    'format': 'png',
-                    'generated_at': datetime.now().isoformat(),
-                })
-
-            return images
-
+            response = self.image_model.generate_content(prompt)
+            return self._process_image_response(response, prompt)
         except Exception as e:
             print(f"Error generating image with Gemini: {e}")
             return []
@@ -126,17 +109,7 @@ Style: {style}, optimized for {age_descriptor}
         therapeutic_focus: str | None = None
     ) -> list:
         """
-        Generate therapeutic coloring book pages with black and white line art
-
-        Args:
-            scene_description: Description of the scene from the story
-            character_name: Name of the main character
-            num_images: Number of variations
-            age: User's age for appropriate complexity
-            therapeutic_focus: Optional therapeutic theme (e.g., "relaxation")
-
-        Returns:
-            List of dicts with image data
+        Generate therapeutic coloring book pages with black and white line art.
         """
         # Determine intricacy based on age
         if age <= 5:
@@ -162,7 +135,7 @@ Style: {style}, optimized for {age_descriptor}
             therapeutic_context = f"\nTherapeutic purpose: Design promotes {therapeutic_focus} through calming, positive imagery"
 
         prompt = f"""
-Create a therapeutic coloring book page featuring elements from a personalized story.
+Create {num_images} therapeutic coloring book page(s) featuring elements from a personalized story.
 
 Story context: {scene_description}
 Main character: {character_name}
@@ -188,32 +161,12 @@ Critical requirements:
 
 Design style: Clean line art coloring page, therapeutic and story-based, for {age_descriptor}
 Output: Pure black lines on white background only
-""".strip()
+"""
 
         try:
-            response = self.image_model.generate_images(
-                prompt=prompt,
-                number_of_images=num_images,
-                safety_filter_level="block_some",
-                aspect_ratio="1:1",
-            )
-
-            images = []
-            for i, image in enumerate(response.images):
-                img_byte_arr = io.BytesIO()
-                image._pil_image.save(img_byte_arr, format='PNG')
-                img_byte_arr = img_byte_arr.getvalue()
-
-                images.append({
-                    'id': f"{uuid.uuid4()}_{i}",
-                    'prompt': prompt,
-                    'image_data': base64.b64encode(img_byte_arr).decode('utf-8'),
-                    'format': 'png',
-                    'generated_at': datetime.now().isoformat(),
-                })
-
-            return images
-
+            # Generate images with Gemini
+            response = self.image_model.generate_content(prompt)
+            return self._process_image_response(response, prompt)
         except Exception as e:
             print(f"Error generating coloring page with Gemini: {e}")
             return []
