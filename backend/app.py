@@ -62,7 +62,7 @@ def create_app(config_name):
         genai.configure(api_key=api_key)
         print(f"DEBUG: Gemini configured with API key")
 
-    GEMINI_MODEL = app.config["GEMINI_MODEL"]
+    GEMINI_MODEL = "gemini-1.5-pro-latest"
     try:
         model = genai.GenerativeModel(GEMINI_MODEL) if api_key else None
     except Exception as e:
