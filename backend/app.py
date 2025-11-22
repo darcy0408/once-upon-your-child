@@ -110,29 +110,6 @@ def create_app(config_name):
             "environment": app.config.get("ENV", "unknown")
         }, 200
     
-    @app.route("/debug/config", methods=["GET"])
-    def debug_config():
-        import os
-        return {
-            'model_from_config': GEMINI_MODEL,
-            'model_from_env': os.getenv('GEMINI_MODEL'),
-            'all_env_keys': sorted(list(os.environ.keys()))
-        }
-
-    @app.route("/debug/models", methods=["GET"])
-    def debug_models():
-        import google.generativeai as genai
-        models = []
-        try:
-            for model in genai.list_models():
-                models.append({
-                    "name": model.name,
-                    "supported_generation_methods": model.supported_generation_methods
-                })
-            return jsonify(models)
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
-
     @app.route("/get-story-themes", methods=["GET"])
     def get_story_themes():
         return jsonify(["Adventure", "Friendship", "Magic", "Dragons", "Castles", "Unicorns", "Space", "Ocean"])
