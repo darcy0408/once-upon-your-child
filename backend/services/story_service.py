@@ -118,7 +118,135 @@ class AdvancedStoryEngine:
         ])
         return "\n".join(parts)
 
-story_engine = AdvancedStoryEngine()
+    def generate_interactive_story(
+        self,
+        character_name: str,
+        theme: str,
+        companion: str | None,
+        character_age: int,
+        model, # The initialized Gemini model
+        user_api_key: str | None,
+    ):
+        age_guidelines = _build_age_instruction_block(character_age)
+
+        prompt = f"""
+        You are a master interactive storyteller creating a personalized branching narrative for a {character_age}-year-old child.
+        The story must be engaging, age-appropriate, and allow the child to make choices that influence the plot.
+
+        STORY DETAILS:
+        - Main Character: {character_name}
+        - Theme: {theme}
+        - Companion: {companion if companion else "None"}
+
+        {age_guidelines}
+
+        INTERACTIVE STORY REQUIREMENTS:
+        1. Generate the FIRST segment of the story. This segment should set the scene, introduce the character, and lead to a clear choice point.
+        2. The segment should be about 100-150 words.
+        3. Provide 2-3 distinct, clear, and age-appropriate choices for the child to make.
+        4. Each choice should naturally flow from the story and hint at different narrative paths.
+
+        FORMAT REQUIREMENTS:
+        - Start the story segment with: [SEGMENT]
+        - End the story segment.
+        - List choices clearly using: [CHOICE_1] [CHOICE_2] ...
+        - The choices must be concise (max 10 words each).
+
+        Example Format:
+        [SEGMENT]
+        Once upon a time, Lily the Brave found herself at a crossroads. A shimmering path led into the Whispering Woods, while a rocky trail climbed towards the Glittering Mountains. Which way would she go?
+        [CHOICE_1] Go into the Whispering Woods
+        [CHOICE_2] Climb the Glittering Mountains
+        """
+        response = model.generate_content(prompt)
+        text = getattr(response, "text", "")
+        if not text:
+            raise ValueError("Empty model response for interactive story opening")
+
+        return self._parse_interactive_story_response(text)
+
+    def continue_interactive_story(
+        self,
+        character_name: str,
+        theme: str,
+        companion: str | None,
+        choice_text: str,
+        story_so_far: str,
+        choices_made: list[str],
+        model,
+        user_api_key: str | None,
+    ):
+        age_guidelines = _build_age_instruction_block(self.character_age) # Assuming character_age is stored or passed
+
+        prompt = f"""
+        You are a master interactive storyteller, continuing a personalized branching narrative for a {character_age}-year-old child.
+        The story must be engaging, age-appropriate, and allow the child to make choices that influence the plot.
+
+        STORY DETAILS:
+        - Main Character: {character_name}
+        - Theme: {theme}
+        - Companion: {companion if companion else "None"}
+        - Previous Story So Far: {story_so_far}
+        - Choices Made: {", ".join(choices_made)}
+        - Last Choice Made: {choice_text}
+
+        {age_guidelines}
+
+        INTERACTIVE STORY REQUIREMENTS:
+        1. Generate the NEXT segment of the story, flowing directly from the "Last Choice Made."
+        2. The segment should be about 100-150 words.
+        3. Provide 2-3 new distinct, clear, and age-appropriate choices for the child to make for the NEXT decision point.
+        4. If the story feels like it's reaching a natural conclusion, you can provide an option like "[CHOICE_END] End the story here."
+        5. Do NOT repeat previous story segments or choices.
+
+        FORMAT REQUIREMENTS:
+        - Start the story segment with: [SEGMENT]
+        - End the story segment.
+        - List choices clearly using: [CHOICE_1] [CHOICE_2] ...
+        - The choices must be concise (max 10 words each).
+        - If ending the story, use [CHOICE_END] as one of the options.
+
+        Example Format (continuation):
+        [SEGMENT]
+        Lily bravely stepped into the Whispering Woods. The trees were tall, and the air smelled of damp earth and magic. Suddenly, she heard a soft whimper. A tiny, lost fox cub was caught in some thorny bushes!
+        [CHOICE_1] Help the fox cub
+        [CHOICE_2] Ignore the fox and keep exploring
+        """
+        response = model.generate_content(prompt)
+        text = getattr(response, "text", "")
+        if not text:
+            raise ValueError("Empty model response for interactive story continuation")
+
+        return self._parse_interactive_story_response(text)
+
+    def _parse_interactive_story_response(self, text: str):
+        segment_match = re.search(r"\[SEGMENT\]\s*(.*?)(?=\[CHOICE_|$)", text, re.DOTALL)
+        segment_text = segment_match.group(1).strip() if segment_match else text.strip()
+
+        choices = []
+        for i in range(1, 10): # Look for up to 9 choices
+            choice_match = re.search(rf"\[CHOICE_{i}\]\s*(.*?)(?=\[CHOICE_|\Z)", text)
+            if choice_match:
+                choices.append({
+                    "id": f"choice_{i}", # Simple ID for now
+                    "text": choice_match.group(1).strip()
+                })
+            else:
+                break
+        
+        # Check for end choice
+        if "[CHOICE_END]" in text:
+            choices.append({
+                "id": "choice_end",
+                "text": "End the story here."
+            })
+
+        if not choices:
+            # If no choices are found, assume it's the end of the story
+            return {"text": segment_text, "choices": [{"id": "choice_end", "text": "End the story here."}]}
+        
+        return {"text": segment_text, "choices": choices}
+
 
 # ----------------------
 # Helpers
@@ -128,6 +256,7 @@ _GEM_RE = re.compile(r"\[WISDOM GEM:\s*(.*?)\s*\]", re.DOTALL)
 
 def _safe_extract_title_and_gem(text: str, theme: str):
     title_match = _TITLE_RE.search(text or "")
+
     gem_match = _GEM_RE.search(text or "")
 
     # Extract title safely
