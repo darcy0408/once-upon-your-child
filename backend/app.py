@@ -62,7 +62,7 @@ def create_app(config_name):
         genai.configure(api_key=api_key)
         print(f"DEBUG: Gemini configured with API key")
 
-    GEMINI_MODEL = "gemini-1.5-pro-latest"
+    GEMINI_MODEL = "gemini-1.5-flash"
     try:
         model = genai.GenerativeModel(GEMINI_MODEL) if api_key else None
     except Exception as e:
@@ -227,12 +227,20 @@ def create_app(config_name):
 
             print(f"!!! Learning to read mode: {learning_to_read_mode}, Rhyme time mode: {rhyme_time_mode}")
             print(f"!!! Character age: {character_age}, Theme: {theme}")
-            logger.error("Model error, using fallback story. Error: %s", e, exc_info=True)
-            raw_text = (
-                "[TITLE: An Unexpected Adventure]\n"
-                "Once upon a time, a brave hero discovered that the greatest adventures come from "
-                "facing our fears with courage and kindness.\n"
-                f"[WISDOM GEM: {story_service.WisdomGems.get_wisdom(theme)}]")
+            logger.exception("Story generation failed")
+
+            environment = os.getenv("ENV", "").lower()
+            if environment in ("dev", "development", "local"):
+                raw_text = (
+                    "[TITLE: An Unexpected Adventure]\n"
+                    "Once upon a time, a brave hero discovered that the greatest adventures come from "
+                    "facing our fears with courage and kindness.\n"
+                    f"[WISDOM GEM: {story_service.WisdomGems.get_wisdom(theme)}]")
+            else:
+                return jsonify({
+                    "error": str(e),
+                    "hint": "Generation failed. Check GEMINI_API_KEY / GEMINI_MODEL / quota in Railway logs."
+                }), 500
         finally:
             # Reset to server API key after user's request
             if user_api_key and api_key:
@@ -393,3 +401,6 @@ def create_app(config_name):
     print(f"=== All routes registered successfully ===")
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
     return app
+
+# A cosmetic change to force a Railway redeploy.
+
