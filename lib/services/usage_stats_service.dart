@@ -1,10 +1,11 @@
+import 'package:story_weaver_app/config/flavor_config.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/usage_stats.dart';
 import 'user_identity_service.dart';
 
 class UsageStatsService {
-  static const String _baseUrl = 'http://127.0.0.1:5000';
+  static String get _baseUrl => FlavorConfig.instance.backendUrl;
 
   Future<UsageStats> getUsageStats() async {
     try {
