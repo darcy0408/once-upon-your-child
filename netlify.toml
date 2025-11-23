@@ -1,6 +1,6 @@
 [build]
   publish = "build/web"
-  command = ".netlify/install_flutter.sh && flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true --dart-define=FLAVOR=production"
+  command = "source .netlify/install_flutter.sh && flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true --dart-define=FLAVOR=production"
 
 [[redirects]]
   from = "/*"
