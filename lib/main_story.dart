@@ -296,19 +296,12 @@ class _StoryScreenState extends State<StoryScreen> {
   }
 
   Future<void> _createStory({bool guidedByFeeling = false}) async {
-    final navContext = context;
     final allowed = await _validateStoryCreationPreconditions();
     if (!allowed) return;
 
     // Start loading state
     if (mounted) setState(() => _isLoading = true);
     _startLoadingMessageRotation();
-
-    CurrentFeeling? currentFeeling;
-    if (guidedByFeeling) {
-      // Removed feelings check-in dialog as requested
-      if (!mounted) return;
-    }
 
     // Get all selected characters
     final List<Character> allSelectedCharacters = [
@@ -335,99 +328,64 @@ class _StoryScreenState extends State<StoryScreen> {
 
     if (!mounted) return;
 
-    // Ask about feelings after story is created
-    final currentFeeling = await PreStoryFeelingsDialog.show(
-      context: context,
-      characterName: _selectedCharacter!.name,
+    // TODO: Consider adding feelings check earlier in the process (before story generation)
+    // Removed the post-story feelings popup as it was disruptive to UX
+
+    // Generate title and wisdom gem
+    final String title = _additionalCharacterIds.isEmpty
+        ? '${_selectedCharacter!.name}\'s ${_selectedTheme} Adventure'
+        : _generateMultiCharacterTitle();
+
+    final String wisdomGem = _additionalCharacterIds.isEmpty
+        ? 'Every adventure makes us stronger and wiser.'
+        : 'Together, we are stronger than we are alone.';
+
+    final storyTimestamp = DateTime.now();
+
+    // Save the story locally with all characters used
+    final saved = SavedStory(
+      title: title,
+      storyText: story,
+      theme: _selectedTheme,
+      characters: allSelectedCharacters,
+      createdAt: storyTimestamp,
+      isInteractive: false,
+      wisdomGem: wisdomGem,
+    );
+    await StorageService().saveStory(saved);
+
+    // Update character evolution (no feelings data for now)
+    await _updateCharacterEvolution(allSelectedCharacters, _therapeuticCustomization, null);
+
+    // Record story creation for usage tracking
+    await _subscriptionService.recordStoryCreation();
+    await _loadSubscriptionInfo(); // Refresh remaining count
+
+    if (!mounted) return;
+
+    // Navigate to result screen
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => StoryResultScreen(
+          title: title,
+          storyText: story,
+          wisdomGem: wisdomGem,
+          characterName: _selectedCharacter?.name,
+          storyId: saved.id,
+          theme: _selectedTheme,
+          characterId: _selectedCharacter?.id,
+          achievementsService: _achievementService,
+          storyCreatedAt: storyTimestamp,
+          trackStoryCreation: true,
+          isInteractive: _interactiveMode,
+          isRhyming: _rhymeTimeMode,
+        ),
+      ),
     );
 
-    if (!mounted || currentFeeling == null) {
-      // Navigate to story result even if feelings not selected
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => StoryResultScreen(
-            title: '${_selectedCharacter!.name}\'s $theme Adventure',
-            storyText: story,
-            wisdomGem: 'Every adventure makes us stronger and wiser.',
-            characterName: _selectedCharacter!.name,
-            theme: theme,
-            isInteractive: _interactiveMode,
-            isRhyming: _rhymeTimeMode,
-          ),
-        ),
-      );
-      return;
+    if (mounted) {
+      await _loadAchievementSummary();
     }
-
-      // Navigate to story result with feelings data
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => StoryResultScreen(
-            title: '${_selectedCharacter!.name}\'s $theme Adventure',
-            storyText: story,
-            wisdomGem: 'Every adventure makes us stronger and wiser.',
-            characterName: _selectedCharacter!.name,
-            theme: theme,
-            isInteractive: _interactiveMode,
-            isRhyming: _rhymeTimeMode,
-          ),
-        ),
-      );
-
-      if (!navContext.mounted) return;
-
-      // Generate title and wisdom gem
-      final String title = _additionalCharacterIds.isEmpty
-          ? '${_selectedCharacter!.name}\'s ${_selectedTheme} Adventure'
-          : _generateMultiCharacterTitle();
-
-      final String wisdomGem = _additionalCharacterIds.isEmpty
-          ? 'Every adventure makes us stronger and wiser.'
-          : 'Together, we are stronger than we are alone.';
-
-      final storyTimestamp = DateTime.now();
-
-      // Save the story locally with all characters used
-      final saved = SavedStory(
-        title: title,
-        storyText: story,
-        theme: _selectedTheme,
-        characters: allSelectedCharacters,
-        createdAt: storyTimestamp,
-        isInteractive: false,
-        wisdomGem: wisdomGem,
-      );
-      await StorageService().saveStory(saved);
-
-      // Update character evolution based on therapeutic elements
-      await _updateCharacterEvolution(allSelectedCharacters, _therapeuticCustomization, currentFeeling);
-
-      // Record story creation for usage tracking
-      await _subscriptionService.recordStoryCreation();
-      await _loadSubscriptionInfo(); // Refresh remaining count
-
-      if (!navContext.mounted) return;
-
-      // Navigate to result screen
-      await Navigator.of(navContext).push(
-        MaterialPageRoute(
-          builder: (_) => StoryResultScreen(
-            title: title,
-            storyText: story,
-            wisdomGem: wisdomGem,
-            characterName: _selectedCharacter?.name,
-            storyId: saved.id,
-            theme: _selectedTheme,
-            characterId: _selectedCharacter?.id,
-            achievementsService: _achievementService,
-            storyCreatedAt: storyTimestamp,
-            trackStoryCreation: true,
-          ),
-        ),
-      );
-      if (mounted) {
-        await _loadAchievementSummary();
-      }
     } catch (e, stackTrace) {
       print('Story generation error: $e');
       print(stackTrace);
