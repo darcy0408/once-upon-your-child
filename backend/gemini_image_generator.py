@@ -18,8 +18,8 @@ class GeminiImageGenerator:
         if self.api_key:
             genai.configure(api_key=self.api_key)
 
-        # Use a Gemini 1.5 Pro model for multimodal capabilities
-        self.image_model = genai.GenerativeModel("gemini-1.5-pro-latest")
+        # Use Gemini 2.5 Flash Image model for image generation
+        self.image_model = genai.GenerativeModel("gemini-2.5-flash-image")
 
     def _process_image_response(self, response, prompt) -> list:
         """Helper to process the response from generate_content and extract images."""

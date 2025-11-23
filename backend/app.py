@@ -325,9 +325,6 @@ def create_app(config_name):
     @app.route("/generate-illustrations", methods=["POST"])
     def generate_illustrations_endpoint():
         """Generate illustrations for a story scene"""
-        if image_generator is None:
-            return jsonify({"error": "Image generation not available"}), 503
-
         try:
             data = request.get_json(silent=True) or {}
             scene_description = data.get("scene_description", "")
@@ -336,11 +333,27 @@ def create_app(config_name):
             num_images = min(int(data.get("num_images", 1)), 4)  # Max 4 images
             age = int(data.get("age", 7))
             therapeutic_focus = data.get("therapeutic_focus")
+            user_api_key = data.get("user_api_key")  # BYOK support
 
             if not scene_description.strip():
                 return jsonify({"error": "Scene description is required"}), 400
 
-            illustrations = image_generator.generate_story_illustration(
+            # Use user's API key if provided, otherwise use server's
+            generator = None
+            using_user_key = False
+
+            if user_api_key:
+                generator = GeminiImageGenerator(api_key=user_api_key)
+                using_user_key = True
+            elif image_generator is not None:
+                generator = image_generator
+            else:
+                return jsonify({
+                    "error": "Image generation requires an API key",
+                    "hint": "Please provide your Gemini API key or upgrade to premium"
+                }), 403
+
+            illustrations = generator.generate_story_illustration(
                 scene_description=scene_description,
                 character_name=character_name,
                 style=style,
@@ -351,12 +364,16 @@ def create_app(config_name):
 
             return jsonify({
                 "illustrations": illustrations,
-                "count": len(illustrations)
+                "count": len(illustrations),
+                "used_user_key": using_user_key
             }), 200
 
         except Exception as e:
-            print(f"!!! Illustration generation failed: {e}")
-            return jsonify({"error": "Failed to generate illustrations"}), 500
+            logger.exception("Illustration generation failed")
+            return jsonify({
+                "error": str(e),
+                "hint": "Image generation failed. Check your API key quota or try again later."
+            }), 500
 
     @limiter.limit("10 per hour")
     @app.route("/generate-coloring-pages", methods=["POST"])
