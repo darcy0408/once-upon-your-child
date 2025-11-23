@@ -255,6 +255,70 @@ def create_app(config_name):
             "used_user_key": using_user_key
         }), 200
 
+    @limiter.limit("5 per minute") # Rate limit for interactive story start
+    @app.route("/generate-interactive-story", methods=["POST"])
+    def generate_interactive_story_endpoint():
+        logger.info(f"POST /generate-interactive-story called")
+        payload = request.get_json(silent=True) or {}
+        character_name = payload.get("character", "a brave adventurer")
+        theme = payload.get("theme", "Adventure")
+        companion = payload.get("companion")
+        character_age = payload.get("age", 7)
+        user_api_key = payload.get("user_api_key")
+
+        try:
+            # Assume story_service has a method for interactive story generation
+            # You'll need to implement story_service.generate_interactive_story in services/story_service.py
+            interactive_story_segment = story_service.generate_interactive_story(
+                character_name=character_name,
+                theme=theme,
+                companion=companion,
+                character_age=character_age,
+                model=model, # Pass the initialized model
+                user_api_key=user_api_key # Allow BYOK
+            )
+            return jsonify(interactive_story_segment), 200
+        except Exception as e:
+            logger.exception("Interactive story generation failed")
+            return jsonify({
+                "error": str(e),
+                "hint": "Interactive story generation failed on the backend."
+            }), 500
+
+    @limiter.limit("5 per minute") # Rate limit for continuing interactive stories
+    @app.route("/continue-interactive-story", methods=["POST"])
+    def continue_interactive_story_endpoint():
+        logger.info(f"POST /continue-interactive-story called")
+        payload = request.get_json(silent=True) or {}
+        character_name = payload.get("character", "a brave adventurer")
+        theme = payload.get("theme", "Adventure")
+        companion = payload.get("companion")
+        choice_text = payload.get("choice", "")
+        story_so_far = payload.get("story_so_far", "")
+        choices_made = payload.get("choices_made", [])
+        user_api_key = payload.get("user_api_key")
+
+        try:
+            # Assume story_service has a method for continuing interactive stories
+            # You'll need to implement story_service.continue_interactive_story in services/story_service.py
+            interactive_story_segment = story_service.continue_interactive_story(
+                character_name=character_name,
+                theme=theme,
+                companion=companion,
+                choice_text=choice_text,
+                story_so_far=story_so_far,
+                choices_made=choices_made,
+                model=model, # Pass the initialized model
+                user_api_key=user_api_key # Allow BYOK
+            )
+            return jsonify(interactive_story_segment), 200
+        except Exception as e:
+            logger.exception("Continuing interactive story failed")
+            return jsonify({
+                "error": str(e),
+                "hint": "Continuing interactive story failed on the backend."
+            }), 500
+
     @limiter.limit("10 per hour")
     @app.route("/generate-illustrations", methods=["POST"])
     def generate_illustrations_endpoint():
