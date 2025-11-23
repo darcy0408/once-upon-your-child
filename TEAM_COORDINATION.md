@@ -1,4 +1,65 @@
-# TEAM_COORDINATION.md
+## 🔄 Previous Session - Railway Deployment Troubleshooting (2025-11-22)
+
+### Context and Problem Summary:
+Yesterday, we were troubleshooting a persistent `ModuleNotFoundError: No module named 'backend'` issue on Railway during deployment. The application was failing to generate stories due to this import error in `wsgi.py`.
+
+### What was Tried / Learned (Timeline):
+
+**Initial Railway Crash & Diagnosis:**
+- Deploy logs showed: `ModuleNotFoundError: No module named 'backend'` coming from `/app/wsgi.py` line 5 `importing from backend.app import create_app`.
+- This indicated that Gunicorn was starting, but Python could not find the `backend/` package in Railway's runtime environment.
+
+**1. `railway.toml` entrypoint fix:**
+- Gemini/Codex noticed `railway.toml` had the wrong start command.
+- **Action:** Changed it to: `gunicorn wsgi:app --bind 0.0.0.0:$PORT --timeout 120 --workers 2`
+- **Result:** Railway still crashed with the same backend import error, suggesting Railway wasn’t actually using that start command (or was using a stale build).
+
+**2. `Procfile` theory:**
+- Codex suspected a `backend/Procfile` was overriding `railway.toml`.
+- **Action:** In Codex’s environment, it deleted/committed/pushed removal. On the user's Windows machine, `backend/Procfile` didn’t exist.
+- **Result:** Confirmed no `Procfile` in the repo, so nothing to remove locally. The persistent error wasn’t coming from a real `Procfile` in Git.
+
+**3. Railway UI Start Command mismatch:**
+- Railway logs briefly switched to: `ModuleNotFoundError: No module named 'main'`, proving the Railway UI was using a different start command at one point.
+- **Action:** User replaced the Railway UI “Start Command” with the correct `gunicorn` one-liner. First try had a colon/port formatting issue (`: 8080`), which was fixed to no space: `0.0.0.0:$PORT`.
+- **Result:** Railway went back to the original error: missing `backend`.
+
+**Key realization: Railway is deploying stale code:**
+- User's local GitHub main showed recent commits (`b20bd21 Fix: Simplify wsgi.py for Gunicorn`, `ad1f714 Fix: Remove conflicting backend/railway.json`, `4141271 Diag: Add version marker to health endpoint`).
+- However, Railway runtime logs still referenced the old `wsgi.py` (no debug prints, same old import line).
+- **Conclusion:** Even when "Redeploying," Railway seemed to reuse a cached artifact/old image.
+
+**Last suggested fix (not yet fully applied/confirmed deployed):**
+- Codex edited `wsgi.py` to add the real project root via `__file__`, not current working directory:
+  ```python
+  PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+  sys.path.insert(0, PROJECT_ROOT)
+  ```
+- Codex committed this in its sandbox but couldn’t push to GitHub.
+- User then tried to re-add/re-commit on Windows, but Git said “no changes to commit,” implying either the local `wsgi.py` already matched HEAD or the local “ahead by 1 commit” already contained that `wsgi` change.
+
+### Current Status:
+- **Repo status:** GitHub/main is believed to be good and already has the earlier fixes.
+- **Railway status:** Start Command is correct, but Railway is still running stale code that can’t import `backend`.
+- **Most likely remaining root cause:** Railway build is not including the `backend/` folder in the runtime image (or it’s building from the wrong source/branch/cached artifact).
+- The `wsgi.py __file__` root-path fix is the right direction, but it needs to be confirmed on GitHub and in the Railway build.
+
+### What is needed from me (Gemini CLI):
+A) Verify whether `wsgi.py` on GitHub already has the `__file__/PROJECT_ROOT sys.path` fix.
+B) If not, implement it, commit to main, push.
+C) Identify why Railway build omits/doesn’t see `backend`:
+   - check nixpacks config / build context
+   - check `.railwayignore` / `.gitignore` / `.dockerignore` / `.slugignore`
+   - confirm Railway service is linked to `darcy0408/story-weaver-app main`
+   - force a fresh build (not cached) if possible
+D) Give step-by-step UI + terminal instructions to ensure Railway rebuilds from latest main.
+
+### Constraints:
+- Keep changes minimal and surgical.
+- Provide explicit PowerShell commands for user execution.
+
+---
+
 
 ## ✅ Grok Agent #4 Tasks Completed - 2025-11-20 09:54:00
 
@@ -238,3 +299,109 @@ The CI/CD infrastructure is technically ready. Awaiting team coordination and se
 - 2025-11-20 · Grok Orchestrator → Team: SECRETS RECEIVED - User provided Netlify Auth Token and Railway Token. Ready to configure GitHub secrets and proceed with deployment cleanup.
 
 - 2025-11-20 · Grok Orchestrator → Gemini: CRITICAL TASK ASSIGNED - Created comprehensive backend fix task in GEMINI_BACKEND_FIX_TASK.md. Railway deployment stale, story generation broken. Priority: Fix immediately to unblock production deployment.
+
+---
+
+---
+
+## **Claude Code Session: UX Fixes & Stripe Integration Prep (2025-11-23)**
+
+### **I. Session Summary:**
+
+**Completed Tasks:**
+1. ✅ **Fixed Interactive Story Generation Bug** - Resolved AttributeError where `continue_interactive_story` was missing `character_age` parameter
+2. ✅ **Removed Annoying Feelings Popup** - Eliminated post-story feelings check dialog that disrupted user flow
+3. ✅ **Added BYOK Image Generation** - Implemented Bring Your Own Key support for Gemini 2.5 Flash Image model
+4. ✅ **Created Stripe Integration Tasks** - Detailed task documents for Gemini, Codex, and Grok
+
+**Key Changes:**
+- `backend/services/story_service.py`: Fixed `character_age` parameter bug in interactive story methods
+- `backend/app.py`: Added `character_age` extraction in continue-interactive-story endpoint
+- `lib/main_story.dart`: Removed PreStoryFeelingsDialog, cleaned up navigation flow
+- `backend/gemini_image_generator.py`: Updated to use `gemini-2.5-flash-image` model
+- `backend/app.py`: Added BYOK support for image generation with user API keys
+
+**Task Documents Created:**
+- `GEMINI_STRIPE_BACKEND_TASK.md`: Backend route registration, environment config, subscription endpoints
+- `CODEX_STRIPE_FRONTEND_TASK.md`: Flutter StripeService, SubscribeButton, subscription management UI
+- `GROK_STRIPE_SETUP_GUIDE.md`: Stripe account setup, product creation, Railway configuration
+
+**Repository Status:**
+- All changes committed and pushed to main
+- Railway will auto-deploy backend fixes
+- Netlify will auto-deploy frontend UX improvements
+
+**Next Steps:**
+1. Gemini CLI: Execute `GEMINI_STRIPE_BACKEND_TASK.md`
+2. Codex: Execute `CODEX_STRIPE_FRONTEND_TASK.md`
+3. Grok: Guide user through `GROK_STRIPE_SETUP_GUIDE.md`
+4. Test end-to-end subscription flow once all tasks complete
+
+---
+
+## **Debugging Session Report: Story Weaver Application Deployment (2025-11-23)**
+
+### **I. Overview & Initial Problem Statement:**
+The primary goal of this session was to get the Story Weaver application (Flutter frontend, Flask backend) fully functional on its respective deployment platforms (Netlify for frontend, Railway for backend). The session started with a persistent `ModuleNotFoundError` on Railway and issues with frontend features.
+
+### **II. What We've Accomplished (Resolved Issues):**
+
+We have successfully diagnosed and resolved several critical deployment and configuration issues:
+
+1.  **Railway Backend `ModuleNotFoundError` Resolution:**
+    *   **Problem:** The Railway backend was failing to start with `ModuleNotFoundError: No module named 'backend'` from `wsgi.py`.
+    *   **Diagnosis:** Railway was deploying stale code or incorrectly setting up `sys.path`.
+    *   **Solution:**
+        *   Verified `wsgi.py` was updated to correctly add the project root to `sys.path`.
+        *   Forced a full Railway rebuild by making a cosmetic change to `backend/app.py`, committing, and pushing.
+    *   **Outcome:** Backend now starts correctly, and `sys.path` is resolved.
+
+2.  **Netlify Frontend Submodule Build Failure Resolution:**
+    *   **Problem:** Netlify deployments were consistently failing with `Error checking out submodules: fatal: No url found for submodule path 'worktrees/story-result-polish'`.
+    *   **Diagnosis:** A phantom Git submodule was causing Netlify's build process to fail, even though it was not active locally.
+    *   **Solution:** Cleaned up local Git history by deinitializing and removing references to the phantom submodule.
+    *   **Outcome:** Netlify builds now successfully proceed past the "preparing repo" stage.
+
+3.  **Netlify Flutter Build Environment Setup:**
+    *   **Problem:** Netlify builds failed with `bash: line 1: flutter: command not found`.
+    *   **Diagnosis:** The Netlify build environment lacked the Flutter SDK.
+    *   **Solution:**
+        *   Created and committed a Flutter installer script (`.netlify/install_flutter.sh`).
+        *   Updated `netlify.toml` to call this script before `flutter build web --release`.
+        *   Fixed the script's execution permissions in Git (`git update-index --chmod=+x`).
+        *   Modified `netlify.toml` to `source` the installer script, ensuring `PATH` changes persist.
+    *   **Outcome:** Netlify can now find and execute the `flutter` command, and frontend builds complete successfully.
+
+4.  **Corrected Frontend-Backend Communication (Base URL):**
+    *   **Problem:** The deployed Netlify frontend was attempting to make API calls to `http://127.0.0.1:5000` (local development server) instead of the deployed Railway backend.
+    *   **Diagnosis:** A hardcoded `_baseUrl` in `lib/services/usage_stats_service.dart` was overriding the correct `FlavorConfig`.
+    *   **Solution:** Modified `lib/services/usage_stats_service.dart` to dynamically load the backend URL from `FlavorConfig.instance.backendUrl`.
+    *   **Outcome:** The Netlify frontend now correctly communicates with the Railway backend for general API calls (e.g., character creation, regular story generation). Frontend UI elements (e.g., personality slider bars) are now correctly displayed.
+
+5.  **Updated Backend Gemini Model Name:**
+    *   **Problem:** The backend was failing to generate stories with `404 models/gemini-1.5-flash is not found`, despite the `GEMINI_MODEL` environment variable and `app.py` setting.
+    *   **Diagnosis:** The previously used `gemini-1.5-flash` model name was deprecated or changed by Google, and the API key did not have access to it under that specific name.
+    *   **Solution:** Used a Python script to list available models, identifying `models/gemini-2.5-flash` as the current valid Flash model. Updated `backend/app.py` to use `models/gemini-2.5-flash`.
+    *   **Outcome:** Regular story generation is now functional, confirming the backend can successfully interact with the Gemini API.
+
+### **III. What We're Still Working On (Current Problem - Interactive Stories):**
+
+*   **Problem:** Interactive story generation fails on the frontend with a "Connection hiccup" error. Browser developer tools initially showed `CORS error` and `404 preflight` for `/generate-interactive-story`.
+*   **Current Status:**
+    *   The preflight `OPTIONS` request now returns `200 OK`, indicating CORS is correctly configured.
+    *   The actual `POST` request to `/generate-interactive-story` now receives a `500 Internal Server Error`.
+    *   Railway logs show `AttributeError: module 'backend.services.story_service' has no attribute 'generate_interactive_story'` when the endpoint is hit.
+*   **Diagnosis:** The frontend is successfully reaching the backend, but the backend implementation for the interactive story endpoints (`/generate-interactive-story` and `/continue-interactive-story`) is incomplete. The specific error indicates that the necessary methods (`generate_interactive_story` and `continue_interactive_story`) were missing from `backend/services/story_service.py`. This has been addressed by adding the methods to `story_service.py`, along with a helper function `_parse_interactive_story_response`.
+
+### **IV. Next Steps:**
+
+1.  **Deploy Backend:** The changes to implement the interactive story logic in `backend/services/story_service.py` have been committed and pushed to GitHub, triggering a new Railway deployment.
+2.  **Test Interactive Story Generation:**
+    *   Monitor the latest Railway deployment for success.
+    *   Once deployed, attempt to start an interactive story from the Netlify frontend (`https://reliable-sherbet-2352c4.netlify.app/`).
+    *   Check if it works, or if a new, more specific error appears in the Railway logs (which would indicate an issue within the newly added logic).
+
+### **V. Other Feedback (To be addressed after critical fixes):**
+
+*   **Rhyme Time Mode Image Generation:** User feedback suggests "rhyme time mode" needs automatic image generation for each page and shorter, Dr. Seuss-like content. This is a new feature request/refinement to be addressed once core functionality is stable.
+
