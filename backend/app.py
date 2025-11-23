@@ -296,6 +296,7 @@ def create_app(config_name):
         choice_text = payload.get("choice", "")
         story_so_far = payload.get("story_so_far", "")
         choices_made = payload.get("choices_made", [])
+        character_age = payload.get("age", 7)
         user_api_key = payload.get("user_api_key")
 
         try:
@@ -308,6 +309,7 @@ def create_app(config_name):
                 choice_text=choice_text,
                 story_so_far=story_so_far,
                 choices_made=choices_made,
+                character_age=character_age,
                 model=model, # Pass the initialized model
                 user_api_key=user_api_key # Allow BYOK
             )

@@ -173,10 +173,11 @@ class AdvancedStoryEngine:
         choice_text: str,
         story_so_far: str,
         choices_made: list[str],
+        character_age: int,
         model,
         user_api_key: str | None,
     ):
-        age_guidelines = _build_age_instruction_block(self.character_age) # Assuming character_age is stored or passed
+        age_guidelines = _build_age_instruction_block(character_age)
 
         prompt = f"""
         You are a master interactive storyteller, continuing a personalized branching narrative for a {character_age}-year-old child.
