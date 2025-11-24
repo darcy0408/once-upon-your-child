@@ -2,6 +2,12 @@
 WSGI entry point for Railway deployment.
 """
 import os
+import sys
+
+# Add the project root to the Python path
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, PROJECT_ROOT)
+
 from backend.app import create_app
 
 # Create the application instance
