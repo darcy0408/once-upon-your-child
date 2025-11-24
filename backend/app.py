@@ -1,8 +1,10 @@
 import os
+import uuid
 import logging
+from datetime import datetime
 import os
 import google.generativeai as genai
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 
 from .config import config, config_by_name
@@ -51,9 +53,47 @@ def create_app(config_name):
         storage_uri="memory://"
     )
 
+    @app.errorhandler(429)
+    def ratelimit_handler(e):
+        request_id = getattr(g, 'request_id', 'unknown')
+        logger.warning(f"[{request_id}] Rate limit exceeded: {request.endpoint}")
+        return jsonify({
+            'error': 'Rate limit exceeded',
+            'retry_after': e.description
+        }), 429
+
     # Logging setup
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger("story_engine")
+
+    @app.before_request
+    def add_request_id():
+        g.request_id = str(uuid.uuid4())[:8]
+        logger.info(f"[{g.request_id}] {request.method} {request.path}")
+
+    @app.after_request
+    def log_response(response):
+        # Ensure g.request_id exists even if an error occurred before before_request completed
+        request_id = getattr(g, 'request_id', 'unknown')
+        logger.info(f"[{request_id}] Response: {response.status_code}")
+        return response
+
+    @app.errorhandler(Exception)
+    def handle_error(error):
+        request_id = getattr(g, 'request_id', 'unknown')
+        logger.exception(f"[{request_id}] Unhandled error: {error}")
+
+        # Don't expose internal errors in production
+        if app.config.get('ENV') == 'production': # Assuming ENV is set to 'production' in Railway
+            return jsonify({
+                'error': 'Internal server error',
+                'request_id': request_id
+            }), 500
+        else:
+            return jsonify({
+                'error': str(error),
+                'request_id': request_id
+            }), 500
 
     # Gemini setup
     api_key = app.config["GEMINI_API_KEY"]
