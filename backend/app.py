@@ -169,7 +169,10 @@ def create_app(config_name):
             "model": GEMINI_MODEL,
             "has_api_key": bool(api_key),
             "database": db_status,
-            "environment": app.config.get("ENV", "unknown")
+            "flask_env": os.getenv("FLASK_ENV"),
+            "railway_environment": os.getenv("RAILWAY_ENVIRONMENT"),
+            "app_config_env": app.config.get("ENV"),
+            "environment_display": app.config.get("ENV", "unknown")
         }, 200
     
     @app.route("/get-story-themes", methods=["GET"])
