@@ -220,11 +220,6 @@ class AdvancedStoryEngine:
 
         return self._parse_interactive_story_response(text)
 
-# Legacy compatibility: some parts of the backend still import story_service.story_engine.
-# Instantiate a shared AdvancedStoryEngine so those references continue to work even
-# though the app now prefers create_app()'s story_engine_instance.
-story_engine = AdvancedStoryEngine()
-
     def _parse_interactive_story_response(self, text: str):
         segment_match = re.search(r"\[SEGMENT\]\s*(.*?)(?=\[CHOICE_|$)", text, re.DOTALL)
         segment_text = segment_match.group(1).strip() if segment_match else text.strip()
@@ -252,6 +247,12 @@ story_engine = AdvancedStoryEngine()
             return {"text": segment_text, "choices": [{"id": "choice_end", "text": "End the story here."}]}
         
         return {"text": segment_text, "choices": choices}
+
+
+# Legacy compatibility: some parts of the backend still import story_service.story_engine.
+# Instantiate a shared AdvancedStoryEngine so those references continue to work even
+# though the app now prefers create_app()'s story_engine_instance.
+story_engine = AdvancedStoryEngine()
 
 
 # ----------------------
