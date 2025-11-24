@@ -152,7 +152,7 @@ def create_app(config_name):
         health_status = {
             'status': 'ok',
             'timestamp': datetime.now().isoformat(),
-            'version': '1.0.1',  # Add versioning
+            'version': '1.0.2',  # Add versioning
         }
 
         # Database check
@@ -189,6 +189,7 @@ def create_app(config_name):
         payload = request.get_json(silent=True) or {}
         rhyme_time_mode = payload.get("rhyme_time_mode", False)
         learning_to_read_mode = payload.get("learning_to_read_mode", False)
+        include_illustrations = payload.get("include_illustrations", False)
         character = payload.get("character", "a brave adventurer")
         theme = payload.get("theme", "Adventure")
         companion = payload.get("companion")
@@ -203,6 +204,7 @@ def create_app(config_name):
 
         if learning_to_read_mode:
             rhyme_time_mode = False  # learning mode already enforces rhyme/length
+            include_illustrations = True
 
         # Deep character integration - get full character details
         character_details = payload.get("character_details") or {}
@@ -318,14 +320,48 @@ def create_app(config_name):
             if user_api_key and api_key:
                 genai.configure(api_key=api_key)
 
+        illustrations = []
+        if include_illustrations:
+            try:
+                generator = None
+                if user_api_key:
+                    generator = GeminiImageGenerator(api_key=user_api_key)
+                elif image_generator is not None:
+                    generator = image_generator
+
+                if generator:
+                    scene_preview = (raw_text or "")[:200].replace("\n", " ").strip()
+                    if not scene_preview:
+                        scene_preview = "A young reader learning through stories"
+
+                    illustrations = generator.generate_story_illustration(
+                        scene_description=f"{character} in a {theme} story. {scene_preview}",
+                        character_name=character,
+                        style="simple, colorful children's book illustration for early readers",
+                        num_images=1,
+                        age=character_age,
+                        therapeutic_focus="reading confidence and engagement",
+                    )
+                    logger.info(f"Generated {len(illustrations)} illustration(s) for story request")
+                else:
+                    logger.warning("Image generator unavailable for requested illustrations")
+            except Exception:
+                logger.exception("Failed to generate illustrations for story response")
+                illustrations = []
+
         title, wisdom_gem, story_text = story_service._safe_extract_title_and_gem(raw_text, theme)
-        return jsonify({
+        response_payload = {
             "title": title,
             "story": story_text,
             "story_text": story_text,
             "wisdom_gem": wisdom_gem,
-            "used_user_key": using_user_key
-        }), 200
+            "used_user_key": using_user_key,
+        }
+        if illustrations:
+            response_payload["illustrations"] = illustrations
+            response_payload["illustration_count"] = len(illustrations)
+
+        return jsonify(response_payload), 200
 
     @limiter.limit("5 per minute") # Rate limit for interactive story start
     @app.route("/generate-interactive-story", methods=["POST"])
@@ -555,4 +591,3 @@ def create_app(config_name):
     print(f"=== All routes registered successfully ===")
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
     return app
-
