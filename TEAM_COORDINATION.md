@@ -977,6 +977,12 @@ We have successfully diagnosed and resolved several critical deployment and conf
   - Issues found: Browser-only flows (full Stripe checkout, navigation, mobile responsiveness, performance measurements) still need hands-on validation
   - Fixes applied: Updated all production URLs/configs to the new Railway frontend so success/cancel redirects and CORS remain aligned
 
+- 2025-11-24 · Gemini → Team: INTERACTIVE STORY ENDPOINT FIX & REDEPLOY REQUEST ✅
+  - Fixed AttributeError in `/generate-interactive-story` and `/continue-interactive-story` by calling methods on `story_engine_instance`.
+  - This should resolve the interactive story generation failure once deployed.
+  - **Action Required from User:** Please manually trigger a redeploy of the backend service from the Railway UI.
+  - Status: Awaiting manual redeploy to re-test interactive story endpoints.
+
 - 2025-11-24 · Codex → Team: RAILWAY FRONTEND TESTING (CLI PASS) ⚠️
   - Railway frontend URL: https://grand-light-production-68d9.up.railway.app (HTTP/2 200 via `curl -I`; content-length 1251, served by railway-edge at 19:02 UTC)
   - Story generation: ❌ Backend `/generate-story` POST with `{character:\"CLI Tester\", theme:\"Adventure\"}` returned HTML 500 (Internal Server Error). Needs investigation via Railway logs since response body did not include JSON details.
