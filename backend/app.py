@@ -367,7 +367,7 @@ def create_app(config_name):
         try:
             # Assume story_service has a method for continuing interactive stories
             # You'll need to implement story_service.continue_interactive_story in services/story_service.py
-            interactive_story_segment = story_service.continue_interactive_story(
+            interactive_story_segment = story_engine_instance.continue_interactive_story(
                 character_name=character_name,
                 theme=theme,
                 companion=companion,
