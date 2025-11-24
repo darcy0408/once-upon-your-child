@@ -40,9 +40,6 @@ def create_app(config_name):
     # Initialize AdvancedStoryEngine
     story_engine_instance = AdvancedStoryEngine()
 
-    # Initialize AdvancedStoryEngine
-    story_engine_instance = AdvancedStoryEngine()
-
     # CORS setup
     CORS(app, resources={
         r"/*": {
@@ -51,8 +48,6 @@ def create_app(config_name):
             "allow_headers": ["Content-Type", "Authorization"],
         }
     })
-
-
 
     # Rate limiting setup
     limiter = Limiter(
@@ -92,7 +87,7 @@ def create_app(config_name):
         request_id = getattr(g, 'request_id', 'unknown')
         logger.exception(f"[{request_id}] Unhandled error: {error}")
 
-        if app.config.get('ENV') == 'production':
+        if os.getenv('RAILWAY_ENVIRONMENT') == 'production': # Use RAILWAY_ENVIRONMENT for production check
             return jsonify({
                 'error': 'Internal server error',
                 'request_id': request_id
@@ -101,14 +96,6 @@ def create_app(config_name):
             'error': str(error),
             'request_id': request_id
         }), 500
-
-    # Rate limiting setup
-    limiter = Limiter(
-        app=app,
-        key_func=get_remote_address,
-        default_limits=["200 per day", "50 per hour"],
-        storage_uri="memory://"
-    )
 
     # Gemini setup
     api_key = app.config["GEMINI_API_KEY"]
