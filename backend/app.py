@@ -341,9 +341,8 @@ def create_app(config_name):
         user_api_key = payload.get("user_api_key")
 
         try:
-            # Assume story_service has a method for interactive story generation
-            # You'll need to implement story_service.generate_interactive_story in services/story_service.py
-            interactive_story_segment = story_service.generate_interactive_story(
+            # Use story_engine_instance which has the interactive story methods
+            interactive_story_segment = story_engine_instance.generate_interactive_story(
                 character_name=character_name,
                 theme=theme,
                 companion=companion,
