@@ -90,51 +90,25 @@ def create_app(config_name):
     @app.errorhandler(Exception)
     def handle_error(error):
         request_id = getattr(g, 'request_id', 'unknown')
-        logger.exception(f"[{request_id}] Unhandled error: Failed to edit, 0 occurrences found for old_string (    # Rate limiting setup
-    limiter = Limiter(
-        app=app,
-        key_func=get_remote_address,
-        default_limits=["200 per day", "50 per hour"],
-        storage_uri="memory://"
-    )
+        logger.exception(f"[{request_id}] Unhandled error: {error}")
 
-    # Gemini setup
-    api_key = app.config["GEMINI_API_KEY"]
-    print(f"DEBUG: api_key from config = {api_key}")
-    print(f"DEBUG: bool(api_key) = {bool(api_key)}")
-    if not api_key:
-        logger.warning("GEMINI_API_KEY not set. Generation endpoints will use fallbacks.")
-    else:
-        genai.configure(api_key=api_key)
-        print(f"DEBUG: Gemini configured with API key")). Original old_string was (    # Rate limiting setup
-    limiter = Limiter(
-        app=app,
-        key_func=get_remote_address,
-        default_limits=["200 per day", "50 per hour"],
-        storage_uri="memory://"
-    )
-
-    # Gemini setup
-    api_key = app.config["GEMINI_API_KEY"]
-    print(f"DEBUG: api_key from config = {api_key}")
-    print(f"DEBUG: bool(api_key) = {bool(api_key)}")
-    if not api_key:
-        logger.warning("GEMINI_API_KEY not set. Generation endpoints will use fallbacks.")
-    else:
-        genai.configure(api_key=api_key)
-        print(f"DEBUG: Gemini configured with API key")) in /mnt/c/dev/story-weaver-app/backend/app.py. No edits made. The exact text in old_string was not found. Ensure you're not escaping content incorrectly and check whitespace, indentation, and context. Use read_file tool to verify.")
-
-        # Don't expose internal errors in production
-        if os.getenv('RAILWAY_ENVIRONMENT') == 'production': # Use RAILWAY_ENVIRONMENT for production check
+        if app.config.get('ENV') == 'production':
             return jsonify({
                 'error': 'Internal server error',
                 'request_id': request_id
             }), 500
-        else:
-            return jsonify({
-                'error': str(error),
-                'request_id': request_id
-            }), 500
+        return jsonify({
+            'error': str(error),
+            'request_id': request_id
+        }), 500
+
+    # Rate limiting setup
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri="memory://"
+    )
 
     # Gemini setup
     api_key = app.config["GEMINI_API_KEY"]
@@ -144,7 +118,7 @@ def create_app(config_name):
         logger.warning("GEMINI_API_KEY not set. Generation endpoints will use fallbacks.")
     else:
         genai.configure(api_key=api_key)
-        print(f"DEBUG: Gemini configured with API key")
+        print("DEBUG: Gemini configured with API key")
 
     GEMINI_MODEL = "models/gemini-2.5-flash"
     try:
@@ -582,7 +556,7 @@ def create_app(config_name):
         """Simple login endpoint for testing."""
         data = request.get_json(silent=True) or {}
         username = data.get('username')
-        password = a.get('password')
+        password = data.get('password')
 
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
@@ -595,6 +569,4 @@ def create_app(config_name):
     print(f"=== All routes registered successfully ===")
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
     return app
-
-
 
