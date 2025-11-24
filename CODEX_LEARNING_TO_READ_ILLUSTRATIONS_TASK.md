@@ -9,7 +9,24 @@
 
 ## 🎯 Objective
 
-Enhance the `/generate-story` endpoint to automatically generate illustrations when `learning_to_read_mode=true`. This will make learning-to-read stories more engaging and educational by providing visual context for young readers.
+Enhance the `/generate-story` endpoint to automatically generate illustrations based on subscription tier and story mode. This will make learning-to-read stories more engaging and provide premium value for paid subscribers.
+
+## 💎 Illustration Tiering Strategy
+
+**FREE Tier:**
+- ✅ Learning-to-read mode: 1 auto-illustration (educational value)
+- ❌ Regular stories: No auto-illustrations (upgrade to Premium)
+- ✅ Can use BYOK (Bring Your Own Gemini API Key) for illustrations
+
+**PREMIUM Tier ($9.99/month):**
+- ✅ All story modes: 1 auto-illustration
+- ✅ Higher quality/more detailed images
+- ✅ Interactive stories with illustrations at key choice points
+
+**FAMILY Tier ($14.99/month):**
+- ✅ All story modes: 2-3 auto-illustrations
+- ✅ Coloring pages auto-generated
+- ✅ Option to regenerate/customize illustrations
 
 ---
 
@@ -46,16 +63,55 @@ return jsonify({
 }), 200
 ```
 
-**Add illustration generation for learning-to-read mode:**
+**Add tier-based illustration generation:**
 
 After line 321 (before extracting title/gem), add:
 
 ```python
-# Auto-generate illustrations for learning-to-read mode
+# Auto-generate illustrations based on tier and mode
 illustrations = []
+
+# Determine if illustrations should be generated
+should_generate_illustrations = False
+num_illustrations = 0
+
+# Get user's subscription tier (you'll need to implement tier checking)
+# For now, assume tier is passed in payload or retrieved from database
+user_tier = payload.get("subscription_tier", "free")  # "free", "premium", "family"
+
+# Tier-based illustration logic
 if learning_to_read_mode:
+    # Learning-to-read mode: Always include illustration (FREE + all tiers)
+    should_generate_illustrations = True
+    num_illustrations = 1
+    logger.info(f"Learning-to-read mode: Enabling auto-illustration (tier: {user_tier})")
+
+elif user_tier == "premium":
+    # Premium: 1 illustration for all stories
+    should_generate_illustrations = True
+    num_illustrations = 1
+    logger.info(f"Premium tier: Enabling auto-illustration")
+
+elif user_tier == "family":
+    # Family: 2 illustrations for richer experience
+    should_generate_illustrations = True
+    num_illustrations = 2
+    logger.info(f"Family tier: Enabling {num_illustrations} auto-illustrations")
+
+else:
+    # Free tier (non-learning mode): No auto-illustrations
+    # But allow BYOK (Bring Your Own Key)
+    if user_api_key:
+        should_generate_illustrations = True
+        num_illustrations = 1
+        logger.info(f"Free tier with BYOK: Enabling auto-illustration")
+    else:
+        logger.info(f"Free tier: No auto-illustration (upgrade to Premium for illustrations)")
+
+# Generate illustrations if enabled
+if should_generate_illustrations:
     try:
-        # Determine if using user's key or server key for images
+        # Determine which API key to use for images
         img_generator = None
         if user_api_key:
             img_generator = GeminiImageGenerator(api_key=user_api_key)
@@ -64,26 +120,33 @@ if learning_to_read_mode:
 
         if img_generator:
             # Extract a brief scene description from the story for illustration
-            # Use first 200 characters as scene context
-            scene_preview = raw_text[:200] if raw_text else "A young reader learning through stories"
+            scene_preview = raw_text[:200] if raw_text else "A therapeutic story"
 
-            # Generate 1-2 illustrations for the story
+            # Adjust style based on tier
+            if user_tier == "family":
+                style = "vibrant, detailed children's book illustration with rich colors"
+            elif user_tier == "premium":
+                style = "colorful children's book illustration"
+            else:
+                style = "simple, colorful children's book illustration for early readers"
+
+            # Generate illustrations
             illustrations = img_generator.generate_story_illustration(
                 scene_description=f"{character} in a {theme} story. {scene_preview}",
                 character_name=character,
-                style="simple, colorful children's book illustration for early readers",
-                num_images=1,  # Start with 1 to keep it fast
+                style=style,
+                num_images=num_illustrations,
                 age=character_age,
-                therapeutic_focus="reading confidence and engagement"
+                therapeutic_focus="emotional growth and confidence"
             )
 
-            logger.info(f"Generated {len(illustrations)} illustration(s) for learning-to-read story")
+            logger.info(f"Generated {len(illustrations)} illustration(s) for {user_tier} tier")
         else:
-            logger.warning("Image generator not available for learning-to-read mode")
+            logger.warning("Image generator not available")
 
     except Exception as e:
         # Don't fail the whole request if illustrations fail
-        logger.exception("Failed to generate illustrations for learning-to-read mode")
+        logger.exception(f"Failed to generate illustrations: {str(e)}")
         illustrations = []
 ```
 
