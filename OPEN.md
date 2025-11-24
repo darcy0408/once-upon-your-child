@@ -1,40 +1,121 @@
-Generated Prompt: Agent Pre-Task Repository Initialization
-Context & Background
-The AI Agent is about to begin a new coding, debugging, or refactoring task. Before making any modifications to the local filesystem, the agent must ensure the local repository is perfectly synchronized with the remote main branch. This step is critical to prevent conflicts and ensure the agent is working on the absolute latest version of the code.
+# OPEN.md - Agent Session Initialization
 
-Core Role & Capabilities
-Synchronization Lead: Responsible for pulling the latest remote changes and resolving potential conflicts immediately.
-Environment Validator: Ensures the working directory is in a ready state before code modification starts.
+## 🚀 EXECUTE THIS AT THE START OF EVERY SESSION
 
-Technical Configuration
-Target Branch: main
-Strategy: Fast-forward merge is preferred; automatic recursive merge otherwise.
-Tools: Git CLI (git status, git pull).
+---
 
-Operational Guidelines
-Check Status: Run git status to verify the working directory is clean before pulling.
-Pull Latest: Execute git pull origin main to fetch and merge all remote changes.
-Conflict Check: Verify the output for merge conflicts or errors.
-Confirm Ready: Report the final status and start the main task.
+## Step 1: Read Project Documentation (Required)
 
-Output Specifications
-Log: Display the terminal output of the git pull command.
-Completion Status: Must explicitly state: "✅ Repository Initialized and Ready for Work."
-Error Warning: If conflicts occurred, alert the user/system clearly.
+Before starting any work, read these files in order:
 
-Advanced Features
-Local Stash: If the initial status check reveals unstaged local changes, the agent must stash the changes (git stash), pull the remote, and then unstash (git stash pop) to protect the work.
-Branch Check: Automatically switch to the main branch if a detached HEAD is detected.
+1. **`PROJECT_RULEBOOK.md`** - Master rules, git workflow, code standards, therapeutic safety protocols
+2. **`TEAM_COORDINATION.md`** - Current project status, recent updates, what other agents are working on
 
-Error Handling
-Authentication Failure: Stop and prompt for credentials immediately.
-Network Error: Alert the user that initialization failed due to connection issues.
+**Purpose:** Understand the project context, rules, and current state before making changes.
 
-Quality Controls
-Final Status: Check that the local HEAD commit matches the remote HEAD commit (or is a clean descendant).
+---
 
-Safety Protocols
-Local Preservation: If stashing/unstashing fails, the agent must not proceed with the task until the local working tree is stable.
+## Step 2: Sync Repository (Pull Latest Code)
 
-Format Management
-Response: The final output should be brief and immediately followed by the agent beginning its actual coding task.
+Execute these git commands to ensure you have the latest code:
+
+### 2.1: Check Current Status
+```bash
+git status
+```
+**Expected:** Should show you're on `main` branch
+
+### 2.2: Handle Existing Changes (If Any)
+If `git status` shows uncommitted changes:
+```bash
+git stash
+```
+**Note:** This temporarily saves any local changes
+
+### 2.3: Pull Latest from Remote
+```bash
+git pull origin main --strategy-option=ours --no-edit
+```
+**What this does:**
+- Downloads latest code from GitHub
+- If conflicts occur, keeps local changes (`--strategy-option=ours`)
+- No interactive merge editor (`--no-edit`)
+
+### 2.4: Restore Stashed Changes (If You Stashed)
+```bash
+git stash pop
+```
+**Only run if you ran `git stash` in step 2.2**
+
+### 2.5: Verify Success
+```bash
+git status
+```
+**Expected:** Clean working tree or your intended changes shown
+
+---
+
+## Step 3: Report Ready Status
+
+After completing steps 1-2, respond to the user:
+
+```
+✅ Repository Initialized and Ready for Work
+- PROJECT_RULEBOOK.md: Read and understood
+- TEAM_COORDINATION.md: Current status reviewed
+- Git repository: Synced with latest from origin/main
+- Branch: main
+- Working tree: [clean/has changes from stash]
+
+Ready to begin assigned task.
+```
+
+---
+
+## 🔧 Error Handling
+
+### Error: "Authentication failed"
+- **Stop immediately**
+- **Alert user:** "⚠️ Git authentication failed. User needs to re-authenticate with GitHub."
+
+### Error: "CONFLICT (content)"
+- **If stash pop causes conflict:**
+  - Run `git stash drop` to discard the stashed changes
+  - Alert user: "⚠️ Stashed changes conflicted with remote updates. Stash was dropped. Please verify."
+
+### Error: "You are in 'detached HEAD' state"
+- **Fix:** Run `git checkout main` then retry step 2
+
+### Error: Network issues
+- **Alert user:** "⚠️ Cannot reach GitHub. Check internet connection."
+
+---
+
+## 🎯 Quick Reference
+
+**Normal flow (no local changes):**
+```bash
+git status
+git pull origin main --strategy-option=ours --no-edit
+```
+
+**With local changes:**
+```bash
+git stash
+git pull origin main --strategy-option=ours --no-edit
+git stash pop
+```
+
+---
+
+## 🛡️ Safety Checks
+
+Before proceeding to work:
+- [ ] On `main` branch? (check `git branch`)
+- [ ] Latest code pulled? (check `git log -1` matches GitHub)
+- [ ] PROJECT_RULEBOOK.md read?
+- [ ] TEAM_COORDINATION.md reviewed?
+
+---
+
+**Session Start Complete** → Now begin your assigned task following PROJECT_RULEBOOK.md guidelines.
