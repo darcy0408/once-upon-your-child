@@ -164,11 +164,20 @@ def create_app(config_name):
         except Exception as e:
             db_status = f"error: {str(e)}"
 
+        # Stripe check
+        stripe_api_key = os.getenv('STRIPE_API_KEY')
+        stripe_configured = bool(stripe_api_key)
+        stripe_premium_price = bool(os.getenv('STRIPE_PRICE_ID_PREMIUM')) if stripe_api_key else False
+        stripe_family_price = bool(os.getenv('STRIPE_PRICE_ID_FAMILY')) if stripe_api_key else False
+
         return {
             "status": "ok",
             "model": GEMINI_MODEL,
             "has_api_key": bool(api_key),
             "database": db_status,
+            "stripe_configured": stripe_configured,
+            "stripe_premium_price": stripe_premium_price,
+            "stripe_family_price": stripe_family_price,
             "flask_env": os.getenv("FLASK_ENV"),
             "railway_environment": os.getenv("RAILWAY_ENVIRONMENT"),
             "app_config_env": app.config.get("ENV"),
