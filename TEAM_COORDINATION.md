@@ -1,8 +1,8 @@
 ## ✅ DEPLOYMENT COMPLETE - Both Systems Live on Railway (2025-11-24)
 
-### Claude Session - Railway Frontend Migration
+### Claude Session - Railway Frontend Migration & Backend Fix
 
-**Status:** ✅ RESOLVED - All systems operational
+**Status:** ✅ RESOLVED - All systems operational (awaiting final Railway redeploy)
 
 #### Issue Resolution:
 
@@ -36,6 +36,13 @@
 - ✅ Backend health check passing
 - ✅ CORS configured for new frontend URL
 - ✅ Both services in same Railway project
+
+#### Backend Interactive Story Fix (2025-11-24 15:02):
+- **Issue Found:** Gemini's commit ad0621e only fixed `continue_interactive_story` endpoint, missed `generate_interactive_story`
+- **Root Cause:** Both endpoints were calling `story_service.generate_interactive_story()` which doesn't exist as a module function
+- **Fix Applied:** Changed `generate_interactive_story` endpoint to use `story_engine_instance.generate_interactive_story()`
+- **Status:** Fix committed and pushed (commit 6f6ec82), awaiting Railway redeploy
+- **Testing:** After Railway redeploys, interactive story endpoints should work
 
 ---
 
