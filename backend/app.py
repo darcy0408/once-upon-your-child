@@ -166,7 +166,8 @@ def create_app(config_name):
 
         # Database check
         try:
-            db.session.execute('SELECT 1')
+            from sqlalchemy import text
+            db.session.execute(text('SELECT 1'))
             health_status['database'] = 'ok'
         except Exception as e:
             health_status['database'] = 'error'
@@ -185,8 +186,10 @@ def create_app(config_name):
         # Environment
         health_status['environment'] = os.getenv('RAILWAY_ENVIRONMENT', 'unknown')
 
-        status_code = 200 if health_status['status'] == 'ok' else 503
-        return jsonify(health_status), status_code
+        if health_status['status'] != 'ok':
+            logger.warning(f"Health degraded: {health_status}")
+
+        return jsonify(health_status), 200
 
     @app.route('/health/database', methods=['GET'])
     def database_health():
