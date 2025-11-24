@@ -1060,3 +1060,7 @@ We have successfully diagnosed and resolved several critical deployment and conf
 - 2025-11-24 · Codex → Team: GEMINI API KEY EXPIRED ⚠️
   - Follow-up test after key rotation still fails: `/generate-story` returns `{"error":"400 API key expired. Please renew the API key. [reason: \"API_KEY_INVALID\" ...]"}`.
   - Suggestion: Generate a fresh Gemini API key from Google AI Studio, update Railway env, redeploy, and confirm `curl -X POST /generate-story` returns story JSON.
+
+- 2025-11-24 · Codex → Team: GEMINI API KEY RESTORED ✅
+  - Latest redeploy with new key succeeded; `/generate-story` now returns full story JSON (`title: "CLI Tester and the Grumpy Owl"`, `wisdom_gem: "The greatest adventures begin with a single brave step"`, `used_user_key:false`).
+  - Backend confirmed healthy via `/health`; proceed with browser testing for story/interactive flows and Stripe checkout per CODEX_RAILWAY_FRONTEND_TASK.md.
