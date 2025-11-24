@@ -42,8 +42,8 @@ def create_checkout_session():
                 },
             ],
             mode='subscription',
-            success_url='https://reliable-sherbet-2352c4.netlify.app/#/subscription-success', # Production success URL
-            cancel_url='https://reliable-sherbet-2352c4.netlify.app/#/subscription-canceled', # Production cancel URL
+            success_url='https://grand-light-production-68d9.up.railway.app/#/subscription-success', # Production success URL
+            cancel_url='https://grand-light-production-68d9.up.railway.app/#/subscription-canceled', # Production cancel URL
         )
         return jsonify({
             'id': checkout_session.id,

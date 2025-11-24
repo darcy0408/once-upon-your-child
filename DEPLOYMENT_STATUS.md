@@ -9,7 +9,7 @@
 
 | System | Platform | Status | URL |
 |--------|----------|--------|-----|
-| **Frontend** | Netlify | ✅ Deployed | https://reliable-sherbet-2352c4.netlify.app |
+| **Frontend** | Railway Edge | ✅ Deployed | https://grand-light-production-68d9.up.railway.app |
 | **Backend** | Railway | ✅ Deployed | https://story-weaver-app-production.up.railway.app |
 | **Database** | Railway PostgreSQL | ✅ Connected | (Railway managed) |
 | **Payments** | Stripe | ✅ Configured | Test mode active |
@@ -29,7 +29,7 @@
 - [x] CORS configured for frontend
 - [x] Rate limiting enabled
 
-### Frontend (Netlify)
+### Frontend (Railway)
 - [x] Flutter web build deployed
 - [x] StripeService integrated
 - [x] SubscribeButton functional
@@ -63,7 +63,7 @@
 **Focus:** End-to-end user flow testing
 
 **Key Tasks:**
-- Verify Netlify deployment
+- Verify Railway frontend deployment
 - Test Stripe checkout flow (Premium & Family)
 - Test subscription management screen
 - Mobile responsiveness check
@@ -196,8 +196,8 @@ Run one at a time:
 - **Page load:** < 3 seconds
 
 ### Resource Usage:
-- **Railway:** Auto-scales as needed
-- **Netlify:** CDN distributed globally
+- **Railway (Backend):** Auto-scales as needed
+- **Railway Edge (Frontend):** CDN distributed globally
 - **Database:** Connection pooling enabled
 
 ---
@@ -219,7 +219,7 @@ Run one at a time:
 
 ### Monitoring Tools:
 - **Railway Logs:** Real-time backend monitoring
-- **Netlify Logs:** Deployment & build logs
+- **Railway Frontend Logs:** Deployment & build logs
 - **Stripe Dashboard:** Payment events & webhooks
 - **Browser Console:** Frontend error tracking
 

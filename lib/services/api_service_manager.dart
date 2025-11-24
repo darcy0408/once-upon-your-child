@@ -11,6 +11,7 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import '../config/environment.dart';
 
 import '../character_traits_data.dart';
+import '../models/story_generation_result.dart';
 import 'story_complexity_service.dart';
 
 /// Manages API calls - routes to either local backend or direct Gemini API
@@ -89,7 +90,7 @@ class ApiServiceManager {
   }
 
   /// Generate a story using appropriate method (backend or direct API)
-  static Future<String> generateStory({
+  static Future<StoryGenerationResult> generateStory({
     required String characterName,
     required String theme,
     required int age,
@@ -98,6 +99,7 @@ class ApiServiceManager {
     List<String>? additionalCharacters,
     bool rhymeTimeMode = false,
     bool learningToReadMode = false,
+    bool includeIllustrations = false,
     Map<String, dynamic>? currentFeeling,
     Map<String, dynamic>? characterEvolution,
     http.Client? client,
@@ -119,6 +121,7 @@ class ApiServiceManager {
         additionalCharacters: additionalCharacters,
         rhymeTimeMode: rhymeTimeMode,
         learningToReadMode: learningToReadMode,
+        includeIllustrations: includeIllustrations,
         currentFeeling: currentFeeling,
         characterEvolution: characterEvolution,
       );
@@ -133,6 +136,7 @@ class ApiServiceManager {
         additionalCharacters: additionalCharacters,
         rhymeTimeMode: rhymeTimeMode,
         learningToReadMode: learningToReadMode,
+        includeIllustrations: includeIllustrations,
         currentFeeling: currentFeeling,
         characterEvolution: characterEvolution,
         client: effectiveClient,
@@ -166,7 +170,7 @@ class ApiServiceManager {
   }
 
   /// Generate story using direct Gemini API
-  static Future<String> _generateStoryWithGemini({
+  static Future<StoryGenerationResult> _generateStoryWithGemini({
     required String characterName,
     required String theme,
     required int age,
@@ -175,6 +179,7 @@ class ApiServiceManager {
     List<String>? additionalCharacters,
     bool rhymeTimeMode = false,
     bool learningToReadMode = false,
+    bool includeIllustrations = false,
     Map<String, dynamic>? currentFeeling,
     Map<String, dynamic>? characterEvolution,
   }) async {
@@ -200,10 +205,16 @@ class ApiServiceManager {
     );
 
     final response = await model.generateContent([Content.text(prompt)]);
-    return response.text ?? '';
+    final storyText = response.text ?? '';
+    return StoryGenerationResult(
+      storyText: storyText,
+      title: null,
+      wisdomGem: null,
+      usedUserKey: true,
+    );
   }
 
-  static Future<String> _generateStoryWithBackendRetry({
+  static Future<StoryGenerationResult> _generateStoryWithBackendRetry({
     required String characterName,
     required String theme,
     required int age,
@@ -212,6 +223,7 @@ class ApiServiceManager {
     List<String>? additionalCharacters,
     bool rhymeTimeMode = false,
     bool learningToReadMode = false,
+    bool includeIllustrations = false,
     Map<String, dynamic>? currentFeeling,
     Map<String, dynamic>? characterEvolution,
     http.Client? client,
@@ -233,6 +245,7 @@ class ApiServiceManager {
           additionalCharacters: additionalCharacters,
           rhymeTimeMode: rhymeTimeMode,
           learningToReadMode: learningToReadMode,
+          includeIllustrations: includeIllustrations,
           currentFeeling: currentFeeling,
           characterEvolution: characterEvolution,
           client: client,
@@ -250,7 +263,7 @@ class ApiServiceManager {
   }
 
   /// Generate story using local backend
-  static Future<String> _generateStoryWithBackend({
+  static Future<StoryGenerationResult> _generateStoryWithBackend({
     required String characterName,
     required String theme,
     required int age,
@@ -259,6 +272,7 @@ class ApiServiceManager {
     List<String>? additionalCharacters,
     bool rhymeTimeMode = false,
     bool learningToReadMode = false,
+    bool includeIllustrations = false,
     Map<String, dynamic>? currentFeeling,
     Map<String, dynamic>? characterEvolution,
     http.Client? client,
@@ -278,6 +292,7 @@ class ApiServiceManager {
       'current_feeling': currentFeeling,
       'character_evolution': characterEvolution,
       'additional_characters': additionalCharacters,
+      'include_illustrations': includeIllustrations,
     };
 
     try {
@@ -292,7 +307,7 @@ class ApiServiceManager {
         final payload = jsonDecode(generateResponse.body) as Map<String, dynamic>;
         final story = payload['story'] ?? payload['story_text'];
         if (story is String && story.isNotEmpty) {
-          return story;
+          return StoryGenerationResult.fromBackend(payload);
         }
         throw HttpException(
           'Backend returned 200 without story content',
@@ -337,7 +352,9 @@ class ApiServiceManager {
 
         if (status == 'complete') {
           final result = statusData['result'];
-          return result as String;
+          return StoryGenerationResult(
+            storyText: result as String,
+          );
         } else if (status == 'failure') {
           throw Exception('Story generation task failed: ${statusData['result']}');
         }

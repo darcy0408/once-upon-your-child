@@ -27,7 +27,7 @@ class Config:
         "http://localhost:5000",  # Direct access
         "http://127.0.0.1:5000",  # Direct access
         "https://story-weaver-app.netlify.app",
-        "https://reliable-sherbet-2352c4.netlify.app",  # Production Netlify domain
+        "https://grand-light-production-68d9.up.railway.app",  # Production Railway domain
         "https://*.netlify.app",  # Allow Netlify preview deploys
     ]
 

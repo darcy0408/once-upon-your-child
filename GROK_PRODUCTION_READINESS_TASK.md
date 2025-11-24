@@ -44,7 +44,7 @@ curl https://story-weaver-app-production.up.railway.app/health
 ### 1.2: Frontend Availability (Netlify)
 
 ```bash
-curl -I https://reliable-sherbet-2352c4.netlify.app
+curl -I https://grand-light-production-68d9.up.railway.app
 ```
 
 **Expected:** `HTTP/2 200`
@@ -59,7 +59,7 @@ curl -I https://reliable-sherbet-2352c4.netlify.app
 ### 1.3: End-to-End Test (Full Flow)
 
 **Critical Path Test:**
-1. Open https://reliable-sherbet-2352c4.netlify.app
+1. Open https://grand-light-production-68d9.up.railway.app
 2. Navigate to subscription screen
 3. Click "Subscribe - Premium"
 4. Verify redirects to Stripe Checkout
@@ -233,7 +233,7 @@ git log -S "STRIPE" --all
 ### 5.2: HTTPS Verification
 
 **Both deployments must use HTTPS:**
-- [ ] https://reliable-sherbet-2352c4.netlify.app (SSL certificate valid)
+- [ ] https://grand-light-production-68d9.up.railway.app (SSL certificate valid)
 - [ ] https://story-weaver-app-production.up.railway.app (SSL certificate valid)
 
 **Test in browser:**
@@ -244,7 +244,7 @@ git log -S "STRIPE" --all
 
 **Verify CORS allows frontend:**
 ```bash
-curl -H "Origin: https://reliable-sherbet-2352c4.netlify.app" \
+curl -H "Origin: https://grand-light-production-68d9.up.railway.app" \
      -H "Access-Control-Request-Method: POST" \
      -X OPTIONS \
      https://story-weaver-app-production.up.railway.app/generate-story
@@ -252,7 +252,7 @@ curl -H "Origin: https://reliable-sherbet-2352c4.netlify.app" \
 
 **Expected headers in response:**
 ```
-Access-Control-Allow-Origin: https://reliable-sherbet-2352c4.netlify.app
+Access-Control-Allow-Origin: https://grand-light-production-68d9.up.railway.app
 ```
 
 ---
@@ -357,7 +357,7 @@ We're excited to announce that Story Weaver is now available for everyone!
 - Premium subscriptions for unlimited stories
 
 🚀 Get Started:
-Visit: https://reliable-sherbet-2352c4.netlify.app
+Visit: https://grand-light-production-68d9.up.railway.app
 
 💳 Subscription Plans:
 - Free: 3 stories per day

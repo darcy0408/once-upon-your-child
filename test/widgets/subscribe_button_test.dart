@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../../lib/models/subscription_tier.dart';
+import '../../lib/subscription_models.dart';
 import '../../lib/services/stripe_service.dart';
 import '../../lib/widgets/subscribe_button.dart';
 

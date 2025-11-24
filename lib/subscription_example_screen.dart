@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/subscribe_button.dart';
-import '../models/subscription_tier.dart';
+import '../subscription_models.dart';
 
 /// Example screen showing how to use SubscribeButton widget
 class SubscriptionExampleScreen extends StatelessWidget {

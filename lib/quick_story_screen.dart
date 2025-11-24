@@ -82,7 +82,7 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
       }
 
       // Generate the story
-      final story = await ApiServiceManager.generateStory(
+      final storyResult = await ApiServiceManager.generateStory(
         characterName: _characterNameController.text.trim(),
         theme: _selectedTheme,
         age: int.parse(_selectedAge),
@@ -93,7 +93,7 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
 
       if (mounted) {
         setState(() {
-          _generatedStory = story;
+          _generatedStory = storyResult.storyText;
           _isGenerating = false;
         });
       }

@@ -39,6 +39,7 @@ import 'pre_story_feelings_dialog.dart';
 import 'config/environment.dart';
 import 'screens/subscription_success_screen.dart';
 import 'services/story_complexity_service.dart';
+import 'models/story_generation_result.dart';
 
 
 class StoryCreatorApp extends StatelessWidget {
@@ -91,6 +92,7 @@ class _StoryScreenState extends State<StoryScreen> {
 
   bool _rhymeTimeMode = false;
   bool _learningToReadMode = false;
+  bool _includeIllustrations = false;
   final _progressionService = ProgressionService();
   int _storiesCreated = 0;
   bool _hasRhymeTime = false;
@@ -317,7 +319,7 @@ class _StoryScreenState extends State<StoryScreen> {
 
     try {
       // Generate story
-      final story = await _generateStory(
+      final storyResult = await _generateStory(
       prompt: prompt,
       characterName: _selectedCharacter!.name,
       ageGroup: ageGroup,
@@ -332,13 +334,21 @@ class _StoryScreenState extends State<StoryScreen> {
     // Removed the post-story feelings popup as it was disruptive to UX
 
     // Generate title and wisdom gem
-    final String title = _additionalCharacterIds.isEmpty
-        ? '${_selectedCharacter!.name}\'s ${_selectedTheme} Adventure'
-        : _generateMultiCharacterTitle();
+    final story = storyResult.storyText;
+    final backendTitle = storyResult.title?.trim();
+    final backendWisdom = storyResult.wisdomGem?.trim();
 
-    final String wisdomGem = _additionalCharacterIds.isEmpty
-        ? 'Every adventure makes us stronger and wiser.'
-        : 'Together, we are stronger than we are alone.';
+    final String title = (backendTitle != null && backendTitle.isNotEmpty)
+        ? backendTitle
+        : (_additionalCharacterIds.isEmpty
+            ? '${_selectedCharacter!.name}\'s ${_selectedTheme} Adventure'
+            : _generateMultiCharacterTitle());
+
+    final String wisdomGem = (backendWisdom != null && backendWisdom.isNotEmpty)
+        ? backendWisdom
+        : (_additionalCharacterIds.isEmpty
+            ? 'Every adventure makes us stronger and wiser.'
+            : 'Together, we are stronger than we are alone.');
 
     final storyTimestamp = DateTime.now();
 
@@ -349,8 +359,8 @@ class _StoryScreenState extends State<StoryScreen> {
       theme: _selectedTheme,
       characters: allSelectedCharacters,
       createdAt: storyTimestamp,
-      isInteractive: false,
-      wisdomGem: wisdomGem,
+          isInteractive: false,
+          wisdomGem: wisdomGem,
     );
     await StorageService().saveStory(saved);
 
@@ -379,6 +389,7 @@ class _StoryScreenState extends State<StoryScreen> {
           trackStoryCreation: true,
           isInteractive: _interactiveMode,
           isRhyming: _rhymeTimeMode,
+          backendIllustrations: storyResult.illustrations,
         ),
       ),
     );
@@ -435,7 +446,7 @@ class _StoryScreenState extends State<StoryScreen> {
     }
   }
 
-  Future<String> _generateStory({
+  Future<StoryGenerationResult> _generateStory({
     required String prompt,
     required String characterName,
     required String ageGroup,
@@ -458,6 +469,7 @@ class _StoryScreenState extends State<StoryScreen> {
       additionalCharacters: allCharacters.skip(1).map((c) => c.name).toList(),
       rhymeTimeMode: _rhymeTimeMode,
       learningToReadMode: _learningToReadMode,
+      includeIllustrations: _includeIllustrations,
       currentFeeling: null, // Could be added later
     );
   }
@@ -792,10 +804,36 @@ class _StoryScreenState extends State<StoryScreen> {
                             _learningToReadMode = value;
                             if (value) {
                               _rhymeTimeMode = false;
+                              _includeIllustrations = true;
                             }
                           });
                         }
                       : null,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: SwitchListTile(
+                  title: const Text(
+                    'Include Illustrations',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    _learningToReadMode
+                        ? 'Enabled automatically for Learn to Read stories'
+                        : 'Generate colorful images with your story',
+                  ),
+                  value:
+                      _learningToReadMode ? true : _includeIllustrations,
+                  activeColor: Colors.teal,
+                  secondary: const Icon(Icons.brush, color: Colors.teal),
+                  onChanged: _learningToReadMode
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _includeIllustrations = value;
+                          });
+                        },
                 ),
               ),
               const SizedBox(height: 12),

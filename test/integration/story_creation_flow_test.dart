@@ -34,7 +34,7 @@ void main() {
         client: mockClient,
       );
 
-      expect(story, 'Mock backend story');
+      expect(story.storyText, 'Mock backend story');
     });
 
     test('includes additional characters in payload when present', () async {
@@ -56,7 +56,7 @@ void main() {
         client: mockClient,
       );
 
-      expect(story, 'Group adventure');
+      expect(story.storyText, 'Group adventure');
     });
 
     test('retries failed backend calls before succeeding', () async {
@@ -77,7 +77,7 @@ void main() {
         retryInitialDelay: const Duration(milliseconds: 20),
       );
 
-      expect(story, 'Retried story!');
+      expect(story.storyText, 'Retried story!');
       expect(attempts, 3);
     });
 
@@ -103,7 +103,7 @@ void main() {
 
       stopwatch.stop();
 
-      expect(story, 'Timing story');
+      expect(story.storyText, 'Timing story');
       expect(attempts, 3);
       expect(
         stopwatch.elapsed,

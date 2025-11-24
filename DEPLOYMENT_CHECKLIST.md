@@ -95,7 +95,7 @@ git push origin main
 - Check logs for any errors
 
 **3. Post-Deployment Verification**
-Visit: https://reliable-sherbet-2352c4.netlify.app
+Visit: https://grand-light-production-68d9.up.railway.app
 
 - [ ] Site loads without errors
 - [ ] Create character screen shows sliders
@@ -137,7 +137,7 @@ Previous stable commit: `1bfd89b` - "Complete 2025-11-10 production deployment s
 
 ### Production URLs
 
-- **Frontend:** https://reliable-sherbet-2352c4.netlify.app
+- **Frontend:** https://grand-light-production-68d9.up.railway.app
 - **Backend:** https://story-weaver-app-production.up.railway.app
 - **GitHub:** https://github.com/darcy0408/story-weaver-app
 - **Railway Dashboard:** radiant-tranquility project

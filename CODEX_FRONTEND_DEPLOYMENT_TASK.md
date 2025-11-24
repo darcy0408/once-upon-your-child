@@ -32,7 +32,7 @@ Verify the Netlify frontend deployment is working correctly with the Railway bac
 ## Task 1: Verify Netlify Deployment Status
 
 ### 1.1: Check Netlify Build
-Go to: https://reliable-sherbet-2352c4.netlify.app
+Go to: https://grand-light-production-68d9.up.railway.app
 
 **Expected:**
 - Site loads without errors
@@ -270,7 +270,7 @@ Before marking task complete:
 
 ### Check Netlify Deployment Status
 ```bash
-curl -I https://reliable-sherbet-2352c4.netlify.app
+curl -I https://grand-light-production-68d9.up.railway.app
 ```
 **Expected:** `HTTP/2 200`
 

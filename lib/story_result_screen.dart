@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -47,6 +48,7 @@ class StoryResultScreen extends StatefulWidget {
   final DateTime? storyCreatedAt;
   final bool trackStoryCreation;
   final bool trackAnalytics;
+  final List<Map<String, dynamic>>? backendIllustrations;
 
   const StoryResultScreen({
     super.key,
@@ -64,6 +66,7 @@ class StoryResultScreen extends StatefulWidget {
     this.storyCreatedAt,
     this.trackStoryCreation = false,
     this.trackAnalytics = true,
+    this.backendIllustrations,
   }) : assert(!trackStoryCreation || achievementsService != null),
         assert(!trackStoryCreation || storyCreatedAt != null);
 
@@ -99,6 +102,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   bool _isSubmittingFeedback = false;
   double _storyRating = 4.0;
   bool _isStoryHovered = false;
+  List<_InlineIllustration> _inlineIllustrations = [];
 
   String get _analyticsStoryId =>
       widget.storyId ?? widget.title.hashCode.toString();
@@ -135,12 +139,37 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     _cacheStoryForOffline();
     _loadCachedIllustrations();
     _loadCachedColoringPages();
+    _decodeInlineIllustrations();
     if (widget.trackStoryCreation) {
       _trackStoryCreation(); // Track that user created a story, check for unlocks
     }
     if (widget.trackAnalytics) {
       _trackStoryView();
     }
+  }
+
+  void _decodeInlineIllustrations() {
+    final raw = widget.backendIllustrations;
+    if (raw == null || raw.isEmpty) return;
+
+    final decoded = <_InlineIllustration>[];
+    for (final item in raw) {
+      final data = item['image_data'];
+      if (data is String && data.isNotEmpty) {
+        try {
+          decoded.add(
+            _InlineIllustration(
+              bytes: base64Decode(data),
+              prompt: item['prompt'] as String?,
+            ),
+          );
+        } catch (_) {
+          // Ignore invalid base64 blobs
+        }
+      }
+    }
+
+    _inlineIllustrations = decoded;
   }
 
   @override
@@ -653,6 +682,41 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     final hasFocus =
         _activeTherapeuticFocus != null && _activeTherapeuticFocus!.isNotEmpty;
     return hasName || widget.characterId != null || hasFocus;
+  }
+
+  Widget _buildBackendIllustrationsCard() {
+    if (_inlineIllustrations.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Story Illustrations',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          ..._inlineIllustrations.map(
+            (illustration) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.memory(
+                  illustration.bytes,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildStoryMetaCard() {
@@ -1183,6 +1247,10 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
               if (_shouldShowMetaCard) _buildStoryMetaCard(),
               if (_shouldShowMetaCard) const SizedBox(height: AppSpacing.sm),
               if (!_shouldShowMetaCard) const SizedBox(height: AppSpacing.sm),
+              if (_inlineIllustrations.isNotEmpty) ...[
+                _buildBackendIllustrationsCard(),
+                const SizedBox(height: AppSpacing.sm),
+              ],
 
               LayoutBuilder(
               builder: (context, constraints) =>
@@ -1484,6 +1552,16 @@ class _ColoringSettingsDialogState extends State<ColoringSettingsDialog> {
       ],
     );
   }
+}
+
+class _InlineIllustration {
+  const _InlineIllustration({
+    required this.bytes,
+    this.prompt,
+  });
+
+  final Uint8List bytes;
+  final String? prompt;
 }
 
 class ColoringGenerationDialog extends StatelessWidget {

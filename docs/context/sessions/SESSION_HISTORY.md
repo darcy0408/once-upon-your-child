@@ -63,7 +63,7 @@ This file tracks all work sessions on the Story Weaver App project. Each entry r
 **Frontend Deployment (Netlify):**
 - Built Flutter web app for production
 - Deployed to Netlify via CLI
-- URL: https://reliable-sherbet-2352c4.netlify.app
+- URL: https://grand-light-production-68d9.up.railway.app
 - Configured automatic deployments from GitHub
 
 **Features Integrated:**
@@ -162,7 +162,7 @@ This file tracks all work sessions on the Story Weaver App project. Each entry r
 
 **Production URLs:**
 - **Backend:** https://story-weaver-app-production.up.railway.app
-- **Frontend:** https://reliable-sherbet-2352c4.netlify.app
+- **Frontend:** https://grand-light-production-68d9.up.railway.app
 - **GitHub:** https://github.com/darcy0408/story-weaver-app
 - **Railway Dashboard:** radiant-tranquility project
 - **Netlify Dashboard:** reliable-sherbet-2352c4 site

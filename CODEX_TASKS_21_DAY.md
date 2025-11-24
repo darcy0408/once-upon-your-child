@@ -948,7 +948,7 @@ Branch: `codex/frontend-tests`
 
    - [iOS App Store](#) - Coming soon
    - [Google Play](#) - Coming soon
-   - [Web App](https://reliable-sherbet-2352c4.netlify.app)
+   - [Web App](https://grand-light-production-68d9.up.railway.app)
 
    ## 🛟 Support
 
