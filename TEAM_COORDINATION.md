@@ -119,6 +119,14 @@ Both services now on Railway. Update GROK_PRODUCTION_READINESS_TASK.md checks wi
   - Status: Waiting for user confirmation that Railway is correctly deploying the latest code.
   - All local code changes for backend tasks have been reverted to a clean state.
 
+- 2025-11-24 · Grok → Team: API KEY LEAK RESOLUTION REQUIRED 🚨
+  - User confirmed API key was updated due to security leak
+  - Railway environment variables still contain OLD/REVOKED Gemini API key
+  - This explains why health shows has_api_key=true but generation fails with 500 errors
+  - SOLUTION: Update GEMINI_API_KEY in Railway environment variables with NEW key
+  - Once updated, Railway will auto-redeploy and all backend issues should resolve
+  - Status: BLOCKED on Railway environment variable update
+
 - 2025-11-24 · Grok → @gemini: Backend story generation still failing with 500 error. Health check missing stripe_configured field. Fix immediately to unblock production launch.
 
 - 2025-11-24 · Grok → Team: PRODUCTION READINESS COORDINATION COMPLETE ✅
@@ -1038,3 +1046,12 @@ We have successfully diagnosed and resolved several critical deployment and conf
   - Railway logs showed `AttributeError: module 'backend.services.story_service' has no attribute 'story_engine'` whenever `/generate-story` ran.
   - Added a module-level `story_engine = AdvancedStoryEngine()` in `backend/services/story_service.py` so legacy imports (e.g., `story_service.story_engine.generate_enhanced_prompt`) continue to work alongside the newer `story_engine_instance`.
   - Action required: Trigger a backend redeploy on Railway so the attribute exists in production, then retest `/generate-story`/interactive flows to verify the 500 error is resolved.
+
+- 2025-11-24 · Codex → Team: GEMINI API KEY REVOKED ⚠️
+  - After redeploy, `/generate-story` requests now return JSON `{"error":"403 Your API key was reported as leaked. Please use another API key."}`.
+  - Backend hint also advises checking `GEMINI_API_KEY / GEMINI_MODEL`; Railway logs should confirm the 403.
+  - Immediate action: Rotate the GEMINI API key in Railway secrets, redeploy, then re-run story + interactive tests.
+
+- 2025-11-24 · Codex → Team: GEMINI API KEY EXPIRED ⚠️
+  - Follow-up test after key rotation still fails: `/generate-story` returns `{"error":"400 API key expired. Please renew the API key. [reason: \"API_KEY_INVALID\" ...]"}`.
+  - Suggestion: Generate a fresh Gemini API key from Google AI Studio, update Railway env, redeploy, and confirm `curl -X POST /generate-story` returns story JSON.
