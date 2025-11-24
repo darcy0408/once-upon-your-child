@@ -130,11 +130,11 @@ def create_app(config_name):
         logger.warning("⚠ STRIPE_API_KEY not set - subscriptions disabled")
 
     # Initialize image generator
-    try:
-        image_generator = GeminiImageGenerator() if api_key else None
-    except Exception as e:
-        logger.exception("Failed to initialize image generator: %s", e)
-        image_generator = None
+    # try:
+    #     image_generator = GeminiImageGenerator() if api_key else None
+    # except Exception as e:
+    #     logger.exception("Failed to initialize image generator: %s", e)
+    #     image_generator = None
 
     print(f"=== Creating database tables ===")
     with app.app_context():
