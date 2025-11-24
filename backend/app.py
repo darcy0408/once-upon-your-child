@@ -1,5 +1,6 @@
 import os
 import logging
+import os
 import google.generativeai as genai
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -13,6 +14,8 @@ from .models.achievement import UserAchievement, AchievementStats
 from .models.user import User
 
 from .services import character_service, story_service
+from .routes.stripe_routes import stripe_routes
+from .routes.webhook_handler import webhook_routes
 # from .repositories import character_repository
 from .gemini_image_generator import GeminiImageGenerator
 # Route imports removed - routes defined directly in app.py
@@ -69,6 +72,15 @@ def create_app(config_name):
         logger.exception("Failed to initialize Gemini model: %s", e)
         model = None
 
+    # Initialize Stripe
+    stripe_api_key = os.getenv('STRIPE_API_KEY')
+    if stripe_api_key:
+        import stripe
+        stripe.api_key = stripe_api_key
+        logger.info("✓ Stripe API configured")
+    else:
+        logger.warning("⚠ STRIPE_API_KEY not set - subscriptions disabled")
+
     # Initialize image generator
     try:
         image_generator = GeminiImageGenerator() if api_key else None
@@ -86,6 +98,8 @@ def create_app(config_name):
     app.config['JWT_SECRET_KEY'] = app.config.get('JWT_SECRET_KEY', 'dev-secret-key')
 
     # Blueprints removed - routes defined directly in app.py
+    app.register_blueprint(stripe_routes, url_prefix='/api/stripe')
+    app.register_blueprint(webhook_routes, url_prefix='/api/webhooks')
 
     # API Routes
     print(f"=== Registering routes ===")
