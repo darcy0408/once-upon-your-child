@@ -147,38 +147,37 @@ def create_app(config_name):
 
     # API Routes
     print(f"=== Registering routes ===")
-    @app.route("/health", methods=["GET"])
-    def health():
-        print(f"=== Health endpoint called ===")
+    @app.route('/health', methods=['GET'])
+    def health_check():
+        health_status = {
+            'status': 'ok',
+            'timestamp': datetime.now().isoformat(),
+            'version': '1.0.0',  # Add versioning
+        }
 
-        # Add database check
-        db_status = "ok"
+        # Database check
         try:
-            # Simple query to verify database connection
-            from .models.user import User
-            User.query.limit(1).all()
+            db.session.execute('SELECT 1')
+            health_status['database'] = 'ok'
         except Exception as e:
-            db_status = f"error: {str(e)}"
+            health_status['database'] = 'error'
+            health_status['database_error'] = str(e)
+            health_status['status'] = 'degraded'
+
+        # Gemini API check
+        health_status['has_api_key'] = bool(os.getenv('GEMINI_API_KEY'))
+        health_status['model'] = os.getenv('GEMINI_MODEL', 'not-set')
 
         # Stripe check
-        stripe_api_key = os.getenv('STRIPE_API_KEY')
-        stripe_configured = bool(stripe_api_key)
-        stripe_premium_price = bool(os.getenv('STRIPE_PRICE_ID_PREMIUM')) if stripe_api_key else False
-        stripe_family_price = bool(os.getenv('STRIPE_PRICE_ID_FAMILY')) if stripe_api_key else False
+        health_status['stripe_configured'] = bool(os.getenv('STRIPE_API_KEY'))
+        health_status['stripe_premium_price'] = bool(os.getenv('STRIPE_PRICE_ID_PREMIUM'))
+        health_status['stripe_family_price'] = bool(os.getenv('STRIPE_PRICE_ID_FAMILY'))
 
-        return {
-            "status": "ok",
-            "model": GEMINI_MODEL,
-            "has_api_key": bool(api_key),
-            "database": db_status,
-            "stripe_configured": stripe_configured,
-            "stripe_premium_price": stripe_premium_price,
-            "stripe_family_price": stripe_family_price,
-            "flask_env": os.getenv("FLASK_ENV"),
-            "railway_environment": os.getenv("RAILWAY_ENVIRONMENT"),
-            "app_config_env": app.config.get("ENV"),
-            "environment_display": app.config.get("ENV", "unknown")
-        }, 200
+        # Environment
+        health_status['environment'] = os.getenv('RAILWAY_ENVIRONMENT', 'unknown')
+
+        status_code = 200 if health_status['status'] == 'ok' else 503
+        return jsonify(health_status), status_code
     
     @app.route("/get-story-themes", methods=["GET"])
     def get_story_themes():
