@@ -2,6 +2,7 @@ import os
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
+import os
 import stripe
 from flask import Blueprint, current_app, jsonify, request
 from sqlalchemy.exc import SQLAlchemyError
@@ -9,16 +10,19 @@ from sqlalchemy.exc import SQLAlchemyError
 from backend.database import db
 from backend.models.user import User
 
-webhook_handler = Blueprint("webhook_handler", __name__)
+webhook_routes = Blueprint("webhook_routes", __name__)
 
 _UNSET = object()
 
 
-@webhook_handler.route("/api/stripe/webhook", methods=["POST"])
+@webhook_routes.route("/stripe", methods=["POST"])
 def handle_webhook():
     payload = request.data
     sig_header = request.headers.get("Stripe-Signature", "")
     webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+    if not webhook_secret:
+        current_app.logger.error("STRIPE_WEBHOOK_SECRET not configured")
+        return jsonify({'error': 'Webhook not configured'}), 500
 
     try:
         event = stripe.Webhook.construct_event(
