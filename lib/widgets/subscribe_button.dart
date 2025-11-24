@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../models/subscription_tier.dart';
+import '../subscription_models.dart';
 import '../theme/app_theme.dart';
 import '../services/user_identity_service.dart';
 import '../services/stripe_service.dart';
@@ -145,17 +145,17 @@ class _SubscribeButtonState extends State<SubscribeButton> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        _getTierIcon(),
+                        widget.tier.icon,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
-                       Text(
-                         'Subscribe to ${widget.tier.name[0].toUpperCase()}${widget.tier.name.substring(1)}',
-                         style: const TextStyle(
-                           fontSize: 16,
-                           fontWeight: FontWeight.w600,
-                         ),
-                       ),
+                      Text(
+                        'Subscribe to ${widget.tier.displayName}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ],
                   ),
           ),
@@ -175,25 +175,5 @@ class _SubscribeButtonState extends State<SubscribeButton> {
     );
   }
 
-  Color _getTierColor() {
-    switch (widget.tier) {
-      case SubscriptionTier.premium:
-        return Colors.deepPurple;
-      case SubscriptionTier.family:
-        return Colors.green;
-      case SubscriptionTier.free:
-        return Colors.grey;
-    }
-  }
-
-  IconData _getTierIcon() {
-    switch (widget.tier) {
-      case SubscriptionTier.premium:
-        return Icons.star;
-      case SubscriptionTier.family:
-        return Icons.family_restroom;
-      case SubscriptionTier.free:
-        return Icons.person;
-    }
-  }
+  Color _getTierColor() => widget.tier.color;
 }
