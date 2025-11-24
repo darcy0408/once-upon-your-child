@@ -40,6 +40,9 @@ def create_app(config_name):
     # Initialize AdvancedStoryEngine
     story_engine_instance = AdvancedStoryEngine()
 
+    # Initialize AdvancedStoryEngine
+    story_engine_instance = AdvancedStoryEngine()
+
     # CORS setup
     CORS(app, resources={
         r"/*": {
@@ -87,10 +90,42 @@ def create_app(config_name):
     @app.errorhandler(Exception)
     def handle_error(error):
         request_id = getattr(g, 'request_id', 'unknown')
-        logger.exception(f"[{request_id}] Unhandled error: {error}")
+        logger.exception(f"[{request_id}] Unhandled error: Failed to edit, 0 occurrences found for old_string (    # Rate limiting setup
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri="memory://"
+    )
+
+    # Gemini setup
+    api_key = app.config["GEMINI_API_KEY"]
+    print(f"DEBUG: api_key from config = {api_key}")
+    print(f"DEBUG: bool(api_key) = {bool(api_key)}")
+    if not api_key:
+        logger.warning("GEMINI_API_KEY not set. Generation endpoints will use fallbacks.")
+    else:
+        genai.configure(api_key=api_key)
+        print(f"DEBUG: Gemini configured with API key")). Original old_string was (    # Rate limiting setup
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri="memory://"
+    )
+
+    # Gemini setup
+    api_key = app.config["GEMINI_API_KEY"]
+    print(f"DEBUG: api_key from config = {api_key}")
+    print(f"DEBUG: bool(api_key) = {bool(api_key)}")
+    if not api_key:
+        logger.warning("GEMINI_API_KEY not set. Generation endpoints will use fallbacks.")
+    else:
+        genai.configure(api_key=api_key)
+        print(f"DEBUG: Gemini configured with API key")) in /mnt/c/dev/story-weaver-app/backend/app.py. No edits made. The exact text in old_string was not found. Ensure you're not escaping content incorrectly and check whitespace, indentation, and context. Use read_file tool to verify.")
 
         # Don't expose internal errors in production
-        if app.config.get('ENV') == 'production': # Assuming ENV is set to 'production' in Railway
+        if os.getenv('RAILWAY_ENVIRONMENT') == 'production': # Use RAILWAY_ENVIRONMENT for production check
             return jsonify({
                 'error': 'Internal server error',
                 'request_id': request_id
@@ -290,31 +325,34 @@ def create_app(config_name):
             error_msg = str(e)
             print(f"!!! API ERROR: {error_type}: {error_msg}")
             print(f"!!! Prompt length: {len(prompt)} characters")
+            print(f"!!! Using user key: {using_user_key}")
 
             # Add helpful hints for common errors
             if "404" in error_msg and "model" in error_msg.lower():
                 print("!!! HINT: The Gemini model name may be incorrect. Check GEMINI_MODEL in config.")
-            elif "quota" in error_msg.lower():
+                hint = "Model not found. Check GEMINI_MODEL configuration."
+            elif "quota" in error_msg.lower() or "429" in error_msg:
                 print("!!! HINT: API quota exceeded. Check your Gemini API usage limits.")
-            elif "api key" in error_msg.lower():
-                print("!!! HINT: API key may be invalid. Check GEMINI_API_KEY in .env file.")
+                hint = "API quota exceeded. Try again later or use your own API key."
+            elif "api key" in error_msg.lower() or "403" in error_msg:
+                print("!!! HINT: API key may be invalid. Check GEMINI_API_KEY in environment.")
+                hint = "API key invalid. Check GEMINI_API_KEY configuration."
+            elif "500" in error_msg or "internal" in error_msg.lower():
+                print("!!! HINT: Gemini API internal error. Try again.")
+                hint = "Gemini API temporarily unavailable. Please try again."
+            else:
+                hint = "Story generation failed. Check Railway logs for details."
 
             print(f"!!! Learning to read mode: {learning_to_read_mode}, Rhyme time mode: {rhyme_time_mode}")
             print(f"!!! Character age: {character_age}, Theme: {theme}")
             logger.exception("Story generation failed")
 
-            environment = os.getenv("ENV", "").lower()
-            if environment in ("dev", "development", "local"):
-                raw_text = (
-                    "[TITLE: An Unexpected Adventure]\n"
-                    "Once upon a time, a brave hero discovered that the greatest adventures come from "
-                    "facing our fears with courage and kindness.\n"
-                    f"[WISDOM GEM: {story_service.WisdomGems.get_wisdom(theme)}]")
-            else:
-                return jsonify({
-                    "error": str(e),
-                    "hint": "Generation failed. Check GEMINI_API_KEY / GEMINI_MODEL / quota in Railway logs."
-                }), 500
+            # Always return a helpful error in production
+            return jsonify({
+                "error": "Story generation failed",
+                "hint": hint,
+                "request_id": getattr(g, 'request_id', 'unknown')
+            }), 500
         finally:
             # Reset to server API key after user's request
             if user_api_key and api_key:
@@ -558,9 +596,5 @@ def create_app(config_name):
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
     return app
 
-# Placeholder comment to force Railway redeploy if changes are not picked up.
-# This line can be removed once the deployment issue is resolved.
 
-
-# A cosmetic change to force a Railway redeploy.
 
