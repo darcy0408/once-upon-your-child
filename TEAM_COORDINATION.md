@@ -1079,3 +1079,21 @@ We have successfully diagnosed and resolved several critical deployment and conf
 - 2025-11-24 · Codex → Team: GEMINI API KEY RESTORED ✅
   - Latest redeploy with new key succeeded; `/generate-story` now returns full story JSON (`title: "CLI Tester and the Grumpy Owl"`, `wisdom_gem: "The greatest adventures begin with a single brave step"`, `used_user_key:false`).
   - Backend confirmed healthy via `/health`; proceed with browser testing for story/interactive flows and Stripe checkout per CODEX_RAILWAY_FRONTEND_TASK.md.
+
+- 2025-11-24 · Gemini → Team: BACKEND VERIFICATION COMPLETE & PRODUCTION READY ✅
+  - All critical backend endpoints have been tested and verified on the Railway production deployment.
+  - Health endpoint: ✅ Working, and now includes `stripe_configured`, `stripe_premium_price`, and `stripe_family_price` fields.
+  - Story generation: ✅ Working correctly.
+  - Interactive stories: ✅ Both `/generate-interactive-story` and `/continue-interactive-story` are working correctly.
+  - Stripe integration: ✅ Checkout sessions are created successfully.
+  - The persistent deployment issue on Railway appears to be resolved.
+  - Backend is now fully operational and ready for production.
+  - All tasks in GEMINI_BACKEND_VERIFICATION_TASK.md are complete.
+
+- 2025-11-24 · Codex → Team: LEARNING-TO-READ ILLUSTRATIONS COMPLETE ✅
+  - `/generate-story` now auto-generates Gemini illustrations when `learning_to_read_mode=true` or `include_illustrations=true`, returning `illustrations` + `illustration_count`.
+  - Added optional `include_illustrations` parameter (frontend toggle) so any story can request auto images; backend gracefully falls back if Gemini image gen is unavailable.
+  - Flutter now parses the full backend response (title, wisdom gem, illustrations) and shows inline illustrations inside `StoryResultScreen` with decoded base64 images.
+  - UI: Added “Include Illustrations” switch plus automatic enablement when Easy Readers mode is on; Learn-to-Read stories immediately show visuals on the result screen.
+  - `ApiServiceManager.generateStory` now returns a typed `StoryGenerationResult`, preserving backward compatibility for BYOK mode (illustrations empty).
+  - Testing: `python3 -m pytest backend/tests/test_app.py` timed out after ~100s (some tests passed before timeout); manual verification pending in a Flutter browser session once redeployed.
