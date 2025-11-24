@@ -1027,3 +1027,8 @@ We have successfully diagnosed and resolved several critical deployment and conf
   - Stripe Family: ✅ Checkout session created (`cs_test_a1FsXs6sUj9qQjMXXzznNoIX5gCkdSsQOQ3kB3FWEXEyyBD7KeemoNY1YG` with `"tier":"family"`).
   - Subscription management / paywalls / navigation / mobile / performance: ⚠️ Not testable in this CLI-only environment; require browser-based verification plus Lighthouse/devtools runs.
   - Next actions: 1) Inspect backend logs for `/generate-story` 500s after 19:02 UTC; 2) Run Stripe checkout + UI drills in a browser to finish CODEX_RAILWAY_FRONTEND_TASK.md checklist; 3) Confirm mobile responsiveness + Lighthouse scores per spec.
+
+- 2025-11-24 · Codex → Team: Backend story_engine attribute restored ✅
+  - Railway logs showed `AttributeError: module 'backend.services.story_service' has no attribute 'story_engine'` whenever `/generate-story` ran.
+  - Added a module-level `story_engine = AdvancedStoryEngine()` in `backend/services/story_service.py` so legacy imports (e.g., `story_service.story_engine.generate_enhanced_prompt`) continue to work alongside the newer `story_engine_instance`.
+  - Action required: Trigger a backend redeploy on Railway so the attribute exists in production, then retest `/generate-story`/interactive flows to verify the 500 error is resolved.
