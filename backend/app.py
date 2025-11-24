@@ -152,7 +152,7 @@ def create_app(config_name):
         health_status = {
             'status': 'ok',
             'timestamp': datetime.now().isoformat(),
-            'version': '1.0.0',  # Add versioning
+            'version': '1.0.1',  # Add versioning
         }
 
         # Database check
