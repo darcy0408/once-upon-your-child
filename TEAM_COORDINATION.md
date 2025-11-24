@@ -37,12 +37,18 @@
 - ✅ CORS configured for new frontend URL
 - ✅ Both services in same Railway project
 
-#### Backend Interactive Story Fix (2025-11-24 15:02):
-- **Issue Found:** Gemini's commit ad0621e only fixed `continue_interactive_story` endpoint, missed `generate_interactive_story`
-- **Root Cause:** Both endpoints were calling `story_service.generate_interactive_story()` which doesn't exist as a module function
-- **Fix Applied:** Changed `generate_interactive_story` endpoint to use `story_engine_instance.generate_interactive_story()`
-- **Status:** Fix committed and pushed (commit 6f6ec82), awaiting Railway redeploy
-- **Testing:** After Railway redeploys, interactive story endpoints should work
+#### Backend Story Generation Fixes (2025-11-24):
+
+**Fix 1: Interactive Story Endpoints (15:02)**
+- **Issue:** Gemini's commit ad0621e only fixed `continue_interactive_story`, missed `generate_interactive_story`
+- **Fix:** Changed `generate_interactive_story` endpoint to use `story_engine_instance` (commit 6f6ec82)
+
+**Fix 2: Codex story_engine Module Attribute (15:13)**
+- **Issue:** `/generate-story` endpoint returned 500: `AttributeError: module 'story_service' has no attribute 'story_engine'`
+- **Codex Fix:** Added `story_engine = AdvancedStoryEngine()` module-level variable (commit f666f4c)
+- **Problem:** Codex placed declaration INSIDE the class at line 226, causing IndentationError
+- **Claude Fix:** Moved `story_engine` declaration to line 255 (after class ends) - commit a25d91a
+- **Status:** Syntax error fixed, pushed to main, awaiting Railway auto-deploy
 
 ---
 
