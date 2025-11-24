@@ -1,0 +1,37 @@
+═══════════════════════════════════════════════════════════════
+  🚀 QUICK GIT SYNC PROMPT - Story Weaver Project
+═══════════════════════════════════════════════════════════════
+
+COPY & PASTE THIS TO ANY AGENT:
+
+Execute a git repository sync for the Story Weaver project:
+
+1. Run: git status
+   - Report what files have changed
+
+2. Run: git add .
+   - Stage all changes (respects .gitignore)
+
+3. Run: git commit -m "[AGENT SYNC | YYYY-MM-DD HH:MM:SS] <your brief description>"
+   - Use actual timestamp
+   - Description: What you accomplished (e.g., "Completed Stripe integration")
+
+4. Run: git pull origin main --strategy-option=ours --no-edit
+   - Fetch remote changes, keep local if conflicts
+
+5. Run: git push origin main
+   - Push to GitHub
+
+6. Run: git status && git log -1 --oneline
+   - Verify clean state and report commit hash
+
+RULES:
+- Always use --strategy-option=ours (keeps local changes)
+- Target branch: main (no PRs)
+- Never force push
+- Don't commit .env files
+- Sync after completing tasks, not mid-work
+
+═══════════════════════════════════════════════════════════════
+For detailed instructions, see: GIT_SYNC_QUICK_COMMAND.md
+═══════════════════════════════════════════════════════════════
