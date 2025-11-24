@@ -26,6 +26,12 @@
 2. Codex: Check Netlify build logs, redeploy if needed
 3. Grok: Re-run verification after fixes applied
 
+- 2025-11-24 · Codex → Team: FRONTEND VERIFICATION BLOCKED ⚠️
+  - Netlify prod URL `https://reliable-sherbet-2352c4.netlify.app` still returns HTTP 503 on multiple checks, so UI testing cannot proceed yet.
+  - Backend health endpoint `https://story-weaver-app-production.up.railway.app/health` responds 200 with `status: ok`, so issue isolated to Netlify.
+  - Flutter dependencies refreshed (`flutter pub get`) and entire Flutter test suite now passes locally after consolidating `SubscriptionTier` definitions (removed duplicate enum, updated SubscribeButton import).
+  - Recommend: From Netlify dashboard, trigger a fresh deploy (no cache), confirm build command succeeds, and verify published directory `build/web` exists. Capture most recent deploy log + screenshot once site serves 200s again.
+
 ---
 
 ## 🔄 Previous Session - Railway Deployment Troubleshooting (2025-11-22)
