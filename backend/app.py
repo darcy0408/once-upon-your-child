@@ -2,6 +2,7 @@ import os
 import uuid
 import logging
 from datetime import datetime
+import time
 import os
 import google.generativeai as genai
 from flask import Flask, request, jsonify, g
@@ -28,6 +29,9 @@ image_generator = None
 from flask_jwt_extended import JWTManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+
+def is_production():
+    return os.getenv('RAILWAY_ENVIRONMENT') == 'production'
 
 def create_app(config_name):
     print(f"=== Creating Flask app with config: {config_name} ===")
@@ -73,12 +77,17 @@ def create_app(config_name):
     @app.before_request
     def add_request_id():
         g.request_id = str(uuid.uuid4())[:8]
+        g.start_time = time.time()
         logger.info(f"[{g.request_id}] {request.method} {request.path}")
 
     @app.after_request
     def log_response(response):
         # Ensure g.request_id exists even if an error occurred before before_request completed
         request_id = getattr(g, 'request_id', 'unknown')
+        if hasattr(g, 'start_time'):
+            duration = time.time() - g.start_time
+            if duration > 1.0 and request.path.startswith('/characters'): # Log slow queries for character routes
+                logger.warning(f"[{request_id}] Slow request: {request.path} took {duration:.2f}s")
         logger.info(f"[{request_id}] Response: {response.status_code}")
         return response
 
@@ -87,7 +96,7 @@ def create_app(config_name):
         request_id = getattr(g, 'request_id', 'unknown')
         logger.exception(f"[{request_id}] Unhandled error: {error}")
 
-        if os.getenv('RAILWAY_ENVIRONMENT') == 'production': # Use RAILWAY_ENVIRONMENT for production check
+        if is_production():
             return jsonify({
                 'error': 'Internal server error',
                 'request_id': request_id
@@ -178,6 +187,25 @@ def create_app(config_name):
 
         status_code = 200 if health_status['status'] == 'ok' else 503
         return jsonify(health_status), status_code
+
+    @app.route('/health/database', methods=['GET'])
+    def database_health():
+        """Detailed database health check"""
+        try:
+            # Check connection pool
+            pool = db.engine.pool
+            return jsonify({
+                'status': 'ok',
+                'pool_size': pool.size(),
+                'checked_in': pool.checkedin(),
+                'checked_out': pool.checkedout(),
+                'overflow': pool.overflow()
+            })
+        except Exception as e:
+            return jsonify({
+                'status': 'error',
+                'error': str(e)
+            }), 500
     
     @app.route("/get-story-themes", methods=["GET"])
     def get_story_themes():
@@ -309,12 +337,18 @@ def create_app(config_name):
             print(f"!!! Character age: {character_age}, Theme: {theme}")
             logger.exception("Story generation failed")
 
-            # Always return a helpful error in production
-            return jsonify({
-                "error": "Story generation failed",
-                "hint": hint,
-                "request_id": getattr(g, 'request_id', 'unknown')
-            }), 500
+            if not is_production():
+                raw_text = (
+                    "[TITLE: An Unexpected Adventure]\n"
+                    "Once upon a time, a brave hero discovered that the greatest adventures come from "
+                    "facing our fears with courage and kindness.\n"
+                    f"[WISDOM GEM: {story_service.WisdomGems.get_wisdom(theme)}]")
+            else:
+                return jsonify({
+                    "error": "Story generation failed",
+                    "hint": hint,
+                    "request_id": getattr(g, 'request_id', 'unknown')
+                }), 500
         finally:
             # Reset to server API key after user's request
             if user_api_key and api_key:
@@ -375,12 +409,7 @@ def create_app(config_name):
         user_api_key = payload.get("user_api_key")
 
         try:
-<<<<<<< Updated upstream
             # Use story_engine_instance which has the interactive story methods
-=======
-            # Assume story_service has a method for interactive story generation
-            # You'll need to implement story_service.generate_interactive_story in services/story_service.py
->>>>>>> Stashed changes
             interactive_story_segment = story_engine_instance.generate_interactive_story(
                 character_name=character_name,
                 theme=theme,
