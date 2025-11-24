@@ -130,11 +130,11 @@ def create_app(config_name):
         logger.warning("⚠ STRIPE_API_KEY not set - subscriptions disabled")
 
     # Initialize image generator
-    # try:
-    #     image_generator = GeminiImageGenerator() if api_key else None
-    # except Exception as e:
-    #     logger.exception("Failed to initialize image generator: %s", e)
-    #     image_generator = None
+    try:
+        image_generator = GeminiImageGenerator() if api_key else None
+    except Exception as e:
+        logger.exception("Failed to initialize image generator: %s", e)
+        image_generator = None
 
     print(f"=== Creating database tables ===")
     with app.app_context():
@@ -549,6 +549,10 @@ def create_app(config_name):
     print(f"=== All routes registered successfully ===")
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
     return app
+
+# Placeholder comment to force Railway redeploy if changes are not picked up.
+# This line can be removed once the deployment issue is resolved.
+
 
 # A cosmetic change to force a Railway redeploy.
 
