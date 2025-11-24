@@ -16,6 +16,7 @@ from .models.achievement import UserAchievement, AchievementStats
 from .models.user import User
 
 from .services import character_service, story_service
+from .services.story_service import AdvancedStoryEngine
 from .routes.stripe_routes import stripe_routes
 from .routes.webhook_handler import webhook_routes
 # from .repositories import character_repository
@@ -36,6 +37,9 @@ def create_app(config_name):
     db.init_app(app)
     print(f"=== Database initialized ===")
 
+    # Initialize AdvancedStoryEngine
+    story_engine_instance = AdvancedStoryEngine()
+
     # CORS setup
     CORS(app, resources={
         r"/*": {
@@ -44,6 +48,8 @@ def create_app(config_name):
             "allow_headers": ["Content-Type", "Authorization"],
         }
     })
+
+
 
     # Rate limiting setup
     limiter = Limiter(
@@ -217,7 +223,7 @@ def create_app(config_name):
                 extra_characters=supporting_characters,
             )
         else:
-            prompt = story_service.story_engine.generate_enhanced_prompt(
+            prompt = story_engine_instance.generate_enhanced_prompt(
                 character,
                 theme,
                 companion,
