@@ -13,6 +13,9 @@ RUN flutter pub get
 # Copy the rest of the application
 COPY . .
 
+# Clean any cached builds and analyze issues
+RUN flutter clean && flutter pub get
+
 # Build the web app
 RUN flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true --dart-define=FLAVOR=production
 
