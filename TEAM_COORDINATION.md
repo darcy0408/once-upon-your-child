@@ -839,3 +839,12 @@ We have successfully diagnosed and resolved several critical deployment and conf
   - Subscription management: ⚠️ Not tested (CLI-only workspace cannot render Railway frontend UI; please verify via browser)
   - Issues found: Browser-only flows (full Stripe checkout, navigation, mobile responsiveness, performance measurements) still need hands-on validation
   - Fixes applied: Updated all production URLs/configs to the new Railway frontend so success/cancel redirects and CORS remain aligned
+
+- 2025-11-24 · Codex → Team: RAILWAY FRONTEND TESTING (CLI PASS) ⚠️
+  - Railway frontend URL: https://grand-light-production-68d9.up.railway.app (HTTP/2 200 via `curl -I`; content-length 1251, served by railway-edge at 19:02 UTC)
+  - Story generation: ❌ Backend `/generate-story` POST with `{character:\"CLI Tester\", theme:\"Adventure\"}` returned HTML 500 (Internal Server Error). Needs investigation via Railway logs since response body did not include JSON details.
+  - Interactive stories: ⚠️ Not attempted; underlying story generation failure likely blocks flow and CLI lacks UI to exercise choices.
+  - Stripe Premium: ✅ Checkout session created (`cs_test_a1ZAxSx3SYE36JQY5FfZGORwvqsoCNgMk1AUl0bi0Gy4JqFUZDHrvdFZtk` returned by `/api/stripe/create-checkout-session` with `"tier":"premium"`).
+  - Stripe Family: ✅ Checkout session created (`cs_test_a1FsXs6sUj9qQjMXXzznNoIX5gCkdSsQOQ3kB3FWEXEyyBD7KeemoNY1YG` with `"tier":"family"`).
+  - Subscription management / paywalls / navigation / mobile / performance: ⚠️ Not testable in this CLI-only environment; require browser-based verification plus Lighthouse/devtools runs.
+  - Next actions: 1) Inspect backend logs for `/generate-story` 500s after 19:02 UTC; 2) Run Stripe checkout + UI drills in a browser to finish CODEX_RAILWAY_FRONTEND_TASK.md checklist; 3) Confirm mobile responsiveness + Lighthouse scores per spec.
