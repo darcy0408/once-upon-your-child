@@ -405,3 +405,8 @@ We have successfully diagnosed and resolved several critical deployment and conf
 
 *   **Rhyme Time Mode Image Generation:** User feedback suggests "rhyme time mode" needs automatic image generation for each page and shorter, Dr. Seuss-like content. This is a new feature request/refinement to be addressed once core functionality is stable.
 
+- 2025-11-23 · Codex → Team: Stripe frontend integration updates 🚧
+  - Added the new `StripeService` plus rewired `SubscribeButton` and premium upgrade UI to launch Stripe Checkout URLs.
+  - Subscription management screen now queries and cancels via the service, and `SubscriptionSyncService`/status models handle the updated API payloads.
+  - Tests updated with lightweight Stripe stubs; `flutter analyze`/`flutter test` blocked by missing Flutter SDK packages in this environment (see task notes).
+

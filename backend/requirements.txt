@@ -7,13 +7,13 @@ python-dotenv==1.1.1
 
 # Database
 SQLAlchemy==2.0.43
-psycopg2-binary==2.9.9
+# psycopg2-binary==2.9.9
 
 
 # Google AI (Gemini)
-google-generativeai==0.8.5
-google-api-core==2.25.1
-google-auth==2.40.3
+google-generativeai
+google-api-core
+google-auth
 
 # Utilities
 requests==2.32.3
@@ -21,7 +21,7 @@ Jinja2==3.1.6
 MarkupSafe==3.0.2
 click==8.2.1
 Werkzeug==3.1.3
-Pillow==10.2.0
+Pillow
 
 # Error Monitoring
 sentry-sdk[flask]==2.33.2

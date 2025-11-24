@@ -1,7 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../../lib/widgets/subscribe_button.dart';
 import '../../lib/models/subscription_tier.dart';
+import '../../lib/services/stripe_service.dart';
+import '../../lib/widgets/subscribe_button.dart';
+
+class _FakeStripeService extends StripeService {
+  _FakeStripeService();
+
+  @override
+  Future<Map<String, dynamic>> createCheckoutSession({
+    required String tier,
+    String? userId,
+  }) async {
+    return {'checkout_url': 'https://example.com/checkout'};
+  }
+
+  @override
+  Future<Map<String, dynamic>> getSubscriptionStatus(String userId) async {
+    return {'status': 'inactive', 'tier': 'free'};
+  }
+
+  @override
+  Future<bool> cancelSubscription(String userId) async {
+    return true;
+  }
+}
 
 void main() {
   group('SubscribeButton Widget Tests', () {
@@ -14,6 +37,7 @@ void main() {
             body: SubscribeButton(
               tier: SubscriptionTier.premium,
               onSuccess: () => wasPressed = true,
+              stripeService: _FakeStripeService(),
             ),
           ),
         ),
@@ -36,6 +60,7 @@ void main() {
             body: SubscribeButton(
               tier: SubscriptionTier.family,
               onSuccess: () {},
+              stripeService: _FakeStripeService(),
             ),
           ),
         ),
@@ -55,6 +80,7 @@ void main() {
             body: SubscribeButton(
               tier: SubscriptionTier.premium,
               onSuccess: () {},
+              stripeService: _FakeStripeService(),
             ),
           ),
         ),

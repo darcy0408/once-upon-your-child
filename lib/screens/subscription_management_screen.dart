@@ -9,6 +9,7 @@ import '../models/subscription_status.dart';
 import '../models/usage_stats.dart';
 import '../services/subscription_sync_service.dart';
 import '../services/user_identity_service.dart';
+import '../services/stripe_service.dart';
 
 typedef SubscriptionLoader = Future<SubscriptionStatus?> Function(String userId);
 typedef SubscriptionSyncer = Future<void> Function(String userId);
@@ -21,12 +22,14 @@ class SubscriptionManagementScreen extends StatefulWidget {
     this.subscriptionLoader,
     this.subscriptionSyncer,
     this.userIdResolver,
+    this.stripeService,
   });
 
   final http.Client? httpClient;
   final SubscriptionLoader? subscriptionLoader;
   final SubscriptionSyncer? subscriptionSyncer;
   final UserIdResolver? userIdResolver;
+  final StripeService? stripeService;
 
   @override
   State<SubscriptionManagementScreen> createState() =>
@@ -41,6 +44,7 @@ class _SubscriptionManagementScreenState
   late final SubscriptionLoader _subscriptionLoader;
   late final SubscriptionSyncer _subscriptionSyncer;
   late final UserIdResolver _userIdResolver;
+  late final StripeService _stripeService;
 
   SubscriptionStatus? _subscriptionStatus;
   UsageStats? _usageStats;
@@ -61,6 +65,7 @@ class _SubscriptionManagementScreenState
         widget.subscriptionSyncer ?? _defaultSyncSubscriptionStatus;
     _userIdResolver =
         widget.userIdResolver ?? UserIdentityService.getOrCreateUserId;
+    _stripeService = widget.stripeService ?? StripeService();
     _loadData();
   }
 
@@ -75,8 +80,8 @@ class _SubscriptionManagementScreenState
   Future<SubscriptionStatus?> _defaultLoadSubscriptionStatus(
     String userId,
   ) async {
-    await _syncService.initialize(userId: userId);
-    return _syncService.currentStatus;
+    final payload = await _stripeService.getSubscriptionStatus(userId);
+    return SubscriptionStatus.fromBackendPayload(userId, payload);
   }
 
   Future<void> _defaultSyncSubscriptionStatus(String userId) {
@@ -147,30 +152,20 @@ class _SubscriptionManagementScreenState
   Future<void> _cancelSubscription() async {
     try {
       final userId = await _ensureUserId();
-      final response = await _httpClient
-          .post(
-            Uri.parse(
-              '${Environment.backendUrl}/api/user/$userId/cancel-subscription',
-            ),
-            headers: const {'Content-Type': 'application/json'},
-          )
-          .timeout(_requestTimeout);
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to cancel');
-      }
-
-      String message = 'Subscription will be canceled at period end';
-      try {
-        final data = json.decode(response.body) as Map<String, dynamic>;
-        message = data['message'] as String? ?? message;
-      } catch (_) {}
+      final success = await _stripeService.cancelSubscription(userId);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
-      await _loadData();
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Subscription will be canceled at period end'),
+          ),
+        );
+        await _loadData();
+      } else {
+        throw Exception('Failed to cancel');
+      }
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

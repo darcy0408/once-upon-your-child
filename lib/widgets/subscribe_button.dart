@@ -1,24 +1,24 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
-import '../config/environment.dart';
 import '../models/subscription_tier.dart';
 import '../theme/app_theme.dart';
 import '../services/user_identity_service.dart';
+import '../services/stripe_service.dart';
 
 /// Subscribe button that initiates Stripe Checkout for subscription tiers
 class SubscribeButton extends StatefulWidget {
   final SubscriptionTier tier;
   final VoidCallback? onSuccess;
   final String? userId;
+  final StripeService? stripeService;
 
   const SubscribeButton({
     super.key,
     required this.tier,
     this.onSuccess,
     this.userId,
+    this.stripeService,
   });
 
   @override
@@ -26,8 +26,15 @@ class SubscribeButton extends StatefulWidget {
 }
 
 class _SubscribeButtonState extends State<SubscribeButton> {
+  late final StripeService _stripeService;
   bool _isLoading = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _stripeService = widget.stripeService ?? StripeService();
+  }
 
   Future<void> _handleSubscribe() async {
     if (_isLoading) return;
@@ -40,54 +47,41 @@ class _SubscribeButtonState extends State<SubscribeButton> {
     try {
       final userId =
           widget.userId ?? await UserIdentityService.getOrCreateUserId();
-      
-      final response = await http.post(
-        Uri.parse('${Environment.backendUrl}/api/create-checkout-session'),
-        headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'tier': widget.tier.name,
-          'user_id': userId,
-        }),
-      ).timeout(const Duration(seconds: 30));
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final checkoutUrl = data['checkout_url'] as String?;
-        
-        if (checkoutUrl == null || checkoutUrl.isEmpty) {
-          throw Exception('No checkout URL received');
-        }
+      final session = await _stripeService.createCheckoutSession(
+        tier: widget.tier.name,
+        userId: userId,
+      );
+      final checkoutUrl = session['checkout_url'] as String?;
 
-        final checkoutUri = Uri.tryParse(checkoutUrl);
-        if (checkoutUri == null) {
-          throw Exception('Invalid checkout URL');
-        }
-
-        final launched = await launchUrl(
-          checkoutUri,
-          mode: LaunchMode.externalApplication,
-        );
-
-        if (!launched) {
-          throw Exception('Could not open payment page');
-        }
-
-        if (!mounted) return;
-
-        if (widget.onSuccess != null) {
-          widget.onSuccess!();
-        }
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Redirected to Stripe Checkout for ${widget.tier.name}.'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception(errorData['error'] ?? 'Failed to create checkout session');
+      if (checkoutUrl == null || checkoutUrl.isEmpty) {
+        throw Exception('No checkout URL received');
       }
+
+      final checkoutUri = Uri.tryParse(checkoutUrl);
+      if (checkoutUri == null) {
+        throw Exception('Invalid checkout URL');
+      }
+
+      final launched = await launchUrl(
+        checkoutUri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        throw Exception('Could not open payment page');
+      }
+
+      if (!mounted) return;
+
+      widget.onSuccess?.call();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Redirected to Stripe Checkout for ${widget.tier.name}.'),
+          backgroundColor: AppColors.primary,
+        ),
+      );
     } catch (e) {
       setState(() {
         _error = e.toString();

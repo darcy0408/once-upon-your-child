@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'subscription_models.dart';
-import 'subscription_service.dart';
 import 'settings_screen.dart' deferred as settings_screen;
+import 'widgets/subscribe_button.dart';
 
 class PremiumUpgradeScreen extends StatefulWidget {
   final String? requiredFeature;
@@ -20,7 +20,6 @@ class PremiumUpgradeScreen extends StatefulWidget {
 }
 
 class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
-  final _subscriptionService = SubscriptionService();
   SubscriptionTier? _selectedTier;
   bool _isYearly = true;
 
@@ -285,26 +284,18 @@ class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
                   padding: const EdgeInsets.all(24.0),
                   child: Column(
                     children: [
-                      ElevatedButton(
-                        onPressed: _handleUpgrade,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.deepPurple,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 48,
-                            vertical: 20,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          minimumSize: const Size(double.infinity, 60),
-                        ),
-                        child: Text(
-                          'Start ${_selectedTier!.displayName} Plan',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                      SubscribeButton(
+                        tier: _selectedTier!,
+                        onSuccess: () {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Redirecting to checkout for ${_selectedTier!.displayName}',
+                              ),
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 12),
                       const Text(
@@ -590,64 +581,5 @@ class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
         ],
       ),
     );
-  }
-
-  Future<void> _handleUpgrade() async {
-    if (_selectedTier == null) return;
-
-    // Show confirmation dialog
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Confirm ${_selectedTier!.displayName} Subscription'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'You\'re about to subscribe to the ${_selectedTier!.displayName} plan.',
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Note: This is a demo. In production, this would integrate with app store billing.',
-              style: TextStyle(
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && mounted) {
-      // Simulate upgrade
-      await _subscriptionService.upgradeToPremium(_selectedTier!);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Successfully upgraded to ${_selectedTier!.displayName}!',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        // Return to previous screen
-        Navigator.pop(context, true);
-      }
-    }
   }
 }

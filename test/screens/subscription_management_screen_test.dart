@@ -6,6 +6,31 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:story_weaver_app/models/subscription_status.dart';
 import 'package:story_weaver_app/screens/subscription_management_screen.dart';
+import 'package:story_weaver_app/services/stripe_service.dart';
+
+class _StubStripeService extends StripeService {
+  _StubStripeService({this.shouldSucceed = true});
+
+  final bool shouldSucceed;
+  bool didCancel = false;
+
+  @override
+  Future<Map<String, dynamic>> getSubscriptionStatus(String userId) async {
+    return {
+      'user_id': userId,
+      'tier': 'premium',
+      'status': 'active',
+      'current_period_end': DateTime.utc(2025, 12, 1).toIso8601String(),
+      'cancel_at_period_end': false,
+    };
+  }
+
+  @override
+  Future<bool> cancelSubscription(String userId) async {
+    didCancel = true;
+    return shouldSucceed;
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -48,7 +73,7 @@ void main() {
     });
   }
 
-  Widget buildScreen({http.Client? client}) {
+  Widget buildScreen({http.Client? client, StripeService? stripeService}) {
     final httpClient = client ?? buildClient();
     return MaterialApp(
       home: SubscriptionManagementScreen(
@@ -56,6 +81,7 @@ void main() {
         subscriptionLoader: (_) async => buildStatus(),
         subscriptionSyncer: (_) async {},
         userIdResolver: () async => 'user-123',
+        stripeService: stripeService ?? _StubStripeService(),
       ),
     );
   }

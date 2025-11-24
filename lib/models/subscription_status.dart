@@ -21,14 +21,28 @@ class SubscriptionStatus {
 
   factory SubscriptionStatus.fromJson(Map<String, dynamic> json) {
     return SubscriptionStatus(
-      userId: json['user_id'],
+      userId: (json['user_id'] ?? 'unknown') as String,
       tier: _tierFromString(json['tier']),
       status: json['status'],
-      currentPeriodEnd: json['current_period_end'] != null
-          ? DateTime.parse(json['current_period_end'])
-          : null,
-      cancelAtPeriodEnd: json['cancel_at_period_end'] ?? false,
+      currentPeriodEnd: _parsePeriodEnd(json['current_period_end']),
+      cancelAtPeriodEnd:
+          json['cancel_at_period_end'] ?? json['cancelAtPeriodEnd'] ?? false,
     );
+  }
+
+  factory SubscriptionStatus.fromBackendPayload(
+    String userId,
+    Map<String, dynamic> payload,
+  ) {
+    final normalized = Map<String, dynamic>.from(payload);
+    normalized['user_id'] = normalized['user_id'] ?? userId;
+    normalized['tier'] = normalized['tier'] ?? 'free';
+    normalized['status'] = normalized['status'] ?? 'inactive';
+    normalized['cancel_at_period_end'] =
+        normalized['cancel_at_period_end'] ??
+            normalized['cancelAtPeriodEnd'] ??
+            false;
+    return SubscriptionStatus.fromJson(normalized);
   }
 
   Map<String, dynamic> toJson() {
@@ -61,5 +75,31 @@ class SubscriptionStatus {
       default:
         return 'free';
     }
+  }
+
+  static DateTime? _parsePeriodEnd(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+
+    if (value is String && value.isNotEmpty) {
+      return DateTime.parse(value);
+    }
+
+    if (value is int) {
+      return DateTime.fromMillisecondsSinceEpoch(
+        value * 1000,
+        isUtc: true,
+      );
+    }
+
+    if (value is double) {
+      return DateTime.fromMillisecondsSinceEpoch(
+        (value * 1000).round(),
+        isUtc: true,
+      );
+    }
+
+    return null;
   }
 }

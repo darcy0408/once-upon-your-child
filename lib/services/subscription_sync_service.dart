@@ -1,25 +1,23 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../config/environment.dart';
 import '../models/subscription_status.dart';
 import 'user_identity_service.dart';
+import 'stripe_service.dart';
 
 class SubscriptionSyncService {
-  SubscriptionSyncService._internal({http.Client? httpClient})
-      : _httpClient = httpClient ?? http.Client();
+  SubscriptionSyncService._internal({StripeService? stripeService})
+      : _stripeService = stripeService ?? StripeService();
 
   static final SubscriptionSyncService _instance =
       SubscriptionSyncService._internal();
 
   factory SubscriptionSyncService() => _instance;
 
-  final http.Client _httpClient;
+  final StripeService _stripeService;
   final StreamController<SubscriptionStatus> _subscriptionController =
       StreamController<SubscriptionStatus>.broadcast();
   SubscriptionStatus? _currentStatus;
@@ -84,33 +82,8 @@ class SubscriptionSyncService {
   }
 
   Future<SubscriptionStatus> _fetchFromBackend(String userId) async {
-    final url =
-        Uri.parse('${Environment.backendUrl}/api/user/$userId/subscription');
-    final response = await _httpClient.get(url).timeout(_requestTimeout);
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body) as Map<String, dynamic>;
-      return SubscriptionStatus.fromJson(data);
-    }
-
-    if (response.statusCode == 404) {
-      final fallback = {
-        'user_id': userId,
-        'tier': 'free',
-        'status': 'active',
-        'current_period_end': DateTime.now()
-            .toUtc()
-            .add(const Duration(days: 30))
-            .toIso8601String(),
-        'cancel_at_period_end': false,
-      };
-      return SubscriptionStatus.fromJson(fallback);
-    }
-
-    throw HttpException(
-      'Failed to load subscription (${response.statusCode})',
-      uri: url,
-    );
+    final data = await _stripeService.getSubscriptionStatus(userId);
+    return SubscriptionStatus.fromBackendPayload(userId, data);
   }
 
   Future<void> _hydrateFromCache() async {
