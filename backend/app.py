@@ -78,6 +78,8 @@ def create_app(config_name):
         import stripe
         stripe.api_key = stripe_api_key
         logger.info("✓ Stripe API configured")
+        logger.info(f"✓ Stripe Premium Price ID: {os.getenv('STRIPE_PRICE_ID_PREMIUM', 'NOT SET')}")
+        logger.info(f"✓ Stripe Family Price ID: {os.getenv('STRIPE_PRICE_ID_FAMILY', 'NOT SET')}")
     else:
         logger.warning("⚠ STRIPE_API_KEY not set - subscriptions disabled")
 
