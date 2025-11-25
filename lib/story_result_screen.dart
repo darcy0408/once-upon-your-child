@@ -1586,46 +1586,58 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
               alignment: Alignment.bottomRight,
               child: Padding(
                 padding: const EdgeInsets.only(right: 16, bottom: 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    FloatingActionButton.small(
-                      heroTag: 'fab_share',
-                      backgroundColor: Colors.blueAccent,
-                      tooltip: 'Share story',
-                      onPressed: () {
-                        _trackResultAction('fab_action', extra: {'action': 'share'});
-                        _shareStory();
-                      },
-                      child: const Icon(Icons.share),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                    Semantics(
+                      label: 'Share story',
+                      button: true,
+                      child: FloatingActionButton.small(
+                        heroTag: 'fab_share',
+                        backgroundColor: Colors.blueAccent,
+                        tooltip: 'Share story',
+                        onPressed: () {
+                          _trackResultAction('fab_action', extra: {'action': 'share'});
+                          _shareStory();
+                        },
+                        child: const Icon(Icons.share),
+                      ),
                     ),
                     const SizedBox(height: 12),
-                    FloatingActionButton.small(
-                      heroTag: 'fab_regenerate',
-                      backgroundColor: Colors.orangeAccent,
-                      tooltip: 'Regenerate story',
-                      onPressed: _isLoading
-                          ? null
-                          : () {
-                              _trackResultAction(
-                                'fab_action',
-                                extra: {'action': 'regenerate'},
-                              );
-                              _createAnotherStory();
-                            },
-                      child: const Icon(Icons.refresh),
+                    Semantics(
+                      label: 'Regenerate story',
+                      button: true,
+                      child: FloatingActionButton.small(
+                        heroTag: 'fab_regenerate',
+                        backgroundColor: Colors.orangeAccent,
+                        tooltip: 'Regenerate story',
+                        onPressed: _isLoading
+                            ? null
+                            : () {
+                                _trackResultAction(
+                                  'fab_action',
+                                  extra: {'action': 'regenerate'},
+                                );
+                                _createAnotherStory();
+                              },
+                        child: const Icon(Icons.refresh),
+                      ),
                     ),
                     const SizedBox(height: 12),
-                    FloatingActionButton.extended(
-                      heroTag: 'fab_save',
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      icon: const Icon(Icons.save),
-                      label: const Text('Save Story'),
-                      onPressed: () {
-                        _trackResultAction('fab_action', extra: {'action': 'save'});
-                        _saveStory();
-                      },
+                    Semantics(
+                      label: 'Save story',
+                      button: true,
+                      child: FloatingActionButton.extended(
+                        heroTag: 'fab_save',
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        icon: const Icon(Icons.save),
+                        label: const Text('Save Story'),
+                        onPressed: () {
+                          _trackResultAction('fab_action', extra: {'action': 'save'});
+                          _saveStory();
+                        },
+                      ),
                     ),
                   ],
                 ),

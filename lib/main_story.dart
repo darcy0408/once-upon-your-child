@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -44,6 +44,8 @@ import 'package:story_weaver_app/widgets/story_generation_progress.dart';
 import 'package:story_weaver_app/widgets/user_friendly_error_dialog.dart';
 import 'services/story_complexity_service.dart';
 import 'models/story_generation_result.dart';
+import 'dialogs/upgrade_prompt_dialog.dart';
+import 'services/grace_period_service.dart';
 
 
 class StoryCreatorApp extends StatelessWidget {
@@ -105,14 +107,14 @@ class _StoryScreenState extends State<StoryScreen> {
   bool _hasRhymeTime = false;
   final _achievementService = AchievementService();
   AchievementSummary? _achievementSummary;
+  final _random = Random();
 
   // Story intent (merged theme + therapeutic customization)
   StoryIntentData? _storyIntent;
 
 
-  Timer? _loadingTimer;
   int _currentPhase = 0;
-  int _totalPhases = 4;
+  int _totalPhases = 3;
   String _funFact = '';
 
   final List<String> _funFacts = [
@@ -367,6 +369,39 @@ class _StoryScreenState extends State<StoryScreen> {
     final allowed = await _validateStoryCreationPreconditions();
     if (!allowed) return;
 
+    final gracePeriodStatus = await GracePeriodService.getStatus(
+      _currentSubscription?.tier.name ?? 'free',
+    );
+
+    if (gracePeriodStatus.shouldShowHardLimit) {
+      if (!mounted) return;
+      await showDialog(
+        context: context,
+        builder: (context) => UpgradePromptDialog(
+          isSoftPrompt: false,
+          storiesUsed: gracePeriodStatus.storiesUsed,
+          storiesLimit: gracePeriodStatus.storiesLimit,
+          accountAgeDays: gracePeriodStatus.accountAgeDays,
+        ),
+      );
+      return;
+    }
+
+    if (gracePeriodStatus.shouldShowSoftPrompt) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => UpgradePromptDialog(
+          isSoftPrompt: true,
+          storiesUsed: gracePeriodStatus.storiesUsed,
+          storiesLimit: gracePeriodStatus.storiesLimit,
+          accountAgeDays: gracePeriodStatus.accountAgeDays,
+          daysRemainingInGracePeriod:
+              gracePeriodStatus.daysRemainingInGracePeriod,
+        ),
+      );
+    }
+
     // Start loading state
     _startProgress();
 
@@ -383,17 +418,31 @@ class _StoryScreenState extends State<StoryScreen> {
     final ageGroup = StoryComplexityService.getAgeGroup(_selectedCharacter!.age).name;
 
     try {
+      if (mounted) {
+        setState(() {
+          _currentPhase = 0;
+          _funFact = _funFacts[_random.nextInt(_funFacts.length)];
+        });
+      }
+
+      if (mounted) {
+        setState(() => _currentPhase = 1);
+      }
       // Generate story
       final storyResult = await _generateStory(
-      prompt: prompt,
-      characterName: _selectedCharacter!.name,
-      ageGroup: ageGroup,
-      theme: theme,
-      mode: mode,
-      allCharacters: allSelectedCharacters,
-    );
+        prompt: prompt,
+        characterName: _selectedCharacter!.name,
+        ageGroup: ageGroup,
+        theme: theme,
+        mode: mode,
+        allCharacters: allSelectedCharacters,
+      );
 
-    if (!mounted) return;
+      if (mounted) {
+        setState(() => _currentPhase = 2);
+      }
+
+      if (!mounted) return;
 
     // TODO: Consider adding feelings check earlier in the process (before story generation)
     // Removed the post-story feelings popup as it was disruptive to UX
@@ -434,6 +483,9 @@ class _StoryScreenState extends State<StoryScreen> {
 
     // Record story creation for usage tracking
     await _subscriptionService.recordStoryCreation();
+    if (_currentSubscription?.tier.name == 'free' || _currentSubscription == null) {
+      await GracePeriodService.incrementStoryCount();
+    }
     await _loadSubscriptionInfo(); // Refresh remaining count
 
     if (!mounted) return;
@@ -547,23 +599,12 @@ class _StoryScreenState extends State<StoryScreen> {
       setState(() {
         _isLoading = true;
         _currentPhase = 0;
-        _funFact = _funFacts[DateTime.now().millisecond % _funFacts.length];
+        _funFact = _funFacts[_random.nextInt(_funFacts.length)];
       });
     }
-    _loadingTimer?.cancel();
-    _loadingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() {
-          if (_currentPhase < _totalPhases - 1) {
-            _currentPhase++;
-          }
-        });
-      }
-    });
   }
 
   void _stopProgress() {
-    _loadingTimer?.cancel();
     if (mounted) setState(() => _isLoading = false);
   }
 
@@ -1054,46 +1095,52 @@ class _StoryScreenState extends State<StoryScreen> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {
-              setState(() {
-                _selectedCharacter = character;
-              });
-            },
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 140, minWidth: 104),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: isSelected ? Colors.deepPurple : Colors.grey.shade300,
-                  width: isSelected ? 3 : 1,
-                ),
-                borderRadius: BorderRadius.circular(14),
-                color: isSelected ? Colors.deepPurple.shade50 : Colors.white,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 12),
-                  _buildCharacterAvatar(character, size: 64),
-                  const SizedBox(height: 10),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(
-                      character.name,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected ? Colors.deepPurple : Colors.black87,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+          Semantics(
+            label:
+                '${character.name}${isSelected ? " selected" : ""} character card',
+            selected: isSelected,
+            button: true,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                setState(() {
+                  _selectedCharacter = character;
+                });
+              },
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 140, minWidth: 104),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: isSelected ? Colors.deepPurple : Colors.grey.shade300,
+                    width: isSelected ? 3 : 1,
                   ),
-                  const SizedBox(height: 12),
-                ],
+                  borderRadius: BorderRadius.circular(14),
+                  color: isSelected ? Colors.deepPurple.shade50 : Colors.white,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 12),
+                    _buildCharacterAvatar(character, size: 64),
+                    const SizedBox(height: 10),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        character.name,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected ? Colors.deepPurple : Colors.black87,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1139,51 +1186,55 @@ class _StoryScreenState extends State<StoryScreen> {
   }
 
   Widget _buildAddCharacterCard() {
-    return GestureDetector(
-      onTap: () async {
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-              builder: (context) => const CharacterCreationScreenEnhanced()),
-        );
-        await _loadCharacters();
-        await _loadAchievementSummary();
-      },
-      child: Container(
-        width: 96,
-        constraints: const BoxConstraints(minHeight: 130, minWidth: 96),
-        decoration: BoxDecoration(
-          border: Border.all(
-              color: Colors.deepPurple, width: 2, style: BorderStyle.solid),
-          borderRadius: BorderRadius.circular(12),
-          color: Colors.deepPurple.shade50,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: Colors.deepPurple.shade100,
-                shape: BoxShape.circle,
+    return Semantics(
+      label: 'Add new character',
+      button: true,
+      child: GestureDetector(
+        onTap: () async {
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+                builder: (context) => const CharacterCreationScreenEnhanced()),
+          );
+          await _loadCharacters();
+          await _loadAchievementSummary();
+        },
+        child: Container(
+          width: 96,
+          constraints: const BoxConstraints(minHeight: 130, minWidth: 96),
+          decoration: BoxDecoration(
+            border: Border.all(
+                color: Colors.deepPurple, width: 2, style: BorderStyle.solid),
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.deepPurple.shade50,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.deepPurple.shade100,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.add, size: 30, color: Colors.deepPurple),
               ),
-              child: const Icon(Icons.add, size: 30, color: Colors.deepPurple),
-            ),
-            const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 6),
-              child: Text(
-                'Add\nCharacter',
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.deepPurple),
-                textAlign: TextAlign.center,
+              const SizedBox(height: 8),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 6),
+                child: Text(
+                  'Add\nCharacter',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepPurple),
+                  textAlign: TextAlign.center,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-          ],
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );
@@ -1535,72 +1586,78 @@ class _StoryScreenState extends State<StoryScreen> {
       runSpacing: 12.0,
       children: availableCharacters.map((c) {
         final isSelected = _additionalCharacterIds.contains(c.id);
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              if (isSelected) {
-                _additionalCharacterIds.remove(c.id);
-              } else {
-                _additionalCharacterIds.add(c.id);
-              }
-            });
-          },
-          child: Container(
-            width: 88,
-            constraints: const BoxConstraints(minHeight: 118, minWidth: 88),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: isSelected ? Colors.green : Colors.grey.shade300,
-                width: isSelected ? 3 : 1,
+        return Semantics(
+          label:
+              '${c.name}${isSelected ? " selected" : ""} additional character',
+          selected: isSelected,
+          button: true,
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                if (isSelected) {
+                  _additionalCharacterIds.remove(c.id);
+                } else {
+                  _additionalCharacterIds.add(c.id);
+                }
+              });
+            },
+            child: Container(
+              width: 88,
+              constraints: const BoxConstraints(minHeight: 118, minWidth: 88),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: isSelected ? Colors.green : Colors.grey.shade300,
+                  width: isSelected ? 3 : 1,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                color: isSelected ? Colors.green.shade50 : Colors.white,
               ),
-              borderRadius: BorderRadius.circular(12),
-              color: isSelected ? Colors.green.shade50 : Colors.white,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 10),
-                Stack(
-                  children: [
-                    _buildCharacterAvatar(c, size: 52),
-                    if (isSelected)
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: const BoxDecoration(
-                            color: Colors.green,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.check,
-                            size: 14,
-                            color: Colors.white,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 10),
+                  Stack(
+                    children: [
+                      _buildCharacterAvatar(c, size: 52),
+                      if (isSelected)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(
+                              color: Colors.green,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              size: 14,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Text(
-                    c.name,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
-                      color:
-                          isSelected ? Colors.green.shade700 : Colors.black87,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    ],
                   ),
-                ),
-                const SizedBox(height: 8),
-              ],
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: Text(
+                      c.name,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        color:
+                            isSelected ? Colors.green.shade700 : Colors.black87,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
             ),
           ),
         );

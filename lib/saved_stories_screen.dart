@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'models.dart';
+import 'services/story_analytics.dart';
 import 'storage_service.dart';
 import 'story_result_screen.dart';
 
@@ -33,6 +34,11 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
       _applyFilters();
       _loading = false;
     });
+    StoryAnalytics.trackStoryResultAction(
+      storyId: 'saved_stories',
+      action: 'pull_to_refresh',
+      extra: {'count': list.length},
+    );
   }
 
   void _applyFilters() {
@@ -86,220 +92,218 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _stories.isEmpty
               ? const Center(child: Text('No stories saved yet.'))
-              : Column(
-                  children: [
-                    // Filter bar
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      color: Colors.grey.shade100,
-                      child: Row(
-                        children: [
-                          const Text('Theme:', style: TextStyle(fontWeight: FontWeight.w600)),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: themes.map((theme) {
-                                  final isSelected = _selectedThemeFilter == theme;
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 8.0),
-                                    child: FilterChip(
-                                      label: Text(theme),
-                                      selected: isSelected,
-                                      onSelected: (selected) {
-                                        setState(() {
-                                          _selectedThemeFilter = theme;
-                                          _applyFilters();
-                                        });
-                                      },
-                                      selectedColor: Colors.deepPurple.shade100,
-                                    ),
-                                  );
-                                }).toList(),
+              : RefreshIndicator(
+                  onRefresh: _refresh,
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      // Filter bar
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        color: Colors.grey.shade100,
+                        child: Row(
+                          children: [
+                            const Text('Theme:', style: TextStyle(fontWeight: FontWeight.w600)),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: themes.map((theme) {
+                                    final isSelected = _selectedThemeFilter == theme;
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 8.0),
+                                      child: FilterChip(
+                                        label: Text(theme),
+                                        selected: isSelected,
+                                        onSelected: (selected) {
+                                          setState(() {
+                                            _selectedThemeFilter = theme;
+                                            _applyFilters();
+                                          });
+                                        },
+                                        selectedColor: Colors.deepPurple.shade100,
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Stats row
-                    if (_stories.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        color: Colors.deepPurple.shade50,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _buildStat(Icons.book, '${_stories.length}', 'Total'),
-                            _buildStat(Icons.favorite, '$favoriteCount', 'Favorites'),
-                            _buildStat(Icons.visibility, '${_filteredStories.length}', 'Showing'),
                           ],
                         ),
                       ),
 
-                    // Stories list
-                    Expanded(
-                      child: _filteredStories.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.filter_alt_off, size: 64, color: Colors.grey.shade400),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'No stories match your filters',
-                                    style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  TextButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        _showOnlyFavorites = false;
-                                        _selectedThemeFilter = 'All';
-                                        _applyFilters();
-                                      });
-                                    },
-                                    child: const Text('Clear Filters'),
-                                  ),
-                                ],
+                      // Stats row
+                      if (_stories.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          color: Colors.deepPurple.shade50,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _buildStat(Icons.book, '${_stories.length}', 'Total'),
+                              _buildStat(Icons.favorite, '$favoriteCount', 'Favorites'),
+                              _buildStat(Icons.visibility, '${_filteredStories.length}', 'Showing'),
+                            ],
+                          ),
+                        ),
+
+                      if (_filteredStories.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.filter_alt_off, size: 64, color: Colors.grey.shade400),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No stories match your filters',
+                                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
                               ),
-                            )
-                          : RefreshIndicator(
-                              onRefresh: _refresh,
-                              child: ListView.separated(
-                                padding: const EdgeInsets.all(12),
-                                itemCount: _filteredStories.length,
-                                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                                itemBuilder: (context, index) {
-                                              final s = _filteredStories[index];
-                                  final dateStr = _prettyDate(s.createdAt);
-                                  final childNames = s.characters.map((c) => c.name).toList();
+                              const SizedBox(height: 8),
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _showOnlyFavorites = false;
+                                    _selectedThemeFilter = 'All';
+                                    _applyFilters();
+                                  });
+                                },
+                                child: const Text('Clear Filters'),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        ..._filteredStories.map((s) {
+                          final dateStr = _prettyDate(s.createdAt);
+                          final childNames = s.characters.map((c) => c.name).toList();
 
-                                  return Card(
-                                    elevation: 2,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      side: s.isFavorite
-                                          ? BorderSide(color: Colors.red.shade200, width: 2)
-                                          : BorderSide.none,
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            child: Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: s.isFavorite
+                                    ? BorderSide(color: Colors.red.shade200, width: 2)
+                                    : BorderSide.none,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Title row + actions
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        if (s.isFavorite)
+                                          const Padding(
+                                            padding: EdgeInsets.only(right: 8.0, top: 4.0),
+                                            child: Icon(Icons.favorite, color: Colors.red, size: 20),
+                                          ),
+                                        Expanded(
+                                          child: Text(
+                                            s.title,
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        if (s.isInteractive)
+                                          Padding(
+                                            padding: const EdgeInsets.only(right: 8.0),
+                                            child: Chip(
+                                              label: const Text('Interactive', style: TextStyle(fontSize: 11)),
+                                              backgroundColor: Colors.purple.shade100,
+                                              padding: EdgeInsets.zero,
+                                              visualDensity: VisualDensity.compact,
+                                            ),
+                                          ),
+                                        IconButton(
+                                          tooltip: s.isFavorite ? 'Remove from favorites' : 'Add to favorites',
+                                          icon: Icon(
+                                            s.isFavorite ? Icons.favorite : Icons.favorite_border,
+                                            color: s.isFavorite ? Colors.red : null,
+                                          ),
+                                          onPressed: () => _toggleFavorite(_filteredStories.indexOf(s)),
+                                        ),
+                                        IconButton(
+                                          tooltip: 'Delete',
+                                          icon: const Icon(Icons.delete_outline),
+                                          onPressed: () {
+                                            final originalIndex = _stories.indexOf(s);
+                                            _deleteAt(originalIndex);
+                                          },
+                                        ),
+                                      ],
                                     ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(12.0),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          // Title row + actions
-                                          Row(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              if (s.isFavorite)
-                                                const Padding(
-                                                  padding: EdgeInsets.only(right: 8.0, top: 4.0),
-                                                  child: Icon(Icons.favorite, color: Colors.red, size: 20),
-                                                ),
-                                              Expanded(
-                                                child: Text(
-                                                  s.title,
-                                                  style: const TextStyle(
-                                                    fontSize: 18,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                              if (s.isInteractive)
-                                                Padding(
-                                                  padding: const EdgeInsets.only(right: 8.0),
-                                                  child: Chip(
-                                                    label: const Text('Interactive', style: TextStyle(fontSize: 11)),
-                                                    backgroundColor: Colors.purple.shade100,
-                                                    padding: EdgeInsets.zero,
-                                                    visualDensity: VisualDensity.compact,
-                                                  ),
-                                                ),
-                                              IconButton(
-                                                tooltip: s.isFavorite ? 'Remove from favorites' : 'Add to favorites',
-                                                icon: Icon(
-                                                  s.isFavorite ? Icons.favorite : Icons.favorite_border,
-                                                  color: s.isFavorite ? Colors.red : null,
-                                                ),
-                                                onPressed: () => _toggleFavorite(index),
-                                              ),
-                                              IconButton(
-                                                tooltip: 'Delete',
-                                                icon: const Icon(Icons.delete_outline),
-                                                onPressed: () {
-                                                  final originalIndex = _stories.indexOf(s);
-                                                  _deleteAt(originalIndex);
-                                                },
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 6),
+                                    const SizedBox(height: 6),
 
-                                          // Meta line
-                                          Text(
-                                            '$dateStr • Theme: ${s.theme}',
-                                            style: TextStyle(
-                                              color: Colors.grey.shade700,
-                                              fontStyle: FontStyle.italic,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-
-                                          // Chip list of included kids
-                                          if (childNames.isNotEmpty)
-                                            Wrap(
-                                              spacing: 6,
-                                              runSpacing: 6,
-                                              children: childNames
-                                                  .map((n) => Chip(
-                                                        label: Text(n),
-                                                        avatar: const Icon(Icons.child_care, size: 16),
-                                                      ))
-                                                  .toList(),
-                                            ),
-                                          if (childNames.isNotEmpty) const SizedBox(height: 8),
-
-                                          // Preview snippet
-                                          Text(
-                                            s.storyText.length > 160
-                                                ? '${s.storyText.substring(0, 160)}…'
-                                                : s.storyText,
-                                          ),
-                                          const SizedBox(height: 10),
-
-                                          // Open button
-                                          Align(
-                                            alignment: Alignment.centerRight,
-                                            child: ElevatedButton.icon(
-                                              icon: const Icon(Icons.open_in_new),
-                                              label: const Text('Open'),
-                                              onPressed: () {
-                                                Navigator.of(context).push(
-                                                  MaterialPageRoute(
-                                                    builder: (_) => StoryResultScreen(
-                                                      title: s.title,
-                                                      storyText: s.storyText,
-                                                      wisdomGem: s.wisdomGem ?? '',
-                                                      characterName: s.characters.isNotEmpty ? s.characters.first.name : null,
-                                                      storyId: s.id,
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                        ],
+                                    // Meta line
+                                    Text(
+                                      '$dateStr • Theme: ${s.theme}',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontStyle: FontStyle.italic,
                                       ),
                                     ),
-                                  );
-                                },
+                                    const SizedBox(height: 8),
+
+                                    // Chip list of included kids
+                                    if (childNames.isNotEmpty)
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 6,
+                                        children: childNames
+                                            .map((n) => Chip(
+                                                  label: Text(n),
+                                                  avatar: const Icon(Icons.child_care, size: 16),
+                                                ))
+                                            .toList(),
+                                      ),
+                                    if (childNames.isNotEmpty) const SizedBox(height: 8),
+
+                                    // Preview snippet
+                                    Text(
+                                      s.storyText.length > 160
+                                          ? '${s.storyText.substring(0, 160)}…'
+                                          : s.storyText,
+                                    ),
+                                    const SizedBox(height: 10),
+
+                                    // Open button
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: ElevatedButton.icon(
+                                        icon: const Icon(Icons.open_in_new),
+                                        label: const Text('Open'),
+                                        onPressed: () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) => StoryResultScreen(
+                                                title: s.title,
+                                                storyText: s.storyText,
+                                                wisdomGem: s.wisdomGem ?? '',
+                                                characterName: s.characters.isNotEmpty ? s.characters.first.name : null,
+                                                storyId: s.id,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                    ),
-                  ],
+                          );
+                        }),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
                 ),
     );
   }
