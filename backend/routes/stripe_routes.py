@@ -11,7 +11,16 @@ load_dotenv()
 stripe_routes = Blueprint('stripe_routes', __name__)
 logger = logging.getLogger("stripe_routes")
 
-stripe.api_key = os.getenv('STRIPE_API_KEY')
+# Stripe API key will be set by init_stripe_api
+# stripe.api_key = os.getenv('STRIPE_API_KEY') # REMOVED
+
+def init_stripe_api(app):
+    """Initializes Stripe API key using app config."""
+    stripe.api_key = app.config.get('STRIPE_API_KEY')
+    if not stripe.api_key:
+        logger.warning("STRIPE_API_KEY not set in app config - Stripe routes may not function.")
+    else:
+        logger.info("✓ Stripe API configured via init_stripe_api")
 
 def get_price_ids():
     """Get Stripe Price IDs from environment variables (loaded dynamically)"""

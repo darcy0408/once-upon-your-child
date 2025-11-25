@@ -172,16 +172,10 @@ def create_app(config_name):
         logger.exception("Failed to initialize Gemini model: %s", e)
         model = None
 
-    # Initialize Stripe
-    stripe_api_key = os.getenv('STRIPE_API_KEY')
-    if stripe_api_key:
-        import stripe
-        stripe.api_key = stripe_api_key
-        logger.info("✓ Stripe API configured")
-        logger.info(f"✓ Stripe Premium Price ID: {os.getenv('STRIPE_PRICE_ID_PREMIUM', 'NOT SET')}")
-        logger.info(f"✓ Stripe Family Price ID: {os.getenv('STRIPE_PRICE_ID_FAMILY', 'NOT SET')}")
-    else:
-        logger.warning("⚠ STRIPE_API_KEY not set - subscriptions disabled")
+    # Initialize Stripe (configured via blueprint setup now)
+    stripe_routes.init_stripe_api(app)
+    logger.info(f"✓ Stripe Premium Price ID: {os.getenv('STRIPE_PRICE_ID_PREMIUM', 'NOT SET')}")
+    logger.info(f"✓ Stripe Family Price ID: {os.getenv('STRIPE_PRICE_ID_FAMILY', 'NOT SET')}")
 
     # Initialize image generator
     try:
