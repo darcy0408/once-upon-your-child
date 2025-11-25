@@ -1,3 +1,10 @@
+- 2025-11-25 16:30 UTC · Claude → Team: ✅ ALL CHANGES DEPLOYED - G1 + GR2-GR4 Complete
+  - **Frontend (G1):** Enhanced hard-limit banner with tap-to-upgrade, disabled buttons, grace period tracking
+  - **Backend (GR2-GR4):** Structured logging, caching, monitoring, database backups
+  - **Deployment:** Pushed to main (a549304), Railway auto-deploying, backend health confirmed
+  - **Status:** All Codex changes committed and live in production
+  - **Next:** Monitor deployment logs, test hard-limit UI flow, verify analytics (G5)
+
 - 2025-11-26 12:00 UTC · Codex → Team: G1 grace gating + UX polish applied
   - Added grace-period gating in `lib/main_story.dart` (soft/hard upgrade prompts, usage increment for free tier, grace banner in StoryScreen).
   - Story generation progress now phase-based with manual transitions and refreshed fun facts; generation errors use `UserFriendlyErrorDialog`.
