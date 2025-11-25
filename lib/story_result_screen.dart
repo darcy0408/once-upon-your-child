@@ -76,7 +76,7 @@ class StoryResultScreen extends StatefulWidget {
     this.subscription,
     this.isLearningToReadMode = false,
     this.usedUserApiKey = false,
-  }) : assert(!trackStoryCreation || achievementsService != null),
+  })  : assert(!trackStoryCreation || achievementsService != null),
         assert(!trackStoryCreation || storyCreatedAt != null);
 
   @override
@@ -90,7 +90,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       GeminiIllustrationService(); // Using Gemini Imagen 3.0 via backend
   final _coloringService =
       GeminiColoringBookService(); // Using Gemini for therapeutic coloring pages
-  final _progressionService = ProgressionService(); // Track user progress and unlocks
+  final _progressionService =
+      ProgressionService(); // Track user progress and unlocks
   final _feedbackService = StoryFeedbackService();
   final TextEditingController _feedbackController = TextEditingController();
   bool _isFavorite = false;
@@ -214,7 +215,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       }
     }
 
-    final newFeatureUnlocks = await _progressionService.incrementStoriesCreated();
+    final newFeatureUnlocks =
+        await _progressionService.incrementStoriesCreated();
     if (mounted && newFeatureUnlocks.isNotEmpty) {
       await UnlockCelebrationDialog.show(context, newFeatureUnlocks);
     }
@@ -256,7 +258,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     try {
       final response = await http
           .get(
-        Uri.parse('${Environment.backendUrl}/characters/${widget.characterId}'),
+            Uri.parse(
+                '${Environment.backendUrl}/characters/${widget.characterId}'),
           )
           .timeout(const Duration(seconds: 15));
 
@@ -511,7 +514,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   }
 
   List<String> _paginateStory(String text, {int wordsPerPage = 120}) {
-    final words = text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    final words =
+        text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
     if (words.isEmpty) {
       return [text];
     }
@@ -683,9 +687,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                 itemBuilder: (context, index) {
                   final page = _storyPages[index];
                   return Semantics(
-                    label: _screenReaderHints
-                        ? 'Story page ${index + 1}'
-                        : null,
+                    label:
+                        _screenReaderHints ? 'Story page ${index + 1}' : null,
                     child: MouseRegion(
                       onEnter: (_) => setState(() => _isStoryHovered = true),
                       onExit: (_) => setState(() => _isStoryHovered = false),
@@ -1200,9 +1203,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
               width: 220,
               child: AppButton.primary(
                 label: _isSubmittingFeedback ? 'Sending...' : 'Send feedback',
-                icon: _isSubmittingFeedback
-                    ? Icons.hourglass_bottom
-                    : Icons.send,
+                icon:
+                    _isSubmittingFeedback ? Icons.hourglass_bottom : Icons.send,
                 onPressed: _isSubmittingFeedback ? null : _submitFeedback,
               ),
             ),
@@ -1325,164 +1327,169 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-              Text(
-                widget.title,
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              if (_shouldShowMetaCard) _buildStoryMetaCard(),
-              if (_shouldShowMetaCard) const SizedBox(height: AppSpacing.sm),
-              if (!_shouldShowMetaCard) const SizedBox(height: AppSpacing.sm),
-              if (_inlineIllustrations.isNotEmpty) ...[
-                _buildBackendIllustrationsCard(),
-                const SizedBox(height: AppSpacing.sm),
-              ],
-
-              LayoutBuilder(
-              builder: (context, constraints) =>
-                  _buildStoryPager(MediaQuery.of(context).size.height),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _buildAccessibilityPanel(),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Make the Wisdom Gem stand out
-            if (widget.wisdomGem.isNotEmpty)
-              Center(child: _buildWisdomGemCard()),
-            if (widget.wisdomGem.isNotEmpty)
-              const SizedBox(height: AppSpacing.lg),
-
-            _buildShareActions(),
-            const SizedBox(height: AppSpacing.lg),
-
-            IllustrationControls(
-              subscriptionTier: widget.subscription?.tier.name ?? 'free',
-              isLearningToReadMode: widget.isLearningToReadMode,
-              hasUserApiKey: widget.usedUserApiKey,
-              currentIllustrationCount: _currentIllustrationCount,
-              onGenerateMore: _generateMoreIllustrations,
-              onUpgrade: _openSubscriptionUpgrade,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            _buildFeedbackCard(),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Favorite button if story is saved
-            if (widget.storyId != null && !_isLoading)
-              Center(
-                child: SizedBox(
-                  width: 280,
-                  child: AppButton.secondary(
-                    label: _isFavorite
-                        ? 'Remove from favorites'
-                        : 'Add to favorites',
-                    icon: _isFavorite ? Icons.favorite : Icons.favorite_border,
-                    onPressed: _toggleFavorite,
+                  Text(
+                    widget.title,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-              ),
-            if (widget.storyId != null && !_isLoading)
-              const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.sm),
+                  if (_shouldShowMetaCard) _buildStoryMetaCard(),
+                  if (_shouldShowMetaCard)
+                    const SizedBox(height: AppSpacing.sm),
+                  if (!_shouldShowMetaCard)
+                    const SizedBox(height: AppSpacing.sm),
+                  if (_inlineIllustrations.isNotEmpty) ...[
+                    _buildBackendIllustrationsCard(),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
 
-            // READ TO ME BUTTON
-            Center(
-              child: SizedBox(
-                width: 360,
-                child: AppButton.primary(
-                  label: 'Read to Me',
-                  icon: Icons.volume_up,
-                  onPressed: () {
-                    _trackResultAction('read_to_me');
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => StoryReaderScreen(
-                          title: widget.title,
-                          storyText: widget.storyText,
-                          characterName: widget.characterName,
+                  LayoutBuilder(
+                    builder: (context, constraints) =>
+                        _buildStoryPager(MediaQuery.of(context).size.height),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildAccessibilityPanel(),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Make the Wisdom Gem stand out
+                  if (widget.wisdomGem.isNotEmpty)
+                    Center(child: _buildWisdomGemCard()),
+                  if (widget.wisdomGem.isNotEmpty)
+                    const SizedBox(height: AppSpacing.lg),
+
+                  _buildShareActions(),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  IllustrationControls(
+                    subscriptionTier: widget.subscription?.tier.name ?? 'free',
+                    isLearningToReadMode: widget.isLearningToReadMode,
+                    hasUserApiKey: widget.usedUserApiKey,
+                    currentIllustrationCount: _currentIllustrationCount,
+                    onGenerateMore: _generateMoreIllustrations,
+                    onUpgrade: _openSubscriptionUpgrade,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  _buildFeedbackCard(),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Favorite button if story is saved
+                  if (widget.storyId != null && !_isLoading)
+                    Center(
+                      child: SizedBox(
+                        width: 280,
+                        child: AppButton.secondary(
+                          label: _isFavorite
+                              ? 'Remove from favorites'
+                              : 'Add to favorites',
+                          icon: _isFavorite
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          onPressed: _toggleFavorite,
                         ),
                       ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
+                    ),
+                  if (widget.storyId != null && !_isLoading)
+                    const SizedBox(height: AppSpacing.md),
 
-            // ILLUSTRATION BUTTON
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: _isGeneratingIllustrations
-                    ? null
-                    : (_cachedIllustrations != null
-                        ? () => _viewIllustratedStory(_cachedIllustrations!)
-                        : _generateIllustrations),
-                icon: Icon(
-                  _isGeneratingIllustrations
-                      ? Icons.hourglass_top
-                      : _cachedIllustrations != null
-                          ? Icons.auto_stories
-                          : Icons.image,
-                  size: 28,
-                ),
-                label: Text(
-                  _isGeneratingIllustrations
-                      ? 'Generating illustrations...'
-                      : _cachedIllustrations != null
-                          ? 'View / Generate More'
-                          : 'Add Illustrations',
-                  style: const TextStyle(fontSize: 18),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                  // READ TO ME BUTTON
+                  Center(
+                    child: SizedBox(
+                      width: 360,
+                      child: AppButton.primary(
+                        label: 'Read to Me',
+                        icon: Icons.volume_up,
+                        onPressed: () {
+                          _trackResultAction('read_to_me');
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => StoryReaderScreen(
+                                title: widget.title,
+                                storyText: widget.storyText,
+                                characterName: widget.characterName,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.md),
 
-            // COLORING BOOK BUTTON
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: _isGeneratingColoringPages
-                    ? null
-                    : (_cachedColoringPages != null
-                        ? _openColoringBook
-                        : _generateColoringPages),
-                icon: Icon(
-                  _isGeneratingColoringPages
-                      ? Icons.hourglass_top
-                      : _cachedColoringPages != null
-                          ? Icons.palette
-                          : Icons.color_lens,
-                  size: 28,
-                ),
-                label: Text(
-                  _isGeneratingColoringPages
-                      ? 'Creating coloring pages...'
-                      : _cachedColoringPages != null
-                          ? 'View Coloring Pages (${_cachedColoringPages!.length})'
-                          : 'Create Coloring Pages',
-                  style: const TextStyle(fontSize: 18),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.secondary,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                  // ILLUSTRATION BUTTON
+                  Center(
+                    child: ElevatedButton.icon(
+                      onPressed: _isGeneratingIllustrations
+                          ? null
+                          : (_cachedIllustrations != null
+                              ? () =>
+                                  _viewIllustratedStory(_cachedIllustrations!)
+                              : _generateIllustrations),
+                      icon: Icon(
+                        _isGeneratingIllustrations
+                            ? Icons.hourglass_top
+                            : _cachedIllustrations != null
+                                ? Icons.auto_stories
+                                : Icons.image,
+                        size: 28,
+                      ),
+                      label: Text(
+                        _isGeneratingIllustrations
+                            ? 'Generating illustrations...'
+                            : _cachedIllustrations != null
+                                ? 'View / Generate More'
+                                : 'Add Illustrations',
+                        style: const TextStyle(fontSize: 18),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 32, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // COLORING BOOK BUTTON
+                  Center(
+                    child: ElevatedButton.icon(
+                      onPressed: _isGeneratingColoringPages
+                          ? null
+                          : (_cachedColoringPages != null
+                              ? _openColoringBook
+                              : _generateColoringPages),
+                      icon: Icon(
+                        _isGeneratingColoringPages
+                            ? Icons.hourglass_top
+                            : _cachedColoringPages != null
+                                ? Icons.palette
+                                : Icons.color_lens,
+                        size: 28,
+                      ),
+                      label: Text(
+                        _isGeneratingColoringPages
+                            ? 'Creating coloring pages...'
+                            : _cachedColoringPages != null
+                                ? 'View Coloring Pages (${_cachedColoringPages!.length})'
+                                : 'Create Coloring Pages',
+                        style: const TextStyle(fontSize: 18),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.secondary,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 32, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
                 ],
               ),
             ),
@@ -1523,7 +1530,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
             ),
           ],
         ),
-  );
+      ),
+    );
   }
 }
 
