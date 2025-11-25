@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -430,18 +432,10 @@ class _CharacterCreationScreenEnhancedState
     setState(() => _isLoading = true);
     final url = Uri.parse('${Environment.backendUrl}/create-character');
 
-    // Build role based on character type
-    String role = _characterType;
-    if (_characterType == 'Superhero' &&
-        _superheroNameController.text.isNotEmpty) {
-      role = 'Superhero (${_superheroNameController.text.trim()})';
-    }
-
     try {
       final ageValue = int.tryParse(_ageController.text.trim());
       final ageToSend =
           (ageValue == null || ageValue < 3 || ageValue > 100) ? 7 : ageValue;
-      final comfortValue = _resolveComfortItem();
       // Simplified character creation - only send essential data
       final body = {
         'name': _nameController.text.trim(),

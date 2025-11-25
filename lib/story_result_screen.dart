@@ -300,7 +300,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         rhymeMode: widget.isRhyming ?? false,
       );
     } catch (e) {
-      print('Failed to track story creation analytics: $e');
+      debugPrint('Failed to track story creation analytics: $e');
     }
 
     final achievementService = widget.achievementsService;

@@ -25,6 +25,7 @@ import 'saved_stories_screen.dart';
 import 'models.dart';
 import 'models/achievement.dart';
 import 'services/user_identity_service.dart';
+import 'services/feature_unlock_service.dart';
 import 'models/story_generation_result.dart';
 import 'multi_character_screen.dart';
 import 'offline_stories_screen.dart';
@@ -508,6 +509,9 @@ class _StoryScreenState extends State<StoryScreen> {
       }
       await _loadSubscriptionInfo(); // Refresh remaining count
       unawaited(_refreshGracePeriodStatus());
+
+      // Increment feature unlock counter
+      await FeatureUnlockService().incrementStoriesCreated(_userId);
 
       if (!mounted) return;
 
