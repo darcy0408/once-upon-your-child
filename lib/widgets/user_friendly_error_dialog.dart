@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as HttpException;
 
 class UserFriendlyErrorDialog extends StatelessWidget {
   final dynamic error;
