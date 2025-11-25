@@ -1,5 +1,6 @@
 // Content Safety Audit - Age-Appropriate Content Review
 // Since Gemini API is not configured, this audit focuses on fallback content and safety measures
+// ignore_for_file: avoid_print
 
 class ContentSafetyAudit {
   static const List<String> safetyChecks = [

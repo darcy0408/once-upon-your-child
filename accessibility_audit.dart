@@ -1,4 +1,5 @@
 // Accessibility Audit Checklist - WCAG 2.1 AA Compliance
+// ignore_for_file: avoid_print
 
 // ✅ IMPLEMENTED FEATURES:
 // 1. Text Scaling - Story result screen has text size slider (0.9x to 1.6x)

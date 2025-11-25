@@ -1,5 +1,6 @@
 // Analytics Validation Checklist
 // This file documents all analytics events that should be tracked
+// ignore_for_file: avoid_print
 
 import 'package:firebase_analytics/firebase_analytics.dart';
 

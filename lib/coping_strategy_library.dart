@@ -1,10 +1,8 @@
 // lib/coping_strategy_library.dart
 
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'character_evolution.dart';
-import 'emotions_learning_system.dart';
 import 'therapeutic_models.dart';
 
 /// Types of coping strategies organized by approach

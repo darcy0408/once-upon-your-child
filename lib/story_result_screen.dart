@@ -35,6 +35,7 @@ import 'widgets/app_button.dart';
 import 'widgets/app_card.dart';
 import 'widgets/illustration_controls.dart';
 import 'widgets/user_friendly_error_dialog.dart';
+import 'widgets/quality_badge.dart';
 import 'premium_upgrade_screen.dart';
 import 'widgets/feature_tour_overlay.dart';
 import 'services/feature_tour_service.dart';
@@ -114,9 +115,13 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   bool _screenReaderHints = true;
   bool _isSubmittingFeedback = false;
   double _storyRating = 4.0;
-  bool _isStoryHovered = false;
-  bool _showSwipeTutorial = false;
-  List<_InlineIllustration> _inlineIllustrations = [];
+   bool _isStoryHovered = false;
+   bool _showSwipeTutorial = false;
+   List<_InlineIllustration> _inlineIllustrations = [];
+
+   // Quality scoring
+   Map<String, dynamic>? _qualityData;
+   bool _isLoadingQuality = false;
   bool _showFeatureTour = false;
   int _featureTourStepIndex = 0;
   List<FeatureTourStep> _featureTourSteps = const [];
@@ -170,6 +175,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     _loadCachedIllustrations();
     _loadCachedColoringPages();
     _decodeInlineIllustrations();
+    _loadQualityData();
     if (widget.trackStoryCreation) {
       _trackStoryCreation(); // Track that user created a story, check for unlocks
     }
@@ -298,6 +304,10 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         characterAge: widget.characterAge ?? 7,
         interactiveMode: widget.isInteractive ?? false,
         rhymeMode: widget.isRhyming ?? false,
+        qualityScore: _qualityData?['overall_score'],
+        qualityBadge: _qualityData?['quality_badge'],
+        wordCount: _qualityData?['word_count'],
+        readabilityScore: _qualityData?['readability_score'],
       );
     } catch (e) {
       debugPrint('Failed to track story creation analytics: $e');
@@ -572,6 +582,35 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
           _cachedColoringPages = pages.isEmpty ? null : pages;
         });
       }
+    }
+  }
+
+  Future<void> _loadQualityData() async {
+    if (_isLoadingQuality) return;
+
+    setState(() => _isLoadingQuality = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse('${Environment.backendUrl}/quality/score-story'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'story_text': widget.storyText,
+          'age': widget.characterAge ?? 7,
+        }),
+      );
+
+      if (response.statusCode == 200 && mounted) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _qualityData = data;
+          _isLoadingQuality = false;
+        });
+      } else {
+        setState(() => _isLoadingQuality = false);
+      }
+    } catch (e) {
+      setState(() => _isLoadingQuality = false);
     }
   }
 
@@ -1499,13 +1538,25 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.title,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
+                   Row(
+                     children: [
+                       Expanded(
+                         child: Text(
+                           widget.title,
+                           style: theme.textTheme.headlineMedium?.copyWith(
+                             fontWeight: FontWeight.bold,
+                           ),
+                         ),
+                       ),
+                       if (_qualityData != null)
+                         QualityBadge(
+                           qualityBadge: _qualityData!['quality_badge'] ?? 'Unknown',
+                           overallScore: _qualityData!['overall_score'] ?? 0,
+                           onTap: () => QualityBadge.showQualityDetails(context, _qualityData!),
+                         ),
+                     ],
+                   ),
+                   const SizedBox(height: AppSpacing.sm),
                   if (_shouldShowMetaCard) _buildStoryMetaCard(),
                   if (_shouldShowMetaCard)
                     const SizedBox(height: AppSpacing.sm),

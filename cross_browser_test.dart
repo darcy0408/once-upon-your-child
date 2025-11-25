@@ -1,5 +1,6 @@
 // Cross-Browser Compatibility Test Checklist
 // Manual testing required for each browser/platform combination
+// ignore_for_file: avoid_print
 
 class CrossBrowserTestChecklist {
   static const List<String> browsers = [

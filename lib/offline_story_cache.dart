@@ -1,6 +1,7 @@
 // lib/offline_story_cache.dart
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CachedStory {

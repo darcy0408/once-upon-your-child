@@ -1,10 +1,8 @@
 // lib/conflict_resolution_stories.dart
 
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'character_evolution.dart';
-import 'emotions_learning_system.dart';
 import 'therapeutic_models.dart';
 
 /// Types of conflict resolution strategies

@@ -1,5 +1,6 @@
 // COPPA Compliance Audit - Children's Online Privacy Protection Act
 // Requirements for websites/apps directed at children under 13
+// ignore_for_file: avoid_print
 
 class CoppaComplianceAudit {
   static const List<String> coppaRequirements = [

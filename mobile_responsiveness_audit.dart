@@ -1,5 +1,6 @@
 // Mobile Responsiveness Audit
 // Testing app behavior on mobile devices and small screens
+// ignore_for_file: avoid_print
 
 class MobileResponsivenessAudit {
   static const List<String> mobileBreakpoints = [

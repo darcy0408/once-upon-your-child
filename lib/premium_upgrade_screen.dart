@@ -159,7 +159,7 @@ class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'Get FREE access to all premium features by using your own Google AI API key. Google provides \$15/month free credit - more than enough for most families!',
+                        'Get FREE access to all premium features by using your own Google AI API key. Google provides monthly free credit—enough for most families.',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.black87,

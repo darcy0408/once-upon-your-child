@@ -22,6 +22,7 @@ from .services.story_service import AdvancedStoryEngine
 from .routes.stripe_routes import stripe_routes
 from .routes.webhook_handler import webhook_routes
 from .analytics_routes import analytics_bp
+from .quality_service import StoryQualityService
 # from .repositories import character_repository
 from .gemini_image_generator import GeminiImageGenerator
 # Route imports removed - routes defined directly in app.py
@@ -223,6 +224,32 @@ def create_app(config_name):
     app.register_blueprint(stripe_routes, url_prefix='/api/stripe')
     app.register_blueprint(webhook_routes, url_prefix='/api/webhooks')
     app.register_blueprint(analytics_bp)
+
+    # Quality scoring endpoint
+    @app.route('/quality/score-story', methods=['POST'])
+    def score_story_quality():
+        """Score a story for quality metrics"""
+        try:
+            data = request.get_json(silent=True) or {}
+            story_text = data.get('story_text', '').strip()
+            age = int(data.get('age', 7))
+
+            if not story_text:
+                return jsonify({'error': 'Story text is required'}), 400
+
+            quality_score = StoryQualityService.calculate_story_quality(story_text, age)
+
+            return jsonify(quality_score), 200
+
+        except ValueError as e:
+            return jsonify({'error': 'Invalid age parameter'}), 400
+        except Exception as e:
+            log_error(
+                error_type='quality_scoring_failed',
+                message=str(e),
+                details={'error_class': e.__class__.__name__}
+            )
+            return jsonify({'error': 'Quality scoring failed'}), 500
 
     # API Routes
     print(f"=== Registering routes ===")

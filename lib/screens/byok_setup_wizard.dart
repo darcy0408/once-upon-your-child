@@ -36,6 +36,12 @@ class _ByokSetupWizardScreenState extends State<ByokSetupWizardScreen> {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open Google AI Studio. Please open it manually.'),
+        ),
+      );
     }
   }
 
@@ -216,6 +222,8 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
   bool _validating = false;
   String? _status;
   bool _valid = false;
+  bool _showKey = false;
+  int _attempts = 0;
 
   @override
   void dispose() {
@@ -236,12 +244,13 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
     setState(() {
       _validating = true;
       _status = null;
+      _attempts++;
     });
 
     // Lightweight validation: check prefix and ping Google models endpoint.
     if (!key.startsWith('AIza')) {
       setState(() {
-        _status = 'That does not look like a Google API key.';
+        _status = 'That does not look like a Google AI Studio key (should start with AIza).';
         _valid = false;
         _validating = false;
       });
@@ -299,9 +308,19 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
                 hintText: 'AIza...',
                 prefixIcon: Icon(Icons.key),
               ),
-              obscureText: true,
+              obscureText: !_showKey,
               maxLines: 1,
             ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Checkbox(
+                value: _showKey,
+                onChanged: (v) => setState(() => _showKey = v ?? false),
+              ),
+              const Text('Show key (keep private)'),
+            ],
           ),
           if (_status != null) ...[
             const SizedBox(height: AppSpacing.sm),
@@ -312,6 +331,17 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
                 fontWeight: FontWeight.w600,
               ),
             ),
+            if (!_valid && _attempts >= 2)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                child: Text(
+                  'Double-check that you copied the full key and that it starts with AIza.',
+                  style: TextStyle(
+                    color: Colors.red.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
           ],
           const SizedBox(height: AppSpacing.md),
           Row(

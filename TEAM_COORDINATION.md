@@ -94,3 +94,12 @@
   - Files modified: lib/story_result_screen.dart, lib/main_story.dart, lib/onboarding_screen.dart, lib/services/onboarding_analytics.dart, cross_browser_test.dart, lib/services/grace_period_service.dart
   - Status: ✅ Complete; analyzer clean (warnings only); release build previously verified locally
   - Notes: Swipe tutorial dismisses after first swipe (SharedPreferences key `seen_swipe_hint`); FABs log `fab_action`; tap targets now 44dp+ for character/theme/companion selectors.
+- 2025-11-26 18:00 UTC · Codex → Team: Codex 1 Week 3 delivered (unsynced)
+  - C3.1 templates service + UI toggle/cards in `character_creation_screen_enhanced.dart`; selects auto-fill traits/age/style and log `character_template_selected`.
+  - C3.2 post-story feature tour (service + overlay) now offered/skippable on StoryResultScreen for Library/Interactive/Coloring/BYOK.
+  - C3.3 pull-to-refresh added to character edit list; prior coloring refresh retained. Tests pass; analyzer warnings only (legacy deprecations). No git sync/commit yet per CLOSE.md.
+- 2025-11-26 18:05 UTC · Codex → Team: Codex 2 Week 3 progress
+  - Interactive story prompts upgraded (therapeutic choices enforced) with emotional-skill chips/choice numbers and analytics (`story_service.py`, `interactive_story_screen.dart`, `interactive_story_analytics.dart`).
+  - BYOK 3-step setup wizard + step indicator linked from Settings; files `byok_setup_wizard.dart`, `app_step_indicator.dart`, `settings_screen.dart`.
+  - `ANALYTICS_EVENTS.md` created; grace-period events logged via `grace_period_analytics.dart`, `main_story.dart`, `upgrade_prompt_dialog.dart`. Hard-limit UX already disables buttons with notice.
+  - Outstanding: manual verification of all analytics events and BYOK wizard with valid/invalid keys; pre-existing edits untouched.
