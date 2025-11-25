@@ -29,11 +29,12 @@ import 'config/environment.dart';
 import 'services/story_feedback_service.dart';
 import 'services/story_analytics.dart';
 import 'services/therapeutic_analytics.dart';
-import 'subscription_service.dart';
 import 'subscription_models.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_button.dart';
 import 'widgets/app_card.dart';
+import 'widgets/illustration_controls.dart';
+import 'premium_upgrade_screen.dart';
 
 class StoryResultScreen extends StatefulWidget {
   final String title;
@@ -52,6 +53,8 @@ class StoryResultScreen extends StatefulWidget {
   final bool trackAnalytics;
   final List<Map<String, dynamic>>? backendIllustrations;
   final UserSubscription? subscription;
+  final bool isLearningToReadMode;
+  final bool usedUserApiKey;
 
   const StoryResultScreen({
     super.key,
@@ -71,6 +74,8 @@ class StoryResultScreen extends StatefulWidget {
     this.trackAnalytics = true,
     this.backendIllustrations,
     this.subscription,
+    this.isLearningToReadMode = false,
+    this.usedUserApiKey = false,
   }) : assert(!trackStoryCreation || achievementsService != null),
         assert(!trackStoryCreation || storyCreatedAt != null);
 
@@ -382,6 +387,20 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         });
       }
     }
+  }
+
+  Future<void> _generateMoreIllustrations() async {
+    if (!_canGenerateIllustrations()) {
+      _showIllustrationLimitMessage();
+      return;
+    }
+    await _generateIllustrations();
+  }
+
+  Future<void> _openSubscriptionUpgrade() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const PremiumUpgradeScreen()),
+    );
   }
 
   /// View story with illustrations
@@ -953,6 +972,30 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     _trackResultAction('share', extra: {'method': 'system_share'});
   }
 
+  Future<void> _saveStory() async {
+    final cachedStory = CachedStory(
+      id: widget.storyId ?? 'offline_${DateTime.now().millisecondsSinceEpoch}',
+      title: widget.title,
+      storyText: widget.storyText,
+      characterName: widget.characterName ?? 'Unknown hero',
+      theme: widget.theme ?? 'Adventure',
+      cachedAt: DateTime.now(),
+      isFavorite: true,
+    );
+
+    await _cache.cacheStory(cachedStory);
+    _trackResultAction('story_saved_offline');
+    if (mounted) {
+      _showSnackBar('Story saved for offline reading!',
+          backgroundColor: Colors.green);
+    }
+  }
+
+  void _createAnotherStory() {
+    _trackResultAction('regenerate_requested');
+    Navigator.of(context).pop();
+  }
+
   void _createAnotherStory() {
     _trackResultAction('regenerate_requested');
     Navigator.of(context).pop();
@@ -1280,6 +1323,16 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
             _buildShareActions(),
             const SizedBox(height: AppSpacing.lg),
 
+            IllustrationControls(
+              subscriptionTier: widget.subscription?.tier.name ?? 'free',
+              isLearningToReadMode: widget.isLearningToReadMode,
+              hasUserApiKey: widget.usedUserApiKey,
+              currentIllustrationCount: _inlineIllustrations.length,
+              onGenerateMore: _generateMoreIllustrations,
+              onUpgrade: _openSubscriptionUpgrade,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+
             _buildFeedbackCard(),
             const SizedBox(height: AppSpacing.lg),
 
@@ -1418,7 +1471,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                       heroTag: 'fab_regenerate',
                       backgroundColor: Colors.orangeAccent,
                       tooltip: 'Regenerate story',
-                      onPressed: _isLoading ? null : () => _createAnotherStory(),
+                      onPressed: _isLoading ? null : _createAnotherStory,
                       child: const Icon(Icons.refresh),
                     ),
                     const SizedBox(height: 12),

@@ -426,7 +426,7 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
                 ),
               )
             else
-              ...recentCheckIns.map((checkIn) {
+              ..._recentCheckIns.map((checkIn) {
                 final timestamp = DateTime.parse(checkIn['timestamp']);
                 final timeAgo = _getTimeAgo(timestamp);
 

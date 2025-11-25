@@ -463,6 +463,9 @@ class _StoryScreenState extends State<StoryScreen> {
           isInteractive: _interactiveMode,
           isRhyming: _rhymeTimeMode,
           backendIllustrations: storyResult.illustrations,
+          subscription: _currentSubscription,
+          isLearningToReadMode: _learningToReadMode,
+          usedUserApiKey: storyResult.usedUserKey,
         ),
       ),
     );
