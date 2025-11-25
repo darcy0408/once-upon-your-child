@@ -480,17 +480,15 @@ class _StoryScreenState extends State<StoryScreen> {
 
   Future<void> _startInteractiveStory() async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
+    _startProgress();
 
     final allowed = await _validateStoryCreationPreconditions();
     if (!allowed) {
-      if (mounted) setState(() => _isLoading = false);
+      _stopProgress();
       return;
     }
 
     if (!mounted) return;
-    setState(() => _isLoading = false);
-
     final bool? storySaved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => InteractiveStoryScreen(
@@ -500,6 +498,8 @@ class _StoryScreenState extends State<StoryScreen> {
         ),
       ),
     );
+
+    _stopProgress(); // Stop progress after navigation completes
 
     if (storySaved == true) {
       await _loadSubscriptionInfo();
@@ -545,16 +545,7 @@ class _StoryScreenState extends State<StoryScreen> {
     );
   }
 
-  String _storyGenerationErrorMessage(Object error) {
-    if (error is SocketException) {
-      return 'Check your internet connection and try again.';
-    } else if (error is TimeoutException) {
-      return 'This is taking longer than usual. Try again?';
-    } else if (error is HttpException) {
-      return 'Our story engine is taking a break. Try again soon!';
-    }
-    return 'Something went wrong. Please try again.';
-  }
+
 
   void _startLoadingMessageRotation() {
     _loadingMessageIndex = 0;
