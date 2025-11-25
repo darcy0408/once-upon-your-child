@@ -33,4 +33,11 @@ class FirebaseAnalyticsService {
       );
     }
   }
+
+  static Future<void> logEvent(String eventName, Map<String, dynamic> parameters) async {
+    await analytics.logEvent(
+      name: eventName,
+      parameters: parameters,
+    );
+  }
 }
