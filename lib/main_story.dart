@@ -6,46 +6,46 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'storage_service.dart';
-import 'story_result_screen.dart';
-import 'saved_stories_screen.dart';
-import 'feelings_corner_screen.dart';
-import 'widgets/app_bottom_navigation.dart';
-import 'models.dart';
-import 'multi_character_screen.dart';
-import 'character_creation_screen_enhanced.dart';
-import 'character_edit_screen_enhanced.dart';
-import 'subscription_service.dart';
-import 'subscription_models.dart';
-import 'models/subscription_status.dart';
-import 'paywall_dialog.dart';
-import 'premium_upgrade_screen.dart';
-import 'interactive_story_screen.dart';
-import 'therapeutic_customization_screen.dart';
-import 'therapeutic_models.dart';
-import 'character_evolution.dart';
-import 'story_intent_card.dart';
-import 'offline_stories_screen.dart';
-import 'coloring_book_library_screen.dart';
-import 'emotions_screen.dart';
-import 'customizable_avatar_widget.dart';
-import 'avatar_models.dart';
-import 'settings_screen.dart' deferred as settings_screen;
-import 'services/api_service_manager.dart';
-import 'services/progression_service.dart';
-import 'achievements_screen.dart' deferred as achievements_screen;
-import 'models/achievement.dart';
-import 'services/achievement_service.dart';
-import 'pre_story_feelings_dialog.dart';
-import 'config/environment.dart';
-import 'screens/subscription_success_screen.dart';
 import 'package:story_weaver_app/widgets/story_generation_progress.dart';
 import 'package:story_weaver_app/widgets/user_friendly_error_dialog.dart';
-import 'services/story_complexity_service.dart';
-import 'models/story_generation_result.dart';
+
+import 'achievements_screen.dart' deferred as achievements_screen;
+import 'avatar_models.dart';
+import 'character_creation_screen_enhanced.dart';
+import 'character_edit_screen_enhanced.dart';
+import 'character_evolution.dart';
+import 'coloring_book_library_screen.dart';
+import 'config/environment.dart';
+import 'customizable_avatar_widget.dart';
 import 'dialogs/upgrade_prompt_dialog.dart';
+import 'emotions_screen.dart';
+import 'feelings_corner_screen.dart';
+import 'interactive_story_screen.dart';
+import 'storage_service.dart';
+import 'saved_stories_screen.dart';
+import 'models.dart';
+import 'models/achievement.dart';
+import 'models/story_generation_result.dart';
+import 'models/subscription_status.dart';
+import 'multi_character_screen.dart';
+import 'offline_stories_screen.dart';
+import 'paywall_dialog.dart';
+import 'pre_story_feelings_dialog.dart';
+import 'premium_upgrade_screen.dart';
+import 'screens/subscription_success_screen.dart';
+import 'services/achievement_service.dart';
+import 'services/api_service_manager.dart';
 import 'services/grace_period_service.dart';
+import 'services/progression_service.dart';
+import 'services/story_complexity_service.dart';
+import 'story_intent_card.dart';
+import 'story_result_screen.dart';
+import 'subscription_models.dart';
+import 'subscription_service.dart';
+import 'therapeutic_customization_screen.dart';
+import 'therapeutic_models.dart';
+import 'widgets/app_bottom_navigation.dart';
+import 'settings_screen.dart' deferred as settings_screen;
 
 
 class StoryCreatorApp extends StatelessWidget {
@@ -108,6 +108,7 @@ class _StoryScreenState extends State<StoryScreen> {
   final _achievementService = AchievementService();
   AchievementSummary? _achievementSummary;
   final _random = Random();
+  GracePeriodStatus? _gracePeriodStatus;
 
   // Story intent (merged theme + therapeutic customization)
   StoryIntentData? _storyIntent;
@@ -197,6 +198,7 @@ class _StoryScreenState extends State<StoryScreen> {
     _loadCharacters();
     _loadSubscriptionInfo();
     _loadAchievementSummary();
+    _refreshGracePeriodStatus();
     _handleInitialRoute();
   }
 
@@ -224,6 +226,18 @@ class _StoryScreenState extends State<StoryScreen> {
         _remainingStoriesToday = remaining;
         _storiesCreated = progress.storiesCreated;
         _hasRhymeTime = hasRhyme;
+      });
+      unawaited(_refreshGracePeriodStatus());
+    }
+  }
+
+  Future<void> _refreshGracePeriodStatus() async {
+    final status = await GracePeriodService.getStatus(
+      _currentSubscription?.tier.name ?? 'free',
+    );
+    if (mounted) {
+      setState(() {
+        _gracePeriodStatus = status;
       });
     }
   }
@@ -372,6 +386,11 @@ class _StoryScreenState extends State<StoryScreen> {
     final gracePeriodStatus = await GracePeriodService.getStatus(
       _currentSubscription?.tier.name ?? 'free',
     );
+    if (mounted) {
+      setState(() {
+        _gracePeriodStatus = gracePeriodStatus;
+      });
+    }
 
     if (gracePeriodStatus.shouldShowHardLimit) {
       if (!mounted) return;
@@ -389,15 +408,17 @@ class _StoryScreenState extends State<StoryScreen> {
 
     if (gracePeriodStatus.shouldShowSoftPrompt) {
       if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) => UpgradePromptDialog(
-          isSoftPrompt: true,
-          storiesUsed: gracePeriodStatus.storiesUsed,
-          storiesLimit: gracePeriodStatus.storiesLimit,
-          accountAgeDays: gracePeriodStatus.accountAgeDays,
-          daysRemainingInGracePeriod:
-              gracePeriodStatus.daysRemainingInGracePeriod,
+      unawaited(
+        showDialog(
+          context: context,
+          builder: (context) => UpgradePromptDialog(
+            isSoftPrompt: true,
+            storiesUsed: gracePeriodStatus.storiesUsed,
+            storiesLimit: gracePeriodStatus.storiesLimit,
+            accountAgeDays: gracePeriodStatus.accountAgeDays,
+            daysRemainingInGracePeriod:
+                gracePeriodStatus.daysRemainingInGracePeriod,
+          ),
         ),
       );
     }
@@ -444,79 +465,79 @@ class _StoryScreenState extends State<StoryScreen> {
 
       if (!mounted) return;
 
-    // TODO: Consider adding feelings check earlier in the process (before story generation)
-    // Removed the post-story feelings popup as it was disruptive to UX
+      // TODO: Consider adding feelings check earlier in the process (before story generation)
+      // Removed the post-story feelings popup as it was disruptive to UX
 
-    // Generate title and wisdom gem
-    final story = storyResult.storyText;
-    final backendTitle = storyResult.title?.trim();
-    final backendWisdom = storyResult.wisdomGem?.trim();
+      // Generate title and wisdom gem
+      final story = storyResult.storyText;
+      final backendTitle = storyResult.title?.trim();
+      final backendWisdom = storyResult.wisdomGem?.trim();
 
-    final String title = (backendTitle != null && backendTitle.isNotEmpty)
-        ? backendTitle
-        : (_additionalCharacterIds.isEmpty
-            ? '${_selectedCharacter!.name}\'s ${_selectedTheme} Adventure'
-            : _generateMultiCharacterTitle());
+      final String title = (backendTitle != null && backendTitle.isNotEmpty)
+          ? backendTitle
+          : (_additionalCharacterIds.isEmpty
+              ? '${_selectedCharacter!.name}\'s ${_selectedTheme} Adventure'
+              : _generateMultiCharacterTitle());
 
-    final String wisdomGem = (backendWisdom != null && backendWisdom.isNotEmpty)
-        ? backendWisdom
-        : (_additionalCharacterIds.isEmpty
-            ? 'Every adventure makes us stronger and wiser.'
-            : 'Together, we are stronger than we are alone.');
+      final String wisdomGem = (backendWisdom != null && backendWisdom.isNotEmpty)
+          ? backendWisdom
+          : (_additionalCharacterIds.isEmpty
+              ? 'Every adventure makes us stronger and wiser.'
+              : 'Together, we are stronger than we are alone.');
 
-    final storyTimestamp = DateTime.now();
+      final storyTimestamp = DateTime.now();
 
-    // Save the story locally with all characters used
-    final saved = SavedStory(
-      title: title,
-      storyText: story,
-      theme: _selectedTheme,
-      characters: allSelectedCharacters,
-      createdAt: storyTimestamp,
-          isInteractive: false,
-          wisdomGem: wisdomGem,
-    );
-    await StorageService().saveStory(saved);
+      // Save the story locally with all characters used
+      final saved = SavedStory(
+        title: title,
+        storyText: story,
+        theme: _selectedTheme,
+        characters: allSelectedCharacters,
+        createdAt: storyTimestamp,
+        isInteractive: false,
+        wisdomGem: wisdomGem,
+      );
+      await StorageService().saveStory(saved);
 
-    // Update character evolution (no feelings data for now)
-    await _updateCharacterEvolution(allSelectedCharacters, _therapeuticCustomization, null);
+      // Update character evolution (no feelings data for now)
+      await _updateCharacterEvolution(allSelectedCharacters, _therapeuticCustomization, null);
 
-    // Record story creation for usage tracking
-    await _subscriptionService.recordStoryCreation();
-    if (_currentSubscription?.tier.name == 'free' || _currentSubscription == null) {
-      await GracePeriodService.incrementStoryCount();
-    }
-    await _loadSubscriptionInfo(); // Refresh remaining count
+      // Record story creation for usage tracking
+      await _subscriptionService.recordStoryCreation();
+      if (_currentSubscription?.tier.name == 'free' || _currentSubscription == null) {
+        await GracePeriodService.incrementStoryCount();
+      }
+      await _loadSubscriptionInfo(); // Refresh remaining count
+      unawaited(_refreshGracePeriodStatus());
 
-    if (!mounted) return;
+      if (!mounted) return;
 
     // Navigate to result screen
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => StoryResultScreen(
           title: title,
-          storyText: story,
-          wisdomGem: wisdomGem,
-          characterName: _selectedCharacter?.name,
-          storyId: saved.id,
-          theme: _selectedTheme,
-          characterId: _selectedCharacter?.id,
-          achievementsService: _achievementService,
-          storyCreatedAt: storyTimestamp,
-          trackStoryCreation: true,
-          isInteractive: _interactiveMode,
-          isRhyming: _rhymeTimeMode,
-                     backendIllustrations: storyResult.illustrations,
-                     subscription: _currentSubscription,
-                   ),      ),
-    );
-
-
+            storyText: story,
+            wisdomGem: wisdomGem,
+            characterName: _selectedCharacter?.name,
+            storyId: saved.id,
+            theme: _selectedTheme,
+            characterId: _selectedCharacter?.id,
+            achievementsService: _achievementService,
+            storyCreatedAt: storyTimestamp,
+            trackStoryCreation: true,
+            isInteractive: _interactiveMode,
+            isRhyming: _rhymeTimeMode,
+            backendIllustrations: storyResult.illustrations,
+            subscription: _currentSubscription,
+          ),
+        ),
+      );
     } catch (e, stackTrace) {
-      print('Story generation error: $e');
-      print(stackTrace);
+      debugPrint('Story generation error: $e');
+      debugPrint(stackTrace.toString());
       if (mounted) {
-        _showStoryErrorDialog(e);
+        await _showStoryErrorDialog(e);
       }
     } finally {
       _stopProgress();
@@ -608,16 +629,16 @@ class _StoryScreenState extends State<StoryScreen> {
     if (mounted) setState(() => _isLoading = false);
   }
 
-  void _showStoryErrorDialog(dynamic error) {
-    showDialog(
+  Future<void> _showStoryErrorDialog(dynamic error) {
+    return showDialog(
       context: context,
-      builder: (context) => UserFriendlyErrorDialog(
+      builder: (dialogContext) => UserFriendlyErrorDialog(
         error: error,
         onRetry: () {
-          Navigator.pop(context);
+          Navigator.of(dialogContext).pop();
           _onCreateButtonPressed(); // Retry the last story creation
         },
-        onCancel: () => Navigator.pop(context),
+        onCancel: () => Navigator.of(dialogContext).pop(),
       ),
     );
   }
@@ -821,6 +842,38 @@ class _StoryScreenState extends State<StoryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              FutureBuilder<GracePeriodStatus>(
+                future: GracePeriodService.getStatus(
+                    _currentSubscription?.tier.name ?? 'free'),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData && snapshot.data!.isInGracePeriod) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: GracePeriodBanner(
+                        daysRemaining: snapshot
+                            .data!.daysRemainingInGracePeriod,
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (dialogContext) => AlertDialog(
+                              title: const Text('Grace Period'),
+                              content: Text(snapshot.data!.usageDescription),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(dialogContext).pop(),
+                                  child: const Text('Got it'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
               if (_achievementSummary != null) ...[
                 _buildAchievementsOverviewCard(),
                 const SizedBox(height: 20),
@@ -970,6 +1023,26 @@ class _StoryScreenState extends State<StoryScreen> {
               _buildSectionCard(
                   'Choose a Companion (Optional)', _buildCompanionSelector()),
               const SizedBox(height: 40),
+              if ((_gracePeriodStatus?.shouldShowHardLimit ?? false))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Material(
+                    elevation: 1,
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.red.shade50,
+                    child: ListTile(
+                      leading: const Icon(Icons.lock, color: Colors.red),
+                      title: const Text(
+                        'Story limit reached',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        'You\'ve hit this month\'s free limit. Upgrade to keep creating stories.',
+                        style: TextStyle(color: Colors.red.shade700),
+                      ),
+                    ),
+                  ),
+                ),
               if (_isLoading) ...[
                 StoryGenerationProgress(
                   currentPhase: _currentPhase,
@@ -978,9 +1051,11 @@ class _StoryScreenState extends State<StoryScreen> {
                 ),
               ] else ...[
                 ElevatedButton(
-                  onPressed: () async {
-                    await _onCreateButtonPressed();
-                  },
+                  onPressed: (_gracePeriodStatus?.shouldShowHardLimit ?? false)
+                      ? null
+                      : () async {
+                          await _onCreateButtonPressed();
+                        },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     textStyle: const TextStyle(
@@ -993,9 +1068,11 @@ class _StoryScreenState extends State<StoryScreen> {
                 if (!_interactiveMode) ...[
                   const SizedBox(height: 12),
                   OutlinedButton(
-                    onPressed: () async {
-                      await _createStory(guidedByFeeling: true);
-                    },
+                    onPressed: (_gracePeriodStatus?.shouldShowHardLimit ?? false)
+                        ? null
+                        : () async {
+                            await _createStory(guidedByFeeling: true);
+                          },
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       side: const BorderSide(color: Colors.deepPurple),
