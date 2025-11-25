@@ -11,6 +11,7 @@ import 'widgets/app_button.dart';
 import 'widgets/loading_spinner.dart';
 import 'widgets/error_message.dart';
 import 'widgets/app_switch.dart';
+import 'screens/byok_setup_wizard.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -75,6 +76,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
             label: 'Use my own Gemini API key',
             subtitle: 'Unlock unlimited stories and features',
             icon: Icons.api,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          AppButton.secondary(
+            label: 'Open setup wizard',
+            icon: Icons.auto_awesome,
+            onPressed: () async {
+              final result = await Navigator.of(context).push<String>(
+                MaterialPageRoute(
+                  builder: (_) => const ByokSetupWizardScreen(),
+                  fullscreenDialog: true,
+                ),
+              );
+              if (result != null && result.isNotEmpty) {
+                setState(() {
+                  _useOwnApiKey = true;
+                  _apiKeyController.text = result;
+                  _validationMessage = '✓ API Key configured via wizard';
+                  _isValid = true;
+                });
+                await _saveSettings();
+              } else {
+                await _loadSettings();
+              }
+            },
           ),
           if (_useOwnApiKey) ...[
             const SizedBox(height: AppSpacing.md),
