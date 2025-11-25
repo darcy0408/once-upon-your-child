@@ -11,16 +11,35 @@ class StoryAnalytics {
     required int characterAge,
     required bool interactiveMode,
     required bool rhymeMode,
+    double? qualityScore,
+    String? qualityBadge,
+    int? wordCount,
+    double? readabilityScore,
   }) async {
+    final parameters = <String, Object?>{
+      'theme': theme,
+      'character_age': characterAge,
+      'interactive_mode': interactiveMode,
+      'rhyme_mode': rhymeMode,
+      'character_name_length': characterName.length,
+    };
+
+    if (qualityScore != null) {
+      parameters['quality_score'] = qualityScore;
+    }
+    if (qualityBadge != null) {
+      parameters['quality_badge'] = qualityBadge;
+    }
+    if (wordCount != null) {
+      parameters['word_count'] = wordCount;
+    }
+    if (readabilityScore != null) {
+      parameters['readability_score'] = readabilityScore;
+    }
+
     await _analytics.logEvent(
       name: 'story_created',
-      parameters: {
-        'theme': theme,
-        'character_age': characterAge,
-        'interactive_mode': interactiveMode,
-        'rhyme_mode': rhymeMode,
-        'character_name_length': characterName.length,
-      },
+      parameters: parameters,
     );
   }
 

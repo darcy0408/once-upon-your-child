@@ -234,3 +234,4 @@ class StoryQualityService:
         elif overall_score >= 40:
             return 'Fair'
         else:
+            return 'Needs Improvement'
