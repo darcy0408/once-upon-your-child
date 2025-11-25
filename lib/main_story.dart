@@ -40,6 +40,8 @@ import 'services/achievement_service.dart';
 import 'pre_story_feelings_dialog.dart';
 import 'config/environment.dart';
 import 'screens/subscription_success_screen.dart';
+import 'package:story_weaver_app/widgets/story_generation_progress.dart';
+import 'package:story_weaver_app/widgets/user_friendly_error_dialog.dart';
 import 'services/story_complexity_service.dart';
 import 'models/story_generation_result.dart';
 
@@ -107,17 +109,10 @@ class _StoryScreenState extends State<StoryScreen> {
   // Story intent (merged theme + therapeutic customization)
   StoryIntentData? _storyIntent;
 
-  // Loading messages for story generation
-  final List<String> _loadingMessages = [
-    'Weaving your magical story...',
-    'Sprinkling in some wonder...',
-    'Adding a dash of adventure...',
-    'Almost there...',
-  ];
-  int _loadingMessageIndex = 0;
+
   Timer? _loadingTimer;
   int _currentPhase = 0;
-  int _totalPhases = 3;
+  int _totalPhases = 4;
   String _funFact = '';
 
   final List<String> _funFacts = [
@@ -181,8 +176,7 @@ class _StoryScreenState extends State<StoryScreen> {
         break;
     }
   }
-  int _loadingMessageIndex = 0;
-  Timer? _loadingTimer;
+
 
   final List<Map<String, String>> _companions = const [
     {'name': 'None', 'image': 'assets/images/none.png'},
@@ -460,19 +454,17 @@ class _StoryScreenState extends State<StoryScreen> {
           trackStoryCreation: true,
           isInteractive: _interactiveMode,
           isRhyming: _rhymeTimeMode,
-          backendIllustrations: storyResult.illustrations,
-        ),
-      ),
+                     backendIllustrations: storyResult.illustrations,
+                     subscription: _currentSubscription,
+                   ),      ),
     );
 
-    if (mounted) {
-      await _loadAchievementSummary();
-    }
+
     } catch (e, stackTrace) {
       print('Story generation error: $e');
       print(stackTrace);
       if (mounted) {
-        _showStoryErrorDialog();
+        _showStoryErrorDialog(e);
       }
     } finally {
       _stopProgress();
@@ -546,44 +538,25 @@ class _StoryScreenState extends State<StoryScreen> {
     );
   }
 
-  String _storyGenerationErrorMessage(Object error) {
-    if (error is SocketException) {
-      return 'Check your internet connection and try again.';
-    } else if (error is TimeoutException) {
-      return 'This is taking longer than usual. Try again?';
-    } else if (error is HttpException) {
-      return 'Our story engine is taking a break. Try again soon!';
-    }
-    return 'Something went wrong. Please try again.';
-  }
 
-  void _startLoadingMessageRotation() {
-    _loadingMessageIndex = 0;
-    _loadingTimer?.cancel();
-    _loadingTimer = Timer.periodic(Duration(seconds: 3), (timer) {
-      if (mounted) {
-        setState(() {
-          _loadingMessageIndex = (_loadingMessageIndex + 1) % _loadingMessages.length;
-        });
-      }
-    });
-  }
 
-  void _stopLoadingMessageRotation() {
-    _loadingTimer?.cancel();
-  }
+
 
   void _startProgress() {
-    if (mounted) setState(() => _isLoading = true);
-    _loadingMessageIndex = 0;
-    _currentPhase = 0;
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _currentPhase = 0;
+        _funFact = _funFacts[DateTime.now().millisecond % _funFacts.length];
+      });
+    }
     _loadingTimer?.cancel();
-    _loadingTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+    _loadingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         setState(() {
-          _loadingMessageIndex = (_loadingMessageIndex + 1) % _loadingMessages.length;
-          // Update phase for progress widget
-          _currentPhase = (_currentPhase + 1) % _totalPhases;
+          if (_currentPhase < _totalPhases - 1) {
+            _currentPhase++;
+          }
         });
       }
     });
@@ -594,20 +567,16 @@ class _StoryScreenState extends State<StoryScreen> {
     if (mounted) setState(() => _isLoading = false);
   }
 
-  void _showStoryErrorDialog() {
+  void _showStoryErrorDialog(dynamic error) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Story Generation Failed'),
-        content: Text(
-          'We had trouble creating your story. Please check your internet connection and try again.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('OK'),
-          ),
-        ],
+      builder: (context) => UserFriendlyErrorDialog(
+        error: error,
+        onRetry: () {
+          Navigator.pop(context);
+          _onCreateButtonPressed(); // Retry the last story creation
+        },
+        onCancel: () => Navigator.pop(context),
       ),
     );
   }
@@ -663,7 +632,7 @@ class _StoryScreenState extends State<StoryScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -1010,22 +979,20 @@ class _StoryScreenState extends State<StoryScreen> {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      color: Colors.white.withValues(alpha: 0.95), // Semi-transparent white
+      color: Colors.white.withOpacity(0.95), // Semi-transparent white
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFF81C784)
-                .withValues(alpha: 0.5), // Light green border
+                        color: const Color(0xFF81C784).withOpacity(0.5), // Light green border
             width: 2,
           ),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.white.withValues(alpha: 0.95),
-              const Color(0xFFF1F8E9)
-                  .withValues(alpha: 0.95), // Very light green tint
+                            Colors.white.withOpacity(0.95),
+                            const Color(0xFFF1F8E9).withOpacity(0.95), // Very light green tint
             ],
           ),
         ),
@@ -1040,7 +1007,7 @@ class _StoryScreenState extends State<StoryScreen> {
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color:
-                          const Color(0xFF4CAF50).withValues(alpha: 0.2),
+                          const Color(0xFF4CAF50).withOpacity(0.2),
                       shape: BoxShape.circle,
                     ),
                     child: const Text('🍃', style: TextStyle(fontSize: 18)),
@@ -1231,7 +1198,7 @@ class _StoryScreenState extends State<StoryScreen> {
         border: Border.all(color: Colors.white, width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: Colors.black.withOpacity(0.08),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -1641,7 +1608,7 @@ class _StoryScreenState extends State<StoryScreen> {
     return Card(
       elevation: 5,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      color: Colors.white.withValues(alpha: 0.95),
+      color: Colors.white.withOpacity(0.95),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -1652,7 +1619,7 @@ class _StoryScreenState extends State<StoryScreen> {
                 Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.amber.withValues(alpha: 0.2),
+                    color: Colors.amber.withOpacity(0.2),
                   ),
                   padding: const EdgeInsets.all(12),
                   child: const Icon(Icons.emoji_events, color: Colors.amber),
@@ -1675,7 +1642,7 @@ class _StoryScreenState extends State<StoryScreen> {
                         '${summary.unlockedCount}/${summary.totalCount} unlocked so far',
                         style: TextStyle(
                           color:
-                              Colors.green.shade900.withValues(alpha: 0.75),
+                              Colors.green.shade900.withOpacity(0.75),
                         ),
                       ),
                     ],
@@ -1716,7 +1683,7 @@ class _StoryScreenState extends State<StoryScreen> {
               '$completionPercent% badges unlocked • '
               '$averageProgress% average progress',
               style: TextStyle(
-                color: Colors.green.shade900.withValues(alpha: 0.7),
+                color: Colors.green.shade900.withOpacity(0.7),
                 fontWeight: FontWeight.w600,
               ),
             ),

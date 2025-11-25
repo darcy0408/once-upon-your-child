@@ -1035,11 +1035,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     Navigator.of(context).pop();
   }
 
-  void _createAnotherStory() {
-    _trackResultAction('regenerate_requested');
-    Navigator.of(context).pop();
-  }
-
   Future<void> _exportStory() async {
     final directory = await getTemporaryDirectory();
     final fileName =

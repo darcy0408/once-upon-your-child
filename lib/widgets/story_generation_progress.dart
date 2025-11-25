@@ -32,20 +32,20 @@ class StoryGenerationProgress extends StatelessWidget {
       children: [
         Text(
           getPhaseTitle(currentPhase),
-          style: Theme.of(context).textTheme.headline6,
+          style: Theme.of(context).textTheme.titleLarge,
         ),
-        SizedBox(height: 20),
+        const SizedBox(height: 20),
         LinearProgressIndicator(
           value: (currentPhase + 1) / totalPhases,
         ),
-        SizedBox(height: 20),
+        const SizedBox(height: 20),
         Text(
           'Estimated time remaining: ${totalPhases - currentPhase - 1} seconds',
-          style: Theme.of(context).textTheme.subtitle1,
+          style: Theme.of(context).textTheme.titleMedium,
         ),
-        SizedBox(height: 40),
+        const SizedBox(height: 40),
         Container(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.blue.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
@@ -54,9 +54,9 @@ class StoryGenerationProgress extends StatelessWidget {
             children: [
               Text(
                 'Fun Fact:',
-                style: Theme.of(context).textTheme.headline6,
+                style: Theme.of(context).textTheme.titleLarge,
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               Text(
                 funFact,
                 textAlign: TextAlign.center,
