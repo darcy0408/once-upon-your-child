@@ -299,6 +299,45 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     }
   }
 
+  int get _currentIllustrationCount =>
+      (_cachedIllustrations?.length ?? 0) + _inlineIllustrations.length;
+
+  bool _canGenerateIllustrations() {
+    if (widget.subscription == null) return false;
+    final tier = widget.subscription!.tier;
+
+    switch (tier) {
+      case SubscriptionTier.free:
+        return widget.usedUserApiKey;
+      case SubscriptionTier.premium:
+        return _currentIllustrationCount < 1;
+      case SubscriptionTier.family:
+        return _currentIllustrationCount < 2;
+    }
+  }
+
+  void _showIllustrationLimitMessage() {
+    String message;
+    if (widget.subscription == null) {
+      message = 'Illustration generation requires a subscription.';
+    } else {
+      switch (widget.subscription!.tier) {
+        case SubscriptionTier.free:
+          message = widget.usedUserApiKey
+              ? 'You have reached the BYOK illustration limit.'
+              : 'Upgrade to Premium for automatic illustrations.';
+          break;
+        case SubscriptionTier.premium:
+          message = 'Family plan allows up to 2 illustrations per story.';
+          break;
+        case SubscriptionTier.family:
+          message = 'Maximum illustrations reached for this story.';
+          break;
+      }
+    }
+    _showSnackBar(message, backgroundColor: Colors.orange);
+  }
+
   /// Generate illustrations for this story
   Future<void> _generateIllustrations() async {
     // Show settings dialog
@@ -1327,7 +1366,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
               subscriptionTier: widget.subscription?.tier.name ?? 'free',
               isLearningToReadMode: widget.isLearningToReadMode,
               hasUserApiKey: widget.usedUserApiKey,
-              currentIllustrationCount: _inlineIllustrations.length,
+              currentIllustrationCount: _currentIllustrationCount,
               onGenerateMore: _generateMoreIllustrations,
               onUpgrade: _openSubscriptionUpgrade,
             ),
