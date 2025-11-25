@@ -85,6 +85,9 @@ class _StoryScreenState extends State<StoryScreen> {
   bool _interactiveMode = false;
   bool _isLoading = false;
 
+  // Bottom navigation
+  int _selectedIndex = 0;
+
   final _subscriptionService = SubscriptionService();
   UserSubscription? _currentSubscription;
   int _remainingStoriesToday = 0;
@@ -109,6 +112,70 @@ class _StoryScreenState extends State<StoryScreen> {
     'Adding a dash of adventure...',
     'Almost there...',
   ];
+  int _loadingMessageIndex = 0;
+  Timer? _loadingTimer;
+  int _currentPhase = 0;
+  int _totalPhases = 3;
+  String _funFact = '';
+
+  final List<String> _funFacts = [
+    'The world\'s oldest known story is the Epic of Gilgamesh, written over 4,000 years ago!',
+    'Reading for just 6 minutes a day can reduce stress by up to 68%.',
+    'The word "story" comes from the Latin word "historia," which means "history" or "narrative."',
+    'The shortest story ever written is "For sale: baby shoes, never worn."',
+    'The human brain is wired for stories. We remember facts 6 to 7 times more easily when they are part of a story.',
+  ];
+
+  // Navigation items
+  static const List<NavigationDestination> _navItems = [
+    NavigationDestination(
+      icon: Icon(Icons.auto_stories),
+      label: 'Stories',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.people),
+      label: 'Characters',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.favorite),
+      label: 'Feelings',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.settings),
+      label: 'Settings',
+    ),
+  ];
+
+  void _onNavItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    // Handle navigation to different screens
+    switch (index) {
+      case 0: // Stories - already on this screen
+        break;
+      case 1: // Characters
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const CharacterManagementScreen()),
+        ).then((_) => setState(() => _selectedIndex = 0)); // Return to stories
+        break;
+      case 2: // Feelings
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const FeelingsCornerScreen()),
+        ).then((_) => setState(() => _selectedIndex = 0)); // Return to stories
+        break;
+      case 3: // Settings
+        settings_screen.loadLibrary().then((_) {
+          if (mounted) {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => settings_screen.SettingsScreen()),
+            ).then((_) => setState(() => _selectedIndex = 0)); // Return to stories
+          }
+        });
+        break;
+    }
+  }
   int _loadingMessageIndex = 0;
   Timer? _loadingTimer;
 
@@ -302,8 +369,7 @@ class _StoryScreenState extends State<StoryScreen> {
     if (!allowed) return;
 
     // Start loading state
-    if (mounted) setState(() => _isLoading = true);
-    _startLoadingMessageRotation();
+    _startProgress();
 
     // Get all selected characters
     final List<Character> allSelectedCharacters = [
@@ -404,8 +470,7 @@ class _StoryScreenState extends State<StoryScreen> {
         _showStoryErrorDialog();
       }
     } finally {
-      _stopLoadingMessageRotation();
-      if (mounted) setState(() => _isLoading = false);
+      _stopProgress();
     }
   }
 
@@ -501,6 +566,27 @@ class _StoryScreenState extends State<StoryScreen> {
 
   void _stopLoadingMessageRotation() {
     _loadingTimer?.cancel();
+  }
+
+  void _startProgress() {
+    if (mounted) setState(() => _isLoading = true);
+    _loadingMessageIndex = 0;
+    _currentPhase = 0;
+    _loadingTimer?.cancel();
+    _loadingTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (mounted) {
+        setState(() {
+          _loadingMessageIndex = (_loadingMessageIndex + 1) % _loadingMessages.length;
+          // Update phase for progress widget
+          _currentPhase = (_currentPhase + 1) % _totalPhases;
+        });
+      }
+    });
+  }
+
+  void _stopProgress() {
+    _loadingTimer?.cancel();
+    if (mounted) setState(() => _isLoading = false);
   }
 
   void _showStoryErrorDialog() {
@@ -866,18 +952,10 @@ class _StoryScreenState extends State<StoryScreen> {
                   'Choose a Companion (Optional)', _buildCompanionSelector()),
               const SizedBox(height: 40),
               if (_isLoading) ...[
-                const Center(child: CircularProgressIndicator()),
-                const SizedBox(height: 16),
-                Center(
-                  child: Text(
-                    _loadingMessages[_loadingMessageIndex],
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.deepPurple,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+                StoryGenerationProgress(
+                  currentPhase: _currentPhase,
+                  totalPhases: _totalPhases,
+                  funFact: _funFact,
                 ),
               ] else ...[
                 ElevatedButton(
