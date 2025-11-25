@@ -40,6 +40,8 @@ import 'services/achievement_service.dart';
 import 'pre_story_feelings_dialog.dart';
 import 'config/environment.dart';
 import 'screens/subscription_success_screen.dart';
+import 'package:story_weaver_app/widgets/story_generation_progress.dart';
+import 'package:story_weaver_app/widgets/user_friendly_error_dialog.dart';
 import 'services/story_complexity_service.dart';
 import 'models/story_generation_result.dart';
 
@@ -463,16 +465,18 @@ class _StoryScreenState extends State<StoryScreen> {
           backendIllustrations: storyResult.illustrations,
         ),
       ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: _onNavItemTapped,
+        destinations: _navItems,
+      ),
     );
-
-    if (mounted) {
-      await _loadAchievementSummary();
-    }
+  }
     } catch (e, stackTrace) {
       print('Story generation error: $e');
       print(stackTrace);
       if (mounted) {
-        _showStoryErrorDialog();
+        _showStoryErrorDialog(e);
       }
     } finally {
       _stopProgress();
@@ -594,20 +598,16 @@ class _StoryScreenState extends State<StoryScreen> {
     if (mounted) setState(() => _isLoading = false);
   }
 
-  void _showStoryErrorDialog() {
+  void _showStoryErrorDialog(dynamic error) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Story Generation Failed'),
-        content: Text(
-          'We had trouble creating your story. Please check your internet connection and try again.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('OK'),
-          ),
-        ],
+      builder: (context) => UserFriendlyErrorDialog(
+        error: error,
+        onRetry: () {
+          Navigator.pop(context);
+          _onCreateButtonPressed(); // Retry the last story creation
+        },
+        onCancel: () => Navigator.pop(context),
       ),
     );
   }
