@@ -221,6 +221,23 @@ def create_app(config_name):
         rhyme_time_mode = payload.get("rhyme_time_mode", False)
         learning_to_read_mode = payload.get("learning_to_read_mode", False)
         include_illustrations = payload.get("include_illustrations", False)
+        user_id = payload.get("user_id")
+        requested_tier = (payload.get("subscription_tier") or "").lower()
+        allowed_tiers = {"free", "premium", "family"}
+        if requested_tier not in allowed_tiers:
+            requested_tier = None
+
+        if not requested_tier and user_id:
+            try:
+                user_record = User.query.filter_by(id=user_id).first()
+                if user_record and user_record.subscription_tier:
+                    normalized = user_record.subscription_tier.lower()
+                    if normalized in allowed_tiers:
+                        requested_tier = normalized
+            except Exception:
+                logger.exception("Failed to load user for subscription tier lookup")
+
+        subscription_tier = requested_tier or "free"
         character = payload.get("character", "a brave adventurer")
         theme = payload.get("theme", "Adventure")
         companion = payload.get("companion")
@@ -358,7 +375,39 @@ def create_app(config_name):
                 genai.configure(api_key=api_key)
 
         illustrations = []
-        if include_illustrations:
+        should_generate_illustrations = False
+        requested_illustration_count = 0
+
+        def enable_illustrations(min_count: int, reason: str | None = None):
+            nonlocal should_generate_illustrations, requested_illustration_count
+            should_generate_illustrations = True
+            if min_count > requested_illustration_count:
+                requested_illustration_count = min_count
+            if reason:
+                logger.info(reason)
+
+        if learning_to_read_mode:
+            enable_illustrations(1, f"Learning-to-read mode auto-illustration for tier {subscription_tier}")
+
+        if subscription_tier == "family":
+            enable_illustrations(2, "Family tier bonus: 2 auto-illustrations")
+        elif subscription_tier == "premium":
+            enable_illustrations(1, "Premium tier bonus: 1 auto-illustration")
+
+        if include_illustrations and not should_generate_illustrations:
+            if subscription_tier in {"premium", "family"}:
+                enable_illustrations(2 if subscription_tier == "family" else 1,
+                                     "User requested illustrations (paid tier)")
+            elif user_api_key:
+                enable_illustrations(1, "User requested illustrations via BYOK")
+            else:
+                logger.info("Free tier requested illustrations without BYOK or learning mode - skipping auto-generation")
+
+        if not should_generate_illustrations and user_api_key and not learning_to_read_mode:
+            enable_illustrations(1, "BYOK enabled illustration for free tier")
+
+        if should_generate_illustrations:
+            num_illustrations = max(1, requested_illustration_count)
             try:
                 generator = None
                 if user_api_key:
@@ -369,17 +418,24 @@ def create_app(config_name):
                 if generator:
                     scene_preview = (raw_text or "")[:200].replace("\n", " ").strip()
                     if not scene_preview:
-                        scene_preview = "A young reader learning through stories"
+                        scene_preview = "A young reader discovering confidence"
+
+                    if subscription_tier == "family":
+                        style = "vibrant, detailed children's book illustration with rich colors and multiple focal points"
+                    elif subscription_tier == "premium":
+                        style = "colorful, painterly children's book illustration"
+                    else:
+                        style = "simple, colorful children's book illustration for early readers"
 
                     illustrations = generator.generate_story_illustration(
                         scene_description=f"{character} in a {theme} story. {scene_preview}",
                         character_name=character,
-                        style="simple, colorful children's book illustration for early readers",
-                        num_images=1,
+                        style=style,
+                        num_images=num_illustrations,
                         age=character_age,
                         therapeutic_focus="reading confidence and engagement",
                     )
-                    logger.info(f"Generated {len(illustrations)} illustration(s) for story request")
+                    logger.info(f"Generated {len(illustrations)} illustration(s) for tier {subscription_tier}")
                 else:
                     logger.warning("Image generator unavailable for requested illustrations")
             except Exception:

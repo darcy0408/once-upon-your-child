@@ -21,6 +21,8 @@ void main() {
         expect(request.url.path, contains('generate-story'));
         final body = jsonDecode(request.body) as Map<String, dynamic>;
         expect(body['character'], 'Luna');
+        expect(body['subscription_tier'], 'free');
+        expect(body['user_id'], startsWith('user_'));
         return http.Response(jsonEncode({'story': 'Mock backend story'}), 200);
       });
 
@@ -44,6 +46,7 @@ void main() {
         final extras = body['additional_characters'] as List<dynamic>?;
         expect(extras, isNotNull);
         expect(extras, contains('Maya'));
+        expect(body['subscription_tier'], 'free');
         return http.Response(jsonEncode({'story': 'Group adventure'}), 200);
       });
 

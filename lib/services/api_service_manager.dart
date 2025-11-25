@@ -13,6 +13,7 @@ import '../config/environment.dart';
 import '../character_traits_data.dart';
 import '../models/story_generation_result.dart';
 import 'story_complexity_service.dart';
+import 'user_identity_service.dart';
 
 /// Manages API calls - routes to either local backend or direct Gemini API
 /// based on user's API key configuration
@@ -100,6 +101,7 @@ class ApiServiceManager {
     bool rhymeTimeMode = false,
     bool learningToReadMode = false,
     bool includeIllustrations = false,
+    String subscriptionTier = 'free',
     Map<String, dynamic>? currentFeeling,
     Map<String, dynamic>? characterEvolution,
     http.Client? client,
@@ -108,25 +110,16 @@ class ApiServiceManager {
     Duration requestTimeout = const Duration(seconds: 30),
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
+    final userId = await UserIdentityService.getOrCreateUserId();
+    final String normalizedTier =
+        (subscriptionTier.isEmpty ? 'free' : subscriptionTier).toLowerCase();
     final http.Client? effectiveClient = client ?? _testClient;
 
-    if (useOwnKey) {
-      // Use direct Gemini API
-      return await _generateStoryWithGemini(
-        characterName: characterName,
-        theme: theme,
-        age: age,
-        companion: companion,
-        characterDetails: characterDetails,
-        additionalCharacters: additionalCharacters,
-        rhymeTimeMode: rhymeTimeMode,
-        learningToReadMode: learningToReadMode,
-        includeIllustrations: includeIllustrations,
-        currentFeeling: currentFeeling,
-        characterEvolution: characterEvolution,
-      );
-    } else {
-      // Use local Flask backend
+    final bool needsBackendForFeatures =
+        includeIllustrations || learningToReadMode;
+
+    if (!useOwnKey || needsBackendForFeatures) {
+      final userApiKey = useOwnKey ? await getUserApiKey() : null;
       return await _generateStoryWithBackendRetry(
         characterName: characterName,
         theme: theme,
@@ -137,6 +130,9 @@ class ApiServiceManager {
         rhymeTimeMode: rhymeTimeMode,
         learningToReadMode: learningToReadMode,
         includeIllustrations: includeIllustrations,
+        subscriptionTier: normalizedTier,
+        userId: userId,
+        userApiKey: userApiKey,
         currentFeeling: currentFeeling,
         characterEvolution: characterEvolution,
         client: effectiveClient,
@@ -145,6 +141,20 @@ class ApiServiceManager {
         requestTimeout: requestTimeout,
       );
     }
+
+    return await _generateStoryWithGemini(
+      characterName: characterName,
+      theme: theme,
+      age: age,
+      companion: companion,
+      characterDetails: characterDetails,
+      additionalCharacters: additionalCharacters,
+      rhymeTimeMode: rhymeTimeMode,
+      learningToReadMode: learningToReadMode,
+      includeIllustrations: includeIllustrations,
+      currentFeeling: currentFeeling,
+      characterEvolution: characterEvolution,
+    );
   }
 
   Map<String, dynamic> _decodeJsonResponse(
@@ -224,6 +234,9 @@ class ApiServiceManager {
     bool rhymeTimeMode = false,
     bool learningToReadMode = false,
     bool includeIllustrations = false,
+    required String subscriptionTier,
+    required String userId,
+    String? userApiKey,
     Map<String, dynamic>? currentFeeling,
     Map<String, dynamic>? characterEvolution,
     http.Client? client,
@@ -246,6 +259,9 @@ class ApiServiceManager {
           rhymeTimeMode: rhymeTimeMode,
           learningToReadMode: learningToReadMode,
           includeIllustrations: includeIllustrations,
+          subscriptionTier: subscriptionTier,
+          userId: userId,
+          userApiKey: userApiKey,
           currentFeeling: currentFeeling,
           characterEvolution: characterEvolution,
           client: client,
@@ -273,6 +289,9 @@ class ApiServiceManager {
     bool rhymeTimeMode = false,
     bool learningToReadMode = false,
     bool includeIllustrations = false,
+    required String subscriptionTier,
+    required String userId,
+    String? userApiKey,
     Map<String, dynamic>? currentFeeling,
     Map<String, dynamic>? characterEvolution,
     http.Client? client,
@@ -293,7 +312,12 @@ class ApiServiceManager {
       'character_evolution': characterEvolution,
       'additional_characters': additionalCharacters,
       'include_illustrations': includeIllustrations,
+      'subscription_tier': subscriptionTier,
+      'user_id': userId,
     };
+    if (userApiKey != null && userApiKey.isNotEmpty) {
+      body['user_api_key'] = userApiKey;
+    }
 
     try {
       // 1. Start the task

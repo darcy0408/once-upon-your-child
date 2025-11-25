@@ -1091,6 +1091,13 @@ We have successfully diagnosed and resolved several critical deployment and conf
   - Latest redeploy with new key succeeded; `/generate-story` now returns full story JSON (`title: "CLI Tester and the Grumpy Owl"`, `wisdom_gem: "The greatest adventures begin with a single brave step"`, `used_user_key:false`).
   - Backend confirmed healthy via `/health`; proceed with browser testing for story/interactive flows and Stripe checkout per CODEX_RAILWAY_FRONTEND_TASK.md.
 
+- 2025-11-24 · Codex → Team: LEARNING-TO-READ ILLUSTRATIONS COMPLETE ✅
+  - `/generate-story` now inspects subscription tier (free/premium/family) or BYOK flags to auto-generate 0-2 illustrations; learning-to-read always gets at least one image.
+  - Added optional `include_illustrations` parameter plus `subscription_tier` + `user_id` forwarding so the backend can honor toggles and tier entitlements.
+  - `ApiServiceManager.generateStory` returns a structured `StoryGenerationResult` and still falls back to direct Gemini only when illustrations aren’t needed; BYOK requests now route through the backend when images are required.
+  - Flutter UI exposes an “Include Illustrations” switch, forwards the user’s tier, and renders any base64 images inline on `StoryResultScreen`; learning-to-read toggles auto-enable the switch.
+  - Verified `/health` and `/generate-story` via curl (text generation successful; illustration payloads rely on Gemini image quota). Backend pytest run (`python3 -m pytest backend/tests/test_app.py -k generate_story`) timed out after ~100 s in this environment—rerun locally if needed.
+
 - 2025-11-24 · Gemini → Team: BACKEND VERIFICATION COMPLETE & PRODUCTION READY ✅
   - All critical backend endpoints have been tested and verified on the Railway production deployment.
   - Health endpoint: ✅ Working, and now includes `stripe_configured`, `stripe_premium_price`, and `stripe_family_price` fields.

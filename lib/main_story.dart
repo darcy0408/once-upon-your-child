@@ -470,6 +470,8 @@ class _StoryScreenState extends State<StoryScreen> {
       rhymeTimeMode: _rhymeTimeMode,
       learningToReadMode: _learningToReadMode,
       includeIllustrations: _includeIllustrations,
+      subscriptionTier:
+          (_currentSubscription?.tier ?? SubscriptionTier.free).name,
       currentFeeling: null, // Could be added later
     );
   }

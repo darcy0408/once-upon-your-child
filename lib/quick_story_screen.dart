@@ -82,10 +82,13 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
       }
 
       // Generate the story
+      final subscription = await subscriptionService.getSubscription();
+
       final storyResult = await ApiServiceManager.generateStory(
         characterName: _characterNameController.text.trim(),
         theme: _selectedTheme,
         age: int.parse(_selectedAge),
+        subscriptionTier: subscription.tier.name,
       );
 
       // Record usage
