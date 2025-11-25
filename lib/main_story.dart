@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -26,7 +25,6 @@ import 'saved_stories_screen.dart';
 import 'models.dart';
 import 'models/achievement.dart';
 import 'models/story_generation_result.dart';
-import 'models/subscription_status.dart';
 import 'multi_character_screen.dart';
 import 'offline_stories_screen.dart';
 import 'paywall_dialog.dart';
@@ -36,6 +34,7 @@ import 'screens/subscription_success_screen.dart';
 import 'services/achievement_service.dart';
 import 'services/api_service_manager.dart';
 import 'services/grace_period_service.dart';
+import 'services/grace_period_analytics.dart';
 import 'services/progression_service.dart';
 import 'services/story_complexity_service.dart';
 import 'story_intent_card.dart';
@@ -109,13 +108,14 @@ class _StoryScreenState extends State<StoryScreen> {
   AchievementSummary? _achievementSummary;
   final _random = Random();
   GracePeriodStatus? _gracePeriodStatus;
+  bool _loggedGraceBanner = false;
 
   // Story intent (merged theme + therapeutic customization)
   StoryIntentData? _storyIntent;
 
 
   int _currentPhase = 0;
-  int _totalPhases = 3;
+  final int _totalPhases = 3;
   String _funFact = '';
 
   final List<String> _funFacts = [
@@ -127,25 +127,6 @@ class _StoryScreenState extends State<StoryScreen> {
   ];
 
   // Navigation items
-  static const List<NavigationDestination> _navItems = [
-    NavigationDestination(
-      icon: Icon(Icons.auto_stories),
-      label: 'Stories',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.people),
-      label: 'Characters',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.favorite),
-      label: 'Feelings',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.settings),
-      label: 'Settings',
-    ),
-  ];
-
   void _onTabTapped(int index) {
     if (_selectedTabIndex == index) {
       return;
@@ -220,15 +201,15 @@ class _StoryScreenState extends State<StoryScreen> {
       UnlockableFeatures.rhymeTimeMode,
     );
 
-    if (mounted) {
-      setState(() {
-        _currentSubscription = subscription;
-        _remainingStoriesToday = remaining;
-        _storiesCreated = progress.storiesCreated;
-        _hasRhymeTime = hasRhyme;
-      });
-      unawaited(_refreshGracePeriodStatus());
-    }
+    if (!mounted) return;
+
+    setState(() {
+      _currentSubscription = subscription;
+      _remainingStoriesToday = remaining;
+      _storiesCreated = progress.storiesCreated;
+      _hasRhymeTime = hasRhyme;
+    });
+    unawaited(_refreshGracePeriodStatus());
   }
 
   Future<void> _refreshGracePeriodStatus() async {
@@ -394,6 +375,11 @@ class _StoryScreenState extends State<StoryScreen> {
 
     if (gracePeriodStatus.shouldShowHardLimit) {
       if (!mounted) return;
+      GracePeriodAnalytics.hardLimitReached(
+        used: gracePeriodStatus.storiesUsed,
+        limit: gracePeriodStatus.storiesLimit,
+        accountAgeDays: gracePeriodStatus.accountAgeDays,
+      );
       await showDialog(
         context: context,
         builder: (context) => UpgradePromptDialog(
@@ -408,6 +394,11 @@ class _StoryScreenState extends State<StoryScreen> {
 
     if (gracePeriodStatus.shouldShowSoftPrompt) {
       if (!mounted) return;
+      GracePeriodAnalytics.softPromptShown(
+        used: gracePeriodStatus.storiesUsed,
+        limit: gracePeriodStatus.storiesLimit,
+        accountAgeDays: gracePeriodStatus.accountAgeDays,
+      );
       unawaited(
         showDialog(
           context: context,
@@ -847,6 +838,12 @@ class _StoryScreenState extends State<StoryScreen> {
                     _currentSubscription?.tier.name ?? 'free'),
                 builder: (context, snapshot) {
                   if (snapshot.hasData && snapshot.data!.isInGracePeriod) {
+                    if (!_loggedGraceBanner) {
+                      _loggedGraceBanner = true;
+                      GracePeriodAnalytics.bannerViewed(
+                        daysRemaining: snapshot.data!.daysRemainingInGracePeriod,
+                      );
+                    }
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: GracePeriodBanner(
@@ -937,7 +934,8 @@ class _StoryScreenState extends State<StoryScreen> {
                     'Make choices that change the story!',
                   ),
                   value: _interactiveMode,
-                  activeColor: Colors.purple,
+                  thumbColor:
+                      MaterialStateProperty.all<Color>(Colors.purple),
                   secondary: const Icon(Icons.alt_route, color: Colors.purple),
                   onChanged: (value) {
                     setState(() => _interactiveMode = value);
@@ -956,7 +954,7 @@ class _StoryScreenState extends State<StoryScreen> {
                       : 'Select a character to enable this mode'),
                   value:
                       _canUseLearningToReadMode ? _learningToReadMode : false,
-                  activeColor: Colors.blue,
+                  thumbColor: MaterialStateProperty.all<Color>(Colors.blue),
                   secondary: const Icon(Icons.menu_book, color: Colors.blue),
                   onChanged: _canUseLearningToReadMode
                       ? (value) {
@@ -985,7 +983,7 @@ class _StoryScreenState extends State<StoryScreen> {
                   ),
                   value:
                       _learningToReadMode ? true : _includeIllustrations,
-                  activeColor: Colors.teal,
+                  thumbColor: MaterialStateProperty.all<Color>(Colors.teal),
                   secondary: const Icon(Icons.brush, color: Colors.teal),
                   onChanged: _learningToReadMode
                       ? null
@@ -1012,7 +1010,8 @@ class _StoryScreenState extends State<StoryScreen> {
                       ? 'Silly rhyming stories with playful verses!'
                       : 'Unlock at 0 stories! ($_storiesCreated/0)'),
                   value: _rhymeTimeMode && _hasRhymeTime,
-                  activeColor: Colors.orange,
+                  thumbColor:
+                      MaterialStateProperty.all<Color>(Colors.orange),
                   secondary: const Icon(Icons.music_note, color: Colors.orange),
                   onChanged: _hasRhymeTime ? (value) {
                     setState(() => _rhymeTimeMode = value);
@@ -1454,7 +1453,9 @@ class _StoryScreenState extends State<StoryScreen> {
 
   String _mapClothingColor(String? style) {
     final value = style?.toLowerCase() ?? '';
-    if (value.contains('forest') || value.contains('jungle')) return 'Green01';
+    if (value.contains('forest') || value.contains('jungle')) {
+      return 'Green01';
+    }
     if (value.contains('sunset') || value.contains('orange')) {
       return 'PastelOrange';
     }

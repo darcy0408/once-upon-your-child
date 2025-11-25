@@ -18,7 +18,10 @@ This file documents the key analytics events and where they are emitted for veri
 - `feelings_reminder_toggled` — same
 
 ## Grace Period / Upgrade
-- TODO: explicit events not yet wired; prompts currently shown in `lib/main_story.dart`.
+- `grace_period_banner_viewed` — `lib/main_story.dart` when grace banner appears
+- `grace_period_soft_prompt_shown` — `lib/main_story.dart` before soft dialog
+- `grace_period_hard_limit_reached` — `lib/main_story.dart` before hard dialog
+- `upgrade_prompt_clicked` — TODO (hook button taps in paywall/upgrade dialogs)
 
 ## Notes
 - FirebaseAnalytics is used throughout; on web, some services guard against collection.
