@@ -1,6 +1,7 @@
 import os
 import uuid
 import logging
+import json
 from datetime import datetime
 import time
 import os
@@ -29,6 +30,7 @@ image_generator = None
 from flask_jwt_extended import JWTManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_caching import Cache
 
 def is_production():
     return os.getenv('RAILWAY_ENVIRONMENT') == 'production'
@@ -61,6 +63,9 @@ def create_app(config_name):
         storage_uri="memory://"
     )
 
+    # Caching setup
+    cache = Cache(app, config={'CACHE_TYPE': 'simple'})
+
     @app.errorhandler(429)
     def ratelimit_handler(e):
         request_id = getattr(g, 'request_id', 'unknown')
@@ -71,8 +76,21 @@ def create_app(config_name):
         }), 429
 
     # Logging setup
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
     logger = logging.getLogger("story_engine")
+
+    # Structured logging helper
+    def log_error(error_type, message, details=None):
+        log_entry = {
+            'timestamp': datetime.utcnow().isoformat(),
+            'type': error_type,
+            'message': message,
+            'details': details or {}
+        }
+        logger.error(json.dumps(log_entry))
 
     @app.before_request
     def add_request_id():
@@ -86,14 +104,43 @@ def create_app(config_name):
         request_id = getattr(g, 'request_id', 'unknown')
         if hasattr(g, 'start_time'):
             duration = time.time() - g.start_time
-            if duration > 1.0 and request.path.startswith('/characters'): # Log slow queries for character routes
-                logger.warning(f"[{request_id}] Slow request: {request.path} took {duration:.2f}s")
-        logger.info(f"[{request_id}] Response: {response.status_code}")
+            # Log slow requests (>5 seconds)
+            if duration > 5.0:
+                log_error(
+                    error_type='slow_request',
+                    message=f'Request took {duration:.2f}s',
+                    details={
+                        'method': request.method,
+                        'path': request.path,
+                        'duration': duration,
+                        'status_code': response.status_code
+                    }
+                )
+        # Log all requests with structured format
+        log_entry = {
+            'method': request.method,
+            'path': request.path,
+            'status': response.status_code,
+            'duration_ms': round(duration * 1000, 2) if hasattr(g, 'start_time') else 0,
+            'ip': request.remote_addr,
+            'request_id': request_id
+        }
+        logger.info(json.dumps(log_entry))
         return response
 
     @app.errorhandler(Exception)
     def handle_error(error):
         request_id = getattr(g, 'request_id', 'unknown')
+        log_error(
+            error_type='unhandled_error',
+            message=str(error),
+            details={
+                'request_id': request_id,
+                'method': request.method,
+                'path': request.path,
+                'error_class': error.__class__.__name__
+            }
+        )
         logger.exception(f"[{request_id}] Unhandled error: {error}")
 
         if is_production():
@@ -150,6 +197,27 @@ def create_app(config_name):
     jwt = JWTManager(app)
     app.config['JWT_SECRET_KEY'] = app.config.get('JWT_SECRET_KEY', 'dev-secret-key')
 
+    # Database query monitoring
+    from sqlalchemy import event
+    from sqlalchemy.engine import Engine
+
+    @event.listens_for(Engine, "before_cursor_execute")
+    def receive_before_cursor_execute(conn, cursor, statement, params, context, executemany):
+        context._query_start_time = time.time()
+
+    @event.listens_for(Engine, "after_cursor_execute")
+    def receive_after_cursor_execute(conn, cursor, statement, params, context, executemany):
+        total = time.time() - context._query_start_time
+        if total > 1.0:  # Log slow queries
+            log_error(
+                error_type='slow_database_query',
+                message=f'Slow query took {total:.2f}s',
+                details={
+                    'query': statement[:200],  # First 200 chars
+                    'duration': total
+                }
+            )
+
     # Blueprints removed - routes defined directly in app.py
     app.register_blueprint(stripe_routes, url_prefix='/api/stripe')
     app.register_blueprint(webhook_routes, url_prefix='/api/webhooks')
@@ -191,6 +259,60 @@ def create_app(config_name):
 
         return jsonify(health_status), 200
 
+    @app.route('/health/detailed', methods=['GET'])
+    def detailed_health():
+        health_status = {
+            'status': 'healthy',
+            'timestamp': datetime.utcnow().isoformat(),
+            'checks': {}
+        }
+
+        # Database check
+        try:
+            from sqlalchemy import text
+            db.session.execute(text('SELECT 1'))
+            health_status['checks']['database'] = {
+                'status': 'healthy'
+            }
+        except Exception as e:
+            health_status['status'] = 'unhealthy'
+            health_status['checks']['database'] = {
+                'status': 'unhealthy',
+                'error': str(e)
+            }
+
+        # Gemini API check
+        try:
+            # Test with minimal request - just check if configured
+            health_status['checks']['gemini_api'] = {
+                'status': 'healthy' if api_key else 'unhealthy',
+                'configured': bool(api_key)
+            }
+        except Exception as e:
+            health_status['status'] = 'degraded'
+            health_status['checks']['gemini_api'] = {
+                'status': 'unhealthy',
+                'error': str(e)
+            }
+
+        # Memory check
+        try:
+            import psutil
+            memory = psutil.virtual_memory()
+            health_status['checks']['memory'] = {
+                'status': 'healthy' if memory.percent < 90 else 'warning',
+                'percent_used': memory.percent
+            }
+        except ImportError:
+            # psutil not available
+            health_status['checks']['memory'] = {
+                'status': 'unknown',
+                'note': 'psutil not installed'
+            }
+
+        status_code = 200 if health_status['status'] == 'healthy' else 503
+        return jsonify(health_status), status_code
+
     @app.route('/health/database', methods=['GET'])
     def database_health():
         """Detailed database health check"""
@@ -211,6 +333,7 @@ def create_app(config_name):
             }), 500
     
     @app.route("/get-story-themes", methods=["GET"])
+    @cache.cached(timeout=3600)  # Cache for 1 hour
     def get_story_themes():
         return jsonify(["Adventure", "Friendship", "Magic", "Dragons", "Castles", "Unicorns", "Space", "Ocean"])
 
@@ -336,6 +459,22 @@ def create_app(config_name):
             print(f"!!! API ERROR: {error_type}: {error_msg}")
             print(f"!!! Prompt length: {len(prompt)} characters")
             print(f"!!! Using user key: {using_user_key}")
+
+            # Structured error logging
+            log_error(
+                error_type='story_generation_failed',
+                message=str(e),
+                details={
+                    'character_name': character,
+                    'theme': theme,
+                    'age': character_age,
+                    'prompt_length': len(prompt),
+                    'using_user_key': using_user_key,
+                    'error_class': error_type,
+                    'learning_to_read_mode': learning_to_read_mode,
+                    'rhyme_time_mode': rhyme_time_mode
+                }
+            )
 
             # Add helpful hints for common errors
             if "404" in error_msg and "model" in error_msg.lower():
@@ -479,6 +618,16 @@ def create_app(config_name):
             )
             return jsonify(interactive_story_segment), 200
         except Exception as e:
+            log_error(
+                error_type='interactive_story_generation_failed',
+                message=str(e),
+                details={
+                    'character_name': character_name,
+                    'theme': theme,
+                    'age': character_age,
+                    'error_class': e.__class__.__name__
+                }
+            )
             logger.exception("Interactive story generation failed")
             return jsonify({
                 "error": str(e),

@@ -45,6 +45,7 @@ marshmallow==3.20.1
 
 # Caching (optional but useful)
 redis==7.0.1
+Flask-Caching==2.1.0
 
 # Testing (development only)
 pytest==7.4.3

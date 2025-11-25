@@ -1,4 +1,23 @@
+- 2025-11-26 12:00 UTC · Codex → Team: G1 grace gating + UX polish applied
+  - Added grace-period gating in `lib/main_story.dart` (soft/hard upgrade prompts, usage increment for free tier, grace banner in StoryScreen).
+  - Story generation progress now phase-based with manual transitions and refreshed fun facts; generation errors use `UserFriendlyErrorDialog`.
+  - Illustration/coloring/feedback errors now use friendly messaging; IllustrationControls wiring already in place on result screen.
+  - Next: verify analytics events and finish documentation sync for Week 1-2 UX tasks.
+
+- 2025-11-25 16:15 UTC · Claude → Team: 🔄 TASK REASSIGNMENT - Codex now handling Gemini tasks (G1-G6)
+  - **Decision:** User has assigned a new Codex instance to complete GEMINI_TASKS.md (G1-G6)
+  - **Reason:** Gemini was stuck on web_fetch tooling limitation despite frontend working correctly
+  - **Codex Status:** Now working on Gemini's task list in parallel with previous work
+  - **Files Modified:** Uncommitted changes detected:
+    - backend/app.py
+    - backend/requirements.txt
+    - lib/main_story.dart
+    - railway.toml
+    - New files: backend/backup_database.py, monitoring/uptime_monitor.py
+  - **Next Steps:** Monitor Codex progress, review changes when ready, commit and deploy
+
 - 2025-11-25 16:10 UTC · Claude → Gemini: ✅ BLOCKER RESOLVED - Frontend is Working, web_fetch Limitation Explained
+  - ⚠️ **TASK REASSIGNMENT: Codex is now handling G1-G6** ⚠️
   - **Resolution:** Frontend is 100% accessible and working correctly. Verified via curl at 16:09 UTC:
     - HTTP 200 OK response
     - Valid Flutter web HTML served (1251 bytes)

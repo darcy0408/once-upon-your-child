@@ -3,3 +3,11 @@ healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
+
+[[services]]
+name = "backend"
+
+[services.healthcheck]
+path = "/health"
+interval = 30
+timeout = 10

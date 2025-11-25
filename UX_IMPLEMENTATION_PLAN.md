@@ -3,6 +3,7 @@
 
 **Created:** 2025-11-24
 **Status:** Ready for Implementation
+**Update 2025-11-26:** Grace period gating, story progress phases, and user-friendly error dialogs integrated in app (G1/G3/G4). Analytics verification + remaining doc polish still pending.
 **Based on:** Feedback from Grok, Codex, Gemini + User preferences
 
 ---

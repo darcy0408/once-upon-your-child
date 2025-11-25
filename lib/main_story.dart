@@ -1030,15 +1030,27 @@ class _StoryScreenState extends State<StoryScreen> {
                     elevation: 1,
                     borderRadius: BorderRadius.circular(12),
                     color: Colors.red.shade50,
-                    child: ListTile(
-                      leading: const Icon(Icons.lock, color: Colors.red),
-                      title: const Text(
-                        'Story limit reached',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(
-                        'You\'ve hit this month\'s free limit. Upgrade to keep creating stories.',
-                        style: TextStyle(color: Colors.red.shade700),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PremiumUpgradeScreen(),
+                          ),
+                        );
+                      },
+                      child: ListTile(
+                        leading: const Icon(Icons.lock, color: Colors.red),
+                        title: const Text(
+                          'Story limit reached',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          'You\'ve hit this month\'s free limit. Tap to upgrade and keep creating stories.',
+                          style: TextStyle(color: Colors.red.shade700),
+                        ),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.red),
                       ),
                     ),
                   ),

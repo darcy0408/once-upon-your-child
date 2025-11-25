@@ -35,6 +35,7 @@ import 'theme/app_theme.dart';
 import 'widgets/app_button.dart';
 import 'widgets/app_card.dart';
 import 'widgets/illustration_controls.dart';
+import 'widgets/user_friendly_error_dialog.dart';
 import 'premium_upgrade_screen.dart';
 
 class StoryResultScreen extends StatefulWidget {
@@ -450,11 +451,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         );
       }
     } catch (e) {
-      if (mounted) {
-        _showSnackBar(
-          'Failed to generate illustrations: $e',
-        );
-      }
+      await _showFriendlyErrorDialog(e);
     } finally {
       if (progressShown && mounted) {
         IllustrationGenerationDialog.hide(context);
@@ -1019,9 +1016,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         );
       }
     } catch (e) {
-      if (mounted) {
-        _showSnackBar('Failed to generate coloring pages: $e');
-      }
+      await _showFriendlyErrorDialog(e);
     } finally {
       if (progressShown && mounted) {
         Navigator.of(context, rootNavigator: true).pop();
@@ -1058,6 +1053,26 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         content: Text(message),
         backgroundColor: backgroundColor,
         action: action,
+      ),
+    );
+  }
+
+  Future<void> _showFriendlyErrorDialog(
+    dynamic error, {
+    VoidCallback? onRetry,
+  }) async {
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      builder: (dialogContext) => UserFriendlyErrorDialog(
+        error: error,
+        onRetry: onRetry != null
+            ? () {
+                Navigator.of(dialogContext).pop();
+                onRetry();
+              }
+            : null,
+        onCancel: () => Navigator.of(dialogContext).pop(),
       ),
     );
   }
@@ -1239,7 +1254,10 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       }
     } catch (e) {
       if (mounted) {
-        _showSnackBar('Could not save feedback: $e');
+        _showSnackBar(
+          'Could not save feedback right now. Please try again soon.',
+          backgroundColor: Colors.orange,
+        );
       }
     } finally {
       if (mounted) {
