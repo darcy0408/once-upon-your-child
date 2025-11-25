@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import 'story_reader_screen.dart';
 import 'storage_service.dart';
@@ -112,6 +113,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   bool _isSubmittingFeedback = false;
   double _storyRating = 4.0;
   bool _isStoryHovered = false;
+  bool _showSwipeTutorial = false;
   List<_InlineIllustration> _inlineIllustrations = [];
 
   String get _analyticsStoryId =>
@@ -139,11 +141,24 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     return age;
   }
 
+  void _handlePageChanged(int index) {
+    setState(() => _currentPageIndex = index);
+    _dismissSwipeTutorial();
+    _trackResultAction(
+      'story_page_viewed',
+      extra: {
+        'page_number': index + 1,
+        'total_pages': _storyPages.length,
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     _storyPages = _paginateStory(widget.storyText);
     _pageController = PageController();
+    _loadSwipeTutorialState();
     _loadCharacterDetails();
     _loadFavoriteStatus();
     _cacheStoryForOffline();
@@ -155,6 +170,27 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     }
     if (widget.trackAnalytics) {
       _trackStoryView();
+    }
+  }
+
+  Future<void> _loadSwipeTutorialState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeen = prefs.getBool('seen_swipe_hint') ?? false;
+    if (!hasSeen && mounted) {
+      setState(() {
+        _showSwipeTutorial = true;
+      });
+    }
+  }
+
+  Future<void> _dismissSwipeTutorial() async {
+    if (!_showSwipeTutorial) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('seen_swipe_hint', true);
+    if (mounted) {
+      setState(() {
+        _showSwipeTutorial = false;
+      });
     }
   }
 
@@ -676,56 +712,85 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
           borderRadius: BorderRadius.circular(18),
           child: Container(
             color: _storyBackgroundColor,
-            child: SizedBox(
-              height: pageHeight,
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: _storyPages.length,
-                onPageChanged: (index) {
-                  setState(() => _currentPageIndex = index);
-                },
-                itemBuilder: (context, index) {
-                  final page = _storyPages[index];
-                  return Semantics(
-                    label:
-                        _screenReaderHints ? 'Story page ${index + 1}' : null,
-                    child: MouseRegion(
-                      onEnter: (_) => setState(() => _isStoryHovered = true),
-                      onExit: (_) => setState(() => _isStoryHovered = false),
-                      cursor: SystemMouseCursors.click,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: _isStoryHovered
-                              ? (_highContrastMode
-                                  ? Colors.grey.shade900
-                                  : Colors.deepPurple.shade50)
-                              : Colors.transparent,
-                          border: Border(
-                            left: BorderSide(
-                              color: Colors.deepPurple.shade100,
-                              width: 4,
+            child: Stack(
+              children: [
+                SizedBox(
+                  height: pageHeight,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: _storyPages.length,
+                    onPageChanged: _handlePageChanged,
+                    itemBuilder: (context, index) {
+                      final page = _storyPages[index];
+                      return Semantics(
+                        label:
+                            _screenReaderHints ? 'Story page ${index + 1}' : null,
+                        child: MouseRegion(
+                          onEnter: (_) => setState(() => _isStoryHovered = true),
+                          onExit: (_) => setState(() => _isStoryHovered = false),
+                          cursor: SystemMouseCursors.click,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: _isStoryHovered
+                                  ? (_highContrastMode
+                                      ? Colors.grey.shade900
+                                      : Colors.deepPurple.shade50)
+                                  : Colors.transparent,
+                              border: Border(
+                                left: BorderSide(
+                                  color: Colors.deepPurple.shade100,
+                                  width: 4,
+                                ),
+                              ),
+                            ),
+                            child: SingleChildScrollView(
+                              child: SelectableText.rich(
+                                TextSpan(
+                                  style: TextStyle(
+                                    fontSize: 18 * _textScale,
+                                    height: 1.5,
+                                    color: _storyTextColor,
+                                  ),
+                                  children: _buildStorySpans(page),
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                        child: SingleChildScrollView(
-                          child: SelectableText.rich(
-                            TextSpan(
-                              style: TextStyle(
-                                fontSize: 18 * _textScale,
-                                height: 1.5,
-                                color: _storyTextColor,
-                              ),
-                              children: _buildStorySpans(page),
+                      );
+                    },
+                  ),
+                ),
+                if (_showSwipeTutorial)
+                  Positioned(
+                    bottom: 12,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.65),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.swipe, color: Colors.white, size: 18),
+                            SizedBox(width: 8),
+                            Text(
+                              'Swipe left or right to see the next page',
+                              style: TextStyle(color: Colors.white),
                             ),
-                          ),
+                          ],
                         ),
                       ),
                     ),
-                  );
-                },
-              ),
+                  ),
+              ],
             ),
           ),
         ),
@@ -737,6 +802,30 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
             color: _highContrastMode ? Colors.white70 : Colors.black54,
           ),
         ),
+        const SizedBox(height: 10),
+        if (_storyPages.length > 1)
+          Semantics(
+            label:
+                'Page indicator. On page ${_currentPageIndex + 1} of ${_storyPages.length}',
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                _storyPages.length,
+                (index) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: index == _currentPageIndex ? 14 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: index == _currentPageIndex
+                        ? AppColors.primary
+                        : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -1504,7 +1593,10 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                       heroTag: 'fab_share',
                       backgroundColor: Colors.blueAccent,
                       tooltip: 'Share story',
-                      onPressed: _shareStory,
+                      onPressed: () {
+                        _trackResultAction('fab_action', extra: {'action': 'share'});
+                        _shareStory();
+                      },
                       child: const Icon(Icons.share),
                     ),
                     const SizedBox(height: 12),
@@ -1512,7 +1604,15 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                       heroTag: 'fab_regenerate',
                       backgroundColor: Colors.orangeAccent,
                       tooltip: 'Regenerate story',
-                      onPressed: _isLoading ? null : _createAnotherStory,
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              _trackResultAction(
+                                'fab_action',
+                                extra: {'action': 'regenerate'},
+                              );
+                              _createAnotherStory();
+                            },
                       child: const Icon(Icons.refresh),
                     ),
                     const SizedBox(height: 12),
@@ -1522,7 +1622,10 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                       foregroundColor: Colors.white,
                       icon: const Icon(Icons.save),
                       label: const Text('Save Story'),
-                      onPressed: _saveStory,
+                      onPressed: () {
+                        _trackResultAction('fab_action', extra: {'action': 'save'});
+                        _saveStory();
+                      },
                     ),
                   ],
                 ),

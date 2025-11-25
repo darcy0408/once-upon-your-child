@@ -44,7 +44,7 @@ class CrossBrowserTestChecklist {
 
     print('\n📋 TEST SCENARIOS (${testScenarios.length}):');
     for (int i = 0; i < testScenarios.length; i++) {
-      print('${i + 1:2d}. ${testScenarios[i]}');
+      print('${(i + 1).toString().padLeft(2)}. ${testScenarios[i]}');
     }
 
     print('\n🖥️  BROWSERS TO TEST (${browsers.length}):');

@@ -1050,37 +1050,39 @@ class _StoryScreenState extends State<StoryScreen> {
     final isSelected = _selectedCharacter?.id == character.id;
 
     return SizedBox(
-      width: 92,
+      width: 104,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () {
               setState(() {
                 _selectedCharacter = character;
               });
             },
             child: Container(
+              constraints: const BoxConstraints(minHeight: 140, minWidth: 104),
               decoration: BoxDecoration(
                 border: Border.all(
                   color: isSelected ? Colors.deepPurple : Colors.grey.shade300,
                   width: isSelected ? 3 : 1,
                 ),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 color: isSelected ? Colors.deepPurple.shade50 : Colors.white,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const SizedBox(height: 12),
-                  _buildCharacterAvatar(character, size: 56),
-                  const SizedBox(height: 8),
+                  _buildCharacterAvatar(character, size: 64),
+                  const SizedBox(height: 10),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Text(
                       character.name,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight:
                             isSelected ? FontWeight.bold : FontWeight.normal,
                         color: isSelected ? Colors.deepPurple : Colors.black87,
@@ -1090,7 +1092,7 @@ class _StoryScreenState extends State<StoryScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                 ],
               ),
             ),
@@ -1147,7 +1149,8 @@ class _StoryScreenState extends State<StoryScreen> {
         await _loadAchievementSummary();
       },
       child: Container(
-        width: 80,
+        width: 96,
+        constraints: const BoxConstraints(minHeight: 130, minWidth: 96),
         decoration: BoxDecoration(
           border: Border.all(
               color: Colors.deepPurple, width: 2, style: BorderStyle.solid),
@@ -1157,23 +1160,23 @@ class _StoryScreenState extends State<StoryScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Container(
-              width: 50,
-              height: 50,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
                 color: Colors.deepPurple.shade100,
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.add, size: 30, color: Colors.deepPurple),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4),
+              padding: EdgeInsets.symmetric(horizontal: 6),
               child: Text(
                 'Add\nCharacter',
                 style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: Colors.deepPurple),
                 textAlign: TextAlign.center,
@@ -1418,22 +1421,32 @@ class _StoryScreenState extends State<StoryScreen> {
     return Wrap(
       spacing: 8.0,
       children: themes
-          .map((theme) => ChoiceChip(
-                label: Text(theme),
+          .map(
+            (theme) => ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 44, minWidth: 96),
+              child: ChoiceChip(
+                labelPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                label: Text(
+                  theme,
+                  style: const TextStyle(fontSize: 14),
+                ),
                 selected: _selectedTheme == theme,
                 onSelected: (isSelected) {
                   setState(() {
                     if (isSelected) _selectedTheme = theme;
                   });
                 },
-              ))
+              ),
+            ),
+          )
           .toList(),
     );
   }
 
   Widget _buildCompanionSelector() {
     return SizedBox(
-      height: 120,
+      height: 140,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: _companions.length,
@@ -1454,8 +1467,8 @@ class _StoryScreenState extends State<StoryScreen> {
                 ),
               ),
               child: Container(
-                width: 110,
-                padding: const EdgeInsets.all(8.0),
+                width: 120,
+                padding: const EdgeInsets.all(10.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -1533,7 +1546,8 @@ class _StoryScreenState extends State<StoryScreen> {
             });
           },
           child: Container(
-            width: 70,
+            width: 88,
+            constraints: const BoxConstraints(minHeight: 118, minWidth: 88),
             decoration: BoxDecoration(
               border: Border.all(
                 color: isSelected ? Colors.green : Colors.grey.shade300,
@@ -1545,10 +1559,10 @@ class _StoryScreenState extends State<StoryScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Stack(
                   children: [
-                    _buildCharacterAvatar(c, size: 45),
+                    _buildCharacterAvatar(c, size: 52),
                     if (isSelected)
                       Positioned(
                         right: 0,
@@ -1570,11 +1584,11 @@ class _StoryScreenState extends State<StoryScreen> {
                 ),
                 const SizedBox(height: 4),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: Text(
                     c.name,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 12,
                       fontWeight:
                           isSelected ? FontWeight.bold : FontWeight.normal,
                       color:

@@ -49,6 +49,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool get _isLastStep => _currentStep == _buildSteps().length - 1;
   bool get _hasName => _childNameController.text.trim().isNotEmpty;
   bool get _hasTheme => (_selectedTheme ?? '').isNotEmpty;
+  double get _progressValue =>
+      (_currentStep + 1) / _buildSteps().length;
 
   void _trackStep(int index) {
     OnboardingAnalytics.trackFeatureViewed('quick_start_step_${index + 1}');
@@ -64,6 +66,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _confirmSkipToAdvanced() async {
+    await OnboardingAnalytics.trackOnboardingSkipped(step: _currentStep + 1);
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -244,29 +247,69 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ],
       ),
       body: SafeArea(
-        child: Stepper(
-          currentStep: _currentStep,
-          steps: steps,
-          type: StepperType.vertical,
-          onStepContinue: _handleContinue,
-          onStepCancel: _handleBack,
-          controlsBuilder: (context, details) {
-            final isFirstStep = _currentStep == 0;
-            return Row(
-              children: [
-                if (!isFirstStep)
-                  TextButton(
-                    onPressed: details.onStepCancel,
-                    child: const Text('Back'),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  LinearProgressIndicator(
+                    value: _progressValue,
+                    backgroundColor: Colors.grey.shade200,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
                   ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: details.onStepContinue,
-                  child: Text(_isLastStep ? 'Finish' : 'Next'),
-                ),
-              ],
-            );
-          },
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Step ${_currentStep + 1} of ${steps.length}',
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          await OnboardingAnalytics.trackOnboardingSkipped(
+                            step: _currentStep + 1,
+                          );
+                          await _completeOnboarding(skipped: true);
+                        },
+                        child: const Text('Skip'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: Stepper(
+                currentStep: _currentStep,
+                steps: steps,
+                type: StepperType.vertical,
+                onStepContinue: _handleContinue,
+                onStepCancel: _handleBack,
+                controlsBuilder: (context, details) {
+                  final isFirstStep = _currentStep == 0;
+                  return Row(
+                    children: [
+                      if (!isFirstStep)
+                        TextButton(
+                          onPressed: details.onStepCancel,
+                          child: const Text('Back'),
+                        ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: details.onStepContinue,
+                        child: Text(_isLastStep ? 'Finish' : 'Next'),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -31,4 +31,14 @@ class OnboardingAnalytics {
       parameters: {'feature_name': featureName},
     );
   }
+
+  static Future<void> trackOnboardingSkipped({int? step}) async {
+    if (_analytics == null) return; // Skip on web
+    await _analytics!.logEvent(
+      name: 'onboarding_skipped',
+      parameters: {
+        if (step != null) 'step': step,
+      },
+    );
+  }
 }

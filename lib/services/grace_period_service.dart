@@ -1,6 +1,7 @@
 // lib/services/grace_period_service.dart
 // Manages the 3-day grace period for free tier users
 
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class GracePeriodService {
@@ -195,6 +196,3 @@ class GracePeriodStatus {
         'gracePeriod: $isInGracePeriod, accountAge: $accountAgeDays days, tier: $tier)';
   }
 }
-
-// Required import for Color
-import 'package:flutter/material.dart';
