@@ -949,6 +949,11 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     _trackResultAction('share', extra: {'method': 'system_share'});
   }
 
+  void _createAnotherStory() {
+    _trackResultAction('regenerate_requested');
+    Navigator.of(context).pop();
+  }
+
   Future<void> _exportStory() async {
     final directory = await getTemporaryDirectory();
     final fileName =
@@ -1232,11 +1237,13 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
               Text(
                 widget.title,
                 style: theme.textTheme.headlineMedium?.copyWith(
@@ -1334,7 +1341,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                   _isGeneratingIllustrations
                       ? 'Generating illustrations...'
                       : _cachedIllustrations != null
-                          ? 'View Illustrated Story'
+                          ? 'View / Generate More'
                           : 'Add Illustrations',
                   style: const TextStyle(fontSize: 18),
                 ),
@@ -1385,10 +1392,46 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
+                ],
+              ),
+            ),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 16, bottom: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FloatingActionButton.small(
+                      heroTag: 'fab_share',
+                      backgroundColor: Colors.blueAccent,
+                      tooltip: 'Share story',
+                      onPressed: _shareStory,
+                      child: const Icon(Icons.share),
+                    ),
+                    const SizedBox(height: 12),
+                    FloatingActionButton.small(
+                      heroTag: 'fab_regenerate',
+                      backgroundColor: Colors.orangeAccent,
+                      tooltip: 'Regenerate story',
+                      onPressed: _isLoading ? null : () => _createAnotherStory(),
+                      child: const Icon(Icons.refresh),
+                    ),
+                    const SizedBox(height: 12),
+                    FloatingActionButton.extended(
+                      heroTag: 'fab_save',
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      icon: const Icon(Icons.save),
+                      label: const Text('Save Story'),
+                      onPressed: _saveStory,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
-      ),
-    ),
   );
   }
 }

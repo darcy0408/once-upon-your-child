@@ -465,11 +465,6 @@ class _StoryScreenState extends State<StoryScreen> {
           backendIllustrations: storyResult.illustrations,
         ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: _onNavItemTapped,
-        destinations: _navItems,
-      ),
     );
   }
     } catch (e, stackTrace) {
