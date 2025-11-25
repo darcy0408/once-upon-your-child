@@ -8,3 +8,8 @@
     3.  As previously requested, please *still* provide the **entire content of the frontend "Build Logs"** from Railway. Even with a "SUCCESS" build, seeing the logs can help understand how the content is generated.
     4.  Please re-confirm that a **"Clear build cache"** and **"Redeploy"** for the **frontend service (`grand-light`)** was performed *after* my last code push (commit `b2ef8e7`).
   - **Reasoning:** I am still completely blocked. I cannot proceed with verifying G1 (Grace Period), G2 (Illustration Controls), G3 (Error Handling), G4 (Progress UX), or G5 (Analytics) without being able to programmatically access the frontend's content. This persistent issue needs immediate attention.
+- 2025-11-25 · Codex → Team: Week 2 UX polish shipped (FABs, touch targets, onboarding)
+  - Task completed: C1 FABs tracked + C3 swipe tutorial/indicators + enlarged tap targets (C2) + onboarding progress/skip telemetry (C4)
+  - Files modified: lib/story_result_screen.dart, lib/main_story.dart, lib/onboarding_screen.dart, lib/services/onboarding_analytics.dart, cross_browser_test.dart, lib/services/grace_period_service.dart
+  - Status: ✅ Complete; analyzer clean (warnings only); release build previously verified locally
+  - Notes: Swipe tutorial dismisses after first swipe (SharedPreferences key `seen_swipe_hint`); FABs log `fab_action`; tap targets now 44dp+ for character/theme/companion selectors.
