@@ -21,6 +21,7 @@ from .services import character_service, story_service
 from .services.story_service import AdvancedStoryEngine
 from .routes.stripe_routes import stripe_routes
 from .routes.webhook_handler import webhook_routes
+from .analytics_routes import analytics_bp
 # from .repositories import character_repository
 from .gemini_image_generator import GeminiImageGenerator
 # Route imports removed - routes defined directly in app.py
@@ -221,6 +222,7 @@ def create_app(config_name):
     # Blueprints removed - routes defined directly in app.py
     app.register_blueprint(stripe_routes, url_prefix='/api/stripe')
     app.register_blueprint(webhook_routes, url_prefix='/api/webhooks')
+    app.register_blueprint(analytics_bp)
 
     # API Routes
     print(f"=== Registering routes ===")

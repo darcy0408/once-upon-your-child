@@ -57,7 +57,7 @@ class EnhancedIllustrationService {
           await Future.delayed(const Duration(seconds: 2));
         }
       } catch (e) {
-        print('Error generating illustration $i: $e');
+        debugPrint('Error generating illustration $i: $e');
       }
     }
 
@@ -225,7 +225,7 @@ class BatchIllustrationService {
           await Future.delayed(const Duration(seconds: 2));
         }
       } catch (e) {
-        print('Error generating portrait for ${character.name}: $e');
+        debugPrint('Error generating portrait for ${character.name}: $e');
       }
     }
 
@@ -270,7 +270,7 @@ STYLE: Children's book illustration, vibrant and heartwarming
     try {
       return await _service._callDallE(prompt);
     } catch (e) {
-      print('Error generating group illustration: $e');
+      debugPrint('Error generating group illustration: $e');
       return null;
     }
   }

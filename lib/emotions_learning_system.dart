@@ -436,7 +436,7 @@ class EmotionsLearningService {
       }
     } catch (e) {
       // Analytics failure shouldn't break check-in
-      print('Failed to track feelings check-in analytics: $e');
+      debugPrint('Failed to track feelings check-in analytics: $e');
     }
   }
 

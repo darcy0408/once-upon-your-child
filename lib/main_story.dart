@@ -947,8 +947,7 @@ class _StoryScreenState extends State<StoryScreen> {
                     'Make choices that change the story!',
                   ),
                   value: _interactiveMode,
-                  thumbColor:
-                      MaterialStateProperty.all<Color>(Colors.purple),
+                  thumbColor: WidgetStateProperty.all<Color>(Colors.purple),
                   secondary: const Icon(Icons.alt_route, color: Colors.purple),
                   onChanged: (value) {
                     setState(() => _interactiveMode = value);
@@ -967,7 +966,7 @@ class _StoryScreenState extends State<StoryScreen> {
                       : 'Select a character to enable this mode'),
                   value:
                       _canUseLearningToReadMode ? _learningToReadMode : false,
-                  thumbColor: MaterialStateProperty.all<Color>(Colors.blue),
+                  thumbColor: WidgetStateProperty.all<Color>(Colors.blue),
                   secondary: const Icon(Icons.menu_book, color: Colors.blue),
                   onChanged: _canUseLearningToReadMode
                       ? (value) {
@@ -996,7 +995,7 @@ class _StoryScreenState extends State<StoryScreen> {
                   ),
                   value:
                       _learningToReadMode ? true : _includeIllustrations,
-                  thumbColor: MaterialStateProperty.all<Color>(Colors.teal),
+                  thumbColor: WidgetStateProperty.all<Color>(Colors.teal),
                   secondary: const Icon(Icons.brush, color: Colors.teal),
                   onChanged: _learningToReadMode
                       ? null
@@ -1023,8 +1022,7 @@ class _StoryScreenState extends State<StoryScreen> {
                       ? 'Silly rhyming stories with playful verses!'
                       : 'Unlock at 0 stories! ($_storiesCreated/0)'),
                   value: _rhymeTimeMode && _hasRhymeTime,
-                  thumbColor:
-                      MaterialStateProperty.all<Color>(Colors.orange),
+                  thumbColor: WidgetStateProperty.all<Color>(Colors.orange),
                   secondary: const Icon(Icons.music_note, color: Colors.orange),
                   onChanged: _hasRhymeTime ? (value) {
                     setState(() => _rhymeTimeMode = value);

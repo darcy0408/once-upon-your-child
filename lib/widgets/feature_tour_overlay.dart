@@ -32,7 +32,7 @@ class FeatureTourOverlay extends StatelessWidget {
     final progress = '${currentIndex + 1}/${steps.length}';
     return Positioned.fill(
       child: Container(
-        color: Colors.black.withOpacity(0.65),
+        color: Colors.black.withValues(alpha: 0.65),
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -57,7 +57,7 @@ class FeatureTourOverlay extends StatelessWidget {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 16,
                         offset: const Offset(0, 8),
                       ),
@@ -69,7 +69,8 @@ class FeatureTourOverlay extends StatelessWidget {
                       Row(
                         children: [
                           CircleAvatar(
-                            backgroundColor: Colors.deepPurple.withOpacity(0.12),
+                            backgroundColor:
+                                Colors.deepPurple.withValues(alpha: 0.12),
                             child: Icon(step.icon, color: Colors.deepPurple),
                           ),
                           const SizedBox(width: 12),

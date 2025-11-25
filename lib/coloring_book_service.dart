@@ -198,7 +198,7 @@ Style: Clean line art, coloring book page, black outlines on white background
           await Future.delayed(const Duration(seconds: 1));
         }
       } catch (e) {
-        print('Error generating coloring page $i: $e');
+        debugPrint('Error generating coloring page $i: $e');
         // Continue with other pages even if one fails
       }
     }
@@ -238,7 +238,7 @@ Style: Clean line art, coloring book page, black outlines on white background
           .map((json) => ColoringPage.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      print('Error loading coloring pages: $e');
+      debugPrint('Error loading coloring pages: $e');
       return [];
     }
   }
@@ -333,7 +333,7 @@ class GeminiColoringBookService extends ColoringBookService {
         );
       }).toList();
     } catch (e) {
-      print('Error generating coloring pages with Gemini: $e');
+      debugPrint('Error generating coloring pages with Gemini: $e');
       rethrow;
     }
   }
@@ -481,7 +481,7 @@ class UserColoringService {
           .map((json) => UserColoring.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      print('Error loading user colorings: $e');
+      debugPrint('Error loading user colorings: $e');
       return [];
     }
   }

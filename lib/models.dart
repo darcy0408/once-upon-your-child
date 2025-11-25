@@ -168,7 +168,9 @@ class Character {
   }) async {
     // This would typically call an API to update evolution data
     // For now, it's a placeholder that would integrate with the backend
-    print('Updating evolution for character $name: emotion=$emotionId, intensity=$intensity');
+    debugPrint(
+      'Updating evolution for character $name: emotion=$emotionId, intensity=$intensity',
+    );
   }
 }
 
