@@ -29,6 +29,8 @@ import 'config/environment.dart';
 import 'services/story_feedback_service.dart';
 import 'services/story_analytics.dart';
 import 'services/therapeutic_analytics.dart';
+import 'subscription_service.dart';
+import 'subscription_models.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_button.dart';
 import 'widgets/app_card.dart';
@@ -49,6 +51,7 @@ class StoryResultScreen extends StatefulWidget {
   final bool trackStoryCreation;
   final bool trackAnalytics;
   final List<Map<String, dynamic>>? backendIllustrations;
+  final UserSubscription? subscription;
 
   const StoryResultScreen({
     super.key,
@@ -67,6 +70,7 @@ class StoryResultScreen extends StatefulWidget {
     this.trackStoryCreation = false,
     this.trackAnalytics = true,
     this.backendIllustrations,
+    this.subscription,
   }) : assert(!trackStoryCreation || achievementsService != null),
         assert(!trackStoryCreation || storyCreatedAt != null);
 
