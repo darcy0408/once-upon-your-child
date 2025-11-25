@@ -10,6 +10,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'storage_service.dart';
 import 'story_result_screen.dart';
 import 'saved_stories_screen.dart';
+import 'feelings_corner_screen.dart';
+import 'widgets/app_bottom_navigation.dart';
 import 'models.dart';
 import 'multi_character_screen.dart';
 import 'character_creation_screen_enhanced.dart';
@@ -86,7 +88,7 @@ class _StoryScreenState extends State<StoryScreen> {
   bool _isLoading = false;
 
   // Bottom navigation
-  int _selectedIndex = 0;
+  int _selectedTabIndex = 0;
 
   final _subscriptionService = SubscriptionService();
   UserSubscription? _currentSubscription;
@@ -146,9 +148,12 @@ class _StoryScreenState extends State<StoryScreen> {
     ),
   ];
 
-  void _onNavItemTapped(int index) {
+  void _onTabTapped(int index) {
+    if (_selectedTabIndex == index) {
+      return;
+    }
     setState(() {
-      _selectedIndex = index;
+      _selectedTabIndex = index;
     });
 
     // Handle navigation to different screens
@@ -157,20 +162,20 @@ class _StoryScreenState extends State<StoryScreen> {
         break;
       case 1: // Characters
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const CharacterManagementScreen()),
-        ).then((_) => setState(() => _selectedIndex = 0)); // Return to stories
+          MaterialPageRoute(builder: (_) => const SavedStoriesScreen()),
+        ).then((_) => setState(() => _selectedTabIndex = 0));
         break;
-      case 2: // Feelings
+      case 2: // Feelings Corner
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const FeelingsCornerScreen()),
-        ).then((_) => setState(() => _selectedIndex = 0)); // Return to stories
+        ).then((_) => setState(() => _selectedTabIndex = 0));
         break;
       case 3: // Settings
         settings_screen.loadLibrary().then((_) {
           if (mounted) {
             Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => settings_screen.SettingsScreen()),
-            ).then((_) => setState(() => _selectedIndex = 0)); // Return to stories
+            ).then((_) => setState(() => _selectedTabIndex = 0));
           }
         });
         break;
@@ -783,6 +788,10 @@ class _StoryScreenState extends State<StoryScreen> {
             },
           ),
         ],
+      ),
+      bottomNavigationBar: AppBottomNavigationBar(
+        currentIndex: _selectedTabIndex,
+        onTap: _onTabTapped,
       ),
       body: Container(
         decoration: BoxDecoration(
