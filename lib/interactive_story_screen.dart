@@ -64,6 +64,7 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
   bool get _storyEnded =>
       _segments.isNotEmpty &&
       (_segments.last.isEnding ||
+          _segments.last.canConclude ||
           _segments.last.choices == null ||
           _segments.last.choices!.isEmpty);
 
@@ -166,6 +167,7 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
           choiceId: choice.id,
           choiceNumber: nextChoiceNumber,
           choiceTextLength: choice.text.length,
+          emotionalSkill: choice.emotionalSkill,
         ),
       );
       _scrollToBottom();
@@ -496,6 +498,20 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
               ),
               if (showChoices) ...[
                 const SizedBox(height: AppSpacing.md),
+                Row(
+                  children: [
+                    const Icon(Icons.alt_route, size: 18, color: AppColors.primary),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      'Choice ${_choiceIds.length + 1}',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
                 ...segment.choices!.map(_buildChoiceButton),
               ],
             ],
@@ -510,6 +526,7 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
     final theme = Theme.of(context);
     final isPending = _pendingChoice?.id == choice.id && _isContinuing;
     final isDisabled = _isContinuing;
+    final skill = choice.emotionalSkill;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -550,6 +567,20 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
                       ),
                     ],
                   ),
+                  if (skill != null && skill.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Chip(
+                      backgroundColor: AppColors.secondary.withOpacity(0.12),
+                      label: Text(
+                        _formatSkill(skill),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: AppColors.secondary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
                   if (choice.description.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
@@ -566,6 +597,21 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
         ),
       ),
     );
+  }
+
+  String _formatSkill(String skill) {
+    switch (skill) {
+      case 'seeking_support':
+        return 'Seeking help';
+      case 'self_reliance':
+        return 'Independent';
+      case 'teamwork':
+        return 'Collaboration';
+      case 'closure':
+        return 'Closure';
+      default:
+        return skill.replaceAll('_', ' ');
+    }
   }
 
   Widget _buildEndingCard() {

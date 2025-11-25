@@ -30,6 +30,7 @@ class InteractiveStoryAnalytics {
     required String choiceId,
     required int choiceNumber,
     required int choiceTextLength,
+    String? emotionalSkill,
   }) async {
     await _analytics.logEvent(
       name: 'interactive_choice_made',
@@ -39,6 +40,7 @@ class InteractiveStoryAnalytics {
         'choice_id': choiceId,
         'choice_number': choiceNumber,
         'choice_text_length': choiceTextLength,
+        if (emotionalSkill != null) 'emotional_skill': emotionalSkill,
       },
     );
   }

@@ -272,11 +272,13 @@ class StoryChoice {
   final String id;
   final String text;
   final String description;
+  final String? emotionalSkill;
 
   StoryChoice({
     required this.id,
     required this.text,
     required this.description,
+    this.emotionalSkill,
   });
 
   factory StoryChoice.fromJson(Map<String, dynamic> json) {
@@ -284,6 +286,7 @@ class StoryChoice {
       id: json['id'] ?? '',
       text: json['text'] ?? '',
       description: json['description'] ?? '',
+      emotionalSkill: json['emotional_skill'],
     );
   }
 
@@ -291,6 +294,7 @@ class StoryChoice {
         'id': id,
         'text': text,
         'description': description,
+        if (emotionalSkill != null) 'emotional_skill': emotionalSkill,
       };
 }
 
@@ -298,11 +302,13 @@ class StorySegment {
   final String text;
   final List<StoryChoice>? choices;
   final bool isEnding;
+  final bool canConclude;
 
   StorySegment({
     required this.text,
     this.choices,
     this.isEnding = false,
+    this.canConclude = false,
   });
 
   factory StorySegment.fromJson(Map<String, dynamic> json) {
@@ -312,6 +318,7 @@ class StorySegment {
           ?.map((c) => StoryChoice.fromJson(c))
           .toList(),
       isEnding: json['is_ending'] ?? false,
+      canConclude: json['can_conclude'] ?? false,
     );
   }
 
@@ -319,5 +326,6 @@ class StorySegment {
         'text': text,
         'choices': choices?.map((c) => c.toJson()).toList(),
         'is_ending': isEnding,
+        'can_conclude': canConclude,
       };
 }

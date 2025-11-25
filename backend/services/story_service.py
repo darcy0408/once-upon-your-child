@@ -130,34 +130,36 @@ class AdvancedStoryEngine:
         age_guidelines = _build_age_instruction_block(character_age)
 
         prompt = f"""
-        You are a master interactive storyteller creating a personalized branching narrative for a {character_age}-year-old child.
-        The story must be engaging, age-appropriate, and allow the child to make choices that influence the plot.
+You are a master interactive therapist-storyteller for a {character_age}-year-old child.
+Create a warm opening segment that introduces the problem and ends with meaningful choices.
 
-        STORY DETAILS:
-        - Main Character: {character_name}
-        - Theme: {theme}
-        - Companion: {companion if companion else "None"}
+STORY DETAILS:
+- Main Character: {character_name}
+- Theme: {theme}
+- Companion: {companion if companion else "None"}
 
-        {age_guidelines}
+{age_guidelines}
 
-        INTERACTIVE STORY REQUIREMENTS:
-        1. Generate the FIRST segment of the story. This segment should set the scene, introduce the character, and lead to a clear choice point.
-        2. The segment should be about 100-150 words.
-        3. Provide 2-3 distinct, clear, and age-appropriate choices for the child to make.
-        4. Each choice should naturally flow from the story and hint at different narrative paths.
+CRITICAL CHOICE REQUIREMENTS:
+1) Provide EXACTLY 3 choices that represent DIFFERENT emotional responses:
+   - Seeking help/support (social connection)
+   - Independent problem-solving (self-reliance)
+   - Creative collaboration (teamwork)
+2) Each choice MUST meaningfully affect the story path (no door colors or directions).
+3) Choices must be age-appropriate and therapeutic.
+4) No filler options. Avoid colors/doors/left-right directions.
 
-        FORMAT REQUIREMENTS:
-        - Start the story segment with: [SEGMENT]
-        - End the story segment.
-        - List choices clearly using: [CHOICE_1] [CHOICE_2] ...
-        - The choices must be concise (max 10 words each).
-
-        Example Format:
-        [SEGMENT]
-        Once upon a time, Lily the Brave found herself at a crossroads. A shimmering path led into the Whispering Woods, while a rocky trail climbed towards the Glittering Mountains. Which way would she go?
-        [CHOICE_1] Go into the Whispering Woods
-        [CHOICE_2] Climb the Glittering Mountains
-        """
+OUTPUT FORMAT (JSON):
+{{
+  "text": "2-3 paragraphs of story setup ending in a decision point.",
+  "choices": [
+    {{"id": "seek_help", "text": "Ask a trusted person for help", "emotional_skill": "seeking_support"}},
+    {{"id": "independent", "text": "Try to solve it yourself step-by-step", "emotional_skill": "self_reliance"}},
+    {{"id": "collaborate", "text": "Team up with a friend to solve it", "emotional_skill": "teamwork"}}
+  ]
+}}
+Use the exact keys shown above. Keep choice text under 14 words. Keep story text under 180 words.
+"""
         response = model.generate_content(prompt)
         text = getattr(response, "text", "")
         if not text:
@@ -180,39 +182,40 @@ class AdvancedStoryEngine:
         age_guidelines = _build_age_instruction_block(character_age)
 
         prompt = f"""
-        You are a master interactive storyteller, continuing a personalized branching narrative for a {character_age}-year-old child.
-        The story must be engaging, age-appropriate, and allow the child to make choices that influence the plot.
+You are continuing an interactive therapeutic story for a {character_age}-year-old.
+Reflect the child's last choice and branch meaningfully.
 
-        STORY DETAILS:
-        - Main Character: {character_name}
-        - Theme: {theme}
-        - Companion: {companion if companion else "None"}
-        - Previous Story So Far: {story_so_far}
-        - Choices Made: {", ".join(choices_made)}
-        - Last Choice Made: {choice_text}
+STORY DETAILS:
+- Main Character: {character_name}
+- Theme: {theme}
+- Companion: {companion if companion else "None"}
+- Previous Story So Far: {story_so_far}
+- Choices Made: {", ".join(choices_made)}
+- Last Choice Made: {choice_text}
 
-        {age_guidelines}
+{age_guidelines}
 
-        INTERACTIVE STORY REQUIREMENTS:
-        1. Generate the NEXT segment of the story, flowing directly from the "Last Choice Made."
-        2. The segment should be about 100-150 words.
-        3. Provide 2-3 new distinct, clear, and age-appropriate choices for the child to make for the NEXT decision point.
-        4. If the story feels like it's reaching a natural conclusion, you can provide an option like "[CHOICE_END] End the story here."
-        5. Do NOT repeat previous story segments or choices.
+CRITICAL CHOICE REQUIREMENTS:
+1) Show consequences consistent with the emotional skill of the last choice.
+   - If they sought help: show positive support outcomes.
+   - If independent: show growth in self-reliance.
+   - If collaboration: show teamwork benefits.
+2) Provide 2-3 new meaningful choices OR include an "end story" option.
+3) Choices must be specific actions, not colors/doors/directions.
+4) Keep each choice under 14 words.
 
-        FORMAT REQUIREMENTS:
-        - Start the story segment with: [SEGMENT]
-        - End the story segment.
-        - List choices clearly using: [CHOICE_1] [CHOICE_2] ...
-        - The choices must be concise (max 10 words each).
-        - If ending the story, use [CHOICE_END] as one of the options.
-
-        Example Format (continuation):
-        [SEGMENT]
-        Lily bravely stepped into the Whispering Woods. The trees were tall, and the air smelled of damp earth and magic. Suddenly, she heard a soft whimper. A tiny, lost fox cub was caught in some thorny bushes!
-        [CHOICE_1] Help the fox cub
-        [CHOICE_2] Ignore the fox and keep exploring
-        """
+OUTPUT FORMAT (JSON):
+{{
+  "text": "Next 1-2 paragraphs continuing from the last choice.",
+  "choices": [
+    {{"id": "continue_1", "text": "Meaningful choice", "emotional_skill": "..." }},
+    {{"id": "continue_2", "text": "Meaningful choice", "emotional_skill": "..." }},
+    {{"id": "end_story", "text": "End the story here", "emotional_skill": "closure"}}
+  ],
+  "can_conclude": true
+}}
+Use the exact keys. If ending naturally, set can_conclude true and include end_story.
+"""
         response = model.generate_content(prompt)
         text = getattr(response, "text", "")
         if not text:
@@ -221,6 +224,44 @@ class AdvancedStoryEngine:
         return self._parse_interactive_story_response(text)
 
     def _parse_interactive_story_response(self, text: str):
+        try:
+            payload = json.loads(text)
+        except json.JSONDecodeError:
+            # Fallback to old parser if model doesn't return JSON
+            return self._parse_legacy_interactive_response(text)
+
+        story_text = payload.get("text") or ""
+        choices = payload.get("choices") or []
+
+        validated_choices = []
+        for choice in choices:
+            choice_id = choice.get("id") or f"choice_{len(validated_choices)+1}"
+            text_value = (choice.get("text") or "").strip()
+            skill = (choice.get("emotional_skill") or "").strip()
+            if not text_value:
+                continue
+            if any(bad in text_value.lower() for bad in ["door", "left", "right", "red", "blue", "green"]):
+                continue
+            validated_choices.append({
+                "id": choice_id,
+                "text": text_value,
+                "emotional_skill": skill or None
+            })
+
+        if not validated_choices:
+            # Graceful fallback
+            return {
+                "text": story_text or "Let's end the story here.",
+                "choices": [{"id": "choice_end", "text": "End the story here."}]
+            }
+
+        return {
+            "text": story_text,
+            "choices": validated_choices,
+            "can_conclude": payload.get("can_conclude", False)
+        }
+
+    def _parse_legacy_interactive_response(self, text: str):
         segment_match = re.search(r"\[SEGMENT\]\s*(.*?)(?=\[CHOICE_|$)", text, re.DOTALL)
         segment_text = segment_match.group(1).strip() if segment_match else text.strip()
 
