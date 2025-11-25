@@ -17,6 +17,9 @@ class User(db.Model):
     cancel_at_period_end = db.Column(db.Boolean, default=False)
     stripe_customer_id = db.Column(db.String(255))
 
+    # Feature unlock tracking
+    stories_created_count = db.Column(db.Integer, default=0, nullable=False)
+
     # Relationships
     characters = db.relationship('Character', backref='user', lazy=True)
     stories = db.relationship('Story', backref='user', lazy=True)
@@ -39,4 +42,5 @@ class User(db.Model):
             'current_period_end': self.current_period_end.isoformat() if self.current_period_end else None,
             'cancel_at_period_end': self.cancel_at_period_end,
             'stripe_customer_id': self.stripe_customer_id,
+            'stories_created_count': self.stories_created_count,
         }

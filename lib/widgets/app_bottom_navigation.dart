@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import '../services/feature_unlock_service.dart';
+import 'feature_unlock_tooltip.dart';
 
 class AppBottomNavigationBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final String? userId;
 
   const AppBottomNavigationBar({
     super.key,
     required this.currentIndex,
     required this.onTap,
+    this.userId,
   });
 
   @override
@@ -19,21 +23,29 @@ class AppBottomNavigationBar extends StatelessWidget {
       selectedItemColor: Colors.purple,
       unselectedItemColor: Colors.grey,
       showUnselectedLabels: true,
-      items: const [
-        BottomNavigationBarItem(
+      items: [
+        const BottomNavigationBarItem(
           icon: _NavIcon(icon: Icons.create),
           label: 'Create',
         ),
         BottomNavigationBarItem(
-          icon: _NavIcon(icon: Icons.library_books),
+          icon: FeatureUnlockTooltip(
+            feature: FeatureType.characterCreation,
+            userId: userId,
+            child: const _NavIcon(icon: Icons.library_books),
+          ),
           label: 'Library',
         ),
-        BottomNavigationBarItem(
+        const BottomNavigationBarItem(
           icon: _NavIcon(icon: Icons.favorite),
           label: 'Feelings',
         ),
         BottomNavigationBarItem(
-          icon: _NavIcon(icon: Icons.settings),
+          icon: FeatureUnlockTooltip(
+            feature: FeatureType.advancedSettings,
+            userId: userId,
+            child: const _NavIcon(icon: Icons.settings),
+          ),
           label: 'Settings',
         ),
       ],

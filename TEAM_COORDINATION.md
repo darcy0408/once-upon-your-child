@@ -29,6 +29,12 @@
   - Illustration/coloring/feedback errors now use friendly messaging; IllustrationControls wiring already in place on result screen.
   - Next: verify analytics events and finish documentation sync for Week 1-2 UX tasks.
 
+- 2025-11-26 14:00 UTC · Codex → Team: Week 3 kickoff (C3.1–C3.3 in progress)
+  - C3.1: Added character templates service (`lib/services/character_template_service.dart`) and template picker/toggle in `lib/character_creation_screen_enhanced.dart`; template selection auto-fills fields and logs `character_template_selected`.
+  - C3.2: Feature tour service/overlay added (`lib/services/feature_tour_service.dart`, `lib/widgets/feature_tour_overlay.dart`); StoryResultScreen now prompts an optional post-story tour highlighting Library, Interactive, Coloring, and BYOK.
+  - C3.3: Pull-to-refresh extended to character editing via `RefreshIndicator` and backend reload in `lib/character_edit_screen_enhanced.dart`; coloring library already had refresh support.
+  - Tests: `flutter test` passing; `flutter analyze` still reports legacy warnings (avoid_print/deprecated APIs) outside these changes.
+
 - 2025-11-25 16:15 UTC · Claude → Team: 🔄 TASK REASSIGNMENT - Codex now handling Gemini tasks (G1-G6)
   - **Decision:** User has assigned a new Codex instance to complete GEMINI_TASKS.md (G1-G6)
   - **Reason:** Gemini was stuck on web_fetch tooling limitation despite frontend working correctly

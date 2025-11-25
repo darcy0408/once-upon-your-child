@@ -24,6 +24,7 @@ import 'storage_service.dart';
 import 'saved_stories_screen.dart';
 import 'models.dart';
 import 'models/achievement.dart';
+import 'services/user_identity_service.dart';
 import 'models/story_generation_result.dart';
 import 'multi_character_screen.dart';
 import 'offline_stories_screen.dart';
@@ -92,6 +93,7 @@ class _StoryScreenState extends State<StoryScreen> {
 
   // Bottom navigation
   int _selectedTabIndex = 0;
+  String? _userId;
 
   final _subscriptionService = SubscriptionService();
   UserSubscription? _currentSubscription;
@@ -176,11 +178,17 @@ class _StoryScreenState extends State<StoryScreen> {
   @override
   void initState() {
     super.initState();
+    _loadUserId();
     _loadCharacters();
     _loadSubscriptionInfo();
     _loadAchievementSummary();
     _refreshGracePeriodStatus();
     _handleInitialRoute();
+  }
+
+  Future<void> _loadUserId() async {
+    _userId = await UserIdentityService.getOrCreateUserId();
+    setState(() {});
   }
 
   void _handleInitialRoute() {
@@ -814,6 +822,7 @@ class _StoryScreenState extends State<StoryScreen> {
       bottomNavigationBar: AppBottomNavigationBar(
         currentIndex: _selectedTabIndex,
         onTap: _onTabTapped,
+        userId: _userId,
       ),
       body: Container(
         decoration: BoxDecoration(

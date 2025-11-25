@@ -10,6 +10,7 @@ class CharacterAnalytics {
     required int age,
     required String gender,
     required List<String> traits,
+    String? templateKey,
   }) async {
     await _analytics.logEvent(
       name: 'character_created',
@@ -18,6 +19,22 @@ class CharacterAnalytics {
         'gender': gender,
         'traits_count': traits.length,
         'has_custom_name': characterName.isNotEmpty,
+        if (templateKey != null) 'template_key': templateKey,
+      },
+    );
+  }
+
+  static Future<void> trackTemplateSelected({
+    required String templateKey,
+    required String templateName,
+    required bool hasCustomName,
+  }) async {
+    await _analytics.logEvent(
+      name: 'character_template_selected',
+      parameters: {
+        'template_key': templateKey,
+        'template_name': templateName,
+        'has_custom_name': hasCustomName,
       },
     );
   }

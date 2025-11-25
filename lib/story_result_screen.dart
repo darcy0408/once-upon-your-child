@@ -36,6 +36,8 @@ import 'widgets/app_card.dart';
 import 'widgets/illustration_controls.dart';
 import 'widgets/user_friendly_error_dialog.dart';
 import 'premium_upgrade_screen.dart';
+import 'widgets/feature_tour_overlay.dart';
+import 'services/feature_tour_service.dart';
 
 class StoryResultScreen extends StatefulWidget {
   final String title;
@@ -115,6 +117,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   bool _isStoryHovered = false;
   bool _showSwipeTutorial = false;
   List<_InlineIllustration> _inlineIllustrations = [];
+  bool _showFeatureTour = false;
+  int _featureTourStepIndex = 0;
+  List<FeatureTourStep> _featureTourSteps = const [];
 
   String get _analyticsStoryId =>
       widget.storyId ?? widget.title.hashCode.toString();
@@ -194,6 +199,64 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     }
   }
 
+  void _startFeatureTourIfNeeded() async {
+    final shouldShow = await FeatureTourService.shouldShowTour();
+    if (!shouldShow || !mounted) return;
+
+    setState(() {
+      _featureTourSteps = const [
+        FeatureTourStep(
+          title: 'Library keeps every story',
+          description: 'Find all of your creations in the Library tab anytime.',
+          icon: Icons.library_books,
+        ),
+        FeatureTourStep(
+          title: 'Try Interactive Stories',
+          description:
+              'Tap Interactive mode before creating to let kids make choices.',
+          icon: Icons.gamepad,
+        ),
+        FeatureTourStep(
+          title: 'Add Coloring Pages',
+          description:
+              'Open Coloring Pages to turn scenes into printable line art.',
+          icon: Icons.brush,
+        ),
+        FeatureTourStep(
+          title: 'Bring Your Own API Key',
+          description:
+              'In Settings, add your own key (BYOK) to unlock more creativity.',
+          icon: Icons.vpn_key,
+        ),
+      ];
+      _featureTourStepIndex = 0;
+      _showFeatureTour = true;
+    });
+  }
+
+  Future<void> _advanceFeatureTour() async {
+    if (_featureTourStepIndex >= _featureTourSteps.length - 1) {
+      await FeatureTourService.markCompleted();
+      if (mounted) {
+        setState(() => _showFeatureTour = false);
+      }
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _featureTourStepIndex++;
+      });
+    }
+  }
+
+  Future<void> _skipFeatureTour() async {
+    await FeatureTourService.markDismissed();
+    if (mounted) {
+      setState(() => _showFeatureTour = false);
+    }
+  }
+
   void _decodeInlineIllustrations() {
     final raw = widget.backendIllustrations;
     if (raw == null || raw.isEmpty) return;
@@ -256,6 +319,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     if (mounted && newFeatureUnlocks.isNotEmpty) {
       await UnlockCelebrationDialog.show(context, newFeatureUnlocks);
     }
+
+    await FeatureTourService.incrementStoryCount();
+    _startFeatureTourIfNeeded();
   }
 
   Future<void> _trackStoryView() async {
@@ -1660,6 +1726,13 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                 ),
               ),
             ),
+            if (_showFeatureTour && _featureTourSteps.isNotEmpty)
+              FeatureTourOverlay(
+                steps: _featureTourSteps,
+                currentIndex: _featureTourStepIndex,
+                onNext: _advanceFeatureTour,
+                onSkip: _skipFeatureTour,
+              ),
           ],
         ),
       ),

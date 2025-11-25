@@ -294,7 +294,6 @@ class UsageStats {
         'stories_created_this_month': storiesCreatedThisMonth,
         'last_story_date': lastStoryDate.toIso8601String(),
         'last_reset_date': lastResetDate.toIso8601String(),
-        'last_reset_date': lastResetDate.toIso8601String(),
       };
 
   factory UsageStats.fromJson(Map<String, dynamic> json) {

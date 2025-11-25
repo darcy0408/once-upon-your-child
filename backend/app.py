@@ -830,6 +830,66 @@ def create_app(config_name):
 
         return jsonify({'message': 'Invalid credentials'}), 401
 
+    @app.route("/users/<string:user_id>/feature-unlocks", methods=["GET"])
+    def get_feature_unlocks(user_id: str):
+        """Get feature unlock status for a user."""
+        try:
+            user = User.query.filter_by(id=user_id).first()
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+
+            stories_created = user.stories_created_count
+
+            # Calculate unlock status
+            unlock_status = {
+                'stories_created_count': stories_created,
+                'character_creation_unlocked': stories_created >= 1,
+                'interactive_stories_unlocked': stories_created >= 2,
+                'coloring_pages_unlocked': stories_created >= 3,
+                'advanced_settings_unlocked': stories_created >= 5,
+            }
+
+            return jsonify(unlock_status), 200
+
+        except Exception as e:
+            log_error(
+                error_type='get_feature_unlocks_failed',
+                message=str(e),
+                details={
+                    'user_id': user_id,
+                    'error_class': e.__class__.__name__
+                }
+            )
+            return jsonify({'error': 'Failed to get feature unlocks'}), 500
+
+    @app.route("/users/<string:user_id>/story-created", methods=["POST"])
+    def record_story_created(user_id: str):
+        """Increment the stories created count for a user."""
+        try:
+            user = User.query.filter_by(id=user_id).first()
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+
+            user.stories_created_count += 1
+            db.session.commit()
+
+            return jsonify({
+                'stories_created_count': user.stories_created_count,
+                'message': 'Story creation recorded successfully'
+            }), 200
+
+        except Exception as e:
+            db.session.rollback()
+            log_error(
+                error_type='record_story_created_failed',
+                message=str(e),
+                details={
+                    'user_id': user_id,
+                    'error_class': e.__class__.__name__
+                }
+            )
+            return jsonify({'error': 'Failed to record story creation'}), 500
+
     print(f"=== All routes registered successfully ===")
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
     return app

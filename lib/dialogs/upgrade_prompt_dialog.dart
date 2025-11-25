@@ -2,6 +2,7 @@
 // Upgrade prompt with tier comparison table
 
 import 'package:flutter/material.dart';
+import '../services/grace_period_analytics.dart';
 
 class UpgradePromptDialog extends StatelessWidget {
   final bool isSoftPrompt; // true = soft prompt, false = hard limit
@@ -120,15 +121,26 @@ class UpgradePromptDialog extends StatelessWidget {
       actions: [
         if (isSoftPrompt)
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () {
+              GracePeriodAnalytics.upgradePromptClicked(promptType: 'soft_continue');
+              Navigator.pop(context, false);
+            },
             child: const Text('Continue'),
           ),
         TextButton(
-          onPressed: () => Navigator.pop(context, false),
+          onPressed: () {
+            GracePeriodAnalytics.upgradePromptClicked(
+              promptType: isSoftPrompt ? 'soft_maybe_later' : 'hard_cancel',
+            );
+            Navigator.pop(context, false);
+          },
           child: Text(isSoftPrompt ? 'Maybe Later' : 'Cancel'),
         ),
         ElevatedButton(
           onPressed: () {
+            GracePeriodAnalytics.upgradePromptClicked(
+              promptType: isSoftPrompt ? 'soft_view_plans' : 'hard_view_plans',
+            );
             Navigator.pop(context, true);
             // Navigate to subscription plans
             Navigator.pushNamed(context, '/subscription-plans');

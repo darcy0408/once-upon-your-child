@@ -28,7 +28,8 @@ class AppSwitch extends StatelessWidget {
       ),
       value: value,
       onChanged: onChanged,
-      activeColor: AppColors.primary,
+      thumbColor: MaterialStateProperty.all(AppColors.primary),
+      trackColor: MaterialStateProperty.all(AppColors.primary.withOpacity(0.35)),
       title: label != null
           ? Text(
               label!,

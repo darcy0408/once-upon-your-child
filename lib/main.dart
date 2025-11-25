@@ -8,7 +8,6 @@ import 'theme/app_theme.dart';
 import 'onboarding_screen.dart';
 import 'services/onboarding_service.dart';
 import 'services/firebase_analytics_service.dart';
-import 'services/performance_analytics.dart';
 import 'services/subscription_service.dart';
 
 Future<void> main() async {

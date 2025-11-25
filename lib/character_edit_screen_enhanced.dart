@@ -153,6 +153,31 @@ class _CharacterEditScreenEnhancedState extends State<CharacterEditScreenEnhance
     }
   }
 
+  Future<void> _reloadCharacter() async {
+    final url = Uri.parse('${Environment.backendUrl}/characters/${widget.character.id}');
+    try {
+      final resp = await http.get(url);
+      if (resp.statusCode == 200) {
+        final data = json.decode(resp.body);
+        final updated = Character.fromJson(data);
+        if (!mounted) return;
+        setState(() {
+          _nameController.text = updated.name;
+          _ageController.text = updated.age.toString();
+          _gender = updated.gender ?? _gender;
+          _hairColor = updated.hair ?? _hairColor;
+          _eyeColor = updated.eyes ?? _eyeColor;
+          _skinTone = updated.skinTone ?? _skinTone;
+          _hairstyle = updated.hairstyle ?? _hairstyle;
+          _likesController.text = (updated.likes ?? []).join(', ');
+          _dislikesController.text = (updated.dislikes ?? []).join(', ');
+        });
+      }
+    } catch (_) {
+      // Ignore reload errors for pull-to-refresh polish.
+    }
+  }
+
   Future<void> _deleteCharacter() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -247,59 +272,63 @@ class _CharacterEditScreenEnhancedState extends State<CharacterEditScreenEnhance
       ),
       body: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Avatar Preview
-              Center(
-                child: Column(
-                  children: [
-                    EnhancedCharacterAvatar(
-                      character: previewCharacter,
-                      emotionState: _currentEmotion,
-                      size: 150,
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Live Preview',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
+        child: RefreshIndicator(
+          onRefresh: _reloadCharacter,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Avatar Preview
+                Center(
+                  child: Column(
+                    children: [
+                      EnhancedCharacterAvatar(
+                        character: previewCharacter,
+                        emotionState: _currentEmotion,
+                        size: 150,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Live Preview',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              _buildBasicInfoSection(),
-              const SizedBox(height: 20),
+                _buildBasicInfoSection(),
+                const SizedBox(height: 20),
 
-              _buildAppearanceSection(),
-              const SizedBox(height: 20),
+                _buildAppearanceSection(),
+                const SizedBox(height: 20),
 
-              _buildEmotionSection(),
-              const SizedBox(height: 20),
+                _buildEmotionSection(),
+                const SizedBox(height: 20),
 
-              _buildInterestsSection(),
-              const SizedBox(height: 30),
+                _buildInterestsSection(),
+                const SizedBox(height: 30),
 
-              ElevatedButton.icon(
-                onPressed: _isLoading ? null : _updateCharacter,
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      )
-                    : const Icon(Icons.save),
-                label: Text(_isLoading ? 'Saving...' : 'Save Changes'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _updateCharacter,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save),
+                  label: Text(_isLoading ? 'Saving...' : 'Save Changes'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

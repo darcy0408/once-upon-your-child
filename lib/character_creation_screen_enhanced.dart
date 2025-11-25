@@ -16,6 +16,7 @@ import 'services/performance_analytics.dart';
 import 'achievement_celebration_dialog.dart';
 import 'config/environment.dart';
 import 'services/character_analytics.dart';
+import 'services/character_template_service.dart';
 import 'theme/app_theme.dart';
 
 class CharacterCreationScreenEnhanced extends StatefulWidget {
@@ -35,6 +36,8 @@ class _CharacterCreationScreenEnhancedState
   bool _hasFantasyMode = false;
   bool _hasAnimalEarsTails = false;
   bool _hasPremium = false;
+  bool _useTemplateMode = true;
+  CharacterTemplate? _selectedTemplate;
 
   // Basic Info
   final _nameController = TextEditingController();
@@ -98,6 +101,48 @@ class _CharacterCreationScreenEnhancedState
         _hasPremium = hasPremium;
       });
     }
+  }
+
+  void _applyTemplate(CharacterTemplate template) {
+    setState(() {
+      _selectedTemplate = template;
+      _useTemplateMode = true;
+      _characterStyle = template.characterStyle;
+      _characterType = template.characterType;
+      _selectedOutfitPreset = template.suggestedOutfit;
+      if (template.suggestedOutfit != null) {
+        _outfitController.text = template.suggestedOutfit!;
+      }
+      _selectedComfortOption = template.comfortItem;
+      _personalitySliderValues
+        ..clear()
+        ..addAll(CharacterTraitsData.defaultSliderValues())
+        ..addAll(
+          template.personality.map((key, value) => MapEntry(
+                key,
+                value.clamp(0, 100).toDouble(),
+              )),
+        );
+      _selectedQuickLikes
+        ..clear()
+        ..addAll(template.likes);
+      _selectedQuickDislikes
+        ..clear()
+        ..addAll(template.dislikes);
+      if (_ageController.text.trim().isEmpty) {
+        _ageController.text = template.suggestedAge.toString();
+      }
+      if (_nameController.text.trim().isEmpty) {
+        _nameController.text = template.name;
+      }
+    });
+
+    CharacterAnalytics.trackTemplateSelected(
+      templateKey: template.key,
+      templateName: template.name,
+      hasCustomName: _nameController.text.trim().isNotEmpty &&
+          _nameController.text.trim() != template.name,
+    );
   }
 
   void _handleNameChanged() {
@@ -239,6 +284,139 @@ class _CharacterCreationScreenEnhancedState
     );
   }
 
+  Widget _buildTemplateModeToggle() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        ChoiceChip(
+          label: const Text('Templates'),
+          selected: _useTemplateMode,
+          onSelected: (_) => setState(() => _useTemplateMode = true),
+          selectedColor: Colors.deepPurple,
+          labelStyle: TextStyle(
+            color: _useTemplateMode ? Colors.white : Colors.black87,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(width: 12),
+        ChoiceChip(
+          label: const Text('Custom'),
+          selected: !_useTemplateMode,
+          onSelected: (_) {
+            setState(() {
+              _useTemplateMode = false;
+              _selectedTemplate = null;
+            });
+          },
+          selectedColor: Colors.deepPurple,
+          labelStyle: TextStyle(
+            color: !_useTemplateMode ? Colors.white : Colors.black87,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTemplateSection() {
+    final templates = CharacterTemplateService.getTemplates();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'One-tap templates',
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Pick a template to auto-fill traits. You can still tweak anything after.',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: templates.map((template) {
+            final isSelected = _selectedTemplate?.key == template.key;
+            return SizedBox(
+              width: MediaQuery.of(context).size.width > 640 ? 260 : double.infinity,
+              child: Card(
+                elevation: isSelected ? 6 : 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color: isSelected ? template.color : Colors.grey.shade200,
+                    width: isSelected ? 2 : 1,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: template.color.withValues(alpha: 0.15),
+                            child: Icon(template.icon, color: template.color),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              template.name,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        template.description,
+                        style: TextStyle(color: Colors.grey[700]),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: template.strengths
+                            .map((s) => Chip(
+                                  label: Text(s),
+                                  backgroundColor: template.color.withValues(alpha: 0.15),
+                                  labelStyle: TextStyle(
+                                      color: template.color, fontWeight: FontWeight.w700),
+                                ))
+                            .toList(),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: () => _applyTemplate(template),
+                        icon: Icon(
+                          isSelected ? Icons.check_circle : Icons.flash_on,
+                        ),
+                        label: Text(isSelected ? 'Template Selected' : 'Use Template'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              isSelected ? template.color : Colors.deepPurple,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
   Future<void> _createCharacter() async {
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -270,6 +448,7 @@ class _CharacterCreationScreenEnhancedState
         'age': ageToSend,
         'gender': _isA, // Send Boy/Girl for story pronouns
         'character_type': _characterType,
+        if (_selectedTemplate != null) 'template_key': _selectedTemplate!.key,
 
         // Only include superhero fields if selected
         if (_characterType == 'Superhero') ...{
@@ -308,6 +487,7 @@ class _CharacterCreationScreenEnhancedState
           age: ageToSend,
           gender: _isA,
           traits: _selectedQuickLikes.toList(),
+          templateKey: _selectedTemplate?.key,
         );
         if (mounted && achievements.isNotEmpty) {
           await AchievementCelebrationDialog.show(context, achievements);
@@ -383,6 +563,12 @@ class _CharacterCreationScreenEnhancedState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              _buildTemplateModeToggle(),
+              const SizedBox(height: 12),
+              if (_useTemplateMode) ...[
+                _buildTemplateSection(),
+                const SizedBox(height: 20),
+              ],
               _buildBasicInfoSection(),
               const SizedBox(height: 20),
               _buildCharacterTypeSection(),
