@@ -40,8 +40,6 @@ import 'services/achievement_service.dart';
 import 'pre_story_feelings_dialog.dart';
 import 'config/environment.dart';
 import 'screens/subscription_success_screen.dart';
-import 'package:story_weaver_app/widgets/story_generation_progress.dart';
-import 'package:story_weaver_app/widgets/user_friendly_error_dialog.dart';
 import 'services/story_complexity_service.dart';
 import 'models/story_generation_result.dart';
 
@@ -463,18 +461,18 @@ class _StoryScreenState extends State<StoryScreen> {
           isInteractive: _interactiveMode,
           isRhyming: _rhymeTimeMode,
           backendIllustrations: storyResult.illustrations,
-          subscription: _currentSubscription,
-          isLearningToReadMode: _learningToReadMode,
-          usedUserApiKey: storyResult.usedUserKey,
         ),
       ),
     );
-  }
+
+    if (mounted) {
+      await _loadAchievementSummary();
+    }
     } catch (e, stackTrace) {
       print('Story generation error: $e');
       print(stackTrace);
       if (mounted) {
-        _showStoryErrorDialog(e);
+        _showStoryErrorDialog();
       }
     } finally {
       _stopProgress();
@@ -483,15 +481,17 @@ class _StoryScreenState extends State<StoryScreen> {
 
   Future<void> _startInteractiveStory() async {
     if (!mounted) return;
-    _startProgress();
+    setState(() => _isLoading = true);
 
     final allowed = await _validateStoryCreationPreconditions();
     if (!allowed) {
-      _stopProgress();
+      if (mounted) setState(() => _isLoading = false);
       return;
     }
 
     if (!mounted) return;
+    setState(() => _isLoading = false);
+
     final bool? storySaved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => InteractiveStoryScreen(
@@ -501,8 +501,6 @@ class _StoryScreenState extends State<StoryScreen> {
         ),
       ),
     );
-
-    _stopProgress(); // Stop progress after navigation completes
 
     if (storySaved == true) {
       await _loadSubscriptionInfo();
@@ -548,7 +546,16 @@ class _StoryScreenState extends State<StoryScreen> {
     );
   }
 
-
+  String _storyGenerationErrorMessage(Object error) {
+    if (error is SocketException) {
+      return 'Check your internet connection and try again.';
+    } else if (error is TimeoutException) {
+      return 'This is taking longer than usual. Try again?';
+    } else if (error is HttpException) {
+      return 'Our story engine is taking a break. Try again soon!';
+    }
+    return 'Something went wrong. Please try again.';
+  }
 
   void _startLoadingMessageRotation() {
     _loadingMessageIndex = 0;
@@ -587,16 +594,20 @@ class _StoryScreenState extends State<StoryScreen> {
     if (mounted) setState(() => _isLoading = false);
   }
 
-  void _showStoryErrorDialog(dynamic error) {
+  void _showStoryErrorDialog() {
     showDialog(
       context: context,
-      builder: (context) => UserFriendlyErrorDialog(
-        error: error,
-        onRetry: () {
-          Navigator.pop(context);
-          _onCreateButtonPressed(); // Retry the last story creation
-        },
-        onCancel: () => Navigator.pop(context),
+      builder: (context) => AlertDialog(
+        title: Text('Story Generation Failed'),
+        content: Text(
+          'We had trouble creating your story. Please check your internet connection and try again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('OK'),
+          ),
+        ],
       ),
     );
   }
