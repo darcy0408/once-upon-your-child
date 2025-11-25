@@ -10,7 +10,6 @@ import 'services/onboarding_service.dart';
 import 'services/firebase_analytics_service.dart';
 import 'services/performance_analytics.dart';
 import 'services/subscription_service.dart';
-import 'character_creation_screen_enhanced.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,24 +64,6 @@ class _StoryWeaverAppState extends State<StoryWeaverApp> {
     }
   }
 
-  void _navigateToCharacterDemo() {
-    // Navigate to character creation screen during onboarding
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const CharacterCreationScreenEnhanced(),
-      ),
-    );
-  }
-
-  void _navigateToStoryDemo() {
-    // Navigate to story creation screen during onboarding
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const StoryCreatorApp(),
-      ),
-    );
-  }
-
   Widget _buildLoading() {
     return const MaterialApp(
       home: Scaffold(
@@ -111,8 +92,6 @@ class _StoryWeaverAppState extends State<StoryWeaverApp> {
       home: OnboardingScreen(
         onFinished: _handleOnboardingFinished,
         onSkipConfirmed: _handleOnboardingFinished,
-        onTryCharacterDemo: _navigateToCharacterDemo,
-        onPreviewStoryDemo: _navigateToStoryDemo,
       ),
       builder: (context, child) {
         if (child == null || !Environment.showFlavorBanner) {

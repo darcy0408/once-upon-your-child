@@ -1098,6 +1098,11 @@ We have successfully diagnosed and resolved several critical deployment and conf
   - Flutter UI exposes an “Include Illustrations” switch, forwards the user’s tier, and renders any base64 images inline on `StoryResultScreen`; learning-to-read toggles auto-enable the switch.
   - Verified `/health` and `/generate-story` via curl (text generation successful; illustration payloads rely on Gemini image quota). Backend pytest run (`python3 -m pytest backend/tests/test_app.py -k generate_story`) timed out after ~100 s in this environment—rerun locally if needed.
 
+- 2025-11-24 · Codex → Team: QUICK-START ONBOARDING DEPLOYED ✅
+  - Replaced the 7-step onboarding carousel with a 3-step Stepper (“Child Info → Theme → Ready”) plus a “Skip / Advanced Options” link for power users.
+  - Removed the blocking feelings pop-up during onboarding; new Quick Start Wizard focuses on gathering essentials quickly without surfacing advanced toggles too early.
+  - Onboarding analytics now tracks the lightweight steps; finishing immediately brings users into the Story Creator.
+
 - 2025-11-24 · Gemini → Team: BACKEND VERIFICATION COMPLETE & PRODUCTION READY ✅
   - All critical backend endpoints have been tested and verified on the Railway production deployment.
   - Health endpoint: ✅ Working, and now includes `stripe_configured`, `stripe_premium_price`, and `stripe_family_price` fields.
