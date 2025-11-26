@@ -79,10 +79,10 @@ class StoryScreen extends StatefulWidget {
   const StoryScreen({super.key});
 
   @override
-  _StoryScreenState createState() => _StoryScreenState();
+  StoryScreenState createState() => StoryScreenState();
 }
 
-class _StoryScreenState extends State<StoryScreen> {
+class StoryScreenState extends State<StoryScreen> {
   List<Character> _characters = [];
   Character? _selectedCharacter;
   final Set<String> _additionalCharacterIds = {};
@@ -249,6 +249,7 @@ class _StoryScreenState extends State<StoryScreen> {
   Future<void> _openAchievementsScreen() async {
     // Lazy load achievements screen
     await achievements_screen.loadLibrary();
+    if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => achievements_screen.AchievementsScreen()),
     );
@@ -299,10 +300,8 @@ class _StoryScreenState extends State<StoryScreen> {
   }
 
   Future<bool> _validateStoryCreationPreconditions() async {
-    final navContext = context;
-
     if (_selectedCharacter == null) {
-      ScaffoldMessenger.of(navContext).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please choose a character!')),
       );
       return false;
@@ -316,7 +315,7 @@ class _StoryScreenState extends State<StoryScreen> {
       if (!mounted) return false;
 
       final upgraded = await PaywallDialog.showStoryLimitDialog(
-        navContext,
+        context,
         remainingToday: remaining,
         remainingMonth: remainingMonth,
       );
@@ -332,7 +331,7 @@ class _StoryScreenState extends State<StoryScreen> {
       if (!hasMultiChar) {
         if (!mounted) return false;
         await PaywallDialog.showFeatureLockedDialog(
-          navContext,
+          context,
           featureName: 'Multi-Character Stories',
           description: 'Include siblings and friends in stories together!',
         );
@@ -345,7 +344,7 @@ class _StoryScreenState extends State<StoryScreen> {
     if (!themeAvailable) {
       if (!mounted) return false;
       await PaywallDialog.showContentLockedDialog(
-        navContext,
+        context,
         contentType: 'Theme',
         contentName: _selectedTheme,
       );
@@ -358,7 +357,7 @@ class _StoryScreenState extends State<StoryScreen> {
       if (!companionAvailable) {
         if (!mounted) return false;
         await PaywallDialog.showContentLockedDialog(
-          navContext,
+          context,
           contentType: 'Companion',
           contentName: _selectedCompanion,
         );
@@ -817,12 +816,12 @@ class _StoryScreenState extends State<StoryScreen> {
             tooltip: 'Settings',
             icon: const Icon(Icons.settings),
             onPressed: () async {
+              final navigator = Navigator.of(context);
               await settings_screen.loadLibrary();
-              if (mounted) {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => settings_screen.SettingsScreen()),
-                );
-              }
+              if (!mounted) return;
+              navigator.push(
+                MaterialPageRoute(builder: (_) => settings_screen.SettingsScreen()),
+              );
             },
           ),
         ],
@@ -1459,11 +1458,21 @@ class _StoryScreenState extends State<StoryScreen> {
     if (value.contains('pink')) return 'PastelPink';
     if (value.contains('silver') ||
         value.contains('gray') ||
-        value.contains('grey')) return 'SilverGray';
-    if (value.contains('purple')) return 'PastelPink';
-    if (value.contains('blue')) return 'SilverGray';
-    if (value.contains('black')) return 'Black';
-    if (value.contains('brown')) return 'Brown';
+        value.contains('grey')) {
+      return 'SilverGray';
+    }
+    if (value.contains('purple')) {
+      return 'PastelPink';
+    }
+    if (value.contains('blue')) {
+      return 'SilverGray';
+    }
+    if (value.contains('black')) {
+      return 'Black';
+    }
+    if (value.contains('brown')) {
+      return 'Brown';
+    }
     return 'Brown';
   }
 
@@ -1577,6 +1586,7 @@ class _StoryScreenState extends State<StoryScreen> {
     }
   }
 
+  // ignore: unused_element
   Widget _buildThemeSelector() {
     final themes = [
       'Adventure',
@@ -1892,6 +1902,7 @@ class _StoryScreenState extends State<StoryScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildTherapeuticCard() {
     return Card(
       elevation: 3,

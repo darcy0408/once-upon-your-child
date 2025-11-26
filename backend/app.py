@@ -104,11 +104,16 @@ def get_tier_limits(operation='default'):
 def create_app(config_name):
     print(f"=== Creating Flask app with config: {config_name} ===")
     app = Flask(__name__)
-    app.config.from_object(config_by_name[config_name])
+    
+    if config_name == 'testing':
+        app.config.from_object(config_by_name['dev'])
+        app.config['TESTING'] = True
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+        app.config.pop('SQLALCHEMY_ENGINE_OPTIONS', None)
+    else:
+        app.config.from_object(config_by_name[config_name])
+
     print(f"=== Config loaded, initializing database ===")
-    print("DEBUG: Current app.config:")
-    for key, value in app.config.items():
-        print(f"  {key}: {value}")
     db.init_app(app)
     print(f"=== Database initialized ===")
 

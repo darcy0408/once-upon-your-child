@@ -78,22 +78,25 @@ async def load_test(base_url: str, num_concurrent: int = 100) -> Dict:
     }
 
     # Print results
-    print("
-📊 Load Test Results:"    print(f"Total Requests: {analysis['total_requests']}")
+    print("""
+📊 Load Test Results:""")
+    print(f"Total Requests: {analysis['total_requests']}")
     print(f"Successful: {analysis['successful_requests']} ({analysis['success_rate']:.1f}%)")
     print(f"Failed: {analysis['failed_requests']}")
     print(f"Total Time: {analysis['total_time']:.2f}s")
     print(f"Requests/sec: {analysis['requests_per_second']:.1f}")
-    print("
-⏱️  Response Times:"    print(f"Average: {analysis['avg_response_time']:.3f}s")
+    print("""
+⏱️  Response Times:""")
+    print(f"Average: {analysis['avg_response_time']:.3f}s")
     print(f"Median: {analysis['median_response_time']:.3f}s")
     print(f"Min: {analysis['min_response_time']:.3f}s")
     print(f"Max: {analysis['max_response_time']:.3f}s")
     print(f"95th Percentile: {analysis['95th_percentile']:.3f}s")
 
     if failed_requests:
-        print("
-❌ Sample Errors:"        for i, failure in enumerate(failed_requests[:5]):  # Show first 5 errors
+        print("""
+❌ Sample Errors:""")
+        for i, failure in enumerate(failed_requests[:5]):  # Show first 5 errors
             print(f"  {i+1}. Status: {failure['status']}, Error: {failure['error']}")
 
     return analysis
