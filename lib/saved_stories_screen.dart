@@ -290,7 +290,7 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                   ],
                 ),
               ),
-            else
+            if (_filteredStories.isNotEmpty)
               ..._filteredStories.map((s) {
                 final dateStr = _prettyDate(s.createdAt);
                 final childNames = s.characters.map((c) => c.name).toList();
