@@ -77,4 +77,30 @@ class StoryAnalytics {
       parameters: parameters,
     );
   }
+
+  static Future<void> trackByokSubmission({
+    required bool success,
+    String? errorMessage,
+  }) async {
+    await _analytics.logEvent(
+      name: 'byok_submission',
+      parameters: {
+        'success': success,
+        if (!success && errorMessage != null) 'error': errorMessage,
+      },
+    );
+  }
+
+  static Future<void> trackFeatureTour({
+    required String action, // started, completed, skipped
+    int? step,
+  }) async {
+    await _analytics.logEvent(
+      name: 'feature_tour',
+      parameters: {
+        'action': action,
+        if (step != null) 'step': step,
+      },
+    );
+  }
 }

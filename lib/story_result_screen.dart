@@ -116,9 +116,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   bool _screenReaderHints = true;
   bool _isSubmittingFeedback = false;
   double _storyRating = 4.0;
-   bool _isStoryHovered = false;
-   bool _showSwipeTutorial = false;
-   List<_InlineIllustration> _inlineIllustrations = [];
+  bool _isStoryHovered = false;
+  bool _showSwipeTutorial = false;
+  List<_InlineIllustration> _inlineIllustrations = [];
 
    // Quality scoring
    Map<String, dynamic>? _qualityData;
@@ -126,6 +126,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   bool _showFeatureTour = false;
   int _featureTourStepIndex = 0;
   List<FeatureTourStep> _featureTourSteps = const [];
+  bool _featureTourStarted = false;
   bool _isReporting = false;
 
   String get _analyticsStoryId =>
@@ -239,12 +240,23 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       ];
       _featureTourStepIndex = 0;
       _showFeatureTour = true;
+      _featureTourStarted = false;
     });
   }
 
   Future<void> _advanceFeatureTour() async {
+    if (!_featureTourStarted) {
+      _featureTourStarted = true;
+      unawaited(StoryAnalytics.trackFeatureTour(action: 'started', step: 1));
+    }
     if (_featureTourStepIndex >= _featureTourSteps.length - 1) {
       await FeatureTourService.markCompleted();
+      unawaited(
+        StoryAnalytics.trackFeatureTour(
+          action: 'completed',
+          step: _featureTourStepIndex + 1,
+        ),
+      );
       if (mounted) {
         setState(() => _showFeatureTour = false);
       }
@@ -260,6 +272,12 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   Future<void> _skipFeatureTour() async {
     await FeatureTourService.markDismissed();
+    unawaited(
+      StoryAnalytics.trackFeatureTour(
+        action: 'skipped',
+        step: _featureTourStepIndex + 1,
+      ),
+    );
     if (mounted) {
       setState(() => _showFeatureTour = false);
     }
@@ -1875,6 +1893,15 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                 currentIndex: _featureTourStepIndex,
                 onNext: _advanceFeatureTour,
                 onSkip: _skipFeatureTour,
+                onStart: () {
+                  _featureTourStarted = true;
+                  unawaited(
+                    StoryAnalytics.trackFeatureTour(
+                      action: 'started',
+                      step: _featureTourStepIndex + 1,
+                    ),
+                  );
+                },
               ),
           ],
         ),

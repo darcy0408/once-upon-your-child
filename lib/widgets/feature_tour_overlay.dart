@@ -17,6 +17,7 @@ class FeatureTourOverlay extends StatelessWidget {
   final int currentIndex;
   final VoidCallback onNext;
   final VoidCallback onSkip;
+  final VoidCallback? onStart;
 
   const FeatureTourOverlay({
     super.key,
@@ -24,6 +25,7 @@ class FeatureTourOverlay extends StatelessWidget {
     required this.currentIndex,
     required this.onNext,
     required this.onSkip,
+    this.onStart,
   });
 
   @override
@@ -40,12 +42,25 @@ class FeatureTourOverlay extends StatelessWidget {
               children: [
                 Align(
                   alignment: Alignment.topRight,
-                  child: TextButton(
-                    onPressed: onSkip,
-                    child: const Text(
-                      'Skip tour',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (onStart != null && currentIndex == 0)
+                        TextButton(
+                          onPressed: onStart,
+                          child: const Text(
+                            'Start tour',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      TextButton(
+                        onPressed: onSkip,
+                        child: const Text(
+                          'Skip tour',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const Spacer(),
