@@ -19,7 +19,7 @@ from .models.user import User
 
 from .services import character_service, story_service
 from .services.story_service import AdvancedStoryEngine
-from .routes.stripe_routes import stripe_routes
+from .routes.stripe_routes import stripe_routes, init_stripe_api
 from .routes.webhook_handler import webhook_routes
 from .analytics_routes import analytics_bp
 from .quality_service import StoryQualityService
@@ -251,7 +251,7 @@ def create_app(config_name):
         model = None
 
     # Initialize Stripe (configured via blueprint setup now)
-    stripe_routes.init_stripe_api(app)
+    init_stripe_api(app)
     logger.info(f"✓ Stripe Premium Price ID: {os.getenv('STRIPE_PRICE_ID_PREMIUM', 'NOT SET')}")
     logger.info(f"✓ Stripe Family Price ID: {os.getenv('STRIPE_PRICE_ID_FAMILY', 'NOT SET')}")
 
