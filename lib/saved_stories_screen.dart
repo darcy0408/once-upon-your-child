@@ -1,9 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:share_plus/share_plus.dart';
+
+import 'config/environment.dart';
 import 'models.dart';
 import 'services/story_analytics.dart';
 import 'storage_service.dart';
 import 'story_result_screen.dart';
-import 'package:share_plus/share_plus.dart';
 
 enum SortOption {
   newest,
@@ -27,6 +32,8 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
   String _selectedThemeFilter = 'All';
   bool _showOnlyInteractive = false;
   SortOption _currentSort = SortOption.newest;
+  final TextEditingController _reportController = TextEditingController();
+  bool _isReporting = false;
 
   static const List<String> _themes = [
     'All',
@@ -47,6 +54,12 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
   void initState() {
     super.initState();
     _refresh();
+  }
+
+  @override
+  void dispose() {
+    _reportController.dispose();
+    super.dispose();
   }
 
   Future<void> _refresh() async {
@@ -409,6 +422,13 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                                             label: const Text('Share'),
                                           ),
                                           TextButton.icon(
+                                            onPressed: _isReporting
+                                                ? null
+                                                : () => _reportStory(s),
+                                            icon: const Icon(Icons.flag_outlined),
+                                            label: const Text('Report'),
+                                          ),
+                                          TextButton.icon(
                                             onPressed: () {
                                               Navigator.of(context).push(
                                                 MaterialPageRoute(
@@ -516,5 +536,88 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
   Future<void> _shareStory(SavedStory story) async {
     final shareText = '${story.title}\n\n${story.storyText}';
     await Share.share(shareText, subject: story.title);
+  }
+
+  Future<String?> _showReportDialog(String title) async {
+    _reportController.clear();
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Report Issue'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Report content in "$title"'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _reportController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: 'Optional: describe what felt wrong',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, _reportController.text.trim()),
+            child: const Text('Report'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _reportStory(SavedStory story) async {
+    final reason = await _showReportDialog(story.title);
+    if (reason == null) return;
+    if (_isReporting) return;
+    setState(() => _isReporting = true);
+    try {
+      final uri = Uri.parse('${Environment.backendUrl}/report-story');
+      final response = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'story_id': story.id,
+          'title': story.title,
+          'theme': story.theme,
+          'reason': reason.isEmpty ? 'No reason provided' : reason,
+          'is_interactive': story.isInteractive,
+          'story_preview': story.storyText.length > 240
+              ? '${story.storyText.substring(0, 240)}...'
+              : story.storyText,
+          'timestamp': DateTime.now().toIso8601String(),
+        }),
+      );
+
+      if (!mounted) return;
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Report submitted. Thank you for keeping stories safe.'),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not submit report. Please try again.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Report failed. Please try again later.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isReporting = false);
+      }
+    }
   }
 }

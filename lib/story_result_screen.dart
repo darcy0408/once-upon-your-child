@@ -98,6 +98,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       ProgressionService(); // Track user progress and unlocks
   final _feedbackService = StoryFeedbackService();
   final TextEditingController _feedbackController = TextEditingController();
+  final TextEditingController _reportController = TextEditingController();
   bool _isFavorite = false;
   bool _isLoading = true;
   List<StoryIllustration>? _cachedIllustrations;
@@ -125,6 +126,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   bool _showFeatureTour = false;
   int _featureTourStepIndex = 0;
   List<FeatureTourStep> _featureTourSteps = const [];
+  bool _isReporting = false;
 
   String get _analyticsStoryId =>
       widget.storyId ?? widget.title.hashCode.toString();
@@ -291,6 +293,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   void dispose() {
     _pageController.dispose();
     _feedbackController.dispose();
+    _reportController.dispose();
     super.dispose();
   }
 
@@ -1273,6 +1276,90 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     _trackResultAction('share', extra: {'method': 'copy_json'});
   }
 
+  Future<void> _submitReport(String reason) async {
+    if (_isReporting) return;
+    setState(() => _isReporting = true);
+    try {
+      final uri = Uri.parse('${Environment.backendUrl}/report-story');
+      final storyId = widget.storyId ?? _analyticsStoryId;
+      final response = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'story_id': storyId,
+          'title': widget.title,
+          'theme': widget.theme,
+          'reason': reason.isEmpty ? 'No reason provided' : reason,
+          'is_interactive': widget.isInteractive ?? false,
+          'story_preview':
+              widget.storyText.length > 240 ? '${widget.storyText.substring(0, 240)}...' : widget.storyText,
+          'timestamp': DateTime.now().toIso8601String(),
+        }),
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        _showSnackBar(
+          'Report submitted. Thank you for keeping stories safe!',
+          backgroundColor: Colors.green,
+        );
+        _reportController.clear();
+      } else {
+        _showSnackBar(
+          'Could not send report right now.',
+          backgroundColor: Colors.orange,
+        );
+      }
+    } catch (_) {
+      _showSnackBar(
+        'Report failed. Please try again later.',
+        backgroundColor: Colors.orange,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isReporting = false);
+      }
+    }
+  }
+
+  Future<void> _showReportDialog() async {
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Report Issue'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Tell us what felt unsafe or inappropriate.'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _reportController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: 'Optional: add details',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: _isReporting
+                ? null
+                : () async {
+                    Navigator.pop(context);
+                    await _submitReport(_reportController.text.trim());
+                  },
+            child: Text(_isReporting ? 'Sending...' : 'Report'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildShareActions() {
     final theme = Theme.of(context);
     return AppCard(
@@ -1519,6 +1606,11 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       appBar: AppBar(
         title: const Text('Story Summary'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.flag_outlined),
+            tooltip: 'Report inappropriate content',
+            onPressed: _showReportDialog,
+          ),
           if (widget.storyId != null && !_isLoading)
             IconButton(
               icon: Icon(

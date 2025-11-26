@@ -116,3 +116,7 @@
   - Implemented age gate + parental consent flow (under 13 requires parent approval; 13+ parental knowledge dialog) with persisted consent.
   - Files: lib/main.dart, lib/screens/age_gate_screen.dart, lib/screens/parental_consent_screen.dart, lib/screens/privacy_policy_screen.dart, lib/screens/terms_of_service_screen.dart, lib/services/parental_consent_service.dart, lib/settings_screen.dart.
   - Status: 🚧 In progress; pending deployment verification and content safety checklist.
+- 2025-11-26 21:00 UTC · Codex → Team: ✅ C2-4.3 content safety pass (filter + reporting)
+  - Added backend content filter + logging, report endpoint, and UI report buttons on story result/saved stories.
+  - Strengthened Gemini prompts with safety guardrails (non-violence, age-appropriate language).
+  - Files: backend/app.py, backend/services/story_service.py, lib/story_result_screen.dart, lib/saved_stories_screen.dart.

@@ -149,11 +149,32 @@ def create_app(config_name):
     @app.errorhandler(429)
     def ratelimit_handler(e):
         request_id = getattr(g, 'request_id', 'unknown')
-        logger.warning(f"[{request_id}] Rate limit exceeded: {request.endpoint}")
-        return jsonify({
+        user_tier = get_user_tier()
+
+        logger.warning(f"[{request_id}] Rate limit exceeded for {user_tier} user: {request.endpoint}")
+
+        # Customize message based on user tier
+        if user_tier == 'free':
+            message = 'Free tier limit reached. Upgrade to Premium for higher limits!'
+            upgrade_url = 'https://storyweaver.com/premium'
+        elif user_tier == 'premium':
+            message = 'Premium limit reached. Upgrade to Family plan for even higher limits!'
+            upgrade_url = 'https://storyweaver.com/family'
+        else:
+            message = 'Rate limit exceeded. Please try again later.'
+            upgrade_url = None
+
+        response_data = {
             'error': 'Rate limit exceeded',
-            'retry_after': e.description
-        }), 429
+            'message': message,
+            'retry_after': e.description,
+            'user_tier': user_tier
+        }
+
+        if upgrade_url:
+            response_data['upgrade_url'] = upgrade_url
+
+        return jsonify(response_data), 429
 
     # Logging setup
     logging.basicConfig(
@@ -161,6 +182,27 @@ def create_app(config_name):
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
     logger = logging.getLogger("story_engine")
+
+    INAPPROPRIATE_KEYWORDS = [
+        'violence', 'weapon', 'death', 'kill', 'hurt', 'blood',
+        'scary', 'monster', 'nightmare', 'attack', 'fight', 'gun',
+        'knife', 'suicide', 'self-harm'
+    ]
+
+    def filter_story_content(story_text: str) -> tuple[str, bool]:
+        """Detect potentially inappropriate keywords in story content."""
+        if not story_text:
+            return story_text, False
+
+        lower_text = story_text.lower()
+        had_issues = False
+        for keyword in INAPPROPRIATE_KEYWORDS:
+            if keyword in lower_text:
+                had_issues = True
+                logger.warning(f"Content filter triggered: {keyword} in story text")
+        if had_issues:
+            logger.warning(f"Flagged story content (first 200 chars): {story_text[:200]!r}")
+        return story_text, had_issues
 
     # Structured logging helper
     def log_error(error_type, message, details=None):
@@ -683,6 +725,7 @@ def create_app(config_name):
                 illustrations = []
 
         title, wisdom_gem, story_text = story_service._safe_extract_title_and_gem(raw_text, theme)
+        story_text, story_flagged = filter_story_content(story_text)
         response_payload = {
             "title": title,
             "story": story_text,
@@ -690,6 +733,8 @@ def create_app(config_name):
             "wisdom_gem": wisdom_gem,
             "used_user_key": using_user_key,
         }
+        if story_flagged:
+            response_payload["content_flagged"] = True
         if illustrations:
             response_payload["illustrations"] = illustrations
             response_payload["illustration_count"] = len(illustrations)
@@ -717,6 +762,11 @@ def create_app(config_name):
                 model=model, # Pass the initialized model
                 user_api_key=user_api_key # Allow BYOK
             )
+            text, flagged = filter_story_content(interactive_story_segment.get("text", ""))
+            interactive_story_segment["text"] = text
+            if flagged:
+                logger.warning("Interactive story opening flagged by content filter")
+
             return jsonify(interactive_story_segment), 200
         except Exception as e:
             log_error(
@@ -763,6 +813,11 @@ def create_app(config_name):
                 model=model, # Pass the initialized model
                 user_api_key=user_api_key # Allow BYOK
             )
+            text, flagged = filter_story_content(interactive_story_segment.get("text", ""))
+            interactive_story_segment["text"] = text
+            if flagged:
+                logger.warning("Interactive continuation flagged by content filter")
+
             return jsonify(interactive_story_segment), 200
         except Exception as e:
             logger.exception("Continuing interactive story failed")
@@ -770,6 +825,23 @@ def create_app(config_name):
                 "error": str(e),
                 "hint": "Continuing interactive story failed on the backend."
             }), 500
+
+    @app.route("/report-story", methods=["POST"])
+    def report_story():
+        """Allow users to report inappropriate content."""
+        data = request.get_json(silent=True) or {}
+        story_id = data.get("story_id") or data.get("id") or "unknown"
+        reason = (data.get("reason") or "").strip() or "No reason provided"
+        snippet = (data.get("story_preview") or "")[:200]
+
+        logger.warning(
+            f"⚠️ CONTENT REPORT - Story ID: {story_id}, Reason: {reason}, Preview: {snippet}"
+        )
+
+        return jsonify({
+            "status": "reported",
+            "message": "Thank you for your report"
+        }), 200
 
     @limiter.limit(lambda: get_tier_limits('expensive') or "100/hour")  # BYOK users get high limit
     @app.route("/generate-illustrations", methods=["POST"])

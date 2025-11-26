@@ -2,6 +2,15 @@ import random
 import re
 import json
 
+SAFETY_GUARDRAILS = """
+SAFETY RULES (non-negotiable):
+- Keep content safe, gentle, and age-appropriate for children 4-12.
+- Avoid violence, weapons, blood, death, or scary/frightening scenes.
+- Avoid bullying, insults, or harm to self/others.
+- Focus on kindness, courage, teamwork, inclusion, and seeking help.
+- Keep language friendly, encouraging, and therapeutic.
+"""
+
 # ----------------------
 # Story components
 # ----------------------
@@ -82,6 +91,8 @@ class AdvancedStoryEngine:
                 f"- How Companion Helps: {companion_info['contribution']}",
             ])
 
+        parts.append(SAFETY_GUARDRAILS)
+
         # Add therapeutic elements if provided
         if therapeutic_prompt:
             parts.extend([
@@ -139,6 +150,7 @@ STORY DETAILS:
 - Companion: {companion if companion else "None"}
 
 {age_guidelines}
+{SAFETY_GUARDRAILS}
 
 CRITICAL CHOICE REQUIREMENTS:
 1) Provide EXACTLY 3 choices that represent DIFFERENT emotional responses:
@@ -194,6 +206,7 @@ STORY DETAILS:
 - Last Choice Made: {choice_text}
 
 {age_guidelines}
+{SAFETY_GUARDRAILS}
 
 CRITICAL CHOICE REQUIREMENTS:
 1) Show consequences consistent with the emotional skill of the last choice.
