@@ -1,9 +1,9 @@
 from flask import Blueprint, jsonify, request
 from datetime import datetime, timedelta
-from ..database import db
-from ..models.story import Story
-from ..models.user import User
-from ..models.character import Character
+from .database import db
+from .models.story import Story
+from .models.user import User
+from .models.character import Character
 import os
 
 analytics_bp = Blueprint('analytics', __name__)
