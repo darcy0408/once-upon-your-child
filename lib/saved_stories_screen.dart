@@ -127,365 +127,6 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
     final textScaler = MediaQuery.textScalerOf(context);
     final favoriteCount = _stories.where((s) => s.isFavorite).length;
 
-    late final Widget bodyContent;
-    if (_loading) {
-      bodyContent = const Center(child: CircularProgressIndicator());
-    } else if (_stories.isEmpty) {
-      bodyContent = const Center(child: Text('No stories saved yet.'));
-    } else {
-      bodyContent = RefreshIndicator(
-        onRefresh: _refresh,
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              color: Colors.grey.shade100,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Text('Theme:', style: TextStyle(fontWeight: FontWeight.w600)),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: _themes.map((theme) {
-                              final isSelected = _selectedThemeFilter == theme;
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: FilterChip(
-                                  label: Text(theme),
-                                  selected: isSelected,
-                                  onSelected: (selected) {
-                                    setState(() {
-                                      _selectedThemeFilter = theme;
-                                      _applyFilters();
-                                    });
-                                  },
-                                  selectedColor: Colors.deepPurple.shade100,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Semantics(
-                        selected: _showOnlyFavorites,
-                        button: true,
-                        label: 'Filter favorites ${_showOnlyFavorites ? 'on' : 'off'}',
-                        child: FilterChip(
-                          label: const Text('Favorites'),
-                          selected: _showOnlyFavorites,
-                          onSelected: (selected) {
-                            setState(() {
-                              _showOnlyFavorites = selected;
-                              _applyFilters();
-                            });
-                          },
-                          selectedColor: AppColors.primary.withValues(alpha: 0.15),
-                          labelStyle: TextStyle(
-                            color: _showOnlyFavorites ? AppColors.primary : Colors.black87,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Semantics(
-                        selected: _showOnlyInteractive,
-                        button: true,
-                        label: 'Filter interactive ${_showOnlyInteractive ? 'on' : 'off'}',
-                        child: FilterChip(
-                          label: const Text('Interactive'),
-                          selected: _showOnlyInteractive,
-                          onSelected: (selected) {
-                            setState(() {
-                              _showOnlyInteractive = selected;
-                              _applyFilters();
-                            });
-                          },
-                          selectedColor: AppColors.primary.withValues(alpha: 0.15),
-                          labelStyle: TextStyle(
-                            color: _showOnlyInteractive ? AppColors.primary : Colors.black87,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      Semantics(
-                        label: 'Sort saved stories',
-                        hint: 'Currently ${_currentSort.name}',
-                        child: DropdownButton<SortOption>(
-                          value: _currentSort,
-                          underline: const SizedBox.shrink(),
-                          items: const [
-                            DropdownMenuItem(
-                              value: SortOption.newest,
-                              child: Text('Newest'),
-                            ),
-                            DropdownMenuItem(
-                              value: SortOption.oldest,
-                              child: Text('Oldest'),
-                            ),
-                            DropdownMenuItem(
-                              value: SortOption.favoritesFirst,
-                              child: Text('Favorites first'),
-                            ),
-                          ],
-                          onChanged: (value) {
-                            if (value == null) return;
-                            setState(() {
-                              _currentSort = value;
-                              _applyFilters();
-                            });
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            if (_stories.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.all(8),
-                color: Colors.deepPurple.shade50,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildStat(Icons.book, '${_stories.length}', 'Total'),
-                    _buildStat(Icons.favorite, '$favoriteCount', 'Favorites'),
-                    _buildStat(Icons.visibility, '${_filteredStories.length}', 'Showing'),
-                  ],
-                ),
-              ),
-            if (_filteredStories.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 40),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.filter_alt_off, size: 64, color: Colors.grey.shade400),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No stories match your filters',
-                      style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _showOnlyFavorites = false;
-                          _selectedThemeFilter = 'All';
-                          _applyFilters();
-                        });
-                      },
-                      child: const Text('Clear Filters'),
-                    ),
-                  ],
-                ),
-              )
-            else
-              ..._filteredStories.map((s) {
-                final dateStr = _prettyDate(s.createdAt);
-                final childNames = s.characters.map((c) => c.name).toList();
-
-                final wordCount = _wordCount(s.storyText);
-                final readMinutes = (wordCount / 180).clamp(1, 30).round();
-                final qualityLabel = _qualityLabel(wordCount);
-                final qualityColor = _qualityColor(wordCount);
-                final avgAge = _averageAge(s.characters);
-
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: Dismissible(
-                    key: ValueKey(s.id),
-                    direction: DismissDirection.endToStart,
-                    background: Container(
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade100,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.delete, color: Colors.red),
-                    ),
-                    confirmDismiss: (_) async {
-                      final originalIndex = _stories.indexOf(s);
-                      await _deleteAt(originalIndex);
-                      return false; // refresh handles removal
-                    },
-                    child: Semantics(
-                      container: true,
-                      label: 'Saved story: ${s.title}, $readMinutes minute read, $wordCount words${s.isInteractive ? ', interactive' : ''}',
-                      hint: 'Swipe left to delete',
-                      child: Card(
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: s.isFavorite
-                              ? BorderSide(color: Colors.red.shade200, width: 2)
-                              : BorderSide.none,
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (s.isFavorite)
-                                    const Padding(
-                                      padding: EdgeInsets.only(right: 8.0, top: 4.0),
-                                      child: Icon(Icons.favorite, color: Colors.red, size: 20),
-                                    ),
-                                  Expanded(
-                                    child: Text(
-                                      s.title,
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  if (s.isInteractive)
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 8.0),
-                                      child: Chip(
-                                        label: const Text('Interactive', style: TextStyle(fontSize: 11)),
-                                        backgroundColor: Colors.purple.shade100,
-                                        padding: EdgeInsets.zero,
-                                        visualDensity: VisualDensity.compact,
-                                      ),
-                                    ),
-                                  Semantics(
-                                    label: 'Quality $qualityLabel story badge',
-                                    child: Chip(
-                                      label: Text(
-                                        qualityLabel,
-                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-                                      ),
-                                      backgroundColor: qualityColor.withValues(alpha: 0.15),
-                                      side: BorderSide(color: qualityColor.withValues(alpha: 0.4)),
-                                      visualDensity: VisualDensity.compact,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    tooltip: s.isFavorite ? 'Remove from favorites' : 'Add to favorites',
-                                    icon: Icon(
-                                      s.isFavorite ? Icons.favorite : Icons.favorite_border,
-                                      color: s.isFavorite ? Colors.red : null,
-                                    ),
-                                    onPressed: () => _toggleFavorite(_filteredStories.indexOf(s)),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 4,
-                                children: [
-                                  _metaChip(Icons.calendar_today, dateStr),
-                                  _metaChip(Icons.menu_book, '$wordCount words'),
-                                  _metaChip(Icons.timer, '$readMinutes min read'),
-                                  _metaChip(Icons.child_care, avgAge != null ? 'Age ~$avgAge' : 'All ages'),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              if (childNames.isNotEmpty)
-                                Wrap(
-                                  spacing: 6,
-                                  runSpacing: 6,
-                                  children: childNames
-                                      .map((n) => Chip(
-                                            label: Text(n),
-                                            avatar: const Icon(Icons.child_care, size: 16),
-                                          ))
-                                      .toList(),
-                                ),
-                              if (childNames.isNotEmpty) const SizedBox(height: 8),
-                              Semantics(
-                                label: 'Story preview for ${s.title}',
-                                readOnly: true,
-                                child: Text(
-                                  s.storyText.length > 180
-                                      ? '${s.storyText.substring(0, 180)}…'
-                                      : s.storyText,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  Semantics(
-                                    button: true,
-                                    label: 'Share ${s.title}',
-                                    child: TextButton.icon(
-                                      onPressed: () => _shareStory(s),
-                                      icon: const Icon(Icons.share),
-                                      label: const Text('Share'),
-                                    ),
-                                  ),
-                                  Semantics(
-                                    button: true,
-                                    label: 'Report ${s.title}',
-                                    child: TextButton.icon(
-                                      onPressed: _isReporting ? null : () => _reportStory(s),
-                                      icon: const Icon(Icons.flag_outlined),
-                                      label: const Text('Report'),
-                                    ),
-                                  ),
-                                  Semantics(
-                                    button: true,
-                                    label: 'Read ${s.title} again',
-                                    child: TextButton.icon(
-                                      onPressed: () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) => StoryResultScreen(
-                                              title: s.title,
-                                              storyText: s.storyText,
-                                              wisdomGem: s.wisdomGem ?? '',
-                                              characterName: s.characters.isNotEmpty ? s.characters.first.name : null,
-                                              storyId: s.id,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      icon: const Icon(Icons.menu_book),
-                                      label: const Text('Read again'),
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  IconButton(
-                                    tooltip: 'Delete',
-                                    icon: const Icon(Icons.delete_outline),
-                                    onPressed: () {
-                                      final originalIndex = _stories.indexOf(s);
-                                      _deleteAt(originalIndex);
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            const SizedBox(height: 12),
-          ],
-        ),
-      );
-    }
-
     return MediaQuery(
       data: mediaQuery.copyWith(textScaler: textScaler),
       child: Scaffold(
@@ -509,12 +150,388 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
         ),
         body: FocusTraversalGroup(
           policy: OrderedTraversalPolicy(),
-          child: bodyContent,
-        ),
-      ),
-    );
-  }
+          child: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _stories.isEmpty
+              ? const Center(child: Text('No stories saved yet.'))
+              : RefreshIndicator(
+                  onRefresh: _refresh,
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      // Filter bar
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        color: Colors.grey.shade100,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Text('Theme:', style: TextStyle(fontWeight: FontWeight.w600)),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      children: _themes.map((theme) {
+                                        final isSelected = _selectedThemeFilter == theme;
+                                        return Padding(
+                                          padding: const EdgeInsets.only(right: 8.0),
+                                          child: FilterChip(
+                                            label: Text(theme),
+                                            selected: isSelected,
+                                            onSelected: (selected) {
+                                              setState(() {
+                                                _selectedThemeFilter = theme;
+                                                _applyFilters();
+                                              });
+                                            },
+                                            selectedColor: Colors.deepPurple.shade100,
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Semantics(
+                                  selected: _showOnlyFavorites,
+                                  button: true,
+                                  label:
+                                      'Filter favorites ${_showOnlyFavorites ? 'on' : 'off'}',
+                                  child: FilterChip(
+                                    label: const Text('Favorites'),
+                                    selected: _showOnlyFavorites,
+                                    onSelected: (selected) {
+                                      setState(() {
+                                        _showOnlyFavorites = selected;
+                                        _applyFilters();
+                                      });
+                                    },
+                                    selectedColor:
+                                        AppColors.primary.withValues(alpha: 0.15),
+                                    labelStyle: TextStyle(
+                                      color: _showOnlyFavorites
+                                          ? AppColors.primary
+                                          : Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Semantics(
+                                  selected: _showOnlyInteractive,
+                                  button: true,
+                                  label:
+                                      'Filter interactive ${_showOnlyInteractive ? 'on' : 'off'}',
+                                  child: FilterChip(
+                                    label: const Text('Interactive'),
+                                    selected: _showOnlyInteractive,
+                                    onSelected: (selected) {
+                                      setState(() {
+                                        _showOnlyInteractive = selected;
+                                        _applyFilters();
+                                      });
+                                    },
+                                    selectedColor:
+                                        AppColors.primary.withValues(alpha: 0.15),
+                                    labelStyle: TextStyle(
+                                      color: _showOnlyInteractive
+                                          ? AppColors.primary
+                                          : Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Semantics(
+                                  label: 'Sort saved stories',
+                                  hint: 'Currently ${_currentSort.name}',
+                                  child: DropdownButton<SortOption>(
+                                    value: _currentSort,
+                                    underline: const SizedBox.shrink(),
+                                    items: const [
+                                      DropdownMenuItem(
+                                        value: SortOption.newest,
+                                        child: Text('Newest'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: SortOption.oldest,
+                                        child: Text('Oldest'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: SortOption.favoritesFirst,
+                                        child: Text('Favorites first'),
+                                      ),
+                                    ],
+                                    onChanged: (value) {
+                                      if (value == null) return;
+                                      setState(() {
+                                        _currentSort = value;
+                                        _applyFilters();
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
 
+                      // Stats row
+                      if (_stories.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          color: Colors.deepPurple.shade50,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _buildStat(Icons.book, '${_stories.length}', 'Total'),
+                              _buildStat(Icons.favorite, '$favoriteCount', 'Favorites'),
+                              _buildStat(Icons.visibility, '${_filteredStories.length}', 'Showing'),
+                            ],
+                          ),
+                        ),
+
+                      if (_filteredStories.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.filter_alt_off, size: 64, color: Colors.grey.shade400),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No stories match your filters',
+                                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                              ),
+                              const SizedBox(height: 8),
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _showOnlyFavorites = false;
+                                    _selectedThemeFilter = 'All';
+                                    _applyFilters();
+                                  });
+                                },
+                                child: const Text('Clear Filters'),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        ..._filteredStories.map((s) {
+                          final dateStr = _prettyDate(s.createdAt);
+                          final childNames = s.characters.map((c) => c.name).toList();
+
+                          final wordCount = _wordCount(s.storyText);
+                          final readMinutes = (wordCount / 180).clamp(1, 30).round();
+                          final qualityLabel = _qualityLabel(wordCount);
+                          final qualityColor = _qualityColor(wordCount);
+                          final avgAge = _averageAge(s.characters);
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            child: Dismissible(
+                              key: ValueKey(s.id),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.delete, color: Colors.red),
+                              ),
+                              confirmDismiss: (_) async {
+                                final originalIndex = _stories.indexOf(s);
+                                await _deleteAt(originalIndex);
+                                return false; // refresh handles removal
+                              },
+                              child: Semantics(
+                                container: true,
+                                label:
+                                    'Saved story: ${s.title}, $readMinutes minute read, $wordCount words${s.isInteractive ? ', interactive' : ''}',
+                                hint: 'Swipe left to delete',
+                                child: Card(
+                                  elevation: 2,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: s.isFavorite
+                                        ? BorderSide(color: Colors.red.shade200, width: 2)
+                                        : BorderSide.none,
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        // Title row + actions
+                                        Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            if (s.isFavorite)
+                                              const Padding(
+                                                padding: EdgeInsets.only(right: 8.0, top: 4.0),
+                                                child: Icon(Icons.favorite, color: Colors.red, size: 20),
+                                              ),
+                                            Expanded(
+                                              child: Text(
+                                                s.title,
+                                                style: const TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            if (s.isInteractive)
+                                              Padding(
+                                                padding: const EdgeInsets.only(right: 8.0),
+                                                child: Chip(
+                                                  label: const Text('Interactive', style: TextStyle(fontSize: 11)),
+                                                  backgroundColor: Colors.purple.shade100,
+                                                  padding: EdgeInsets.zero,
+                                                  visualDensity: VisualDensity.compact,
+                                                ),
+                                              ),
+                                            Semantics(
+                                              label: 'Quality $qualityLabel story badge',
+                                              child: Chip(
+                                                label: Text(
+                                                  qualityLabel,
+                                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                                                ),
+                                                backgroundColor: qualityColor.withValues(alpha: 0.15),
+                                                side: BorderSide(color: qualityColor.withValues(alpha: 0.4)),
+                                                visualDensity: VisualDensity.compact,
+                                              ),
+                                            ),
+                                            IconButton(
+                                              tooltip: s.isFavorite ? 'Remove from favorites' : 'Add to favorites',
+                                              icon: Icon(
+                                                s.isFavorite ? Icons.favorite : Icons.favorite_border,
+                                                color: s.isFavorite ? Colors.red : null,
+                                              ),
+                                              onPressed: () => _toggleFavorite(_filteredStories.indexOf(s)),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+
+                                        // Meta line
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 4,
+                                          children: [
+                                            _metaChip(Icons.calendar_today, dateStr),
+                                            _metaChip(Icons.menu_book, '$wordCount words'),
+                                            _metaChip(Icons.timer, '$readMinutes min read'),
+                                            _metaChip(Icons.child_care, avgAge != null ? 'Age ~$avgAge' : 'All ages'),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+
+                                        // Chip list of included kids
+                                        if (childNames.isNotEmpty)
+                                          Wrap(
+                                            spacing: 6,
+                                            runSpacing: 6,
+                                            children: childNames
+                                                .map((n) => Chip(
+                                                      label: Text(n),
+                                                      avatar: const Icon(Icons.child_care, size: 16),
+                                                    ))
+                                                .toList(),
+                                          ),
+                                        if (childNames.isNotEmpty) const SizedBox(height: 8),
+
+                                        // Preview snippet
+                                        Semantics(
+                                          label: 'Story preview for ${s.title}',
+                                          readOnly: true,
+                                          child: Text(
+                                            s.storyText.length > 180
+                                                ? '${s.storyText.substring(0, 180)}…'
+                                                : s.storyText,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 10),
+
+                                        // Quick actions
+                                        Row(
+                                          children: [
+                                            Semantics(
+                                              button: true,
+                                              label: 'Share ${s.title}',
+                                              child: TextButton.icon(
+                                                onPressed: () => _shareStory(s),
+                                                icon: const Icon(Icons.share),
+                                                label: const Text('Share'),
+                                              ),
+                                            ),
+                                            Semantics(
+                                              button: true,
+                                              label: 'Report ${s.title}',
+                                              child: TextButton.icon(
+                                                onPressed: _isReporting
+                                                    ? null
+                                                    : () => _reportStory(s),
+                                                icon: const Icon(Icons.flag_outlined),
+                                                label: const Text('Report'),
+                                              ),
+                                            ),
+                                            Semantics(
+                                              button: true,
+                                              label: 'Read ${s.title} again',
+                                              child: TextButton.icon(
+                                                onPressed: () {
+                                                  Navigator.of(context).push(
+                                                    MaterialPageRoute(
+                                                      builder: (_) => StoryResultScreen(
+                                                        title: s.title,
+                                                        storyText: s.storyText,
+                                                        wisdomGem: s.wisdomGem ?? '',
+                                                        characterName: s.characters.isNotEmpty ? s.characters.first.name : null,
+                                                        storyId: s.id,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                                icon: const Icon(Icons.menu_book),
+                                                label: const Text('Read again'),
+                                              ),
+                                            ),
+                                            const Spacer(),
+                                            IconButton(
+                                              tooltip: 'Delete',
+                                              icon: const Icon(Icons.delete_outline),
+                                              onPressed: () {
+                                                final originalIndex = _stories.indexOf(s);
+                                                _deleteAt(originalIndex);
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                    const SizedBox(height: 12),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+  }
 
   Widget _buildStat(IconData icon, String value, String label) {
     return Column(
@@ -581,12 +598,7 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
 
   Future<void> _shareStory(SavedStory story) async {
     final shareText = '${story.title}\n\n${story.storyText}';
-    await SharePlus.instance.share(
-      ShareParams(
-        text: shareText,
-        subject: story.title,
-      ),
-    );
+    await Share.share(shareText, subject: story.title);
   }
 
   Future<String?> _showReportDialog(String title) async {
