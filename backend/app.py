@@ -106,6 +106,9 @@ def create_app(config_name):
     app = Flask(__name__)
     app.config.from_object(config_by_name[config_name])
     print(f"=== Config loaded, initializing database ===")
+    print("DEBUG: Current app.config:")
+    for key, value in app.config.items():
+        print(f"  {key}: {value}")
     db.init_app(app)
     print(f"=== Database initialized ===")
 
@@ -443,6 +446,47 @@ def create_app(config_name):
 
         except Exception as e:
             logger.exception("Failed to run database optimization")
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/admin/add-missing-columns', methods=['POST'])
+    def add_missing_columns():
+        """Add missing columns to database (migration fix)"""
+        try:
+            from sqlalchemy import text
+
+            # Add missing columns
+            sql_statements = [
+                # Add stories_created_count column if it doesn't exist
+                """
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                   WHERE table_name='user' AND column_name='stories_created_count') THEN
+                        ALTER TABLE "user" ADD COLUMN stories_created_count INTEGER DEFAULT 0 NOT NULL;
+                    END IF;
+                END $$;
+                """,
+            ]
+
+            applied_migrations = []
+            with db.engine.connect() as conn:
+                for sql in sql_statements:
+                    try:
+                        conn.execute(text(sql))
+                        conn.commit()
+                        applied_migrations.append("stories_created_count column")
+                        logger.info(f"✓ Applied migration: stories_created_count")
+                    except Exception as e:
+                        logger.warning(f"Migration warning: {str(e)}")
+
+            return jsonify({
+                'status': 'success',
+                'message': 'Database migrations complete',
+                'migrations_applied': applied_migrations
+            }), 200
+
+        except Exception as e:
+            logger.exception("Failed to run database migrations")
             return jsonify({'error': str(e)}), 500
 
     @app.route('/health/detailed', methods=['GET'])
