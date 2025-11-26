@@ -8,7 +8,13 @@ import json
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
-from ..database import db
+
+# Handle relative imports for both direct execution and module import
+try:
+    from .database import db
+except ImportError:
+    # When run directly or in test environment
+    db = None
 
 # Cost estimates based on Gemini API pricing (as of 2024)
 # These are approximate and should be updated based on actual pricing
