@@ -4,12 +4,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
+import '../services/story_analytics.dart';
 
 import '../theme/app_theme.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_step_indicator.dart';
-import '../services/story_analytics.dart';
 
 class ByokSetupWizardScreen extends StatefulWidget {
   const ByokSetupWizardScreen({super.key});
@@ -256,12 +256,10 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
         _valid = false;
         _validating = false;
       });
-      unawaited(
-        StoryAnalytics.trackByokSubmission(
-          success: false,
-          errorMessage: 'invalid_prefix',
-        ),
-      );
+      unawaited(StoryAnalytics.trackByokSubmission(
+        success: false,
+        errorMessage: 'invalid_prefix',
+      ));
       return;
     }
 
@@ -284,12 +282,10 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
           _valid = false;
           _validating = false;
         });
-        unawaited(
-          StoryAnalytics.trackByokSubmission(
-            success: false,
-            errorMessage: body?['error']?['message'],
-          ),
-        );
+        unawaited(StoryAnalytics.trackByokSubmission(
+          success: false,
+          errorMessage: body?['error']?['message'],
+        ));
       }
     } catch (_) {
       setState(() {
@@ -297,12 +293,10 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
         _valid = false;
         _validating = false;
       });
-      unawaited(
-        StoryAnalytics.trackByokSubmission(
-          success: false,
-          errorMessage: 'network_or_timeout',
-        ),
-      );
+      unawaited(StoryAnalytics.trackByokSubmission(
+        success: false,
+        errorMessage: 'network_or_timeout',
+      ));
     }
   }
 
