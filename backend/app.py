@@ -131,6 +131,21 @@ def create_app(config_name):
     # Caching setup
     cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 
+    @app.after_request
+    def add_rate_limit_headers(response):
+        """Add rate limit headers to API responses"""
+        try:
+            # Get current request limits
+            current_limit = getattr(request, 'rate_limit', None)
+            if current_limit:
+                response.headers['X-RateLimit-Limit'] = str(current_limit.limit)
+                response.headers['X-RateLimit-Remaining'] = str(max(0, current_limit.limit - current_limit.count))
+                response.headers['X-RateLimit-Reset'] = str(int(current_limit.reset_time.timestamp()))
+        except Exception:
+            # Don't fail the request if header addition fails
+            pass
+        return response
+
     @app.errorhandler(429)
     def ratelimit_handler(e):
         request_id = getattr(g, 'request_id', 'unknown')
