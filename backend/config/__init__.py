@@ -13,6 +13,15 @@ class Config:
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    # Database connection pooling for better performance
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': 10,              # Number of connections to keep open
+        'pool_recycle': 3600,          # Recycle connections after 1 hour
+        'pool_pre_ping': True,         # Check connection health before use
+        'max_overflow': 20,            # Allow 20 extra connections if needed
+        'pool_timeout': 30,            # Timeout for getting connection from pool
+    }
+
     # API Configuration
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
     GEMINI_MODEL = os.environ.get('GEMINI_MODEL') or 'gemini-1.5-flash'

@@ -1,10 +1,9 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from datetime import datetime, timedelta
-from sqlalchemy import func
-from .database import db
-from .models.story import Story
-from .models.user import User
-from .models.character import Character
+from ..database import db
+from ..models.story import Story
+from ..models.user import User
+from ..models.character import Character
 import os
 
 analytics_bp = Blueprint('analytics', __name__)
@@ -173,3 +172,94 @@ def get_feature_usage():
             'advanced_settings_unlocked': User.query.filter(User.stories_created_count >= 5).count(),
         }
     })
+
+@analytics_bp.route('/admin/analytics/stories')
+def get_stories_paginated():
+    """Get paginated list of stories for admin review"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 50, type=int)
+        per_page = min(per_page, 100)  # Max 100 per page
+
+        # Use optimized query with joins
+        stories_query = Story.query.options(
+            db.joinedload(Story.user),
+            db.joinedload(Story.characters)
+        ).order_by(Story.created_at.desc())
+
+        stories = stories_query.paginate(
+            page=page,
+            per_page=per_page,
+            error_out=False
+        )
+
+        return jsonify({
+            'items': [{
+                'id': s.id,
+                'title': s.title or 'Untitled Story',
+                'created_at': s.created_at.isoformat(),
+                'user_id': s.user_id,
+                'user_email': s.user.email if s.user else None,
+                'character_count': len(s.characters) if hasattr(s, 'characters') else 0,
+            } for s in stories.items],
+            'total': stories.total,
+            'page': page,
+            'pages': stories.pages,
+            'per_page': per_page,
+            'has_next': stories.has_next,
+            'has_prev': stories.has_prev
+        })
+
+    except Exception as e:
+        return jsonify({'error': f'Failed to fetch stories: {str(e)}'}), 500
+
+@analytics_bp.route('/admin/analytics/users')
+def get_users_paginated():
+    """Get paginated list of users for admin review"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 50, type=int)
+        per_page = min(per_page, 100)  # Max 100 per page
+
+        tier_filter = request.args.get('tier')
+        active_only = request.args.get('active_only', type=bool)
+
+        users_query = User.query
+
+        if tier_filter:
+            users_query = users_query.filter(User.subscription_tier == tier_filter)
+
+        if active_only:
+            # Users active in last 30 days
+            cutoff = datetime.utcnow() - timedelta(days=30)
+            users_query = users_query.join(Story).filter(Story.created_at >= cutoff).distinct()
+
+        users_query = users_query.order_by(User.created_at.desc())
+
+        users = users_query.paginate(
+            page=page,
+            per_page=per_page,
+            error_out=False
+        )
+
+        return jsonify({
+            'items': [{
+                'id': u.id,
+                'username': u.username,
+                'email': u.email,
+                'subscription_tier': u.subscription_tier,
+                'created_at': u.created_at.isoformat(),
+                'stories_created_count': u.stories_created_count,
+                'current_period_end': u.current_period_end.isoformat() if u.current_period_end else None,
+                'cancel_at_period_end': u.cancel_at_period_end
+            } for u in users.items],
+            'total': users.total,
+            'page': page,
+            'pages': users.pages,
+            'per_page': per_page,
+            'has_next': users.has_next,
+            'has_prev': users.has_prev
+        })
+
+    except Exception as e:
+        return jsonify({'error': f'Failed to fetch users: {str(e)}'}), 500
