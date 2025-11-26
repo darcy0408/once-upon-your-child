@@ -1,7 +1,7 @@
 # 🚀 Story Weaver - Deployment Status
 
-**Last Updated:** 2025-11-25 15:55 PM
-**Status:** ✅ Production Verified - All Systems Operational
+**Last Updated:** 2025-11-26 21:15 UTC
+**Status:** 🚧 In Progress - Week 4 compliance & safety updates pending redeploy
 
 ---
 
@@ -10,7 +10,7 @@
 | System | Platform | Status | URL |
 |--------|----------|--------|-----|
 | **Frontend** | Railway Edge | ✅ Deployed | https://grand-light-production-68d9.up.railway.app |
-| **Backend** | Railway | ✅ Deployed | https://story-weaver-app-production.up.railway.app |
+| **Backend** | Railway | ⚠️ Redeploy needed (post-content-safety changes) | https://story-weaver-app-production.up.railway.app |
 | **Database** | Railway PostgreSQL | ✅ Connected | (Railway managed) |
 | **Payments** | Stripe | ✅ Configured | Test mode active |
 | **AI** | Google Gemini | ✅ Connected | 2.5 Flash model |
@@ -20,7 +20,7 @@
 ## ✅ What's Complete
 
 ### Backend (Railway)
-- [x] All routes deployed and tested
+- [ ] Redeploy with content safety filter + /report-story endpoint
 - [x] Stripe integration working (both tiers)
 - [x] Interactive story generation fixed
 - [x] Database connected (PostgreSQL)
@@ -51,6 +51,7 @@
 - [x] OPEN.md (session start)
 - [x] CLOSE.md (session end)
 - [x] GIT_SYNC_QUICK_COMMAND.md (git reference)
+- [ ] DEPLOYMENT_STATUS.md (current doc) — update after backend redeploy
 
 ---
 
@@ -132,24 +133,25 @@
 ## 🚦 Launch Readiness Checklist
 
 ### Technical Systems
-- [x] Backend deployed and tested
-- [x] Frontend deployed and tested
+- [ ] Backend redeployed with content safety + report endpoint
+- [ ] End-to-end flow re-verified (post legal/safety changes)
+- [x] Frontend deployed and tested (Week 3 baseline)
 - [x] Database connected with backups
-- [x] Stripe integration working
-- [ ] End-to-end flow verified (Codex task)
+- [x] Stripe integration working (test mode)
 - [ ] Error monitoring setup (Gemini task)
 - [ ] Production readiness confirmed (Grok task)
 
 ### Business Requirements
 - [x] Pricing confirmed ($9.99 & $14.99)
 - [x] Test mode active in Stripe
-- [ ] Decision: Keep test mode or go live?
-- [ ] Terms of service (if required)
-- [ ] Privacy policy (if required)
+- [ ] Decision: Switch to live mode?
+- [x] Terms of service (added Week 4)
+- [x] Privacy policy (added Week 4)
+- [x] Parental consent flow added (Week 4)
 
 ### Communication
 - [ ] Launch announcement drafted
-- [ ] Social media posts (if applicable)
+- [ ] Social posts (if applicable)
 - [ ] Email list notified (if applicable)
 
 ---
@@ -223,16 +225,23 @@ Run one at a time:
 
 ---
 
-## 🔒 Security Status
+## 🔒 Security & Safety
 
-✅ **All Systems Secure:**
 - HTTPS enabled on both domains
-- No secrets in repository
-- Environment variables encrypted (Railway)
+- Secrets kept in env vars (Railway)
 - Webhook signature verification
-- CORS properly configured
+- CORS configured
 - Rate limiting enabled
-- .gitignore protecting sensitive files
+- Content safety filter + reporting endpoint pending redeploy
+
+## ♻️ Rollback Procedure (Railway)
+- Frontend: redeploy previous successful build from Railway dashboard or revert to prior commit on main and redeploy.
+- Backend: rollback by redeploying previous successful build or git revert to last good commit, then redeploy. Keep DB backup before rollback if schema changes are involved.
+
+## 📞 Emergency Contacts
+- Engineering: engineering@storyweaver.app
+- Ops/Infra: ops@storyweaver.app
+- Pager (business hours): +1-555-0100
 
 ---
 
