@@ -124,12 +124,11 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
-    final clampedTextScale =
-        mediaQuery.textScaleFactor.clamp(1.0, 1.4).toDouble();
+    final textScaler = MediaQuery.textScalerOf(context);
     final favoriteCount = _stories.where((s) => s.isFavorite).length;
 
     return MediaQuery(
-      data: mediaQuery.copyWith(textScaleFactor: clampedTextScale),
+      data: mediaQuery.copyWith(textScaler: textScaler),
       child: Scaffold(
         appBar: AppBar(
           title: const Text('My Stories'),
@@ -357,7 +356,7 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                               child: Semantics(
                                 container: true,
                                 label:
-                                    'Saved story: ${s.title}, ${readMinutes} minute read, ${wordCount} words${s.isInteractive ? ', interactive' : ''}',
+                                    'Saved story: ${s.title}, $readMinutes minute read, $wordCount words${s.isInteractive ? ', interactive' : ''}',
                                 hint: 'Swipe left to delete',
                                 child: Card(
                                   elevation: 2,
@@ -424,112 +423,114 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                                         ),
                                         const SizedBox(height: 6),
 
-                                      // Meta line
-                                      Wrap(
-                                        spacing: 8,
-                                        runSpacing: 4,
-                                        children: [
-                                          _metaChip(Icons.calendar_today, dateStr),
-                                          _metaChip(Icons.menu_book, '$wordCount words'),
-                                          _metaChip(Icons.timer, '$readMinutes min read'),
-                                          _metaChip(Icons.child_care, avgAge != null ? 'Age ~$avgAge' : 'All ages'),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-
-                                      // Chip list of included kids
-                                      if (childNames.isNotEmpty)
+                                        // Meta line
                                         Wrap(
-                                          spacing: 6,
-                                          runSpacing: 6,
-                                          children: childNames
-                                              .map((n) => Chip(
-                                                    label: Text(n),
-                                                    avatar: const Icon(Icons.child_care, size: 16),
-                                                  ))
-                                              .toList(),
+                                          spacing: 8,
+                                          runSpacing: 4,
+                                          children: [
+                                            _metaChip(Icons.calendar_today, dateStr),
+                                            _metaChip(Icons.menu_book, '$wordCount words'),
+                                            _metaChip(Icons.timer, '$readMinutes min read'),
+                                            _metaChip(Icons.child_care, avgAge != null ? 'Age ~$avgAge' : 'All ages'),
+                                          ],
                                         ),
-                                      if (childNames.isNotEmpty) const SizedBox(height: 8),
+                                        const SizedBox(height: 8),
 
-                                      // Preview snippet
-                                      Semantics(
-                                        label: 'Story preview for ${s.title}',
-                                        readOnly: true,
-                                        child: Text(
-                                          s.storyText.length > 180
-                                              ? '${s.storyText.substring(0, 180)}…'
-                                              : s.storyText,
+                                        // Chip list of included kids
+                                        if (childNames.isNotEmpty)
+                                          Wrap(
+                                            spacing: 6,
+                                            runSpacing: 6,
+                                            children: childNames
+                                                .map((n) => Chip(
+                                                      label: Text(n),
+                                                      avatar: const Icon(Icons.child_care, size: 16),
+                                                    ))
+                                                .toList(),
+                                          ),
+                                        if (childNames.isNotEmpty) const SizedBox(height: 8),
+
+                                        // Preview snippet
+                                        Semantics(
+                                          label: 'Story preview for ${s.title}',
+                                          readOnly: true,
+                                          child: Text(
+                                            s.storyText.length > 180
+                                                ? '${s.storyText.substring(0, 180)}…'
+                                                : s.storyText,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 10),
+                                        const SizedBox(height: 10),
 
-                                      // Quick actions
-                                      Row(
-                                        children: [
-                                          Semantics(
-                                            button: true,
-                                            label: 'Share ${s.title}',
-                                            child: TextButton.icon(
-                                              onPressed: () => _shareStory(s),
-                                              icon: const Icon(Icons.share),
-                                              label: const Text('Share'),
+                                        // Quick actions
+                                        Row(
+                                          children: [
+                                            Semantics(
+                                              button: true,
+                                              label: 'Share ${s.title}',
+                                              child: TextButton.icon(
+                                                onPressed: () => _shareStory(s),
+                                                icon: const Icon(Icons.share),
+                                                label: const Text('Share'),
+                                              ),
                                             ),
-                                          ),
-                                          Semantics(
-                                            button: true,
-                                            label: 'Report ${s.title}',
-                                            child: TextButton.icon(
-                                              onPressed: _isReporting
-                                                  ? null
-                                                  : () => _reportStory(s),
-                                              icon: const Icon(Icons.flag_outlined),
-                                              label: const Text('Report'),
+                                            Semantics(
+                                              button: true,
+                                              label: 'Report ${s.title}',
+                                              child: TextButton.icon(
+                                                onPressed: _isReporting
+                                                    ? null
+                                                    : () => _reportStory(s),
+                                                icon: const Icon(Icons.flag_outlined),
+                                                label: const Text('Report'),
+                                              ),
                                             ),
-                                          ),
-                                          Semantics(
-                                            button: true,
-                                            label: 'Read ${s.title} again',
-                                            child: TextButton.icon(
-                                              onPressed: () {
-                                                Navigator.of(context).push(
-                                                  MaterialPageRoute(
-                                                    builder: (_) => StoryResultScreen(
-                                                      title: s.title,
-                                                      storyText: s.storyText,
-                                                      wisdomGem: s.wisdomGem ?? '',
-                                                      characterName: s.characters.isNotEmpty ? s.characters.first.name : null,
-                                                      storyId: s.id,
+                                            Semantics(
+                                              button: true,
+                                              label: 'Read ${s.title} again',
+                                              child: TextButton.icon(
+                                                onPressed: () {
+                                                  Navigator.of(context).push(
+                                                    MaterialPageRoute(
+                                                      builder: (_) => StoryResultScreen(
+                                                        title: s.title,
+                                                        storyText: s.storyText,
+                                                        wisdomGem: s.wisdomGem ?? '',
+                                                        characterName: s.characters.isNotEmpty ? s.characters.first.name : null,
+                                                        storyId: s.id,
+                                                      ),
                                                     ),
-                                                  ),
-                                                );
-                                              },
-                                              icon: const Icon(Icons.menu_book),
-                                              label: const Text('Read again'),
+                                                  );
+                                                },
+                                                icon: const Icon(Icons.menu_book),
+                                                label: const Text('Read again'),
+                                              ),
                                             ),
-                                          ),
-                                          const Spacer(),
-                                          IconButton(
-                                            tooltip: 'Delete',
-                                            icon: const Icon(Icons.delete_outline),
-                                            onPressed: () {
-                                              final originalIndex = _stories.indexOf(s);
-                                              _deleteAt(originalIndex);
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    ],
+                                            const Spacer(),
+                                            IconButton(
+                                              tooltip: 'Delete',
+                                              icon: const Icon(Icons.delete_outline),
+                                              onPressed: () {
+                                                final originalIndex = _stories.indexOf(s);
+                                                _deleteAt(originalIndex);
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          );
-                        }),
-                      const SizedBox(height: 12),
+                            );
+                          }),
+                    const SizedBox(height: 12),
                     ],
                   ),
                 ),
-    );
+              ),
+            ),
+          );
   }
 
   Widget _buildStat(IconData icon, String value, String label) {

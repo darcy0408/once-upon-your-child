@@ -449,11 +449,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
-    final clampedTextScale =
-        mediaQuery.textScaleFactor.clamp(1.0, 1.4).toDouble();
+    final textScaler = MediaQuery.textScalerOf(context);
 
     return MediaQuery(
-      data: mediaQuery.copyWith(textScaleFactor: clampedTextScale),
+      data: mediaQuery.copyWith(textScaler: textScaler),
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Settings'),

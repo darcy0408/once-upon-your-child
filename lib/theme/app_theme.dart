@@ -50,7 +50,7 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: effectivePrimary,
           foregroundColor: Colors.white,
-          overlayColor: effectiveAccent.withOpacity(0.14),
+          overlayColor: effectiveAccent.withValues(alpha: 0.14),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: AppSpacing.sm,
@@ -67,16 +67,16 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primary,
-          overlayColor: AppColors.accent.withOpacity(0.14),
+          overlayColor: AppColors.accent.withValues(alpha: 0.14),
           textStyle: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
-      focusColor: AppColors.accent.withOpacity(0.22),
-      hoverColor: AppColors.accent.withOpacity(0.08),
-      highlightColor: AppColors.accent.withOpacity(0.12),
+      focusColor: AppColors.accent.withValues(alpha: 0.22),
+      hoverColor: AppColors.accent.withValues(alpha: 0.08),
+      highlightColor: AppColors.accent.withValues(alpha: 0.12),
       chipTheme: base.chipTheme.copyWith(
         backgroundColor: Colors.grey.shade100,
-        selectedColor: effectiveAccent.withOpacity(0.16),
+        selectedColor: effectiveAccent.withValues(alpha: 0.16),
         labelStyle: const TextStyle(
           color: Colors.black87,
           fontWeight: FontWeight.w600,
@@ -85,7 +85,7 @@ class AppTheme {
           horizontal: AppSpacing.sm,
           vertical: AppSpacing.xs,
         ),
-        side: BorderSide(color: effectivePrimary.withOpacity(0.2)),
+        side: BorderSide(color: effectivePrimary.withValues(alpha: 0.2)),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
