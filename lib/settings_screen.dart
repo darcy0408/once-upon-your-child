@@ -12,6 +12,8 @@ import 'widgets/loading_spinner.dart';
 import 'widgets/error_message.dart';
 import 'widgets/app_switch.dart';
 import 'screens/byok_setup_wizard.dart';
+import 'screens/privacy_policy_screen.dart';
+import 'screens/terms_of_service_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -446,6 +448,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: AppSpacing.md),
               _buildPrivacyCard(),
             ],
+            const SizedBox(height: AppSpacing.lg),
+            _buildLegalLinks(context),
           ],
         ),
       ),
@@ -462,6 +466,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
             .bodyMedium
             ?.copyWith(color: Colors.green.shade900),
       ),
+    );
+  }
+
+  Widget _buildLegalLinks(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Legal',
+          style: Theme.of(context)
+              .textTheme
+              .titleSmall
+              ?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Wrap(
+          spacing: AppSpacing.sm,
+          children: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const PrivacyPolicyScreen(),
+                  ),
+                );
+              },
+              child: const Text('Privacy Policy'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const TermsOfServiceScreen(),
+                  ),
+                );
+              },
+              child: const Text('Terms of Service'),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

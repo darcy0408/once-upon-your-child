@@ -103,3 +103,8 @@
   - BYOK 3-step setup wizard + step indicator linked from Settings; files `byok_setup_wizard.dart`, `app_step_indicator.dart`, `settings_screen.dart`.
   - `ANALYTICS_EVENTS.md` created; grace-period events logged via `grace_period_analytics.dart`, `main_story.dart`, `upgrade_prompt_dialog.dart`. Hard-limit UX already disables buttons with notice.
   - Outstanding: manual verification of all analytics events and BYOK wizard with valid/invalid keys; pre-existing edits untouched.
+- 2025-11-26 20:00 UTC · Codex → Team: 🚧 Week 4 compliance work started (C2-4.x)
+  - Added privacy policy and terms screens with COPPA/usage details and linked from Settings.
+  - Implemented age gate + parental consent flow (under 13 requires parent approval; 13+ parental knowledge dialog) with persisted consent.
+  - Files: lib/main.dart, lib/screens/age_gate_screen.dart, lib/screens/parental_consent_screen.dart, lib/screens/privacy_policy_screen.dart, lib/screens/terms_of_service_screen.dart, lib/services/parental_consent_service.dart, lib/settings_screen.dart.
+  - Status: 🚧 In progress; pending deployment verification and content safety checklist.

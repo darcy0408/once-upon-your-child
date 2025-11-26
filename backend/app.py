@@ -37,6 +37,69 @@ from flask_caching import Cache
 def is_production():
     return os.getenv('RAILWAY_ENVIRONMENT') == 'production'
 
+def get_user_identifier():
+    """Get user ID from request or fall back to IP address"""
+    # Try to get user ID from various sources
+    user_id = None
+
+    # Check for user ID in headers (from frontend)
+    user_id = request.headers.get('X-User-ID')
+
+    # Check for user ID in session (if using sessions)
+    if not user_id and hasattr(g, 'user_id'):
+        user_id = g.user_id
+
+    # Check for user ID in JWT token (if authenticated)
+    if not user_id:
+        try:
+            from flask_jwt_extended import get_jwt_identity
+            user_id = get_jwt_identity()
+        except:
+            pass
+
+    # Fall back to IP address if no user ID found
+    if user_id:
+        return f"user:{user_id}"
+    else:
+        return f"ip:{get_remote_address()}"
+
+def get_user_tier():
+    """Get user subscription tier for rate limiting"""
+    user_id = request.headers.get('X-User-ID') or getattr(g, 'user_id', None)
+
+    if user_id:
+        try:
+            user = User.query.filter_by(id=user_id).first()
+            if user:
+                return user.subscription_tier or 'free'
+        except:
+            pass
+
+    return 'free'  # Default to free tier
+
+def get_tier_limits(operation='default'):
+    """Get rate limits based on user tier"""
+    tier = get_user_tier()
+
+    # Base limits for different operations
+    limits = {
+        'default': {
+            'free': "3/minute; 10/hour; 50/day",
+            'premium': "10/minute; 100/hour",
+            'family': "15/minute; 200/hour",
+            'byok': None  # No limits for BYOK users
+        },
+        'expensive': {  # For image generation, etc.
+            'free': "1/minute; 5/hour; 10/day",
+            'premium': "3/minute; 20/hour",
+            'family': "5/minute; 30/hour",
+            'byok': None  # No limits for BYOK users
+        }
+    }
+
+    limit = limits.get(operation, limits['default']).get(tier, limits['default']['free'])
+    return limit
+
 def create_app(config_name):
     print(f"=== Creating Flask app with config: {config_name} ===")
     app = Flask(__name__)
@@ -60,7 +123,7 @@ def create_app(config_name):
     # Rate limiting setup
     limiter = Limiter(
         app=app,
-        key_func=get_remote_address,
+        key_func=get_user_identifier,
         default_limits=["200 per day", "50 per hour"],
         storage_uri="memory://"
     )
@@ -360,7 +423,7 @@ def create_app(config_name):
     def get_story_themes():
         return jsonify(["Adventure", "Friendship", "Magic", "Dragons", "Castles", "Unicorns", "Space", "Ocean"])
 
-    @limiter.limit("10 per minute")
+    @limiter.limit(lambda: get_tier_limits() or "1000/minute")  # BYOK users get high limit
     @app.route("/generate-story", methods=["POST"])
     def generate_story_endpoint():
         payload = request.get_json(silent=True) or {}
@@ -693,7 +756,7 @@ def create_app(config_name):
                 "hint": "Continuing interactive story failed on the backend."
             }), 500
 
-    @limiter.limit("10 per hour")
+    @limiter.limit(lambda: get_tier_limits('expensive') or "100/hour")  # BYOK users get high limit
     @app.route("/generate-illustrations", methods=["POST"])
     def generate_illustrations_endpoint():
         """Generate illustrations for a story scene"""
