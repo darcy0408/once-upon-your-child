@@ -9,6 +9,7 @@ import 'models.dart';
 import 'services/story_analytics.dart';
 import 'storage_service.dart';
 import 'story_result_screen.dart';
+import 'theme/app_theme.dart';
 
 enum SortOption {
   newest,
@@ -122,28 +123,35 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final clampedTextScale =
+        mediaQuery.textScaleFactor.clamp(1.0, 1.4).toDouble();
     final favoriteCount = _stories.where((s) => s.isFavorite).length;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Stories'),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _showOnlyFavorites ? Icons.favorite : Icons.favorite_border,
-              color: _showOnlyFavorites ? Colors.red : null,
+    return MediaQuery(
+      data: mediaQuery.copyWith(textScaleFactor: clampedTextScale),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('My Stories'),
+          actions: [
+            IconButton(
+              icon: Icon(
+                _showOnlyFavorites ? Icons.favorite : Icons.favorite_border,
+                color: _showOnlyFavorites ? Colors.red : null,
+              ),
+              tooltip: _showOnlyFavorites ? 'Show all stories' : 'Show favorites only',
+              onPressed: () {
+                setState(() {
+                  _showOnlyFavorites = !_showOnlyFavorites;
+                  _applyFilters();
+                });
+              },
             ),
-            tooltip: _showOnlyFavorites ? 'Show all stories' : 'Show favorites only',
-            onPressed: () {
-              setState(() {
-                _showOnlyFavorites = !_showOnlyFavorites;
-                _applyFilters();
-              });
-            },
-          ),
-        ],
-      ),
-      body: _loading
+          ],
+        ),
+        body: FocusTraversalGroup(
+          policy: OrderedTraversalPolicy(),
+          child: _loading
           ? const Center(child: CircularProgressIndicator())
           : _stories.isEmpty
               ? const Center(child: Text('No stories saved yet.'))
@@ -192,52 +200,82 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                FilterChip(
-                                  label: const Text('Favorites'),
+                                Semantics(
                                   selected: _showOnlyFavorites,
-                                  onSelected: (selected) {
-                                    setState(() {
-                                      _showOnlyFavorites = selected;
-                                      _applyFilters();
-                                    });
-                                  },
+                                  button: true,
+                                  label:
+                                      'Filter favorites ${_showOnlyFavorites ? 'on' : 'off'}',
+                                  child: FilterChip(
+                                    label: const Text('Favorites'),
+                                    selected: _showOnlyFavorites,
+                                    onSelected: (selected) {
+                                      setState(() {
+                                        _showOnlyFavorites = selected;
+                                        _applyFilters();
+                                      });
+                                    },
+                                    selectedColor:
+                                        AppColors.primary.withValues(alpha: 0.15),
+                                    labelStyle: TextStyle(
+                                      color: _showOnlyFavorites
+                                          ? AppColors.primary
+                                          : Colors.black87,
+                                    ),
+                                  ),
                                 ),
                                 const SizedBox(width: 8),
-                                FilterChip(
-                                  label: const Text('Interactive'),
+                                Semantics(
                                   selected: _showOnlyInteractive,
-                                  onSelected: (selected) {
-                                    setState(() {
-                                      _showOnlyInteractive = selected;
-                                      _applyFilters();
-                                    });
-                                  },
+                                  button: true,
+                                  label:
+                                      'Filter interactive ${_showOnlyInteractive ? 'on' : 'off'}',
+                                  child: FilterChip(
+                                    label: const Text('Interactive'),
+                                    selected: _showOnlyInteractive,
+                                    onSelected: (selected) {
+                                      setState(() {
+                                        _showOnlyInteractive = selected;
+                                        _applyFilters();
+                                      });
+                                    },
+                                    selectedColor:
+                                        AppColors.primary.withValues(alpha: 0.15),
+                                    labelStyle: TextStyle(
+                                      color: _showOnlyInteractive
+                                          ? AppColors.primary
+                                          : Colors.black87,
+                                    ),
+                                  ),
                                 ),
                                 const Spacer(),
-                                DropdownButton<SortOption>(
-                                  value: _currentSort,
-                                  underline: const SizedBox.shrink(),
-                                  items: const [
-                                    DropdownMenuItem(
-                                      value: SortOption.newest,
-                                      child: Text('Newest'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: SortOption.oldest,
-                                      child: Text('Oldest'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: SortOption.favoritesFirst,
-                                      child: Text('Favorites first'),
-                                    ),
-                                  ],
-                                  onChanged: (value) {
-                                    if (value == null) return;
-                                    setState(() {
-                                      _currentSort = value;
-                                      _applyFilters();
-                                    });
-                                  },
+                                Semantics(
+                                  label: 'Sort saved stories',
+                                  hint: 'Currently ${_currentSort.name}',
+                                  child: DropdownButton<SortOption>(
+                                    value: _currentSort,
+                                    underline: const SizedBox.shrink(),
+                                    items: const [
+                                      DropdownMenuItem(
+                                        value: SortOption.newest,
+                                        child: Text('Newest'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: SortOption.oldest,
+                                        child: Text('Oldest'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: SortOption.favoritesFirst,
+                                        child: Text('Favorites first'),
+                                      ),
+                                    ],
+                                    onChanged: (value) {
+                                      if (value == null) return;
+                                      setState(() {
+                                        _currentSort = value;
+                                        _applyFilters();
+                                      });
+                                    },
+                                  ),
                                 ),
                               ],
                             ),
@@ -316,67 +354,75 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                                 await _deleteAt(originalIndex);
                                 return false; // refresh handles removal
                               },
-                              child: Card(
-                                elevation: 2,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: s.isFavorite
-                                      ? BorderSide(color: Colors.red.shade200, width: 2)
-                                      : BorderSide.none,
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12.0),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      // Title row + actions
-                                      Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          if (s.isFavorite)
-                                            const Padding(
-                                              padding: EdgeInsets.only(right: 8.0, top: 4.0),
-                                              child: Icon(Icons.favorite, color: Colors.red, size: 20),
-                                            ),
-                                          Expanded(
-                                            child: Text(
-                                              s.title,
-                                              style: const TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
+                              child: Semantics(
+                                container: true,
+                                label:
+                                    'Saved story: ${s.title}, ${readMinutes} minute read, ${wordCount} words${s.isInteractive ? ', interactive' : ''}',
+                                hint: 'Swipe left to delete',
+                                child: Card(
+                                  elevation: 2,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: s.isFavorite
+                                        ? BorderSide(color: Colors.red.shade200, width: 2)
+                                        : BorderSide.none,
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        // Title row + actions
+                                        Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            if (s.isFavorite)
+                                              const Padding(
+                                                padding: EdgeInsets.only(right: 8.0, top: 4.0),
+                                                child: Icon(Icons.favorite, color: Colors.red, size: 20),
+                                              ),
+                                            Expanded(
+                                              child: Text(
+                                                s.title,
+                                                style: const TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                          if (s.isInteractive)
-                                            Padding(
-                                              padding: const EdgeInsets.only(right: 8.0),
+                                            if (s.isInteractive)
+                                              Padding(
+                                                padding: const EdgeInsets.only(right: 8.0),
+                                                child: Chip(
+                                                  label: const Text('Interactive', style: TextStyle(fontSize: 11)),
+                                                  backgroundColor: Colors.purple.shade100,
+                                                  padding: EdgeInsets.zero,
+                                                  visualDensity: VisualDensity.compact,
+                                                ),
+                                              ),
+                                            Semantics(
+                                              label: 'Quality $qualityLabel story badge',
                                               child: Chip(
-                                                label: const Text('Interactive', style: TextStyle(fontSize: 11)),
-                                                backgroundColor: Colors.purple.shade100,
-                                                padding: EdgeInsets.zero,
+                                                label: Text(
+                                                  qualityLabel,
+                                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                                                ),
+                                                backgroundColor: qualityColor.withValues(alpha: 0.15),
+                                                side: BorderSide(color: qualityColor.withValues(alpha: 0.4)),
                                                 visualDensity: VisualDensity.compact,
                                               ),
                                             ),
-                                          Chip(
-                                            label: Text(
-                                              qualityLabel,
-                                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                                            IconButton(
+                                              tooltip: s.isFavorite ? 'Remove from favorites' : 'Add to favorites',
+                                              icon: Icon(
+                                                s.isFavorite ? Icons.favorite : Icons.favorite_border,
+                                                color: s.isFavorite ? Colors.red : null,
+                                              ),
+                                              onPressed: () => _toggleFavorite(_filteredStories.indexOf(s)),
                                             ),
-                                            backgroundColor: qualityColor.withValues(alpha: 0.15),
-                                            side: BorderSide(color: qualityColor.withValues(alpha: 0.4)),
-                                            visualDensity: VisualDensity.compact,
-                                          ),
-                                          IconButton(
-                                            tooltip: s.isFavorite ? 'Remove from favorites' : 'Add to favorites',
-                                            icon: Icon(
-                                              s.isFavorite ? Icons.favorite : Icons.favorite_border,
-                                              color: s.isFavorite ? Colors.red : null,
-                                            ),
-                                            onPressed: () => _toggleFavorite(_filteredStories.indexOf(s)),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 6),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
 
                                       // Meta line
                                       Wrap(
@@ -406,44 +452,60 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                                       if (childNames.isNotEmpty) const SizedBox(height: 8),
 
                                       // Preview snippet
-                                      Text(
-                                        s.storyText.length > 180
-                                            ? '${s.storyText.substring(0, 180)}…'
-                                            : s.storyText,
+                                      Semantics(
+                                        label: 'Story preview for ${s.title}',
+                                        readOnly: true,
+                                        child: Text(
+                                          s.storyText.length > 180
+                                              ? '${s.storyText.substring(0, 180)}…'
+                                              : s.storyText,
+                                        ),
                                       ),
                                       const SizedBox(height: 10),
 
                                       // Quick actions
                                       Row(
                                         children: [
-                                          TextButton.icon(
-                                            onPressed: () => _shareStory(s),
-                                            icon: const Icon(Icons.share),
-                                            label: const Text('Share'),
+                                          Semantics(
+                                            button: true,
+                                            label: 'Share ${s.title}',
+                                            child: TextButton.icon(
+                                              onPressed: () => _shareStory(s),
+                                              icon: const Icon(Icons.share),
+                                              label: const Text('Share'),
+                                            ),
                                           ),
-                                          TextButton.icon(
-                                            onPressed: _isReporting
-                                                ? null
-                                                : () => _reportStory(s),
-                                            icon: const Icon(Icons.flag_outlined),
-                                            label: const Text('Report'),
+                                          Semantics(
+                                            button: true,
+                                            label: 'Report ${s.title}',
+                                            child: TextButton.icon(
+                                              onPressed: _isReporting
+                                                  ? null
+                                                  : () => _reportStory(s),
+                                              icon: const Icon(Icons.flag_outlined),
+                                              label: const Text('Report'),
+                                            ),
                                           ),
-                                          TextButton.icon(
-                                            onPressed: () {
-                                              Navigator.of(context).push(
-                                                MaterialPageRoute(
-                                                  builder: (_) => StoryResultScreen(
-                                                    title: s.title,
-                                                    storyText: s.storyText,
-                                                    wisdomGem: s.wisdomGem ?? '',
-                                                    characterName: s.characters.isNotEmpty ? s.characters.first.name : null,
-                                                    storyId: s.id,
+                                          Semantics(
+                                            button: true,
+                                            label: 'Read ${s.title} again',
+                                            child: TextButton.icon(
+                                              onPressed: () {
+                                                Navigator.of(context).push(
+                                                  MaterialPageRoute(
+                                                    builder: (_) => StoryResultScreen(
+                                                      title: s.title,
+                                                      storyText: s.storyText,
+                                                      wisdomGem: s.wisdomGem ?? '',
+                                                      characterName: s.characters.isNotEmpty ? s.characters.first.name : null,
+                                                      storyId: s.id,
+                                                    ),
                                                   ),
-                                                ),
-                                              );
-                                            },
-                                            icon: const Icon(Icons.menu_book),
-                                            label: const Text('Read again'),
+                                                );
+                                              },
+                                              icon: const Icon(Icons.menu_book),
+                                              label: const Text('Read again'),
+                                            ),
                                           ),
                                           const Spacer(),
                                           IconButton(

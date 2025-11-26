@@ -37,141 +37,159 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildHeaderCard(BuildContext context) {
-    return AppCard(
-      color: AppColors.primary.withValues(alpha: 0.05),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.vpn_key, color: AppColors.primary),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  'Bring Your Own API Key',
-                  style: Theme.of(context).textTheme.titleMedium,
+    return Semantics(
+      container: true,
+      label: 'BYOK setup header',
+      child: AppCard(
+        color: AppColors.primary.withValues(alpha: 0.05),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.vpn_key, color: AppColors.primary),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    'Bring Your Own API Key',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Use your free Gemini API key to unlock all premium features!',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ],
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Use your free Gemini API key to unlock all premium features!',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildApiToggleCard() {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppSwitch(
-            value: _useOwnApiKey,
-            onChanged: (value) {
-              setState(() => _useOwnApiKey = value);
-              _saveSettings();
-            },
-            label: 'Use my own Gemini API key',
-            subtitle: 'Unlock unlimited stories and features',
-            icon: Icons.api,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          AppButton.secondary(
-            label: 'Open setup wizard',
-            icon: Icons.auto_awesome,
-            onPressed: () async {
-              final result = await Navigator.of(context).push<String>(
-                MaterialPageRoute(
-                  builder: (_) => const ByokSetupWizardScreen(),
-                  fullscreenDialog: true,
-                ),
-              );
-              if (result != null && result.isNotEmpty) {
-                setState(() {
-                  _useOwnApiKey = true;
-                  _apiKeyController.text = result;
-                  _validationMessage = '✓ API Key configured via wizard';
-                  _isValid = true;
-                });
-                await _saveSettings();
-              } else {
-                await _loadSettings();
-              }
-            },
-          ),
-          if (_useOwnApiKey) ...[
-            const SizedBox(height: AppSpacing.md),
-            _buildApiKeyField(),
+    return Semantics(
+      container: true,
+      label: 'API key setup section',
+      child: AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppSwitch(
+              value: _useOwnApiKey,
+              onChanged: (value) {
+                setState(() => _useOwnApiKey = value);
+                _saveSettings();
+              },
+              label: 'Use my own Gemini API key',
+              subtitle: 'Unlock unlimited stories and features',
+              icon: Icons.api,
+            ),
             const SizedBox(height: AppSpacing.sm),
-            if (_validationMessage != null)
-              _isValid == false
-                  ? ErrorMessage(
-                      title: 'Validation failed',
-                      message: _validationMessage!,
-                      onRetry: _validateApiKey,
-                    )
-                  : AppCard(
-                      color: AppColors.accent.withValues(alpha: 0.15),
-                      child: Text(
-                        _validationMessage!,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(color: AppColors.primary),
+            AppButton.secondary(
+              label: 'Open setup wizard',
+              icon: Icons.auto_awesome,
+              onPressed: () async {
+                final result = await Navigator.of(context).push<String>(
+                  MaterialPageRoute(
+                    builder: (_) => const ByokSetupWizardScreen(),
+                    fullscreenDialog: true,
+                  ),
+                );
+                if (result != null && result.isNotEmpty) {
+                  setState(() {
+                    _useOwnApiKey = true;
+                    _apiKeyController.text = result;
+                    _validationMessage = '✓ API Key configured via wizard';
+                    _isValid = true;
+                  });
+                  await _saveSettings();
+                } else {
+                  await _loadSettings();
+                }
+              },
+            ),
+            if (_useOwnApiKey) ...[
+              const SizedBox(height: AppSpacing.md),
+              _buildApiKeyField(),
+              const SizedBox(height: AppSpacing.sm),
+              if (_validationMessage != null)
+                _isValid == false
+                    ? ErrorMessage(
+                        title: 'Validation failed',
+                        message: _validationMessage!,
+                        onRetry: _validateApiKey,
+                      )
+                    : AppCard(
+                        color: AppColors.accent.withValues(alpha: 0.15),
+                        child: Text(
+                          _validationMessage!,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(color: AppColors.primary),
+                        ),
                       ),
-                    ),
-            const SizedBox(height: AppSpacing.md),
-            AppButton.primary(
-              label: _isValidating ? 'Validating...' : 'Validate & Save',
-              onPressed: _isValidating ? null : _validateApiKey,
-              icon: _isValidating ? null : Icons.verified_user,
-            ),
-            if (_isValidating)
-              const Padding(
-                padding: EdgeInsets.only(top: AppSpacing.sm),
-                child: LoadingSpinner(size: 32),
+              const SizedBox(height: AppSpacing.md),
+              AppButton.primary(
+                label: _isValidating ? 'Validating...' : 'Validate & Save',
+                onPressed: _isValidating ? null : _validateApiKey,
+                icon: _isValidating ? null : Icons.verified_user,
               ),
-            TextButton.icon(
-              onPressed: _launchApiKeyHelp,
-              icon: const Icon(Icons.help_outline),
-              label: const Text('How do I get an API key?'),
-            ),
+              if (_isValidating)
+                const Padding(
+                  padding: EdgeInsets.only(top: AppSpacing.sm),
+                  child: LoadingSpinner(size: 32),
+                ),
+              TextButton.icon(
+                onPressed: _launchApiKeyHelp,
+                icon: const Icon(Icons.help_outline),
+                label: const Text('How do I get an API key?'),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildApiKeyField() {
-    return TextField(
-      controller: _apiKeyController,
-      decoration: InputDecoration(
-        labelText: 'Gemini API Key',
-        hintText: 'AIza...',
-        prefixIcon: const Icon(Icons.key),
-        suffixIcon: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: Icon(
-                _obscureApiKey ? Icons.visibility : Icons.visibility_off,
-              ),
-              onPressed: () => setState(() => _obscureApiKey = !_obscureApiKey),
-            ),
-            if (_apiKeyController.text.isNotEmpty)
+    return Semantics(
+      label: 'Gemini API key input',
+      hint: 'Paste your own API key here',
+      textField: true,
+      child: TextField(
+        controller: _apiKeyController,
+        decoration: InputDecoration(
+          labelText: 'Gemini API Key',
+          hintText: 'AIza...',
+          prefixIcon: const Icon(Icons.key),
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               IconButton(
-                icon: const Icon(Icons.clear),
-                onPressed: _clearApiKey,
+                icon: Icon(
+                  _obscureApiKey ? Icons.visibility : Icons.visibility_off,
+                ),
+                tooltip: _obscureApiKey ? 'Show key' : 'Hide key',
+                onPressed: () => setState(() => _obscureApiKey = !_obscureApiKey),
               ),
-          ],
+              if (_apiKeyController.text.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.clear),
+                  tooltip: 'Clear API key',
+                  onPressed: _clearApiKey,
+                ),
+            ],
+          ),
         ),
+        obscureText: _obscureApiKey,
+        maxLines: 1,
+        enableSuggestions: false,
+        autocorrect: false,
+        textInputAction: TextInputAction.done,
       ),
-      obscureText: _obscureApiKey,
-      maxLines: 1,
     );
   }
 
@@ -430,27 +448,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeaderCard(context),
-            const SizedBox(height: AppSpacing.lg),
-            _buildApiToggleCard(),
-            if (_useOwnApiKey) ...[
-              const SizedBox(height: AppSpacing.lg),
-              _buildBenefitsCard(),
-              const SizedBox(height: AppSpacing.md),
-              _buildPrivacyCard(),
-            ],
-            const SizedBox(height: AppSpacing.lg),
-            _buildLegalLinks(context),
-          ],
+    final mediaQuery = MediaQuery.of(context);
+    final clampedTextScale =
+        mediaQuery.textScaleFactor.clamp(1.0, 1.4).toDouble();
+
+    return MediaQuery(
+      data: mediaQuery.copyWith(textScaleFactor: clampedTextScale),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Settings'),
+        ),
+        body: FocusTraversalGroup(
+          policy: OrderedTraversalPolicy(),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeaderCard(context),
+                const SizedBox(height: AppSpacing.lg),
+                _buildApiToggleCard(),
+                if (_useOwnApiKey) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  _buildBenefitsCard(),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildPrivacyCard(),
+                ],
+                const SizedBox(height: AppSpacing.lg),
+                _buildLegalLinks(context),
+              ],
+            ),
+          ),
         ),
       ),
     );

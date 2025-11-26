@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../emotions_learning_system.dart';
@@ -429,7 +430,7 @@ class AchievementService {
 
       return false;
     } catch (e) {
-      print('Failed to sync achievements with backend: $e');
+      debugPrint('Failed to sync achievements with backend: $e');
       return false;
     }
   }
@@ -484,7 +485,7 @@ class AchievementService {
 
       return false;
     } catch (e) {
-      print('Failed to load achievements from backend: $e');
+      debugPrint('Failed to load achievements from backend: $e');
       return false;
     }
   }

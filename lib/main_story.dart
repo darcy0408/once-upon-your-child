@@ -648,8 +648,13 @@ class _StoryScreenState extends State<StoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final clampedTextScale =
+        mediaQuery.textScaleFactor.clamp(1.0, 1.4).toDouble();
     final newAchievementCount = _achievementSummary?.newCount ?? 0;
-    return Scaffold(
+    return MediaQuery(
+      data: mediaQuery.copyWith(textScaleFactor: clampedTextScale),
+      child: Scaffold(
       appBar: AppBar(
         title: Row(
           children: [
@@ -841,7 +846,9 @@ class _StoryScreenState extends State<StoryScreen> {
             ],
           ),
         ),
-        child: SingleChildScrollView(
+        child: FocusTraversalGroup(
+          policy: OrderedTraversalPolicy(),
+          child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1072,45 +1079,56 @@ class _StoryScreenState extends State<StoryScreen> {
                   funFact: _funFact,
                 ),
               ] else ...[
-                ElevatedButton(
-                  onPressed: (_gracePeriodStatus?.shouldShowHardLimit ?? false)
-                      ? null
-                      : () async {
-                          await _onCreateButtonPressed();
-                        },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    textStyle: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  child: Text(_interactiveMode
-                      ? 'Start Interactive Story'
-                      : 'Quick Story'),
-                ),
-                if (!_interactiveMode) ...[
-                  const SizedBox(height: 12),
-                  OutlinedButton(
+                Semantics(
+                  button: true,
+                  label: _interactiveMode
+                      ? 'Start interactive story'
+                      : 'Create quick story',
+                  child: ElevatedButton(
                     onPressed: (_gracePeriodStatus?.shouldShowHardLimit ?? false)
                         ? null
                         : () async {
-                            await _createStory(guidedByFeeling: true);
+                            await _onCreateButtonPressed();
                           },
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: const BorderSide(color: Colors.deepPurple),
-                      foregroundColor: Colors.deepPurple,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                          fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                    child: const Text('Create Story About a Feeling'),
+                    child: Text(_interactiveMode
+                        ? 'Start Interactive Story'
+                        : 'Quick Story'),
+                  ),
+                ),
+                if (!_interactiveMode) ...[
+                  const SizedBox(height: 12),
+                  Semantics(
+                    button: true,
+                    label: 'Create story about a feeling',
+                    child: OutlinedButton(
+                      onPressed: (_gracePeriodStatus?.shouldShowHardLimit ?? false)
+                          ? null
+                          : () async {
+                              await _createStory(guidedByFeeling: true);
+                            },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: Colors.deepPurple),
+                        foregroundColor: Colors.deepPurple,
+                        textStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      child: const Text('Create Story About a Feeling'),
+                    ),
                   ),
                 ],
               ],
             ],
           ),
         ),
+      ),
       ),
     );
   }

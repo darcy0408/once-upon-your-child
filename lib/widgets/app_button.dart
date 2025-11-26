@@ -23,22 +23,26 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final child = Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.max,
-      children: [
-        if (icon != null) ...[
-          Icon(icon, size: 18),
-          const SizedBox(width: 8),
-        ],
-        Flexible(
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
+    final child = Semantics(
+      button: true,
+      label: label,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 18),
+            const SizedBox(width: 8),
+          ],
+          Flexible(
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
 
     if (isSecondary) {
@@ -48,6 +52,11 @@ class AppButton extends StatelessWidget {
           minimumSize: const Size(double.infinity, 52),
           foregroundColor: AppColors.primary,
           side: const BorderSide(color: AppColors.primary, width: 2),
+          overlayColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.focused)
+                ? AppColors.primary.withValues(alpha: 0.12)
+                : null,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -62,6 +71,11 @@ class AppButton extends StatelessWidget {
         minimumSize: const Size(double.infinity, 52),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        overlayColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.focused)
+              ? AppColors.accent.withValues(alpha: 0.16)
+              : null,
+        ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),

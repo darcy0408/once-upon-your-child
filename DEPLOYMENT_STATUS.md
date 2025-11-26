@@ -1,7 +1,7 @@
 # 🚀 Story Weaver - Deployment Status
 
-**Last Updated:** 2025-11-26 21:15 UTC
-**Status:** 🚧 In Progress - Week 4 compliance & safety updates pending redeploy
+**Last Updated:** 2025-11-26 21:45 UTC
+**Status:** 🚧 In Progress - services presumed healthy; pending backend redeploy with content-safety/report changes and env var verification
 
 ---
 
@@ -9,8 +9,8 @@
 
 | System | Platform | Status | URL |
 |--------|----------|--------|-----|
-| **Frontend** | Railway Edge | ✅ Deployed | https://grand-light-production-68d9.up.railway.app |
-| **Backend** | Railway | ⚠️ Redeploy needed (post-content-safety changes) | https://story-weaver-app-production.up.railway.app |
+| **Frontend** | Railway Edge | ✅ Deployed (last known good) | https://grand-light-production-68d9.up.railway.app |
+| **Backend** | Railway | ⚠️ Redeploy needed to apply latest content-safety/reporting | https://story-weaver-app-production.up.railway.app |
 | **Database** | Railway PostgreSQL | ✅ Connected | (Railway managed) |
 | **Payments** | Stripe | ✅ Configured | Test mode active |
 | **AI** | Google Gemini | ✅ Connected | 2.5 Flash model |
@@ -24,8 +24,8 @@
 - [x] Stripe integration working (both tiers)
 - [x] Interactive story generation fixed
 - [x] Database connected (PostgreSQL)
-- [x] Environment variables configured
-- [x] Health endpoint responding
+- [x] Environment variables configured (pending re-verify on Railway UI)
+- [x] Health endpoint responding (last known)
 - [x] CORS configured for frontend
 - [x] Rate limiting enabled
 
@@ -234,14 +234,27 @@ Run one at a time:
 - Rate limiting enabled
 - Content safety filter + reporting endpoint pending redeploy
 
-## ♻️ Rollback Procedure (Railway)
-- Frontend: redeploy previous successful build from Railway dashboard or revert to prior commit on main and redeploy.
-- Backend: rollback by redeploying previous successful build or git revert to last good commit, then redeploy. Keep DB backup before rollback if schema changes are involved.
+## ♻️ Rollback Procedure
+- See `ROLLBACK_PROCEDURE.md` for detailed steps.
 
 ## 📞 Emergency Contacts
-- Engineering: engineering@storyweaver.app
-- Ops/Infra: ops@storyweaver.app
-- Pager (business hours): +1-555-0100
+- See `PRODUCTION_CONTACTS.md` for primary contacts.
+
+## 📅 Last Successful Deployment
+- Last known good: 2025-11-25 (per Railway history; needs confirmation on dashboard).
+- Latest changes pending deployment: content safety filter, report endpoint, privacy/terms/consent UI.
+
+## 🌐 Environment Variables (to verify on Railway)
+- GEMINI_API_KEY — expected: set
+- STRIPE_API_KEY — expected: test mode unless switching to live
+- STRIPE_PRICE_ID_PREMIUM — expected: set
+- STRIPE_PRICE_ID_FAMILY — expected: set
+- DATABASE_URL — managed by Railway
+
+## ⚠️ Known Issues / Actions
+- Need to redeploy backend for content safety/reporting.
+- Need to re-verify env vars in Railway dashboard (no access in this session).
+- Run final smoke tests post-redeploy: age gate, parental consent, story gen, report button, library filters, rate limiting (expect 429 after burst).
 
 ---
 

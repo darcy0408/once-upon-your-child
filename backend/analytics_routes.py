@@ -4,6 +4,7 @@ from .database import db
 from .models.story import Story
 from .models.user import User
 from .models.character import Character
+from .cost_tracking import get_cost_report
 import os
 
 analytics_bp = Blueprint('analytics', __name__)
@@ -263,3 +264,17 @@ def get_users_paginated():
 
     except Exception as e:
         return jsonify({'error': f'Failed to fetch users: {str(e)}'}), 500
+
+@analytics_bp.route('/admin/cost-report')
+def get_cost_report_endpoint():
+    """Get API cost report with breakdown by feature and time period"""
+    try:
+        days = request.args.get('days', 7, type=int)
+        days = min(max(days, 1), 90)  # Limit to 1-90 days
+
+        report = get_cost_report(days)
+
+        return jsonify(report), 200
+
+    except Exception as e:
+        return jsonify({'error': f'Failed to generate cost report: {str(e)}'}), 500

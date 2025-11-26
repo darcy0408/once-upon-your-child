@@ -23,6 +23,7 @@ from .routes.stripe_routes import stripe_routes, init_stripe_api
 from .routes.webhook_handler import webhook_routes
 from .analytics_routes import analytics_bp
 from .quality_service import StoryQualityService
+from .cost_tracking import track_cost, get_cost_report
 # from .repositories import character_repository
 from .gemini_image_generator import GeminiImageGenerator
 # Route imports removed - routes defined directly in app.py
@@ -780,6 +781,23 @@ def create_app(config_name):
         if illustrations:
             response_payload["illustrations"] = illustrations
             response_payload["illustration_count"] = len(illustrations)
+
+        # Track API costs
+        user_tier = subscription_tier
+        if user_api_key:
+            user_tier = 'byok'
+
+        # Track story generation cost
+        track_cost('story_generation', user_id or 'anonymous', user_tier)
+
+        # Track illustration costs if any were generated
+        if illustrations:
+            illustration_cost = track_cost('image_generation', user_id or 'anonymous', user_tier)
+            # Scale cost by number of illustrations
+            total_illustration_cost = illustration_cost * len(illustrations)
+            # Note: The track_cost function already handles the base cost, we just log the scaling
+            if len(illustrations) > 1:
+                logger.info(f"Additional illustration cost: ${(total_illustration_cost - illustration_cost):.6f} for {len(illustrations)-1} extra images")
 
         return jsonify(response_payload), 200
 
