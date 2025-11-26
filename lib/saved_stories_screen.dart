@@ -289,7 +289,7 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                     ),
                   ],
                 ),
-              )
+              ),
             else
               ..._filteredStories.map((s) {
                 final dateStr = _prettyDate(s.createdAt);
