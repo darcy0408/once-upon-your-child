@@ -31,6 +31,7 @@ These tasks will be completed on **feature branches** to keep `main` branch stab
 | 🟡 MEDIUM | Celery Integration | Grok | `feature/celery-integration` | High | 2 |
 | 🟡 MEDIUM | Offline-First (Isar) | Codex 2 | `feature/offline-first` | Medium | 3 |
 | 🟡 MEDIUM | State Management | Codex 1 | `feature/state-management` | High | 3 |
+| 🟡 MEDIUM | Fix Accessibility (Semantics) | Codex 1 | `feature/accessibility-fix` | Medium | 0.5 |
 | 🟢 LOW | Mobile IAP | Codex 1 | `feature/mobile-iap` | Medium | 2 |
 
 ---
@@ -1127,6 +1128,209 @@ These tasks will be completed on **feature branches** to keep `main` branch stab
 - ✅ Subscriptions visible in app
 - ✅ Test purchase works in sandbox
 - ✅ Entitlements synced
+
+---
+
+### **Task 8: Fix Accessibility (Semantics Widgets) (Half day, MEDIUM PRIORITY)**
+
+**Branch:** `feature/accessibility-fix`
+
+**Current State:**
+- ALL Semantics widgets removed (emergency fix for Thanksgiving)
+- App works but has NO accessibility features
+- Screen readers can't properly announce UI elements
+
+**Why It Broke:**
+Semantics widgets were causing **infinite loops** (Stack Overflow errors) because they were triggering rebuild cycles:
+1. Semantics widget built
+2. Triggered parent widget rebuild
+3. Parent rebuilt Semantics widget
+4. Infinite loop → Stack Overflow crash
+
+**Goal:** Re-implement accessibility correctly without causing infinite loops
+
+**Steps:**
+
+1. **Create feature branch:**
+   ```bash
+   git checkout main
+   git pull origin main
+   git checkout -b feature/accessibility-fix
+   ```
+
+2. **Understand the problem:**
+   - Read Flutter docs on Semantics best practices
+   - Study ExcludeSemantics usage
+   - Learn about semantic merge behaviors
+
+3. **Strategy for safe Semantics:**
+   ```dart
+   // ❌ BAD - Can cause infinite loops
+   Semantics(
+     label: 'Delete button',
+     button: true,
+     child: StatefulWidget(...), // Stateful widget that rebuilds
+   )
+
+   // ✅ GOOD - Use excludeSemantics on parent
+   ExcludeSemantics(
+     child: ParentWidget(
+       child: IconButton(
+         semanticLabel: 'Delete button', // Built-in semantic property
+         icon: Icon(Icons.delete),
+       ),
+     ),
+   )
+
+   // ✅ GOOD - Use MergeSemantics to prevent conflicts
+   MergeSemantics(
+     child: Row(
+       children: [
+         Icon(Icons.delete),
+         Text('Delete'),
+       ],
+     ),
+   )
+   ```
+
+4. **Priority order (add incrementally):**
+
+   **Phase 1: Critical navigation (1 hour)**
+   - Bottom navigation bar
+   - App bar actions
+   - Primary action buttons (Generate Story, Save Story)
+   - Test with screen reader after EACH addition
+
+   **Phase 2: Story management (1 hour)**
+   - Story list items
+   - Favorite toggle
+   - Share button
+   - Test again
+
+   **Phase 3: Forms and inputs (30 min)**
+   - Character name input
+   - Age selection
+   - Theme selection
+   - Test again
+
+5. **Use built-in semantics where possible:**
+   ```dart
+   // Instead of wrapping in Semantics, use semantic properties:
+
+   // Buttons
+   IconButton(
+     tooltip: 'Delete story', // Automatically provides semantics
+     icon: Icon(Icons.delete),
+   )
+
+   // Text fields
+   TextField(
+     decoration: InputDecoration(
+       labelText: 'Character name', // Provides semantics
+       hintText: 'Enter a name',
+     ),
+   )
+
+   // Images
+   Image.network(
+     url,
+     semanticLabel: 'Story illustration showing...', // Built-in
+   )
+   ```
+
+6. **Add semantic tests:**
+   ```dart
+   // test/accessibility_test.dart
+   testWidgets('Delete button is accessible', (tester) async {
+     await tester.pumpWidget(MyApp());
+
+     final deleteButtonFinder = find.bySemanticsLabel('Delete story');
+     expect(deleteButtonFinder, findsOneWidget);
+
+     // Verify tappable
+     final semantics = tester.getSemantics(deleteButtonFinder);
+     expect(semantics.hasAction(SemanticsAction.tap), isTrue);
+   });
+   ```
+
+7. **Test with actual screen readers:**
+   ```bash
+   # iOS
+   flutter run -d ios
+   # Enable VoiceOver: Settings → Accessibility → VoiceOver
+
+   # Android
+   flutter run -d android
+   # Enable TalkBack: Settings → Accessibility → TalkBack
+
+   # Web
+   flutter run -d chrome
+   # Use browser screen reader extension
+   ```
+
+8. **Files to update (in priority order):**
+   - `lib/widgets/app_button.dart` - Use tooltip instead of Semantics
+   - `lib/widgets/app_switch.dart` - Use SwitchListTile's built-in semantics
+   - `lib/main_story.dart` - Add semantics to main navigation only
+   - `lib/story_result_screen.dart` - Add semantics to action buttons
+   - `lib/settings_screen.dart` - Use ListTile's built-in semantics
+   - `lib/quick_story_screen.dart` - Add semantics to form fields
+   - `lib/saved_stories_screen.dart` - Add semantics to list items (LAST, test carefully)
+
+9. **Commit after each phase passes:**
+   ```bash
+   git add .
+   git commit -m "Accessibility: Phase 1 - Critical navigation semantics
+
+   - Add semantic labels to bottom navigation
+   - Add tooltips to app bar actions
+   - Add semantic labels to primary action buttons
+   - Use built-in semantic properties instead of Semantics wrapper
+   - Tested with VoiceOver/TalkBack - no infinite loops
+
+   Screen readers can now navigate core app features.
+
+   🤖 Generated with [Claude Code](https://claude.com/claude-code)
+   Co-Authored-By: Claude <noreply@anthropic.com>"
+
+   git push origin feature/accessibility-fix
+   ```
+
+10. **Final verification:**
+    ```bash
+    # Run semantic tests
+    flutter test test/accessibility_test.dart
+
+    # Run app with semantics debugger
+    flutter run --debug
+    # Enable "Show Semantics Tree" in Flutter DevTools
+
+    # Test with screen reader on real device
+    # Navigate entire app using only screen reader
+    ```
+
+**Key Rules to Prevent Infinite Loops:**
+
+1. ✅ **DO** use built-in semantic properties (tooltip, semanticLabel, labelText)
+2. ✅ **DO** use ExcludeSemantics to prevent parent conflicts
+3. ✅ **DO** test after adding each Semantics widget
+4. ✅ **DO** use MergeSemantics for grouped elements
+5. ❌ **DON'T** wrap StatefulWidgets directly in Semantics
+6. ❌ **DON'T** add Semantics to widgets that rebuild frequently
+7. ❌ **DON'T** nest Semantics widgets deeply
+
+**Success Criteria:**
+- ✅ All critical UI elements have semantic labels
+- ✅ Screen reader can navigate entire app
+- ✅ No Stack Overflow errors
+- ✅ No infinite rebuild loops
+- ✅ Semantic tests pass
+- ✅ Manual screen reader testing successful
+- ✅ App works for users with disabilities
+
+**Time Estimate:** 2-3 hours (done incrementally, tested carefully)
+
+**Assigned To:** Codex 1 (frontend specialist)
 
 ---
 
