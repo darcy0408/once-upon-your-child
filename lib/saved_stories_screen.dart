@@ -1,15 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:share_plus/share_plus.dart';
-
-import 'config/environment.dart';
 import 'models.dart';
 import 'services/story_analytics.dart';
 import 'storage_service.dart';
 import 'story_result_screen.dart';
-import 'theme/app_theme.dart';
+import 'package:share_plus/share_plus.dart';
 
 enum SortOption {
   newest,
@@ -33,8 +27,6 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
   String _selectedThemeFilter = 'All';
   bool _showOnlyInteractive = false;
   SortOption _currentSort = SortOption.newest;
-  final TextEditingController _reportController = TextEditingController();
-  bool _isReporting = false;
 
   static const List<String> _themes = [
     'All',
@@ -55,12 +47,6 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
   void initState() {
     super.initState();
     _refresh();
-  }
-
-  @override
-  void dispose() {
-    _reportController.dispose();
-    super.dispose();
   }
 
   Future<void> _refresh() async {
@@ -123,34 +109,28 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final textScaler = MediaQuery.textScalerOf(context);
     final favoriteCount = _stories.where((s) => s.isFavorite).length;
 
-    return MediaQuery(
-      data: mediaQuery.copyWith(textScaler: textScaler),
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('My Stories'),
-          actions: [
-            IconButton(
-              icon: Icon(
-                _showOnlyFavorites ? Icons.favorite : Icons.favorite_border,
-                color: _showOnlyFavorites ? Colors.red : null,
-              ),
-              tooltip: _showOnlyFavorites ? 'Show all stories' : 'Show favorites only',
-              onPressed: () {
-                setState(() {
-                  _showOnlyFavorites = !_showOnlyFavorites;
-                  _applyFilters();
-                });
-              },
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Stories'),
+        actions: [
+          IconButton(
+            icon: Icon(
+              _showOnlyFavorites ? Icons.favorite : Icons.favorite_border,
+              color: _showOnlyFavorites ? Colors.red : null,
             ),
-          ],
-        ),
-        body: FocusTraversalGroup(
-          policy: OrderedTraversalPolicy(),
-          child: _loading
+            tooltip: _showOnlyFavorites ? 'Show all stories' : 'Show favorites only',
+            onPressed: () {
+              setState(() {
+                _showOnlyFavorites = !_showOnlyFavorites;
+                _applyFilters();
+              });
+            },
+          ),
+        ],
+      ),
+      body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _stories.isEmpty
               ? const Center(child: Text('No stories saved yet.'))
@@ -199,82 +179,52 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                Semantics(
+                                FilterChip(
+                                  label: const Text('Favorites'),
                                   selected: _showOnlyFavorites,
-                                  button: true,
-                                  label:
-                                      'Filter favorites ${_showOnlyFavorites ? 'on' : 'off'}',
-                                  child: FilterChip(
-                                    label: const Text('Favorites'),
-                                    selected: _showOnlyFavorites,
-                                    onSelected: (selected) {
-                                      setState(() {
-                                        _showOnlyFavorites = selected;
-                                        _applyFilters();
-                                      });
-                                    },
-                                    selectedColor:
-                                        AppColors.primary.withValues(alpha: 0.15),
-                                    labelStyle: TextStyle(
-                                      color: _showOnlyFavorites
-                                          ? AppColors.primary
-                                          : Colors.black87,
-                                    ),
-                                  ),
+                                  onSelected: (selected) {
+                                    setState(() {
+                                      _showOnlyFavorites = selected;
+                                      _applyFilters();
+                                    });
+                                  },
                                 ),
                                 const SizedBox(width: 8),
-                                Semantics(
+                                FilterChip(
+                                  label: const Text('Interactive'),
                                   selected: _showOnlyInteractive,
-                                  button: true,
-                                  label:
-                                      'Filter interactive ${_showOnlyInteractive ? 'on' : 'off'}',
-                                  child: FilterChip(
-                                    label: const Text('Interactive'),
-                                    selected: _showOnlyInteractive,
-                                    onSelected: (selected) {
-                                      setState(() {
-                                        _showOnlyInteractive = selected;
-                                        _applyFilters();
-                                      });
-                                    },
-                                    selectedColor:
-                                        AppColors.primary.withValues(alpha: 0.15),
-                                    labelStyle: TextStyle(
-                                      color: _showOnlyInteractive
-                                          ? AppColors.primary
-                                          : Colors.black87,
-                                    ),
-                                  ),
+                                  onSelected: (selected) {
+                                    setState(() {
+                                      _showOnlyInteractive = selected;
+                                      _applyFilters();
+                                    });
+                                  },
                                 ),
                                 const Spacer(),
-                                Semantics(
-                                  label: 'Sort saved stories',
-                                  hint: 'Currently ${_currentSort.name}',
-                                  child: DropdownButton<SortOption>(
-                                    value: _currentSort,
-                                    underline: const SizedBox.shrink(),
-                                    items: const [
-                                      DropdownMenuItem(
-                                        value: SortOption.newest,
-                                        child: Text('Newest'),
-                                      ),
-                                      DropdownMenuItem(
-                                        value: SortOption.oldest,
-                                        child: Text('Oldest'),
-                                      ),
-                                      DropdownMenuItem(
-                                        value: SortOption.favoritesFirst,
-                                        child: Text('Favorites first'),
-                                      ),
-                                    ],
-                                    onChanged: (value) {
-                                      if (value == null) return;
-                                      setState(() {
-                                        _currentSort = value;
-                                        _applyFilters();
-                                      });
-                                    },
-                                  ),
+                                DropdownButton<SortOption>(
+                                  value: _currentSort,
+                                  underline: const SizedBox.shrink(),
+                                  items: const [
+                                    DropdownMenuItem(
+                                      value: SortOption.newest,
+                                      child: Text('Newest'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: SortOption.oldest,
+                                      child: Text('Oldest'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: SortOption.favoritesFirst,
+                                      child: Text('Favorites first'),
+                                    ),
+                                  ],
+                                  onChanged: (value) {
+                                    if (value == null) return;
+                                    setState(() {
+                                      _currentSort = value;
+                                      _applyFilters();
+                                    });
+                                  },
                                 ),
                               ],
                             ),
@@ -327,6 +277,7 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                         ..._filteredStories.map((s) {
                           final dateStr = _prettyDate(s.createdAt);
                           final childNames = s.characters.map((c) => c.name).toList();
+
                           final wordCount = _wordCount(s.storyText);
                           final readMinutes = (wordCount / 180).clamp(1, 30).round();
                           final qualityLabel = _qualityLabel(wordCount);
@@ -352,182 +303,150 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                                 await _deleteAt(originalIndex);
                                 return false; // refresh handles removal
                               },
-                              child: Semantics(
-                                container: true,
-                                label:
-                                    'Saved story: ${s.title}, $readMinutes minute read, $wordCount words${s.isInteractive ? ', interactive' : ''}',
-                                hint: 'Swipe left to delete',
-                                child: Card(
-                                  elevation: 2,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    side: s.isFavorite
-                                        ? BorderSide(color: Colors.red.shade200, width: 2)
-                                        : BorderSide.none,
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(12.0),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        // Title row + actions
-                                        Row(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            if (s.isFavorite)
-                                              const Padding(
-                                                padding: EdgeInsets.only(right: 8.0, top: 4.0),
-                                                child: Icon(Icons.favorite, color: Colors.red, size: 20),
-                                              ),
-                                            Expanded(
-                                              child: Text(
-                                                s.title,
-                                                style: const TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                              child: Card(
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: s.isFavorite
+                                      ? BorderSide(color: Colors.red.shade200, width: 2)
+                                      : BorderSide.none,
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Title row + actions
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          if (s.isFavorite)
+                                            const Padding(
+                                              padding: EdgeInsets.only(right: 8.0, top: 4.0),
+                                              child: Icon(Icons.favorite, color: Colors.red, size: 20),
+                                            ),
+                                          Expanded(
+                                            child: Text(
+                                              s.title,
+                                              style: const TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
                                               ),
                                             ),
-                                            if (s.isInteractive)
-                                              Padding(
-                                                padding: const EdgeInsets.only(right: 8.0),
-                                                child: Chip(
-                                                  label: const Text('Interactive', style: TextStyle(fontSize: 11)),
-                                                  backgroundColor: Colors.purple.shade100,
-                                                  padding: EdgeInsets.zero,
-                                                  visualDensity: VisualDensity.compact,
-                                                ),
-                                              ),
-                                            Semantics(
-                                              label: 'Quality $qualityLabel story badge',
+                                          ),
+                                          if (s.isInteractive)
+                                            Padding(
+                                              padding: const EdgeInsets.only(right: 8.0),
                                               child: Chip(
-                                                label: Text(
-                                                  qualityLabel,
-                                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-                                                ),
-                                                backgroundColor: qualityColor.withValues(alpha: 0.15),
-                                                side: BorderSide(color: qualityColor.withValues(alpha: 0.4)),
+                                                label: const Text('Interactive', style: TextStyle(fontSize: 11)),
+                                                backgroundColor: Colors.purple.shade100,
+                                                padding: EdgeInsets.zero,
                                                 visualDensity: VisualDensity.compact,
                                               ),
                                             ),
-                                            IconButton(
-                                              tooltip: s.isFavorite ? 'Remove from favorites' : 'Add to favorites',
-                                              icon: Icon(
-                                                s.isFavorite ? Icons.favorite : Icons.favorite_border,
-                                                color: s.isFavorite ? Colors.red : null,
-                                              ),
-                                              onPressed: () => _toggleFavorite(_filteredStories.indexOf(s)),
+                                          Chip(
+                                            label: Text(
+                                              qualityLabel,
+                                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
                                             ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 6),
+                                            backgroundColor: qualityColor.withValues(alpha: 0.15),
+                                            side: BorderSide(color: qualityColor.withValues(alpha: 0.4)),
+                                            visualDensity: VisualDensity.compact,
+                                          ),
+                                          IconButton(
+                                            tooltip: s.isFavorite ? 'Remove from favorites' : 'Add to favorites',
+                                            icon: Icon(
+                                              s.isFavorite ? Icons.favorite : Icons.favorite_border,
+                                              color: s.isFavorite ? Colors.red : null,
+                                            ),
+                                            onPressed: () => _toggleFavorite(_filteredStories.indexOf(s)),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
 
-                                        // Meta line
+                                      // Meta line
+                                      Wrap(
+                                        spacing: 8,
+                                        runSpacing: 4,
+                                        children: [
+                                          _metaChip(Icons.calendar_today, dateStr),
+                                          _metaChip(Icons.menu_book, '${wordCount} words'),
+                                          _metaChip(Icons.timer, '$readMinutes min read'),
+                                          _metaChip(Icons.child_care, avgAge != null ? 'Age ~$avgAge' : 'All ages'),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+
+                                      // Chip list of included kids
+                                      if (childNames.isNotEmpty)
                                         Wrap(
-                                          spacing: 8,
-                                          runSpacing: 4,
-                                          children: [
-                                            _metaChip(Icons.calendar_today, dateStr),
-                                            _metaChip(Icons.menu_book, '$wordCount words'),
-                                            _metaChip(Icons.timer, '$readMinutes min read'),
-                                            _metaChip(Icons.child_care, avgAge != null ? 'Age ~$avgAge' : 'All ages'),
-                                          ],
+                                          spacing: 6,
+                                          runSpacing: 6,
+                                          children: childNames
+                                              .map((n) => Chip(
+                                                    label: Text(n),
+                                                    avatar: const Icon(Icons.child_care, size: 16),
+                                                  ))
+                                              .toList(),
                                         ),
-                                        const SizedBox(height: 8),
+                                      if (childNames.isNotEmpty) const SizedBox(height: 8),
 
-                                        // Chip list of included kids
-                                        if (childNames.isNotEmpty)
-                                          Wrap(
-                                            spacing: 6,
-                                            runSpacing: 6,
-                                            children: childNames
-                                                .map((n) => Chip(
-                                                      label: Text(n),
-                                                      avatar: const Icon(Icons.child_care, size: 16),
-                                                    ))
-                                                .toList(),
+                                      // Preview snippet
+                                      Text(
+                                        s.storyText.length > 180
+                                            ? '${s.storyText.substring(0, 180)}…'
+                                            : s.storyText,
+                                      ),
+                                      const SizedBox(height: 10),
+
+                                      // Quick actions
+                                      Row(
+                                        children: [
+                                          TextButton.icon(
+                                            onPressed: () => _shareStory(s),
+                                            icon: const Icon(Icons.share),
+                                            label: const Text('Share'),
                                           ),
-                                        if (childNames.isNotEmpty) const SizedBox(height: 8),
-
-                                        // Preview snippet
-                                        Semantics(
-                                          label: 'Story preview for ${s.title}',
-                                          readOnly: true,
-                                          child: Text(
-                                            s.storyText.length > 180
-                                                ? '${s.storyText.substring(0, 180)}…'
-                                                : s.storyText,
+                                          TextButton.icon(
+                                            onPressed: () {
+                                              Navigator.of(context).push(
+                                                MaterialPageRoute(
+                                                  builder: (_) => StoryResultScreen(
+                                                    title: s.title,
+                                                    storyText: s.storyText,
+                                                    wisdomGem: s.wisdomGem ?? '',
+                                                    characterName: s.characters.isNotEmpty ? s.characters.first.name : null,
+                                                    storyId: s.id,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            icon: const Icon(Icons.menu_book),
+                                            label: const Text('Read again'),
                                           ),
-                                        ),
-                                        const SizedBox(height: 10),
-
-                                        // Quick actions
-                                        Row(
-                                          children: [
-                                            Semantics(
-                                              button: true,
-                                              label: 'Share ${s.title}',
-                                              child: TextButton.icon(
-                                                onPressed: () => _shareStory(s),
-                                                icon: const Icon(Icons.share),
-                                                label: const Text('Share'),
-                                              ),
-                                            ),
-                                            Semantics(
-                                              button: true,
-                                              label: 'Report ${s.title}',
-                                              child: TextButton.icon(
-                                                onPressed: _isReporting ? null : () => _reportStory(s),
-                                                icon: const Icon(Icons.flag_outlined),
-                                                label: const Text('Report'),
-                                              ),
-                                            ),
-                                            Semantics(
-                                              button: true,
-                                              label: 'Read ${s.title} again',
-                                              child: TextButton.icon(
-                                                onPressed: () {
-                                                  Navigator.of(context).push(
-                                                    MaterialPageRoute(
-                                                      builder: (_) => StoryResultScreen(
-                                                        title: s.title,
-                                                        storyText: s.storyText,
-                                                        wisdomGem: s.wisdomGem ?? '',
-                                                        characterName: s.characters.isNotEmpty ? s.characters.first.name : null,
-                                                        storyId: s.id,
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                                icon: const Icon(Icons.menu_book),
-                                                label: const Text('Read again'),
-                                              ),
-                                            ),
-                                            const Spacer(),
-                                            IconButton(
-                                              tooltip: 'Delete',
-                                              icon: const Icon(Icons.delete_outline),
-                                              onPressed: () {
-                                                final originalIndex = _stories.indexOf(s);
-                                                _deleteAt(originalIndex);
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
+                                          const Spacer(),
+                                          IconButton(
+                                            tooltip: 'Delete',
+                                            icon: const Icon(Icons.delete_outline),
+                                            onPressed: () {
+                                              final originalIndex = _stories.indexOf(s);
+                                              _deleteAt(originalIndex);
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
-                            );
-                          }),
+                            ),
+                          );
+                        }),
                       const SizedBox(height: 12),
                     ],
                   ),
                 ),
-              ),
-        ),
-      ),
     );
   }
 
@@ -597,88 +516,5 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
   Future<void> _shareStory(SavedStory story) async {
     final shareText = '${story.title}\n\n${story.storyText}';
     await Share.share(shareText, subject: story.title);
-  }
-
-  Future<String?> _showReportDialog(String title) async {
-    _reportController.clear();
-    return showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Report Issue'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Report content in "$title"'),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _reportController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                hintText: 'Optional: describe what felt wrong',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, _reportController.text.trim()),
-            child: const Text('Report'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _reportStory(SavedStory story) async {
-    final reason = await _showReportDialog(story.title);
-    if (reason == null) return;
-    if (_isReporting) return;
-    setState(() => _isReporting = true);
-    try {
-      final uri = Uri.parse('${Environment.backendUrl}/report-story');
-      final response = await http.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'story_id': story.id,
-          'title': story.title,
-          'theme': story.theme,
-          'reason': reason.isEmpty ? 'No reason provided' : reason,
-          'is_interactive': story.isInteractive,
-          'story_preview': story.storyText.length > 240
-              ? '${story.storyText.substring(0, 240)}...'
-              : story.storyText,
-          'timestamp': DateTime.now().toIso8601String(),
-        }),
-      );
-
-      if (!mounted) return;
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Report submitted. Thank you for keeping stories safe.'),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not submit report. Please try again.')),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Report failed. Please try again later.')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isReporting = false);
-      }
-    }
   }
 }
