@@ -118,16 +118,17 @@ class _StoryWeaverAppState extends State<StoryWeaverApp> {
       return _buildLoading();
     }
 
-    if (!consentStatus) {
-      return _buildThemedApp(
-        AgeGateScreen(
-          consentService: _consentService,
-          onConsentCompleted: _handleConsentCompleted,
-        ),
-      );
-    }
+    // TEMPORARY: Skip age gate for family demo
+    // if (!consentStatus) {
+    //   return _buildThemedApp(
+    //     AgeGateScreen(
+    //       consentService: _consentService,
+    //       onConsentCompleted: _handleConsentCompleted,
+    //     ),
+    //   );
+    // }
 
-    if (onboardingStatus) {
+    if (onboardingStatus || true) {  // TEMPORARY: Always skip to main app
       return const StoryCreatorApp();
     }
 
