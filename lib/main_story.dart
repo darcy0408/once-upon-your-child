@@ -1077,49 +1077,39 @@ class StoryScreenState extends State<StoryScreen> {
                   funFact: _funFact,
                 ),
               ] else ...[
-                Semantics(
-                  button: true,
-                  label: _interactiveMode
-                      ? 'Start interactive story'
-                      : 'Create quick story',
-                  child: ElevatedButton(
-                    onPressed: (_gracePeriodStatus?.shouldShowHardLimit ?? false)
-                        ? null
-                        : () async {
-                            await _onCreateButtonPressed();
-                          },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      textStyle: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    child: Text(_interactiveMode
-                        ? 'Start Interactive Story'
-                        : 'Quick Story'),
+                ElevatedButton(
+                  onPressed: (_gracePeriodStatus?.shouldShowHardLimit ?? false)
+                      ? null
+                      : () async {
+                          await _onCreateButtonPressed();
+                        },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
                   ),
+                  child: Text(_interactiveMode
+                      ? 'Start Interactive Story'
+                      : 'Quick Story'),
                 ),
                 if (!_interactiveMode) ...[
                   const SizedBox(height: 12),
-                  Semantics(
-                    button: true,
-                    label: 'Create story about a feeling',
-                    child: OutlinedButton(
-                      onPressed: (_gracePeriodStatus?.shouldShowHardLimit ?? false)
-                          ? null
-                          : () async {
-                              await _createStory(guidedByFeeling: true);
-                            },
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: const BorderSide(color: Colors.deepPurple),
-                        foregroundColor: Colors.deepPurple,
-                        textStyle: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                  OutlinedButton(
+                    onPressed: (_gracePeriodStatus?.shouldShowHardLimit ?? false)
+                        ? null
+                        : () async {
+                            await _createStory(guidedByFeeling: true);
+                          },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: const BorderSide(color: Colors.deepPurple),
+                      foregroundColor: Colors.deepPurple,
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
-                      child: const Text('Create Story About a Feeling'),
                     ),
+                    child: const Text('Create Story About a Feeling'),
                   ),
                 ],
               ],
@@ -1211,52 +1201,46 @@ class StoryScreenState extends State<StoryScreen> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Semantics(
-            label:
-                '${character.name}${isSelected ? " selected" : ""} character card',
-            selected: isSelected,
-            button: true,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                setState(() {
-                  _selectedCharacter = character;
-                });
-              },
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 140, minWidth: 104),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: isSelected ? Colors.deepPurple : Colors.grey.shade300,
-                    width: isSelected ? 3 : 1,
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  color: isSelected ? Colors.deepPurple.shade50 : Colors.white,
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              setState(() {
+                _selectedCharacter = character;
+              });
+            },
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 140, minWidth: 104),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: isSelected ? Colors.deepPurple : Colors.grey.shade300,
+                  width: isSelected ? 3 : 1,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 12),
-                    _buildCharacterAvatar(character, size: 64),
-                    const SizedBox(height: 10),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text(
-                        character.name,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected ? Colors.deepPurple : Colors.black87,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                borderRadius: BorderRadius.circular(14),
+                color: isSelected ? Colors.deepPurple.shade50 : Colors.white,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 12),
+                  _buildCharacterAvatar(character, size: 64),
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      character.name,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected ? Colors.deepPurple : Colors.black87,
                       ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 12),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
               ),
             ),
           ),
@@ -1302,55 +1286,51 @@ class StoryScreenState extends State<StoryScreen> {
   }
 
   Widget _buildAddCharacterCard() {
-    return Semantics(
-      label: 'Add new character',
-      button: true,
-      child: GestureDetector(
-        onTap: () async {
-          await Navigator.of(context).push(
-            MaterialPageRoute(
-                builder: (context) => const CharacterCreationScreenEnhanced()),
-          );
-          await _loadCharacters();
-          await _loadAchievementSummary();
-        },
-        child: Container(
-          width: 96,
-          constraints: const BoxConstraints(minHeight: 130, minWidth: 96),
-          decoration: BoxDecoration(
-            border: Border.all(
-                color: Colors.deepPurple, width: 2, style: BorderStyle.solid),
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.deepPurple.shade50,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.deepPurple.shade100,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.add, size: 30, color: Colors.deepPurple),
+    return GestureDetector(
+      onTap: () async {
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+              builder: (context) => const CharacterCreationScreenEnhanced()),
+        );
+        await _loadCharacters();
+        await _loadAchievementSummary();
+      },
+      child: Container(
+        width: 96,
+        constraints: const BoxConstraints(minHeight: 130, minWidth: 96),
+        decoration: BoxDecoration(
+          border: Border.all(
+              color: Colors.deepPurple, width: 2, style: BorderStyle.solid),
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.deepPurple.shade50,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.deepPurple.shade100,
+                shape: BoxShape.circle,
               ),
-              const SizedBox(height: 8),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 6),
-                child: Text(
-                  'Add\nCharacter',
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.deepPurple),
-                  textAlign: TextAlign.center,
-                ),
+              child: const Icon(Icons.add, size: 30, color: Colors.deepPurple),
+            ),
+            const SizedBox(height: 8),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                'Add\nCharacter',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepPurple),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
-            ],
-          ),
+            ),
+            const SizedBox(height: 8),
+          ],
         ),
       ),
     );
@@ -1715,78 +1695,72 @@ class StoryScreenState extends State<StoryScreen> {
       runSpacing: 12.0,
       children: availableCharacters.map((c) {
         final isSelected = _additionalCharacterIds.contains(c.id);
-        return Semantics(
-          label:
-              '${c.name}${isSelected ? " selected" : ""} additional character',
-          selected: isSelected,
-          button: true,
-          child: GestureDetector(
-            onTap: () {
-              setState(() {
-                if (isSelected) {
-                  _additionalCharacterIds.remove(c.id);
-                } else {
-                  _additionalCharacterIds.add(c.id);
-                }
-              });
-            },
-            child: Container(
-              width: 88,
-              constraints: const BoxConstraints(minHeight: 118, minWidth: 88),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: isSelected ? Colors.green : Colors.grey.shade300,
-                  width: isSelected ? 3 : 1,
-                ),
-                borderRadius: BorderRadius.circular(12),
-                color: isSelected ? Colors.green.shade50 : Colors.white,
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              if (isSelected) {
+                _additionalCharacterIds.remove(c.id);
+              } else {
+                _additionalCharacterIds.add(c.id);
+              }
+            });
+          },
+          child: Container(
+            width: 88,
+            constraints: const BoxConstraints(minHeight: 118, minWidth: 88),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: isSelected ? Colors.green : Colors.grey.shade300,
+                width: isSelected ? 3 : 1,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 10),
-                  Stack(
-                    children: [
-                      _buildCharacterAvatar(c, size: 52),
-                      if (isSelected)
-                        Positioned(
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: const BoxDecoration(
-                              color: Colors.green,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.check,
-                              size: 14,
-                              color: Colors.white,
-                            ),
+              borderRadius: BorderRadius.circular(12),
+              color: isSelected ? Colors.green.shade50 : Colors.white,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 10),
+                Stack(
+                  children: [
+                    _buildCharacterAvatar(c, size: 52),
+                    if (isSelected)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: const BoxDecoration(
+                            color: Colors.green,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.check,
+                            size: 14,
+                            color: Colors.white,
                           ),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    child: Text(
-                      c.name,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                        color:
-                            isSelected ? Colors.green.shade700 : Colors.black87,
                       ),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Text(
+                    c.name,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      color:
+                          isSelected ? Colors.green.shade700 : Colors.black87,
                     ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
-                ],
-              ),
+                ),
+                const SizedBox(height: 8),
+              ],
             ),
           ),
         );

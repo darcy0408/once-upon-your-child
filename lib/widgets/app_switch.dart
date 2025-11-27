@@ -21,35 +21,30 @@ class AppSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      container: true,
-      label: label ?? 'Setting toggle',
-      toggled: value,
-      child: SwitchListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs,
-        ),
-        value: value,
-        onChanged: onChanged,
-        thumbColor: WidgetStateProperty.all(AppColors.primary),
-        trackColor:
-            WidgetStateProperty.all(AppColors.primary.withValues(alpha: 0.35)),
-        title: label != null
-            ? Text(
-                label!,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w600),
-              )
-            : null,
-        subtitle: subtitle != null
-            ? Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium)
-            : null,
-        secondary: icon != null ? Icon(icon, color: AppColors.primary) : null,
-        tileColor: Colors.transparent,
+    return SwitchListTile(
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
       ),
+      value: value,
+      onChanged: onChanged,
+      thumbColor: WidgetStateProperty.all(AppColors.primary),
+      trackColor:
+          WidgetStateProperty.all(AppColors.primary.withValues(alpha: 0.35)),
+      title: label != null
+          ? Text(
+              label!,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            )
+          : null,
+      subtitle: subtitle != null
+          ? Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium)
+          : null,
+      secondary: icon != null ? Icon(icon, color: AppColors.primary) : null,
+      tileColor: Colors.transparent,
     );
   }
 }

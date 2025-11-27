@@ -23,26 +23,22 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final child = Semantics(
-      button: true,
-      label: label,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 18),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
+    final child = Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.max,
+      children: [
+        if (icon != null) ...[
+          Icon(icon, size: 18),
+          const SizedBox(width: 8),
         ],
-      ),
+        Flexible(
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
 
     if (isSecondary) {

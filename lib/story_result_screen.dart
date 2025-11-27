@@ -711,42 +711,38 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       _highContrastMode ? Colors.black : Colors.white;
 
   Widget _buildReadingProgressHeader() {
-    return Semantics(
-      label:
-          'Reading progress ${(100 * _pageProgress).toStringAsFixed(0)} percent, about $_estimatedMinutes minute read',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: LinearProgressIndicator(
-                  value: _pageProgress,
-                  backgroundColor: Colors.grey.shade200,
-                  color: Colors.deepPurple,
-                  minHeight: 10,
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: LinearProgressIndicator(
+                value: _pageProgress,
+                backgroundColor: Colors.grey.shade200,
+                color: Colors.deepPurple,
+                minHeight: 10,
               ),
-              const SizedBox(width: 12),
-              Text(
-                '${(_pageProgress * 100).toStringAsFixed(0)}%',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.deepPurple,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Page ${_currentPageIndex + 1} of ${_storyPages.length} · ≈ $_estimatedMinutes min read',
-            style: const TextStyle(
-              fontSize: 13,
-              color: Colors.black54,
             ),
+            const SizedBox(width: 12),
+            Text(
+              '${(_pageProgress * 100).toStringAsFixed(0)}%',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Page ${_currentPageIndex + 1} of ${_storyPages.length} · ≈ $_estimatedMinutes min read',
+          style: const TextStyle(
+            fontSize: 13,
+            color: Colors.black54,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -844,39 +840,35 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                     onPageChanged: _handlePageChanged,
                     itemBuilder: (context, index) {
                       final page = _storyPages[index];
-                      return Semantics(
-                        label:
-                            _screenReaderHints ? 'Story page ${index + 1}' : null,
-                        child: MouseRegion(
-                          onEnter: (_) => setState(() => _isStoryHovered = true),
-                          onExit: (_) => setState(() => _isStoryHovered = false),
-                          cursor: SystemMouseCursors.click,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: _isStoryHovered
-                                  ? (_highContrastMode
-                                      ? Colors.grey.shade900
-                                      : Colors.deepPurple.shade50)
-                                  : Colors.transparent,
-                              border: Border(
-                                left: BorderSide(
-                                  color: Colors.deepPurple.shade100,
-                                  width: 4,
-                                ),
+                      return MouseRegion(
+                        onEnter: (_) => setState(() => _isStoryHovered = true),
+                        onExit: (_) => setState(() => _isStoryHovered = false),
+                        cursor: SystemMouseCursors.click,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: _isStoryHovered
+                                ? (_highContrastMode
+                                    ? Colors.grey.shade900
+                                    : Colors.deepPurple.shade50)
+                                : Colors.transparent,
+                            border: Border(
+                              left: BorderSide(
+                                color: Colors.deepPurple.shade100,
+                                width: 4,
                               ),
                             ),
-                            child: SingleChildScrollView(
-                              child: SelectableText.rich(
-                                TextSpan(
-                                  style: TextStyle(
-                                    fontSize: 18 * _textScale,
-                                    height: 1.5,
-                                    color: _storyTextColor,
-                                  ),
-                                  children: _buildStorySpans(page),
+                          ),
+                          child: SingleChildScrollView(
+                            child: SelectableText.rich(
+                              TextSpan(
+                                style: TextStyle(
+                                  fontSize: 18 * _textScale,
+                                  height: 1.5,
+                                  color: _storyTextColor,
                                 ),
+                                children: _buildStorySpans(page),
                               ),
                             ),
                           ),
@@ -926,24 +918,20 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         ),
         const SizedBox(height: 10),
         if (_storyPages.length > 1)
-          Semantics(
-            label:
-                'Page indicator. On page ${_currentPageIndex + 1} of ${_storyPages.length}',
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                _storyPages.length,
-                (index) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: index == _currentPageIndex ? 14 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: index == _currentPageIndex
-                        ? AppColors.primary
-                        : Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              _storyPages.length,
+              (index) => AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: index == _currentPageIndex ? 14 : 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: index == _currentPageIndex
+                      ? AppColors.primary
+                      : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
             ),
@@ -1833,55 +1821,43 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                    Semantics(
-                      label: 'Share story',
-                      button: true,
-                      child: FloatingActionButton.small(
-                        heroTag: 'fab_share',
-                        backgroundColor: Colors.blueAccent,
-                        tooltip: 'Share story',
-                        onPressed: () {
-                          _trackResultAction('fab_action', extra: {'action': 'share'});
-                          _shareStory();
-                        },
-                        child: const Icon(Icons.share),
-                      ),
+                    FloatingActionButton.small(
+                      heroTag: 'fab_share',
+                      backgroundColor: Colors.blueAccent,
+                      tooltip: 'Share story',
+                      onPressed: () {
+                        _trackResultAction('fab_action', extra: {'action': 'share'});
+                        _shareStory();
+                      },
+                      child: const Icon(Icons.share),
                     ),
                     const SizedBox(height: 12),
-                    Semantics(
-                      label: 'Regenerate story',
-                      button: true,
-                      child: FloatingActionButton.small(
-                        heroTag: 'fab_regenerate',
-                        backgroundColor: Colors.orangeAccent,
-                        tooltip: 'Regenerate story',
-                        onPressed: _isLoading
-                            ? null
-                            : () {
-                                _trackResultAction(
-                                  'fab_action',
-                                  extra: {'action': 'regenerate'},
-                                );
-                                _createAnotherStory();
-                              },
-                        child: const Icon(Icons.refresh),
-                      ),
+                    FloatingActionButton.small(
+                      heroTag: 'fab_regenerate',
+                      backgroundColor: Colors.orangeAccent,
+                      tooltip: 'Regenerate story',
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              _trackResultAction(
+                                'fab_action',
+                                extra: {'action': 'regenerate'},
+                              );
+                              _createAnotherStory();
+                            },
+                      child: const Icon(Icons.refresh),
                     ),
                     const SizedBox(height: 12),
-                    Semantics(
-                      label: 'Save story',
-                      button: true,
-                      child: FloatingActionButton.extended(
-                        heroTag: 'fab_save',
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        icon: const Icon(Icons.save),
-                        label: const Text('Save Story'),
-                        onPressed: () {
-                          _trackResultAction('fab_action', extra: {'action': 'save'});
-                          _saveStory();
-                        },
-                      ),
+                    FloatingActionButton.extended(
+                      heroTag: 'fab_save',
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      icon: const Icon(Icons.save),
+                      label: const Text('Save Story'),
+                      onPressed: () {
+                        _trackResultAction('fab_action', extra: {'action': 'save'});
+                        _saveStory();
+                      },
                     ),
                   ],
                 ),

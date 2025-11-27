@@ -282,21 +282,16 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
             ),
           ),
           const SizedBox(height: 8),
-          Semantics(
-            label: 'Character name',
-            hint: 'Enter the main character name',
-            textField: true,
-            child: TextField(
-              controller: _characterNameController,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                hintText: 'Enter a name (e.g., Emma, Max, Luna)',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
+          TextField(
+            controller: _characterNameController,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              hintText: 'Enter a name (e.g., Emma, Max, Luna)',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
+              filled: true,
+              fillColor: Colors.grey.shade50,
             ),
           ),
 
@@ -311,31 +306,27 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
             ),
           ),
           const SizedBox(height: 8),
-          Semantics(
-            label: 'Select reader age',
-            hint: 'Currently $_selectedAge years old',
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedAge,
-                  isExpanded: true,
-                  items: _ages.map((age) {
-                    return DropdownMenuItem(
-                      value: age,
-                      child: Text('$age years old'),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedAge = value!;
-                    });
-                  },
-                ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedAge,
+                isExpanded: true,
+                items: _ages.map((age) {
+                  return DropdownMenuItem(
+                    value: age,
+                    child: Text('$age years old'),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedAge = value!;
+                  });
+                },
               ),
             ),
           ),
@@ -356,23 +347,18 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
             runSpacing: 8,
             children: _quickThemes.map((theme) {
               final isSelected = theme == _selectedTheme;
-              return Semantics(
+              return FilterChip(
+                label: Text(theme),
                 selected: isSelected,
-                button: true,
-                label: '$theme theme ${isSelected ? 'selected' : 'not selected'}',
-                child: FilterChip(
-                  label: Text(theme),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    setState(() {
-                      _selectedTheme = theme;
-                      _themeController.text = theme;
-                    });
-                  },
-                  backgroundColor: Colors.grey.shade100,
-                  selectedColor: AppColors.primary.withValues(alpha: 0.2),
-                  checkmarkColor: AppColors.primary,
-                ),
+                onSelected: (selected) {
+                  setState(() {
+                    _selectedTheme = theme;
+                    _themeController.text = theme;
+                  });
+                },
+                backgroundColor: Colors.grey.shade100,
+                selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                checkmarkColor: AppColors.primary,
               );
             }).toList(),
           ),
@@ -380,71 +366,62 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
           const SizedBox(height: 32),
 
           // Custom Theme Option
-          Semantics(
-            label: 'Custom theme',
-            hint: 'Describe your own theme',
-            textField: true,
-            child: TextField(
-              controller: _themeController,
-              decoration: InputDecoration(
-                hintText: 'Or create your own theme...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-                prefixIcon: const Icon(Icons.edit),
+          TextField(
+            controller: _themeController,
+            decoration: InputDecoration(
+              hintText: 'Or create your own theme...',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              onChanged: (value) {
-                setState(() {
-                  _selectedTheme = value;
-                });
-              },
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              prefixIcon: const Icon(Icons.edit),
             ),
+            onChanged: (value) {
+              setState(() {
+                _selectedTheme = value;
+              });
+            },
           ),
 
           const SizedBox(height: 32),
 
           // Generate Button
-          Semantics(
-            button: true,
-            label: _isGenerating ? 'Creating your story' : 'Create story now',
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isGenerating ? null : _generateQuickStory,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.all(16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isGenerating ? null : _generateQuickStory,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.all(16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: _isGenerating
-                    ? const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          ),
-                          SizedBox(width: 12),
-                          Text('Creating your story...'),
-                        ],
-                      )
-                    : const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.auto_stories),
-                          SizedBox(width: 8),
-                          Text('Create Story'),
-                        ],
-                      ),
               ),
+              child: _isGenerating
+                  ? const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Text('Creating your story...'),
+                      ],
+                    )
+                  : const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.auto_stories),
+                        SizedBox(width: 8),
+                        Text('Create Story'),
+                      ],
+                    ),
             ),
           ),
 
@@ -520,34 +497,26 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
           child: Row(
             children: [
               Expanded(
-                child: Semantics(
-                  button: true,
-                  label: 'Save story',
-                  child: OutlinedButton.icon(
-                    onPressed: _saveStory,
-                    icon: const Icon(Icons.save),
-                    label: const Text('Save'),
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                child: OutlinedButton.icon(
+                  onPressed: _saveStory,
+                  icon: const Icon(Icons.save),
+                  label: const Text('Save'),
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Semantics(
-                  button: true,
-                  label: 'Share story',
-                  child: OutlinedButton.icon(
-                    onPressed: _shareStory,
-                    icon: const Icon(Icons.share),
-                    label: const Text('Share'),
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                child: OutlinedButton.icon(
+                  onPressed: _shareStory,
+                  icon: const Icon(Icons.share),
+                  label: const Text('Share'),
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                 ),
@@ -560,15 +529,11 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
-            child: Semantics(
-              label: 'Generated story content',
-              readOnly: true,
-              child: Text(
-                _generatedStory!,
-                style: const TextStyle(
-                  fontSize: 16,
-                  height: 1.6,
-                ),
+            child: Text(
+              _generatedStory!,
+              style: const TextStyle(
+                fontSize: 16,
+                height: 1.6,
               ),
             ),
           ),
@@ -584,37 +549,29 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
           child: Row(
             children: [
               Expanded(
-                child: Semantics(
-                  button: true,
-                  label: 'Create another story',
-                  child: OutlinedButton(
-                    onPressed: _createAnotherStory,
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                child: OutlinedButton(
+                  onPressed: _createAnotherStory,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.all(16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text('Create Another'),
                   ),
+                  child: const Text('Create Another'),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: Semantics(
-                  button: true,
-                  label: 'Explore advanced story creator',
-                  child: ElevatedButton(
-                    onPressed: _exploreAdvancedFeatures,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.all(16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                child: ElevatedButton(
+                  onPressed: _exploreAdvancedFeatures,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.all(16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text('Explore More'),
                   ),
+                  child: const Text('Explore More'),
                 ),
               ),
             ],
