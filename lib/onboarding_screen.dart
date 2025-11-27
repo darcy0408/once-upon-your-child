@@ -46,11 +46,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
-  List<Step> get _steps => _buildSteps();
-  bool get _isLastStep => _currentStep == _steps.length - 1;
+  bool get _isLastStep => _currentStep == _buildSteps().length - 1;
   bool get _hasName => _childNameController.text.trim().isNotEmpty;
   bool get _hasTheme => (_selectedTheme ?? '').isNotEmpty;
-  double get _progressValue => (_currentStep + 1) / _steps.length;
+  double get _progressValue =>
+      (_currentStep + 1) / _buildSteps().length;
 
   void _trackStep(int index) {
     OnboardingAnalytics.trackFeatureViewed('quick_start_step_${index + 1}');
@@ -93,28 +93,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  Future<bool?> _showSkipDialog() {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Skip for now?'),
-        content: const Text(
-          'You can always finish onboarding later in Settings. Skipping means you might miss quick setup tips.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Stay'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Skip'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _handleContinue() {
     if (_currentStep == 0 && !_hasName) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -145,7 +123,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     setState(() {
       _currentStep -= 1;
     });
-    _trackStep(_currentStep);
   }
 
   List<Step> _buildSteps() {
@@ -257,7 +234,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final steps = _steps;
+    final steps = _buildSteps();
 
     return Scaffold(
       appBar: AppBar(
@@ -293,15 +270,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                       TextButton(
                         onPressed: () async {
-                          final skip = await _showSkipDialog();
-                          if (skip == true) {
-                            await OnboardingAnalytics.trackOnboardingSkipped(
-                              step: _currentStep + 1,
-                            );
-                            await _completeOnboarding(skipped: true);
-                          }
+                          await OnboardingAnalytics.trackOnboardingSkipped(
+                            step: _currentStep + 1,
+                          );
+                          await _completeOnboarding(skipped: true);
                         },
-                        child: const Text('Skip for now'),
+                        child: const Text('Skip'),
                       ),
                     ],
                   ),

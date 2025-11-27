@@ -98,7 +98,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       ProgressionService(); // Track user progress and unlocks
   final _feedbackService = StoryFeedbackService();
   final TextEditingController _feedbackController = TextEditingController();
-  final TextEditingController _reportController = TextEditingController();
   bool _isFavorite = false;
   bool _isLoading = true;
   List<StoryIllustration>? _cachedIllustrations;
@@ -116,9 +115,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   bool _screenReaderHints = true;
   bool _isSubmittingFeedback = false;
   double _storyRating = 4.0;
-  bool _isStoryHovered = false;
-  bool _showSwipeTutorial = false;
-  List<_InlineIllustration> _inlineIllustrations = [];
+   bool _isStoryHovered = false;
+   bool _showSwipeTutorial = false;
+   List<_InlineIllustration> _inlineIllustrations = [];
 
    // Quality scoring
    Map<String, dynamic>? _qualityData;
@@ -126,8 +125,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   bool _showFeatureTour = false;
   int _featureTourStepIndex = 0;
   List<FeatureTourStep> _featureTourSteps = const [];
-  bool _featureTourStarted = false;
-  bool _isReporting = false;
 
   String get _analyticsStoryId =>
       widget.storyId ?? widget.title.hashCode.toString();
@@ -240,23 +237,12 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       ];
       _featureTourStepIndex = 0;
       _showFeatureTour = true;
-      _featureTourStarted = false;
     });
   }
 
   Future<void> _advanceFeatureTour() async {
-    if (!_featureTourStarted) {
-      _featureTourStarted = true;
-      unawaited(StoryAnalytics.trackFeatureTour(action: 'started', step: 1));
-    }
     if (_featureTourStepIndex >= _featureTourSteps.length - 1) {
       await FeatureTourService.markCompleted();
-      unawaited(
-        StoryAnalytics.trackFeatureTour(
-          action: 'completed',
-          step: _featureTourStepIndex + 1,
-        ),
-      );
       if (mounted) {
         setState(() => _showFeatureTour = false);
       }
@@ -272,12 +258,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   Future<void> _skipFeatureTour() async {
     await FeatureTourService.markDismissed();
-    unawaited(
-      StoryAnalytics.trackFeatureTour(
-        action: 'skipped',
-        step: _featureTourStepIndex + 1,
-      ),
-    );
     if (mounted) {
       setState(() => _showFeatureTour = false);
     }
@@ -311,7 +291,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   void dispose() {
     _pageController.dispose();
     _feedbackController.dispose();
-    _reportController.dispose();
     super.dispose();
   }
 
@@ -711,38 +690,42 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       _highContrastMode ? Colors.black : Colors.white;
 
   Widget _buildReadingProgressHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: LinearProgressIndicator(
-                value: _pageProgress,
-                backgroundColor: Colors.grey.shade200,
-                color: Colors.deepPurple,
-                minHeight: 10,
+    return Semantics(
+      label:
+          'Reading progress ${(100 * _pageProgress).toStringAsFixed(0)} percent, about $_estimatedMinutes minute read',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: LinearProgressIndicator(
+                  value: _pageProgress,
+                  backgroundColor: Colors.grey.shade200,
+                  color: Colors.deepPurple,
+                  minHeight: 10,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '${(_pageProgress * 100).toStringAsFixed(0)}%',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
+              const SizedBox(width: 12),
+              Text(
+                '${(_pageProgress * 100).toStringAsFixed(0)}%',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple,
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Page ${_currentPageIndex + 1} of ${_storyPages.length} · ≈ $_estimatedMinutes min read',
-          style: const TextStyle(
-            fontSize: 13,
-            color: Colors.black54,
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            'Page ${_currentPageIndex + 1} of ${_storyPages.length} · ≈ $_estimatedMinutes min read',
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.black54,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -840,35 +823,39 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                     onPageChanged: _handlePageChanged,
                     itemBuilder: (context, index) {
                       final page = _storyPages[index];
-                      return MouseRegion(
-                        onEnter: (_) => setState(() => _isStoryHovered = true),
-                        onExit: (_) => setState(() => _isStoryHovered = false),
-                        cursor: SystemMouseCursors.click,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: _isStoryHovered
-                                ? (_highContrastMode
-                                    ? Colors.grey.shade900
-                                    : Colors.deepPurple.shade50)
-                                : Colors.transparent,
-                            border: Border(
-                              left: BorderSide(
-                                color: Colors.deepPurple.shade100,
-                                width: 4,
+                      return Semantics(
+                        label:
+                            _screenReaderHints ? 'Story page ${index + 1}' : null,
+                        child: MouseRegion(
+                          onEnter: (_) => setState(() => _isStoryHovered = true),
+                          onExit: (_) => setState(() => _isStoryHovered = false),
+                          cursor: SystemMouseCursors.click,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: _isStoryHovered
+                                  ? (_highContrastMode
+                                      ? Colors.grey.shade900
+                                      : Colors.deepPurple.shade50)
+                                  : Colors.transparent,
+                              border: Border(
+                                left: BorderSide(
+                                  color: Colors.deepPurple.shade100,
+                                  width: 4,
+                                ),
                               ),
                             ),
-                          ),
-                          child: SingleChildScrollView(
-                            child: SelectableText.rich(
-                              TextSpan(
-                                style: TextStyle(
-                                  fontSize: 18 * _textScale,
-                                  height: 1.5,
-                                  color: _storyTextColor,
+                            child: SingleChildScrollView(
+                              child: SelectableText.rich(
+                                TextSpan(
+                                  style: TextStyle(
+                                    fontSize: 18 * _textScale,
+                                    height: 1.5,
+                                    color: _storyTextColor,
+                                  ),
+                                  children: _buildStorySpans(page),
                                 ),
-                                children: _buildStorySpans(page),
                               ),
                             ),
                           ),
@@ -918,20 +905,24 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         ),
         const SizedBox(height: 10),
         if (_storyPages.length > 1)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              _storyPages.length,
-              (index) => AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: index == _currentPageIndex ? 14 : 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: index == _currentPageIndex
-                      ? AppColors.primary
-                      : Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(4),
+          Semantics(
+            label:
+                'Page indicator. On page ${_currentPageIndex + 1} of ${_storyPages.length}',
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                _storyPages.length,
+                (index) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: index == _currentPageIndex ? 14 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: index == _currentPageIndex
+                        ? AppColors.primary
+                        : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
               ),
             ),
@@ -1282,90 +1273,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     _trackResultAction('share', extra: {'method': 'copy_json'});
   }
 
-  Future<void> _submitReport(String reason) async {
-    if (_isReporting) return;
-    setState(() => _isReporting = true);
-    try {
-      final uri = Uri.parse('${Environment.backendUrl}/report-story');
-      final storyId = widget.storyId ?? _analyticsStoryId;
-      final response = await http.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'story_id': storyId,
-          'title': widget.title,
-          'theme': widget.theme,
-          'reason': reason.isEmpty ? 'No reason provided' : reason,
-          'is_interactive': widget.isInteractive ?? false,
-          'story_preview':
-              widget.storyText.length > 240 ? '${widget.storyText.substring(0, 240)}...' : widget.storyText,
-          'timestamp': DateTime.now().toIso8601String(),
-        }),
-      );
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        _showSnackBar(
-          'Report submitted. Thank you for keeping stories safe!',
-          backgroundColor: Colors.green,
-        );
-        _reportController.clear();
-      } else {
-        _showSnackBar(
-          'Could not send report right now.',
-          backgroundColor: Colors.orange,
-        );
-      }
-    } catch (_) {
-      _showSnackBar(
-        'Report failed. Please try again later.',
-        backgroundColor: Colors.orange,
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isReporting = false);
-      }
-    }
-  }
-
-  Future<void> _showReportDialog() async {
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Report Issue'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Tell us what felt unsafe or inappropriate.'),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _reportController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                hintText: 'Optional: add details',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: _isReporting
-                ? null
-                : () async {
-                    Navigator.pop(context);
-                    await _submitReport(_reportController.text.trim());
-                  },
-            child: Text(_isReporting ? 'Sending...' : 'Report'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildShareActions() {
     final theme = Theme.of(context);
     return AppCard(
@@ -1612,11 +1519,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       appBar: AppBar(
         title: const Text('Story Summary'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.flag_outlined),
-            tooltip: 'Report inappropriate content',
-            onPressed: _showReportDialog,
-          ),
           if (widget.storyId != null && !_isLoading)
             IconButton(
               icon: Icon(
@@ -1821,43 +1723,55 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                    FloatingActionButton.small(
-                      heroTag: 'fab_share',
-                      backgroundColor: Colors.blueAccent,
-                      tooltip: 'Share story',
-                      onPressed: () {
-                        _trackResultAction('fab_action', extra: {'action': 'share'});
-                        _shareStory();
-                      },
-                      child: const Icon(Icons.share),
+                    Semantics(
+                      label: 'Share story',
+                      button: true,
+                      child: FloatingActionButton.small(
+                        heroTag: 'fab_share',
+                        backgroundColor: Colors.blueAccent,
+                        tooltip: 'Share story',
+                        onPressed: () {
+                          _trackResultAction('fab_action', extra: {'action': 'share'});
+                          _shareStory();
+                        },
+                        child: const Icon(Icons.share),
+                      ),
                     ),
                     const SizedBox(height: 12),
-                    FloatingActionButton.small(
-                      heroTag: 'fab_regenerate',
-                      backgroundColor: Colors.orangeAccent,
-                      tooltip: 'Regenerate story',
-                      onPressed: _isLoading
-                          ? null
-                          : () {
-                              _trackResultAction(
-                                'fab_action',
-                                extra: {'action': 'regenerate'},
-                              );
-                              _createAnotherStory();
-                            },
-                      child: const Icon(Icons.refresh),
+                    Semantics(
+                      label: 'Regenerate story',
+                      button: true,
+                      child: FloatingActionButton.small(
+                        heroTag: 'fab_regenerate',
+                        backgroundColor: Colors.orangeAccent,
+                        tooltip: 'Regenerate story',
+                        onPressed: _isLoading
+                            ? null
+                            : () {
+                                _trackResultAction(
+                                  'fab_action',
+                                  extra: {'action': 'regenerate'},
+                                );
+                                _createAnotherStory();
+                              },
+                        child: const Icon(Icons.refresh),
+                      ),
                     ),
                     const SizedBox(height: 12),
-                    FloatingActionButton.extended(
-                      heroTag: 'fab_save',
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      icon: const Icon(Icons.save),
-                      label: const Text('Save Story'),
-                      onPressed: () {
-                        _trackResultAction('fab_action', extra: {'action': 'save'});
-                        _saveStory();
-                      },
+                    Semantics(
+                      label: 'Save story',
+                      button: true,
+                      child: FloatingActionButton.extended(
+                        heroTag: 'fab_save',
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        icon: const Icon(Icons.save),
+                        label: const Text('Save Story'),
+                        onPressed: () {
+                          _trackResultAction('fab_action', extra: {'action': 'save'});
+                          _saveStory();
+                        },
+                      ),
                     ),
                   ],
                 ),
@@ -1869,15 +1783,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                 currentIndex: _featureTourStepIndex,
                 onNext: _advanceFeatureTour,
                 onSkip: _skipFeatureTour,
-                onStart: () {
-                  _featureTourStarted = true;
-                  unawaited(
-                    StoryAnalytics.trackFeatureTour(
-                      action: 'started',
-                      step: _featureTourStepIndex + 1,
-                    ),
-                  );
-                },
               ),
           ],
         ),

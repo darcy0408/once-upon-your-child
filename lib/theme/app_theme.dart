@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const primary = Color(0xFF1B5E20); // darker for contrast
-  static const secondary = Color(0xFF2E7D32);
-  static const accent = Color(0xFF0D47A1); // high-contrast accent
+  static const primary = Color(0xFF2E7D32);
+  static const secondary = Color(0xFF4CAF50);
+  static const accent = Color(0xFF81C784);
   static const surface = Color(0xFFF5F9F5);
   static const error = Color(0xFFD32F2F);
   static const warning = Color(0xFFFFA000);
@@ -31,11 +31,8 @@ class AppTheme {
         seedColor: effectiveAccent,
         primary: effectivePrimary,
         secondary: effectiveAccent,
-        onPrimary: Colors.white,
-        onSecondary: Colors.white,
         surface: surface,
         error: error,
-        brightness: Brightness.light,
       ),
       textTheme: _textTheme(base.textTheme),
       cardTheme: const CardThemeData(
@@ -50,7 +47,6 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: effectivePrimary,
           foregroundColor: Colors.white,
-          overlayColor: effectiveAccent.withValues(alpha: 0.14),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: AppSpacing.sm,
@@ -67,25 +63,8 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primary,
-          overlayColor: AppColors.accent.withValues(alpha: 0.14),
           textStyle: const TextStyle(fontWeight: FontWeight.w600),
         ),
-      ),
-      focusColor: AppColors.accent.withValues(alpha: 0.22),
-      hoverColor: AppColors.accent.withValues(alpha: 0.08),
-      highlightColor: AppColors.accent.withValues(alpha: 0.12),
-      chipTheme: base.chipTheme.copyWith(
-        backgroundColor: Colors.grey.shade100,
-        selectedColor: effectiveAccent.withValues(alpha: 0.16),
-        labelStyle: const TextStyle(
-          color: Colors.black87,
-          fontWeight: FontWeight.w600,
-        ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.xs,
-        ),
-        side: BorderSide(color: effectivePrimary.withValues(alpha: 0.2)),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,

@@ -160,13 +160,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               icon: Icon(
                 _obscureApiKey ? Icons.visibility : Icons.visibility_off,
               ),
-              tooltip: _obscureApiKey ? 'Show key' : 'Hide key',
               onPressed: () => setState(() => _obscureApiKey = !_obscureApiKey),
             ),
             if (_apiKeyController.text.isNotEmpty)
               IconButton(
                 icon: const Icon(Icons.clear),
-                tooltip: 'Clear API key',
                 onPressed: _clearApiKey,
               ),
           ],
@@ -174,9 +172,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       obscureText: _obscureApiKey,
       maxLines: 1,
-      enableSuggestions: false,
-      autocorrect: false,
-      textInputAction: TextInputAction.done,
     );
   }
 
@@ -435,36 +430,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final textScaler = MediaQuery.textScalerOf(context);
-
-    return MediaQuery(
-      data: mediaQuery.copyWith(textScaler: textScaler),
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Settings'),
-        ),
-        body: FocusTraversalGroup(
-          policy: OrderedTraversalPolicy(),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeaderCard(context),
-                const SizedBox(height: AppSpacing.lg),
-                _buildApiToggleCard(),
-                if (_useOwnApiKey) ...[
-                  const SizedBox(height: AppSpacing.lg),
-                  _buildBenefitsCard(),
-                  const SizedBox(height: AppSpacing.md),
-                  _buildPrivacyCard(),
-                ],
-                const SizedBox(height: AppSpacing.lg),
-                _buildLegalLinks(context),
-              ],
-            ),
-          ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Settings'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeaderCard(context),
+            const SizedBox(height: AppSpacing.lg),
+            _buildApiToggleCard(),
+            if (_useOwnApiKey) ...[
+              const SizedBox(height: AppSpacing.lg),
+              _buildBenefitsCard(),
+              const SizedBox(height: AppSpacing.md),
+              _buildPrivacyCard(),
+            ],
+            const SizedBox(height: AppSpacing.lg),
+            _buildLegalLinks(context),
+          ],
         ),
       ),
     );

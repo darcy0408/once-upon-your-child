@@ -1,9 +1,6 @@
-import 'dart:convert';
-
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:story_weaver_app/config/flavor_config.dart';
-
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../models/usage_stats.dart';
 import 'user_identity_service.dart';
 
@@ -32,7 +29,7 @@ class UsageStatsService {
         );
       }
     } catch (e) {
-      debugPrint('Error fetching usage stats: $e');
+      print('Error fetching usage stats: $e');
       // Return default stats on error
       return UsageStats(
         storiesThisMonth: 0,
@@ -50,7 +47,7 @@ class UsageStatsService {
       final stats = await getUsageStats();
       return stats.storiesThisMonth < stats.storiesLimit;
     } catch (e) {
-      debugPrint('Error checking if can create story: $e');
+      print('Error checking if can create story: $e');
       // Default to true to not block users
       return true;
     }

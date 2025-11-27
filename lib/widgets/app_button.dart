@@ -48,7 +48,6 @@ class AppButton extends StatelessWidget {
           minimumSize: const Size(double.infinity, 52),
           foregroundColor: AppColors.primary,
           side: const BorderSide(color: AppColors.primary, width: 2),
-          overlayColor: AppColors.primary.withValues(alpha: 0.12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -63,7 +62,6 @@ class AppButton extends StatelessWidget {
         minimumSize: const Size(double.infinity, 52),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        overlayColor: AppColors.accent.withValues(alpha: 0.16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),

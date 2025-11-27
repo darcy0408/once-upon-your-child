@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/flavor_config.dart';
@@ -66,14 +65,11 @@ class StripeService {
         return {'status': 'inactive', 'tier': 'free'};
       }
 
-      debugPrint(
-        'Stripe status fetch failed (${response.statusCode}): ${response.body}',
+      throw Exception(
+        'Failed to get subscription status: ${response.body}',
       );
-      return {'status': 'inactive', 'tier': 'free'};
     } catch (error) {
-      debugPrint('Network error getting subscription status: $error');
-      // Fallback to free tier so the UI can still render.
-      return {'status': 'inactive', 'tier': 'free'};
+      throw Exception('Network error getting subscription status: $error');
     }
   }
 

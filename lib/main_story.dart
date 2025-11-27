@@ -79,10 +79,10 @@ class StoryScreen extends StatefulWidget {
   const StoryScreen({super.key});
 
   @override
-  StoryScreenState createState() => StoryScreenState();
+  _StoryScreenState createState() => _StoryScreenState();
 }
 
-class StoryScreenState extends State<StoryScreen> {
+class _StoryScreenState extends State<StoryScreen> {
   List<Character> _characters = [];
   Character? _selectedCharacter;
   final Set<String> _additionalCharacterIds = {};
@@ -249,7 +249,6 @@ class StoryScreenState extends State<StoryScreen> {
   Future<void> _openAchievementsScreen() async {
     // Lazy load achievements screen
     await achievements_screen.loadLibrary();
-    if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => achievements_screen.AchievementsScreen()),
     );
@@ -300,8 +299,10 @@ class StoryScreenState extends State<StoryScreen> {
   }
 
   Future<bool> _validateStoryCreationPreconditions() async {
+    final navContext = context;
+
     if (_selectedCharacter == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(navContext).showSnackBar(
         const SnackBar(content: Text('Please choose a character!')),
       );
       return false;
@@ -315,7 +316,7 @@ class StoryScreenState extends State<StoryScreen> {
       if (!mounted) return false;
 
       final upgraded = await PaywallDialog.showStoryLimitDialog(
-        context,
+        navContext,
         remainingToday: remaining,
         remainingMonth: remainingMonth,
       );
@@ -331,7 +332,7 @@ class StoryScreenState extends State<StoryScreen> {
       if (!hasMultiChar) {
         if (!mounted) return false;
         await PaywallDialog.showFeatureLockedDialog(
-          context,
+          navContext,
           featureName: 'Multi-Character Stories',
           description: 'Include siblings and friends in stories together!',
         );
@@ -344,7 +345,7 @@ class StoryScreenState extends State<StoryScreen> {
     if (!themeAvailable) {
       if (!mounted) return false;
       await PaywallDialog.showContentLockedDialog(
-        context,
+        navContext,
         contentType: 'Theme',
         contentName: _selectedTheme,
       );
@@ -357,7 +358,7 @@ class StoryScreenState extends State<StoryScreen> {
       if (!companionAvailable) {
         if (!mounted) return false;
         await PaywallDialog.showContentLockedDialog(
-          context,
+          navContext,
           contentType: 'Companion',
           contentName: _selectedCompanion,
         );
@@ -475,7 +476,7 @@ class StoryScreenState extends State<StoryScreen> {
       final String title = (backendTitle != null && backendTitle.isNotEmpty)
           ? backendTitle
           : (_additionalCharacterIds.isEmpty
-              ? '${_selectedCharacter!.name}\'s $_selectedTheme Adventure'
+              ? '${_selectedCharacter!.name}\'s ${_selectedTheme} Adventure'
               : _generateMultiCharacterTitle());
 
       final String wisdomGem = (backendWisdom != null && backendWisdom.isNotEmpty)
@@ -647,12 +648,8 @@ class StoryScreenState extends State<StoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final textScaler = MediaQuery.textScalerOf(context);
     final newAchievementCount = _achievementSummary?.newCount ?? 0;
-    return MediaQuery(
-      data: mediaQuery.copyWith(textScaler: textScaler),
-      child: Scaffold(
+    return Scaffold(
       appBar: AppBar(
         title: Row(
           children: [
@@ -700,7 +697,7 @@ class StoryScreenState extends State<StoryScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -816,12 +813,12 @@ class StoryScreenState extends State<StoryScreen> {
             tooltip: 'Settings',
             icon: const Icon(Icons.settings),
             onPressed: () async {
-              final navigator = Navigator.of(context);
               await settings_screen.loadLibrary();
-              if (!mounted) return;
-              navigator.push(
-                MaterialPageRoute(builder: (_) => settings_screen.SettingsScreen()),
-              );
+              if (mounted) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => settings_screen.SettingsScreen()),
+                );
+              }
             },
           ),
         ],
@@ -844,9 +841,7 @@ class StoryScreenState extends State<StoryScreen> {
             ],
           ),
         ),
-        child: FocusTraversalGroup(
-          policy: OrderedTraversalPolicy(),
-          child: SingleChildScrollView(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1117,29 +1112,27 @@ class StoryScreenState extends State<StoryScreen> {
           ),
         ),
       ),
-    ),
-  ),
-);
-}
+    );
+  }
 
   Card _buildSectionCard(String title, Widget content) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      color: Colors.white.withValues(alpha: 0.95), // Semi-transparent white
+      color: Colors.white.withOpacity(0.95), // Semi-transparent white
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-                        color: const Color(0xFF81C784).withValues(alpha: 0.5), // Light green border
+                        color: const Color(0xFF81C784).withOpacity(0.5), // Light green border
             width: 2,
           ),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-                            Colors.white.withValues(alpha: 0.95),
-                            const Color(0xFFF1F8E9).withValues(alpha: 0.95), // Very light green tint
+                            Colors.white.withOpacity(0.95),
+                            const Color(0xFFF1F8E9).withOpacity(0.95), // Very light green tint
             ],
           ),
         ),
@@ -1154,7 +1147,7 @@ class StoryScreenState extends State<StoryScreen> {
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color:
-                          const Color(0xFF4CAF50).withValues(alpha: 0.2),
+                          const Color(0xFF4CAF50).withOpacity(0.2),
                       shape: BoxShape.circle,
                     ),
                     child: const Text('🍃', style: TextStyle(fontSize: 18)),
@@ -1201,46 +1194,52 @@ class StoryScreenState extends State<StoryScreen> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {
-              setState(() {
-                _selectedCharacter = character;
-              });
-            },
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 140, minWidth: 104),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: isSelected ? Colors.deepPurple : Colors.grey.shade300,
-                  width: isSelected ? 3 : 1,
-                ),
-                borderRadius: BorderRadius.circular(14),
-                color: isSelected ? Colors.deepPurple.shade50 : Colors.white,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 12),
-                  _buildCharacterAvatar(character, size: 64),
-                  const SizedBox(height: 10),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(
-                      character.name,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected ? Colors.deepPurple : Colors.black87,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+          Semantics(
+            label:
+                '${character.name}${isSelected ? " selected" : ""} character card',
+            selected: isSelected,
+            button: true,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                setState(() {
+                  _selectedCharacter = character;
+                });
+              },
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 140, minWidth: 104),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: isSelected ? Colors.deepPurple : Colors.grey.shade300,
+                    width: isSelected ? 3 : 1,
                   ),
-                  const SizedBox(height: 12),
-                ],
+                  borderRadius: BorderRadius.circular(14),
+                  color: isSelected ? Colors.deepPurple.shade50 : Colors.white,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 12),
+                    _buildCharacterAvatar(character, size: 64),
+                    const SizedBox(height: 10),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        character.name,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected ? Colors.deepPurple : Colors.black87,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1286,51 +1285,55 @@ class StoryScreenState extends State<StoryScreen> {
   }
 
   Widget _buildAddCharacterCard() {
-    return GestureDetector(
-      onTap: () async {
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-              builder: (context) => const CharacterCreationScreenEnhanced()),
-        );
-        await _loadCharacters();
-        await _loadAchievementSummary();
-      },
-      child: Container(
-        width: 96,
-        constraints: const BoxConstraints(minHeight: 130, minWidth: 96),
-        decoration: BoxDecoration(
-          border: Border.all(
-              color: Colors.deepPurple, width: 2, style: BorderStyle.solid),
-          borderRadius: BorderRadius.circular(12),
-          color: Colors.deepPurple.shade50,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: Colors.deepPurple.shade100,
-                shape: BoxShape.circle,
+    return Semantics(
+      label: 'Add new character',
+      button: true,
+      child: GestureDetector(
+        onTap: () async {
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+                builder: (context) => const CharacterCreationScreenEnhanced()),
+          );
+          await _loadCharacters();
+          await _loadAchievementSummary();
+        },
+        child: Container(
+          width: 96,
+          constraints: const BoxConstraints(minHeight: 130, minWidth: 96),
+          decoration: BoxDecoration(
+            border: Border.all(
+                color: Colors.deepPurple, width: 2, style: BorderStyle.solid),
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.deepPurple.shade50,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.deepPurple.shade100,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.add, size: 30, color: Colors.deepPurple),
               ),
-              child: const Icon(Icons.add, size: 30, color: Colors.deepPurple),
-            ),
-            const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 6),
-              child: Text(
-                'Add\nCharacter',
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.deepPurple),
-                textAlign: TextAlign.center,
+              const SizedBox(height: 8),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 6),
+                child: Text(
+                  'Add\nCharacter',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepPurple),
+                  textAlign: TextAlign.center,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-          ],
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );
@@ -1348,7 +1351,7 @@ class StoryScreenState extends State<StoryScreen> {
         border: Border.all(color: Colors.white, width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: Colors.black.withOpacity(0.08),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -1438,21 +1441,11 @@ class StoryScreenState extends State<StoryScreen> {
     if (value.contains('pink')) return 'PastelPink';
     if (value.contains('silver') ||
         value.contains('gray') ||
-        value.contains('grey')) {
-      return 'SilverGray';
-    }
-    if (value.contains('purple')) {
-      return 'PastelPink';
-    }
-    if (value.contains('blue')) {
-      return 'SilverGray';
-    }
-    if (value.contains('black')) {
-      return 'Black';
-    }
-    if (value.contains('brown')) {
-      return 'Brown';
-    }
+        value.contains('grey')) return 'SilverGray';
+    if (value.contains('purple')) return 'PastelPink';
+    if (value.contains('blue')) return 'SilverGray';
+    if (value.contains('black')) return 'Black';
+    if (value.contains('brown')) return 'Brown';
     return 'Brown';
   }
 
@@ -1566,7 +1559,6 @@ class StoryScreenState extends State<StoryScreen> {
     }
   }
 
-  // ignore: unused_element
   Widget _buildThemeSelector() {
     final themes = [
       'Adventure',
@@ -1665,10 +1657,10 @@ class StoryScreenState extends State<StoryScreen> {
         .toList();
 
     if (others.isEmpty) {
-      return 'A $_selectedTheme Adventure with ${_selectedCharacter!.name}';
+      return 'A ${_selectedTheme} Adventure with ${_selectedCharacter!.name}';
     }
 
-    return 'A $_selectedTheme Adventure with ${_selectedCharacter!.name} & ${others.join(", ")}';
+    return 'A ${_selectedTheme} Adventure with ${_selectedCharacter!.name} & ${others.join(", ")}';
   }
 
   Widget _buildAdditionalCharactersSelector() {
@@ -1695,72 +1687,78 @@ class StoryScreenState extends State<StoryScreen> {
       runSpacing: 12.0,
       children: availableCharacters.map((c) {
         final isSelected = _additionalCharacterIds.contains(c.id);
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              if (isSelected) {
-                _additionalCharacterIds.remove(c.id);
-              } else {
-                _additionalCharacterIds.add(c.id);
-              }
-            });
-          },
-          child: Container(
-            width: 88,
-            constraints: const BoxConstraints(minHeight: 118, minWidth: 88),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: isSelected ? Colors.green : Colors.grey.shade300,
-                width: isSelected ? 3 : 1,
+        return Semantics(
+          label:
+              '${c.name}${isSelected ? " selected" : ""} additional character',
+          selected: isSelected,
+          button: true,
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                if (isSelected) {
+                  _additionalCharacterIds.remove(c.id);
+                } else {
+                  _additionalCharacterIds.add(c.id);
+                }
+              });
+            },
+            child: Container(
+              width: 88,
+              constraints: const BoxConstraints(minHeight: 118, minWidth: 88),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: isSelected ? Colors.green : Colors.grey.shade300,
+                  width: isSelected ? 3 : 1,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                color: isSelected ? Colors.green.shade50 : Colors.white,
               ),
-              borderRadius: BorderRadius.circular(12),
-              color: isSelected ? Colors.green.shade50 : Colors.white,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 10),
-                Stack(
-                  children: [
-                    _buildCharacterAvatar(c, size: 52),
-                    if (isSelected)
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: const BoxDecoration(
-                            color: Colors.green,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.check,
-                            size: 14,
-                            color: Colors.white,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 10),
+                  Stack(
+                    children: [
+                      _buildCharacterAvatar(c, size: 52),
+                      if (isSelected)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(
+                              color: Colors.green,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              size: 14,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Text(
-                    c.name,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
-                      color:
-                          isSelected ? Colors.green.shade700 : Colors.black87,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    ],
                   ),
-                ),
-                const SizedBox(height: 8),
-              ],
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: Text(
+                      c.name,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        color:
+                            isSelected ? Colors.green.shade700 : Colors.black87,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
             ),
           ),
         );
@@ -1782,7 +1780,7 @@ class StoryScreenState extends State<StoryScreen> {
     return Card(
       elevation: 5,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      color: Colors.white.withValues(alpha: 0.95),
+      color: Colors.white.withOpacity(0.95),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -1793,7 +1791,7 @@ class StoryScreenState extends State<StoryScreen> {
                 Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.amber.withValues(alpha: 0.2),
+                    color: Colors.amber.withOpacity(0.2),
                   ),
                   padding: const EdgeInsets.all(12),
                   child: const Icon(Icons.emoji_events, color: Colors.amber),
@@ -1816,7 +1814,7 @@ class StoryScreenState extends State<StoryScreen> {
                         '${summary.unlockedCount}/${summary.totalCount} unlocked so far',
                         style: TextStyle(
                           color:
-                              Colors.green.shade900.withValues(alpha: 0.75),
+                              Colors.green.shade900.withOpacity(0.75),
                         ),
                       ),
                     ],
@@ -1857,7 +1855,7 @@ class StoryScreenState extends State<StoryScreen> {
               '$completionPercent% badges unlocked • '
               '$averageProgress% average progress',
               style: TextStyle(
-                color: Colors.green.shade900.withValues(alpha: 0.7),
+                color: Colors.green.shade900.withOpacity(0.7),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1876,7 +1874,6 @@ class StoryScreenState extends State<StoryScreen> {
     );
   }
 
-  // ignore: unused_element
   Widget _buildTherapeuticCard() {
     return Card(
       elevation: 3,

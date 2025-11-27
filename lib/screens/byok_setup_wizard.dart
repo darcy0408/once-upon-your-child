@@ -1,10 +1,8 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
-import '../services/story_analytics.dart';
 
 import '../theme/app_theme.dart';
 import '../widgets/app_button.dart';
@@ -256,10 +254,6 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
         _valid = false;
         _validating = false;
       });
-      unawaited(StoryAnalytics.trackByokSubmission(
-        success: false,
-        errorMessage: 'invalid_prefix',
-      ));
       return;
     }
 
@@ -273,7 +267,6 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
           _status = 'Great! Your key looks good. Tap finish to save.';
           _validating = false;
         });
-        unawaited(StoryAnalytics.trackByokSubmission(success: true));
       } else {
         final Map<String, dynamic>? body =
             response.body.isNotEmpty ? jsonDecode(response.body) : null;
@@ -282,10 +275,6 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
           _valid = false;
           _validating = false;
         });
-        unawaited(StoryAnalytics.trackByokSubmission(
-          success: false,
-          errorMessage: body?['error']?['message'],
-        ));
       }
     } catch (_) {
       setState(() {
@@ -293,10 +282,6 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
         _valid = false;
         _validating = false;
       });
-      unawaited(StoryAnalytics.trackByokSubmission(
-        success: false,
-        errorMessage: 'network_or_timeout',
-      ));
     }
   }
 

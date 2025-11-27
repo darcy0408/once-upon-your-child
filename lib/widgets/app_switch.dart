@@ -40,9 +40,8 @@ class AppSwitch extends StatelessWidget {
                   ?.copyWith(fontWeight: FontWeight.w600),
             )
           : null,
-      subtitle: subtitle != null
-          ? Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium)
-          : null,
+      subtitle:
+          subtitle != null ? Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium) : null,
       secondary: icon != null ? Icon(icon, color: AppColors.primary) : null,
       tileColor: Colors.transparent,
     );

@@ -193,32 +193,23 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final textScaler = MediaQuery.textScalerOf(context);
-
-    return MediaQuery(
-      data: mediaQuery.copyWith(textScaler: textScaler),
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Quick Story'),
-          backgroundColor: AppColors.primary,
-          actions: [
-            TextButton(
-              onPressed: _exploreAdvancedFeatures,
-              child: const Text(
-                'Advanced',
-                style: TextStyle(color: Colors.white),
-              ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Quick Story'),
+        backgroundColor: AppColors.primary,
+        actions: [
+          TextButton(
+            onPressed: _exploreAdvancedFeatures,
+            child: const Text(
+              'Advanced',
+              style: TextStyle(color: Colors.white),
             ),
-          ],
-        ),
-        body: FocusTraversalGroup(
-          policy: OrderedTraversalPolicy(),
-          child: _generatedStory != null
-              ? _buildStoryView()
-              : _buildStoryCreator(),
-        ),
+          ),
+        ],
       ),
+      body: _generatedStory != null
+          ? _buildStoryView()
+          : _buildStoryCreator(),
     );
   }
 
@@ -284,7 +275,6 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
           const SizedBox(height: 8),
           TextField(
             controller: _characterNameController,
-            textInputAction: TextInputAction.next,
             decoration: InputDecoration(
               hintText: 'Enter a name (e.g., Emma, Max, Luna)',
               border: OutlineInputBorder(
