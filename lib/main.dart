@@ -128,7 +128,7 @@ class _StoryWeaverAppState extends State<StoryWeaverApp> {
     }
 
     if (onboardingStatus) {
-      return const StoryCreatorApp();
+      return _buildThemedApp(const StoryScreen());
     }
 
     return _buildThemedApp(
