@@ -327,7 +327,6 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                         ..._filteredStories.map((s) {
                           final dateStr = _prettyDate(s.createdAt);
                           final childNames = s.characters.map((c) => c.name).toList();
-
                           final wordCount = _wordCount(s.storyText);
                           final readMinutes = (wordCount / 180).clamp(1, 30).round();
                           final qualityLabel = _qualityLabel(wordCount);
@@ -478,9 +477,7 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                                               button: true,
                                               label: 'Report ${s.title}',
                                               child: TextButton.icon(
-                                                onPressed: _isReporting
-                                                    ? null
-                                                    : () => _reportStory(s),
+                                                onPressed: _isReporting ? null : () => _reportStory(s),
                                                 icon: const Icon(Icons.flag_outlined),
                                                 label: const Text('Report'),
                                               ),
@@ -524,13 +521,14 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                               ),
                             );
                           }),
-                    const SizedBox(height: 12),
+                      const SizedBox(height: 12),
                     ],
                   ),
                 ),
               ),
-            ),
-          );
+        ),
+      ),
+    );
   }
 
   Widget _buildStat(IconData icon, String value, String label) {
