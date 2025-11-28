@@ -177,7 +177,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
                       emoji: emotion.emoji,
                       eyeType: emotion.eyeType,
                       mouthType: emotion.mouthType,
-                      color: emotion.color ?? SunsetJungleTheme.sunsetPink,
+                      color: emotion.color ?? SunsetJungleTheme.sunsetPeach,
                     ),
                   );
                 } else {
@@ -238,7 +238,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
                       emoji: emotion.emoji,
                       eyeType: emotion.eyeType,
                       mouthType: emotion.mouthType,
-                      color: _selectedCore!.color ?? SunsetJungleTheme.sunsetPink,
+                      color: _selectedCore!.color ?? SunsetJungleTheme.sunsetPeach,
                     ),
                   );
                 } else {
@@ -302,7 +302,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
                     emoji: emoji,
                     eyeType: _selectedSecondary!.eyeType,
                     mouthType: _selectedSecondary!.mouthType,
-                    color: _selectedCore!.color ?? SunsetJungleTheme.sunsetPink,
+                    color: _selectedCore!.color ?? SunsetJungleTheme.sunsetPeach,
                   ),
                 );
               },
