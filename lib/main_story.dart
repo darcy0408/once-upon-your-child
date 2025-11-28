@@ -149,7 +149,11 @@ class _StoryScreenState extends State<StoryScreen> {
         break;
       case 2: // Feelings Corner
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const FeelingsCornerScreen()),
+          MaterialPageRoute(
+            builder: (_) => FeelingsCornerScreen(
+              characterAge: _selectedCharacter?.age,
+            ),
+          ),
         ).then((_) => setState(() => _selectedTabIndex = 0));
         break;
       case 3: // Settings
@@ -1194,12 +1198,7 @@ class _StoryScreenState extends State<StoryScreen> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Semantics(
-            label:
-                '${character.name}${isSelected ? " selected" : ""} character card',
-            selected: isSelected,
-            button: true,
-            child: GestureDetector(
+          GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () {
                 setState(() {
@@ -1242,7 +1241,6 @@ class _StoryScreenState extends State<StoryScreen> {
                 ),
               ),
             ),
-          ),
           Positioned(
             top: -6,
             right: -6,
@@ -1285,10 +1283,7 @@ class _StoryScreenState extends State<StoryScreen> {
   }
 
   Widget _buildAddCharacterCard() {
-    return Semantics(
-      label: 'Add new character',
-      button: true,
-      child: GestureDetector(
+    return GestureDetector(
         onTap: () async {
           await Navigator.of(context).push(
             MaterialPageRoute(
@@ -1335,8 +1330,7 @@ class _StoryScreenState extends State<StoryScreen> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildCharacterAvatar(Character character, {double size = 40}) {
@@ -1687,12 +1681,7 @@ class _StoryScreenState extends State<StoryScreen> {
       runSpacing: 12.0,
       children: availableCharacters.map((c) {
         final isSelected = _additionalCharacterIds.contains(c.id);
-        return Semantics(
-          label:
-              '${c.name}${isSelected ? " selected" : ""} additional character',
-          selected: isSelected,
-          button: true,
-          child: GestureDetector(
+        return GestureDetector(
             onTap: () {
               setState(() {
                 if (isSelected) {
@@ -1760,8 +1749,7 @@ class _StoryScreenState extends State<StoryScreen> {
                 ],
               ),
             ),
-          ),
-        );
+          );
       }).toList(),
     );
   }

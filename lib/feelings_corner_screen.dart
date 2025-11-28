@@ -10,7 +10,12 @@ import 'feelings_wheel_data.dart';
 import 'services/feelings_analytics_service.dart';
 
 class FeelingsCornerScreen extends StatefulWidget {
-  const FeelingsCornerScreen({Key? key}) : super(key: key);
+  const FeelingsCornerScreen({
+    Key? key,
+    this.characterAge,
+  }) : super(key: key);
+
+  final int? characterAge;
 
   @override
   State<FeelingsCornerScreen> createState() => _FeelingsCornerScreenState();
@@ -185,6 +190,7 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
             ),
             const SizedBox(height: 12),
             FeelingsWheelScreen(
+              ageYears: widget.characterAge,
               currentFeeling: _selectedFeeling,
               onFeelingSelected: (feeling) {
                 setState(() {

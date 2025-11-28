@@ -1,6 +1,5 @@
 // lib/feelings_wheel_screen.dart
-// Interactive Feelings Wheel for therapeutic emotional learning
-// Matching React web app functionality
+// Interactive Feelings Wheel with age-aware depth and optional reference image
 
 import 'package:flutter/material.dart';
 import 'feelings_wheel_data.dart';
@@ -9,11 +8,13 @@ import 'sunset_jungle_theme.dart';
 class FeelingsWheelScreen extends StatefulWidget {
   final SelectedFeeling? currentFeeling;
   final ValueChanged<SelectedFeeling>? onFeelingSelected;
+  final int? ageYears;
 
   const FeelingsWheelScreen({
     super.key,
     this.currentFeeling,
     this.onFeelingSelected,
+    this.ageYears,
   });
 
   @override
@@ -26,9 +27,12 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final age = widget.ageYears;
+    final maxDepth = _maxDepthForAge(age);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _buildWheelImage(),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -38,31 +42,43 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
+            children: [
+              const Text(
                 'Step 1: Pick a core emotion',
                 style: TextStyle(
                   fontFamily: 'Quicksand',
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              SizedBox(height: 4),
-              Text(
-                'Step 2: Choose a more specific feeling',
-                style: TextStyle(fontFamily: 'Quicksand'),
-              ),
-              SizedBox(height: 2),
-              Text(
-                'Step 3: Tap the exact feeling that fits',
-                style: TextStyle(fontFamily: 'Quicksand'),
-              ),
+              if (maxDepth > 1) ...const [
+                SizedBox(height: 4),
+                Text(
+                  'Step 2: Choose a more specific feeling',
+                  style: TextStyle(fontFamily: 'Quicksand'),
+                ),
+              ],
+              if (maxDepth > 2) ...const [
+                SizedBox(height: 2),
+                Text(
+                  'Step 3: Tap the exact feeling that fits',
+                  style: TextStyle(fontFamily: 'Quicksand'),
+                ),
+              ],
+              if (age != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    _ageGuidanceText(maxDepth),
+                    style: const TextStyle(fontFamily: 'Quicksand', fontSize: 12),
+                  ),
+                ),
             ],
           ),
         ),
         const SizedBox(height: 14),
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 250),
-          child: _buildActiveLevel(),
+          child: _buildActiveLevel(maxDepth),
         ),
         if (_selectedCore != null)
           Align(
@@ -82,20 +98,56 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
     );
   }
 
-  Widget _buildActiveLevel() {
+  int _maxDepthForAge(int? age) {
+    if (age == null) return 3;
+    if (age <= 6) return 1; // core only
+    if (age <= 9) return 2; // core + secondary
+    return 3; // full depth
+  }
+
+  String _ageGuidanceText(int depth) {
+    switch (depth) {
+      case 1:
+        return 'For younger readers: pick the big feeling.';
+      case 2:
+        return 'Pick the big feeling, then a simple feeling under it.';
+      default:
+        return 'Explore the wheel to find the exact feeling.';
+    }
+  }
+
+  Widget _buildWheelImage() {
+    return Semantics(
+      label: 'Feelings wheel reference image',
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Image.asset(
+          'assets/images/FeelingsWheel.png',
+          height: 220,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stack) => const SizedBox.shrink(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActiveLevel(int maxDepth) {
     if (_selectedCore == null) {
-      return _buildCoreLevel();
+      return _buildCoreLevel(maxDepth);
+    }
+    if (maxDepth == 1) {
+      return _buildCoreFinal();
     }
     if (_selectedSecondary == null) {
-      return _buildSecondaryLevel();
+      return _buildSecondaryLevel(maxDepth);
+    }
+    if (maxDepth == 2) {
+      return _buildSecondaryFinal();
     }
     return _buildTertiaryLevel();
   }
 
-
-
-
-  Widget _buildCoreLevel() {
+  Widget _buildCoreLevel(int maxDepth) {
     return Column(
       key: const ValueKey('core'),
       children: [
@@ -116,10 +168,24 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
               name: emotion.name,
               color: emotion.color!,
               onTap: () {
-                setState(() {
-                  _selectedCore = emotion;
-                  _selectedSecondary = null;
-                });
+                if (maxDepth == 1) {
+                  _notifySelection(
+                    SelectedFeeling(
+                      core: emotion.name,
+                      secondary: '',
+                      tertiary: emotion.name,
+                      emoji: emotion.emoji,
+                      eyeType: emotion.eyeType,
+                      mouthType: emotion.mouthType,
+                      color: emotion.color ?? SunsetJungleTheme.sunsetPink,
+                    ),
+                  );
+                } else {
+                  setState(() {
+                    _selectedCore = emotion;
+                    _selectedSecondary = null;
+                  });
+                }
               },
             );
           },
@@ -128,7 +194,11 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
     );
   }
 
-  Widget _buildSecondaryLevel() {
+  Widget _buildCoreFinal() {
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildSecondaryLevel(int maxDepth) {
     return Column(
       key: const ValueKey('secondary'),
       children: [
@@ -159,15 +229,33 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
               name: emotion.name,
               color: _selectedCore!.color!.withOpacity(0.8),
               onTap: () {
-                setState(() {
-                  _selectedSecondary = emotion;
-                });
+                if (maxDepth == 2) {
+                  _notifySelection(
+                    SelectedFeeling(
+                      core: _selectedCore!.name,
+                      secondary: emotion.name,
+                      tertiary: emotion.name,
+                      emoji: emotion.emoji,
+                      eyeType: emotion.eyeType,
+                      mouthType: emotion.mouthType,
+                      color: _selectedCore!.color ?? SunsetJungleTheme.sunsetPink,
+                    ),
+                  );
+                } else {
+                  setState(() {
+                    _selectedSecondary = emotion;
+                  });
+                }
               },
             );
           },
         ),
       ],
     );
+  }
+
+  Widget _buildSecondaryFinal() {
+    return const SizedBox.shrink();
   }
 
   Widget _buildTertiaryLevel() {
@@ -196,23 +284,27 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
           itemCount: _selectedSecondary!.tertiary.length,
           itemBuilder: (context, index) {
             final feelingName = _selectedSecondary!.tertiary[index];
+            final emoji =
+                FeelingsEmojiLookup.emojiFor(feelingName) ?? _selectedSecondary!.emoji;
             final isSelected =
                 widget.currentFeeling?.tertiary == feelingName;
             return _buildFeelingButton(
+              emoji: emoji,
               name: feelingName,
-              color: _selectedCore!.color!.withOpacity(0.6),
+              color: _selectedCore!.color!.withOpacity(0.7),
               isSelected: isSelected,
               onTap: () {
-                final selectedFeeling = SelectedFeeling(
-                  core: _selectedCore!.name,
-                  secondary: _selectedSecondary!.name,
-                  tertiary: feelingName,
-                  emoji: _selectedSecondary!.emoji,
-                  eyeType: _selectedSecondary!.eyeType,
-                  mouthType: _selectedSecondary!.mouthType,
-                  color: _selectedCore!.color!,
+                _notifySelection(
+                  SelectedFeeling(
+                    core: _selectedCore!.name,
+                    secondary: _selectedSecondary!.name,
+                    tertiary: feelingName,
+                    emoji: emoji,
+                    eyeType: _selectedSecondary!.eyeType,
+                    mouthType: _selectedSecondary!.mouthType,
+                    color: _selectedCore!.color ?? SunsetJungleTheme.sunsetPink,
+                  ),
                 );
-                widget.onFeelingSelected?.call(selectedFeeling);
               },
             );
           },
@@ -221,117 +313,81 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
     );
   }
 
-  Widget _buildFeelingButton({
-    String? emoji,
-    required String name,
-    required Color color,
-    required VoidCallback onTap,
-    bool isSelected = false,
-  }) {
-    return Material(
-      color: isSelected ? color.darken() : color,
-      borderRadius: BorderRadius.circular(16),
-      elevation: 4,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (emoji != null)
-                Text(
-                  emoji,
-                  style: const TextStyle(fontSize: 40),
-                ),
-              if (emoji != null) const SizedBox(height: 8),
-              Text(
-                name,
-                style: const TextStyle(
-                  fontFamily: 'Quicksand',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black26,
-                      blurRadius: 4,
-                    ),
-                  ],
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (isSelected) ...[
-                const SizedBox(height: 6),
-                const Icon(Icons.check_circle, color: Colors.white, size: 20),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
+  void _notifySelection(SelectedFeeling feeling) {
+    widget.onFeelingSelected?.call(feeling);
   }
 
   Widget _buildBreadcrumb({
     required String text,
     required VoidCallback onBack,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: SunsetJungleTheme.sandWarm,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          ElevatedButton(
-            onPressed: onBack,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: SunsetJungleTheme.sunsetCoral,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text(
-              '← Back',
-              style: TextStyle(
-                fontFamily: 'Quicksand',
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
+    return Row(
+      children: [
+        IconButton(
+          onPressed: onBack,
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Back',
+        ),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontFamily: 'Quicksand',
+              fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                fontFamily: 'Quicksand',
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: SunsetJungleTheme.jungleDeepGreen,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-
-}
-
-extension on Color {
-  Color darken([double amount = .1]) {
-    final hsl = HSLColor.fromColor(this);
-    final adjusted =
-        hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
-    return adjusted.toColor();
+  Widget _buildFeelingButton({
+    required String emoji,
+    required String name,
+    required Color color,
+    required VoidCallback onTap,
+    bool isSelected = false,
+  }) {
+    return Semantics(
+      button: true,
+      label: name,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isSelected ? color.withOpacity(0.3) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected ? color : color.withOpacity(0.4),
+              width: isSelected ? 2.5 : 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 26)),
+              const SizedBox(height: 8),
+              Text(
+                name,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontFamily: 'Quicksand',
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

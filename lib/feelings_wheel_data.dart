@@ -116,6 +116,43 @@ class FeelingSupportInfo {
   });
 }
 
+/// Optional emoji mapping for tertiary feelings (matches FeelingsWheel.png)
+class FeelingsEmojiLookup {
+  static const Map<String, String> tertiary = {
+    'Proud': '😊',
+    'Calm': '😌',
+    'Excited': '🤩',
+    'Hopeful': '🙂',
+    'Loved': '🥰',
+    'Supported': '😊',
+    'Connected': '🤗',
+    'Caring': '🥰',
+    'Affectionate': '😘',
+    'Warm': '☺️',
+    'Curious': '🤔',
+    'Confused': '😕',
+    'Shocked': '😱',
+    'Amazed': '🤩',
+    'Lonely': '😔',
+    'Embarrassed': '😳',
+    'Disappointed': '😞',
+    'Hurt': '😢',
+    'Guilty': '😟',
+    'Scared': '😨',
+    'Nervous': '😬',
+    'Worried': '😟',
+    'Anxious': '😰',
+    'Panicked': '😱',
+    'Angry': '😠',
+    'Frustrated': '😤',
+    'Annoyed': '😒',
+    'Jealous': '😒',
+    'Irritated': '😑',
+  };
+
+  static String? emojiFor(String name) => tertiary[name];
+}
+
 class FeelingSupportLibrary {
   static final Map<String, FeelingSupportInfo> _secondaryLevel = {
     'Joyful': const FeelingSupportInfo(
