@@ -153,6 +153,128 @@ class FeelingsEmojiLookup {
   static String? emojiFor(String name) => tertiary[name];
 }
 
+class FeelingDetail {
+  final String description;
+  final List<String> coping;
+  final String? emoji;
+
+  const FeelingDetail({
+    required this.description,
+    required this.coping,
+    this.emoji,
+  });
+}
+
+/// Child-friendly descriptions and coping ideas per feeling.
+class FeelingDetails {
+  static final Map<String, FeelingDetail> _details = {
+    'Frustrated': const FeelingDetail(
+      description: 'When things feel stuck or not going your way.',
+      coping: [
+        'Pause and take 3 slow breaths.',
+        'Shake out your hands and stretch.',
+        'Ask an adult to break the problem into small steps.',
+      ],
+      emoji: '😤',
+    ),
+    'Worried': const FeelingDetail(
+      description: 'When your brain keeps thinking about “what if” things.',
+      coping: [
+        'Name five things you can see to feel calmer.',
+        'Breathe in for 4, out for 4.',
+        'Tell a trusted adult what you’re worried about.',
+      ],
+      emoji: '😟',
+    ),
+    'Lonely': const FeelingDetail(
+      description: 'When you miss being with others or feel left out.',
+      coping: [
+        'Hug a stuffed friend or cozy pillow.',
+        'Draw someone you like spending time with.',
+        'Say hi to someone nearby or send a kind message.',
+      ],
+      emoji: '😔',
+    ),
+    'Mad': const FeelingDetail(
+      description: 'When your body feels hot and you want things to change.',
+      coping: [
+        'Stomp safely like a dinosaur, then pause.',
+        'Blow big dragon breaths into your hands.',
+        'Talk about what bothered you.',
+      ],
+      emoji: '😠',
+    ),
+    'Excited': const FeelingDetail(
+      description: 'When you feel super ready and full of energy.',
+      coping: [
+        'Do a happy dance.',
+        'Tell someone your good news.',
+        'Take a breath to enjoy the moment.',
+      ],
+      emoji: '🤩',
+    ),
+    'Calm': const FeelingDetail(
+      description: 'When your body feels relaxed and peaceful.',
+      coping: [
+        'Listen to soft music or nature sounds.',
+        'Take a slow stretch.',
+        'Notice three things that feel good right now.',
+      ],
+      emoji: '😌',
+    ),
+    'Scared': const FeelingDetail(
+      description: 'When something feels unsafe or surprising.',
+      coping: [
+        'Hold a comfort item.',
+        'Look around and name things that are safe.',
+        'Stand near a trusted adult.',
+      ],
+      emoji: '😨',
+    ),
+    'Sad': const FeelingDetail(
+      description: 'When you feel down, miss someone, or something hurt your heart.',
+      coping: [
+        'Wrap up in a cozy blanket.',
+        'Draw or write about your feeling.',
+        'Talk to someone who listens kindly.',
+      ],
+      emoji: '😢',
+    ),
+    'Surprised': const FeelingDetail(
+      description: 'When something unexpected happens fast.',
+      coping: [
+        'Blink slowly and take a breath.',
+        'Share the surprise with someone.',
+        'Stretch your arms wide and relax.',
+      ],
+      emoji: '😲',
+    ),
+    'Proud': const FeelingDetail(
+      description: 'When you feel good about what you did.',
+      coping: [
+        'Tell someone what you accomplished.',
+        'Write or draw your win.',
+        'Help a friend using your new skill.',
+      ],
+      emoji: '😊',
+    ),
+  };
+
+  static FeelingDetail forFeeling(SelectedFeeling feeling) {
+    return _details[feeling.tertiary] ??
+        _details[feeling.secondary] ??
+        _details[feeling.core] ??
+        const FeelingDetail(
+          description: 'This is how you feel right now.',
+          coping: [
+            'Take a slow breath in and out.',
+            'Share your feeling with someone you trust.',
+          ],
+          emoji: null,
+        );
+  }
+}
+
 class FeelingSupportLibrary {
   static final Map<String, FeelingSupportInfo> _secondaryLevel = {
     'Joyful': const FeelingSupportInfo(

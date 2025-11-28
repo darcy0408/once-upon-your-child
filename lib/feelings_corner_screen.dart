@@ -24,6 +24,7 @@ class FeelingsCornerScreen extends StatefulWidget {
 class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
   SelectedFeeling? _selectedFeeling;
   FeelingSupportInfo? _supportInfo;
+  FeelingDetail? _detail;
   int _intensity = 3;
   List<Map<String, dynamic>> _recentCheckIns = [];
   bool _dailyReminderEnabled = false;
@@ -196,6 +197,7 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
                 setState(() {
                   _selectedFeeling = feeling;
                   _supportInfo = FeelingSupportLibrary.findSupport(feeling);
+                  _detail = FeelingDetails.forFeeling(feeling);
                   _intensity = 3;
                 });
               },
@@ -204,111 +206,7 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
             // Selected emotion details
             if (_selectedFeeling != null) ...[
               const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: _selectedFeeling!.color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _selectedFeeling!.color,
-                    width: 2,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          _selectedFeeling!.emoji,
-                          style: const TextStyle(fontSize: 40),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _selectedFeeling!.tertiary,
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                '${_selectedFeeling!.core} → ${_selectedFeeling!.secondary}',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[700],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Intensity Slider
-                    const Text(
-                      'How strong is this feeling?',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Text('Mild', style: TextStyle(fontSize: 12)),
-                        Expanded(
-                          child: Slider(
-                            value: _intensity.toDouble(),
-                            min: 1,
-                            max: 5,
-                            divisions: 4,
-                            label: _getIntensityLabel(_intensity),
-                            activeColor: _selectedFeeling!.color,
-                            onChanged: (value) {
-                              setState(() => _intensity = value.toInt());
-                            },
-                          ),
-                        ),
-                        const Text('Very Strong', style: TextStyle(fontSize: 12)),
-                      ],
-                    ),
-                    Center(
-                      child: Text(
-                        _getIntensityLabel(_intensity),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: _selectedFeeling!.color,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Support information
-              if (_supportInfo != null) ...[
-                const SizedBox(height: 16),
-                _buildSupportSection(
-                  title: 'How this feeling shows up in the body',
-                  items: _supportInfo!.bodySignals,
-                  accent: _selectedFeeling!.color,
-                  icon: Icons.self_improvement,
-                ),
-                const SizedBox(height: 12),
-                _buildSupportSection(
-                  title: 'Helpful things to try',
-                  items: _supportInfo!.copingIdeas,
-                  accent: _selectedFeeling!.color,
-                  icon: Icons.favorite_outline,
-                ),
-              ],
+              _buildInfoPanel(context),
 
               const SizedBox(height: 24),
 
@@ -500,6 +398,124 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Unified info panel for the selected feeling (path, definition, coping).
+  Widget _buildInfoPanel(BuildContext context) {
+    final feeling = _selectedFeeling!;
+    final detail = _detail ?? FeelingDetails.forFeeling(feeling);
+    final support = _supportInfo;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: feeling.color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: feeling.color, width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                detail.emoji ?? feeling.emoji,
+                style: const TextStyle(fontSize: 40),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      feeling.tertiary,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      '${feeling.core} → ${feeling.secondary}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'What this feeling means',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            detail.description,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'How strong is this feeling?',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text('Mild', style: TextStyle(fontSize: 12)),
+              Expanded(
+                child: Slider(
+                  value: _intensity.toDouble(),
+                  min: 1,
+                  max: 5,
+                  divisions: 4,
+                  label: _getIntensityLabel(_intensity),
+                  activeColor: feeling.color,
+                  onChanged: (value) {
+                    setState(() => _intensity = value.toInt());
+                  },
+                ),
+              ),
+              const Text('Very Strong', style: TextStyle(fontSize: 12)),
+            ],
+          ),
+          Center(
+            child: Text(
+              _getIntensityLabel(_intensity),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: feeling.color,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (detail.coping.isNotEmpty)
+            _buildSupportSection(
+              title: 'Helpful things to try',
+              items: detail.coping,
+              accent: feeling.color,
+              icon: Icons.favorite_outline,
+            ),
+          if (support != null && support.bodySignals.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _buildSupportSection(
+              title: 'How this feeling shows up in the body',
+              items: support.bodySignals,
+              accent: feeling.color,
+              icon: Icons.self_improvement,
+            ),
+          ],
+        ],
       ),
     );
   }
