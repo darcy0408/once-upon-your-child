@@ -117,17 +117,50 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
   }
 
   Widget _buildWheelImage() {
-    return Semantics(
-      label: 'Feelings wheel reference image',
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Image.asset(
-          'assets/images/FeelingsWheel.png',
-          height: 220,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stack) => const SizedBox.shrink(),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          label: 'Feelings wheel reference image',
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: AspectRatio(
+              aspectRatio: 1.1,
+              child: InteractiveViewer(
+                minScale: 0.9,
+                maxScale: 2.0,
+                child: Image.asset(
+                  'assets/images/FeelingsWheel.png',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stack) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ),
         ),
-      ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => Dialog(
+                  child: InteractiveViewer(
+                    minScale: 0.8,
+                    maxScale: 3.0,
+                    child: Image.asset(
+                      'assets/images/FeelingsWheel.png',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.fullscreen),
+            label: const Text('Open full wheel'),
+          ),
+        ),
+      ],
     );
   }
 
@@ -150,24 +183,24 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
   Widget _buildCoreLevel(int maxDepth) {
     return Column(
       key: const ValueKey('core'),
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.2,
-          ),
-          itemCount: FeelingsWheelData.coreEmotions.length,
-          itemBuilder: (context, index) {
-            final emotion = FeelingsWheelData.coreEmotions[index];
-            return _buildFeelingButton(
-              emoji: emotion.emoji,
-              name: emotion.name,
-              color: emotion.color!,
-              onTap: () {
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: FeelingsWheelData.coreEmotions.map((emotion) {
+            final selected = _selectedCore?.id == emotion.id;
+            return ChoiceChip(
+              label: Text(emotion.name),
+              avatar: Text(emotion.emoji),
+              selected: selected,
+              labelStyle: TextStyle(
+                color: selected ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.w700,
+              ),
+              selectedColor: emotion.color,
+              onSelected: (_) {
                 if (maxDepth == 1) {
                   _notifySelection(
                     SelectedFeeling(
@@ -188,7 +221,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
                 }
               },
             );
-          },
+          }).toList(),
         ),
       ],
     );
@@ -212,23 +245,21 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
           },
         ),
         const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.3,
-          ),
-          itemCount: _selectedCore!.secondary.length,
-          itemBuilder: (context, index) {
-            final emotion = _selectedCore!.secondary[index];
-            return _buildFeelingButton(
-              emoji: emotion.emoji,
-              name: emotion.name,
-              color: _selectedCore!.color!.withOpacity(0.8),
-              onTap: () {
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _selectedCore!.secondary.map((emotion) {
+            final selected = _selectedSecondary?.id == emotion.id;
+            return ChoiceChip(
+              label: Text(emotion.name),
+              avatar: Text(emotion.emoji),
+              selected: selected,
+              labelStyle: TextStyle(
+                color: selected ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.w700,
+              ),
+              selectedColor: _selectedCore!.color,
+              onSelected: (_) {
                 if (maxDepth == 2) {
                   _notifySelection(
                     SelectedFeeling(
@@ -248,7 +279,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
                 }
               },
             );
-          },
+          }).toList(),
         ),
       ],
     );
@@ -272,28 +303,23 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
           },
         ),
         const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.8,
-          ),
-          itemCount: _selectedSecondary!.tertiary.length,
-          itemBuilder: (context, index) {
-            final feelingName = _selectedSecondary!.tertiary[index];
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _selectedSecondary!.tertiary.map((feelingName) {
             final emoji =
                 FeelingsEmojiLookup.emojiFor(feelingName) ?? _selectedSecondary!.emoji;
-            final isSelected =
-                widget.currentFeeling?.tertiary == feelingName;
-            return _buildFeelingButton(
-              emoji: emoji,
-              name: feelingName,
-              color: _selectedCore!.color!.withOpacity(0.7),
-              isSelected: isSelected,
-              onTap: () {
+            final isSelected = widget.currentFeeling?.tertiary == feelingName;
+            return ChoiceChip(
+              label: Text(feelingName),
+              avatar: Text(emoji),
+              selected: isSelected,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.w700,
+              ),
+              selectedColor: _selectedCore!.color,
+              onSelected: (_) {
                 _notifySelection(
                   SelectedFeeling(
                     core: _selectedCore!.name,
@@ -307,7 +333,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
                 );
               },
             );
-          },
+          }).toList(),
         ),
       ],
     );
