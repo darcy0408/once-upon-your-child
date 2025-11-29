@@ -64,7 +64,7 @@ class CharacterAvatar {
     };
 
     query.removeWhere((_, value) => value.isEmpty);
-    return Uri.https('avataaars.io', '/', query).toString();
+    return Uri.https('api.dicebear.com', '/7.x/avataaars/svg', query).toString();
   }
 
   /// Create a copy with optional parameter overrides
