@@ -68,7 +68,7 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "black-forest-labs/flux-1-schnell-free",  # Free image model
+                        "model": "black-forest-labs/flux.2-flex",  # Free image model  # Free image model
                         "messages": [
                             {
                                 "role": "user",
@@ -155,7 +155,7 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "black-forest-labs/flux-1-schnell-free",
+                        "model": "black-forest-labs/flux.2-flex",  # Free image model
                         "messages": [
                             {
                                 "role": "user",
