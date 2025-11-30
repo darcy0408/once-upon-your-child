@@ -26,6 +26,7 @@ from .quality_service import StoryQualityService
 from .cost_tracking import track_cost, get_cost_report
 # from .repositories import character_repository
 from .gemini_image_generator import GeminiImageGenerator
+from .openrouter_image_generator import OpenRouterImageGenerator
 # Route imports removed - routes defined directly in app.py
 
 # Global image generator instance
@@ -306,9 +307,19 @@ def create_app(config_name):
     logger.info(f"✓ Stripe Premium Price ID: {os.getenv('STRIPE_PRICE_ID_PREMIUM', 'NOT SET')}")
     logger.info(f"✓ Stripe Family Price ID: {os.getenv('STRIPE_PRICE_ID_FAMILY', 'NOT SET')}")
 
-    # Initialize image generator
+    # Initialize image generator (prefer low-cost OpenRouter SDXL if available)
+    global image_generator
     try:
-        image_generator = GeminiImageGenerator() if api_key else None
+        openrouter_key = os.getenv("OPENROUTER_API_KEY")
+        if openrouter_key:
+            image_generator = OpenRouterImageGenerator(api_key=openrouter_key)
+            logger.info("Image generator initialized with OpenRouter (cost-optimized)")
+        elif api_key:
+            image_generator = GeminiImageGenerator()
+            logger.info("Image generator initialized with Gemini")
+        else:
+            image_generator = None
+            logger.warning("No image generator initialized (no OPENROUTER_API_KEY or GEMINI_API_KEY)")
     except Exception as e:
         logger.exception("Failed to initialize image generator: %s", e)
         image_generator = None
@@ -670,6 +681,7 @@ def create_app(config_name):
 
         # Decide which model to use
         using_user_key = False
+        fallback_used = False
         try:
             if user_api_key:
                 # User provided their own API key - use it for unlimited generation
@@ -738,11 +750,28 @@ def create_app(config_name):
                     "facing our fears with courage and kindness.\n"
                     f"[WISDOM GEM: {story_service.WisdomGems.get_wisdom(theme)}]")
             else:
-                return jsonify({
-                    "error": "Story generation failed",
-                    "hint": hint,
-                    "request_id": getattr(g, 'request_id', 'unknown')
-                }), 500
+                # In production, fall back to a simple offline-safe story instead of 500 to avoid UI hangs.
+                fallback_used = True
+                include_illustrations = False  # Skip illustrations if the model is unavailable.
+                if learning_to_read_mode or rhyme_time_mode:
+                    raw_text = (
+                        "[TITLE: A Quick Rhyming Adventure]\n"
+                        "Tap your shoes, tap-tap-tap,\n"
+                        f"{character} checks a treasure map.\n"
+                        "Sun is bright, breeze is light,\n"
+                        "Friends team up to make things right.\n"
+                        "Kindness shared and worries small,\n"
+                        "Brave hearts grow the most of all.\n"
+                        f"[WISDOM GEM: {story_service.WisdomGems.get_wisdom(theme)}]"
+                    )
+                else:
+                    raw_text = (
+                        "[TITLE: A Quick Adventure]\n"
+                        f"{character} starts a small quest about {theme.lower()}.\n"
+                        "A tiny problem pops up, friends lend a hand, and courage grows.\n"
+                        "Teamwork, a deep breath, and a kind choice solve the trouble.\n"
+                        f"[WISDOM GEM: {story_service.WisdomGems.get_wisdom(theme)}]"
+                    )
         finally:
             # Reset to server API key after user's request
             if user_api_key and api_key:
@@ -760,15 +789,16 @@ def create_app(config_name):
             if reason:
                 logger.info(reason)
 
-        if learning_to_read_mode:
+        # Skip illustration generation entirely if we fell back to an offline story.
+        if not fallback_used and learning_to_read_mode:
             enable_illustrations(1, f"Learning-to-read mode auto-illustration for tier {subscription_tier}")
 
-        if subscription_tier == "family":
+        if not fallback_used and subscription_tier == "family":
             enable_illustrations(2, "Family tier bonus: 2 auto-illustrations")
-        elif subscription_tier == "premium":
+        elif not fallback_used and subscription_tier == "premium":
             enable_illustrations(1, "Premium tier bonus: 1 auto-illustration")
 
-        if include_illustrations and not should_generate_illustrations:
+        if not fallback_used and include_illustrations and not should_generate_illustrations:
             if subscription_tier in {"premium", "family"}:
                 enable_illustrations(2 if subscription_tier == "family" else 1,
                                      "User requested illustrations (paid tier)")
@@ -777,10 +807,10 @@ def create_app(config_name):
             else:
                 logger.info("Free tier requested illustrations without BYOK or learning mode - skipping auto-generation")
 
-        if not should_generate_illustrations and user_api_key and not learning_to_read_mode:
+        if not fallback_used and not should_generate_illustrations and user_api_key and not learning_to_read_mode:
             enable_illustrations(1, "BYOK enabled illustration for free tier")
 
-        if should_generate_illustrations:
+        if not fallback_used and should_generate_illustrations:
             num_illustrations = max(1, requested_illustration_count)
             try:
                 generator = None
@@ -1010,9 +1040,6 @@ def create_app(config_name):
     @app.route("/generate-coloring-pages", methods=["POST"])
     def generate_coloring_pages_endpoint():
         """Generate coloring book pages for a story scene"""
-        if image_generator is None:
-            return jsonify({"error": "Image generation not available"}), 503
-
         try:
             data = request.get_json(silent=True) or {}
             scene_description = data.get("scene_description", "")
@@ -1020,11 +1047,32 @@ def create_app(config_name):
             num_images = min(int(data.get("num_images", 1)), 3)  # Max 3 pages
             age = int(data.get("age", 7))
             therapeutic_focus = data.get("therapeutic_focus")
+            user_api_key = data.get("user_api_key")
 
             if not scene_description.strip():
                 return jsonify({"error": "Scene description is required"}), 400
 
-            coloring_pages = image_generator.generate_coloring_page(
+            generator = None
+            if user_api_key:
+                try:
+                    generator = GeminiImageGenerator(api_key=user_api_key)
+                except Exception as e:
+                    logger.exception("Failed to init user-provided image generator")
+                    return jsonify({
+                        "error": "Invalid or unavailable image API key",
+                        "hint": str(e)
+                    }), 400
+            elif image_generator is not None:
+                generator = image_generator
+            else:
+                # Graceful fallback when image generation is unavailable (no key/model).
+                return jsonify({
+                    "coloring_pages": [],
+                    "count": 0,
+                    "warning": "Image generation unavailable; configure GEMINI_API_KEY or provide user_api_key."
+                }), 200
+
+            coloring_pages = generator.generate_coloring_page(
                 scene_description=scene_description,
                 character_name=character_name,
                 num_images=num_images,
@@ -1038,8 +1086,11 @@ def create_app(config_name):
             }), 200
 
         except Exception as e:
-            print(f"!!! Coloring page generation failed: {e}")
-            return jsonify({"error": "Failed to generate coloring pages"}), 500
+            logger.exception("Coloring page generation failed")
+            return jsonify({
+                "error": "Failed to generate coloring pages",
+                "hint": str(e)
+            }), 500
 
     @limiter.limit("20 per hour")
     @app.route("/create-character", methods=["POST"])

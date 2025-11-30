@@ -10,6 +10,9 @@ import base64
 import uuid
 from datetime import datetime
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 class OpenRouterImageGenerator:
     def __init__(self, api_key=None):
@@ -22,7 +25,10 @@ class OpenRouterImageGenerator:
         scene_description: str,
         character_name: str = "the hero",
         style: str = "children's book illustration",
-        num_images: int = 1
+        num_images: int = 1,
+        age: int | None = None,
+        therapeutic_focus: str | None = None,
+        **_: dict
     ) -> list:
         """
         Generate story illustrations using Stable Diffusion via OpenRouter
@@ -36,6 +42,8 @@ class OpenRouterImageGenerator:
         Returns:
             List of dicts with image URLs or base64 data
         """
+        audience = f"ages {age}" if age else "children"
+        therapy = f"\nTherapeutic focus: {therapeutic_focus}" if therapeutic_focus else ""
         prompt = f"""
 {style}, high quality digital art:
 
@@ -43,49 +51,63 @@ class OpenRouterImageGenerator:
 
 Main character: {character_name}
 
-Style: colorful, vibrant, child-friendly, professional illustration, ages 4-8, engaging, imaginative, no text, clean composition
+Style: colorful, vibrant, child-friendly, professional illustration, {audience}, engaging, imaginative, no text, clean composition{therapy}
 """.strip()
 
         images = []
         for i in range(num_images):
             try:
-                # Use Stable Diffusion XL via OpenRouter
+                # OpenRouter uses chat completions with image models
+                # Using a flux model that returns image URLs
                 response = requests.post(
-                    f"{self.base_url}/images/generations",
+                    f"{self.base_url}/chat/completions",
                     headers={
                         "Authorization": f"Bearer {self.api_key}",
-                        "HTTP-Referer": "http://localhost:5000",  # Your app URL
-                        "X-Title": "Story Creator App",
+                        "HTTP-Referer": "https://story-weaver-app-production.up.railway.app",
+                        "X-Title": "Story Weaver App",
+                        "Content-Type": "application/json",
                     },
                     json={
-                        "model": "stabilityai/stable-diffusion-xl-base-1.0",  # Cheap & good
-                        "prompt": prompt,
-                        "n": 1,
-                        "size": "1024x1024",
+                        "model": "black-forest-labs/flux-1-schnell-free",  # Free image model
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": prompt
+                            }
+                        ],
                     },
                     timeout=60,
                 )
 
                 if response.status_code == 200:
                     data = response.json()
-                    image_url = data['data'][0]['url']
+                    # Flux models return markdown with image URL
+                    content = data['choices'][0]['message']['content']
 
-                    images.append({
-                        'id': f"{uuid.uuid4()}_{i}",
-                        'prompt': prompt,
-                        'image_url': image_url,
-                        'format': 'png',
-                        'generated_at': datetime.now().isoformat(),
-                    })
+                    # Extract image URL from markdown (format: ![image](url))
+                    import re
+                    url_match = re.search(r'!\[.*?\]\((https?://[^\)]+)\)', content)
+
+                    if url_match:
+                        image_url = url_match.group(1)
+                        images.append({
+                            'id': f"{uuid.uuid4()}_{i}",
+                            'prompt': prompt,
+                            'image_url': image_url,
+                            'format': 'png',
+                            'generated_at': datetime.now().isoformat(),
+                        })
+                    else:
+                        logger.warning("No image URL found in OpenRouter response: %s", content)
                 else:
-                    print(f"OpenRouter API error: {response.status_code} - {response.text}")
+                    logger.warning("OpenRouter API error: %s - %s", response.status_code, response.text)
 
                 # Rate limiting
                 if i < num_images - 1:
                     time.sleep(1)
 
             except Exception as e:
-                print(f"Error generating image {i+1}: {e}")
+                logger.exception("Error generating image %s", i + 1)
 
         return images
 
@@ -93,7 +115,10 @@ Style: colorful, vibrant, child-friendly, professional illustration, ages 4-8, e
         self,
         scene_description: str,
         character_name: str = "the hero",
-        num_images: int = 1
+        num_images: int = 1,
+        age: int | None = None,
+        therapeutic_focus: str | None = None,
+        **_: dict
     ) -> list:
         """
         Generate black and white line art for coloring
@@ -106,6 +131,8 @@ Style: colorful, vibrant, child-friendly, professional illustration, ages 4-8, e
         Returns:
             List of dicts with image URLs
         """
+        audience = f"ages {age}" if age else "children"
+        therapy = f"\nTherapeutic focus: {therapeutic_focus}" if therapeutic_focus else ""
         prompt = f"""
 black and white line art coloring book page, children's coloring book style:
 
@@ -113,47 +140,59 @@ black and white line art coloring book page, children's coloring book style:
 
 Main character: {character_name}
 
-Style: simple black outlines only, no colors, no shading, no gray, thick bold lines, large areas to color, high contrast, white background, suitable for printing, similar to Disney coloring books, ages 4-8, no text
+Style: simple black outlines only, no colors, no shading, no gray, thick bold lines, large areas to color, high contrast, white background, suitable for printing, similar to Disney coloring books, {audience}, no text{therapy}
 """.strip()
 
         images = []
         for i in range(num_images):
             try:
                 response = requests.post(
-                    f"{self.base_url}/images/generations",
+                    f"{self.base_url}/chat/completions",
                     headers={
                         "Authorization": f"Bearer {self.api_key}",
-                        "HTTP-Referer": "http://localhost:5000",
-                        "X-Title": "Story Creator App",
+                        "HTTP-Referer": "https://story-weaver-app-production.up.railway.app",
+                        "X-Title": "Story Weaver App",
+                        "Content-Type": "application/json",
                     },
                     json={
-                        "model": "stabilityai/stable-diffusion-xl-base-1.0",
-                        "prompt": prompt,
-                        "n": 1,
-                        "size": "1024x1024",
+                        "model": "black-forest-labs/flux-1-schnell-free",
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": prompt
+                            }
+                        ],
                     },
                     timeout=60,
                 )
 
                 if response.status_code == 200:
                     data = response.json()
-                    image_url = data['data'][0]['url']
+                    content = data['choices'][0]['message']['content']
 
-                    images.append({
-                        'id': f"{uuid.uuid4()}_{i}",
-                        'prompt': prompt,
-                        'image_url': image_url,
-                        'format': 'png',
-                        'generated_at': datetime.now().isoformat(),
-                    })
+                    # Extract image URL from markdown
+                    import re
+                    url_match = re.search(r'!\[.*?\]\((https?://[^\)]+)\)', content)
+
+                    if url_match:
+                        image_url = url_match.group(1)
+                        images.append({
+                            'id': f"{uuid.uuid4()}_{i}",
+                            'prompt': prompt,
+                            'image_url': image_url,
+                            'format': 'png',
+                            'generated_at': datetime.now().isoformat(),
+                        })
+                    else:
+                        logger.warning("No image URL found in OpenRouter coloring page response: %s", content)
                 else:
-                    print(f"OpenRouter API error: {response.status_code} - {response.text}")
+                    logger.warning("OpenRouter API error: %s - %s", response.status_code, response.text)
 
                 if i < num_images - 1:
                     time.sleep(1)
 
             except Exception as e:
-                print(f"Error generating coloring page {i+1}: {e}")
+                logger.exception("Error generating coloring page %s", i + 1)
 
         return images
 
