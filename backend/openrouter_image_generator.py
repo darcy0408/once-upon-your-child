@@ -81,8 +81,10 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
 
                 if response.status_code == 200:
                     data = response.json()
+                    logger.info(f"OpenRouter story_illustration: Full response data: {data}")
                     # Flux models return markdown with image URL
                     content = data['choices'][0]['message']['content']
+                    logger.info(f"OpenRouter story_illustration: Extracted content: {content}")
 
                     # Extract image URL from markdown (format: ![image](url))
                     import re
@@ -169,7 +171,9 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
 
                 if response.status_code == 200:
                     data = response.json()
+                    logger.info(f"OpenRouter coloring_page: Full response data: {data}")
                     content = data['choices'][0]['message']['content']
+                    logger.info(f"OpenRouter coloring_page: Extracted content: {content}")
 
                     # Extract image URL from markdown
                     import re
