@@ -69,6 +69,7 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                     json={
                         "model": "black-forest-labs/flux.2-flex",  # Free image model
                         "modalities": ["image", "text"], # Explicitly request image modality
+                        "max_tokens": 1000, # Limit token reservation to avoid 402 errors
                         "messages": [
                             {
                                 "role": "user",
@@ -107,12 +108,19 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                             if images and len(images) > 0:
                                 # It might be a URL or base64
                                 img_data = images[0]
-                                if isinstance(img_data, dict) and 'url' in img_data:
-                                    image_url = img_data['url']
-                                    logger.info("Found image data in message.images[0].url")
-                                elif isinstance(img_data, str):
+                                # Case A: Direct URL/String
+                                if isinstance(img_data, str):
                                     image_url = img_data
                                     logger.info("Found image data in message.images[0] string")
+                                # Case B: Dict with 'url' key
+                                elif isinstance(img_data, dict):
+                                    if 'url' in img_data:
+                                        image_url = img_data['url']
+                                        logger.info("Found image data in message.images[0]['url']")
+                                    # Case C: Nested image_url dict (OpenRouter/Flux standard)
+                                    elif 'image_url' in img_data and isinstance(img_data['image_url'], dict) and 'url' in img_data['image_url']:
+                                        image_url = img_data['image_url']['url']
+                                        logger.info("Found image data in message.images[0]['image_url']['url']")
                         except (KeyError, IndexError):
                             pass
 
@@ -189,6 +197,7 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                     json={
                         "model": "black-forest-labs/flux.2-flex",
                         "modalities": ["image", "text"],
+                        "max_tokens": 1000,
                         "messages": [
                             {
                                 "role": "user",
@@ -220,10 +229,13 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                             images = data['choices'][0]['message'].get('images', [])
                             if images and len(images) > 0:
                                 img_data = images[0]
-                                if isinstance(img_data, dict) and 'url' in img_data:
-                                    image_url = img_data['url']
-                                elif isinstance(img_data, str):
+                                if isinstance(img_data, str):
                                     image_url = img_data
+                                elif isinstance(img_data, dict):
+                                    if 'url' in img_data:
+                                        image_url = img_data['url']
+                                    elif 'image_url' in img_data and isinstance(img_data['image_url'], dict) and 'url' in img_data['image_url']:
+                                        image_url = img_data['image_url']['url']
                         except (KeyError, IndexError):
                             pass
 
