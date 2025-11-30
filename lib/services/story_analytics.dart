@@ -1,4 +1,5 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:flutter/foundation.dart';
 
 class StoryAnalytics {
   StoryAnalytics._();
@@ -37,10 +38,7 @@ class StoryAnalytics {
       parameters['readability_score'] = readabilityScore;
     }
 
-    await _analytics.logEvent(
-      name: 'story_created',
-      parameters: parameters,
-    );
+    await _safeLogEvent('story_created', parameters);
   }
 
   static Future<void> trackStoryCompletion({
@@ -48,14 +46,11 @@ class StoryAnalytics {
     required int wordCount,
     required Duration readingTime,
   }) async {
-    await _analytics.logEvent(
-      name: 'story_completed',
-      parameters: {
-        'story_id': storyId,
-        'word_count': wordCount,
-        'reading_time_seconds': readingTime.inSeconds,
-      },
-    );
+    await _safeLogEvent('story_completed', {
+      'story_id': storyId,
+      'word_count': wordCount,
+      'reading_time_seconds': readingTime.inSeconds,
+    });
   }
 
   static Future<void> trackStoryResultAction({
@@ -72,9 +67,30 @@ class StoryAnalytics {
       parameters['theme'] = theme;
     }
     parameters.addAll(extra);
-    await _analytics.logEvent(
-      name: 'story_result_action',
-      parameters: parameters,
-    );
+    await _safeLogEvent('story_result_action', parameters);
+  }
+
+  static Future<void> _safeLogEvent(
+    String name,
+    Map<String, Object?> parameters,
+  ) async {
+    try {
+      // Convert to Map<String, dynamic> and ensure all values are primitive types
+      final Map<String, dynamic> cleanParams = {};
+      parameters.forEach((key, value) {
+        if (value != null) {
+          // Only include primitive types that Firebase Analytics accepts
+          if (value is String || value is num || value is bool) {
+            cleanParams[key] = value;
+          } else {
+            cleanParams[key] = value.toString();
+          }
+        }
+      });
+      await _analytics.logEvent(name: name, parameters: cleanParams);
+    } catch (e) {
+      // Do not let analytics failures crash the app (seen in web builds).
+      debugPrint('Analytics logEvent failed ($name): $e');
+    }
   }
 }

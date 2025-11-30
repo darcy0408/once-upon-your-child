@@ -1,4 +1,5 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:flutter/foundation.dart';
 
 class CharacterAnalytics {
   CharacterAnalytics._();
@@ -12,16 +13,13 @@ class CharacterAnalytics {
     required List<String> traits,
     String? templateKey,
   }) async {
-    await _analytics.logEvent(
-      name: 'character_created',
-      parameters: {
-        'age': age,
-        'gender': gender,
-        'traits_count': traits.length,
-        'has_custom_name': characterName.isNotEmpty,
-        if (templateKey != null) 'template_key': templateKey,
-      },
-    );
+    await _safeLogEvent('character_created', {
+      'age': age,
+      'gender': gender,
+      'traits_count': traits.length,
+      'has_custom_name': characterName.isNotEmpty,
+      if (templateKey != null) 'template_key': templateKey,
+    });
   }
 
   static Future<void> trackTemplateSelected({
@@ -29,14 +27,11 @@ class CharacterAnalytics {
     required String templateName,
     required bool hasCustomName,
   }) async {
-    await _analytics.logEvent(
-      name: 'character_template_selected',
-      parameters: {
-        'template_key': templateKey,
-        'template_name': templateName,
-        'has_custom_name': hasCustomName,
-      },
-    );
+    await _safeLogEvent('character_template_selected', {
+      'template_key': templateKey,
+      'template_name': templateName,
+      'has_custom_name': hasCustomName,
+    });
   }
 
   static Future<void> trackGalleryInteraction({
@@ -47,16 +42,36 @@ class CharacterAnalytics {
     String? gender,
     String? feeling,
   }) async {
-    await _analytics.logEvent(
-      name: 'character_gallery_action',
-      parameters: {
-        'action': action,
-        'character_id': characterId,
-        'character_name_length': characterName.length,
-        'age': age,
-        if (gender != null) 'gender': gender,
-        if (feeling != null) 'feeling': feeling,
-      },
-    );
+    await _safeLogEvent('character_gallery_action', {
+      'action': action,
+      'character_id': characterId,
+      'character_name_length': characterName.length,
+      'age': age,
+      if (gender != null) 'gender': gender,
+      if (feeling != null) 'feeling': feeling,
+    });
+  }
+
+  static Future<void> _safeLogEvent(
+    String name,
+    Map<String, Object?> parameters,
+  ) async {
+    try {
+      // Convert to Map<String, dynamic> and ensure all values are primitive types
+      final Map<String, dynamic> cleanParams = {};
+      parameters.forEach((key, value) {
+        if (value != null) {
+          // Only include primitive types that Firebase Analytics accepts
+          if (value is String || value is num || value is bool) {
+            cleanParams[key] = value;
+          } else {
+            cleanParams[key] = value.toString();
+          }
+        }
+      });
+      await _analytics.logEvent(name: name, parameters: cleanParams);
+    } catch (e) {
+      debugPrint('Analytics logEvent failed ($name): $e');
+    }
   }
 }
