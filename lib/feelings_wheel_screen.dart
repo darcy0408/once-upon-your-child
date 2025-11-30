@@ -311,7 +311,9 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
 
     if (radius > maxRadius) return; // tapped outside the wheel
 
-    final angle = (math.atan2(dy, dx) + 2 * math.pi) % (2 * math.pi);
+    // Align 0° to the top of the wheel (12 o'clock) to match the graphic.
+    const double startAngleOffset = -math.pi / 2;
+    final angle = (math.atan2(dy, dx) + startAngleOffset + 2 * math.pi) % (2 * math.pi);
     final ringRatio = radius / maxRadius;
     const coreThreshold = 0.33;
     const secondaryThreshold = 0.66;
