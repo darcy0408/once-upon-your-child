@@ -57,8 +57,7 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
         images = []
         for i in range(num_images):
             try:
-                # OpenRouter uses chat completions with image models
-                # Using a flux model that returns image URLs
+                logger.info(f"OpenRouter story_illustration: Sending request for story illustration prompt (first 100 chars): {prompt[:100]}...")
                 response = requests.post(
                     f"{self.base_url}/chat/completions",
                     headers={
