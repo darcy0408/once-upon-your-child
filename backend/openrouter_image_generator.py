@@ -67,7 +67,8 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "black-forest-labs/flux.2-flex",  # Free image model  # Free image model
+                        "model": "black-forest-labs/flux.2-flex",  # Free image model
+                        "modalities": ["image", "text"], # Explicitly request image modality
                         "messages": [
                             {
                                 "role": "user",
@@ -80,12 +81,43 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
 
                 if response.status_code == 200:
                     data = response.json()
-                    logger.info(f"OpenRouter story_illustration: Full response data: {data}")
-                    # Flux models return image data as base64 data URIs
-                    content = data['choices'][0]['message']['content']
-                    if content.startswith("data:image/"):
-                        image_url = content  # Use the full data URI as the image_url
-                        logger.info(f"OpenRouter story_illustration: Appending image to list. Content type: {type(content)}")
+                    # Log full response structure (truncated content) for debugging
+                    logger.info(f"OpenRouter story_illustration: Response keys: {data.keys()}")
+                    if 'choices' in data and len(data['choices']) > 0:
+                         logger.info(f"OpenRouter story_illustration: Choice keys: {data['choices'][0].keys()}")
+                         if 'message' in data['choices'][0]:
+                             logger.info(f"OpenRouter story_illustration: Message keys: {data['choices'][0]['message'].keys()}")
+
+                    # Try to find image data in multiple locations
+                    image_url = None
+                    
+                    # 1. Check message content (standard for some models)
+                    try:
+                        content = data['choices'][0]['message']['content']
+                        if content and content.strip().startswith("data:image/"):
+                            image_url = content.strip()
+                            logger.info("Found image data in message content")
+                    except (KeyError, IndexError):
+                        pass
+
+                    # 2. Check message images array (standard for others)
+                    if not image_url:
+                        try:
+                            images = data['choices'][0]['message'].get('images', [])
+                            if images and len(images) > 0:
+                                # It might be a URL or base64
+                                img_data = images[0]
+                                if isinstance(img_data, dict) and 'url' in img_data:
+                                    image_url = img_data['url']
+                                    logger.info("Found image data in message.images[0].url")
+                                elif isinstance(img_data, str):
+                                    image_url = img_data
+                                    logger.info("Found image data in message.images[0] string")
+                        except (KeyError, IndexError):
+                            pass
+
+                    if image_url:
+                        logger.info(f"OpenRouter story_illustration: Successfully extracted image data. Length: {len(image_url)}")
                         images.append({
                             'id': f"{uuid.uuid4()}_{i}",
                             'prompt': prompt,
@@ -94,14 +126,10 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                             'generated_at': datetime.now().isoformat(),
                         })
                     else:
-                        # If it's not a data URI, let's at least return the content for debugging
-                        logger.warning("OpenRouter response did not contain a data URI for story illustration. Returning raw content for debugging: %s", content)
-                        images.append({
-                            'id': f"{uuid.uuid4()}_{i}",
-                            'prompt': prompt,
-                            'raw_content': content,
-                            'generated_at': datetime.now().isoformat(),
-                        })
+                        # If we couldn't find an image, log the raw content for debugging
+                        raw_content = str(data)[:1000] # Log first 1000 chars
+                        logger.warning(f"OpenRouter response did not contain a recognized image format. Raw response start: {raw_content}")
+                        # Don't append broken data, just log it
                 else:
                     logger.warning("OpenRouter API error: %s - %s", response.status_code, response.text)
 
@@ -160,6 +188,7 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                     },
                     json={
                         "model": "black-forest-labs/flux.2-flex",
+                        "modalities": ["image", "text"],
                         "messages": [
                             {
                                 "role": "user",
@@ -172,12 +201,34 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
 
                 if response.status_code == 200:
                     data = response.json()
-                    logger.info(f"OpenRouter coloring_page: Full response data: {data}")
-                    content = data['choices'][0]['message']['content']
-                    logger.info(f"OpenRouter coloring_page: Extracted content (first 100 chars): {content[:100]}...")
+                    # Log full response structure (truncated content) for debugging
+                    logger.info(f"OpenRouter coloring_page: Response keys: {data.keys()}")
+                    
+                    image_url = None
+                    
+                    # 1. Check message content
+                    try:
+                        content = data['choices'][0]['message']['content']
+                        if content and content.strip().startswith("data:image/"):
+                            image_url = content.strip()
+                    except (KeyError, IndexError):
+                        pass
 
-                    if content.startswith("data:image/"):
-                        image_url = content  # Use the full data URI as the image_url
+                    # 2. Check message images
+                    if not image_url:
+                        try:
+                            images = data['choices'][0]['message'].get('images', [])
+                            if images and len(images) > 0:
+                                img_data = images[0]
+                                if isinstance(img_data, dict) and 'url' in img_data:
+                                    image_url = img_data['url']
+                                elif isinstance(img_data, str):
+                                    image_url = img_data
+                        except (KeyError, IndexError):
+                            pass
+
+                    if image_url:
+                        logger.info(f"OpenRouter coloring_page: Successfully extracted image data. Length: {len(image_url)}")
                         images.append({
                             'id': f"{uuid.uuid4()}_{i}",
                             'prompt': prompt,
@@ -186,7 +237,8 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                             'generated_at': datetime.now().isoformat(),
                         })
                     else:
-                        logger.warning("OpenRouter response did not contain a data URI for coloring page: %s", content)
+                        raw_content = str(data)[:1000]
+                        logger.warning(f"OpenRouter response did not contain a recognized image format for coloring page. Raw response start: {raw_content}")
                 else:
                     logger.warning("OpenRouter API error: %s - %s", response.status_code, response.text)
 
