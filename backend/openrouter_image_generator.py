@@ -94,7 +94,14 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                             'generated_at': datetime.now().isoformat(),
                         })
                     else:
-                        logger.warning("OpenRouter response did not contain a data URI for story illustration: %s", content)
+                        # If it's not a data URI, let's at least return the content for debugging
+                        logger.warning("OpenRouter response did not contain a data URI for story illustration. Returning raw content for debugging: %s", content)
+                        images.append({
+                            'id': f"{uuid.uuid4()}_{i}",
+                            'prompt': prompt,
+                            'raw_content': content,
+                            'generated_at': datetime.now().isoformat(),
+                        })
                 else:
                     logger.warning("OpenRouter API error: %s - %s", response.status_code, response.text)
 
