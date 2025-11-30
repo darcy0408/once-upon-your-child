@@ -104,10 +104,10 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                     # 2. Check message images array (standard for others)
                     if not image_url:
                         try:
-                            images = data['choices'][0]['message'].get('images', [])
-                            if images and len(images) > 0:
+                            raw_images = data['choices'][0]['message'].get('images', [])
+                            if raw_images and len(raw_images) > 0:
                                 # It might be a URL or base64
-                                img_data = images[0]
+                                img_data = raw_images[0]
                                 # Case A: Direct URL/String
                                 if isinstance(img_data, str):
                                     image_url = img_data
@@ -226,9 +226,9 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                     # 2. Check message images
                     if not image_url:
                         try:
-                            images = data['choices'][0]['message'].get('images', [])
-                            if images and len(images) > 0:
-                                img_data = images[0]
+                            raw_images = data['choices'][0]['message'].get('images', [])
+                            if raw_images and len(raw_images) > 0:
+                                img_data = raw_images[0]
                                 if isinstance(img_data, str):
                                     image_url = img_data
                                 elif isinstance(img_data, dict):
