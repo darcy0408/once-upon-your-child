@@ -74,59 +74,80 @@ class AdvancedStoryEngine:
         therapeutic_prompt: str = "",
         feelings_prompt: str | None = None,
     ):
-        story_structure = self.story_structures.get_random_structure(theme)
         companion_info = self.companion_dynamics.get_companion_info(companion)
-        plot_twist = random.choice(self.story_structures.PLOT_TWISTS)
         wisdom = self.wisdom_gems.get_wisdom(theme)
+        companion_line = (
+            f"- Companion: {companion} ({companion_info['contribution']})"
+            if companion_info
+            else "- Companion: None"
+        )
+
         parts = [
-            "You are a master storyteller creating an enchanting tale for children.",
-            "\nSTORY DETAILS:",
-            f"- Main Character: {character}",
+            "You are an experienced children's author running the Engaging Storycraft v9.0 engine.",
+            "Follow the exact output order and labels below. Keep everything age-appropriate and gentle.",
+            "",
+            "OUTPUT ORDER (use these exact labels):",
+            "REQUEST SUMMARY",
+            "STORY",
+            "WISDOM GEM",
+            "ADVENTURE REPORT",
+            "",
+            "REQUEST SUMMARY:",
+            f"- Child/Character: {character}",
             f"- Theme: {theme}",
-            f"- Story Structure: {story_structure['structure']}",
+            companion_line,
+            "- Mode: Linear story",
+            "- Default length: Short (aim for ~400-700 words) unless context suggests otherwise.",
+            "",
+            "STORY:",
+            "STORY START",
+            "Write immersive narrative prose only (no code blocks). Use clear beginning, middle, and end with a vivid hook, a strong kid-friendly problem, rising action, and a satisfying resolution.",
+            "Include sensory emotion (body cues), one surprise, one playful/ humorous beat, and one gentle wonder moment.",
+            "STORY END",
+            "",
+            f"WISDOM GEM: A 5-10 word heart lesson in kid language (e.g., \"{wisdom}\").",
+            "",
+            "ADVENTURE REPORT (adult-facing, concise bullets):",
+            "- PLOT BEATS: 3-6 bullets summarizing arc",
+            "- CHARACTER SNAPSHOT: who they are + how they changed",
+            "- EMOTION NOTES: how feelings showed up and shifted",
+            "- RE-READABILITY HOOKS: patterns, echoes, questions, Easter eggs",
+            "",
+            "9-POINT STORYCRAFT CHECK (internal, but ensure output reflects):",
+            "1) Main character kids can mirror (clear want/quirk/feeling).",
+            "2) One-sentence kid-repeatable problem appears early.",
+            "3) At least two 'and then...' rising steps before resolution.",
+            "4) Embodied emotion (tummy twisty, cheeks warm, etc.).",
+            "5) Age-appropriate rhythm and repetition.",
+            "6) Small heart lesson, not preachy.",
+            "7) Playful delight: surprise + giggle + wonder.",
+            "8) Satisfying ending echoing an opening image/line.",
+            "9) Re-read hooks: patterns, echoes, or questions.",
+            "",
+            SAFETY_GUARDRAILS.strip(),
         ]
-        if companion_info:
-            parts.extend([
-                f"- Companion: {companion}",
-                f"- How Companion Helps: {companion_info['contribution']}",
-            ])
 
-        parts.append(SAFETY_GUARDRAILS)
-
-        # Add therapeutic elements if provided
         if therapeutic_prompt:
-            parts.extend([
-                "\nTHERAPEUTIC ELEMENTS:",
-                therapeutic_prompt,
-            ])
+            parts.extend(
+                [
+                    "",
+                    "THERAPEUTIC ELEMENTS:",
+                    therapeutic_prompt,
+                ]
+            )
         if feelings_prompt:
-            parts.extend([
-                "\nFEELINGS-FOCUSED GUIDANCE:",
-                feelings_prompt,
-            ])
+            parts.extend(
+                [
+                    "",
+                    "FEELINGS-FOCUSED GUIDANCE:",
+                    feelings_prompt,
+                ]
+            )
 
-        parts.extend([
-            "\nNARRATIVE REQUIREMENTS:",
-            f"1. Start with an engaging opening that introduces {character}.",
-            f"2. Incorporate this plot element naturally: {plot_twist}.",
-            "3. End with a satisfying resolution.",
-        ])
+        parts.append(
+            "Maintain warm, musical voice. Do not output code blocks or markdown fences."
+        )
 
-        if therapeutic_prompt:
-            parts.append("4. Weave therapeutic elements naturally into the story (not preachy or obvious).")
-
-        parts.extend([
-            "\nSTORY LENGTH: Approximately 500-600 words.",
-            "\nSENSORY-RICH WRITING:",
-            "- Use SENSORY DETAILS: What does the character see, hear, feel, smell, taste?",
-            "- SHOW emotions through body language: 'heart racing', 'palms sweating', 'warm feeling spreading'",
-            "- Use VIVID DESCRIPTIONS: colors, sounds, textures, temperatures",
-            "- Create IMMERSIVE scenes that readers can picture clearly",
-            "- Example: Instead of 'Emma was scared', write 'Emma's heart pounded as shadows danced on the wall'",
-            "\nFORMAT REQUIREMENTS:",
-            "- Start with: [TITLE: A Creative and Engaging Title]",
-            f"- End with: [WISDOM GEM: {wisdom}]",
-        ])
         return "\n".join(parts)
 
     def generate_interactive_story(
@@ -141,36 +162,60 @@ class AdvancedStoryEngine:
         age_guidelines = _build_age_instruction_block(character_age)
 
         prompt = f"""
-You are a master interactive therapist-storyteller for a {character_age}-year-old child.
-Create a warm opening segment that introduces the problem and ends with meaningful choices.
-
-STORY DETAILS:
-- Main Character: {character_name}
+You are an experienced children's author running the Engaging Storycraft v9.0 engine for an interactive story.
+Child profile:
+- Name: {character_name}
+- Age: {character_age}
 - Theme: {theme}
 - Companion: {companion if companion else "None"}
+- Mode: Interactive
 
 {age_guidelines}
 {SAFETY_GUARDRAILS}
 
-CRITICAL CHOICE REQUIREMENTS:
-1) Provide EXACTLY 3 choices that represent DIFFERENT emotional responses:
-   - Seeking help/support (social connection)
-   - Independent problem-solving (self-reliance)
-   - Creative collaboration (teamwork)
-2) Each choice MUST meaningfully affect the story path (no door colors or directions).
-3) Choices must be age-appropriate and therapeutic.
-4) No filler options. Avoid colors/doors/left-right directions.
+IMPORTANT: Never include code blocks, syntax, or programming examples in your response. Only return story text and reader choices in plain narrative form.
 
-OUTPUT FORMAT (JSON):
-{{
-  "text": "2-3 paragraphs of story setup ending in a decision point.",
+OUTPUT: Return a single, valid, RFC 8259-compliant JSON object in your response. Do not include any text outside of the JSON object.
+Example:
+{
+  "text": "The dragon looked at you curiously. What do you do?",
   "choices": [
-    {{"id": "seek_help", "text": "Ask a trusted person for help", "emotional_skill": "seeking_support"}},
-    {{"id": "independent", "text": "Try to solve it yourself step-by-step", "emotional_skill": "self_reliance"}},
-    {{"id": "collaborate", "text": "Team up with a friend to solve it", "emotional_skill": "teamwork"}}
-  ]
-}}
-Use the exact keys shown above. Keep choice text under 14 words. Keep story text under 180 words.
+    {
+      "id": "choice_1",
+      "text": "Offer the dragon an apple",
+      "emotional_skill": "seeking_support"
+    },
+    {
+      "id": "choice_2",
+      "text": "Run away quickly",
+      "emotional_skill": "self_reliance"
+    },
+    {
+      "id": "choice_3",
+      "text": "Try to talk to the dragon",
+      "emotional_skill": "teamwork"
+    }
+  ],
+  "can_conclude": false
+}
+
+The JSON object should have the following keys:
+- "text": Narrative formatted with these labels (plain text, no code fences):
+  REQUEST SUMMARY
+  STORY START (2-3 lively paragraphs ending at a clear decision point)
+  CHOICE 1:
+    A) ... (seeking_support)
+    B) ... (self_reliance)
+    C) ... (teamwork)
+  Keep story prose 220-320 words. No markdown fences.
+- "choices": Mirror the options above with ids and emotional_skill fields.
+
+CHOICE RULES:
+- Exactly 3 options mapping to seeking_support, self_reliance, and teamwork.
+- Each option should feel different and drive the plot/emotions meaningfully.
+- No color/door/left-right filler.
+
+Ensure text is vivid, age-tuned, playful, with a strong hook/problem and embodied feelings. Do NOT wrap JSON in backticks.
 """
         response = model.generate_content(prompt)
         text = getattr(response, "text", "")
@@ -194,40 +239,55 @@ Use the exact keys shown above. Keep choice text under 14 words. Keep story text
         age_guidelines = _build_age_instruction_block(character_age)
 
         prompt = f"""
-You are continuing an interactive therapeutic story for a {character_age}-year-old.
-Reflect the child's last choice and branch meaningfully.
+You are continuing an interactive children's story using Engaging Storycraft v9.0 for a {character_age}-year-old.
 
-STORY DETAILS:
+CONTEXT:
 - Main Character: {character_name}
 - Theme: {theme}
 - Companion: {companion if companion else "None"}
-- Previous Story So Far: {story_so_far}
-- Choices Made: {", ".join(choices_made)}
-- Last Choice Made: {choice_text}
+- Story so far: {story_so_far}
+- Choices made: {", ".join(choices_made)}
+- Last choice: {choice_text}
 
 {age_guidelines}
 {SAFETY_GUARDRAILS}
 
-CRITICAL CHOICE REQUIREMENTS:
-1) Show consequences consistent with the emotional skill of the last choice.
-   - If they sought help: show positive support outcomes.
-   - If independent: show growth in self-reliance.
-   - If collaboration: show teamwork benefits.
-2) Provide 2-3 new meaningful choices OR include an "end story" option.
-3) Choices must be specific actions, not colors/doors/directions.
-4) Keep each choice under 14 words.
+IMPORTANT: Never include code blocks, syntax, or programming examples in your response. Only return story text and reader choices in plain narrative form.
 
-OUTPUT FORMAT (JSON):
-{{
-  "text": "Next 1-2 paragraphs continuing from the last choice.",
+OUTPUT: Return a single, valid, RFC 8259-compliant JSON object in your response. Do not include any text outside of the JSON object.
+Example:
+{
+  "text": "You offer the dragon the apple. It sniffs it curiously, then takes a small bite. It seems to like it!",
   "choices": [
-    {{"id": "continue_1", "text": "Meaningful choice", "emotional_skill": "..." }},
-    {{"id": "continue_2", "text": "Meaningful choice", "emotional_skill": "..." }},
-    {{"id": "end_story", "text": "End the story here", "emotional_skill": "closure"}}
+    {
+      "id": "choice_1",
+      "text": "Ask the dragon its name",
+      "emotional_skill": "seeking_support"
+    },
+    {
+      "id": "choice_2",
+      "text": "Offer it another apple",
+      "emotional_skill": "teamwork"
+    },
+    {
+      "id": "choice_end",
+      "text": "End the story here"
+    }
   ],
   "can_conclude": true
-}}
-Use the exact keys. If ending naturally, set can_conclude true and include end_story.
+}
+
+The JSON object should have the following keys:
+- "text": Plain prose with labels (no code fences):
+  STORY CONTINUES (1-2 paragraphs reflecting last choice; keep 200-280 words)
+  If can_conclude is true, append STORY END, WISDOM GEM (5-10 words), and ADVENTURE REPORT bullets as in v9 (plot beats, character snapshot, emotion notes, re-readability hooks).
+- "choices": 2-3 meaningful next options. Always include an "end_story" option when can_conclude is true.
+- "can_conclude": true if this segment can gracefully end now, else false.
+
+CHOICE RULES:
+- Options must be specific actions tied to emotional skills; no color/door/left-right filler.
+- Keep each option under 14 words.
+Do NOT wrap JSON in backticks.
 """
         response = model.generate_content(prompt)
         text = getattr(response, "text", "")
@@ -237,14 +297,51 @@ Use the exact keys. If ending naturally, set can_conclude true and include end_s
         return self._parse_interactive_story_response(text)
 
     def _parse_interactive_story_response(self, text: str):
-        try:
-            payload = json.loads(text)
-        except json.JSONDecodeError:
-            # Fallback to old parser if model doesn't return JSON
+        def _try_load_json(raw: str):
+            """Try multiple sane fallbacks to load JSON from model text."""
+            stripped = (raw or "").strip()
+            if not stripped:
+                return None
+
+            candidates = []
+
+            # 1) Best guess at an object block even if the model added prose around it
+            brace_start = stripped.find("{")
+            brace_end = stripped.rfind("}")
+            if brace_start != -1 and brace_end != -1 and brace_end > brace_start:
+                candidates.append(stripped[brace_start:brace_end + 1].strip())
+
+            # 2) Remove optional markdown code fences
+            if stripped.startswith("```"):
+                fence_stripped = re.sub(r"^```(?:json)?", "", stripped, flags=re.IGNORECASE)
+                fence_stripped = re.sub(r"```$", "", fence_stripped).strip()
+                candidates.append(fence_stripped)
+
+            # 3) Raw text as-is
+            candidates.append(stripped)
+
+            seen = set()
+            for candidate in candidates:
+                if not candidate or candidate in seen:
+                    continue
+                seen.add(candidate)
+                try:
+                    return json.loads(candidate)
+                except json.JSONDecodeError:
+                    continue
+            return None
+
+        payload = _try_load_json(text)
+        if payload is None:
+            # Fallback to old parser if model doesn't return usable JSON
             return self._parse_legacy_interactive_response(text)
 
         story_text = payload.get("text") or ""
+        if not isinstance(story_text, str):
+            story_text = str(story_text)
         choices = payload.get("choices") or []
+        if not isinstance(choices, list):
+            choices = []
 
         validated_choices = []
         for choice in choices:

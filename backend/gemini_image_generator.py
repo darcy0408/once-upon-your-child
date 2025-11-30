@@ -10,6 +10,9 @@ import io
 import base64
 import uuid
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 class GeminiImageGenerator:
     def __init__(self, api_key=None):
@@ -93,11 +96,15 @@ Style: {style}, optimized for {age_descriptor}
 """
 
         try:
+            logger.info("Calling Gemini image generation with prompt preview: %s", prompt[:200].replace("\n", " "))
             # Generate images with Gemini
             response = self.image_model.generate_content(prompt)
-            return self._process_image_response(response, prompt)
+            images = self._process_image_response(response, prompt)
+            candidate_count = len(getattr(response, "candidates", []) or [])
+            logger.info("Gemini image generation returned %s candidates and %s image(s)", candidate_count, len(images))
+            return images
         except Exception as e:
-            print(f"Error generating image with Gemini: {e}")
+            logger.exception("Error generating image with Gemini")
             return []
 
     def generate_coloring_page(
@@ -164,11 +171,15 @@ Output: Pure black lines on white background only
 """
 
         try:
+            logger.info("Calling Gemini coloring page generation with prompt preview: %s", prompt[:200].replace("\n", " "))
             # Generate images with Gemini
             response = self.image_model.generate_content(prompt)
-            return self._process_image_response(response, prompt)
+            images = self._process_image_response(response, prompt)
+            candidate_count = len(getattr(response, "candidates", []) or [])
+            logger.info("Gemini coloring generation returned %s candidates and %s image(s)", candidate_count, len(images))
+            return images
         except Exception as e:
-            print(f"Error generating coloring page with Gemini: {e}")
+            logger.exception("Error generating coloring page with Gemini")
             return []
 
 
