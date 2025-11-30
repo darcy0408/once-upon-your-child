@@ -146,6 +146,7 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
         images = []
         for i in range(num_images):
             try:
+                logger.info(f"OpenRouter: Sending request for coloring page prompt (first 100 chars): {prompt[:100]}...")
                 response = requests.post(
                     f"{self.base_url}/chat/completions",
                     headers={
@@ -155,7 +156,7 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "black-forest-labs/flux.2-flex",  # Free image model
+                        "model": "black-forest-labs/flux.2-flex",
                         "messages": [
                             {
                                 "role": "user",

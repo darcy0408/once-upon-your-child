@@ -28,6 +28,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
   late final List<_SecondaryOption> _secondaryOptions;
   final GlobalKey _wheelKey = GlobalKey();
   final GlobalKey _dialogWheelKey = GlobalKey();
+  bool _useListPicker = false;
 
   @override
   void initState() {
@@ -84,11 +85,11 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
         const SizedBox(height: 8),
         _buildGuidanceCard(maxDepth, age),
         const SizedBox(height: 14),
-        _buildGuidedSelector(maxDepth),
-        if (_selectedCore != null || _selectedSecondary != null)
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
+        _buildSelectionSummary(),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            TextButton.icon(
               onPressed: () {
                 setState(() {
                   _selectedCore = null;
@@ -98,7 +99,17 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
               icon: const Icon(Icons.refresh),
               label: const Text('Start over'),
             ),
-          ),
+            const Spacer(),
+            TextButton(
+              onPressed: () => setState(() => _useListPicker = !_useListPicker),
+              child: Text(_useListPicker ? 'Hide list picker' : 'Use list instead'),
+            ),
+          ],
+        ),
+        if (_useListPicker) ...[
+          const SizedBox(height: 8),
+          _buildGuidedSelector(maxDepth),
+        ],
       ],
     );
   }
@@ -212,7 +223,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Tap the core feeling first',
+            'Tap the wheel to pick feelings',
             style: TextStyle(
               fontFamily: 'Quicksand',
               fontWeight: FontWeight.w700,
@@ -220,7 +231,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
           ),
           const SizedBox(height: 6),
           const Text(
-            'We will dim everything else. Then the next level of feelings will light up so you can drill down step by step.',
+            'Tap the colored wheel itself. It dims non-relevant slices and lights up the next level as you drill down.',
             style: TextStyle(fontFamily: 'Quicksand'),
           ),
           if (maxDepth > 1) ...const [
@@ -247,6 +258,14 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Text(
+          'List picker (optional)',
+          style: TextStyle(
+            fontFamily: 'Quicksand',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
         _buildStageCard(
           title: '1. Core feelings',
           subtitle: 'Tap the big feeling family first.',
@@ -595,6 +614,52 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
 
   void _notifySelection(SelectedFeeling feeling) {
     widget.onFeelingSelected?.call(feeling);
+  }
+
+  Widget _buildSelectionSummary() {
+    if (_selectedCore == null) {
+      return const Text(
+        'Tap anywhere on the wheel to choose your core feeling.',
+        style: TextStyle(fontFamily: 'Quicksand'),
+      );
+    }
+
+    final chips = <Widget>[
+      Chip(
+        label: Text(_selectedCore!.name),
+        avatar: Text(_selectedCore!.emoji),
+        backgroundColor: _selectedCore!.color?.withOpacity(0.25),
+        labelStyle: const TextStyle(fontWeight: FontWeight.w700),
+      ),
+    ];
+
+    if (_selectedSecondary != null) {
+      chips.add(
+        Chip(
+          label: Text(_selectedSecondary!.name),
+          avatar: Text(_selectedSecondary!.emoji),
+          backgroundColor: _selectedCore!.color?.withOpacity(0.18),
+          labelStyle: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+      );
+    }
+
+    if (widget.currentFeeling?.tertiary.isNotEmpty == true) {
+      chips.add(
+        Chip(
+          label: Text(widget.currentFeeling!.tertiary),
+          avatar: Text(widget.currentFeeling!.emoji),
+          backgroundColor: _selectedCore!.color?.withOpacity(0.15),
+          labelStyle: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: chips,
+    );
   }
 }
 
