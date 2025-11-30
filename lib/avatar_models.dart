@@ -49,18 +49,19 @@ class CharacterAvatar {
 
   /// Translate this avatar into an Avataaars URL for rich SVG rendering.
   String toAvataaarsUrl({bool circleBackground = true}) {
-    // DiceBear 7.x uses simple parameter names with specific value formats
+    // DiceBear 7.x uses simple parameter names without brackets
+    // Note: Omit accessories and facialHair to have none (no "blank" value exists)
     final query = <String, String>{
       'seed': '$skinColor-$hairStyle-$hairColor', // Unique seed for consistency
-      'top[]': _mapTopTypeToDiceBear(hairStyle),
-      'hairColor[]': _mapHairColorToDiceBear(hairColor),
-      'accessories[]': 'blank', // No accessories by default
-      'facialHair[]': 'blank', // No facial hair by default
-      'clothing[]': _mapClothingTypeToDiceBear(clothingStyle),
-      'clothingColor[]': _mapClothingColorToDiceBear(clothingColor),
-      'eyes[]': _mapEyeTypeToDiceBear(eyeType),
-      'mouth[]': _mapMouthTypeToDiceBear(mouthType),
-      'skinColor[]': _mapSkinColorToDiceBear(skinColor),
+      'top': _mapTopTypeToDiceBear(hairStyle),
+      'hairColor': _mapHairColorToDiceBear(hairColor),
+      // accessories: omitted to have no accessories
+      // facialHair: omitted to have no facial hair
+      'clothing': _mapClothingTypeToDiceBear(clothingStyle),
+      'clothingColor': _mapClothingColorToDiceBear(clothingColor),
+      'eyes': _mapEyeTypeToDiceBear(eyeType),
+      'mouth': _mapMouthTypeToDiceBear(mouthType),
+      'skinColor': _mapSkinColorToDiceBear(skinColor),
     };
 
     query.removeWhere((_, value) => value.isEmpty);
