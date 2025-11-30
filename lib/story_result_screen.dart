@@ -690,10 +690,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       _highContrastMode ? Colors.black : Colors.white;
 
   Widget _buildReadingProgressHeader() {
-    return Semantics(
-      label:
-          'Reading progress ${(100 * _pageProgress).toStringAsFixed(0)} percent, about $_estimatedMinutes minute read',
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -725,8 +722,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
             ),
           ),
         ],
-      ),
-    );
+      );
   }
 
   Widget _buildAccessibilityPanel() {
@@ -823,10 +819,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                     onPageChanged: _handlePageChanged,
                     itemBuilder: (context, index) {
                       final page = _storyPages[index];
-                      return Semantics(
-                        label:
-                            _screenReaderHints ? 'Story page ${index + 1}' : null,
-                        child: MouseRegion(
+                      return MouseRegion(
                           onEnter: (_) => setState(() => _isStoryHovered = true),
                           onExit: (_) => setState(() => _isStoryHovered = false),
                           cursor: SystemMouseCursors.click,
@@ -859,8 +852,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                               ),
                             ),
                           ),
-                        ),
-                      );
+                        );
                     },
                   ),
                 ),
@@ -905,10 +897,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         ),
         const SizedBox(height: 10),
         if (_storyPages.length > 1)
-          Semantics(
-            label:
-                'Page indicator. On page ${_currentPageIndex + 1} of ${_storyPages.length}',
-            child: Row(
+          Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
                 _storyPages.length,
@@ -926,7 +915,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                 ),
               ),
             ),
-          ),
       ],
     );
   }
@@ -1667,7 +1655,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                         style: const TextStyle(fontSize: 18),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary, width: 2),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 32, vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -1723,10 +1713,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                    Semantics(
-                      label: 'Share story',
-                      button: true,
-                      child: FloatingActionButton.small(
+                    FloatingActionButton.small(
                         heroTag: 'fab_share',
                         backgroundColor: Colors.blueAccent,
                         tooltip: 'Share story',
@@ -1736,12 +1723,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                         },
                         child: const Icon(Icons.share),
                       ),
-                    ),
                     const SizedBox(height: 12),
-                    Semantics(
-                      label: 'Regenerate story',
-                      button: true,
-                      child: FloatingActionButton.small(
+                    FloatingActionButton.small(
                         heroTag: 'fab_regenerate',
                         backgroundColor: Colors.orangeAccent,
                         tooltip: 'Regenerate story',
@@ -1756,12 +1739,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                               },
                         child: const Icon(Icons.refresh),
                       ),
-                    ),
                     const SizedBox(height: 12),
-                    Semantics(
-                      label: 'Save story',
-                      button: true,
-                      child: FloatingActionButton.extended(
+                    FloatingActionButton.extended(
                         heroTag: 'fab_save',
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -1772,7 +1751,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                           _saveStory();
                         },
                       ),
-                    ),
                   ],
                 ),
               ),

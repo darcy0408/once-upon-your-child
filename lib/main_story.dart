@@ -17,7 +17,6 @@ import 'coloring_book_library_screen.dart';
 import 'config/environment.dart';
 import 'customizable_avatar_widget.dart';
 import 'dialogs/upgrade_prompt_dialog.dart';
-import 'emotions_screen.dart';
 import 'feelings_corner_screen.dart';
 import 'interactive_story_screen.dart';
 import 'storage_service.dart';
@@ -787,11 +786,15 @@ class _StoryScreenState extends State<StoryScreen> {
           ),
           // Feelings Helper
           IconButton(
-            tooltip: 'Feelings Helper',
+            tooltip: 'Feelings Corner',
             icon: const Icon(Icons.favorite),
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const EmotionsScreen()),
+                MaterialPageRoute(
+                  builder: (_) => FeelingsCornerScreen(
+                    characterAge: _selectedCharacter?.age,
+                  ),
+                ),
               );
             },
           ),

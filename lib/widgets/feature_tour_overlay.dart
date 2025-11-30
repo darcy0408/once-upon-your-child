@@ -118,6 +118,7 @@ class FeatureTourOverlay extends StatelessWidget {
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.deepPurple,
+                              foregroundColor: Colors.white,
                             ),
                           ),
                         ],

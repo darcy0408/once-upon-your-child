@@ -577,36 +577,44 @@ This is a FEELINGS-FIRST story. The emotion is the main character's journey.
     }
 
     return '''
-You are a therapeutic storyteller specializing in EMOTION-FOCUSED stories for children and young people.
+You are an experienced children's author running the Engaging Storycraft v9.0 engine for a feelings-first story.
 
-Create a $lengthGuideline FEELINGS-CENTERED story about $characterName (age $age) with a $theme theme.$companionText$multiCharacterText$feelingsSection$characterIntegration$evolutionContext
+REQUEST SUMMARY
+- Child/Character: $characterName (age $age)
+- Theme: $theme
+- Mode: Linear story, feelings-centered
+- Length target: $lengthGuideline (Short default)
+- Companion: ${companion ?? 'None'}
+$multiCharacterText$feelingsSection$characterIntegration$evolutionContext
+
+STORY
+STORY START
+Write immersive, age-appropriate prose (no code fences) that leads with the current emotion, names body sensations, and sets a clear, kid-repeatable problem. Include at least two rising steps ("and then...") before resolving. Show coping skills in action.
+STORY END
+
+WISDOM GEM: A 5-10 word heart lesson in kid language.
+
+ADVENTURE REPORT
+- PLOT BEATS: 3-6 bullets summarizing arc
+- CHARACTER SNAPSHOT: who they are + how they changed
+- EMOTION NOTES: how feelings showed and shifted
+- RE-READABILITY HOOKS: patterns, echoes, questions, Easter eggs
+
+9-POINT STORYCRAFT CHECK (ensure output reflects):
+1) Main character kids can mirror (want/quirk/feeling).
+2) One-sentence kid-repeatable problem appears early.
+3) At least two rising steps before resolution.
+4) Embodied emotion (body cues).
+5) Age-appropriate rhythm and repetition.
+6) Small heart lesson, not preachy.
+7) Playful delight: surprise + giggle + gentle wonder.
+8) Ending echoes an opening image/line with inner shift.
+9) Re-read hooks present.
 
 $ageInstructions
-FEELINGS-FIRST STORY STRUCTURE:
-1. FEELING ACKNOWLEDGMENT: Begin by showing $characterName experiencing their current emotion. "Today $characterName felt..." or "$characterName woke up feeling..."
-2. PHYSICAL AWARENESS: Show how the emotion feels in their body
-3. SITUATION: What's happening in their life that connects to this feeling
-4. COPING JOURNEY: Show $characterName trying healthy ways to cope (from the list above)
-5. EMOTIONAL PROCESSING: $characterName talks about the feeling, understands it better
-6. RESOLUTION: The feeling softens (not disappears) as $characterName learns they can handle it
-7. WISDOM: End with validation that all feelings are okay and temporary
+SAFETY: Keep content gentle, avoid violence/scares; keep tone warm and supportive.
+Maintain plain text (no markdown fences).'''
 
-CRITICAL WRITING GUIDELINES:
-✓ The emotion IS the story - make it central, not background
-✓ Use the child's actual current feeling, don't change it
-✓ Show physical sensations of emotions vividly
-✓ Validate the emotion: "It's okay to feel [emotion]"
-✓ Include self-talk: "$characterName thought to themselves..."
-✓ Show emotions as temporary: "After a while, the feeling started to feel smaller..."
-✓ End with empowerment: "$characterName felt proud for handling their feelings"
-✓ Age-appropriate language for a $age-year-old
-✓ Sensory details and vivid imagery
-✓ Natural, realistic dialogue
-
-Remember: This is a story about FEELINGS, not just adventure. The emotional journey is the plot.
-
-Create the feelings-focused therapeutic story now:
-''';
   }
 
   static String _buildAdventurePrompt({
@@ -711,35 +719,44 @@ Create the feelings-focused therapeutic story now:
     }
 
     return '''
-You are an engaging storyteller creating fun, age-appropriate adventure stories for children.
+You are an experienced children's author running the Engaging Storycraft v9.0 engine for an adventure story.
 
-Create a $lengthGuideline adventure story about $characterName (age $age) with a $theme theme.$companionText$multiCharacterText$characterIntegration$evolutionContext
+REQUEST SUMMARY
+- Child/Character: $characterName (age $age)
+- Theme: $theme
+- Mode: Linear story
+- Length target: $lengthGuideline (Short default)
+- Companion: ${companion ?? 'None'}
+$multiCharacterText$characterIntegration$evolutionContext
+
+STORY
+STORY START
+Write vivid, age-tuned prose (no code fences) with a strong hook, clear kid-repeatable problem, rising action with at least two "and then..." steps, playful delight (surprise + humor + gentle wonder), and a satisfying resolution that echoes an opening image/line.
+STORY END
+
+WISDOM GEM: A 5-10 word heart lesson in kid language.
+
+ADVENTURE REPORT
+- PLOT BEATS: 3-6 bullets summarizing arc
+- CHARACTER SNAPSHOT: who they are + how they changed
+- EMOTION NOTES: how feelings showed and shifted
+- RE-READABILITY HOOKS: patterns, echoes, questions, Easter eggs
+
+9-POINT STORYCRAFT CHECK (ensure output reflects):
+1) Main character kids can mirror (want/quirk/feeling).
+2) One-sentence kid-repeatable problem appears early.
+3) At least two rising steps before resolution.
+4) Embodied emotion (body cues).
+5) Age-appropriate rhythm and repetition.
+6) Small heart lesson, not preachy.
+7) Playful delight: surprise + giggle + gentle wonder.
+8) Ending echoes an opening image/line with inner shift.
+9) Re-read hooks present.
 
 $ageInstructions
-ADVENTURE STORY GUIDELINES:
-✓ Focus on exciting plot and engaging adventure
-✓ Include problem-solving and creative thinking
-✓ Show characters working together and supporting each other
-✓ Weave in emotional awareness naturally (characters notice feelings, support each other)
-✓ Positive messages about friendship, courage, kindness
-✓ Age-appropriate challenges and victories
-✓ Vivid sensory details and imagery
-✓ Natural, realistic dialogue
-✓ Fun and entertaining while being meaningful
+SAFETY: Keep content gentle, avoid violence/scares; keep tone warm and supportive.
+Maintain plain text (no markdown fences).'''
 
-STORY STRUCTURE:
-1. EXCITING OPENING: Hook the reader with an interesting situation or discovery
-2. ADVENTURE BEGINS: $characterName faces a challenge or embarks on a quest
-3. OBSTACLES: Show creative problem-solving and teamwork
-4. EMOTIONAL MOMENTS: Characters naturally notice and support each other's feelings
-5. CLIMAX: The main challenge is overcome through effort and cooperation
-6. RESOLUTION: Satisfying ending that shows growth and friendship
-7. CLOSING: End with a sense of accomplishment and possibility
-
-Remember: This is primarily an ADVENTURE story. Make it fun, exciting, and engaging while including natural emotional intelligence.
-
-Create the adventure story now:
-''';
    }
 
    static String _buildLearningToReadPrompt({
@@ -933,22 +950,34 @@ Create the rhyming learning-to-read story about $characterName now:
         : '';
 
     final prompt = '''
-You are creating an interactive choose-your-own-adventure story for children.
+You are an experienced children's author running the Engaging Storycraft v9.0 engine for an interactive story.
 
-Create the OPENING segment (150-200 words) of an engaging story about $characterName (age $age) with the theme: $theme. $companionText
+Child profile:
+- Name: $characterName
+- Age: $age
+- Theme: $theme
+- Companion: ${companion != null && companion.isNotEmpty ? companion : 'None'}
+- Mode: Interactive
 
-Set the scene and introduce a situation where the character must make a choice.
+OUTPUT: Return STRICT JSON with keys "text" and "choices" (and optional "can_conclude": false).
+- "text": Narrative formatted with these labels (plain text, no code fences):
+  REQUEST SUMMARY
+  STORY START (2-3 lively paragraphs ending at a clear decision point)
+  CHOICE 1:
+    A) ... (seeking_support)
+    B) ... (self_reliance)
+    C) ... (teamwork)
+  Keep story prose around 220-320 words. No markdown fences.
+- "choices": Mirror the options above with ids and emotional_skill fields.
 
-Return ONLY valid JSON in this exact format:
-{
-  "text": "The story opening text here...",
-  "choices": [
-    {"id": "choice1", "text": "First option (short)", "description": "What happens if they choose this"},
-    {"id": "choice2", "text": "Second option (short)", "description": "What happens if they choose this"},
-    {"id": "choice3", "text": "Third option (short)", "description": "What happens if they choose this"}
-  ]
-}
+CHOICE RULES:
+- Exactly 3 options mapping to seeking_support, self_reliance, and teamwork.
+- Each option should feel different and drive the plot/emotions meaningfully.
+- No color/door/left-right filler.
+
+Ensure text is vivid, age-tuned, playful, with a strong hook/problem and embodied feelings. Do NOT wrap JSON in backticks.
 ''';
+
 
     final response = await model.generateContent([Content.text(prompt)]);
     final responseText = response.text ?? '';
@@ -1035,22 +1064,28 @@ Return ONLY valid JSON in this exact format:
     final shouldEnd = choicesMade.length >= 3;
 
     final prompt = '''
-You are continuing an interactive choose-your-own-adventure story.
+You are continuing an interactive children's story using Engaging Storycraft v9.0.
 
 STORY SO FAR:
 $storySoFar
 
 $characterName chose: "$choice"
 
-${shouldEnd ? 'This should be the ENDING. Wrap up the story positively (150-200 words).' : 'Write the next segment (150-200 words) and provide 3 new choices.'}
+${shouldEnd ? 'This should be the ENDING. Wrap up the story positively (200-280 words) and include STORY END, WISDOM GEM, and ADVENTURE REPORT in text.' : 'Write the next segment (200-280 words) and provide 2-3 new choices. Keep text labeled as below.'}
 
-Return ONLY valid JSON in this exact format:
-{
-  "text": "The next story segment here...",
-  "is_ending": ${shouldEnd ? 'true' : 'false'},
-  ${!shouldEnd ? '"choices": [{"id": "choice1", "text": "Option", "description": "What happens"}, {"id": "choice2", "text": "Option", "description": "What happens"}, {"id": "choice3", "text": "Option", "description": "What happens"}]' : '"choices": []'}
-}
+OUTPUT: Return STRICT JSON with keys "text", "choices", and "is_ending".
+- "text": Plain prose with labels (no code fences):
+  STORY CONTINUES (reflect last choice)
+  If is_ending is true, append STORY END, WISDOM GEM (5-10 words), and ADVENTURE REPORT bullets (plot beats, character snapshot, emotion notes, re-readability hooks).
+- "choices": 2-3 meaningful next options. If ending, include an "end_story" option and keep list short.
+- "is_ending": ${shouldEnd ? 'true' : 'false'}
+
+CHOICE RULES:
+- Options must be specific actions tied to emotional skills; no color/door/left-right filler.
+- Keep each option under 14 words.
+Do NOT wrap JSON in backticks.
 ''';
+
 
     final response = await model.generateContent([Content.text(prompt)]);
     final responseText = response.text ?? '';

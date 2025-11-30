@@ -35,6 +35,17 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
     FeelingsAnalyticsService.trackScreenViewed();
     _loadRecentCheckIns();
     _loadReminderPreference();
+    _loadSelectedFeeling();
+  }
+
+  Future<void> _loadSelectedFeeling() async {
+    final prefs = await SharedPreferences.getInstance();
+    final feelingJson = prefs.getString('selected_feeling');
+    if (feelingJson != null) {
+      setState(() {
+        _selectedFeeling = SelectedFeeling.fromJson(jsonDecode(feelingJson));
+      });
+    }
   }
 
   Future<void> _loadRecentCheckIns() async {
@@ -64,6 +75,15 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
     await prefs.setBool('feelings_daily_reminder', value);
     setState(() => _dailyReminderEnabled = value);
     await FeelingsAnalyticsService.trackReminderToggled(value);
+  }
+
+  Future<void> _saveSelectedFeeling() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_selectedFeeling == null) {
+      await prefs.remove('selected_feeling');
+    } else {
+      await prefs.setString('selected_feeling', jsonEncode(_selectedFeeling!.toJson()));
+    }
   }
 
   Future<void> _saveCheckIn() async {
@@ -200,6 +220,7 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
                   _detail = FeelingDetails.forFeeling(feeling);
                   _intensity = 3;
                 });
+                _saveSelectedFeeling();
               },
             ),
 

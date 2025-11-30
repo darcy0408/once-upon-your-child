@@ -1,6 +1,7 @@
 // ignore_for_file: unused_element
 
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -544,6 +545,16 @@ class _CharacterCreationScreenEnhancedState
     _goalsChallengesController.dispose();
     _comfortItemController.dispose();
     super.dispose();
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   @override

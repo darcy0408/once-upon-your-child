@@ -23,10 +23,10 @@ class AppBottomNavigationBar extends StatelessWidget {
       selectedItemColor: Colors.purple,
       unselectedItemColor: Colors.grey,
       showUnselectedLabels: true,
-      items: [
-        const BottomNavigationBarItem(
-          icon: _NavIcon(icon: Icons.create),
-          label: 'Create',
+      items: const [
+        BottomNavigationBarItem(
+          icon: _NavIcon(icon: Icons.auto_stories),
+          label: 'Stories',
         ),
         BottomNavigationBarItem(
           icon: FeatureUnlockTooltip(

@@ -1,6 +1,7 @@
 // lib/feelings_wheel_screen.dart
 // Interactive Feelings Wheel with age-aware depth and optional reference image
 
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'feelings_wheel_data.dart';
 import 'sunset_jungle_theme.dart';
@@ -24,63 +25,66 @@ class FeelingsWheelScreen extends StatefulWidget {
 class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
   CoreEmotion? _selectedCore;
   SecondaryFeeling? _selectedSecondary;
+  late final List<_SecondaryOption> _secondaryOptions;
+  final GlobalKey _wheelKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _secondaryOptions = FeelingsWheelData.coreEmotions
+        .expand(
+          (core) => core.secondary.map(
+            (secondary) => _SecondaryOption(core: core, secondary: secondary),
+          ),
+        )
+        .toList();
+    _bootstrapFromCurrent(widget.currentFeeling);
+  }
+
+  @override
+  void didUpdateWidget(covariant FeelingsWheelScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.currentFeeling?.tertiary != oldWidget.currentFeeling?.tertiary) {
+      setState(() {
+        _bootstrapFromCurrent(widget.currentFeeling);
+      });
+    }
+  }
+
+  void _bootstrapFromCurrent(SelectedFeeling? feeling) {
+    if (feeling == null) return;
+
+    CoreEmotion? core;
+    SecondaryFeeling? secondary;
+
+    for (final option in _secondaryOptions) {
+      if (option.core.name.toLowerCase() == feeling.core.toLowerCase()) {
+        core ??= option.core;
+      }
+      if (option.secondary.name.toLowerCase() == feeling.secondary.toLowerCase()) {
+        core ??= option.core;
+        secondary ??= option.secondary;
+      }
+    }
+
+    _selectedCore = core;
+    _selectedSecondary = secondary;
+  }
 
   @override
   Widget build(BuildContext context) {
     final age = widget.ageYears;
     final maxDepth = _maxDepthForAge(age);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildWheelImage(),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: SunsetJungleTheme.creamLight,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: SunsetJungleTheme.jungleMint, width: 1.5),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Step 1: Pick a core emotion',
-                style: TextStyle(
-                  fontFamily: 'Quicksand',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              if (maxDepth > 1) ...const [
-                SizedBox(height: 4),
-                Text(
-                  'Step 2: Choose a more specific feeling',
-                  style: TextStyle(fontFamily: 'Quicksand'),
-                ),
-              ],
-              if (maxDepth > 2) ...const [
-                SizedBox(height: 2),
-                Text(
-                  'Step 3: Tap the exact feeling that fits',
-                  style: TextStyle(fontFamily: 'Quicksand'),
-                ),
-              ],
-              if (age != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    _ageGuidanceText(maxDepth),
-                    style: const TextStyle(fontFamily: 'Quicksand', fontSize: 12),
-                  ),
-                ),
-            ],
-          ),
-        ),
+        const SizedBox(height: 8),
+        _buildGuidanceCard(maxDepth, age),
         const SizedBox(height: 14),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 250),
-          child: _buildActiveLevel(maxDepth),
-        ),
-        if (_selectedCore != null)
+        _buildGuidedSelector(maxDepth),
+        if (_selectedCore != null || _selectedSecondary != null)
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
@@ -117,303 +121,467 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
   }
 
   Widget _buildWheelImage() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Semantics(
-          label: 'Feelings wheel reference image',
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: AspectRatio(
-              aspectRatio: 1.1,
-              child: InteractiveViewer(
-                minScale: 0.9,
-                maxScale: 2.0,
-                child: Image.asset(
-                  'assets/images/FeelingsWheel.png',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stack) => const SizedBox.shrink(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Semantics(
+              label: 'Feelings wheel - tap the colors to pick feelings',
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: AspectRatio(
+                  key: _wheelKey,
+                  aspectRatio: 1.1,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset(
+                        'assets/images/FeelingsWheel.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stack) => const SizedBox.shrink(),
+                      ),
+                      GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onTapDown: _handleWheelTap,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (ctx) => Dialog(
-                  child: InteractiveViewer(
-                    minScale: 0.8,
-                    maxScale: 3.0,
-                    child: Image.asset(
-                      'assets/images/FeelingsWheel.png',
-                      fit: BoxFit.contain,
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => Dialog(
+                      child: InteractiveViewer(
+                        minScale: 0.8,
+                        maxScale: 3.0,
+                        child: Image.asset(
+                          'assets/images/FeelingsWheel.png',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              );
-            },
-            icon: const Icon(Icons.fullscreen),
-            label: const Text('Open full wheel'),
-          ),
-        ),
-      ],
+                  );
+                },
+                icon: const Icon(Icons.fullscreen),
+                label: const Text('Open & tap the wheel'),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildActiveLevel(int maxDepth) {
-    if (_selectedCore == null) {
-      return _buildCoreLevel(maxDepth);
-    }
-    if (maxDepth == 1) {
-      return _buildCoreFinal();
-    }
-    if (_selectedSecondary == null) {
-      return _buildSecondaryLevel(maxDepth);
-    }
-    if (maxDepth == 2) {
-      return _buildSecondaryFinal();
-    }
-    return _buildTertiaryLevel();
+  Widget _buildGuidanceCard(int maxDepth, int? age) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: SunsetJungleTheme.creamLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: SunsetJungleTheme.jungleMint, width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Tap the core feeling first',
+            style: TextStyle(
+              fontFamily: 'Quicksand',
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'We will dim everything else. Then the next level of feelings will light up so you can drill down step by step.',
+            style: TextStyle(fontFamily: 'Quicksand'),
+          ),
+          if (maxDepth > 1) ...const [
+            SizedBox(height: 8),
+            Text(
+              'Keep tapping the bright chips until you land on the exact word.',
+              style: TextStyle(fontFamily: 'Quicksand'),
+            ),
+          ],
+          if (age != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                _ageGuidanceText(maxDepth),
+                style: const TextStyle(fontFamily: 'Quicksand', fontSize: 12),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
-  Widget _buildCoreLevel(int maxDepth) {
+  Widget _buildGuidedSelector(int maxDepth) {
     return Column(
-      key: const ValueKey('core'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: FeelingsWheelData.coreEmotions.map((emotion) {
-            final selected = _selectedCore?.id == emotion.id;
-            return ChoiceChip(
-              label: Text(emotion.name),
-              avatar: Text(emotion.emoji),
-              selected: selected,
-              labelStyle: TextStyle(
-                color: selected ? Colors.white : Colors.black87,
-                fontWeight: FontWeight.w700,
-              ),
-              selectedColor: emotion.color,
-              onSelected: (_) {
-                if (maxDepth == 1) {
-                  _notifySelection(
-                    SelectedFeeling(
-                      core: emotion.name,
-                      secondary: '',
-                      tertiary: emotion.name,
-                      emoji: emotion.emoji,
-                      eyeType: emotion.eyeType,
-                      mouthType: emotion.mouthType,
-                      color: emotion.color ?? SunsetJungleTheme.sunsetPeach,
-                    ),
-                  );
-                } else {
-                  setState(() {
-                    _selectedCore = emotion;
-                    _selectedSecondary = null;
-                  });
-                }
-              },
-            );
-          }).toList(),
+        _buildStageCard(
+          title: '1. Core feelings',
+          subtitle: 'Tap the big feeling family first.',
+          accent: _selectedCore?.color ?? SunsetJungleTheme.jungleMint,
+          isLocked: false,
+          child: _buildCoreChoices(maxDepth),
         ),
+        if (maxDepth > 1)
+          _buildStageCard(
+            title: '2. Next feelings',
+            subtitle: _selectedCore == null
+                ? 'Pick a core feeling to unlock these.'
+                : 'Select the feeling that best matches ${_selectedCore!.name}.',
+            accent: _selectedCore?.color ?? SunsetJungleTheme.jungleMint,
+            isLocked: _selectedCore == null,
+            child: _buildSecondaryChoices(maxDepth),
+          ),
+        if (maxDepth > 2)
+          _buildStageCard(
+            title: '3. Exact feelings',
+            subtitle: _selectedSecondary == null
+                ? 'Choose a feeling above to see the exact words.'
+                : 'Pick the word that fits best.',
+            accent: _selectedCore?.color ?? SunsetJungleTheme.jungleMint,
+            isLocked: _selectedSecondary == null,
+            child: _buildTertiaryChoices(),
+          ),
       ],
     );
   }
 
-  Widget _buildCoreFinal() {
-    return const SizedBox.shrink();
-  }
+  void _handleWheelTap(TapDownDetails details) {
+    final box = _wheelKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) return;
 
-  Widget _buildSecondaryLevel(int maxDepth) {
-    return Column(
-      key: const ValueKey('secondary'),
-      children: [
-        _buildBreadcrumb(
-          text: '${_selectedCore!.emoji} ${_selectedCore!.name}',
-          onBack: () {
-            setState(() {
-              _selectedCore = null;
-              _selectedSecondary = null;
-            });
-          },
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _selectedCore!.secondary.map((emotion) {
-            final selected = _selectedSecondary?.id == emotion.id;
-            return ChoiceChip(
-              label: Text(emotion.name),
-              avatar: Text(emotion.emoji),
-              selected: selected,
-              labelStyle: TextStyle(
-                color: selected ? Colors.white : Colors.black87,
-                fontWeight: FontWeight.w700,
-              ),
-              selectedColor: _selectedCore!.color,
-              onSelected: (_) {
-                if (maxDepth == 2) {
-                  _notifySelection(
-                    SelectedFeeling(
-                      core: _selectedCore!.name,
-                      secondary: emotion.name,
-                      tertiary: emotion.name,
-                      emoji: emotion.emoji,
-                      eyeType: emotion.eyeType,
-                      mouthType: emotion.mouthType,
-                      color: _selectedCore!.color ?? SunsetJungleTheme.sunsetPeach,
-                    ),
-                  );
-                } else {
-                  setState(() {
-                    _selectedSecondary = emotion;
-                  });
-                }
-              },
-            );
-          }).toList(),
-        ),
-      ],
+    final size = box.size;
+    final local = box.globalToLocal(details.globalPosition);
+    final center = Offset(size.width / 2, size.height / 2);
+    final dx = local.dx - center.dx;
+    final dy = local.dy - center.dy;
+    final radius = math.sqrt(dx * dx + dy * dy);
+    final maxRadius = math.min(size.width, size.height) / 2;
+
+    if (radius > maxRadius) return; // tapped outside the wheel
+
+    final angle = (math.atan2(dy, dx) + 2 * math.pi) % (2 * math.pi);
+    final ringRatio = radius / maxRadius;
+    const coreThreshold = 0.33;
+    const secondaryThreshold = 0.66;
+
+    final sectorCount = FeelingsWheelData.coreEmotions.length;
+    final sectorAngle = (2 * math.pi) / sectorCount;
+    final sectorIndex = (angle / sectorAngle).floor() % sectorCount;
+    final core = FeelingsWheelData.coreEmotions[sectorIndex];
+    final localAngle = (angle - (sectorIndex * sectorAngle)) % sectorAngle;
+    final localFraction = localAngle / sectorAngle;
+    final maxDepth = _maxDepthForAge(widget.ageYears);
+
+    if (ringRatio <= coreThreshold) {
+      // Core ring
+      if (maxDepth == 1) {
+        _notifySelection(
+          SelectedFeeling(
+            core: core.name,
+            secondary: '',
+            tertiary: core.name,
+            emoji: core.emoji,
+            eyeType: core.eyeType,
+            mouthType: core.mouthType,
+            color: core.color ?? SunsetJungleTheme.sunsetPeach,
+          ),
+        );
+      } else {
+        setState(() {
+          _selectedCore = core;
+          _selectedSecondary = null;
+        });
+      }
+      return;
+    }
+
+    final secondaryList = core.secondary;
+    if (secondaryList.isEmpty) return;
+
+    final secondaryIndex = (localFraction * secondaryList.length)
+        .floor()
+        .clamp(0, secondaryList.length - 1);
+    final secondary = secondaryList[secondaryIndex];
+
+    if (ringRatio <= secondaryThreshold) {
+      // Secondary ring
+      if (maxDepth <= 2) {
+        final feeling = SelectedFeeling(
+          core: core.name,
+          secondary: secondary.name,
+          tertiary: secondary.name,
+          emoji: secondary.emoji,
+          eyeType: secondary.eyeType,
+          mouthType: secondary.mouthType,
+          color: core.color ?? SunsetJungleTheme.sunsetPeach,
+        );
+        setState(() {
+          _selectedCore = core;
+          _selectedSecondary = secondary;
+        });
+        _notifySelection(feeling);
+      } else {
+        setState(() {
+          _selectedCore = core;
+          _selectedSecondary = secondary;
+        });
+      }
+      return;
+    }
+
+    // Tertiary ring
+    if (secondary.tertiary.isEmpty) return;
+    final tertiaryIndex = (localFraction * secondary.tertiary.length)
+        .floor()
+        .clamp(0, secondary.tertiary.length - 1);
+    final tertiary = secondary.tertiary[tertiaryIndex];
+
+    final emoji = FeelingsEmojiLookup.emojiFor(tertiary) ?? secondary.emoji;
+    setState(() {
+      _selectedCore = core;
+      _selectedSecondary = secondary;
+    });
+    _notifySelection(
+      SelectedFeeling(
+        core: core.name,
+        secondary: secondary.name,
+        tertiary: tertiary,
+        emoji: emoji,
+        eyeType: secondary.eyeType,
+        mouthType: secondary.mouthType,
+        color: core.color ?? SunsetJungleTheme.sunsetPeach,
+      ),
     );
   }
 
-  Widget _buildSecondaryFinal() {
-    return const SizedBox.shrink();
-  }
-
-  Widget _buildTertiaryLevel() {
-    return Column(
-      key: const ValueKey('tertiary'),
-      children: [
-        _buildBreadcrumb(
-          text:
-              '${_selectedCore!.emoji} ${_selectedCore!.name} → ${_selectedSecondary!.emoji} ${_selectedSecondary!.name}',
-          onBack: () {
-            setState(() {
-              _selectedSecondary = null;
-            });
-          },
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _selectedSecondary!.tertiary.map((feelingName) {
-            final emoji =
-                FeelingsEmojiLookup.emojiFor(feelingName) ?? _selectedSecondary!.emoji;
-            final isSelected = widget.currentFeeling?.tertiary == feelingName;
-            return ChoiceChip(
-              label: Text(feelingName),
-              avatar: Text(emoji),
-              selected: isSelected,
-              labelStyle: TextStyle(
-                color: isSelected ? Colors.white : Colors.black87,
-                fontWeight: FontWeight.w700,
-              ),
-              selectedColor: _selectedCore!.color,
-              onSelected: (_) {
+  Widget _buildCoreChoices(int maxDepth) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: FeelingsWheelData.coreEmotions.map((emotion) {
+        final selected = _selectedCore?.id == emotion.id;
+        final dimmed = _selectedCore != null && !selected;
+        return AnimatedOpacity(
+          duration: const Duration(milliseconds: 180),
+          opacity: dimmed ? 0.35 : 1.0,
+      child: ChoiceChip(
+        label: Text(emotion.name),
+        avatar: Text(emotion.emoji),
+        selected: selected,
+            labelStyle: TextStyle(
+              color: selected ? Colors.white : Colors.black87,
+              fontWeight: FontWeight.w700,
+            ),
+            selectedColor: emotion.color ?? SunsetJungleTheme.sunsetPeach,
+            onSelected: (_) {
+              if (maxDepth == 1) {
                 _notifySelection(
-                  SelectedFeeling(
-                    core: _selectedCore!.name,
-                    secondary: _selectedSecondary!.name,
-                    tertiary: feelingName,
-                    emoji: emoji,
-                    eyeType: _selectedSecondary!.eyeType,
-                    mouthType: _selectedSecondary!.mouthType,
-                    color: _selectedCore!.color ?? SunsetJungleTheme.sunsetPeach,
+              SelectedFeeling(
+                    core: emotion.name,
+                    secondary: '',
+                    tertiary: emotion.name,
+                    emoji: emotion.emoji,
+                    eyeType: emotion.eyeType,
+                    mouthType: emotion.mouthType,
+                    color: emotion.color ?? SunsetJungleTheme.sunsetPeach,
                   ),
                 );
-              },
-            );
-          }).toList(),
+              } else {
+                setState(() {
+                  _selectedCore = emotion;
+                  _selectedSecondary = null;
+                });
+              }
+            },
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildSecondaryChoices(int maxDepth) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _secondaryOptions.map((option) {
+        final inFamily = _selectedCore?.id == option.core.id;
+        final selected = _selectedSecondary?.id == option.secondary.id;
+        final enabled = _selectedCore != null && inFamily;
+        final opacity = _selectedCore == null
+            ? 0.3
+            : inFamily
+                ? 1.0
+                : 0.18;
+
+        return AnimatedOpacity(
+          duration: const Duration(milliseconds: 180),
+          opacity: opacity,
+          child: ChoiceChip(
+            label: Text(option.secondary.name),
+            avatar: Text(option.secondary.emoji),
+            selected: selected,
+            labelStyle: TextStyle(
+              color: selected ? Colors.white : Colors.black87,
+              fontWeight: FontWeight.w700,
+            ),
+            selectedColor: option.core.color ?? SunsetJungleTheme.sunsetPeach,
+            onSelected: enabled
+                ? (_) {
+                    if (maxDepth == 2) {
+                      final feeling = SelectedFeeling(
+                        core: option.core.name,
+                        secondary: option.secondary.name,
+                        tertiary: option.secondary.name,
+                        emoji: option.secondary.emoji,
+                        eyeType: option.secondary.eyeType,
+                        mouthType: option.secondary.mouthType,
+                        color: option.core.color ?? SunsetJungleTheme.sunsetPeach,
+                      );
+                      setState(() {
+                        _selectedCore = option.core;
+                        _selectedSecondary = option.secondary;
+                      });
+                      _notifySelection(feeling);
+                    } else {
+                      setState(() {
+                        _selectedCore = option.core;
+                        _selectedSecondary = option.secondary;
+                      });
+                    }
+                  }
+                : null,
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildTertiaryChoices() {
+    final tertiaryFeelings = _selectedSecondary?.tertiary ?? [];
+    final isLocked = _selectedSecondary == null;
+
+    if (tertiaryFeelings.isEmpty) {
+      return Text(
+        'Choose a feeling above to see more specific options.',
+        style: TextStyle(color: Colors.grey[700]),
+      );
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: tertiaryFeelings.map((feelingName) {
+        final emoji =
+            FeelingsEmojiLookup.emojiFor(feelingName) ?? _selectedSecondary!.emoji;
+        final selectedTertiary = widget.currentFeeling?.tertiary;
+        final isSelected = selectedTertiary != null &&
+            selectedTertiary.toLowerCase() == feelingName.toLowerCase();
+        return AnimatedOpacity(
+          duration: const Duration(milliseconds: 180),
+          opacity: isLocked ? 0.25 : 1.0,
+          child: ChoiceChip(
+            label: Text(feelingName),
+            avatar: Text(emoji),
+            selected: isSelected,
+            labelStyle: TextStyle(
+              color: isSelected ? Colors.white : Colors.black87,
+              fontWeight: FontWeight.w700,
+            ),
+            selectedColor: _selectedCore?.color ?? SunsetJungleTheme.sunsetPeach,
+            onSelected: isLocked
+                ? null
+                : (_) {
+                    _notifySelection(
+                      SelectedFeeling(
+                        core: _selectedCore!.name,
+                        secondary: _selectedSecondary!.name,
+                        tertiary: feelingName,
+                        emoji: emoji,
+                        eyeType: _selectedSecondary!.eyeType,
+                        mouthType: _selectedSecondary!.mouthType,
+                        color: _selectedCore!.color ?? SunsetJungleTheme.sunsetPeach,
+                      ),
+                    );
+                  },
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildStageCard({
+    required String title,
+    required String subtitle,
+    required Widget child,
+    required Color accent,
+    bool isLocked = false,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: accent.withOpacity(0.14),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: accent.withOpacity(isLocked ? 0.4 : 0.9),
+          width: 1.5,
         ),
-      ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontFamily: 'Quicksand',
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontFamily: 'Quicksand',
+              color: Colors.grey[800],
+            ),
+          ),
+          const SizedBox(height: 10),
+          IgnorePointer(
+            ignoring: isLocked,
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 160),
+              opacity: isLocked ? 0.35 : 1.0,
+              child: child,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   void _notifySelection(SelectedFeeling feeling) {
     widget.onFeelingSelected?.call(feeling);
   }
+}
 
-  Widget _buildBreadcrumb({
-    required String text,
-    required VoidCallback onBack,
-  }) {
-    return Row(
-      children: [
-        IconButton(
-          onPressed: onBack,
-          icon: const Icon(Icons.arrow_back),
-          tooltip: 'Back',
-        ),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontFamily: 'Quicksand',
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+class _SecondaryOption {
+  final CoreEmotion core;
+  final SecondaryFeeling secondary;
 
-  Widget _buildFeelingButton({
-    required String emoji,
-    required String name,
-    required Color color,
-    required VoidCallback onTap,
-    bool isSelected = false,
-  }) {
-    return Semantics(
-      button: true,
-      label: name,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          decoration: BoxDecoration(
-            color: isSelected ? color.withOpacity(0.3) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected ? color : color.withOpacity(0.4),
-              width: isSelected ? 2.5 : 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(emoji, style: const TextStyle(fontSize: 26)),
-              const SizedBox(height: 8),
-              Text(
-                name,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontFamily: 'Quicksand',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  const _SecondaryOption({
+    required this.core,
+    required this.secondary,
+  });
 }

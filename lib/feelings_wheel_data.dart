@@ -195,6 +195,42 @@ class FeelingDetails {
       ],
       emoji: '😔',
     ),
+    'Vulnerable': const FeelingDetail(
+      description: 'When you feel unprotected or unsure and need extra care.',
+      coping: [
+        'Sit close to someone safe.',
+        'Place your hand on your heart and breathe slowly.',
+        'Wrap in a blanket and notice you are safe right now.',
+      ],
+      emoji: '😟',
+    ),
+    'Despair': const FeelingDetail(
+      description: 'When it feels like nothing will get better.',
+      coping: [
+        'Tell a trusted adult how heavy it feels.',
+        'Name one small thing you can do next.',
+        'Take three slow breaths and notice your feet on the ground.',
+      ],
+      emoji: '😞',
+    ),
+    'Guilty': const FeelingDetail(
+      description: 'When you feel you did something wrong and wish you could undo it.',
+      coping: [
+        'Say sorry or make a small repair.',
+        'Write or draw what you would do differently.',
+        'Remind yourself mistakes help us learn.',
+      ],
+      emoji: '😔',
+    ),
+    'Depressed': const FeelingDetail(
+      description: 'When you feel very low, empty, or drained for a while.',
+      coping: [
+        'Move your body gently, like a short walk or stretch.',
+        'Talk to someone supportive about how long this has felt this way.',
+        'Do one tiny kind thing for yourself, like a sip of water.',
+      ],
+      emoji: '☁️',
+    ),
     'Mad': const FeelingDetail(
       description: 'When your body feels hot and you want things to change.',
       coping: [
@@ -323,6 +359,54 @@ class FeelingSupportLibrary {
         'Reach out to a friend or family member',
         'Cuddle a favorite stuffed friend',
         'Read or listen to a comforting story',
+      ],
+    ),
+    'Vulnerable': const FeelingSupportInfo(
+      bodySignals: [
+        'Looking around for safety',
+        'Tight shoulders',
+        'Wanting to curl up',
+      ],
+      copingIdeas: [
+        'Sit with a trusted person or cozy item',
+        'Place hand on heart and breathe slowly',
+        'Remind yourself who keeps you safe',
+      ],
+    ),
+    'Despair': const FeelingSupportInfo(
+      bodySignals: [
+        'Slumped posture',
+        'Deep sighs',
+        'Very low energy',
+      ],
+      copingIdeas: [
+        'Ask for support from someone safe',
+        'Name one small thing you can control',
+        'Drink water and take 3 grounding breaths',
+      ],
+    ),
+    'Guilty': const FeelingSupportInfo(
+      bodySignals: [
+        'Heavy stomach',
+        'Avoiding eye contact',
+        'Quiet voice',
+      ],
+      copingIdeas: [
+        'Say sorry or make a repair if you can',
+        'Write down what you learned',
+        'Take a breath and plan a better choice next time',
+      ],
+    ),
+    'Depressed': const FeelingSupportInfo(
+      bodySignals: [
+        'Very low energy',
+        'Slow movements',
+        'Wanting to stay still or alone',
+      ],
+      copingIdeas: [
+        'Move gently: stretch, small walk, or sway',
+        'Talk to someone supportive',
+        'Do one tiny task, then rest',
       ],
     ),
     'Hurt': const FeelingSupportInfo(
@@ -489,6 +573,38 @@ class FeelingsWheelData {
       eyeType: 'Dizzy',
       mouthType: 'Concerned',
       secondary: [
+        SecondaryFeeling(
+          id: 'vulnerable',
+          name: 'Vulnerable',
+          emoji: '😟',
+          eyeType: 'Surprised',
+          mouthType: 'Concerned',
+          tertiary: ['Insecure', 'Exposed', 'Fragile', 'Sensitive'],
+        ),
+        SecondaryFeeling(
+          id: 'despair',
+          name: 'Despair',
+          emoji: '😞',
+          eyeType: 'Dizzy',
+          mouthType: 'Concerned',
+          tertiary: ['Hopeless', 'Helpless', 'Powerless', 'Overwhelmed'],
+        ),
+        SecondaryFeeling(
+          id: 'guilty',
+          name: 'Guilty',
+          emoji: '😔',
+          eyeType: 'Dizzy',
+          mouthType: 'Concerned',
+          tertiary: ['Ashamed', 'Sorry', 'Regretful', 'Responsible'],
+        ),
+        SecondaryFeeling(
+          id: 'depressed',
+          name: 'Depressed',
+          emoji: '☁️',
+          eyeType: 'Dizzy',
+          mouthType: 'Concerned',
+          tertiary: ['Empty', 'Numb', 'Drained', 'Low energy'],
+        ),
         SecondaryFeeling(
           id: 'lonely',
           name: 'Lonely',
