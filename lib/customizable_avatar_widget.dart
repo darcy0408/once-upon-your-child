@@ -63,15 +63,18 @@ class CustomizableAvatarWidget extends StatelessWidget {
                   ),
                 );
               },
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: const Color(0xFFE0F2F1),
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.person_outline,
-                  size: 48,
-                  color: Color(0xFF558B2F),
-                ),
-              ),
+              errorBuilder: (context, error, stackTrace) {
+                // Fallback avatar to avoid runtime crashes if DiceBear rejects params
+                return Container(
+                  color: const Color(0xFFE0F2F1),
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.person_outline,
+                    size: 48,
+                    color: Color(0xFF558B2F),
+                  ),
+                );
+              },
             ),
           ),
         ),
