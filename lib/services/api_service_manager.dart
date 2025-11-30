@@ -615,8 +615,6 @@ $ageInstructions
 SAFETY: Keep content gentle, avoid violence/scares; keep tone warm and supportive.
 Maintain plain text (no markdown fences).'''
 
-  }
-
   static String _buildAdventurePrompt({
     required String characterName,
     required String theme,
@@ -756,8 +754,6 @@ ADVENTURE REPORT
 $ageInstructions
 SAFETY: Keep content gentle, avoid violence/scares; keep tone warm and supportive.
 Maintain plain text (no markdown fences).'''
-
-   }
 
    static String _buildLearningToReadPrompt({
      required String characterName,

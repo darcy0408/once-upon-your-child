@@ -23,8 +23,8 @@ class AppBottomNavigationBar extends StatelessWidget {
       selectedItemColor: Colors.purple,
       unselectedItemColor: Colors.grey,
       showUnselectedLabels: true,
-      items: const [
-        BottomNavigationBarItem(
+      items: [
+        const BottomNavigationBarItem(
           icon: _NavIcon(icon: Icons.auto_stories),
           label: 'Stories',
         ),
