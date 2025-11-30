@@ -1223,6 +1223,66 @@ def create_app(config_name):
             )
             return jsonify({'error': 'Failed to record story creation'}), 500
 
+    @app.route("/debug-openrouter", methods=["GET"])
+    def debug_openrouter():
+        """Diagnostic endpoint to debug OpenRouter in production"""
+        import traceback
+        import sys
+        from io import StringIO
+        
+        results = {
+            "env_check": {},
+            "generation_attempt": {},
+            "logs": []
+        }
+        
+        # Capture logs
+        log_capture = StringIO()
+        handler = logging.StreamHandler(log_capture)
+        logger.addHandler(handler)
+        
+        try:
+            # 1. Check Env
+            api_key = os.getenv("OPENROUTER_API_KEY")
+            results["env_check"]["has_key"] = bool(api_key)
+            if api_key:
+                results["env_check"]["key_length"] = len(api_key)
+                results["env_check"]["key_prefix"] = api_key[:5]
+                results["env_check"]["key_suffix"] = api_key[-5:]
+            
+            # 2. Initialize
+            gen = OpenRouterImageGenerator(api_key=api_key)
+            results["generation_attempt"]["initialized"] = True
+            
+            # 3. Generate
+            start_time = time.time()
+            try:
+                images = gen.generate_story_illustration(
+                    scene_description="A red ball",
+                    character_name="Test",
+                    num_images=1
+                )
+                results["generation_attempt"]["success"] = True
+                results["generation_attempt"]["count"] = len(images)
+                if images:
+                    results["generation_attempt"]["first_image_keys"] = list(images[0].keys())
+                    results["generation_attempt"]["image_url_len"] = len(images[0].get('image_url', ''))
+            except Exception as e:
+                results["generation_attempt"]["success"] = False
+                results["generation_attempt"]["error"] = str(e)
+                results["generation_attempt"]["traceback"] = traceback.format_exc()
+            
+            results["generation_attempt"]["duration"] = time.time() - start_time
+            
+        except Exception as e:
+            results["fatal_error"] = str(e)
+            results["fatal_traceback"] = traceback.format_exc()
+        finally:
+            logger.removeHandler(handler)
+            results["logs"] = log_capture.getvalue()
+            
+        return jsonify(results), 200
+
     print(f"=== All routes registered successfully ===")
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
     return app
