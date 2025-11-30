@@ -82,16 +82,12 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                 if response.status_code == 200:
                     data = response.json()
                     logger.info(f"OpenRouter story_illustration: Full response data: {data}")
-                    # Flux models return markdown with image URL
+                    # Flux models return image data as base64 data URIs
                     content = data['choices'][0]['message']['content']
-                    logger.info(f"OpenRouter story_illustration: Extracted content: {content}")
+                    logger.info(f"OpenRouter story_illustration: Extracted content (first 100 chars): {content[:100]}...")
 
-                    # Extract image URL from markdown (format: ![image](url))
-                    import re
-                    url_match = re.search(r'!\[.*?\]\((https?://[^\)]+)\)', content)
-
-                    if url_match:
-                        image_url = url_match.group(1)
+                    if content.startswith("data:image/"):
+                        image_url = content  # Use the full data URI as the image_url
                         images.append({
                             'id': f"{uuid.uuid4()}_{i}",
                             'prompt': prompt,
@@ -100,7 +96,7 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                             'generated_at': datetime.now().isoformat(),
                         })
                     else:
-                        logger.warning("No image URL found in OpenRouter response (story illustration): %s", content)
+                        logger.warning("OpenRouter response did not contain a data URI for story illustration: %s", content)
                 else:
                     logger.warning("OpenRouter API error: %s - %s", response.status_code, response.text)
 
@@ -173,14 +169,10 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                     data = response.json()
                     logger.info(f"OpenRouter coloring_page: Full response data: {data}")
                     content = data['choices'][0]['message']['content']
-                    logger.info(f"OpenRouter coloring_page: Extracted content: {content}")
+                    logger.info(f"OpenRouter coloring_page: Extracted content (first 100 chars): {content[:100]}...")
 
-                    # Extract image URL from markdown
-                    import re
-                    url_match = re.search(r'!\[.*?\]\((https?://[^\)]+)\)', content)
-
-                    if url_match:
-                        image_url = url_match.group(1)
+                    if content.startswith("data:image/"):
+                        image_url = content  # Use the full data URI as the image_url
                         images.append({
                             'id': f"{uuid.uuid4()}_{i}",
                             'prompt': prompt,
@@ -189,7 +181,7 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                             'generated_at': datetime.now().isoformat(),
                         })
                     else:
-                        logger.warning("No image URL found in OpenRouter response (coloring page): %s", content)
+                        logger.warning("OpenRouter response did not contain a data URI for coloring page: %s", content)
                 else:
                     logger.warning("OpenRouter API error: %s - %s", response.status_code, response.text)
 
