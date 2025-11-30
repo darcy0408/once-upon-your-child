@@ -1228,11 +1228,14 @@ def create_app(config_name):
         """Diagnostic endpoint to debug OpenRouter in production"""
         import traceback
         import sys
+        import inspect
         from io import StringIO
         
         results = {
             "env_check": {},
             "generation_attempt": {},
+            "source_code": "",
+            "file_path": "",
             "logs": []
         }
         
@@ -1254,6 +1257,13 @@ def create_app(config_name):
             gen = OpenRouterImageGenerator(api_key=api_key)
             results["generation_attempt"]["initialized"] = True
             
+            # Inspect Source
+            try:
+                results["source_code"] = inspect.getsource(gen.generate_story_illustration)
+                results["file_path"] = sys.modules[gen.__module__].__file__
+            except Exception as e:
+                results["source_code"] = f"Failed to get source: {e}"
+
             # 3. Generate
             start_time = time.time()
             try:
@@ -1264,9 +1274,7 @@ def create_app(config_name):
                 )
                 results["generation_attempt"]["success"] = True
                 results["generation_attempt"]["count"] = len(images)
-                if images:
-                    results["generation_attempt"]["first_image_keys"] = list(images[0].keys())
-                    results["generation_attempt"]["image_url_len"] = len(images[0].get('image_url', ''))
+                results["generation_attempt"]["full_output"] = images
             except Exception as e:
                 results["generation_attempt"]["success"] = False
                 results["generation_attempt"]["error"] = str(e)
