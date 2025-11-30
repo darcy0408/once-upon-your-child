@@ -83,10 +83,9 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                     logger.info(f"OpenRouter story_illustration: Full response data: {data}")
                     # Flux models return image data as base64 data URIs
                     content = data['choices'][0]['message']['content']
-                    logger.info(f"OpenRouter story_illustration: Extracted content (first 100 chars): {content[:100]}...")
-
                     if content.startswith("data:image/"):
                         image_url = content  # Use the full data URI as the image_url
+                        logger.info(f"OpenRouter story_illustration: Appending image to list. Content type: {type(content)}")
                         images.append({
                             'id': f"{uuid.uuid4()}_{i}",
                             'prompt': prompt,
