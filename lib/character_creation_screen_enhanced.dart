@@ -434,8 +434,8 @@ class _CharacterCreationScreenEnhancedState
 
     try {
       final ageValue = int.tryParse(_ageController.text.trim());
-      final ageToSend =
-          (ageValue == null || ageValue < 3 || ageValue > 100) ? 7 : ageValue;
+      // Clamp age to supported range to avoid edge-case crashes in analytics/backends.
+      final int ageToSend = (ageValue ?? 7).clamp(3, 99).toInt();
       // Simplified character creation - only send essential data
       final body = {
         'name': _nameController.text.trim(),
@@ -473,18 +473,27 @@ class _CharacterCreationScreenEnhancedState
       if (!mounted) return;
 
       if (resp.statusCode == 201) {
-        final achievements =
-            await _achievementService.recordCharacterCreated();
-        await _progressionService.incrementCharactersCreated();
-        await CharacterAnalytics.trackCharacterCreation(
-          characterName: _nameController.text.trim(),
-          age: ageToSend,
-          gender: _isA,
-          traits: _selectedQuickLikes.toList(),
-          templateKey: _selectedTemplate?.key,
-        );
-        if (mounted && achievements.isNotEmpty) {
-          await AchievementCelebrationDialog.show(context, achievements);
+        try {
+          final achievements =
+              await _achievementService.recordCharacterCreated();
+          await _progressionService.incrementCharactersCreated();
+          if (mounted && achievements.isNotEmpty) {
+            await AchievementCelebrationDialog.show(context, achievements);
+          }
+        } catch (e) {
+          debugPrint('Progress/achievement tracking failed: $e');
+        }
+
+        try {
+          await CharacterAnalytics.trackCharacterCreation(
+            characterName: _nameController.text.trim(),
+            age: ageToSend,
+            gender: _isA,
+            traits: _selectedQuickLikes.toList(),
+            templateKey: _selectedTemplate?.key,
+          );
+        } catch (e) {
+          debugPrint('Character analytics failed: $e');
         }
 
         if (!mounted) return;
@@ -506,20 +515,14 @@ class _CharacterCreationScreenEnhancedState
           ),
         );
       }
-    } catch (e) {
-      // Track error analytics
-      try {
-        await PerformanceAnalytics.trackError('character_creation', e.toString());
-      } catch (_) {
-        // Don't let analytics failure break error handling
-      }
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('An error occurred: $e'),
-            backgroundColor: Colors.red),
-      );
+    } on http.ClientException catch (e) {
+      _showErrorSnackBar('Network Error: ${e.message}');
+    } on SocketException catch (e) {
+      _showErrorSnackBar('Connection Error: ${e.message}');
+    } catch (e, stackTrace) {
+      print('Character Creation Error: $e');
+      print('Stack Trace: $stackTrace');
+      _showErrorSnackBar('An unexpected error occurred: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -643,6 +646,7 @@ class _CharacterCreationScreenEnhancedState
             fillColor: Colors.grey[50],
             prefixIcon: const Icon(Icons.badge),
           ),
+          maxLength: 50,
           validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
         ),
         const SizedBox(height: 12),
@@ -662,7 +666,7 @@ class _CharacterCreationScreenEnhancedState
             if (v == null || v.trim().isEmpty) return 'Age is required';
             final age = int.tryParse(v.trim());
             if (age == null) return 'Please enter a valid age';
-            if (age < 3 || age > 17) return 'Age must be between 3-17';
+            if (age < 3 || age > 99) return 'Age must be between 3-99';
             return null;
           },
         ),
@@ -731,7 +735,7 @@ class _CharacterCreationScreenEnhancedState
                 controller: _ageController,
                 decoration: InputDecoration(
                   labelText: 'Age *',
-                  hintText: '3-100',
+                  hintText: '3-17',
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8)),
                   filled: true,
@@ -746,8 +750,8 @@ class _CharacterCreationScreenEnhancedState
                   if (v == null || v.trim().isEmpty) return 'Required';
                   final age = int.tryParse(v.trim());
                   if (age == null) return 'Invalid number';
-                  if (age < 3 || age > 100) {
-                    return 'Age must be 3-100';
+                  if (age < 3 || age > 99) {
+                    return 'Age must be 3-99';
                   }
                   return null;
                 },
@@ -767,6 +771,7 @@ class _CharacterCreationScreenEnhancedState
                 items: const [
                   DropdownMenuItem(value: 'Girl', child: Text('Girl')),
                   DropdownMenuItem(value: 'Boy', child: Text('Boy')),
+                  DropdownMenuItem(value: 'They', child: Text('They')),
                 ],
                 onChanged: (v) => setState(() => _isA = v ?? 'Girl'),
               ),
