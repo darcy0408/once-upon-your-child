@@ -27,6 +27,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
   SecondaryFeeling? _selectedSecondary;
   late final List<_SecondaryOption> _secondaryOptions;
   final GlobalKey _wheelKey = GlobalKey();
+  final GlobalKey _dialogWheelKey = GlobalKey();
 
   @override
   void initState() {
@@ -143,7 +144,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
                       ),
                       GestureDetector(
                         behavior: HitTestBehavior.translucent,
-                        onTapDown: _handleWheelTap,
+                        onTapDown: (details) => _handleWheelTap(details),
                       ),
                     ],
                   ),
@@ -157,13 +158,34 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
                   showDialog(
                     context: context,
                     builder: (ctx) => Dialog(
-                      child: InteractiveViewer(
-                        minScale: 0.8,
-                        maxScale: 3.0,
-                        child: Image.asset(
-                          'assets/images/FeelingsWheel.png',
-                          fit: BoxFit.contain,
-                        ),
+                      child: LayoutBuilder(
+                        builder: (ctx, dialogConstraints) {
+                          return InteractiveViewer(
+                            minScale: 0.8,
+                            maxScale: 3.0,
+                            child: AspectRatio(
+                              key: _dialogWheelKey,
+                              aspectRatio: 1.1,
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.asset(
+                                    'assets/images/FeelingsWheel.png',
+                                    fit: BoxFit.contain,
+                                  ),
+                                  GestureDetector(
+                                    behavior: HitTestBehavior.translucent,
+                                    onTapDown: (details) => _handleWheelTap(
+                                      details,
+                                      boxOverride: _dialogWheelKey.currentContext
+                                          ?.findRenderObject() as RenderBox?,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   );
@@ -256,8 +278,8 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
     );
   }
 
-  void _handleWheelTap(TapDownDetails details) {
-    final box = _wheelKey.currentContext?.findRenderObject() as RenderBox?;
+  void _handleWheelTap(TapDownDetails details, {RenderBox? boxOverride}) {
+    final box = boxOverride ?? _wheelKey.currentContext?.findRenderObject() as RenderBox?;
     if (box == null) return;
 
     final size = box.size;
