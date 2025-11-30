@@ -42,17 +42,7 @@ class OpenRouterImageGenerator:
         Returns:
             List of dicts with image URLs or base64 data
         """
-        audience = f"ages {age}" if age else "children"
-        therapy = f"\nTherapeutic focus: {therapeutic_focus}" if therapeutic_focus else ""
-        prompt = f"""
-{style}, high quality digital art:
-
-{scene_description}
-
-Main character: {character_name}
-
-Style: colorful, vibrant, child-friendly, professional illustration, {audience}, engaging, imaginative, no text, clean composition{therapy}
-""".strip()
+        prompt = "A simple red apple on a green table."
 
         images = []
         for i in range(num_images):
