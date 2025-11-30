@@ -98,7 +98,7 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                             'generated_at': datetime.now().isoformat(),
                         })
                     else:
-                        logger.warning("No image URL found in OpenRouter response: %s", content)
+                        logger.warning("No image URL found in OpenRouter response (story illustration): %s", content)
                 else:
                     logger.warning("OpenRouter API error: %s - %s", response.status_code, response.text)
 
@@ -185,7 +185,7 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                             'generated_at': datetime.now().isoformat(),
                         })
                     else:
-                        logger.warning("No image URL found in OpenRouter coloring page response: %s", content)
+                        logger.warning("No image URL found in OpenRouter response (coloring page): %s", content)
                 else:
                     logger.warning("OpenRouter API error: %s - %s", response.status_code, response.text)
 
