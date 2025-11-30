@@ -30,6 +30,17 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
   final GlobalKey _dialogWheelKey = GlobalKey();
   bool _useListPicker = false;
 
+  // Order of core emotions as they appear clockwise on the wheel image, starting at 12 o'clock.
+  // Adjust here if the asset changes.
+  final List<String> _wheelOrder = const [
+    'happy',
+    'surprised',
+    'scared',
+    'sad',
+    'disgusted',
+    'angry',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -318,10 +329,14 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
     const coreThreshold = 0.33;
     const secondaryThreshold = 0.66;
 
-    final sectorCount = FeelingsWheelData.coreEmotions.length;
+    final sectorCount = _wheelOrder.length;
     final sectorAngle = (2 * math.pi) / sectorCount;
     final sectorIndex = (angle / sectorAngle).floor() % sectorCount;
-    final core = FeelingsWheelData.coreEmotions[sectorIndex];
+    final coreId = _wheelOrder[sectorIndex];
+    final core = FeelingsWheelData.coreEmotions.firstWhere(
+      (c) => c.id == coreId,
+      orElse: () => FeelingsWheelData.coreEmotions.first,
+    );
     final localAngle = (angle - (sectorIndex * sectorAngle)) % sectorAngle;
     final localFraction = localAngle / sectorAngle;
     final maxDepth = _maxDepthForAge(widget.ageYears);
