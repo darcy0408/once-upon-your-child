@@ -580,6 +580,46 @@ def create_app(config_name):
                 'error': str(e)
             }), 500
     
+    @app.route('/debug-openrouter', methods=['GET'])
+    def debug_openrouter():
+        """Debug endpoint to test OpenRouter configuration and generation."""
+        try:
+            api_key = os.getenv("OPENROUTER_API_KEY")
+            if not api_key:
+                return jsonify({
+                    "status": "error",
+                    "message": "OPENROUTER_API_KEY not found in environment variables",
+                    "env_keys": list(os.environ.keys())
+                }), 500
+
+            # Test generation
+            generator = OpenRouterImageGenerator()
+            test_prompt = "A cute small blue bird"
+            
+            # Capture logs/print output if possible, or just return the result
+            try:
+                image_url = generator.generate_story_illustration(test_prompt)
+                return jsonify({
+                    "status": "success",
+                    "message": "Image generated successfully",
+                    "model": "google/gemini-2.5-flash-image",
+                    "image_data_preview": image_url[:50] + "..." if image_url else "None",
+                    "api_key_preview": f"{api_key[:4]}...{api_key[-4:]}"
+                })
+            except Exception as e:
+                return jsonify({
+                    "status": "error",
+                    "message": f"Generation failed: {str(e)}",
+                    "traceback": traceback.format_exc()
+                }), 500
+
+        except Exception as e:
+            return jsonify({
+                "status": "error",
+                "message": f"Debug endpoint failed: {str(e)}",
+                "traceback": traceback.format_exc()
+            }), 500
+
     @app.route("/get-story-themes", methods=["GET"])
     @cache.cached(timeout=3600)  # Cache for 1 hour
     def get_story_themes():
@@ -639,45 +679,7 @@ def create_app(config_name):
             character_details.get("personality_sliders", {})
         )
 
-@app.route('/debug-openrouter', methods=['GET'])
-def debug_openrouter():
-    """Debug endpoint to test OpenRouter configuration and generation."""
-    try:
-        api_key = os.getenv("OPENROUTER_API_KEY")
-        if not api_key:
-            return jsonify({
-                "status": "error",
-                "message": "OPENROUTER_API_KEY not found in environment variables",
-                "env_keys": list(os.environ.keys())
-            }), 500
 
-        # Test generation
-        generator = OpenRouterImageGenerator()
-        test_prompt = "A cute small blue bird"
-        
-        # Capture logs/print output if possible, or just return the result
-        try:
-            image_url = generator.generate_story_illustration(test_prompt)
-            return jsonify({
-                "status": "success",
-                "message": "Image generated successfully",
-                "model": "google/gemini-2.5-flash-image",
-                "image_data_preview": image_url[:50] + "..." if image_url else "None",
-                "api_key_preview": f"{api_key[:4]}...{api_key[-4:]}"
-            })
-        except Exception as e:
-            return jsonify({
-                "status": "error",
-                "message": f"Generation failed: {str(e)}",
-                "traceback": traceback.format_exc()
-            }), 500
-
-    except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": f"Debug endpoint failed: {str(e)}",
-            "traceback": traceback.format_exc()
-        }), 500
 
         age_instruction_block = story_service._build_age_instruction_block(character_age)
 
