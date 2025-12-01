@@ -1,0 +1,23 @@
+INFO:openrouter_image_generator:OpenRouter story_illustration: Sending request for story illustration prompt (first 100 chars): children's book illustration, high quality digital art:
+
+A simple red ball
+
+Main character: Ball
+
+St...
+INFO:openrouter_image_generator:OpenRouter story_illustration: Response keys: dict_keys(['id', 'provider', 'model', 'object', 'created', 'choices', 'usage'])
+INFO:openrouter_image_generator:OpenRouter story_illustration: Choice keys: dict_keys(['logprobs', 'finish_reason', 'native_finish_reason', 'index', 'message'])
+INFO:openrouter_image_generator:OpenRouter story_illustration: Message keys: dict_keys(['role', 'content', 'refusal', 'reasoning', 'images'])
+WARNING:openrouter_image_generator:OpenRouter response did not contain a recognized image format. Raw response start: {'id': 'gen-1764537741-9hZystbD7B5d6Av0GW0f', 'provider': 'Black Forest Labs', 'model': 'black-forest-labs/flux.2-flex', 'object': 'chat.completion', 'created': 1764537741, 'choices': [{'logprobs': None, 'finish_reason': 'stop', 'native_finish_reason': None, 'index': 0, 'message': {'role': 'assistant', 'content': '', 'refusal': None, 'reasoning': None, 'images': [{'index': 0, 'type': 'image_url', 'image_url': {'url': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABAAAAAMACAIAAAA12IJaAADusWNhQlgAAO6xanVtYgAAAB5qdW1kYzJwYQARABCAAACqADibcQNjMnBhAAAA7otqdW1iAAAAR2p1bWRjMm1hABEAEIAAAKoAOJtxA3VybjpjMnBhOjNkMGIzNjM5LWFjNjUtNDIyZi05NDk1LWE0MGViMDBjMzliNQAAALI/anVtYgAAAClqdW1kYzJhcwARABCAAACqADibcQNjMnBhLmFzc2VydGlvbnMAAACvIWp1bWIAAABGanVtZEDLDDK7ikidpwsq1vR/Q2kTYzJwYS50aHVtYm5haWwuY2xhaW0AAAAAGGMyc2iBb/lV2VNdaHdZymP1685bAAAAFGJmZGIAaW1hZ2UvanBlZwAAAK6/YmlkYolQTkcNChoKAAAADUlIRFIAAAEAAAAAwAgCAAAAZI8qMQAArn5JREFUeJyE/XnUbVt2F4b95lz7nPN1997X1atOqlJJshpChIUNGAQ4NCEiIBywHROGB+nAjtPYDByn8WCkGcF/JCME
+ERROR:__main__:Test failed
+Traceback (most recent call last):
+  File "C:\dev\story-weaver-app\backend\debug_openrouter.py", line 39, in test
+    print(f"\u2705 Generated {len(illustrations)} images")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position 0: character maps to <undefined>
+DEBUG: openrouter_image_generator file: C:\dev\story-weaver-app\backend\openrouter_image_generator.py
+DEBUG: API Key present: True
+DEBUG: Generator initialized

@@ -67,7 +67,7 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "black-forest-labs/flux.2-flex",  # Free image model
+                        "model": "google/gemini-2.5-flash-image",  # Image generation model
                         "modalities": ["image", "text"], # Explicitly request image modality
                         "max_tokens": 1000, # Limit token reservation to avoid 402 errors
                         "messages": [
@@ -195,7 +195,7 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "black-forest-labs/flux.2-flex",
+                        "model": "google/gemini-2.5-flash-image",
                         "modalities": ["image", "text"],
                         "max_tokens": 1000,
                         "messages": [

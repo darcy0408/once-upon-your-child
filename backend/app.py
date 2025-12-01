@@ -104,6 +104,7 @@ def get_tier_limits(operation='default'):
 
 def create_app(config_name):
     print(f"=== Creating Flask app with config: {config_name} ===")
+    # Image generation fix deployed - 2024-12-01
     app = Flask(__name__)
     
     if config_name == 'testing':
@@ -1222,6 +1223,85 @@ def create_app(config_name):
                 }
             )
             return jsonify({'error': 'Failed to record story creation'}), 500
+
+    @app.route("/debug-openrouter", methods=["GET"])
+    def debug_openrouter():
+        """Diagnostic endpoint to debug OpenRouter in production"""
+        import traceback
+        import sys
+        import inspect
+        from io import StringIO
+        
+        results = {
+            "env_check": {},
+            "generation_attempt": {},
+            "source_code_snippet": "",
+            "file_path": "",
+            "logs": []
+        }
+        
+        # Capture logs
+        log_capture = StringIO()
+        handler = logging.StreamHandler(log_capture)
+        logger.addHandler(handler)
+        
+        try:
+            # 1. Check Env
+            api_key = os.getenv("OPENROUTER_API_KEY")
+            results["env_check"]["has_key"] = bool(api_key)
+            if api_key:
+                results["env_check"]["key_length"] = len(api_key)
+                results["env_check"]["key_prefix"] = api_key[:5]
+            
+            # 2. Initialize
+            gen = OpenRouterImageGenerator(api_key=api_key)
+            results["generation_attempt"]["initialized"] = True
+            
+            # Inspect Source (Check if fix is present)
+            try:
+                src = inspect.getsource(gen.generate_story_illustration)
+                results["source_code_snippet"] = src  # Return full source to verify fix
+                results["file_path"] = sys.modules[gen.__module__].__file__
+                # Check for the fix specifically
+                results["has_fix"] = "raw_images =" in src
+            except Exception as e:
+                results["source_code_error"] = str(e)
+
+            # 3. Generate
+            start_time = time.time()
+            try:
+                # Use a very simple prompt to be fast
+                images = gen.generate_story_illustration(
+                    scene_description="A red ball",
+                    character_name="Test",
+                    num_images=1
+                )
+                results["generation_attempt"]["success"] = True
+                results["generation_attempt"]["count"] = len(images)
+                # Return the structure of the first image, but truncate long data
+                if images:
+                    first_img = images[0].copy()
+                    if 'image_url' in first_img and len(str(first_img['image_url'])) > 100:
+                        first_img['image_url'] = str(first_img['image_url'])[:50] + "..."
+                    results["generation_attempt"]["first_image_sample"] = first_img
+                else:
+                    results["generation_attempt"]["first_image_sample"] = None
+                    
+            except Exception as e:
+                results["generation_attempt"]["success"] = False
+                results["generation_attempt"]["error"] = str(e)
+                results["generation_attempt"]["traceback"] = traceback.format_exc()
+            
+            results["generation_attempt"]["duration"] = time.time() - start_time
+            
+        except Exception as e:
+            results["fatal_error"] = str(e)
+            results["fatal_traceback"] = traceback.format_exc()
+        finally:
+            logger.removeHandler(handler)
+            results["logs"] = log_capture.getvalue()
+            
+        return jsonify(results), 200
 
     print(f"=== All routes registered successfully ===")
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
