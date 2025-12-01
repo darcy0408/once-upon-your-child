@@ -843,8 +843,10 @@ def create_app(config_name):
                     logger.info(f"Generated {len(illustrations)} illustration(s) for tier {subscription_tier}")
                 else:
                     logger.warning("Image generator unavailable for requested illustrations")
-            except Exception:
-                logger.exception("Failed to generate illustrations for story response")
+            except Exception as e:
+                logger.exception(f"Failed to generate illustrations for story response: {str(e)}")
+                # Log the specific error for debugging
+                logger.error(f"Image generation error details: generator={type(generator).__name__}, error={str(e)}")
                 illustrations = []
 
         title, wisdom_gem, story_text = story_service._safe_extract_title_and_gem(raw_text, theme)
@@ -1011,9 +1013,11 @@ def create_app(config_name):
                 generator = image_generator
             else:
                 return jsonify({
-                    "error": "Image generation requires an API key",
-                    "hint": "Please provide your Gemini API key or upgrade to premium"
-                }), 403
+                    "error": "Image generation temporarily unavailable",
+                    "hint": "OpenRouter image service is currently unavailable. Please try again later.",
+                    "illustrations": [],
+                    "count": 0
+                }), 200
 
             illustrations = generator.generate_story_illustration(
                 scene_description=scene_description,
@@ -1024,10 +1028,17 @@ def create_app(config_name):
                 therapeutic_focus=therapeutic_focus
             )
 
+            if not illustrations:
+                logger.warning(f"No illustrations generated for scene: {scene_description[:50]}...")
+                
             return jsonify({
                 "illustrations": illustrations,
                 "count": len(illustrations),
-                "used_user_key": using_user_key
+                "used_user_key": using_user_key,
+                "debug_info": {
+                    "generator_type": type(generator).__name__ if generator else "None",
+                    "scene_length": len(scene_description)
+                }
             }), 200
 
         except Exception as e:
