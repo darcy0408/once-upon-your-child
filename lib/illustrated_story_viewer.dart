@@ -1,6 +1,7 @@
 // lib/illustrated_story_viewer.dart
 
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'story_illustration_service.dart';
 import 'story_narrator.dart';
 
@@ -204,42 +205,7 @@ class _IllustratedStoryViewerState extends State<IllustratedStoryViewer> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
-                child: Image.network(
-                  widget.illustrations[pageIndex].imageUrl,
-                  height: 300,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      height: 300,
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
-                              : null,
-                        ),
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 300,
-                      color: Colors.grey.shade200,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.image_not_supported, size: 60, color: Colors.grey.shade400),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Image not available',
-                            style: TextStyle(color: Colors.grey.shade600),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                  child: _buildImage(widget.illustrations[pageIndex].imageUrl),
                 ),
               ),
             ),
@@ -310,7 +276,63 @@ class _IllustratedStoryViewerState extends State<IllustratedStoryViewer> {
     );
   }
 
-  void _previousPage() {
+  Widget _buildImage(String imageUrl) {
+    if (imageUrl.startsWith('data:image')) {
+      try {
+        // Extract base64 part
+        final base64String = imageUrl.split(',').last;
+        return Image.memory(
+          base64Decode(base64String),
+          height: 300,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _buildErrorImage(),
+        );
+      } catch (e) {
+        return _buildErrorImage();
+      }
+    }
+
+    return Image.network(
+      imageUrl,
+      height: 300,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Container(
+          height: 300,
+          child: Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                  : null,
+            ),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) => _buildErrorImage(),
+    );
+  }
+
+  Widget _buildErrorImage() {
+    return Container(
+      height: 300,
+      color: Colors.grey.shade200,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.image_not_supported, size: 60, color: Colors.grey.shade400),
+          const SizedBox(height: 8),
+          Text(
+            'Image not available',
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
+        ],
+      ),
+    );
+  }
     if (_currentPage > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),

@@ -67,7 +67,7 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "google/gemini-2.5-flash-image",  # Image generation model
+                        "model": "google/gemini-2.5-flash-image",  # Nano Banana (Free)
                         "modalities": ["image", "text"], # Explicitly request image modality
                         "max_tokens": 1000, # Limit token reservation to avoid 402 errors
                         "messages": [
