@@ -1627,46 +1627,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
-
-                  // ILLUSTRATION BUTTON
-                  Center(
-                    child: ElevatedButton.icon(
-                      onPressed: _isGeneratingIllustrations
-                          ? null
-                          : (_cachedIllustrations != null
-                              ? () =>
-                                  _viewIllustratedStory(_cachedIllustrations!)
-                              : _generateIllustrations),
-                      icon: Icon(
-                        _isGeneratingIllustrations
-                            ? Icons.hourglass_top
-                            : _cachedIllustrations != null
-                                ? Icons.auto_stories
-                                : Icons.image,
-                        size: 28,
-                      ),
-                      label: Text(
-                        _isGeneratingIllustrations
-                            ? 'Generating illustrations...'
-                            : _cachedIllustrations != null
-                                ? 'View / Generate More'
-                                : 'Add Illustrations',
-                        style: const TextStyle(fontSize: 18),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary, width: 2),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 32, vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
+                  // Illustration button removed - users should toggle illustrations before generating story
 
                   // COLORING BOOK BUTTON
                   Center(

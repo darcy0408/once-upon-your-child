@@ -907,13 +907,13 @@ def create_app(config_name):
             enable_illustrations(1, f"Learning-to-read mode auto-illustration for tier {subscription_tier}")
 
         if not fallback_used and subscription_tier == "family":
-            enable_illustrations(2, "Family tier bonus: 2 auto-illustrations")
+            enable_illustrations(3, "Family tier bonus: 3 auto-illustrations")
         elif not fallback_used and subscription_tier == "premium":
-            enable_illustrations(1, "Premium tier bonus: 1 auto-illustration")
+            enable_illustrations(2, "Premium tier bonus: 2 auto-illustrations")
 
         if not fallback_used and include_illustrations and not should_generate_illustrations:
             if subscription_tier in {"premium", "family"}:
-                enable_illustrations(2 if subscription_tier == "family" else 1,
+                enable_illustrations(3 if subscription_tier == "family" else 2,
                                      "User requested illustrations (paid tier)")
             elif user_api_key:
                 enable_illustrations(1, "User requested illustrations via BYOK")

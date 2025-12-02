@@ -58,7 +58,7 @@ class _IllustratedStoryViewerState extends State<IllustratedStoryViewer> {
         .where((s) => s.trim().isNotEmpty)
         .toList();
 
-    final pagesCount = widget.illustrations.length + 1; // illustrations + final page
+    final pagesCount = widget.illustrations.length; // Pages match illustrations
     final sentencesPerPage = sentences.length ~/ pagesCount;
 
     _storyPages = [];
