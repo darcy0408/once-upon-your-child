@@ -49,15 +49,15 @@ class CharacterAvatar {
 
   /// Translate this avatar into an Avataaars URL for rich SVG rendering.
   String toAvataaarsUrl({bool circleBackground = true}) {
-    // Use big-smile style which is kid-friendly and works reliably
-    // Seed combines all attributes for consistent unique avatars
-    final seed = '$skinColor-$hairStyle-$hairColor-$clothingStyle-$eyeType-$mouthType';
+    // Try multiple avatar sources for reliability
 
-    // Build URL manually to avoid encoding issues
-    final baseUrl = 'https://api.dicebear.com/7.x/big-smile/svg';
-    final encodedSeed = Uri.encodeComponent(seed);
+    // Option 1: DiceBear with simple adventurer style (most reliable)
+    final seed = '$skinColor$hairColor$clothingStyle'.toLowerCase();
+    return 'https://api.dicebear.com/7.x/adventurer/svg?seed=$seed';
 
-    return '$baseUrl?seed=$encodedSeed';
+    // Option 2 (fallback): If DiceBear fails, could use:
+    // return 'https://api.dicebear.com/7.x/bottts/svg?seed=$seed';
+    // return 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=$seed';
   }
 
   /// Create a copy with optional parameter overrides
