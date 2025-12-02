@@ -922,6 +922,9 @@ def create_app(config_name):
             response_payload["illustrations"] = illustrations
             response_payload["illustration_count"] = len(illustrations)
 
+        if fallback_used:
+            response_payload["warning"] = "Story generation fell back to offline mode. Please check server logs or API key configuration."
+
         # Track API costs
         user_tier = subscription_tier
         if user_api_key:
