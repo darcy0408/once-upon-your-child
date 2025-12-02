@@ -729,13 +729,9 @@ class _CharacterCreationScreenEnhancedState
                 const SizedBox(height: AppSpacing.sm),
                 // Use key to force rebuild when colors change
                 KeyedSubtree(
-                  key: ValueKey('$_hairColor-$_eyeColor-${_nameController.text}'),
-                  child: AvatarService.buildAvatarWidget(
-                    characterId:
-                        'preview-${_nameController.text.isEmpty ? "character" : _nameController.text}',
-                    hairColor: _hairColor,
-                    eyeColor: _eyeColor,
-                    outfit: null,
+                  key: ValueKey('${_avatar.hashCode}-${_nameController.text}'),
+                  child: CustomizableAvatarWidget(
+                    avatar: _avatar,
                     size: 120,
                   ),
                 ),
@@ -1006,14 +1002,21 @@ class _CharacterCreationScreenEnhancedState
           title: 'Hair Color',
           options: hairColorOptions,
           selectedValue: _hairColor,
-          onSelected: (value) => setState(() => _hairColor = value),
+          onSelected: (value) => setState(() {
+            _hairColor = value;
+            _avatar = _avatar.copyWith(hairColor: value);
+          }),
         ),
         const SizedBox(height: 12),
         _buildColorChoiceRow(
           title: 'Eye Color',
           options: eyeColorOptions,
           selectedValue: _eyeColor,
-          onSelected: (value) => setState(() => _eyeColor = value),
+          onSelected: (value) => setState(() {
+            _eyeColor = value;
+            // Eye color in avatar_models is actually eyeType (expression)
+            // Keep _eyeColor for legacy backend compatibility
+          }),
         ),
         const SizedBox(height: 12),
         _buildOutfitPresetPicker(),
