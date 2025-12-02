@@ -206,7 +206,6 @@ class _IllustratedStoryViewerState extends State<IllustratedStoryViewer> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                   child: _buildImage(widget.illustrations[pageIndex].imageUrl),
-                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -333,6 +332,7 @@ class _IllustratedStoryViewerState extends State<IllustratedStoryViewer> {
       ),
     );
   }
+  void _previousPage() {
     if (_currentPage > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
