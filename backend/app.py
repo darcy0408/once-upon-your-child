@@ -297,7 +297,7 @@ def create_app(config_name):
         genai.configure(api_key=api_key)
         print("DEBUG: Gemini configured with API key")
 
-    GEMINI_MODEL = "gemini-1.5-flash"
+    GEMINI_MODEL = "models/gemini-2.5-flash"
     try:
         model = genai.GenerativeModel(GEMINI_MODEL) if api_key else None
     except Exception as e:
