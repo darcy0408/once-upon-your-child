@@ -582,6 +582,50 @@ def create_app(config_name):
     
 
 
+    @app.route('/debug-gemini', methods=['GET'])
+    def debug_gemini():
+        """Debug endpoint to test Gemini text generation"""
+        api_key = os.getenv("GEMINI_API_KEY")
+        model_name = os.getenv("GEMINI_MODEL", "models/gemini-2.5-flash")
+        
+        status = {
+            "api_key_configured": bool(api_key),
+            "api_key_prefix": api_key[:4] + "..." if api_key else None,
+            "model_name": model_name,
+            "steps": []
+        }
+        
+        try:
+            # Step 1: Configure
+            if not api_key:
+                status["steps"].append("❌ API Key missing")
+                return jsonify(status), 500
+                
+            genai.configure(api_key=api_key)
+            status["steps"].append("✅ GenAI Configured")
+            
+            # Step 2: Initialize Model
+            model = genai.GenerativeModel(model_name)
+            status["steps"].append(f"✅ Model initialized: {model_name}")
+            
+            # Step 3: Generate Content
+            start_time = time.time()
+            response = model.generate_content("Say 'Hello from Gemini!' if you can hear me.")
+            duration = time.time() - start_time
+            
+            status["steps"].append(f"✅ Generation successful ({duration:.2f}s)")
+            status["response_text"] = response.text
+            status["success"] = True
+            
+        except Exception as e:
+            status["success"] = False
+            status["error"] = str(e)
+            status["error_type"] = type(e).__name__
+            status["steps"].append(f"❌ Error: {str(e)}")
+            logger.exception("Debug Gemini failed")
+            
+        return jsonify(status)
+
     @app.route('/debug-openrouter', methods=['GET'])
     def debug_openrouter():
         """Debug endpoint to test OpenRouter configuration and generation."""
