@@ -49,23 +49,14 @@ class CharacterAvatar {
 
   /// Translate this avatar into an Avataaars URL for rich SVG rendering.
   String toAvataaarsUrl({bool circleBackground = true}) {
-    // DiceBear 7.x Avataaars expects option names (not hex) for colors/types.
-    // Omit accessories/facialHair to keep them blank.
-    final query = <String, String>{
-      'seed': '$skinColor-$hairStyle-$hairColor', // Unique seed for consistency
-      'top': _mapTopTypeToDiceBear(hairStyle),
-      'hairColor': _mapHairColorToDiceBear(hairColor),
-      // accessories: omitted to have no accessories
-      // facialHair: omitted to have no facial hair
-      'clothing': _mapClothingTypeToDiceBear(clothingStyle),
-      'clothingColor': _mapClothingColorToDiceBear(clothingColor),
-      'eyes': _mapEyeTypeToDiceBear(eyeType),
-      'mouth': _mapMouthTypeToDiceBear(mouthType),
-      'skinColor': _mapSkinColorToDiceBear(skinColor),
-    };
+    // Use big-smile style which is kid-friendly and works reliably
+    // Seed combines all attributes for consistent unique avatars
+    final seed = '$skinColor-$hairStyle-$hairColor-$clothingStyle-$eyeType-$mouthType';
 
-    query.removeWhere((_, value) => value.isEmpty);
-    return Uri.https('api.dicebear.com', '/7.x/avataaars/svg', query).toString();
+    return Uri.https('api.dicebear.com', '/7.x/big-smile/svg', {
+      'seed': seed,
+      'backgroundColor': circleBackground ? 'b6e3f4' : 'transparent',
+    }).toString();
   }
 
   /// Create a copy with optional parameter overrides

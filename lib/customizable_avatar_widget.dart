@@ -18,6 +18,9 @@ class CustomizableAvatarWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final imageUrl = avatar.toAvataaarsUrl(circleBackground: false);
 
+    // Debug: print the avatar URL
+    print('🎭 Avatar URL: $imageUrl');
+
     final devicePixelRatio =
         MediaQuery.maybeOf(context)?.devicePixelRatio ?? 2.0;
 
@@ -64,14 +67,28 @@ class CustomizableAvatarWidget extends StatelessWidget {
                 );
               },
               errorBuilder: (context, error, stackTrace) {
+                // Debug: print error
+                print('❌ Avatar loading error: $error');
+                print('Stack trace: $stackTrace');
+
                 // Fallback avatar to avoid runtime crashes if DiceBear rejects params
                 return Container(
                   color: const Color(0xFFE0F2F1),
                   alignment: Alignment.center,
-                  child: const Icon(
-                    Icons.person_outline,
-                    size: 48,
-                    color: Color(0xFF558B2F),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.person_outline,
+                        size: 48,
+                        color: Color(0xFF558B2F),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Avatar Error',
+                        style: TextStyle(fontSize: 10, color: Colors.red[700]),
+                      ),
+                    ],
                   ),
                 );
               },
