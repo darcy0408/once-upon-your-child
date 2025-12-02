@@ -106,6 +106,7 @@ class _StoryScreenState extends State<StoryScreen> {
   final _progressionService = ProgressionService();
   int _storiesCreated = 0;
   bool _hasRhymeTime = false;
+  bool _magicPulse = false;
   final _achievementService = AchievementService();
   AchievementSummary? _achievementSummary;
   final _random = Random();
@@ -1079,20 +1080,34 @@ class _StoryScreenState extends State<StoryScreen> {
                   funFact: _funFact,
                 ),
               ] else ...[
-                ElevatedButton(
-                  onPressed: (_gracePeriodStatus?.shouldShowHardLimit ?? false)
-                      ? null
-                      : () async {
-                          await _onCreateButtonPressed();
-                        },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    textStyle: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
+                AnimatedScale(
+                  duration: const Duration(milliseconds: 160),
+                  scale: _magicPulse ? 1.05 : 1.0,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.auto_awesome),
+                    onPressed: (_gracePeriodStatus?.shouldShowHardLimit ?? false)
+                        ? null
+                        : () async {
+                            setState(() => _magicPulse = true);
+                            await _onCreateButtonPressed();
+                            if (mounted) {
+                              setState(() => _magicPulse = false);
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
+                      textStyle: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      backgroundColor: Colors.deepPurpleAccent,
+                      shadowColor: Colors.deepPurpleAccent.withOpacity(0.6),
+                      elevation: 6,
+                    ),
+                    label: Text(_interactiveMode
+                        ? 'Start Interactive Story'
+                        : 'Make Magic'),
                   ),
-                  child: Text(_interactiveMode
-                      ? 'Start Interactive Story'
-                      : 'Quick Story'),
                 ),
                 if (!_interactiveMode) ...[
                   const SizedBox(height: 12),

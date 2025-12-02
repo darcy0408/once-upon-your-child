@@ -25,6 +25,7 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
   bool _isGenerating = false;
   String? _generatedStory;
   SavedStory? _lastSavedStory;
+  bool _magicPulse = false;
 
   final List<String> _quickThemes = [
     'Adventure',
@@ -66,6 +67,7 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
 
     setState(() {
       _isGenerating = true;
+      _magicPulse = true;
       _generatedStory = null;
     });
 
@@ -77,6 +79,10 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
       if (!canGenerate) {
         if (mounted) {
           _showUpgradeDialog();
+          setState(() {
+            _isGenerating = false;
+            _magicPulse = false;
+          });
         }
         return;
       }
@@ -98,6 +104,7 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
         setState(() {
           _generatedStory = storyResult.storyText;
           _isGenerating = false;
+          _magicPulse = false;
         });
       }
     } catch (e) {
@@ -107,6 +114,7 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
         );
         setState(() {
           _isGenerating = false;
+          _magicPulse = false;
         });
       }
     }
@@ -379,39 +387,42 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
           // Generate Button
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _isGenerating ? null : _generateQuickStory,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                padding: const EdgeInsets.all(16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            child: AnimatedScale(
+              duration: const Duration(milliseconds: 150),
+              scale: _magicPulse ? 1.05 : 1.0,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.auto_awesome),
+                onPressed: _isGenerating ? null : _generateQuickStory,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.all(16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 6,
+                  shadowColor: AppColors.primary.withOpacity(0.5),
                 ),
-              ),
-              child: _isGenerating
-                  ? const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                label: _isGenerating
+                    ? const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
                           ),
-                        ),
-                        SizedBox(width: 12),
-                        Text('Creating your story...'),
-                      ],
-                    )
-                  : const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.auto_stories),
-                        SizedBox(width: 8),
-                        Text('Create Story'),
-                      ],
-                    ),
+                          SizedBox(width: 12),
+                          Text('Making magic...'),
+                        ],
+                      )
+                    : const Text(
+                        'Make Magic',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+              ),
             ),
           ),
 
