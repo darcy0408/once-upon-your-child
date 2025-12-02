@@ -156,10 +156,17 @@ class _IllustratedStoryViewerState extends State<IllustratedStoryViewer> {
               ),
             ],
           ),
-          child: Image.memory(
-            base64.decode(illustration.imageData),
-            fit: BoxFit.contain,
-          ),
+          child: illustration.imageUrl.startsWith('data:image')
+              ? Image.memory(
+                  base64.decode(
+                    illustration.imageUrl.split(',')[1], // Extract base64 after comma
+                  ),
+                  fit: BoxFit.contain,
+                )
+              : Image.network(
+                  illustration.imageUrl,
+                  fit: BoxFit.contain,
+                ),
         ),
 
         // Scrollable story text
