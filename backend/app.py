@@ -1179,41 +1179,43 @@ def create_app(config_name):
             # OpenRouter generator returns 'image_url' which might be a full data URI.
             
             transformed_illustrations = []
-            for img in illustrations:
-                new_img = img.copy()
-                image_url = img.get('image_url', '')
-                
-                # If it's a data URI, extract the raw base64 for 'image_data'
-                if image_url.startswith('data:image'):
+            try:
+                for img in illustrations:
+                    new_img = img.copy()
+                    image_url = img.get('image_url', '')
+                    
+                    # If it's a data URI, extract the raw base64 for 'image_data'
                     try:
-                        # Split 'data:image/png;base64,.....'
-                        base64_part = image_url.split(',', 1)[1]
-                        new_img['image_data'] = base64_part
-                    except IndexError:
-                        pass
-                elif image_url.startswith('http'):
-                    # Download image and convert to base64
-                    try:
-                        logger.info(f"Downloading illustration from {image_url[:50]}...")
-                        img_resp = requests.get(image_url, timeout=10)
-                        if img_resp.status_code == 200:
-                            b64_data = base64.b64encode(img_resp.content).decode('utf-8')
-                            new_img['image_data'] = b64_data
-                            logger.info("Successfully converted image URL to base64 data")
-                        else:
-                            logger.error(f"Failed to download image: {img_resp.status_code}")
+                        if image_url.startswith('data:image'):
+                            # Split 'data:image/png;base64,.....'
+                            base64_part = image_url.split(',', 1)[1]
+                            new_img['image_data'] = base64_part
+                        elif image_url.startswith('http'):
+                            # Download image and convert to base64
+                            logger.info(f"Downloading illustration from {image_url[:50]}...")
+                            img_resp = requests.get(image_url, timeout=10)
+                            if img_resp.status_code == 200:
+                                b64_data = base64.b64encode(img_resp.content).decode('utf-8')
+                                new_img['image_data'] = b64_data
+                                logger.info("Successfully converted image URL to base64 data")
+                            else:
+                                logger.error(f"Failed to download image: {img_resp.status_code}")
                     except Exception as e:
-                        logger.error(f"Error processing illustration image data: {str(e)}")
-                
-                # Ensure image_id is present (frontend expects it)
-                if 'id' in img:
-                    new_img['image_id'] = img['id']
+                        logger.error(f"Error processing single illustration: {str(e)}")
                     
-                # Ensure scene_description is present (frontend expects it)
-                if 'prompt' in img:
-                    new_img['scene_description'] = img['prompt']
-                    
-                transformed_illustrations.append(new_img)
+                    # Ensure image_id is present (frontend expects it)
+                    if 'id' in img:
+                        new_img['image_id'] = img['id']
+                        
+                    # Ensure scene_description is present (frontend expects it)
+                    if 'prompt' in img:
+                        new_img['scene_description'] = img['prompt']
+                        
+                    transformed_illustrations.append(new_img)
+            except Exception as e:
+                logger.error(f"Error transforming illustrations batch: {str(e)}")
+                # Use original illustrations if transformation fails
+                transformed_illustrations = illustrations
 
             return jsonify({
                 "illustrations": transformed_illustrations,
