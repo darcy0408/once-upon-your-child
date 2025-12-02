@@ -977,29 +977,26 @@ def create_app(config_name):
             response_payload["content_flagged"] = True
         if illustrations:
             # Ensure illustrations are in the correct format for the frontend (base64 image_data)
-            try:
-                for img in illustrations:
-                    if 'image_url' in img and 'image_data' not in img:
-                        img_url = img['image_url']
-                        try:
-                            if img_url.startswith('data:image/'):
-                                # Extract base64 from data URI
-                                if ';base64,' in img_url:
-                                    img['image_data'] = img_url.split(';base64,')[1]
-                            elif img_url.startswith('http'):
-                                # Download image and convert to base64
-                                logger.info(f"Downloading illustration from {img_url[:50]}...")
-                                img_resp = requests.get(img_url, timeout=10)
-                                if img_resp.status_code == 200:
-                                    b64_data = base64.b64encode(img_resp.content).decode('utf-8')
-                                    img['image_data'] = b64_data
-                                    logger.info("Successfully converted image URL to base64 data")
-                                else:
-                                    logger.error(f"Failed to download image: {img_resp.status_code}")
-                        except Exception as e:
-                            logger.error(f"Error processing single illustration: {str(e)}")
-            except Exception as e:
-                logger.error(f"Error processing illustrations batch: {str(e)}")
+            for img in illustrations:
+                if 'image_url' in img and 'image_data' not in img:
+                    img_url = img['image_url']
+                    try:
+                        if img_url.startswith('data:image/'):
+                            # Extract base64 from data URI
+                            if ';base64,' in img_url:
+                                img['image_data'] = img_url.split(';base64,')[1]
+                        elif img_url.startswith('http'):
+                            # Download image and convert to base64
+                            logger.info(f"Downloading illustration from {img_url[:50]}...")
+                            img_resp = requests.get(img_url, timeout=10)
+                            if img_resp.status_code == 200:
+                                b64_data = base64.b64encode(img_resp.content).decode('utf-8')
+                                img['image_data'] = b64_data
+                                logger.info("Successfully converted image URL to base64 data")
+                            else:
+                                logger.error(f"Failed to download image: {img_resp.status_code}")
+                    except Exception as e:
+                        logger.error(f"Error processing illustration image data: {str(e)}")
 
             response_payload["illustrations"] = illustrations
             response_payload["illustration_count"] = len(illustrations)
