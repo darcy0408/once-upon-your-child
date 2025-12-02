@@ -563,6 +563,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
           storyText: widget.storyText,
           illustrations: illustrations,
           characterName: widget.characterName,
+          subscriptionTier: widget.subscription?.tier.name ?? 'free',
         ),
       ),
     );
