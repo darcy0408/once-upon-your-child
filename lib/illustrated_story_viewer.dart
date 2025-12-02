@@ -10,6 +10,7 @@ class IllustratedStoryViewer extends StatefulWidget {
   final String storyText;
   final List<StoryIllustration> illustrations;
   final String? characterName;
+  final String? subscriptionTier; // 'free', 'premium', 'family', or null (defaults to free)
 
   const IllustratedStoryViewer({
     super.key,
@@ -17,6 +18,7 @@ class IllustratedStoryViewer extends StatefulWidget {
     required this.storyText,
     required this.illustrations,
     this.characterName,
+    this.subscriptionTier,
   });
 
   @override
@@ -58,7 +60,7 @@ class _IllustratedStoryViewerState extends State<IllustratedStoryViewer> {
         .where((s) => s.trim().isNotEmpty)
         .toList();
 
-    final pagesCount = widget.illustrations.length + 1; // illustrations + final page
+    final pagesCount = widget.illustrations.length; // Pages match illustrations
     final sentencesPerPage = sentences.length ~/ pagesCount;
 
     _storyPages = [];
@@ -99,87 +101,206 @@ class _IllustratedStoryViewerState extends State<IllustratedStoryViewer> {
           ),
         ],
       ),
-      body: Column(
+      body: _buildTierBasedView(),
+    );
+  }
+
+  /// Build tier-specific view (free: sticky header, premium: page view)
+  Widget _buildTierBasedView() {
+    final isFree = widget.subscriptionTier == null || 
+                    widget.subscriptionTier == 'free';
+    
+    if (isFree && widget.illustrations.isNotEmpty) {
+      return _buildFreeView();
+    } else {
+      return _buildPremiumView();
+    }
+  }
+
+  /// Free tier: Single sticky illustration at top, scrollable text below
+  Widget _buildFreeView() {
+    final illustration = widget.illustrations.first;
+    
+    return Column(
+      children: [
+        // Page indicator
+        Container(
+          padding: const EdgeInsets.all(12),
+          color: Colors.purple.shade50,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                widget.title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Sticky illustration header
+        Container(
+          height: 250,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.shade300,
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: illustration.imageUrl.startsWith('data:image')
+              ? Image.memory(
+                  base64.decode(
+                    illustration.imageUrl.split(',')[1], // Extract base64 after comma
+                  ),
+                  fit: BoxFit.contain,
+                )
+              : Image.network(
+                  illustration.imageUrl,
+                  fit: BoxFit.contain,
+                ),
+        ),
+
+        // Scrollable story text
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              widget.storyText,
+              style: const TextStyle(
+                fontSize: 20,
+                height: 1.6,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ),
+        ),
+
+        // Narration controls
+        _buildNarrationControls(),
+      ],
+    );
+  }
+
+  /// Premium tier: PageView with multiple pages
+  Widget _buildPremiumView() {
+    return Column(
+      children: [
+        // Page indicator
+        Container(
+          padding: const EdgeInsets.all(12),
+          color: Colors.purple.shade50,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Page ${_currentPage + 1} of ${_storyPages.length}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Story pages with illustrations
+        Expanded(
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: (page) {
+              setState(() {
+                _currentPage = page;
+              });
+              if (_isNarrating) {
+                _narrator.stopNarration();
+              }
+            },
+            itemCount: _storyPages.length,
+            itemBuilder: (context, index) {
+              return _buildStoryPage(index);
+            },
+          ),
+        ),
+
+        // Navigation controls
+        _buildNavigationControls(),
+      ],
+    );
+  }
+
+  Widget _buildNarrationControls() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade300,
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: ElevatedButton.icon(
+        onPressed: _toggleNarration,
+        icon: Icon(_isNarrating ? Icons.pause : Icons.volume_up),
+        label: Text(_isNarrating ? 'Pause' : 'Read Aloud'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _isNarrating ? Colors.orange : Colors.green,
+          minimumSize: const Size(double.infinity, 50),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavigationControls() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade300,
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Page indicator
-          Container(
-            padding: const EdgeInsets.all(12),
-            color: Colors.purple.shade50,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Page ${_currentPage + 1} of ${_storyPages.length}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.deepPurple,
-                  ),
-                ),
-              ],
+          ElevatedButton.icon(
+            onPressed: _currentPage > 0 ? _previousPage : null,
+            icon: const Icon(Icons.arrow_back),
+            label: const Text('Previous'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
             ),
           ),
-
-          // Story pages with illustrations
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: (page) {
-                setState(() {
-                  _currentPage = page;
-                });
-                if (_isNarrating) {
-                  _narrator.stopNarration();
-                }
-              },
-              itemCount: _storyPages.length,
-              itemBuilder: (context, index) {
-                return _buildStoryPage(index);
-              },
+          ElevatedButton.icon(
+            onPressed: _toggleNarration,
+            icon: Icon(_isNarrating ? Icons.pause : Icons.volume_up),
+            label: Text(_isNarrating ? 'Pause' : 'Read Aloud'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _isNarrating ? Colors.orange : Colors.green,
             ),
           ),
-
-          // Navigation controls
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.shade300,
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: _currentPage > 0 ? _previousPage : null,
-                  icon: const Icon(Icons.arrow_back),
-                  label: const Text('Previous'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                  ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: _toggleNarration,
-                  icon: Icon(_isNarrating ? Icons.pause : Icons.volume_up),
-                  label: Text(_isNarrating ? 'Pause' : 'Read Aloud'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _isNarrating ? Colors.orange : Colors.green,
-                  ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: _currentPage < _storyPages.length - 1 ? _nextPage : null,
-                  icon: const Icon(Icons.arrow_forward),
-                  label: const Text('Next'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                  ),
-                ),
-              ],
+          ElevatedButton.icon(
+            onPressed: _currentPage < _storyPages.length - 1 ? _nextPage : null,
+            icon: const Icon(Icons.arrow_forward),
+            label: const Text('Next'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
             ),
           ),
         ],
@@ -206,7 +327,6 @@ class _IllustratedStoryViewerState extends State<IllustratedStoryViewer> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                   child: _buildImage(widget.illustrations[pageIndex].imageUrl),
-                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -333,6 +453,7 @@ class _IllustratedStoryViewerState extends State<IllustratedStoryViewer> {
       ),
     );
   }
+  void _previousPage() {
     if (_currentPage > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),

@@ -1,10 +1,13 @@
 import os
 import uuid
 import logging
+import traceback
 import json
 from datetime import datetime
 import time
 import os
+import requests
+import base64
 import google.generativeai as genai
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS
@@ -579,6 +582,113 @@ def create_app(config_name):
                 'error': str(e)
             }), 500
     
+
+
+    @app.route('/debug-gemini', methods=['GET'])
+    def debug_gemini():
+        """Debug endpoint to test Gemini text generation"""
+        api_key = os.getenv("GEMINI_API_KEY")
+        model_name = os.getenv("GEMINI_MODEL", "models/gemini-2.5-flash")
+        
+        status = {
+            "api_key_configured": bool(api_key),
+            "api_key_prefix": api_key[:4] + "..." if api_key else None,
+            "model_name": model_name,
+            "steps": []
+        }
+        
+        try:
+            # Step 1: Configure
+            if not api_key:
+                status["steps"].append("❌ API Key missing")
+                return jsonify(status), 500
+                
+            genai.configure(api_key=api_key)
+            status["steps"].append("✅ GenAI Configured")
+            
+            # Step 2: Initialize Model
+            model = genai.GenerativeModel(model_name)
+            status["steps"].append(f"✅ Model initialized: {model_name}")
+            
+            # Step 3: Generate Content
+            start_time = time.time()
+            response = model.generate_content("Say 'Hello from Gemini!' if you can hear me.")
+            duration = time.time() - start_time
+            
+            status["steps"].append(f"✅ Generation successful ({duration:.2f}s)")
+            status["response_text"] = response.text
+            status["success"] = True
+            
+        except Exception as e:
+            status["success"] = False
+            status["error"] = str(e)
+            status["error_type"] = type(e).__name__
+            status["steps"].append(f"❌ Error: {str(e)}")
+            logger.exception("Debug Gemini failed")
+            
+            # Try to list available models to help debug
+            try:
+                available_models = []
+                for m in genai.list_models():
+                    if 'generateContent' in m.supported_generation_methods:
+                        available_models.append(m.name)
+                status["available_models"] = available_models
+                status["steps"].append(f"ℹ️ Listed {len(available_models)} available models")
+            except Exception as list_err:
+                status["steps"].append(f"❌ Failed to list models: {str(list_err)}")
+
+        return jsonify(status)
+
+    @app.route('/debug-openrouter', methods=['GET'])
+    def debug_openrouter():
+        """Debug endpoint to test OpenRouter configuration and generation."""
+        try:
+            api_key = os.getenv("OPENROUTER_API_KEY")
+            if not api_key:
+                return jsonify({
+                    "status": "error",
+                    "message": "OPENROUTER_API_KEY not found in environment variables",
+                    "env_keys": list(os.environ.keys())
+                }), 500
+
+            # Test generation
+            generator = OpenRouterImageGenerator()
+            test_prompt = "A cute small blue bird"
+            
+            try:
+                # Returns list of dicts: [{'image_url': '...', ...}]
+                images = generator.generate_story_illustration(test_prompt) 
+                
+                preview = "None"
+                if images and len(images) > 0:
+                     first_img = images[0]
+                     if 'image_url' in first_img:
+                         # Handle if image_url is very long (base64)
+                         url_str = str(first_img['image_url'])
+                         preview = url_str[:50] + "..." if len(url_str) > 50 else url_str
+                
+                return jsonify({
+                    "status": "success",
+                    "message": "Image generated successfully",
+                    "model": "google/gemini-2.5-flash-image",
+                    "image_count": len(images),
+                    "image_data_preview": preview,
+                    "api_key_preview": f"{api_key[:4]}...{api_key[-4:]}"
+                })
+            except Exception as e:
+                return jsonify({
+                    "status": "error",
+                    "message": f"Generation failed: {str(e)}",
+                    "traceback": traceback.format_exc()
+                }), 500
+
+        except Exception as e:
+            return jsonify({
+                "status": "error",
+                "message": f"Debug endpoint failed: {str(e)}",
+                "traceback": traceback.format_exc()
+            }), 500
+
     @app.route("/get-story-themes", methods=["GET"])
     @cache.cached(timeout=3600)  # Cache for 1 hour
     def get_story_themes():
@@ -637,6 +747,8 @@ def create_app(config_name):
         personality_sliders = character_service._sanitize_personality_sliders(
             character_details.get("personality_sliders", {})
         )
+
+
 
         age_instruction_block = story_service._build_age_instruction_block(character_age)
 
@@ -795,18 +907,21 @@ def create_app(config_name):
             enable_illustrations(1, f"Learning-to-read mode auto-illustration for tier {subscription_tier}")
 
         if not fallback_used and subscription_tier == "family":
-            enable_illustrations(2, "Family tier bonus: 2 auto-illustrations")
+            enable_illustrations(3, "Family tier bonus: 3 auto-illustrations")
         elif not fallback_used and subscription_tier == "premium":
-            enable_illustrations(1, "Premium tier bonus: 1 auto-illustration")
+            enable_illustrations(2, "Premium tier bonus: 2 auto-illustrations")
 
         if not fallback_used and include_illustrations and not should_generate_illustrations:
             if subscription_tier in {"premium", "family"}:
-                enable_illustrations(2 if subscription_tier == "family" else 1,
+                enable_illustrations(3 if subscription_tier == "family" else 2,
                                      "User requested illustrations (paid tier)")
             elif user_api_key:
                 enable_illustrations(1, "User requested illustrations via BYOK")
+            elif image_generator is not None:
+                # Allow free tier to use the server's image generator (e.g. OpenRouter Nano)
+                enable_illustrations(1, "Free tier requested illustrations (server-funded)")
             else:
-                logger.info("Free tier requested illustrations without BYOK or learning mode - skipping auto-generation")
+                logger.info("Free tier requested illustrations but no generator available - skipping")
 
         if not fallback_used and not should_generate_illustrations and user_api_key and not learning_to_read_mode:
             enable_illustrations(1, "BYOK enabled illustration for free tier")
@@ -861,8 +976,33 @@ def create_app(config_name):
         if story_flagged:
             response_payload["content_flagged"] = True
         if illustrations:
+            # Ensure illustrations are in the correct format for the frontend (base64 image_data)
+            for img in illustrations:
+                if 'image_url' in img and 'image_data' not in img:
+                    img_url = img['image_url']
+                    try:
+                        if img_url.startswith('data:image/'):
+                            # Extract base64 from data URI
+                            if ';base64,' in img_url:
+                                img['image_data'] = img_url.split(';base64,')[1]
+                        elif img_url.startswith('http'):
+                            # Download image and convert to base64
+                            logger.info(f"Downloading illustration from {img_url[:50]}...")
+                            img_resp = requests.get(img_url, timeout=10)
+                            if img_resp.status_code == 200:
+                                b64_data = base64.b64encode(img_resp.content).decode('utf-8')
+                                img['image_data'] = b64_data
+                                logger.info("Successfully converted image URL to base64 data")
+                            else:
+                                logger.error(f"Failed to download image: {img_resp.status_code}")
+                    except Exception as e:
+                        logger.error(f"Error processing illustration image data: {str(e)}")
+
             response_payload["illustrations"] = illustrations
             response_payload["illustration_count"] = len(illustrations)
+
+        if fallback_used:
+            response_payload["warning"] = "Story generation fell back to offline mode. Please check server logs or API key configuration."
 
         # Track API costs
         user_tier = subscription_tier
@@ -1031,9 +1171,55 @@ def create_app(config_name):
             if not illustrations:
                 logger.warning(f"No illustrations generated for scene: {scene_description[:50]}...")
                 
+            # Transform illustrations to match frontend expectations (GeminiIllustrationService)
+            # Frontend expects 'image_data' (raw base64) or 'image_url'.
+            # OpenRouter generator returns 'image_url' which might be a full data URI.
+            
+            
+            transformed_illustrations = []
+            try:
+                for img in illustrations:
+                    new_img = img.copy()
+                    image_url = img.get('image_url', '')
+                    
+                    # If it's a data URI, extract the raw base64 for 'image_data'
+                    if image_url.startswith('data:image'):
+                        try:
+                            # Split 'data:image/png;base64,.....'
+                            base64_part = image_url.split(',', 1)[1]
+                            new_img['image_data'] = base64_part
+                        except IndexError:
+                            pass
+                    elif image_url.startswith('http'):
+                        # Download image and convert to base64
+                        try:
+                            logger.info(f"Downloading illustration from {image_url[:50]}...")
+                            img_resp = requests.get(image_url, timeout=10)
+                            if img_resp.status_code == 200:
+                                b64_data = base64.b64encode(img_resp.content).decode('utf-8')
+                                new_img['image_data'] = b64_data
+                                logger.info("Successfully converted image URL to base64 data")
+                            else:
+                                logger.error(f"Failed to download image: {img_resp.status_code}")
+                        except Exception as e:
+                            logger.error(f"Error processing illustration image data: {str(e)}")
+                    
+                    # Ensure image_id is present (frontend expects it)
+                    if 'id' in img:
+                        new_img['image_id'] = img['id']
+                        
+                    # Ensure scene_description is present (frontend expects it)
+                    if 'prompt' in img:
+                        new_img['scene_description'] = img['prompt']
+                        
+                    transformed_illustrations.append(new_img)
+            except Exception as e:
+                logger.error(f"Error in illustration transformation: {str(e)}")
+                transformed_illustrations = illustrations  # Fallback to original
+
             return jsonify({
-                "illustrations": illustrations,
-                "count": len(illustrations),
+                "illustrations": transformed_illustrations,
+                "count": len(transformed_illustrations),
                 "used_user_key": using_user_key,
                 "debug_info": {
                     "generator_type": type(generator).__name__ if generator else "None",
@@ -1235,85 +1421,11 @@ def create_app(config_name):
             )
             return jsonify({'error': 'Failed to record story creation'}), 500
 
-    @app.route("/debug-openrouter", methods=["GET"])
-    def debug_openrouter():
-        """Diagnostic endpoint to debug OpenRouter in production"""
-        import traceback
-        import sys
-        import inspect
-        from io import StringIO
-        
-        results = {
-            "env_check": {},
-            "generation_attempt": {},
-            "source_code_snippet": "",
-            "file_path": "",
-            "logs": []
-        }
-        
-        # Capture logs
-        log_capture = StringIO()
-        handler = logging.StreamHandler(log_capture)
-        logger.addHandler(handler)
-        
-        try:
-            # 1. Check Env
-            api_key = os.getenv("OPENROUTER_API_KEY")
-            results["env_check"]["has_key"] = bool(api_key)
-            if api_key:
-                results["env_check"]["key_length"] = len(api_key)
-                results["env_check"]["key_prefix"] = api_key[:5]
-            
-            # 2. Initialize
-            gen = OpenRouterImageGenerator(api_key=api_key)
-            results["generation_attempt"]["initialized"] = True
-            
-            # Inspect Source (Check if fix is present)
-            try:
-                src = inspect.getsource(gen.generate_story_illustration)
-                results["source_code_snippet"] = src  # Return full source to verify fix
-                results["file_path"] = sys.modules[gen.__module__].__file__
-                # Check for the fix specifically
-                results["has_fix"] = "raw_images =" in src
-            except Exception as e:
-                results["source_code_error"] = str(e)
 
-            # 3. Generate
-            start_time = time.time()
-            try:
-                # Use a very simple prompt to be fast
-                images = gen.generate_story_illustration(
-                    scene_description="A red ball",
-                    character_name="Test",
-                    num_images=1
-                )
-                results["generation_attempt"]["success"] = True
-                results["generation_attempt"]["count"] = len(images)
-                # Return the structure of the first image, but truncate long data
-                if images:
-                    first_img = images[0].copy()
-                    if 'image_url' in first_img and len(str(first_img['image_url'])) > 100:
-                        first_img['image_url'] = str(first_img['image_url'])[:50] + "..."
-                    results["generation_attempt"]["first_image_sample"] = first_img
-                else:
-                    results["generation_attempt"]["first_image_sample"] = None
-                    
-            except Exception as e:
-                results["generation_attempt"]["success"] = False
-                results["generation_attempt"]["error"] = str(e)
-                results["generation_attempt"]["traceback"] = traceback.format_exc()
-            
-            results["generation_attempt"]["duration"] = time.time() - start_time
-            
-        except Exception as e:
-            results["fatal_error"] = str(e)
-            results["fatal_traceback"] = traceback.format_exc()
-        finally:
-            logger.removeHandler(handler)
-            results["logs"] = log_capture.getvalue()
-            
-        return jsonify(results), 200
 
     print(f"=== All routes registered successfully ===")
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
     return app
+
+# Create the app instance for Gunicorn
+app = create_app(os.getenv('FLASK_CONFIG') or 'default')
