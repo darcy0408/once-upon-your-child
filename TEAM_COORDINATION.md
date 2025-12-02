@@ -11,6 +11,40 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2025-12-02
+
+### Phase 1: POST_THANKSGIVING Tasks - Multi-Agent Deployment
+
+**Strategy:** Running 3 agents in parallel on HIGH PRIORITY tasks to conserve Claude session time.
+
+**Agent Assignments for Phase 1:**
+- **Agent 1 (Backend):** Backend Modularization - Extract routes from app.py to blueprints
+  - Branch: `refactor/backend-modularization`
+  - Files: `backend/app.py` → `backend/routes/*.py`
+  - Testing: pytest, manual endpoint tests
+
+- **Agent 2 (Frontend Core):** Crash Reporting with Sentry
+  - Branch: `feature/security-hardening`
+  - Files: `lib/main.dart`, `pubspec.yaml`
+  - Testing: flutter test, Sentry dashboard verification
+
+- **Agent 3 (Frontend Widgets):** Secure Storage for API Keys
+  - Branch: `feature/security-hardening` (shared with Agent 2)
+  - Files: `lib/services/secure_storage_service.dart`, API service updates
+  - Testing: BYOK flow, migration test
+
+**Coordination:**
+- Agent 2 and 3 share same branch - coordinated file access
+- All agents report to TEAM_COORDINATION.md with test results
+- Supervisor (Claude) verifies each agent before marking complete
+- Phase 1 integration test before moving to Phase 2
+
+**Detailed Prompts:** See `PHASE_1_AGENT_PROMPTS.md`
+
+**Timeline:** 1-2 days with rigorous testing
+
+---
+
 ## Supervisor Notes | 2025-11-29
 
 ### Multi-Agent Setup Complete
