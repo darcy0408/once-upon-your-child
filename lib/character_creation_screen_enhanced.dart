@@ -460,6 +460,17 @@ class _CharacterCreationScreenEnhancedState
         if (_eyeColor != 'Brown') 'eyes': _eyeColor,
         if (_outfitController.text.trim().isNotEmpty) 'outfit': _outfitController.text.trim(),
 
+        // Avatar configuration
+        'avatar': {
+          'skinColor': 'Light',
+          'topType': 'ShortHairShortFlat',
+          'hairColor': _hairColor,
+          'eyeType': 'Happy',
+          'mouthType': 'Smile',
+          'clotheType': 'Hoodie',
+          'clotheColor': 'Blue03',
+        },
+
         // Only include likes/dislikes if specified
         if (_selectedQuickLikes.isNotEmpty) 'likes': _selectedQuickLikes.toList(),
         if (_selectedQuickDislikes.isNotEmpty) 'dislikes': _selectedQuickDislikes.toList(),
@@ -585,6 +596,7 @@ class _CharacterCreationScreenEnhancedState
                 _buildSuperheroSection(),
                 const SizedBox(height: 20),
               ],
+              _buildAppearanceSection(),
               const SizedBox(height: 30),
               ElevatedButton.icon(
                 onPressed: _isLoading ? null : _createCharacter,
@@ -746,7 +758,7 @@ class _CharacterCreationScreenEnhancedState
                 controller: _ageController,
                 decoration: InputDecoration(
                   labelText: 'Age *',
-                  hintText: '3-17',
+                  hintText: '3-99',
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8)),
                   filled: true,
