@@ -297,7 +297,7 @@ def create_app(config_name):
         genai.configure(api_key=api_key)
         print("DEBUG: Gemini configured with API key")
 
-    GEMINI_MODEL = "models/gemini-2.5-flash"
+    GEMINI_MODEL = "gemini-1.5-flash"
     try:
         model = genai.GenerativeModel(GEMINI_MODEL) if api_key else None
     except Exception as e:
@@ -624,6 +624,17 @@ def create_app(config_name):
             status["steps"].append(f"❌ Error: {str(e)}")
             logger.exception("Debug Gemini failed")
             
+            # Try to list available models to help debug
+            try:
+                available_models = []
+                for m in genai.list_models():
+                    if 'generateContent' in m.supported_generation_methods:
+                        available_models.append(m.name)
+                status["available_models"] = available_models
+                status["steps"].append(f"ℹ️ Listed {len(available_models)} available models")
+            except Exception as list_err:
+                status["steps"].append(f"❌ Failed to list models: {str(list_err)}")
+
         return jsonify(status)
 
     @app.route('/debug-openrouter', methods=['GET'])
