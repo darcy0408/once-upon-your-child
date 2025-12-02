@@ -860,8 +860,11 @@ def create_app(config_name):
                                      "User requested illustrations (paid tier)")
             elif user_api_key:
                 enable_illustrations(1, "User requested illustrations via BYOK")
+            elif image_generator is not None:
+                # Allow free tier to use the server's image generator (e.g. OpenRouter Nano)
+                enable_illustrations(1, "Free tier requested illustrations (server-funded)")
             else:
-                logger.info("Free tier requested illustrations without BYOK or learning mode - skipping auto-generation")
+                logger.info("Free tier requested illustrations but no generator available - skipping")
 
         if not fallback_used and not should_generate_illustrations and user_api_key and not learning_to_read_mode:
             enable_illustrations(1, "BYOK enabled illustration for free tier")
@@ -1086,9 +1089,37 @@ def create_app(config_name):
             if not illustrations:
                 logger.warning(f"No illustrations generated for scene: {scene_description[:50]}...")
                 
+            # Transform illustrations to match frontend expectations (GeminiIllustrationService)
+            # Frontend expects 'image_data' (raw base64) or 'image_url'.
+            # OpenRouter generator returns 'image_url' which might be a full data URI.
+            
+            transformed_illustrations = []
+            for img in illustrations:
+                new_img = img.copy()
+                image_url = img.get('image_url', '')
+                
+                # If it's a data URI, extract the raw base64 for 'image_data'
+                if image_url.startswith('data:image'):
+                    try:
+                        # Split 'data:image/png;base64,.....'
+                        base64_part = image_url.split(',', 1)[1]
+                        new_img['image_data'] = base64_part
+                    except IndexError:
+                        pass
+                
+                # Ensure image_id is present (frontend expects it)
+                if 'id' in img:
+                    new_img['image_id'] = img['id']
+                    
+                # Ensure scene_description is present (frontend expects it)
+                if 'prompt' in img:
+                    new_img['scene_description'] = img['prompt']
+                    
+                transformed_illustrations.append(new_img)
+
             return jsonify({
-                "illustrations": illustrations,
-                "count": len(illustrations),
+                "illustrations": transformed_illustrations,
+                "count": len(transformed_illustrations),
                 "used_user_key": using_user_key,
                 "debug_info": {
                     "generator_type": type(generator).__name__ if generator else "None",
