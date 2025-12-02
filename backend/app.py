@@ -580,6 +580,8 @@ def create_app(config_name):
                 'error': str(e)
             }), 500
     
+
+
     @app.route('/debug-openrouter', methods=['GET'])
     def debug_openrouter():
         """Debug endpoint to test OpenRouter configuration and generation."""
@@ -596,14 +598,24 @@ def create_app(config_name):
             generator = OpenRouterImageGenerator()
             test_prompt = "A cute small blue bird"
             
-            # Capture logs/print output if possible, or just return the result
             try:
-                image_url = generator.generate_story_illustration(test_prompt)
+                # Returns list of dicts: [{'image_url': '...', ...}]
+                images = generator.generate_story_illustration(test_prompt) 
+                
+                preview = "None"
+                if images and len(images) > 0:
+                     first_img = images[0]
+                     if 'image_url' in first_img:
+                         # Handle if image_url is very long (base64)
+                         url_str = str(first_img['image_url'])
+                         preview = url_str[:50] + "..." if len(url_str) > 50 else url_str
+                
                 return jsonify({
                     "status": "success",
                     "message": "Image generated successfully",
                     "model": "google/gemini-2.5-flash-image",
-                    "image_data_preview": image_url[:50] + "..." if image_url else "None",
+                    "image_count": len(images),
+                    "image_data_preview": preview,
                     "api_key_preview": f"{api_key[:4]}...{api_key[-4:]}"
                 })
             except Exception as e:
