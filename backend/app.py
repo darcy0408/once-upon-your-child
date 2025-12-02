@@ -1188,6 +1188,19 @@ def create_app(config_name):
                         new_img['image_data'] = base64_part
                     except IndexError:
                         pass
+                elif image_url.startswith('http'):
+                    # Download image and convert to base64
+                    try:
+                        logger.info(f"Downloading illustration from {image_url[:50]}...")
+                        img_resp = requests.get(image_url, timeout=10)
+                        if img_resp.status_code == 200:
+                            b64_data = base64.b64encode(img_resp.content).decode('utf-8')
+                            new_img['image_data'] = b64_data
+                            logger.info("Successfully converted image URL to base64 data")
+                        else:
+                            logger.error(f"Failed to download image: {img_resp.status_code}")
+                    except Exception as e:
+                        logger.error(f"Error processing illustration image data: {str(e)}")
                 
                 # Ensure image_id is present (frontend expects it)
                 if 'id' in img:
