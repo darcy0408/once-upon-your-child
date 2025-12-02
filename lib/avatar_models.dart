@@ -53,10 +53,11 @@ class CharacterAvatar {
     // Seed combines all attributes for consistent unique avatars
     final seed = '$skinColor-$hairStyle-$hairColor-$clothingStyle-$eyeType-$mouthType';
 
-    return Uri.https('api.dicebear.com', '/7.x/big-smile/svg', {
-      'seed': seed,
-      'backgroundColor': circleBackground ? 'b6e3f4' : 'transparent',
-    }).toString();
+    // Build URL manually to avoid encoding issues
+    final baseUrl = 'https://api.dicebear.com/7.x/big-smile/svg';
+    final encodedSeed = Uri.encodeComponent(seed);
+
+    return '$baseUrl?seed=$encodedSeed';
   }
 
   /// Create a copy with optional parameter overrides
