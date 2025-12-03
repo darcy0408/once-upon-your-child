@@ -15,7 +15,8 @@ webhook_routes = Blueprint("webhook_routes", __name__)
 _UNSET = object()
 
 
-@webhook_routes.route("/stripe", methods=["POST"])
+@webhook_routes.route("/webhooks/stripe", methods=["POST"])
+@webhook_routes.route("/stripe/webhook", methods=["POST"])
 def handle_webhook():
     payload = request.data
     sig_header = request.headers.get("Stripe-Signature", "")

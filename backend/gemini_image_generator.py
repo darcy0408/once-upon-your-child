@@ -3,14 +3,14 @@ Gemini Image Generation Service
 Uses Google's Gemini 1.5 Pro via the Gemini API
 """
 
-import os
-import google.generativeai as genai
-from PIL import Image
-import io
 import base64
+import io
+import logging
+import os
 import uuid
 from datetime import datetime
-import logging
+
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -18,11 +18,19 @@ class GeminiImageGenerator:
     def __init__(self, api_key=None):
         """Initialize with Gemini API key"""
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
+        self.genai = None
+        self.image_model = None
         if self.api_key:
-            genai.configure(api_key=self.api_key)
+            import google.generativeai as genai
 
-        # Use Gemini 2.0 Flash with image generation capability
-        self.image_model = genai.GenerativeModel("gemini-2.0-flash-exp-image-generation")
+            genai.configure(api_key=self.api_key)
+            self.genai = genai
+            # Use Gemini 2.0 Flash with image generation capability
+            self.image_model = genai.GenerativeModel("gemini-2.0-flash-exp-image-generation")
+
+    def _ensure_model(self):
+        if not self.image_model or not self.genai:
+            raise RuntimeError("Gemini image model is not initialized")
 
     def _process_image_response(self, response, prompt) -> list:
         """Helper to process the response from generate_content and extract images."""
@@ -53,6 +61,9 @@ class GeminiImageGenerator:
         """
         Generate therapeutic story illustrations using Gemini 1.5 Pro.
         """
+        if not self.image_model:
+            logger.warning("Gemini image generator unavailable; skipping illustration generation")
+            return []
         # Determine detail level based on age
         if age <= 5:
             detail_level = "simple, bold shapes with minimal details, cartoonish and fun"
@@ -92,7 +103,7 @@ Visual requirements:
 - Therapeutic value: promote emotional expression, growth, and positivity
 - Respectful, safe, and appropriate for the intended age group
 
-Style: {style}, optimized for {age_descriptor}
+        Style: {style}, optimized for {age_descriptor}
 """
 
         try:
@@ -118,6 +129,9 @@ Style: {style}, optimized for {age_descriptor}
         """
         Generate therapeutic coloring book pages with black and white line art.
         """
+        if not self.image_model:
+            logger.warning("Gemini image generator unavailable; skipping coloring page generation")
+            return []
         # Determine intricacy based on age
         if age <= 5:
             intricacy = "very simple shapes with large coloring areas, minimal details, easy for small hands"
@@ -167,7 +181,7 @@ Critical requirements:
 - Printable quality (suitable for app display or printing)
 
 Design style: Clean line art coloring page, therapeutic and story-based, for {age_descriptor}
-Output: Pure black lines on white background only
+        Output: Pure black lines on white background only
 """
 
         try:

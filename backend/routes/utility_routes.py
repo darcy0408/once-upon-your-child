@@ -2,7 +2,6 @@ import os
 import time
 import traceback
 
-import google.generativeai as genai
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token
 
@@ -59,6 +58,8 @@ def create_utility_blueprint(logger, log_error):
                 status["steps"].append("❌ API Key missing")
                 return jsonify(status), 500
                 
+            import google.generativeai as genai
+
             genai.configure(api_key=api_key)
             status["steps"].append("✅ GenAI Configured")
             

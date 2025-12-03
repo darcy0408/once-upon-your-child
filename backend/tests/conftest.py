@@ -1,6 +1,10 @@
-import pytest
-import sys
 import os
+import sys
+
+import pytest
+
+os.environ.setdefault("SKIP_DEFAULT_APP_INIT", "1")
+os.environ.setdefault("FLASK_CONFIG", "testing")
 
 # Add project root to path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))

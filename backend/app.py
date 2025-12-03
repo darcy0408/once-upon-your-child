@@ -4,7 +4,6 @@ import logging
 import traceback
 from datetime import datetime
 import time
-import google.generativeai as genai
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 
@@ -17,14 +16,7 @@ from .models.achievement import UserAchievement, AchievementStats
 from .models.user import User
 
 from .services.story_service import AdvancedStoryEngine
-from .routes.stripe_routes import stripe_routes, init_stripe_api
-from .routes.webhook_handler import webhook_routes
-from .analytics_routes import analytics_bp
-from .quality_service import StoryQualityService
 from .cost_tracking import track_cost
-# from .repositories import character_repository
-from .gemini_image_generator import GeminiImageGenerator
-from .openrouter_image_generator import OpenRouterImageGenerator
 from .utils.app_helpers import (
     get_user_identifier,
     get_user_tier,
@@ -50,12 +42,13 @@ def create_app(config_name):
     app = Flask(__name__)
     
     if config_name == 'testing':
-        app.config.from_object(config_by_name['dev'])
+        app.config.from_object(config_by_name['testing'])
         app.config['TESTING'] = True
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
         app.config.pop('SQLALCHEMY_ENGINE_OPTIONS', None)
     else:
         app.config.from_object(config_by_name[config_name])
+
+    testing_mode = app.config.get('TESTING', False)
 
     print(f"=== Config loaded, initializing database ===")
     db.init_app(app)
@@ -148,35 +141,54 @@ def create_app(config_name):
     app.register_error_handler(Exception, handle_error)
 
     # Gemini setup
-    api_key = app.config["GEMINI_API_KEY"]
+    GEMINI_MODEL = app.config.get("GEMINI_MODEL", "models/gemini-2.5-flash")
+    api_key = None if testing_mode else app.config.get("GEMINI_API_KEY")
+    genai = None
     print(f"DEBUG: api_key from config = {api_key}")
     print(f"DEBUG: bool(api_key) = {bool(api_key)}")
     if not api_key:
         logger.warning("GEMINI_API_KEY not set. Generation endpoints will use fallbacks.")
-    else:
-        genai.configure(api_key=api_key)
-        print("DEBUG: Gemini configured with API key")
-
-    GEMINI_MODEL = "models/gemini-2.5-flash"
-    try:
-        model = genai.GenerativeModel(GEMINI_MODEL) if api_key else None
-    except Exception as e:
-        logger.exception("Failed to initialize Gemini model: %s", e)
         model = None
+    else:
+        try:
+            import google.generativeai as genai  # Local import to avoid slow startup in tests
+        except Exception as e:
+            logger.exception("Failed to import google.generativeai: %s", e)
+            genai = None
+        if genai:
+            genai.configure(api_key=api_key)
+            print("DEBUG: Gemini configured with API key")
+            GEMINI_MODEL = app.config.get("GEMINI_MODEL", "models/gemini-2.5-flash")
+            try:
+                model = genai.GenerativeModel(GEMINI_MODEL)
+            except Exception as e:
+                logger.exception("Failed to initialize Gemini model: %s", e)
+                model = None
+        else:
+            model = None
+            api_key = None
 
     # Initialize Stripe (configured via blueprint setup now)
-    init_stripe_api(app)
-    logger.info(f"✓ Stripe Premium Price ID: {os.getenv('STRIPE_PRICE_ID_PREMIUM', 'NOT SET')}")
-    logger.info(f"✓ Stripe Family Price ID: {os.getenv('STRIPE_PRICE_ID_FAMILY', 'NOT SET')}")
+    from .routes.stripe_routes import stripe_routes, init_stripe_api
+    from .routes.webhook_handler import webhook_routes
+
+    if not testing_mode:
+        init_stripe_api(app)
+        logger.info(f"✓ Stripe Premium Price ID: {os.getenv('STRIPE_PRICE_ID_PREMIUM', 'NOT SET')}")
+        logger.info(f"✓ Stripe Family Price ID: {os.getenv('STRIPE_PRICE_ID_FAMILY', 'NOT SET')}")
 
     # Initialize image generator (prefer low-cost OpenRouter SDXL if available)
     global image_generator
     try:
-        openrouter_key = os.getenv("OPENROUTER_API_KEY")
+        openrouter_key = os.getenv("OPENROUTER_API_KEY") if not testing_mode else None
         if openrouter_key:
+            from .openrouter_image_generator import OpenRouterImageGenerator
+
             image_generator = OpenRouterImageGenerator(api_key=openrouter_key)
             logger.info("Image generator initialized with OpenRouter (cost-optimized)")
-        elif api_key:
+        elif api_key and not testing_mode:
+            from .gemini_image_generator import GeminiImageGenerator
+
             image_generator = GeminiImageGenerator()
             logger.info("Image generator initialized with Gemini")
         else:
@@ -216,10 +228,20 @@ def create_app(config_name):
                 }
             )
 
+    from .analytics_routes import analytics_bp
+    from .routes.achievement_routes import achievement_bp
+    from .routes.subscription_routes import subscription_routes as subscription_bp
+    from .routes.user_routes import user_routes
+
     print(f"=== Registering routes ===")
-    app.register_blueprint(stripe_routes, url_prefix='/api/stripe')
-    app.register_blueprint(webhook_routes, url_prefix='/api/webhooks')
+    if stripe_routes:
+        app.register_blueprint(stripe_routes, url_prefix='/api/stripe')
+    if webhook_routes:
+        app.register_blueprint(webhook_routes, url_prefix='/api')
     app.register_blueprint(analytics_bp)
+    app.register_blueprint(achievement_bp, url_prefix='/achievement')
+    app.register_blueprint(subscription_bp)
+    app.register_blueprint(user_routes)
 
     from .routes.story_routes import create_story_blueprint
     from .routes.character_routes import create_character_blueprint
@@ -257,5 +279,6 @@ def create_app(config_name):
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
     return app
 
-# Create the app instance for Gunicorn
-app = create_app(os.getenv('FLASK_CONFIG') or 'default')
+# Create the app instance for Gunicorn unless explicitly skipped (e.g., during pytest)
+if not os.getenv("SKIP_DEFAULT_APP_INIT"):
+    app = create_app(os.getenv('FLASK_CONFIG') or 'default')

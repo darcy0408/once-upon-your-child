@@ -1,6 +1,5 @@
 import base64
 import requests
-import google.generativeai as genai
 from flask import Blueprint, jsonify, request
 
 from ..models.user import User
@@ -140,11 +139,14 @@ def create_story_blueprint(
         # Decide which model to use
         using_user_key = False
         fallback_used = False
+        genai_module = None
         try:
             if user_api_key:
                 # User provided their own API key - use it for unlimited generation
-                genai.configure(api_key=user_api_key)
-                user_model = genai.GenerativeModel(gemini_model)
+                import google.generativeai as genai_module
+
+                genai_module.configure(api_key=user_api_key)
+                user_model = genai_module.GenerativeModel(gemini_model)
                 response = user_model.generate_content(prompt)
                 using_user_key = True
             else:
@@ -233,8 +235,8 @@ def create_story_blueprint(
                     )
         finally:
             # Reset to server API key after user's request
-            if user_api_key and api_key:
-                genai.configure(api_key=api_key)
+            if user_api_key and api_key and genai_module:
+                genai_module.configure(api_key=api_key)
 
         illustrations = []
         should_generate_illustrations = False
