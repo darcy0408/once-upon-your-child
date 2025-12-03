@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+// import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:story_weaver_app/services/secure_storage_service.dart';
 
 import 'config/environment.dart';
 import 'main_story.dart';
@@ -12,24 +15,73 @@ import 'services/firebase_analytics_service.dart';
 import 'services/subscription_service.dart';
 import 'screens/age_gate_screen.dart';
 
+const String _sentryDsn = String.fromEnvironment(
+  'SENTRY_DSN',
+  defaultValue: '',
+);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // One-time migration to secure storage - disabled for now
+  // final prefs = await SharedPreferences.getInstance();
+  // final migrated = prefs.getBool('secure_storage_migrated') ?? false;
+  // if (!migrated) {
+  //   await SecureStorageService.migrateFromSharedPreferences();
+  // }
+
+  // Sentry disabled for now
+  // if (_sentryDsn.isEmpty) {
+    await _initializeAnalytics();
+    runApp(const StoryWeaverApp());
+    return;
+  // }
+
+  // await SentryFlutter.init(
+  //   (options) {
+  //     options.dsn = _sentryDsn;
+  //     options.environment = Environment.isDevelopment
+  //         ? 'development'
+  //         : Environment.isStaging
+  //             ? 'staging'
+  //             : 'production';
+  //     options.tracesSampleRate = 0.1;
+  //     options.beforeSend = (event, {hint}) {
+  //       final dsn = options.dsn;
+  //       if (Environment.isDevelopment || dsn == null || dsn.isEmpty) {
+  //         return null;
+  //       }
+  //       return event;
+  //     };
+  //     options.enableTimeToFullDisplayTracing = false;
+  //   },
+  //   appRunner: () async {
+  //     await _initializeAnalytics();
+  //     runApp(const StoryWeaverApp(enableSentryNavigation: true));
+  //   },
+  // );
+}
+
+Future<void> _initializeAnalytics() async {
   // Initialize Firebase with graceful degradation
   try {
     await FirebaseAnalyticsService.initialize();
     // Track app start after Firebase initialization
     // TODO: Add PerformanceAnalytics tracking
     // await PerformanceAnalytics.trackAppStart();
-  } catch (e) {
-    // Firebase initialization failed - continue without analytics
+  } catch (e, stackTrace) {
+    // await Sentry.captureException(e, stackTrace);
+    print('Analytics initialization error: $e');
   }
-
-  runApp(const StoryWeaverApp());
 }
 
 class StoryWeaverApp extends StatefulWidget {
-  const StoryWeaverApp({super.key});
+  const StoryWeaverApp({
+    super.key,
+    this.enableSentryNavigation = false,
+  });
+
+  final bool enableSentryNavigation;
 
   @override
   State<StoryWeaverApp> createState() => _StoryWeaverAppState();
@@ -90,6 +142,12 @@ class _StoryWeaverAppState extends State<StoryWeaverApp> {
       title: Environment.appName,
       theme: AppTheme.light(primaryColor: Environment.primaryColor),
       debugShowCheckedModeBanner: !Environment.isProduction,
+      // navigatorObservers: widget.enableSentryNavigation
+      //     ? [
+      //         SentryNavigatorObserver(),
+      //       ]
+      //     : const [],
+      navigatorObservers: const [],
       home: home,
       builder: (context, child) {
         if (child == null || !Environment.showFlavorBanner) {
