@@ -32,6 +32,27 @@ const List<AppearanceColorOption> eyeColorOptions = [
   AppearanceColorOption('Gold', Color(0xFFFFD54F)),
 ];
 
+const List<AppearanceColorOption> skinToneOptions = [
+  AppearanceColorOption('Light', Color(0xFFFDDAC7)),
+  AppearanceColorOption('Pale', Color(0xFFF5D5C4)),
+  AppearanceColorOption('Tanned', Color(0xFFE4B899)),
+  AppearanceColorOption('Brown', Color(0xFFB57C57)),
+  AppearanceColorOption('DarkBrown', Color(0xFF8D5524)),
+  AppearanceColorOption('Black', Color(0xFF4A3228)),
+];
+
+const List<String> hairStyleOptions = [
+  'Short & Flat',
+  'Short & Curly',
+  'Short & Wavy',
+  'Long & Straight',
+  'Long & Curly',
+  'Big Hair',
+  'Bun',
+  'Braids',
+  'Ponytail',
+];
+
 const List<InterestOption> outfitPresetOptions = [
   InterestOption('Hero Cape', Icons.flash_on),
   InterestOption('Princess Dress', Icons.face_retouching_natural),

@@ -49,15 +49,14 @@ class CharacterAvatar {
 
   /// Translate this avatar into an Avataaars URL for rich SVG rendering.
   String toAvataaarsUrl({bool circleBackground = true}) {
-    // Try multiple avatar sources for reliability
+    // Use DiceBear Big Ears Neutral style with specific parameters
+    final params = <String, String>{
+      'seed': '$skinColor$hairColor$hairStyle'.toLowerCase(), // Seed for consistency
+      'backgroundColor': circleBackground ? 'b6e3f4' : 'transparent',
+    };
 
-    // Option 1: DiceBear with simple adventurer style (most reliable)
-    final seed = '$skinColor$hairColor$clothingStyle'.toLowerCase();
-    return 'https://api.dicebear.com/7.x/adventurer/svg?seed=$seed';
-
-    // Option 2 (fallback): If DiceBear fails, could use:
-    // return 'https://api.dicebear.com/7.x/bottts/svg?seed=$seed';
-    // return 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=$seed';
+    final queryString = params.entries.map((e) => '${e.key}=${e.value}').join('&');
+    return 'https://api.dicebear.com/7.x/big-ears-neutral/svg?$queryString';
   }
 
   /// Create a copy with optional parameter overrides

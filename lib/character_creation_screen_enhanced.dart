@@ -57,6 +57,8 @@ class _CharacterCreationScreenEnhancedState
   final _missionController = TextEditingController();
 
   // Appearance
+  String _skinTone = 'Light';
+  String _hairStyle = 'Short & Flat';
   String _hairColor = 'Brown';
   String _eyeColor = 'Brown';
   final _outfitController = TextEditingController();
@@ -461,15 +463,7 @@ class _CharacterCreationScreenEnhancedState
         if (_outfitController.text.trim().isNotEmpty) 'outfit': _outfitController.text.trim(),
 
         // Avatar configuration
-        'avatar': {
-          'skinColor': 'Light',
-          'topType': 'ShortHairShortFlat',
-          'hairColor': _hairColor,
-          'eyeType': 'Happy',
-          'mouthType': 'Smile',
-          'clotheType': 'Hoodie',
-          'clotheColor': 'Blue03',
-        },
+        'avatar': _avatar.toJson(),
 
         // Only include likes/dislikes if specified
         if (_selectedQuickLikes.isNotEmpty) 'likes': _selectedQuickLikes.toList(),
@@ -978,6 +972,34 @@ class _CharacterCreationScreenEnhancedState
       Icons.face,
       [
         _buildColorChoiceRow(
+          title: 'Skin Tone',
+          options: skinToneOptions,
+          selectedValue: _skinTone,
+          onSelected: (value) => setState(() {
+            _skinTone = value;
+            _avatar = _avatar.copyWith(skinColor: value);
+          }),
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          value: _hairStyle,
+          decoration: InputDecoration(
+            labelText: 'Hair Style',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            filled: true,
+            fillColor: Colors.grey[50],
+            prefixIcon: const Icon(Icons.face_retouching_natural),
+          ),
+          items: hairStyleOptions.map((style) {
+            return DropdownMenuItem(value: style, child: Text(style));
+          }).toList(),
+          onChanged: (value) => setState(() {
+            _hairStyle = value ?? _hairStyle;
+            _avatar = _avatar.copyWith(hairStyle: _mapHairStyleToAvataaars(value ?? _hairStyle));
+          }),
+        ),
+        const SizedBox(height: 12),
+        _buildColorChoiceRow(
           title: 'Hair Color',
           options: hairColorOptions,
           selectedValue: _hairColor,
@@ -993,8 +1015,7 @@ class _CharacterCreationScreenEnhancedState
           selectedValue: _eyeColor,
           onSelected: (value) => setState(() {
             _eyeColor = value;
-            // Eye color in avatar_models is actually eyeType (expression)
-            // Keep _eyeColor for legacy backend compatibility
+            // Eye color stored for backend, but not used in avatar (DiceBear limitation)
           }),
         ),
         const SizedBox(height: 12),
@@ -1013,6 +1034,31 @@ class _CharacterCreationScreenEnhancedState
         ),
       ],
     );
+  }
+
+  String _mapHairStyleToAvataaars(String friendlyName) {
+    switch (friendlyName) {
+      case 'Short & Flat':
+        return 'ShortHairShortFlat';
+      case 'Short & Curly':
+        return 'ShortHairShortCurly';
+      case 'Short & Wavy':
+        return 'ShortHairShortWaved';
+      case 'Long & Straight':
+        return 'LongHairStraight';
+      case 'Long & Curly':
+        return 'LongHairCurly';
+      case 'Big Hair':
+        return 'LongHairBigHair';
+      case 'Bun':
+        return 'LongHairBun';
+      case 'Braids':
+        return 'LongHairBraids';
+      case 'Ponytail':
+        return 'LongHairPonytail';
+      default:
+        return 'ShortHairShortFlat';
+    }
   }
 
   Widget _buildPersonalitySection() {
