@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:story_weaver_app/services/secure_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../config/environment.dart';
@@ -72,14 +73,13 @@ class ApiServiceManager {
   static Future<bool> isUsingOwnApiKey() async {
     final prefs = await SharedPreferences.getInstance();
     final useOwnKey = prefs.getBool('use_own_api_key') ?? false;
-    final apiKey = prefs.getString('gemini_api_key') ?? '';
+    final apiKey = await SecureStorageService.getApiKey('gemini') ?? '';
     return useOwnKey && apiKey.isNotEmpty;
   }
 
   /// Get user's API key (if configured)
   static Future<String?> getUserApiKey() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('gemini_api_key');
+    return SecureStorageService.getApiKey('gemini');
   }
 
   /// Check if user has premium access (either BYOK or paid)

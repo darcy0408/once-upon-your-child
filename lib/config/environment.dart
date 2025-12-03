@@ -8,6 +8,8 @@ class Environment {
       FlavorConfig.instance.flavor == Flavor.production;
   static bool get isStaging =>
       FlavorConfig.instance.flavor == Flavor.staging;
+  static bool get isDevelopment =>
+      !isProduction && !isStaging;
   static String get appName => FlavorConfig.instance.name;
   static bool get showFlavorBanner => FlavorConfig.instance.showBanner;
   static String get bannerLabel => FlavorConfig.instance.bannerLabel;
