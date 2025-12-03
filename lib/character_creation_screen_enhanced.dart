@@ -673,27 +673,6 @@ class _CharacterCreationScreenEnhancedState
           validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
         ),
         const SizedBox(height: 12),
-        TextFormField(
-          controller: _ageController,
-          decoration: InputDecoration(
-            labelText: 'Age *',
-            hintText: '3-17',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            filled: true,
-            fillColor: Colors.grey[50],
-            prefixIcon: const Icon(Icons.cake),
-          ),
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          validator: (v) {
-            if (v == null || v.trim().isEmpty) return 'Age is required';
-            final age = int.tryParse(v.trim());
-            if (age == null) return 'Please enter a valid age';
-            if (age < 3 || age > 99) return 'Age must be between 3-99';
-            return null;
-          },
-        ),
-        const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           value: _isA,
           decoration: InputDecoration(
