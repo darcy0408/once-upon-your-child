@@ -2,6 +2,7 @@
 // Avatar preview widget that renders Avataaars-based SVGs via network image.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'avatar_models.dart';
 
 class CustomizableAvatarWidget extends StatelessWidget {
@@ -49,49 +50,19 @@ class CustomizableAvatarWidget extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(6),
           child: ClipOval(
-            child: Image.network(
+            child: SvgPicture.network(
               imageUrl,
               key: ValueKey(imageUrl),
               fit: BoxFit.contain,
               width: size,
               height: size,
-              cacheWidth: (size * devicePixelRatio).clamp(120, 600).round(),
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) return child;
-                return Center(
-                  child: SizedBox(
-                    width: size * 0.35,
-                    height: size * 0.35,
-                    child: const CircularProgressIndicator(strokeWidth: 3),
-                  ),
-                );
-              },
-              errorBuilder: (context, error, stackTrace) {
-                // Debug: print error
-                print('❌ Avatar loading error: $error');
-                print('Stack trace: $stackTrace');
-
-                // Fallback avatar to avoid runtime crashes if DiceBear rejects params
-                return Container(
-                  color: const Color(0xFFE0F2F1),
-                  alignment: Alignment.center,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.person_outline,
-                        size: 48,
-                        color: Color(0xFF558B2F),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Avatar Error',
-                        style: TextStyle(fontSize: 10, color: Colors.red[700]),
-                      ),
-                    ],
-                  ),
-                );
-              },
+              placeholderBuilder: (context) => Center(
+                child: SizedBox(
+                  width: size * 0.35,
+                  height: size * 0.35,
+                  child: const CircularProgressIndicator(strokeWidth: 3),
+                ),
+              ),
             ),
           ),
         ),
