@@ -1,10 +1,13 @@
 // lib/settings_screen.dart
 
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:story_weaver_app/services/secure_storage_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'config/environment.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_card.dart';
 import 'widgets/app_button.dart';
@@ -230,9 +233,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+    final apiKey = await SecureStorageService.getApiKey('gemini');
     setState(() {
       _useOwnApiKey = prefs.getBool('use_own_api_key') ?? false;
-      _apiKeyController.text = prefs.getString('gemini_api_key') ?? '';
+      _apiKeyController.text = apiKey ?? '';
       if (_useOwnApiKey && _apiKeyController.text.isNotEmpty) {
         _isValid = true;
         _validationMessage = '✓ API Key configured';
@@ -243,7 +247,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('use_own_api_key', _useOwnApiKey);
-    await prefs.setString('gemini_api_key', _apiKeyController.text.trim());
+    await SecureStorageService.saveApiKey('gemini', _apiKeyController.text.trim());
 
     if (_useOwnApiKey && _isValid == true) {
       // When users bring their own key, they get "premium" features
@@ -350,8 +354,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _isValid = null;
       });
 
+      await SecureStorageService.deleteApiKey('gemini');
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('gemini_api_key');
       await prefs.setBool('use_own_api_key', false);
       await prefs.setBool('is_premium_byok', false);
 
@@ -450,6 +454,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
             const SizedBox(height: AppSpacing.lg),
             _buildLegalLinks(context),
+            if (Environment.isDevelopment) ...[
+              const SizedBox(height: AppSpacing.lg),
+              ElevatedButton(
+                onPressed: () {
+                  // TODO: REMOVE BEFORE PRODUCTION
+                  throw Exception('Test crash for Sentry verification');
+                },
+                child: const Text('Test Crash (Dev Only)'),
+              ),
+            ],
           ],
         ),
       ),
