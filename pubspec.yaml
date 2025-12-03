@@ -46,6 +46,7 @@ dependencies:
   package_info_plus: ^8.0.2
   url_launcher: ^6.3.0
   page_flip_builder: ^0.1.4  # Premium page-turn animations
+  flutter_svg: ^2.0.10  # SVG rendering for avatars
 
   # Note: Backend handles AI generation for free users, but BYOK users call Gemini directly
   flutter_secure_storage: ^9.0.0
