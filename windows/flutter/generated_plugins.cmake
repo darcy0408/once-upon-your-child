@@ -4,9 +4,8 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   firebase_core
-  flutter_secure_storage_windows
   flutter_tts
-  sentry_flutter
+  isar_flutter_libs
   share_plus
   url_launcher_windows
 )

@@ -6,14 +6,19 @@ import 'config/environment.dart';
 import 'main_story.dart';
 import 'theme/app_theme.dart';
 import 'onboarding_screen.dart';
+import 'services/isar_service.dart';
 import 'services/onboarding_service.dart';
 import 'services/parental_consent_service.dart';
 import 'services/firebase_analytics_service.dart';
 import 'services/subscription_service.dart';
+import 'services/storage_migration.dart';
 import 'screens/age_gate_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await IsarService.getInstance();
+  await StorageMigration.migrateFromSharedPreferences();
 
   // Initialize Firebase with graceful degradation
   try {
