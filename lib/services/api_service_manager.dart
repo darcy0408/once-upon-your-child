@@ -6,8 +6,9 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:story_weaver_app/services/secure_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:story_weaver_app/services/secure_storage_service.dart';
+
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../config/environment.dart';
 
@@ -71,10 +72,8 @@ class ApiServiceManager {
 
   /// Check if user has configured their own API key
   static Future<bool> isUsingOwnApiKey() async {
-    final prefs = await SharedPreferences.getInstance();
-    final useOwnKey = prefs.getBool('use_own_api_key') ?? false;
-    final apiKey = await SecureStorageService.getApiKey('gemini') ?? '';
-    return useOwnKey && apiKey.isNotEmpty;
+    final apiKey = await SecureStorageService.getApiKey('gemini');
+    return apiKey != null && apiKey.isNotEmpty;
   }
 
   /// Get user's API key (if configured)

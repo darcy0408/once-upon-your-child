@@ -49,14 +49,21 @@ class CharacterAvatar {
 
   /// Translate this avatar into an Avataaars URL for rich SVG rendering.
   String toAvataaarsUrl({bool circleBackground = true}) {
-    // Use DiceBear Big Ears Neutral style with specific parameters
+    // Use DiceBear Avataaars style with specific parameters that actually customize the avatar
     final params = <String, String>{
-      'seed': '$skinColor$hairColor$hairStyle'.toLowerCase(), // Seed for consistency
-      'backgroundColor': circleBackground ? 'b6e3f4' : 'transparent',
+      'seed': '$skinColor$hairColor$hairStyle'.toLowerCase(),
+      'skinColor': _mapSkinColorToDiceBear(skinColor),
+      'hairColor': _mapHairColorToDiceBear(hairColor),
+      'top': _mapTopTypeToDiceBear(hairStyle),
+      'eyes': _mapEyeTypeToDiceBear(eyeType),
+      'mouth': _mapMouthTypeToDiceBear(mouthType),
+      'clothes': _mapClothingTypeToDiceBear(clothingStyle),
+      'clothesColor': _mapClothingColorToDiceBear(clothingColor),
+      if (circleBackground) 'backgroundColor': 'b6e3f4',
     };
 
     final queryString = params.entries.map((e) => '${e.key}=${e.value}').join('&');
-    return 'https://api.dicebear.com/7.x/big-ears-neutral/svg?$queryString';
+    return 'https://api.dicebear.com/7.x/avataaars/svg?$queryString';
   }
 
   /// Create a copy with optional parameter overrides
