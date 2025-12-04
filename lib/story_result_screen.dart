@@ -1632,7 +1632,13 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
                   // COLORING BOOK BUTTON
                   Center(
-                    child: ElevatedButton.icon(
+                    child: Tooltip(
+                      message: _isGeneratingColoringPages
+                          ? 'Creating coloring pages...'
+                          : _cachedColoringPages != null
+                              ? 'View your generated coloring pages'
+                              : 'Generate coloring pages from this story',
+                      child: ElevatedButton.icon(
                       onPressed: _isGeneratingColoringPages
                           ? null
                           : (_cachedColoringPages != null
@@ -1708,6 +1714,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                         foregroundColor: Colors.white,
                         icon: const Icon(Icons.save),
                         label: const Text('Save Story'),
+                        tooltip: 'Save story for offline reading',
                         onPressed: () {
                           _trackResultAction('fab_action', extra: {'action': 'save'});
                           _saveStory();

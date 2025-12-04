@@ -44,8 +44,11 @@ marshmallow==3.20.1
 # aiohttp==3.9.1
 
 # Caching (optional but useful)
-redis==7.0.1
+redis==5.0.1
 Flask-Caching==2.1.0
+
+# Task Queue
+celery==5.3.4
 
 # Testing (development only)
 pytest==7.4.3

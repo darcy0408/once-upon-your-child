@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
-import 'models.dart';
-import 'services/story_analytics.dart';
-import 'storage_service.dart';
-import 'story_result_screen.dart';
 import 'package:share_plus/share_plus.dart';
+
+import 'models.dart';
+import 'models/local/story_local.dart';
+import 'services/isar_service.dart';
+import 'services/offline_story_service.dart';
+import 'services/story_analytics.dart';
+import 'story_result_screen.dart';
 
 enum SortOption {
   newest,
@@ -19,9 +22,9 @@ class SavedStoriesScreen extends StatefulWidget {
 }
 
 class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
-  final _storage = StorageService();
-  List<SavedStory> _stories = [];
-  List<SavedStory> _filteredStories = [];
+  late OfflineStoryService _offlineService;
+  List<StoryLocal> _stories = [];
+  List<StoryLocal> _filteredStories = [];
   bool _loading = true;
   bool _showOnlyFavorites = false;
   String _selectedThemeFilter = 'All';
@@ -46,12 +49,18 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
   @override
   void initState() {
     super.initState();
-    _refresh();
+    _initOfflineService();
+  }
+
+  Future<void> _initOfflineService() async {
+    final isar = await IsarService.getInstance();
+    _offlineService = OfflineStoryService(isar);
+    await _refresh();
   }
 
   Future<void> _refresh() async {
     setState(() => _loading = true);
-    final list = await _storage.loadStories();
+    final list = await _offlineService.getAllStories();
     if (!mounted) return;
     setState(() {
       _stories = list;
@@ -92,14 +101,13 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
     _filteredStories = filtered;
   }
 
-  Future<void> _toggleFavorite(int index) async {
-    final story = _filteredStories[index];
-    await _storage.toggleFavorite(story.id);
+  Future<void> _toggleFavorite(StoryLocal story) async {
+    await _offlineService.toggleFavorite(story.identifier);
     await _refresh();
   }
 
-  Future<void> _deleteAt(int index) async {
-    await _storage.deleteStoryAt(index);
+  Future<void> _deleteStory(StoryLocal story) async {
+    await _offlineService.deleteStory(story.identifier);
     await _refresh();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -287,7 +295,7 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                           return Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             child: Dismissible(
-                              key: ValueKey(s.id),
+                              key: ValueKey(s.identifier),
                               direction: DismissDirection.endToStart,
                               background: Container(
                                 alignment: Alignment.centerRight,
@@ -299,8 +307,7 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                                 child: const Icon(Icons.delete, color: Colors.red),
                               ),
                               confirmDismiss: (_) async {
-                                final originalIndex = _stories.indexOf(s);
-                                await _deleteAt(originalIndex);
+                                await _deleteStory(s);
                                 return false; // refresh handles removal
                               },
                               child: Card(
@@ -359,7 +366,7 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                                               s.isFavorite ? Icons.favorite : Icons.favorite_border,
                                               color: s.isFavorite ? Colors.red : null,
                                             ),
-                                            onPressed: () => _toggleFavorite(_filteredStories.indexOf(s)),
+                                            onPressed: () => _toggleFavorite(s),
                                           ),
                                         ],
                                       ),
@@ -417,7 +424,7 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                                                     storyText: s.storyText,
                                                     wisdomGem: s.wisdomGem ?? '',
                                                     characterName: s.characters.isNotEmpty ? s.characters.first.name : null,
-                                                    storyId: s.id,
+                                                    storyId: s.identifier,
                                                   ),
                                                 ),
                                               );
@@ -430,8 +437,7 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
                                             tooltip: 'Delete',
                                             icon: const Icon(Icons.delete_outline),
                                             onPressed: () {
-                                              final originalIndex = _stories.indexOf(s);
-                                              _deleteAt(originalIndex);
+                                              _deleteStory(s);
                                             },
                                           ),
                                         ],
@@ -513,7 +519,7 @@ class _SavedStoriesScreenState extends State<SavedStoriesScreen> {
     );
   }
 
-  Future<void> _shareStory(SavedStory story) async {
+  Future<void> _shareStory(StoryLocal story) async {
     final shareText = '${story.title}\n\n${story.storyText}';
     await Share.share(shareText, subject: story.title);
   }

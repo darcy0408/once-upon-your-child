@@ -9,6 +9,7 @@ from flask_cors import CORS
 
 from .config import config, config_by_name
 from .database import db
+from .celery_config import celery
 # Import models in dependency order (Story and Character first, then User which references them)
 from .models.story import Story
 from .models.character import Character

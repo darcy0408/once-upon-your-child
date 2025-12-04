@@ -1,46 +1,25 @@
-from celery import Celery
 import os
-import re
-import logging
-from backend.services.story_generation_service import StoryGenerationService
+from celery import Celery
 
+# Get Redis URL from environment with a sensible default for local development
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+
+# Initialize Celery app
 celery = Celery(
-    'story_weaver',
-    broker=os.getenv('REDIS_URL'),
-    backend=os.getenv('REDIS_URL')
+    "story_weaver",
+    broker=REDIS_URL,
+    backend=REDIS_URL,
+    include=["backend.tasks.story_tasks"],
 )
 
-logger = logging.getLogger("story_engine")
-story_generation_service = StoryGenerationService()
-
-_TITLE_RE = re.compile(r'\[TITLE:\s*(.*?)\s*\]', re.DOTALL)
-_GEM_RE = re.compile(r'\[WISDOM GEM:\s*(.*?)\s*\]', re.DOTALL)
-
-def _safe_extract_title_and_gem(text: str, theme: str):
-    title_match = _TITLE_RE.search(text or "")
-    gem_match = _GEM_RE.search(text or "")
-    title = title_match.group(1).strip() if title_match and title_match.group(1) else "A Brave Little Adventure"
-    wisdom_gem = gem_match.group(1).strip() if gem_match and gem_match.group(1) else "Always be kind." # Fallback
-    story_body = _TITLE_RE.sub("", text or "").strip()
-    story_body = _GEM_RE.sub("", story_body).strip()
-    return title, wisdom_gem, story_body
-
-@celery.task(bind=True)
-def generate_story_task(self, prompt, theme):
-    try:
-        story_text = story_generation_service.generate_story(prompt)
-        _, _, story_body = _safe_extract_title_and_gem(story_text, theme)
-        self.update_state(state='SUCCESS', meta={'story_text': story_body})
-        return story_body
-
-    except Exception as e:
-        logger.warning("Model error, using fallback: %s", e)
-        self.update_state(state='FAILURE', meta=str(e))
-        raw_text = (
-            "[TITLE: An Unexpected Adventure]\n"
-            "Once upon a time, a brave hero discovered that the greatest adventures come from "
-            "facing our fears with courage and kindness.\n"
-            "[WISDOM GEM: Always be kind.]"
-        )
-        _, _, story_body = _safe_extract_title_and_gem(raw_text, theme)
-        return story_body
+# Celery configuration
+celery.conf.update(
+    task_serializer="json",
+    accept_content=["json"],
+    result_serializer="json",
+    timezone="UTC",
+    enable_utc=True,
+    task_track_started=True,
+    task_time_limit=600,  # 10 minute max per task
+    result_expires=3600,  # Results expire after 1 hour
+)
