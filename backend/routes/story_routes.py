@@ -2,9 +2,9 @@ import base64
 import requests
 from flask import Blueprint, jsonify, request
 
-from ..models.user import User
-from ..services import character_service, story_service
+from ..celery_config import celery
 from ..gemini_image_generator import GeminiImageGenerator
+from ..tasks.story_tasks import generate_story_task
 
 
 def create_story_blueprint(
@@ -44,339 +44,90 @@ def create_story_blueprint(
     @story_bp.route("/generate-story", methods=["POST"])
     def generate_story_endpoint():
         payload = request.get_json(silent=True) or {}
-        rhyme_time_mode = payload.get("rhyme_time_mode", False)
-        learning_to_read_mode = payload.get("learning_to_read_mode", False)
-        include_illustrations = payload.get("include_illustrations", False)
-        user_id = payload.get("user_id")
-        requested_tier = (payload.get("subscription_tier") or "").lower()
-        allowed_tiers = {"free", "premium", "family"}
-        if requested_tier not in allowed_tiers:
-            requested_tier = None
+        theme = payload.get("theme") or "Adventure"
+        user_id = payload.get("user_id") or "anonymous"
 
-        if not requested_tier and user_id:
-            try:
-                user_record = User.query.filter_by(id=user_id).first()
-                if user_record and user_record.subscription_tier:
-                    normalized = user_record.subscription_tier.lower()
-                    if normalized in allowed_tiers:
-                        requested_tier = normalized
-            except Exception:
-                logger.exception("Failed to load user for subscription tier lookup")
+        if not payload.get("character_id") and not payload.get("character"):
+            return jsonify({"error": "character_id or character is required"}), 400
 
-        subscription_tier = requested_tier or "free"
-        character = payload.get("character", "a brave adventurer")
-        theme = payload.get("theme", "Adventure")
-        companion = payload.get("companion")
-        therapeutic_prompt = payload.get("therapeutic_prompt", "")
-        user_api_key = payload.get("user_api_key")  # Optional user-provided API key
-        character_age = payload.get("character_age", 7)  # For age-appropriate content
-        current_feeling = story_service._extract_current_feeling(payload)
-        feelings_prompt = story_service._build_feelings_prompt(character, current_feeling)
-        supporting_characters = (
-            payload.get("characters") if isinstance(payload.get("characters"), list) else None
-        )
-
-        if learning_to_read_mode:
-            rhyme_time_mode = False  # learning mode already enforces rhyme/length
-            include_illustrations = True
-
-        # Deep character integration - get full character details
-        character_details = payload.get("character_details") or {}
-        if not isinstance(character_details, dict):
-            character_details = {}
-        fears = character_details.get("fears", [])
-        strengths = character_details.get("strengths", [])
-        likes = character_details.get("likes", [])
-        dislikes = character_details.get("dislikes", [])
-        comfort_item = character_details.get("comfort_item", "")
-        personality_traits = character_details.get("personality_traits", [])
-        personality_sliders = character_service._sanitize_personality_sliders(
-            character_details.get("personality_sliders", {})
-        )
-
-        age_instruction_block = story_service._build_age_instruction_block(character_age)
-
-        if learning_to_read_mode:
-            prompt = story_service._build_learning_to_read_prompt(
-                character,
-                theme,
-                character_age,
-                character_details,
-                companion=companion,
-                extra_characters=supporting_characters,
-            )
-        else:
-            prompt = story_engine_instance.generate_enhanced_prompt(
-                character,
-                theme,
-                companion,
-                therapeutic_prompt,
-                feelings_prompt if feelings_prompt else None,
-            )
-
-            character_integration = story_service._build_character_integration(
-                character,
-                fears,
-                strengths,
-                likes,
-                dislikes,
-                comfort_item,
-                personality_traits,
-                personality_sliders,
-            )
-
-            sections = [prompt, character_integration]
-            sections.append(f"\n{age_instruction_block}")
-            if rhyme_time_mode:
-                rhyme_instruction = (
-                    "\nSTORY STYLE:\n"
-                    "**This is extremely important:** Write the entire story in a playful, silly, rhyming verse, like a Dr. Seuss or Julia Donaldson book. "
-                    "Use AABB or ABAB rhyme schemes. The story must rhyme."
-                )
-                sections.append(rhyme_instruction)
-            prompt = "\n\n".join(sections)
-
-        # Decide which model to use
-        using_user_key = False
-        fallback_used = False
-        genai_module = None
-        try:
-            if user_api_key:
-                # User provided their own API key - use it for unlimited generation
-                import google.generativeai as genai_module
-
-                genai_module.configure(api_key=user_api_key)
-                user_model = genai_module.GenerativeModel(gemini_model)
-                response = user_model.generate_content(prompt)
-                using_user_key = True
-            else:
-                # Use server's API key (free tier)
-                if model is None:
-                    raise RuntimeError("Model unavailable")
-                response = model.generate_content(prompt)
-                using_user_key = False
-
-            raw_text = getattr(response, "text", "")
-            if not raw_text:
-                raise ValueError("Empty model response")
-
-        except Exception as e:
-            error_type = type(e).__name__
-            error_msg = str(e)
-            print(f"!!! API ERROR: {error_type}: {error_msg}")
-            print(f"!!! Prompt length: {len(prompt)} characters")
-            print(f"!!! Using user key: {using_user_key}")
-
-            # Structured error logging
-            log_error(
-                error_type="story_generation_failed",
-                message=str(e),
-                details={
-                    "character_name": character,
-                    "theme": theme,
-                    "age": character_age,
-                    "prompt_length": len(prompt),
-                    "using_user_key": using_user_key,
-                    "error_class": error_type,
-                    "learning_to_read_mode": learning_to_read_mode,
-                    "rhyme_time_mode": rhyme_time_mode,
-                },
-            )
-
-            # Add helpful hints for common errors
-            if "404" in error_msg and "model" in error_msg.lower():
-                print("!!! HINT: The Gemini model name may be incorrect. Check GEMINI_MODEL in config.")
-                hint = "Model not found. Check GEMINI_MODEL configuration."
-            elif "quota" in error_msg.lower() or "429" in error_msg:
-                print("!!! HINT: API quota exceeded. Check your Gemini API usage limits.")
-                hint = "API quota exceeded. Try again later or use your own API key."
-            elif "api key" in error_msg.lower() or "403" in error_msg:
-                print("!!! HINT: API key may be invalid. Check GEMINI_API_KEY in environment.")
-                hint = "API key invalid. Check GEMINI_API_KEY configuration."
-            elif "500" in error_msg or "internal" in error_msg.lower():
-                print("!!! HINT: Gemini API internal error. Try again.")
-                hint = "Gemini API temporarily unavailable. Please try again."
-            else:
-                hint = "Story generation failed. Check Railway logs for details."
-
-            print(f"!!! Learning to read mode: {learning_to_read_mode}, Rhyme time mode: {rhyme_time_mode}")
-            print(f"!!! Character age: {character_age}, Theme: {theme}")
-            logger.exception("Story generation failed")
-
-            if not is_production_fn():
-                raw_text = (
-                    "[TITLE: An Unexpected Adventure]\n"
-                    "Once upon a time, a brave hero discovered that the greatest adventures come from "
-                    "facing our fears with courage and kindness.\n"
-                    f"[WISDOM GEM: {story_service.WisdomGems.get_wisdom(theme)}]"
-                )
-            else:
-                # In production, fall back to a simple offline-safe story instead of 500 to avoid UI hangs.
-                fallback_used = True
-                include_illustrations = False  # Skip illustrations if the model is unavailable.
-                if learning_to_read_mode or rhyme_time_mode:
-                    raw_text = (
-                        "[TITLE: A Quick Rhyming Adventure]\n"
-                        "Tap your shoes, tap-tap-tap,\n"
-                        f"{character} checks a treasure map.\n"
-                        "Sun is bright, breeze is light,\n"
-                        "Friends team up to make things right.\n"
-                        "Kindness shared and worries small,\n"
-                        "Brave hearts grow the most of all.\n"
-                        f"[WISDOM GEM: {story_service.WisdomGems.get_wisdom(theme)}]"
-                    )
-                else:
-                    raw_text = (
-                        "[TITLE: A Quick Adventure]\n"
-                        f"{character} starts a small quest about {theme.lower()}.\n"
-                        "A tiny problem pops up, friends lend a hand, and courage grows.\n"
-                        "Teamwork, a deep breath, and a kind choice solve the trouble.\n"
-                        f"[WISDOM GEM: {story_service.WisdomGems.get_wisdom(theme)}]"
-                    )
-        finally:
-            # Reset to server API key after user's request
-            if user_api_key and api_key and genai_module:
-                genai_module.configure(api_key=api_key)
-
-        illustrations = []
-        should_generate_illustrations = False
-        requested_illustration_count = 0
-
-        def enable_illustrations(min_count: int, reason: str | None = None):
-            nonlocal should_generate_illustrations, requested_illustration_count
-            should_generate_illustrations = True
-            if min_count > requested_illustration_count:
-                requested_illustration_count = min_count
-            if reason:
-                logger.info(reason)
-
-        # Skip illustration generation entirely if we fell back to an offline story.
-        if not fallback_used and learning_to_read_mode:
-            enable_illustrations(1, f"Learning-to-read mode auto-illustration for tier {subscription_tier}")
-
-        if not fallback_used and subscription_tier == "family":
-            enable_illustrations(3, "Family tier bonus: 3 auto-illustrations")
-        elif not fallback_used and subscription_tier == "premium":
-            enable_illustrations(2, "Premium tier bonus: 2 auto-illustrations")
-
-        if not fallback_used and include_illustrations and not should_generate_illustrations:
-            if subscription_tier in {"premium", "family"}:
-                enable_illustrations(
-                    3 if subscription_tier == "family" else 2, "User requested illustrations (paid tier)"
-                )
-            elif user_api_key:
-                enable_illustrations(1, "User requested illustrations via BYOK")
-            elif image_generator is not None:
-                # Allow free tier to use the server's image generator (e.g. OpenRouter Nano)
-                enable_illustrations(1, "Free tier requested illustrations (server-funded)")
-            else:
-                logger.info("Free tier requested illustrations but no generator available - skipping")
-
-        if not fallback_used and not should_generate_illustrations and user_api_key and not learning_to_read_mode:
-            enable_illustrations(1, "BYOK enabled illustration for free tier")
-
-        if not fallback_used and should_generate_illustrations:
-            num_illustrations = max(1, requested_illustration_count)
-            try:
-                generator = None
-                if user_api_key:
-                    generator = GeminiImageGenerator(api_key=user_api_key)
-                elif image_generator is not None:
-                    generator = image_generator
-
-                if generator:
-                    scene_preview = (raw_text or "")[:200].replace("\n", " ").strip()
-                    if not scene_preview:
-                        scene_preview = "A young reader discovering confidence"
-
-                    if subscription_tier == "family":
-                        style = "vibrant, detailed children's book illustration with rich colors and multiple focal points"
-                    elif subscription_tier == "premium":
-                        style = "colorful, painterly children's book illustration"
-                    else:
-                        style = "simple, colorful children's book illustration for early readers"
-
-                    illustrations = generator.generate_story_illustration(
-                        scene_description=f"{character} in a {theme} story. {scene_preview}",
-                        character_name=character,
-                        style=style,
-                        num_images=num_illustrations,
-                        age=character_age,
-                        therapeutic_focus="reading confidence and engagement",
-                    )
-                    logger.info(f"Generated {len(illustrations)} illustration(s) for tier {subscription_tier}")
-                else:
-                    logger.warning("Image generator unavailable for requested illustrations")
-            except Exception as e:
-                logger.exception(f"Failed to generate illustrations for story response: {str(e)}")
-                # Log the specific error for debugging
-                logger.error(
-                    f"Image generation error details: generator={type(generator).__name__ if generator else 'None'}, error={str(e)}"
-                )
-                illustrations = []
-
-        title, wisdom_gem, story_text = story_service._safe_extract_title_and_gem(raw_text, theme)
-        story_text, story_flagged = filter_story_content(story_text)
-        response_payload = {
-            "title": title,
-            "story": story_text,
-            "story_text": story_text,
-            "wisdom_gem": wisdom_gem,
-            "used_user_key": using_user_key,
+        task_kwargs = {
+            "character_id": payload.get("character_id"),
+            "character": payload.get("character"),
+            "theme": theme,
+            "user_id": user_id,
+            "include_illustrations": payload.get("include_illustrations", False),
+            "rhyme_time_mode": payload.get("rhyme_time_mode", False),
+            "learning_to_read_mode": payload.get("learning_to_read_mode", False),
+            "companion": payload.get("companion"),
+            "therapeutic_prompt": payload.get("therapeutic_prompt", ""),
+            "feelings_prompt": payload.get("feelings_prompt"),
         }
-        if story_flagged:
-            response_payload["content_flagged"] = True
-        if illustrations:
-            # Ensure illustrations are in the correct format for the frontend (base64 image_data)
-            for img in illustrations:
-                if "image_url" in img and "image_data" not in img:
-                    img_url = img["image_url"]
-                    try:
-                        if img_url.startswith("data:image/"):
-                            # Extract base64 from data URI
-                            if ";base64," in img_url:
-                                img["image_data"] = img_url.split(";base64,", 1)[1]
-                        elif img_url.startswith("http"):
-                            # Download image and convert to base64
-                            logger.info(f"Downloading illustration from {img_url[:50]}...")
-                            img_resp = requests.get(img_url, timeout=10)
-                            if img_resp.status_code == 200:
-                                b64_data = base64.b64encode(img_resp.content).decode("utf-8")
-                                img["image_data"] = b64_data
-                                logger.info("Successfully converted image URL to base64 data")
-                            else:
-                                logger.error(f"Failed to download image: {img_resp.status_code}")
-                    except Exception as e:
-                        logger.error(f"Error processing illustration image data: {str(e)}")
 
-            response_payload["illustrations"] = illustrations
-            response_payload["illustration_count"] = len(illustrations)
+        try:
+            task = generate_story_task.delay(**task_kwargs)
+            return (
+                jsonify(
+                    {
+                        "task_id": task.id,
+                        "status": "processing",
+                        "message": "Story generation started",
+                        "poll_url": f"/task-status/{task.id}",
+                    }
+                ),
+                202,
+            )
+        except Exception as exc:
+            logger.exception("Falling back to synchronous story generation: %s", exc)
+            try:
+                sync_result = generate_story_task.apply(kwargs=task_kwargs).get()
+                story_payload = (sync_result or {}).get("story", {})
+                response_payload = {
+                    "status": sync_result.get("status", "complete"),
+                    "title": story_payload.get("title"),
+                    "story": story_payload.get("story_text"),
+                    "story_text": story_payload.get("story_text"),
+                    "task_id": None,
+                    "theme": story_payload.get("theme"),
+                    "wisdom_gem": story_payload.get("wisdom_gem"),
+                }
+                return jsonify(response_payload), 200
+            except Exception as fallback_exc:
+                logger.exception("Synchronous story generation failed: %s", fallback_exc)
+                return jsonify({"error": "Story generation failed"}), 500
 
-        if fallback_used:
-            response_payload[
-                "warning"
-            ] = "Story generation fell back to offline mode. Please check server logs or API key configuration."
+    @story_bp.route("/task-status/<task_id>", methods=["GET"])
+    def get_task_status(task_id):
+        task = celery.AsyncResult(task_id)
 
-        # Track API costs
-        user_tier = subscription_tier
-        if user_api_key:
-            user_tier = "byok"
+        if task.state == "PENDING":
+            response = {
+                "status": "pending",
+                "message": "Task is waiting to start",
+            }
+        elif task.state == "PROCESSING":
+            meta = task.info or {}
+            status_message = meta.get("status") if isinstance(meta, dict) else str(meta)
+            response = {
+                "status": "processing",
+                "message": status_message or "Generating story...",
+            }
+        elif task.state == "SUCCESS":
+            response = {
+                "status": "complete",
+                "result": task.result,
+            }
+        elif task.state == "FAILURE":
+            response = {
+                "status": "failed",
+                "error": str(task.info),
+            }
+        else:
+            response = {
+                "status": (task.state or "unknown").lower(),
+                "message": f"Task state: {task.state}",
+            }
 
-        # Track story generation cost
-        track_cost("story_generation", user_id or "anonymous", user_tier)
-
-        # Track illustration costs if any were generated
-        if illustrations:
-            illustration_cost = track_cost("image_generation", user_id or "anonymous", user_tier)
-            # Scale cost by number of illustrations
-            total_illustration_cost = illustration_cost * len(illustrations)
-            # Note: The track_cost function already handles the base cost, we just log the scaling
-            if len(illustrations) > 1:
-                logger.info(
-                    f"Additional illustration cost: ${(total_illustration_cost - illustration_cost):.6f} for {len(illustrations)-1} extra images"
-                )
-
-        return jsonify(response_payload), 200
+        return jsonify(response), 200
 
     @limiter.limit("5 per minute")  # Rate limit for interactive story start
     @story_bp.route("/generate-interactive-story", methods=["POST"])

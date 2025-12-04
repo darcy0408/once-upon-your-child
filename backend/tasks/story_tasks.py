@@ -1,0 +1,118 @@
+import os
+import traceback
+from typing import Any, Dict
+
+from celery.utils.log import get_task_logger
+
+# Prevent default app initialization during import so we can control app context here.
+os.environ.setdefault("SKIP_DEFAULT_APP_INIT", "1")
+
+from backend.celery_config import celery
+from backend.app import create_app
+from backend.database import db
+from backend.models.character import Character
+from backend.models.story import Story
+from backend.services.story_generation_service import StoryGenerationService
+from backend.services.story_service import AdvancedStoryEngine, _safe_extract_title_and_gem
+
+logger = get_task_logger(__name__)
+
+# Create a Flask app for task context
+_config_name = os.getenv("FLASK_CONFIG") or "dev"
+if _config_name not in {"dev", "prod", "testing"}:
+    _config_name = "dev"
+flask_app = create_app(_config_name)
+
+
+def _fallback_story(theme: str, character_name: str) -> str:
+    """Local fallback story used when the AI generator fails."""
+    return (
+        f"[TITLE: A {theme.title()} Adventure]\n"
+        f"{character_name} embarks on a quick quest about {theme.lower()} and discovers that courage grows with every kind choice.\n"
+        "[WISDOM GEM: Always be kind.]\n"
+    )
+
+
+def _generate_story_text(prompt: str, theme: str, character_name: str) -> str:
+    """Generate story text with graceful fallback when the AI call fails."""
+    try:
+        generator = StoryGenerationService()
+        story_text = generator.generate_story(prompt)
+        if story_text:
+            return story_text
+    except Exception:
+        logger.exception("StoryGenerationService failed, using fallback story")
+    return _fallback_story(theme, character_name)
+
+
+@celery.task(bind=True, name="tasks.generate_story")
+def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Async story generation task.
+
+    Expected kwargs:
+        character_id: ID of character to personalize the story
+        theme: Story theme
+        user_id: Requesting user
+        include_illustrations, rhyme_time_mode, learning_to_read_mode: Feature flags
+        companion, therapeutic_prompt, feelings_prompt: Additional context
+        character: Optional character name fallback when no ID is provided
+    """
+    with flask_app.app_context():
+        character_id = kwargs.get("character_id")
+        theme = kwargs.get("theme") or "Adventure"
+        user_id = kwargs.get("user_id") or "anonymous"
+        include_illustrations = kwargs.get("include_illustrations", False)
+        rhyme_time_mode = kwargs.get("rhyme_time_mode", False)
+        learning_to_read_mode = kwargs.get("learning_to_read_mode", False)
+        companion = kwargs.get("companion")
+        character_name = kwargs.get("character") or "a brave adventurer"
+
+        try:
+            character = Character.query.get(character_id) if character_id else None
+            if character:
+                character_name = character.name
+            elif character_id:
+                raise ValueError(f"Character {character_id} not found")
+
+            self.update_state(state="PROCESSING", meta={"status": "Generating story..."})
+
+            engine = AdvancedStoryEngine()
+            prompt = engine.generate_enhanced_prompt(
+                character=character_name,
+                theme=theme,
+                companion=companion,
+                therapeutic_prompt=kwargs.get("therapeutic_prompt", ""),
+                feelings_prompt=kwargs.get("feelings_prompt"),
+            )
+
+            story_text = _generate_story_text(prompt, theme, character_name)
+            title, wisdom_gem, story_body = _safe_extract_title_and_gem(story_text, theme)
+
+            story_record = Story(user_id=user_id, title=title)
+            db.session.add(story_record)
+            db.session.commit()
+
+            return {
+                "status": "complete",
+                "story": {
+                    "id": story_record.id,
+                    "title": title,
+                    "story_text": story_body,
+                    "theme": theme,
+                    "wisdom_gem": wisdom_gem,
+                    "include_illustrations": include_illustrations,
+                    "rhyme_time_mode": rhyme_time_mode,
+                    "learning_to_read_mode": learning_to_read_mode,
+                },
+            }
+
+        except Exception as exc:
+            db.session.rollback()
+            error_msg = str(exc)
+            logger.error("generate_story_task failed: %s", error_msg, exc_info=True)
+            self.update_state(
+                state="FAILURE",
+                meta={"error": error_msg, "traceback": traceback.format_exc()},
+            )
+            raise
