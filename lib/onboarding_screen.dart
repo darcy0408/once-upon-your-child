@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'services/onboarding_analytics.dart';
+import 'widgets/error_boundary.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onFinished;
@@ -236,7 +237,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     final steps = _buildSteps();
 
-    return Scaffold(
+    return ErrorBoundary(
+      onRetry: () {
+        setState(() {
+          _currentStep = 0;
+        });
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Quick Start Wizard'),
         actions: [
@@ -312,6 +319,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 }

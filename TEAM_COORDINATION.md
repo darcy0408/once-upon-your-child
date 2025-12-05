@@ -78,10 +78,17 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 **Error Handling & Loading UX (Agent 4):**
 - Created `ErrorBoundary` widget for graceful error handling
 - Created `LoadingOverlay` widget with fade animation
-- Wrapped `InteractiveStoryScreen`, `StoryResultScreen`, `CharacterCreationScreen`
+- Wrapped `InteractiveStoryScreen`, `StoryResultScreen`, `CharacterCreationScreen`, `OnboardingScreen`
 - Improved error messages in `ApiServiceManager`
 - Added safer JSON decode diagnostics
 - Professional error UX without scary red screens
+- **Railway Deployment Fixes:**
+  - Fixed frontend Isar type mismatches with conditional exports (io/stub)
+  - Created platform-specific implementations for offline services and models
+  - Fixed backend config handling with defensive fallback logic
+  - Resolved FFI/web compilation conflicts
+  - Web build now succeeds ✅
+- **Tests:** Created `error_boundary_test.dart` and `loading_overlay_test.dart` (9/10 passing)
 
 **Coordination Notes:**
 - All agents stayed in scope ✅
