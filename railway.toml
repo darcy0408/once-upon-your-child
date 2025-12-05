@@ -1,14 +1,40 @@
+# Railway Multi-Service Configuration for Story Weaver App
+# This configuration deploys both backend (Flask/Python) and frontend (Flutter/nginx)
+
+# Default deployment settings
 [deploy]
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
-startCommand = "gunicorn -w 4 -b 0.0.0.0:$PORT wsgi:app"
 
+# Backend Service (Python Flask API)
 [[services]]
 name = "backend"
+dockerfile = "Dockerfile"
+buildCommand = "pip install --no-cache-dir -r backend/requirements.txt"
+startCommand = "gunicorn -w 4 -b 0.0.0.0:$PORT wsgi:app --timeout 120"
 
 [services.healthcheck]
 path = "/health"
 interval = 30
 timeout = 10
+
+[services.env]
+FLASK_ENV = "prod"
+FLASK_CONFIG = "prod"
+
+# Frontend Service (Flutter Web + nginx)
+[[services]]
+name = "frontend"
+dockerfile = "Dockerfile.frontend"
+buildCommand = "flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true --dart-define=FLAVOR=production"
+
+[services.healthcheck]
+path = "/"
+interval = 30
+timeout = 10
+
+[services.env]
+# Frontend will communicate with backend via internal Railway networking
+BACKEND_URL = "${{backend.RAILWAY_PRIVATE_DOMAIN}}"

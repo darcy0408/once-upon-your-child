@@ -1,12 +1,16 @@
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load environment variables from .env file ONLY if it exists
+# In Railway/production, environment variables are set directly in the platform
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
-print(f"Loading .env from: {dotenv_path}")
-print(f"File exists: {os.path.exists(dotenv_path)}")
-load_dotenv(dotenv_path=dotenv_path, override=True)
-print(f"GEMINI_API_KEY loaded: {bool(os.environ.get('GEMINI_API_KEY'))}")
+if os.path.exists(dotenv_path):
+    print(f"Loading .env from: {dotenv_path}")
+    load_dotenv(dotenv_path=dotenv_path, override=True)
+    print(f"GEMINI_API_KEY loaded: {bool(os.environ.get('GEMINI_API_KEY'))}")
+else:
+    print(f"No .env file found at {dotenv_path}, using system environment variables")
+    print(f"GEMINI_API_KEY present: {bool(os.environ.get('GEMINI_API_KEY'))}")
 
 class Config:
     """Base configuration."""
@@ -18,18 +22,40 @@ class Config:
     GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
     GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-pro-latest")
     
-    # CORS
-    ALLOWED_ORIGINS = [
-        "http://localhost:8080",
-        "http://127.0.0.1:8080",
-        "http://localhost:3000",  # Flutter web development
-        "http://127.0.0.1:3000",  # Flutter web development
-        "http://localhost:5000",  # Direct access
-        "http://127.0.0.1:5000",  # Direct access
-        "https://story-weaver-app.netlify.app",
-        "https://grand-light-production-68d9.up.railway.app",  # Production Railway domain
-        "https://*.netlify.app",  # Allow Netlify preview deploys
-    ]
+    # CORS - Build allowed origins dynamically
+    @staticmethod
+    def get_allowed_origins():
+        """Get allowed CORS origins based on environment"""
+        base_origins = [
+            "https://story-weaver-app.netlify.app",
+            "https://*.netlify.app",  # Allow Netlify preview deploys
+        ]
+
+        # Add Railway frontend URL if available
+        railway_frontend = os.environ.get('RAILWAY_FRONTEND_URL')
+        if railway_frontend:
+            base_origins.append(railway_frontend)
+            base_origins.append(railway_frontend.replace('https://', 'http://'))
+
+        # Add Railway static outbound URL if available
+        railway_static_url = os.environ.get('RAILWAY_STATIC_URL')
+        if railway_static_url:
+            base_origins.append(f"https://{railway_static_url}")
+
+        # Add localhost origins only in development
+        if os.environ.get('FLASK_ENV') in ['dev', 'development']:
+            base_origins.extend([
+                "http://localhost:8080",
+                "http://127.0.0.1:8080",
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://localhost:5000",
+                "http://127.0.0.1:5000",
+            ])
+
+        return base_origins
+
+    ALLOWED_ORIGINS = get_allowed_origins.__func__()
 
 class DevelopmentConfig(Config):
     """Development configuration."""

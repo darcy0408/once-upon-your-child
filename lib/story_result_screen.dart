@@ -1648,7 +1648,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                         ),
                       ),
                     ),
-                    // Illustration button removed - users should toggle illustrations before generating story
 
                     // COLORING BOOK BUTTON
                     Center(

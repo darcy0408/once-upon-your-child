@@ -12,9 +12,11 @@ RUN pip install --no-cache-dir -r ./backend/requirements.txt
 # Copy the rest of the application code
 COPY . .
 
-# Expose the port the app runs on
+# Expose the port the app runs on (Railway will set $PORT dynamically)
 EXPOSE 8080
 
 # Define the command to run the application
 # Use gunicorn wsgi:app as the entry point
-CMD ["gunicorn", "wsgi:app", "--bind", "0.0.0.0:8080", "--timeout", "120", "--workers", "2"]
+# Note: Railway's startCommand in railway.toml will override this CMD
+# This is here as a fallback for local development
+CMD gunicorn wsgi:app --bind 0.0.0.0:${PORT:-8080} --timeout 120 --workers 2
