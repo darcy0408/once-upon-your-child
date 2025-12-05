@@ -303,10 +303,8 @@ class _StoryScreenState extends State<StoryScreen> {
   }
 
   Future<bool> _validateStoryCreationPreconditions() async {
-    final navContext = context;
-
     if (_selectedCharacter == null) {
-      ScaffoldMessenger.of(navContext).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please choose a character!')),
       );
       return false;
@@ -320,7 +318,7 @@ class _StoryScreenState extends State<StoryScreen> {
       if (!mounted) return false;
 
       final upgraded = await PaywallDialog.showStoryLimitDialog(
-        navContext,
+        context,
         remainingToday: remaining,
         remainingMonth: remainingMonth,
       );
@@ -336,7 +334,7 @@ class _StoryScreenState extends State<StoryScreen> {
       if (!hasMultiChar) {
         if (!mounted) return false;
         await PaywallDialog.showFeatureLockedDialog(
-          navContext,
+          context,
           featureName: 'Multi-Character Stories',
           description: 'Include siblings and friends in stories together!',
         );
@@ -349,7 +347,7 @@ class _StoryScreenState extends State<StoryScreen> {
     if (!themeAvailable) {
       if (!mounted) return false;
       await PaywallDialog.showContentLockedDialog(
-        navContext,
+        context,
         contentType: 'Theme',
         contentName: _selectedTheme,
       );
@@ -362,7 +360,7 @@ class _StoryScreenState extends State<StoryScreen> {
       if (!companionAvailable) {
         if (!mounted) return false;
         await PaywallDialog.showContentLockedDialog(
-          navContext,
+          context,
           contentType: 'Companion',
           contentName: _selectedCompanion,
         );
@@ -652,7 +650,6 @@ class _StoryScreenState extends State<StoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final newAchievementCount = _achievementSummary?.newCount ?? 0;
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -1584,42 +1581,6 @@ class _StoryScreenState extends State<StoryScreen> {
     }
   }
 
-  Widget _buildThemeSelector() {
-    final themes = [
-      'Adventure',
-      'Friendship',
-      'Magic',
-      'Dragons',
-      'Castles',
-      'Unicorns',
-      'Space',
-      'Ocean'
-    ];
-    return Wrap(
-      spacing: 8.0,
-      children: themes
-          .map(
-            (theme) => ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 44, minWidth: 96),
-              child: ChoiceChip(
-                labelPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                label: Text(
-                  theme,
-                  style: const TextStyle(fontSize: 14),
-                ),
-                selected: _selectedTheme == theme,
-                onSelected: (isSelected) {
-                  setState(() {
-                    if (isSelected) _selectedTheme = theme;
-                  });
-                },
-              ),
-            ),
-          )
-          .toList(),
-    );
-  }
 
   Widget _buildCompanionSelector() {
     return SizedBox(
@@ -1893,134 +1854,6 @@ class _StoryScreenState extends State<StoryScreen> {
     );
   }
 
-  Widget _buildTherapeuticCard() {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.purple.shade50,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.psychology, color: Colors.deepPurple, size: 24),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'Therapeutic Story Customization',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'FREE',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Create therapeutic stories to help with emotions, challenges, and growth',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade700,
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (_therapeuticCustomization != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.deepPurple.shade200),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          _therapeuticCustomization!.primaryGoal?.icon ??
-                              Icons.auto_awesome,
-                          size: 20,
-                          color:
-                              _therapeuticCustomization!.primaryGoal?.color ??
-                                  Colors.deepPurple,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _therapeuticCustomization!
-                                    .primaryGoal?.displayName ??
-                                'Custom',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close, size: 18),
-                          onPressed: () {
-                            setState(() => _therapeuticCustomization = null);
-                          },
-                        ),
-                      ],
-                    ),
-                    if (_therapeuticCustomization!.wishes.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        '${_therapeuticCustomization!.wishes.length} wish${_therapeuticCustomization!.wishes.length == 1 ? "" : "es"} added',
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade600),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-            ElevatedButton.icon(
-              onPressed: () async {
-                final customization = await Navigator.of(context)
-                    .push<TherapeuticStoryCustomization>(
-                  MaterialPageRoute(
-                    builder: (_) => const TherapeuticCustomizationScreen(),
-                  ),
-                );
-                if (customization != null && mounted) {
-                  setState(() => _therapeuticCustomization = customization);
-                }
-              },
-              icon: Icon(
-                  _therapeuticCustomization != null ? Icons.edit : Icons.add),
-              label: Text(_therapeuticCustomization != null
-                  ? 'Edit Customization'
-                  : 'Customize Story'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   /// Update character evolution based on therapeutic story elements
   Future<void> _updateCharacterEvolution(
