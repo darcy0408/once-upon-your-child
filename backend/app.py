@@ -39,9 +39,15 @@ image_generator = None
 
 def create_app(config_name):
     print(f"=== Creating Flask app with config: {config_name} ===")
+    print(f"=== Available configs: {list(config_by_name.keys())} ===")
     # Image generation fix deployed - 2024-12-01
     app = Flask(__name__)
-    
+
+    # Normalize config name
+    if config_name not in config_by_name:
+        print(f"WARNING: Config '{config_name}' not found, using 'production'")
+        config_name = 'production'
+
     if config_name == 'testing':
         app.config.from_object(config_by_name['testing'])
         app.config['TESTING'] = True

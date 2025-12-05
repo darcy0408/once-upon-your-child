@@ -1,8 +1,10 @@
 // Stub implementation of IsarService for web platform
 // Web doesn't support Isar (FFI-based database)
 
+// Create a stub Isar type that matches the API surface we need
 class Isar {
   // Stub class for web
+  void close() {}
 }
 
 class IsarService {
