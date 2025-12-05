@@ -182,12 +182,10 @@ class SunsetJungleTheme {
         secondary: sunsetCoral,
         tertiary: jungleSage,
         surface: Colors.white,
-        background: creamLight,
         error: Colors.red,
         onPrimary: creamLight,
         onSecondary: creamLight,
         onSurface: jungleForest,
-        onBackground: jungleDeepGreen,
       ),
       fontFamily: 'Quicksand',
       appBarTheme: const AppBarTheme(

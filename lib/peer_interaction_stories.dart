@@ -195,7 +195,7 @@ class _PeerInteractionStoriesState extends State<PeerInteractionStories>
   int _currentInteractionIndex = 0;
   String _selectedChoice = '';
   bool _showFeedback = false;
-  bool _isCorrect = false;
+  final bool _isCorrect = false;
 
   @override
   void initState() {

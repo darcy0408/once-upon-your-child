@@ -144,7 +144,7 @@ class StoryComplexityService {
   static String buildAgeInstructions(int age) {
     final guidelines = getAgeGuidelines(age);
     return '''
-AGE-APPROPRIATE GUIDELINES FOR ${age}-YEAR-OLD:
+AGE-APPROPRIATE GUIDELINES FOR $age-YEAR-OLD:
 ✓ LENGTH: ${guidelines['length_guideline']} (strict requirement)
 ✓ VOCABULARY: ${guidelines['vocabulary_level']}
 ✓ SENTENCE STYLE: ${guidelines['sentence_structure']}
@@ -192,10 +192,10 @@ Make the story engaging, age-appropriate, and therapeutically valuable.
     final issues = <String>[];
 
     if (wordCount < guidelines['min_words']) {
-      issues.add('Story too short (${wordCount} words, minimum ${guidelines['min_words']})');
+      issues.add('Story too short ($wordCount words, minimum ${guidelines['min_words']})');
     }
     if (wordCount > guidelines['max_words']) {
-      issues.add('Story too long (${wordCount} words, maximum ${guidelines['max_words']})');
+      issues.add('Story too long ($wordCount words, maximum ${guidelines['max_words']})');
     }
 
     // Check for age-appropriate vocabulary (basic check)

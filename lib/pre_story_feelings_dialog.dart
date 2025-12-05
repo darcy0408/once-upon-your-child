@@ -32,7 +32,7 @@ class CurrentFeeling {
         'intensity': intensity,
         'what_happened': whatHappened,
         'physical_signs':
-            physicalSigns == null ? null : physicalSigns!.join(', '),
+            physicalSigns?.join(', '),
         'coping_strategies': copingStrategies ?? const [],
       };
 }

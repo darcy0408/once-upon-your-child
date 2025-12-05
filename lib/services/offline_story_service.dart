@@ -1,7 +1,6 @@
 import 'package:isar/isar.dart';
 
 import '../models/local/story_local.dart';
-import 'isar_service.dart';
 
 class OfflineStoryService {
   final Isar _isar;

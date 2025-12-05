@@ -42,9 +42,21 @@ class ProductionConfig(Config):
     DEBUG = False
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
 
+class TestingConfig(Config):
+    """Testing configuration."""
+    TESTING = True
+    DEBUG = True
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    SQLALCHEMY_DATABASE_URI = f"sqlite:///:memory:"
+    # Disable rate limiting in tests
+    RATELIMIT_ENABLED = False
+
 config_by_name = dict(
     dev=DevelopmentConfig,
-    prod=ProductionConfig
+    prod=ProductionConfig,
+    production=ProductionConfig,  # Alias for prod
+    default=DevelopmentConfig,  # Default to development
+    testing=TestingConfig
 )
 
 key = os.environ.get("FLASK_ENV", "prod")

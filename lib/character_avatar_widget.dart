@@ -193,7 +193,7 @@ class CharacterAvatarEnhanced extends StatelessWidget {
     final hairColor = _getHairColor();
     final eyeColor = _getEyeColor();
 
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
       child: Stack(

@@ -67,9 +67,10 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "google/gemini-2.5-flash-image",  # Nano Banana (Free)
+                        "model": "black-forest-labs/flux-1-schnell",  # Flux Schnell (Fast & Cheap)
+                        #"model": "google/gemini-2.5-flash-image-preview", # Alternative Free
                         "modalities": ["image", "text"], # Explicitly request image modality
-                        "max_tokens": 1000, # Limit token reservation to avoid 402 errors
+                        "max_tokens": 1000,
                         "messages": [
                             {
                                 "role": "user",

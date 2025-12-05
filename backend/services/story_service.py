@@ -217,7 +217,22 @@ CHOICE RULES:
 
 Ensure text is vivid, age-tuned, playful, with a strong hook/problem and embodied feelings. Do NOT wrap JSON in backticks.
 """
-        response = model.generate_content(prompt)
+        # Determine which model to use (User's key > Server model)
+        active_model = model
+        if user_api_key:
+            try:
+                import google.generativeai as genai
+                genai.configure(api_key=user_api_key)
+                # Use the same model name as server or default
+                active_model = genai.GenerativeModel("models/gemini-2.5-flash")
+            except Exception as e:
+                # Log but fall back to server model if possible, or fail later
+                print(f"Error configuring user API key: {e}")
+
+        if not active_model:
+            raise ValueError("No valid Gemini model available (Server key missing and no User key provided)")
+
+        response = active_model.generate_content(prompt)
         text = getattr(response, "text", "")
         if not text:
             raise ValueError("Empty model response for interactive story opening")
@@ -289,7 +304,20 @@ CHOICE RULES:
 - Keep each option under 14 words.
 Do NOT wrap JSON in backticks.
 """
-        response = model.generate_content(prompt)
+        # Determine which model to use (User's key > Server model)
+        active_model = model
+        if user_api_key:
+            try:
+                import google.generativeai as genai
+                genai.configure(api_key=user_api_key)
+                active_model = genai.GenerativeModel("models/gemini-2.5-flash")
+            except Exception as e:
+                print(f"Error configuring user API key: {e}")
+
+        if not active_model:
+            raise ValueError("No valid Gemini model available (Server key missing and no User key provided)")
+
+        response = active_model.generate_content(prompt)
         text = getattr(response, "text", "")
         if not text:
             raise ValueError("Empty model response for interactive story continuation")

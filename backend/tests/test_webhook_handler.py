@@ -190,6 +190,29 @@ def test_invalid_signature_returns_401(client, monkeypatch):
     assert response.status_code == 401
 
 
+def test_invalid_payload_returns_400(client, monkeypatch):
+    def _raise_value_error(payload, sig_header, secret):
+        raise ValueError("bad payload")
+
+    monkeypatch.setattr(stripe.Webhook, "construct_event", _raise_value_error)
+
+    response = client.post(
+        "/api/stripe/webhook", data="{}", headers={"Stripe-Signature": "sig"}
+    )
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "Invalid payload"
+
+
+def test_missing_webhook_secret_returns_500(client, monkeypatch):
+    monkeypatch.delenv("STRIPE_WEBHOOK_SECRET", raising=False)
+
+    response = client.post(
+        "/api/stripe/webhook", data="{}", headers={"Stripe-Signature": "sig"}
+    )
+    assert response.status_code == 500
+    assert response.get_json()["error"] == "Webhook not configured"
+
+
 def test_unknown_event_returns_200(client, monkeypatch):
     with client.application.app_context():
         user = _create_user(subscription_status="active")

@@ -14,7 +14,6 @@ import 'services/parental_consent_service.dart';
 import 'services/firebase_analytics_service.dart';
 import 'services/subscription_service.dart';
 import 'services/storage_migration.dart';
-import 'screens/age_gate_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -14,8 +14,6 @@ import 'appearance_options.dart';
 import 'interest_options.dart';
 import 'services/progression_service.dart';
 import 'services/achievement_service.dart';
-import 'services/avatar_service.dart';
-import 'services/performance_analytics.dart';
 import 'achievement_celebration_dialog.dart';
 import 'config/environment.dart';
 import 'services/character_analytics.dart';
@@ -683,7 +681,7 @@ class _CharacterCreationScreenEnhancedState
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          value: _isA,
+          initialValue: _isA,
           decoration: InputDecoration(
             labelText: 'Gender *',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -767,7 +765,7 @@ class _CharacterCreationScreenEnhancedState
             const SizedBox(width: 12),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _isA,
+                initialValue: _isA,
                 decoration: InputDecoration(
                   labelText: 'Is a: *',
                   border: OutlineInputBorder(
@@ -787,7 +785,7 @@ class _CharacterCreationScreenEnhancedState
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          value: _characterStyle,
+          initialValue: _characterStyle,
           decoration: InputDecoration(
             labelText: 'Character Style *',
             hintText: 'Choose appearance and personality',
@@ -1036,7 +1034,7 @@ class _CharacterCreationScreenEnhancedState
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          value: _hairStyle,
+          initialValue: _hairStyle,
           decoration: InputDecoration(
             labelText: 'Hair Style',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),

@@ -12,13 +12,13 @@ class UpgradePromptDialog extends StatelessWidget {
   final int daysRemainingInGracePeriod;
 
   const UpgradePromptDialog({
-    Key? key,
+    super.key,
     required this.isSoftPrompt,
     required this.storiesUsed,
     required this.storiesLimit,
     required this.accountAgeDays,
     this.daysRemainingInGracePeriod = 0,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -282,10 +282,10 @@ class GracePeriodBanner extends StatelessWidget {
   final VoidCallback? onTap;
 
   const GracePeriodBanner({
-    Key? key,
+    super.key,
     required this.daysRemaining,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -328,12 +328,12 @@ class UsageIndicator extends StatelessWidget {
   final Color color;
 
   const UsageIndicator({
-    Key? key,
+    super.key,
     required this.used,
     required this.limit,
     required this.isInGracePeriod,
     required this.color,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,7 +1,6 @@
 // lib/illustration_settings_dialog.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'story_illustration_service.dart';
 
 import 'therapeutic_focus_options.dart';
@@ -134,7 +133,7 @@ class _IllustrationSettingsDialogState
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _selectedTherapeuticFocus,
+              initialValue: _selectedTherapeuticFocus,
               decoration: InputDecoration(
                 border:
                     OutlineInputBorder(borderRadius: BorderRadius.circular(8)),

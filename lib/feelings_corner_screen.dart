@@ -11,9 +11,9 @@ import 'services/feelings_analytics_service.dart';
 
 class FeelingsCornerScreen extends StatefulWidget {
   const FeelingsCornerScreen({
-    Key? key,
+    super.key,
     this.characterAge,
-  }) : super(key: key);
+  });
 
   final int? characterAge;
 
@@ -407,7 +407,7 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
                     ],
                   ),
                 );
-              }).toList(),
+              }),
 
             const SizedBox(height: 24),
 

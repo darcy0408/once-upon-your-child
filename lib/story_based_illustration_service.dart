@@ -93,7 +93,7 @@ class StoryBasedIllustrationService extends StoryIllustrationService {
       illustrations.add(StoryIllustration(
         id: '${DateTime.now().millisecondsSinceEpoch}_$i',
         prompt: 'Scene $i from $storyTitle with $characterName',
-        imageUrl: 'https://picsum.photos/seed/${storyTitle}$i/400/400',
+        imageUrl: 'https://picsum.photos/seed/$storyTitle$i/400/400',
         generatedAt: DateTime.now(),
         segmentIndex: i,
       ));

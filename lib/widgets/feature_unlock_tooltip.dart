@@ -9,12 +9,12 @@ class FeatureUnlockTooltip extends StatelessWidget {
   final bool showTooltip;
 
   const FeatureUnlockTooltip({
-    Key? key,
+    super.key,
     required this.feature,
     required this.child,
     this.userId,
     this.showTooltip = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -75,9 +75,9 @@ class FeatureUnlockCelebrationDialog extends StatelessWidget {
   final FeatureUnlockCelebration celebration;
 
   const FeatureUnlockCelebrationDialog({
-    Key? key,
+    super.key,
     required this.celebration,
-  }) : super(key: key);
+  });
 
   static void show(BuildContext context, FeatureUnlockCelebration celebration) {
     showDialog(
@@ -184,11 +184,11 @@ class FeatureUnlockProgressIndicator extends StatelessWidget {
   final double size;
 
   const FeatureUnlockProgressIndicator({
-    Key? key,
+    super.key,
     required this.feature,
     this.userId,
     this.size = 24,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -236,11 +236,11 @@ class FeatureLockOverlay extends StatelessWidget {
   final double iconSize;
 
   const FeatureLockOverlay({
-    Key? key,
+    super.key,
     required this.isLocked,
     required this.child,
     this.iconSize = 16,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -18,18 +18,26 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
+
+    // Switch to the list-based picker so the chips are available in tests.
+    await tester.tap(find.text('Use list instead'));
+    await tester.pumpAndSettle();
 
     // Tap a core emotion
-    await tester.ensureVisible(find.text('Happy'));
-    await tester.tap(find.text('Happy'));
+    final happy = find.text('Happy');
+    expect(happy, findsWidgets);
+    await tester.ensureVisible(happy.first);
+    await tester.tap(happy.first);
     await tester.pumpAndSettle();
 
     // Secondary level should appear
-    expect(find.text('Joyful'), findsWidgets);
+    final joyful = find.text('Joyful');
+    expect(joyful, findsWidgets);
 
     // Tap a secondary emotion
-    await tester.ensureVisible(find.text('Joyful').first);
-    await tester.tap(find.text('Joyful').first);
+    await tester.ensureVisible(joyful.first);
+    await tester.tap(joyful.first);
     await tester.pumpAndSettle();
 
     // Tertiary options should appear

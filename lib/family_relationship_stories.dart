@@ -1,10 +1,8 @@
 // lib/family_relationship_stories.dart
 
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'character_evolution.dart';
-import 'emotions_learning_system.dart';
 import 'therapeutic_models.dart';
 
 /// Types of family relationship story themes
@@ -197,7 +195,7 @@ class _FamilyRelationshipStoriesState extends State<FamilyRelationshipStories>
   int _currentInteractionIndex = 0;
   String _selectedChoice = '';
   bool _showFeedback = false;
-  bool _isCorrect = false;
+  final bool _isCorrect = false;
 
   @override
   void initState() {

@@ -15,7 +15,8 @@ enum TherapeuticGoal {
   fears,
   transitions,
   selfEsteem,
-  friendship;
+  friendship,
+  focus;
 
   String get displayName {
     switch (this) {
@@ -43,6 +44,8 @@ enum TherapeuticGoal {
         return 'Self-Esteem';
       case TherapeuticGoal.friendship:
         return 'Making Friends';
+      case TherapeuticGoal.focus:
+        return 'Focus & Listening';
     }
   }
 
@@ -72,6 +75,8 @@ enum TherapeuticGoal {
         return 'Stories celebrating uniqueness and self-worth';
       case TherapeuticGoal.friendship:
         return 'Stories about being a good friend and finding kindred spirits';
+      case TherapeuticGoal.focus:
+        return 'Stories about listening, following directions, and paying attention';
     }
   }
 
@@ -101,6 +106,8 @@ enum TherapeuticGoal {
         return Icons.auto_awesome;
       case TherapeuticGoal.friendship:
         return Icons.group;
+      case TherapeuticGoal.focus:
+        return Icons.hearing;
     }
   }
 
@@ -130,6 +137,8 @@ enum TherapeuticGoal {
         return Colors.deepOrange;
       case TherapeuticGoal.friendship:
         return Colors.lightGreen;
+      case TherapeuticGoal.focus:
+        return Colors.teal;
     }
   }
 }
@@ -364,6 +373,186 @@ class TherapeuticScenario {
           'Becomes an amazing big sibling',
           'Parents reassure them of their love',
           'Discovers benefits of having a sibling',
+        ],
+      ),
+      const TherapeuticScenario(
+        id: 'focus_following_directions',
+        title: 'Following Directions',
+        description: 'Character learns to listen and follow instructions',
+        goal: TherapeuticGoal.focus,
+        copingStrategies: [
+          'Active listening',
+          'Breaking tasks into smaller steps',
+          'Asking clarifying questions',
+          'Repeating instructions back',
+        ],
+        positiveOutcome: 'Successfully completes a task by following directions',
+        suggestedPrompts: [
+          'A fun game requires careful listening',
+          'A new recipe needs precise steps',
+          'Building a complex toy requires attention to detail',
+        ],
+      ),
+      const TherapeuticScenario(
+        id: 'focus_ignoring_distractions',
+        title: 'Ignoring Distractions',
+        description: 'Character learns to stay focused despite interruptions',
+        goal: TherapeuticGoal.focus,
+        copingStrategies: [
+          'Identifying distractions',
+          'Using a "focus bubble"',
+          'Taking short brain breaks',
+          'Self-talk ("I can focus")',
+        ],
+        positiveOutcome: 'Finishes a project despite noisy surroundings',
+        suggestedPrompts: [
+          'Studying for a test while siblings play',
+          'Finishing a drawing in a busy classroom',
+          'Reading a book at a loud park',
+        ],
+      ),
+      const TherapeuticScenario(
+        id: 'focus_active_listening',
+        title: 'Active Listening',
+        description: 'Character learns to truly hear what others say',
+        goal: TherapeuticGoal.focus,
+        copingStrategies: [
+          'Making eye contact',
+          'Nodding and showing interest',
+          'Waiting for the speaker to finish',
+          'Summarizing what was heard',
+        ],
+        positiveOutcome: 'Builds a stronger friendship through listening',
+        suggestedPrompts: [
+          'A friend shares a secret',
+          'Grandparent tells a story from the past',
+          'Teacher explains a new game',
+        ],
+      ),
+      const TherapeuticScenario(
+        id: 'focus_impulse_control',
+        title: 'Thinking Before Acting',
+        description: 'Character learns to pause and think',
+        goal: TherapeuticGoal.focus,
+        copingStrategies: [
+          'Stop, Think, Act',
+          'Counting to ten',
+          'Taking a deep breath',
+          'Considering consequences',
+        ],
+        positiveOutcome: 'Avoids a mistake by pausing to think',
+        suggestedPrompts: [
+          'Wanting to interrupt a conversation',
+          'Seeing a delicious treat that isn\'t theirs',
+          'Feeling angry and wanting to yell',
+        ],
+      ),
+      const TherapeuticScenario(
+        id: 'focus_task_completion',
+        title: 'Finishing What You Start',
+        description: 'Character learns the value of perseverance',
+        goal: TherapeuticGoal.focus,
+        copingStrategies: [
+          'Setting small goals',
+          'Celebrating progress',
+          'Asking for help when stuck',
+          'Visualizing the finished result',
+        ],
+        positiveOutcome: 'Feels proud after completing a long project',
+        suggestedPrompts: [
+          'Building a giant lego castle',
+          'Cleaning a messy room',
+          'Learning a new song on an instrument',
+        ],
+      ),
+      const TherapeuticScenario(
+        id: 'focus_memory_skills',
+        title: 'Remembering Important Things',
+        description: 'Character learns tricks to improve memory',
+        goal: TherapeuticGoal.focus,
+        copingStrategies: [
+          'Using mnemonics or rhymes',
+          'Writing things down',
+          'Visualizing information',
+          'Repeating key details',
+        ],
+        positiveOutcome: 'Remembers everything needed for a trip',
+        suggestedPrompts: [
+          'Packing for a camping trip',
+          'Remembering a grocery list',
+          'Learning lines for a school play',
+        ],
+      ),
+      const TherapeuticScenario(
+        id: 'focus_patience',
+        title: 'Practicing Patience',
+        description: 'Character learns to wait calmly',
+        goal: TherapeuticGoal.focus,
+        copingStrategies: [
+          'Finding a quiet activity while waiting',
+          'Deep breathing',
+          'Observing surroundings',
+          'Positive self-talk',
+        ],
+        positiveOutcome: 'Waits patiently for a turn or event',
+        suggestedPrompts: [
+          'Waiting in a long line at an amusement park',
+          'Waiting for a birthday surprise',
+          'Waiting for a seed to sprout',
+        ],
+      ),
+      const TherapeuticScenario(
+        id: 'focus_organization',
+        title: 'Being Organized',
+        description: 'Character learns that organization helps focus',
+        goal: TherapeuticGoal.focus,
+        copingStrategies: [
+          'Everything has a place',
+          'Cleaning up after oneself',
+          'Using a checklist',
+          'Preparing for the next day',
+        ],
+        positiveOutcome: 'Finds a lost toy easily because of organization',
+        suggestedPrompts: [
+          'Cleaning a messy desk',
+          'Organizing a toy collection',
+          'Getting ready for school the night before',
+        ],
+      ),
+      const TherapeuticScenario(
+        id: 'focus_mindfulness',
+        title: 'Being in the Moment',
+        description: 'Character learns mindfulness to stay present',
+        goal: TherapeuticGoal.focus,
+        copingStrategies: [
+          'Five senses check-in',
+          'Focusing on breath',
+          'Noticing small details',
+          'Letting go of worries',
+        ],
+        positiveOutcome: 'Enjoys a special moment fully',
+        suggestedPrompts: [
+          'A walk in nature',
+          'Eating a favorite meal slowly',
+          'Watching a sunset',
+        ],
+      ),
+      const TherapeuticScenario(
+        id: 'focus_asking_for_help',
+        title: 'Asking for Help',
+        description: 'Character learns it\'s okay to ask for clarification',
+        goal: TherapeuticGoal.focus,
+        copingStrategies: [
+          'Raising hand',
+          'Saying "I don\'t understand"',
+          'Asking specific questions',
+          'Finding the right person to ask',
+        ],
+        positiveOutcome: 'Understands a difficult concept after asking',
+        suggestedPrompts: [
+          'Struggling with a math problem',
+          'Confused by game rules',
+          'Lost in a new place',
         ],
       ),
     ];

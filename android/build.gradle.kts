@@ -14,6 +14,14 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+
+    // Fix for libraries not specifying namespace (AGP 8.0+ requirement)
+    plugins.withId("com.android.library") {
+        val android = project.extensions.getByType(com.android.build.gradle.LibraryExtension::class.java)
+        if (android.namespace == null) {
+            android.namespace = project.group.toString()
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {

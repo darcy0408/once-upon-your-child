@@ -512,7 +512,7 @@ class ApiServiceManager {
 
 🌟 === CURRENT EMOTIONAL STATE (MOST IMPORTANT) === 🌟
 
-$characterName is feeling ${intensityText}$emotionEmoji $emotionName right now.
+$characterName is feeling $intensityText$emotionEmoji $emotionName right now.
 $emotionName means: $emotionDescription
 
 ${whatHappened != null ? "Context: $whatHappened\n" : ""}
@@ -658,15 +658,15 @@ This is a FEELINGS-FIRST story. The emotion is the main character's journey.
 
         if (confidence != null && confidence > 50) {
           evolutionContext +=
-              '\n\nCHARACTER TRAIT: $characterName has grown confident (${confidence}%). Show them taking brave actions.';
+              '\n\nCHARACTER TRAIT: $characterName has grown confident ($confidence%). Show them taking brave actions.';
         }
         if (empathy != null && empathy > 50) {
           evolutionContext +=
-              '\n\nCHARACTER TRAIT: $characterName has developed empathy (${empathy}%). Include opportunities to understand others\' feelings.';
+              '\n\nCHARACTER TRAIT: $characterName has developed empathy ($empathy%). Include opportunities to understand others\' feelings.';
         }
         if (emotionalIntelligence != null && emotionalIntelligence > 50) {
           evolutionContext +=
-              '\n\nCHARACTER TRAIT: $characterName has strong emotional intelligence (${emotionalIntelligence}%). Create nuanced emotional challenges.';
+              '\n\nCHARACTER TRAIT: $characterName has strong emotional intelligence ($emotionalIntelligence%). Create nuanced emotional challenges.';
         }
       }
     }
@@ -816,11 +816,11 @@ Maintain plain text (no markdown fences).''';
 
         if (confidence != null && confidence > 50) {
           evolutionContext +=
-              '\n\nCHARACTER TRAIT: $characterName has grown confident (${confidence}%). Show them taking leadership in the adventure.';
+              '\n\nCHARACTER TRAIT: $characterName has grown confident ($confidence%). Show them taking leadership in the adventure.';
         }
         if (empathy != null && empathy > 50) {
           evolutionContext +=
-              '\n\nCHARACTER TRAIT: $characterName has developed empathy (${empathy}%). Include moments where they understand and help others emotionally.';
+              '\n\nCHARACTER TRAIT: $characterName has developed empathy ($empathy%). Include moments where they understand and help others emotionally.';
         }
       }
     }
@@ -912,7 +912,7 @@ Maintain plain text (no markdown fences).''';
     }
 
     return '''
-You are creating a LEARNING TO READ rhyming story for a ${age}-year-old named $characterName.
+You are creating a LEARNING TO READ rhyming story for a $age-year-old named $characterName.
 
 STRICT REQUIREMENTS (NO EXCEPTIONS):
 1. TOTAL LENGTH: 50-100 words (stop inside this range).
@@ -995,7 +995,7 @@ Create the rhyming learning-to-read story about $characterName now:
           parsedValue > 50 ? slider.rightLabel : slider.leftLabel;
       buffer.writeln(
         '- ${slider.label}: ${slider.describeValue(parsedValue)} '
-        '(${parsedValue}/100 toward ${towardLabel.toLowerCase()})',
+        '($parsedValue/100 toward ${towardLabel.toLowerCase()})',
       );
     }
     return hasData ? buffer.toString() : '';

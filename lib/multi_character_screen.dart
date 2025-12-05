@@ -94,8 +94,8 @@ class _MultiCharacterScreenState extends State<MultiCharacterScreen> {
         final main = _all.firstWhere((c) => c.id == _mainId);
         final others = _all.where((c) => _selectedIds.contains(c.id) && c.id != _mainId).map((c) => c.name).toList();
         final title = others.isEmpty
-            ? 'A ${_theme} Adventure with ${main.name}'
-            : 'A ${_theme} Adventure with ${main.name} & ${others.join(", ")}';
+            ? 'A $_theme Adventure with ${main.name}'
+            : 'A $_theme Adventure with ${main.name} & ${others.join(", ")}';
 
         await Navigator.of(context).push(
           MaterialPageRoute(
@@ -217,7 +217,7 @@ class _MultiCharacterScreenState extends State<MultiCharacterScreen> {
                                     ),
                                     const SizedBox(height: 6),
                                     Text('Age: ${c.age}'),
-                                    if (c.role != null && c.role!.isNotEmpty)
+                                    if (c.role.isNotEmpty)
                                       Text('Role: ${c.role}', overflow: TextOverflow.ellipsis),
                                     if ((c.magicType ?? '').isNotEmpty)
                                       Text('Magic: ${c.magicType}', overflow: TextOverflow.ellipsis),

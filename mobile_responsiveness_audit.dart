@@ -34,7 +34,7 @@ class MobileResponsivenessAudit {
   ];
 
   static void generateMobileAuditReport() {
-    print('\n' + '=' * 60);
+    print('\n${'=' * 60}');
     print('📱 MOBILE RESPONSIVENESS AUDIT');
     print('=' * 60);
 

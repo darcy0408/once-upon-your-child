@@ -1,0 +1,165 @@
+lib/interactive_story_screen.dart:269:27: Error: Can't find ')' to match '('.
+Running Gradle task 'assembleRelease'...                        
+      child: ErrorBoundary(
+                          ^
+lib/interactive_story_screen.dart:264:24: Error: Can't find ')' to match '('.
+    return WillPopScope(
+                       ^
+lib/story_result_screen.dart:1529:27: Error: Can't find ']' to match '['.
+                children: [
+                          ^
+lib/story_result_screen.dart:1524:21: Error: Can't find ']' to match '['.
+          children: [
+                    ^
+lib/story_result_screen.dart:1681:17: Error: Expected an identifier, but got ']'.
+Try inserting an identifier before ']'.
+                ],
+                ^
+lib/story_result_screen.dart:1681:17: Error: Expected ')' before this.
+                ],
+                ^
+lib/story_result_screen.dart:1506:20: Error: Too many positional arguments: 0 allowed, but 2 found.
+Try removing the extra positional arguments.
+    return Scaffold(
+                   ^
+../flutter/packages/flutter/lib/src/material/scaffold.dart:1696:9: Context: Found this candidate, but the arguments don't match.
+  const Scaffold({
+        ^^^^^^^^
+lib/story_result_screen.dart:1682:15: Error: Expected ';' after this.
+              ),
+              ^
+lib/story_result_screen.dart:1682:16: Error: Expected an identifier, but got ','.
+Try inserting an identifier before ','.
+              ),
+               ^
+lib/story_result_screen.dart:1682:16: Error: Unexpected token ';'.
+              ),
+               ^
+lib/story_result_screen.dart:1683:13: Error: Expected an identifier, but got ')'.
+Try inserting an identifier before ')'.
+            ),
+            ^
+lib/story_result_screen.dart:1682:16: Error: Expected ';' after this.
+              ),
+               ^
+lib/story_result_screen.dart:1683:13: Error: Unexpected token ';'.
+            ),
+            ^
+lib/story_result_screen.dart:1683:14: Error: Expected an identifier, but got ','.
+Try inserting an identifier before ','.
+            ),
+             ^
+lib/story_result_screen.dart:1683:13: Error: Expected ';' after this.
+            ),
+            ^
+lib/story_result_screen.dart:1683:14: Error: Unexpected token ';'.
+            ),
+             ^
+lib/story_result_screen.dart:1733:13: Error: Expected ';' after this.
+            ),
+            ^
+lib/story_result_screen.dart:1733:14: Error: Expected an identifier, but got ','.
+Try inserting an identifier before ','.
+            ),
+             ^
+lib/story_result_screen.dart:1733:14: Error: Unexpected token ';'.
+            ),
+             ^
+lib/story_result_screen.dart:1740:15: Error: Expected ';' after this.
+              ),
+              ^
+lib/story_result_screen.dart:1740:16: Error: Expected an identifier, but got ','.
+Try inserting an identifier before ','.
+              ),
+               ^
+lib/story_result_screen.dart:1740:16: Error: Unexpected token ';'.
+              ),
+               ^
+lib/story_result_screen.dart:1741:11: Error: Expected an identifier, but got ']'.
+Try inserting an identifier before ']'.
+          ],
+          ^
+lib/story_result_screen.dart:1740:16: Error: Expected ';' after this.
+              ),
+               ^
+lib/story_result_screen.dart:1741:11: Error: Unexpected token ';'.
+          ],
+          ^
+lib/story_result_screen.dart:1741:12: Error: Expected an identifier, but got ','.
+Try inserting an identifier before ','.
+          ],
+           ^
+lib/story_result_screen.dart:1741:11: Error: Expected ';' after this.
+          ],
+          ^
+lib/story_result_screen.dart:1741:12: Error: Unexpected token ';'.
+          ],
+           ^
+lib/story_result_screen.dart:1742:9: Error: Expected an identifier, but got ')'.
+Try inserting an identifier before ')'.
+        ),
+        ^
+lib/story_result_screen.dart:1741:12: Error: Expected ';' after this.
+          ],
+           ^
+lib/story_result_screen.dart:1742:9: Error: Unexpected token ';'.
+        ),
+        ^
+lib/story_result_screen.dart:1742:10: Error: Expected an identifier, but got ','.
+Try inserting an identifier before ','.
+        ),
+         ^
+lib/story_result_screen.dart:1742:9: Error: Expected ';' after this.
+        ),
+        ^
+lib/story_result_screen.dart:1742:10: Error: Unexpected token ';'.
+        ),
+         ^
+lib/story_result_screen.dart:1743:7: Error: Expected an identifier, but got ')'.
+Try inserting an identifier before ')'.
+      ),
+      ^
+lib/story_result_screen.dart:1742:10: Error: Expected ';' after this.
+        ),
+         ^
+lib/story_result_screen.dart:1743:7: Error: Unexpected token ';'.
+      ),
+      ^
+lib/story_result_screen.dart:1743:8: Error: Expected an identifier, but got ','.
+Try inserting an identifier before ','.
+      ),
+       ^
+lib/story_result_screen.dart:1743:7: Error: Expected ';' after this.
+      ),
+      ^
+lib/story_result_screen.dart:1743:8: Error: Unexpected token ';'.
+      ),
+       ^
+lib/story_result_screen.dart:1744:5: Error: Expected an identifier, but got ')'.
+Try inserting an identifier before ')'.
+    );
+    ^
+lib/story_result_screen.dart:1743:8: Error: Expected ';' after this.
+      ),
+       ^
+lib/story_result_screen.dart:1744:5: Error: Unexpected token ';'.
+    );
+    ^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildRelease'.
+> Process 'command 'C:\dev\flutter\bin\flutter.bat'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 27s
+Running Gradle task 'assembleRelease'...                           28.5s
+Gradle task assembleRelease failed with exit code 1

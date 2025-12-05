@@ -75,7 +75,7 @@ class _IllustratedStoryViewerState extends State<IllustratedStoryViewer> {
           startIndex,
           endIndex.clamp(0, sentences.length),
         );
-        _storyPages.add(pageSentences.join('. ') + '.');
+        _storyPages.add('${pageSentences.join('. ')}.');
       }
     }
   }
@@ -420,7 +420,7 @@ class _IllustratedStoryViewerState extends State<IllustratedStoryViewer> {
       fit: BoxFit.cover,
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;
-        return Container(
+        return SizedBox(
           height: 300,
           child: Center(
             child: CircularProgressIndicator(

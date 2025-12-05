@@ -45,7 +45,7 @@ class ContentSafetyAudit {
   ];
 
   static void generateSafetyAuditReport() {
-    print('\n' + '=' * 70);
+    print('\n${'=' * 70}');
     print('🛡️  CONTENT SAFETY AUDIT REPORT');
     print('=' * 70);
 

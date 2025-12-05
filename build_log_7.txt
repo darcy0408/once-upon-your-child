@@ -1,0 +1,29 @@
+Running Gradle task 'assembleRelease'...                        
+lib/story_result_screen.dart:1634:25: Error: Can't find ')' to match '('.
+                  Center(
+                        ^
+lib/story_result_screen.dart:1634:25: Error: Too many positional arguments: 0 allowed, but 1 found.
+Try removing the extra positional arguments.
+                  Center(
+                        ^
+../flutter/packages/flutter/lib/src/widgets/basic.dart:2413:9: Context: Found this candidate, but the arguments don't match.
+  const Center({super.key, super.widthFactor, super.heightFactor, super.child});
+        ^^^^^^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildRelease'.
+> Process 'command 'C:\dev\flutter\bin\flutter.bat'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 23s
+Running Gradle task 'assembleRelease'...                           23.4s
+Gradle task assembleRelease failed with exit code 1

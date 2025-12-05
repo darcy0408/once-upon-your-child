@@ -34,7 +34,7 @@ class CoppaComplianceAudit {
   ];
 
   static void generateCoppaReport() {
-    print('\n' + '=' * 60);
+    print('\n${'=' * 60}');
     print('📋 COPPA COMPLIANCE AUDIT REPORT');
     print('=' * 60);
 
@@ -53,7 +53,7 @@ class CoppaComplianceAudit {
       }
     }
 
-    print('\n' + '-' * 60);
+    print('\n${'-' * 60}');
     print('COMPLIANCE SCORE: $compliant/${compliant + nonCompliant} requirements met');
     final percentage = ((compliant / (compliant + nonCompliant)) * 100).round();
 

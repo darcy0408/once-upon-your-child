@@ -424,7 +424,7 @@ class EmotionsLearningService {
 
     // Track analytics
     try {
-      final emotion = await getEmotionById(checkIn.emotionId);
+      final emotion = getEmotionById(checkIn.emotionId);
       if (emotion != null) {
         // TODO: Add TherapeuticAnalytics tracking
         // await TherapeuticAnalytics.trackFeelingsCheckIn(

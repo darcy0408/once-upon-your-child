@@ -6,11 +6,11 @@ class QualityBadge extends StatelessWidget {
   final VoidCallback? onTap;
 
   const QualityBadge({
-    Key? key,
+    super.key,
     required this.qualityBadge,
     required this.overallScore,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

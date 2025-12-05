@@ -298,7 +298,7 @@ class SavedStoriesScreen extends ConsumerWidget {
                                   runSpacing: 4,
                                   children: [
                                     _metaChip(Icons.calendar_today, dateStr),
-                                    _metaChip(Icons.menu_book, '${wordCount} words'),
+                                    _metaChip(Icons.menu_book, '$wordCount words'),
                                     _metaChip(Icons.timer, '$readMinutes min read'),
                                     _metaChip(Icons.child_care, avgAge != null ? 'Age ~$avgAge' : 'All ages'),
                                   ],

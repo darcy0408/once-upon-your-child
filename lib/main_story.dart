@@ -480,7 +480,7 @@ class _StoryScreenState extends State<StoryScreen> {
       final String title = (backendTitle != null && backendTitle.isNotEmpty)
           ? backendTitle
           : (_additionalCharacterIds.isEmpty
-              ? '${_selectedCharacter!.name}\'s ${_selectedTheme} Adventure'
+              ? '${_selectedCharacter!.name}\'s $_selectedTheme Adventure'
               : _generateMultiCharacterTitle());
 
       final String wisdomGem = (backendWisdom != null && backendWisdom.isNotEmpty)
@@ -542,7 +542,7 @@ class _StoryScreenState extends State<StoryScreen> {
       );
     } catch (e, stackTrace) {
       debugPrint('Story generation error: $e');
-      debugPrint(stackTrace.toString());
+      debugPrint('Stack trace: $stackTrace');
       if (mounted) {
         await _showStoryErrorDialog(e);
       }
@@ -657,7 +657,12 @@ class _StoryScreenState extends State<StoryScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            const Text('Story Creator'),
+            const Expanded(
+              child: Text(
+                'Story Creator',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
             if (_currentSubscription != null &&
                 _currentSubscription!.isPremium) ...[
               const SizedBox(width: 8),
@@ -730,104 +735,104 @@ class _StoryScreenState extends State<StoryScreen> {
                 await _loadSubscriptionInfo();
               },
             ),
-          // Achievements
-          IconButton(
-            tooltip: 'Achievements',
-            icon: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                const Icon(Icons.emoji_events),
-                if (newAchievementCount > 0)
-                  Positioned(
-                    right: -4,
-                    top: -4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.deepOrange,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '$newAchievementCount',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            onPressed: _openAchievementsScreen,
-          ),
-          // Offline Stories
-          IconButton(
-            tooltip: 'Offline Stories',
-            icon: const Icon(Icons.offline_pin),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const OfflineStoriesScreen()),
-              );
-            },
-          ),
-          // Coloring Book
-          IconButton(
-            tooltip: 'Coloring Book',
-            icon: const Icon(Icons.palette),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                    builder: (_) => const ColoringBookLibraryScreen()),
-              );
-            },
-          ),
-          // Feelings Helper
-          IconButton(
-            tooltip: 'Feelings Corner',
-            icon: const Icon(Icons.favorite),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => FeelingsCornerScreen(
-                    characterAge: _selectedCharacter?.age,
-                  ),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            tooltip: 'My stories',
-            icon: const Icon(Icons.book),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SavedStoriesScreen()),
-              );
-            },
-          ),
-          IconButton(
-            tooltip: 'Group Story',
-            icon: const Icon(Icons.groups),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const MultiCharacterScreen()),
-              );
-            },
-          ),
-          IconButton(
-            tooltip: 'Settings',
-            icon: const Icon(Icons.settings),
-            onPressed: () async {
-              await settings_screen.loadLibrary();
-              if (mounted) {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => settings_screen.SettingsScreen()),
-                );
+          // Menu for other options
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'More options',
+            onSelected: (value) async {
+              switch (value) {
+                case 'achievements':
+                  _openAchievementsScreen();
+                  break;
+                case 'offline':
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const OfflineStoriesScreen()));
+                  break;
+                case 'coloring':
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const ColoringBookLibraryScreen()));
+                  break;
+                case 'feelings':
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => FeelingsCornerScreen(
+                            characterAge: _selectedCharacter?.age,
+                          )));
+                  break;
+                case 'my_stories':
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const SavedStoriesScreen()));
+                  break;
+                case 'group':
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const MultiCharacterScreen()));
+                  break;
+                case 'settings':
+                  await settings_screen.loadLibrary();
+                  if (mounted) {
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => settings_screen.SettingsScreen()));
+                  }
+                  break;
               }
             },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'achievements',
+                child: ListTile(
+                  leading: Icon(Icons.emoji_events),
+                  title: Text('Achievements'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'offline',
+                child: ListTile(
+                  leading: Icon(Icons.offline_pin),
+                  title: Text('Offline Stories'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'coloring',
+                child: ListTile(
+                  leading: Icon(Icons.palette),
+                  title: Text('Coloring Book'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'feelings',
+                child: ListTile(
+                  leading: Icon(Icons.favorite),
+                  title: Text('Feelings Corner'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'my_stories',
+                child: ListTile(
+                  leading: Icon(Icons.book),
+                  title: Text('My Stories'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'group',
+                child: ListTile(
+                  leading: Icon(Icons.groups),
+                  title: Text('Group Story'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'settings',
+                child: ListTile(
+                  leading: Icon(Icons.settings),
+                  title: Text('Settings'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -905,36 +910,35 @@ class _StoryScreenState extends State<StoryScreen> {
               if (_selectedCharacter != null &&
                   _additionalCharacterIds.isNotEmpty)
                 const SizedBox(height: 20),
-              // Story Intent Card (merged theme + support focus)
+
               StoryIntentCard(
                 initialData: _storyIntent,
                 onIntentChanged: (intent) {
                   setState(() {
                     _storyIntent = intent;
-                    // Update theme for backward compatibility with API
-                    if (intent.narrativeStyle != null) {
-                      _selectedTheme = intent.narrativeStyle!;
-                    }
-                    // Convert support focuses to therapeutic customization if present
+
                     if (intent.supportFocuses.isNotEmpty ||
                         intent.situation != null ||
-                        intent.desiredOutcome != null ||
+                        intent.storyElements.isNotEmpty ||
                         intent.message != null) {
-                      // Combine situation and desired outcome
-                      String? fullSituation;
-                      if (intent.situation != null &&
-                          intent.desiredOutcome != null) {
-                        fullSituation =
-                            '${intent.situation}\n\nDesired outcome: ${intent.desiredOutcome}';
-                      } else {
-                        fullSituation =
-                            intent.situation ?? intent.desiredOutcome;
+
+                      final wishes = intent.storyElements.map((e) => StoryWish(
+                        description: 'Include $e',
+                        type: WishType.other,
+                      )).toList();
+
+                      TherapeuticGoal? primaryGoal;
+                      for (final goal in TherapeuticGoal.values) {
+                        if (intent.supportFocuses.contains(goal.displayName)) {
+                          primaryGoal = goal;
+                          break;
+                        }
                       }
 
                       _therapeuticCustomization = TherapeuticStoryCustomization(
-                        primaryGoal: null,
-                        wishes: const [],
-                        specificSituation: fullSituation,
+                        primaryGoal: primaryGoal,
+                        wishes: wishes,
+                        specificSituation: intent.situation,
                         copingStrategiesToHighlight: intent.supportFocuses,
                         desiredLesson: intent.message,
                       );
@@ -1018,8 +1022,15 @@ class _StoryScreenState extends State<StoryScreen> {
               Card(
                 child: SwitchListTile(
                   title: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('Rhyme Time Mode', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Flexible(
+                        child: Text(
+                          'Rhyme Time Mode',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                       if (!_hasRhymeTime) ...[
                         const SizedBox(width: 8),
                         const Icon(Icons.lock, size: 18, color: Colors.orange),
@@ -1453,7 +1464,9 @@ class _StoryScreenState extends State<StoryScreen> {
     if (value.contains('pink')) return 'PastelPink';
     if (value.contains('silver') ||
         value.contains('gray') ||
-        value.contains('grey')) return 'SilverGray';
+        value.contains('grey')) {
+      return 'SilverGray';
+    }
     if (value.contains('purple')) return 'PastelPink';
     if (value.contains('blue')) return 'SilverGray';
     if (value.contains('black')) return 'Black';
@@ -1669,10 +1682,10 @@ class _StoryScreenState extends State<StoryScreen> {
         .toList();
 
     if (others.isEmpty) {
-      return 'A ${_selectedTheme} Adventure with ${_selectedCharacter!.name}';
+      return 'A $_selectedTheme Adventure with ${_selectedCharacter!.name}';
     }
 
-    return 'A ${_selectedTheme} Adventure with ${_selectedCharacter!.name} & ${others.join(", ")}';
+    return 'A $_selectedTheme Adventure with ${_selectedCharacter!.name} & ${others.join(", ")}';
   }
 
   Widget _buildAdditionalCharactersSelector() {

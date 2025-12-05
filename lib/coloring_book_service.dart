@@ -327,7 +327,7 @@ class GeminiColoringBookService extends ColoringBookService {
         return ColoringPage(
           id: pageData['image_id'] as String,
           storyId: storyId,
-          pageTitle: '${storyTitle} - ${pageData['scene_title']}',
+          pageTitle: '$storyTitle - ${pageData['scene_title']}',
           imageUrl: dataUrl,
           createdAt: DateTime.now(),
           characterAppearance: characterAppearance,

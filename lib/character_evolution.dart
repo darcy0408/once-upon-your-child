@@ -346,7 +346,7 @@ class CharacterEvolutionService {
         newMilestones.add(CharacterMilestone(
           id: '${emotionId}_mastery',
           title: '${emotion?.name ?? emotionId} Expert',
-          description: 'Mastered understanding and managing ${emotion?.name?.toLowerCase() ?? emotionId} feelings',
+          description: 'Mastered understanding and managing ${emotion?.name.toLowerCase() ?? emotionId} feelings',
           emotionId: emotionId,
           achievedAt: DateTime.now(),
           progressIncrease: progressIncrease,

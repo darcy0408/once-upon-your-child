@@ -19,28 +19,15 @@ class StoryIntentCard extends StatefulWidget {
 }
 
 class _StoryIntentCardState extends State<StoryIntentCard> {
-  // Narrative style selection
-  String? _selectedStyle;
-
   // Support focus selection (optional, can be multiple)
   Set<String> _selectedFocuses = {};
 
+  // Story elements selection
+  Set<String> _selectedElements = {};
+
   // Text field controllers
   final TextEditingController _situationController = TextEditingController();
-  final TextEditingController _outcomeController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
-
-  // Available narrative styles
-  final List<String> _narrativeStyles = [
-    'Adventure',
-    'Friendship',
-    'Magic',
-    'Dragons',
-    'Castles',
-    'Unicorns',
-    'Space',
-    'Ocean',
-  ];
 
   // Available support focuses
   final List<String> _supportFocuses = [
@@ -54,16 +41,32 @@ class _StoryIntentCardState extends State<StoryIntentCard> {
     'Life Transitions',
     'Self-Esteem',
     'Making Friends',
+    'Focus & Listening',
+  ];
+
+  // Available story elements
+  final List<String> _storyElements = [
+    'Friends',
+    'Siblings',
+    'Magic',
+    'Animals',
+    'School',
+    'Home',
+    'Park',
+    'Toys',
+    'Nature',
+    'Space',
+    'Ocean',
+    'Castle',
   ];
 
   @override
   void initState() {
     super.initState();
     if (widget.initialData != null) {
-      _selectedStyle = widget.initialData!.narrativeStyle;
       _selectedFocuses = Set.from(widget.initialData!.supportFocuses);
+      _selectedElements = Set.from(widget.initialData!.storyElements);
       _situationController.text = widget.initialData!.situation ?? '';
-      _outcomeController.text = widget.initialData!.desiredOutcome ?? '';
       _messageController.text = widget.initialData!.message ?? '';
     }
   }
@@ -71,7 +74,6 @@ class _StoryIntentCardState extends State<StoryIntentCard> {
   @override
   void dispose() {
     _situationController.dispose();
-    _outcomeController.dispose();
     _messageController.dispose();
     super.dispose();
   }
@@ -80,14 +82,11 @@ class _StoryIntentCardState extends State<StoryIntentCard> {
     if (widget.onIntentChanged != null) {
       widget.onIntentChanged!(
         StoryIntentData(
-          narrativeStyle: _selectedStyle,
           supportFocuses: _selectedFocuses.toList(),
+          storyElements: _selectedElements.toList(),
           situation: _situationController.text.trim().isEmpty
               ? null
               : _situationController.text,
-          desiredOutcome: _outcomeController.text.trim().isEmpty
-              ? null
-              : _outcomeController.text,
           message: _messageController.text.trim().isEmpty
               ? null
               : _messageController.text,
@@ -123,16 +122,16 @@ class _StoryIntentCardState extends State<StoryIntentCard> {
               _buildHeader(),
               const SizedBox(height: 20),
 
-              // A. Narrative Style Section
-              _buildNarrativeStyleSection(),
+              // 1. Situation & Focus
+              _buildSituationSection(),
               const SizedBox(height: 24),
 
-              // B. Support Focus Section (Optional)
-              _buildSupportFocusSection(),
+              // 2. Story Elements
+              _buildStoryElementsSection(),
               const SizedBox(height: 24),
 
-              // C. Free-Text Inputs
-              _buildFreeTextInputs(),
+              // 3. Message
+              _buildMessageSection(),
             ],
           ),
         ),
@@ -173,7 +172,7 @@ class _StoryIntentCardState extends State<StoryIntentCard> {
         ),
         const SizedBox(height: 8),
         const Text(
-          'Pick a style and (optional) support focus. This works for any age — kids, teens, and adults.',
+          'Customize what happens in the story.',
           style: TextStyle(
             fontSize: 14,
             color: Color(0xFF556B2F), // Jungle olive
@@ -184,209 +183,129 @@ class _StoryIntentCardState extends State<StoryIntentCard> {
     );
   }
 
-  Widget _buildNarrativeStyleSection() {
+  Widget _buildSituationSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTextField(
+          controller: _situationController,
+          label: 'What\'s happening?',
+          hint: 'e.g., "Nervous about school" or "Want to learn about sharing"',
+          maxLines: 2,
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Or choose a focus:',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF556B2F),
+          ),
+        ),
+        const SizedBox(height: 8),
+        _buildChipGroup(
+          items: _supportFocuses,
+          selectedItems: _selectedFocuses,
+          onSelectionChanged: (item, isSelected) {
+            setState(() {
+              if (isSelected) {
+                _selectedFocuses.add(item);
+              } else {
+                _selectedFocuses.remove(item);
+              }
+            });
+            _notifyChange();
+          },
+          color: const Color(0xFF9B59B6), // Purple
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStoryElementsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Narrative Style',
+          'Include in story:',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: FontWeight.w600,
             color: Color(0xFF2D5016),
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Choose the vibe and fantasy flavor for your story',
-          style: TextStyle(
-            fontSize: 13,
-            color: Color(0xFF556B2F),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _narrativeStyles.map((style) {
-            final isSelected = _selectedStyle == style;
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedStyle = style;
-                });
-                _notifyChange();
-              },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF6B9F4A)
-                      : Colors.white,
-                  border: Border.all(
-                    color: isSelected
-                        ? const Color(0xFF6B9F4A)
-                        : const Color(0xFF87B668),
-                    width: 2,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFF6B9F4A).withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          )
-                        ]
-                      : null,
-                ),
-                child: Text(
-                  style,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: isSelected ? Colors.white : const Color(0xFF2D5016),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
+        _buildChipGroup(
+          items: _storyElements,
+          selectedItems: _selectedElements,
+          onSelectionChanged: (item, isSelected) {
+            setState(() {
+              if (isSelected) {
+                _selectedElements.add(item);
+              } else {
+                _selectedElements.remove(item);
+              }
+            });
+            _notifyChange();
+          },
+          color: const Color(0xFF2980B9), // Blue
         ),
       ],
     );
   }
 
-  Widget _buildSupportFocusSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Text(
-              'Support Focus',
+  Widget _buildMessageSection() {
+    return _buildTextField(
+      controller: _messageController,
+      label: 'Message to reinforce (Optional)',
+      hint: 'e.g., "You are brave" or "It\'s okay to ask for help"',
+      maxLines: 1,
+    );
+  }
+
+  Widget _buildChipGroup({
+    required List<String> items,
+    required Set<String> selectedItems,
+    required Function(String, bool) onSelectionChanged,
+    required Color color,
+  }) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: items.map((item) {
+        final isSelected = selectedItems.contains(item);
+        return GestureDetector(
+          onTap: () => onSelectionChanged(item, !isSelected),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected ? color : Colors.white,
+              border: Border.all(
+                color: isSelected ? color : color.withOpacity(0.5),
+                width: 1.5,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: color.withOpacity(0.3),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      )
+                    ]
+                  : null,
+            ),
+            child: Text(
+              item,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF2D5016),
+                color: isSelected ? Colors.white : color.withOpacity(0.8),
               ),
             ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFB26B), // Sunset peach
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text(
-                'optional',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Choose anything you\'d like this story to help with — confidence, anxiety, stress, friendship, life changes, etc.',
-          style: TextStyle(
-            fontSize: 13,
-            color: Color(0xFF556B2F),
-            height: 1.4,
           ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _supportFocuses.map((focus) {
-            final isSelected = _selectedFocuses.contains(focus);
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  if (isSelected) {
-                    _selectedFocuses.remove(focus);
-                  } else {
-                    _selectedFocuses.add(focus);
-                  }
-                });
-                _notifyChange();
-              },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF9B59B6) // Purple for support
-                      : Colors.white,
-                  border: Border.all(
-                    color: isSelected
-                        ? const Color(0xFF9B59B6)
-                        : const Color(0xFFC39BD3),
-                    width: 2,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFF9B59B6).withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          )
-                        ]
-                      : null,
-                ),
-                child: Text(
-                  focus,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: isSelected ? Colors.white : const Color(0xFF2D5016),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFreeTextInputs() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Divider(height: 32, thickness: 1, color: Color(0xFFA8D5A3)),
-
-        // Input 1: What's happening
-        _buildTextField(
-          controller: _situationController,
-          label: 'What\'s happening that you want this story to help with?',
-          hint: 'e.g., "I\'m anxious before tests" or "Work stress is wearing me down" or "My daughter is scared of the dark"',
-          maxLines: 3,
-        ),
-        const SizedBox(height: 20),
-
-        // Input 2: Desired outcome
-        _buildTextField(
-          controller: _outcomeController,
-          label: 'What outcome would you love to see in the story?',
-          hint: 'e.g., "I feel calmer and more confident"',
-          maxLines: 2,
-        ),
-        const SizedBox(height: 20),
-
-        // Input 3: Message to reinforce
-        _buildTextField(
-          controller: _messageController,
-          label: 'Is there a message you\'d like the story to reinforce?',
-          hint: 'e.g., "You are capable and safe"',
-          maxLines: 2,
-        ),
-      ],
+        );
+      }).toList(),
     );
   }
 
@@ -449,36 +368,34 @@ class _StoryIntentCardState extends State<StoryIntentCard> {
 
 // Data class to hold story intent information
 class StoryIntentData {
-  final String? narrativeStyle;
   final List<String> supportFocuses;
+  final List<String> storyElements;
   final String? situation;
-  final String? desiredOutcome;
   final String? message;
 
   StoryIntentData({
-    this.narrativeStyle,
     this.supportFocuses = const [],
+    this.storyElements = const [],
     this.situation,
-    this.desiredOutcome,
     this.message,
   });
 
   Map<String, dynamic> toJson() => {
-        'narrativeStyle': narrativeStyle,
         'supportFocuses': supportFocuses,
+        'storyElements': storyElements,
         'situation': situation,
-        'desiredOutcome': desiredOutcome,
         'message': message,
       };
 
   factory StoryIntentData.fromJson(Map<String, dynamic> json) {
     return StoryIntentData(
-      narrativeStyle: json['narrativeStyle'],
       supportFocuses: json['supportFocuses'] != null
           ? List<String>.from(json['supportFocuses'])
           : [],
+      storyElements: json['storyElements'] != null
+          ? List<String>.from(json['storyElements'])
+          : [],
       situation: json['situation'],
-      desiredOutcome: json['desiredOutcome'],
       message: json['message'],
     );
   }

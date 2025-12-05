@@ -6,11 +6,11 @@ class StoryGenerationProgress extends StatelessWidget {
   final String funFact;
 
   const StoryGenerationProgress({
-    Key? key,
+    super.key,
     required this.currentPhase,
     required this.totalPhases,
     required this.funFact,
-  }) : super(key: key);
+  });
 
   String getPhaseTitle(int phase) {
     switch (phase) {

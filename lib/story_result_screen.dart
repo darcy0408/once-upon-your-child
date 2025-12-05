@@ -993,7 +993,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         avatar:
             const Icon(Icons.cake_outlined, size: 18, color: Colors.deepPurple),
         label: Text(
-          'Age ${_effectiveAge}${usingDefaultAge ? ' (default)' : ''}',
+          'Age $_effectiveAge${usingDefaultAge ? ' (default)' : ''}',
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         backgroundColor: Colors.deepPurple.shade50,
@@ -1865,7 +1865,7 @@ class _ColoringSettingsDialogState extends State<ColoringSettingsDialog> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _selectedTherapeuticFocus,
+              initialValue: _selectedTherapeuticFocus,
               decoration: InputDecoration(
                 border:
                     OutlineInputBorder(borderRadius: BorderRadius.circular(8)),

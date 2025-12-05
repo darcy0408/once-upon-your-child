@@ -12,14 +12,14 @@ class IllustrationControls extends StatelessWidget {
   final VoidCallback? onUpgrade;
 
   const IllustrationControls({
-    Key? key,
+    super.key,
     required this.subscriptionTier,
     required this.isLearningToReadMode,
     required this.hasUserApiKey,
     required this.currentIllustrationCount,
     this.onGenerateMore,
     this.onUpgrade,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -228,10 +228,10 @@ class IllustrationCounter extends StatelessWidget {
   final int max;
 
   const IllustrationCounter({
-    Key? key,
+    super.key,
     required this.current,
     required this.max,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

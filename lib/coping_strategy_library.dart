@@ -1140,7 +1140,7 @@ class _CopingStrategyLibraryState extends State<CopingStrategyLibrary>
           children: [
             // Emotion filter
             DropdownButtonFormField<String>(
-              value: _selectedEmotion.isEmpty ? null : _selectedEmotion,
+              initialValue: _selectedEmotion.isEmpty ? null : _selectedEmotion,
               decoration: const InputDecoration(
                 labelText: 'Filter by Emotion',
                 border: OutlineInputBorder(),
@@ -1160,7 +1160,7 @@ class _CopingStrategyLibraryState extends State<CopingStrategyLibrary>
 
             // Type filter
             DropdownButtonFormField<CopingStrategyType>(
-              value: _selectedType,
+              initialValue: _selectedType,
               decoration: const InputDecoration(
                 labelText: 'Filter by Type',
                 border: OutlineInputBorder(),

@@ -279,7 +279,3 @@ def create_app(config_name):
     print(f"=== All routes registered successfully ===")
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
     return app
-
-# Create the app instance for Gunicorn unless explicitly skipped (e.g., during pytest)
-if not os.getenv("SKIP_DEFAULT_APP_INIT"):
-    app = create_app(os.getenv('FLASK_CONFIG') or 'default')

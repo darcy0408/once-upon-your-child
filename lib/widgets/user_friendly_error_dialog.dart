@@ -8,11 +8,11 @@ class UserFriendlyErrorDialog extends StatelessWidget {
   final VoidCallback? onCancel;
 
   const UserFriendlyErrorDialog({
-    Key? key,
+    super.key,
     required this.error,
     this.onRetry,
     this.onCancel,
-  }) : super(key: key);
+  });
 
   String _getFriendlyMessage() {
     final errorString = error.toString().toLowerCase();
@@ -67,7 +67,7 @@ BorderRadius.circular(16)),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _getFriendlyMessage(),
+            '${_getFriendlyMessage()}\n\nDebug: $error',
             style: const TextStyle(fontSize: 16),
           ),
           const SizedBox(height: 16),

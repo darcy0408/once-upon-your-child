@@ -2,10 +2,8 @@
 // Comprehensive avatar widget with proper facial features and emotion support
 
 import 'package:flutter/material.dart';
-import 'dart:ui' as ui;
 import 'models.dart';
 import 'emotion_models.dart';
-import 'dart:math' as math;
 
 class EnhancedCharacterAvatar extends StatelessWidget {
   final Character character;
@@ -81,7 +79,7 @@ class EnhancedCharacterAvatar extends StatelessWidget {
     final eyeColor = _getEyeColor(character.eyes);
     final skinColor = _getSkinToneColor(character.skinTone);
 
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
       child: CustomPaint(

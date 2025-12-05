@@ -39,7 +39,7 @@ class CrossBrowserTestChecklist {
   ];
 
   static void generateTestMatrix() {
-    print('\n' + '=' * 80);
+    print('\n${'=' * 80}');
     print('🌐 CROSS-BROWSER COMPATIBILITY TEST MATRIX');
     print('=' * 80);
 

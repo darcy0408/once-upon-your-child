@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'emotions_learning_system.dart';
-import 'dart:math' as math;
 
 class EmotionsScreen extends StatefulWidget {
   const EmotionsScreen({super.key});
