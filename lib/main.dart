@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'config/environment.dart';
 import 'main_story.dart';
+import 'providers/theme_provider.dart';
 import 'theme/app_theme.dart';
 import 'onboarding_screen.dart';
 import 'services/isar_service.dart';
@@ -30,17 +32,21 @@ Future<void> main() async {
     // Firebase initialization failed - continue without analytics
   }
 
-  runApp(const StoryWeaverApp());
+  runApp(
+    const ProviderScope(
+      child: StoryWeaverApp(),
+    ),
+  );
 }
 
-class StoryWeaverApp extends StatefulWidget {
+class StoryWeaverApp extends ConsumerStatefulWidget {
   const StoryWeaverApp({super.key});
 
   @override
-  State<StoryWeaverApp> createState() => _StoryWeaverAppState();
+  ConsumerState<StoryWeaverApp> createState() => _StoryWeaverAppState();
 }
 
-class _StoryWeaverAppState extends State<StoryWeaverApp> {
+class _StoryWeaverAppState extends ConsumerState<StoryWeaverApp> {
   final OnboardingService _onboardingService = const OnboardingService();
   final SubscriptionService _subscriptionService = SubscriptionService();
   final ParentalConsentService _consentService = const ParentalConsentService();
@@ -81,7 +87,9 @@ class _StoryWeaverAppState extends State<StoryWeaverApp> {
   }
 
   Widget _buildLoading() {
+    final themeMode = ref.watch(themeModeNotifierProvider);
     return _buildThemedApp(
+      themeMode,
       const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
@@ -90,10 +98,48 @@ class _StoryWeaverAppState extends State<StoryWeaverApp> {
     );
   }
 
-  Widget _buildThemedApp(Widget home) {
+  Widget _buildThemedApp(ThemeMode themeMode, Widget home) {
+    final darkTheme = ThemeData.dark().copyWith(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Environment.primaryColor,
+        brightness: Brightness.dark,
+        primary: AppColors.primary,
+        secondary: AppColors.secondary,
+      ),
+      scaffoldBackgroundColor: const Color(0xFF0F1115),
+      appBarTheme: const AppBarTheme(
+        elevation: 0,
+        backgroundColor: Color(0xFF1A1D23),
+        foregroundColor: Colors.white,
+      ),
+      cardColor: const Color(0xFF1E2229),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.primary,
+        contentTextStyle: const TextStyle(color: Colors.white),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF1E2229),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade700),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.primary, width: 2),
+        ),
+      ),
+    );
+
     return MaterialApp(
       title: Environment.appName,
       theme: AppTheme.light(primaryColor: Environment.primaryColor),
+      darkTheme: darkTheme,
+      themeMode: themeMode,
       debugShowCheckedModeBanner: !Environment.isProduction,
       home: home,
       builder: (context, child) {
@@ -118,6 +164,7 @@ class _StoryWeaverAppState extends State<StoryWeaverApp> {
   Widget build(BuildContext context) {
     final onboardingStatus = _hasCompletedOnboarding;
     final consentStatus = _hasConsent;
+    final themeMode = ref.watch(themeModeNotifierProvider);
 
     if (onboardingStatus == null || consentStatus == null) {
       return _buildLoading();
@@ -126,6 +173,7 @@ class _StoryWeaverAppState extends State<StoryWeaverApp> {
     // TEMPORARY: Skip age gate for family demo
     // if (!consentStatus) {
     //   return _buildThemedApp(
+    //     themeMode,
     //     AgeGateScreen(
     //       consentService: _consentService,
     //       onConsentCompleted: _handleConsentCompleted,
@@ -138,6 +186,7 @@ class _StoryWeaverAppState extends State<StoryWeaverApp> {
     }
 
     return _buildThemedApp(
+      themeMode,
       OnboardingScreen(
         onFinished: _handleOnboardingFinished,
         onSkipConfirmed: _handleOnboardingFinished,

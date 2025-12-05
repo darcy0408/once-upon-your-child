@@ -3,40 +3,310 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'package:story_weaver_app/services/secure_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:story_weaver_app/services/secure_storage_service.dart';
 
 import 'config/environment.dart';
+import 'providers/theme_provider.dart';
 import 'theme/app_theme.dart';
-import 'widgets/app_card.dart';
 import 'widgets/app_button.dart';
-import 'widgets/loading_spinner.dart';
-import 'widgets/error_message.dart';
+import 'widgets/app_card.dart';
 import 'widgets/app_switch.dart';
+import 'widgets/error_message.dart';
+import 'widgets/loading_spinner.dart';
 import 'screens/byok_setup_wizard.dart';
 import 'screens/privacy_policy_screen.dart';
 import 'screens/terms_of_service_screen.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsState {
+  const SettingsState({
+    required this.useOwnApiKey,
+    required this.isValidating,
+    required this.obscureApiKey,
+    required this.apiKey,
+    required this.isLoading,
+    this.validationMessage,
+    this.isValid,
+  });
+
+  final bool useOwnApiKey;
+  final bool isValidating;
+  final bool obscureApiKey;
+  final String apiKey;
+  final bool isLoading;
+  final String? validationMessage;
+  final bool? isValid;
+
+  SettingsState copyWith({
+    bool? useOwnApiKey,
+    bool? isValidating,
+    bool? obscureApiKey,
+    String? apiKey,
+    bool? isLoading,
+    String? validationMessage,
+    bool? isValid,
+  }) {
+    return SettingsState(
+      useOwnApiKey: useOwnApiKey ?? this.useOwnApiKey,
+      isValidating: isValidating ?? this.isValidating,
+      obscureApiKey: obscureApiKey ?? this.obscureApiKey,
+      apiKey: apiKey ?? this.apiKey,
+      isLoading: isLoading ?? this.isLoading,
+      validationMessage: validationMessage,
+      isValid: isValid,
+    );
+  }
+
+  factory SettingsState.initial() {
+    return const SettingsState(
+      useOwnApiKey: false,
+      isValidating: false,
+      obscureApiKey: true,
+      apiKey: '',
+      validationMessage: null,
+      isValid: null,
+      isLoading: true,
+    );
+  }
+}
+
+class SettingsNotifier extends StateNotifier<SettingsState> {
+  SettingsNotifier() : super(SettingsState.initial()) {
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final apiKey = await SecureStorageService.getApiKey('gemini') ?? '';
+    final useOwnApiKey = prefs.getBool('use_own_api_key') ?? false;
+
+    state = state.copyWith(
+      useOwnApiKey: useOwnApiKey,
+      apiKey: apiKey,
+      isValid: useOwnApiKey && apiKey.isNotEmpty ? true : null,
+      validationMessage:
+          useOwnApiKey && apiKey.isNotEmpty ? '✓ API Key configured' : null,
+      isLoading: false,
+    );
+  }
+
+  Future<void> reload() async {
+    state = state.copyWith(isLoading: true);
+    await _loadSettings();
+  }
+
+  Future<void> toggleUseOwnApiKey(bool value) async {
+    state = state.copyWith(useOwnApiKey: value);
+    await _persistSettings();
+  }
+
+  void toggleObscure() {
+    state = state.copyWith(obscureApiKey: !state.obscureApiKey);
+  }
+
+  void updateApiKey(String value) {
+    state = state.copyWith(
+      apiKey: value,
+      isValid: null,
+      validationMessage: null,
+    );
+  }
+
+  Future<void> applyWizardResult(String apiKey) async {
+    state = state.copyWith(
+      useOwnApiKey: true,
+      apiKey: apiKey,
+      isValid: true,
+      validationMessage: '✓ API Key configured via wizard',
+    );
+    await _persistSettings(isPremium: true);
+  }
+
+  Future<bool> validateApiKey() async {
+    final trimmedKey = state.apiKey.trim();
+    if (trimmedKey.isEmpty) {
+      state = state.copyWith(
+        validationMessage: 'Please enter an API key',
+        isValid: false,
+      );
+      return false;
+    }
+
+    state = state.copyWith(
+      isValidating: true,
+      validationMessage: null,
+      isValid: null,
+    );
+
+    try {
+      final testUrl =
+          Uri.parse('https://generativelanguage.googleapis.com/v1beta/models?key=$trimmedKey');
+      final response = await http.get(testUrl).timeout(
+            const Duration(seconds: 10),
+          );
+
+      if (response.statusCode == 200) {
+        state = state.copyWith(
+          validationMessage: '✓ API Key is valid! All premium features unlocked.',
+          isValid: true,
+          isValidating: false,
+        );
+        await _persistSettings(isPremium: true);
+        return true;
+      } else if (response.statusCode == 400) {
+        final data = jsonDecode(response.body);
+        state = state.copyWith(
+          validationMessage:
+              '✗ Invalid API key. Error: ${data['error']?['message'] ?? 'Unknown error'}',
+          isValid: false,
+          isValidating: false,
+        );
+        await _persistSettings();
+        return false;
+      } else {
+        state = state.copyWith(
+          validationMessage:
+              '✗ API Key validation failed (Status ${response.statusCode})',
+          isValid: false,
+          isValidating: false,
+        );
+        await _persistSettings();
+        return false;
+      }
+    } catch (e) {
+      state = state.copyWith(
+        validationMessage: '✗ Error validating key: ${e.toString()}',
+        isValid: false,
+        isValidating: false,
+      );
+      await _persistSettings();
+      return false;
+    }
+  }
+
+  Future<void> clearApiKey() async {
+    state = state.copyWith(
+      apiKey: '',
+      useOwnApiKey: false,
+      validationMessage: null,
+      isValid: null,
+    );
+    await SecureStorageService.deleteApiKey('gemini');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('use_own_api_key', false);
+    await prefs.setBool('is_premium_byok', false);
+  }
+
+  Future<void> _persistSettings({bool? isPremium}) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('use_own_api_key', state.useOwnApiKey);
+    await SecureStorageService.saveApiKey('gemini', state.apiKey.trim());
+
+    final premiumFlag = isPremium ?? (state.useOwnApiKey && state.isValid == true);
+    await prefs.setBool('is_premium_byok', premiumFlag);
+  }
+}
+
+final settingsProvider =
+    StateNotifierProvider<SettingsNotifier, SettingsState>((ref) {
+  return SettingsNotifier();
+});
+
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  final _apiKeyController = TextEditingController();
-  bool _useOwnApiKey = false;
-  bool _isValidating = false;
-  bool _obscureApiKey = true;
-  String? _validationMessage;
-  bool? _isValid;
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  late final TextEditingController _apiKeyController;
 
   @override
   void initState() {
     super.initState();
-    _loadSettings();
+    _apiKeyController = TextEditingController();
+    _apiKeyController.addListener(_onApiKeyChanged);
+    ref.listen<SettingsState>(settingsProvider, (previous, next) {
+      if (_apiKeyController.text != next.apiKey) {
+        _apiKeyController.text = next.apiKey;
+      }
+    });
+  }
+
+  void _onApiKeyChanged() {
+    final text = _apiKeyController.text;
+    final current = ref.read(settingsProvider);
+    if (current.apiKey == text) return;
+    ref.read(settingsProvider.notifier).updateApiKey(text);
+  }
+
+  @override
+  void dispose() {
+    _apiKeyController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = ref.watch(settingsProvider);
+    final themeMode = ref.watch(themeModeNotifierProvider);
+    final notifier = ref.read(settingsProvider.notifier);
+
+    if (settings.isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Settings')),
+        body: const Center(child: LoadingSpinner(size: 48)),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Settings'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeaderCard(context),
+            const SizedBox(height: AppSpacing.lg),
+            _buildApiToggleCard(context, settings, notifier),
+            if (settings.useOwnApiKey) ...[
+              const SizedBox(height: AppSpacing.lg),
+              _buildBenefitsCard(),
+              const SizedBox(height: AppSpacing.md),
+              _buildPrivacyCard(),
+            ],
+            const SizedBox(height: AppSpacing.lg),
+            AppCard(
+              child: SwitchListTile(
+                title: const Text('Dark Mode'),
+                subtitle: const Text('Toggle between light and dark themes'),
+                value: themeMode == ThemeMode.dark,
+                onChanged: (_) {
+                  ref.read(themeModeNotifierProvider.notifier).toggle();
+                },
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            _buildLegalLinks(context),
+            if (Environment.isDevelopment) ...[
+              const SizedBox(height: AppSpacing.lg),
+              ElevatedButton(
+                onPressed: () {
+                  // TODO: REMOVE BEFORE PRODUCTION
+                  throw Exception('Test crash for Sentry verification');
+                },
+                child: const Text('Test Crash (Dev Only)'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildHeaderCard(BuildContext context) {
@@ -67,17 +337,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildApiToggleCard() {
+  Widget _buildApiToggleCard(
+    BuildContext context,
+    SettingsState settings,
+    SettingsNotifier notifier,
+  ) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppSwitch(
-            value: _useOwnApiKey,
-            onChanged: (value) {
-              setState(() => _useOwnApiKey = value);
-              _saveSettings();
-            },
+            value: settings.useOwnApiKey,
+            onChanged: notifier.toggleUseOwnApiKey,
             label: 'Use my own Gemini API key',
             subtitle: 'Unlock unlimited stories and features',
             icon: Icons.api,
@@ -86,41 +357,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
           AppButton.secondary(
             label: 'Open setup wizard',
             icon: Icons.auto_awesome,
-            onPressed: () async {
-              final result = await Navigator.of(context).push<String>(
-                MaterialPageRoute(
-                  builder: (_) => const ByokSetupWizardScreen(),
-                  fullscreenDialog: true,
-                ),
-              );
-              if (result != null && result.isNotEmpty) {
-                setState(() {
-                  _useOwnApiKey = true;
-                  _apiKeyController.text = result;
-                  _validationMessage = '✓ API Key configured via wizard';
-                  _isValid = true;
-                });
-                await _saveSettings();
-              } else {
-                await _loadSettings();
-              }
-            },
+            onPressed: () => _openWizard(context),
           ),
-          if (_useOwnApiKey) ...[
+          if (settings.useOwnApiKey) ...[
             const SizedBox(height: AppSpacing.md),
-            _buildApiKeyField(),
+            _buildApiKeyField(settings),
             const SizedBox(height: AppSpacing.sm),
-            if (_validationMessage != null)
-              _isValid == false
+            if (settings.validationMessage != null)
+              settings.isValid == false
                   ? ErrorMessage(
                       title: 'Validation failed',
-                      message: _validationMessage!,
-                      onRetry: _validateApiKey,
+                      message: settings.validationMessage!,
+                      onRetry: () => _onValidateApiKey(context),
                     )
                   : AppCard(
                       color: AppColors.accent.withValues(alpha: 0.15),
                       child: Text(
-                        _validationMessage!,
+                        settings.validationMessage!,
                         style: Theme.of(context)
                             .textTheme
                             .bodyMedium
@@ -129,11 +382,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
             const SizedBox(height: AppSpacing.md),
             AppButton.primary(
-              label: _isValidating ? 'Validating...' : 'Validate & Save',
-              onPressed: _isValidating ? null : _validateApiKey,
-              icon: _isValidating ? null : Icons.verified_user,
+              label: settings.isValidating ? 'Validating...' : 'Validate & Save',
+              onPressed: settings.isValidating ? null : () => _onValidateApiKey(context),
+              icon: settings.isValidating ? null : Icons.verified_user,
             ),
-            if (_isValidating)
+            if (settings.isValidating)
               const Padding(
                 padding: EdgeInsets.only(top: AppSpacing.sm),
                 child: LoadingSpinner(size: 32),
@@ -149,7 +402,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildApiKeyField() {
+  Widget _buildApiKeyField(SettingsState settings) {
     return TextField(
       controller: _apiKeyController,
       decoration: InputDecoration(
@@ -161,19 +414,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             IconButton(
               icon: Icon(
-                _obscureApiKey ? Icons.visibility : Icons.visibility_off,
+                settings.obscureApiKey ? Icons.visibility : Icons.visibility_off,
               ),
-              onPressed: () => setState(() => _obscureApiKey = !_obscureApiKey),
+              onPressed: ref.read(settingsProvider.notifier).toggleObscure,
             ),
             if (_apiKeyController.text.isNotEmpty)
               IconButton(
                 icon: const Icon(Icons.clear),
-                onPressed: _clearApiKey,
+                onPressed: () => _clearApiKey(context),
               ),
           ],
         ),
       ),
-      obscureText: _obscureApiKey,
+      obscureText: settings.obscureApiKey,
       maxLines: 1,
     );
   }
@@ -225,107 +478,74 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-  @override
-  void dispose() {
-    _apiKeyController.dispose();
-    super.dispose();
+
+  Widget _buildBenefitRow(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Text(
+        text,
+        style: Theme.of(context)
+            .textTheme
+            .bodyMedium
+            ?.copyWith(color: Colors.green.shade900),
+      ),
+    );
   }
 
-  Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    final apiKey = await SecureStorageService.getApiKey('gemini');
-    setState(() {
-      _useOwnApiKey = prefs.getBool('use_own_api_key') ?? false;
-      _apiKeyController.text = apiKey ?? '';
-      if (_useOwnApiKey && _apiKeyController.text.isNotEmpty) {
-        _isValid = true;
-        _validationMessage = '✓ API Key configured';
-      }
-    });
-  }
-
-  Future<void> _saveSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('use_own_api_key', _useOwnApiKey);
-    await SecureStorageService.saveApiKey('gemini', _apiKeyController.text.trim());
-
-    if (_useOwnApiKey && _isValid == true) {
-      // When users bring their own key, they get "premium" features
-      await prefs.setBool('is_premium_byok', true);
-    } else {
-      await prefs.setBool('is_premium_byok', false);
-    }
-  }
-
-  Future<void> _validateApiKey() async {
-    if (_apiKeyController.text.trim().isEmpty) {
-      setState(() {
-        _validationMessage = 'Please enter an API key';
-        _isValid = false;
-      });
-      return;
-    }
-
-    setState(() {
-      _isValidating = true;
-      _validationMessage = null;
-      _isValid = null;
-    });
-
-    try {
-      // Test the API key with a minimal request
-      final apiKey = _apiKeyController.text.trim();
-      final testUrl = Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models?key=$apiKey');
-
-      final response = await http.get(testUrl).timeout(
-            const Duration(seconds: 10),
-          );
-
-      if (response.statusCode == 200) {
-        setState(() {
-          _validationMessage = '✓ API Key is valid! All premium features unlocked.';
-          _isValid = true;
-          _isValidating = false;
-        });
-
-        await _saveSettings();
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('🎉 Premium features unlocked!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
+  Widget _buildLegalLinks(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Legal',
+          style: Theme.of(context)
+              .textTheme
+              .titleSmall
+              ?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Wrap(
+          spacing: AppSpacing.sm,
+          children: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const PrivacyPolicyScreen(),
+                  ),
+                );
+              },
+              child: const Text('Privacy Policy'),
             ),
-          );
-        }
-      } else if (response.statusCode == 400) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          _validationMessage =
-              '✗ Invalid API key. Error: ${data['error']?['message'] ?? 'Unknown error'}';
-          _isValid = false;
-          _isValidating = false;
-        });
-      } else {
-        setState(() {
-          _validationMessage =
-              '✗ API Key validation failed (Status ${response.statusCode})';
-          _isValid = false;
-          _isValidating = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _validationMessage = '✗ Error validating key: ${e.toString()}';
-        _isValid = false;
-        _isValidating = false;
-      });
-    }
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const TermsOfServiceScreen(),
+                  ),
+                );
+              },
+              child: const Text('Terms of Service'),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
-  Future<void> _clearApiKey() async {
+  Future<void> _onValidateApiKey(BuildContext context) async {
+    final success = await ref.read(settingsProvider.notifier).validateApiKey();
+    if (!mounted || !success) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🎉 Premium features unlocked!'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  Future<void> _clearApiKey(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -347,23 +567,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (confirmed == true) {
-      setState(() {
-        _apiKeyController.clear();
-        _useOwnApiKey = false;
-        _validationMessage = null;
-        _isValid = null;
-      });
+      await ref.read(settingsProvider.notifier).clearApiKey();
+      _apiKeyController.clear();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('API key cleared')),
+      );
+    }
+  }
 
-      await SecureStorageService.deleteApiKey('gemini');
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('use_own_api_key', false);
-      await prefs.setBool('is_premium_byok', false);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('API key cleared')),
-        );
-      }
+  Future<void> _openWizard(BuildContext context) async {
+    final result = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => const ByokSetupWizardScreen(),
+        fullscreenDialog: true,
+      ),
+    );
+    if (result != null && result.isNotEmpty) {
+      await ref.read(settingsProvider.notifier).applyWizardResult(result);
+      _apiKeyController.text = result;
+    } else {
+      await ref.read(settingsProvider.notifier).reload();
     }
   }
 
@@ -429,98 +653,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeaderCard(context),
-            const SizedBox(height: AppSpacing.lg),
-            _buildApiToggleCard(),
-            if (_useOwnApiKey) ...[
-              const SizedBox(height: AppSpacing.lg),
-              _buildBenefitsCard(),
-              const SizedBox(height: AppSpacing.md),
-              _buildPrivacyCard(),
-            ],
-            const SizedBox(height: AppSpacing.lg),
-            _buildLegalLinks(context),
-            if (Environment.isDevelopment) ...[
-              const SizedBox(height: AppSpacing.lg),
-              ElevatedButton(
-                onPressed: () {
-                  // TODO: REMOVE BEFORE PRODUCTION
-                  throw Exception('Test crash for Sentry verification');
-                },
-                child: const Text('Test Crash (Dev Only)'),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBenefitRow(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-      child: Text(
-        text,
-        style: Theme.of(context)
-            .textTheme
-            .bodyMedium
-            ?.copyWith(color: Colors.green.shade900),
-      ),
-    );
-  }
-
-  Widget _buildLegalLinks(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Legal',
-          style: Theme.of(context)
-              .textTheme
-              .titleSmall
-              ?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Wrap(
-          spacing: AppSpacing.sm,
-          children: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const PrivacyPolicyScreen(),
-                  ),
-                );
-              },
-              child: const Text('Privacy Policy'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const TermsOfServiceScreen(),
-                  ),
-                );
-              },
-              child: const Text('Terms of Service'),
-            ),
-          ],
-        ),
-      ],
     );
   }
 }
