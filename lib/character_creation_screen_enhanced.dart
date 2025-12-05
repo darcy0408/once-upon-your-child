@@ -21,6 +21,7 @@ import 'config/environment.dart';
 import 'services/character_analytics.dart';
 import 'services/character_template_service.dart';
 import 'theme/app_theme.dart';
+import 'widgets/loading_overlay.dart';
 
 class CharacterCreationScreenEnhanced extends StatefulWidget {
   const CharacterCreationScreenEnhanced({super.key});
@@ -347,7 +348,9 @@ class _CharacterCreationScreenEnhancedState
           children: templates.map((template) {
             final isSelected = _selectedTemplate?.key == template.key;
             return SizedBox(
-              width: MediaQuery.of(context).size.width > 640 ? 260 : double.infinity,
+              width: MediaQuery.of(context).size.width > 640
+                  ? 260
+                  : double.infinity,
               child: Card(
                 elevation: isSelected ? 6 : 2,
                 shape: RoundedRectangleBorder(
@@ -365,7 +368,8 @@ class _CharacterCreationScreenEnhancedState
                       Row(
                         children: [
                           CircleAvatar(
-                            backgroundColor: template.color.withValues(alpha: 0.15),
+                            backgroundColor:
+                                template.color.withValues(alpha: 0.15),
                             child: Icon(template.icon, color: template.color),
                           ),
                           const SizedBox(width: 12),
@@ -392,9 +396,11 @@ class _CharacterCreationScreenEnhancedState
                         children: template.strengths
                             .map((s) => Chip(
                                   label: Text(s),
-                                  backgroundColor: template.color.withValues(alpha: 0.15),
+                                  backgroundColor:
+                                      template.color.withValues(alpha: 0.15),
                                   labelStyle: TextStyle(
-                                      color: template.color, fontWeight: FontWeight.w700),
+                                      color: template.color,
+                                      fontWeight: FontWeight.w700),
                                 ))
                             .toList(),
                       ),
@@ -404,7 +410,8 @@ class _CharacterCreationScreenEnhancedState
                         icon: Icon(
                           isSelected ? Icons.check_circle : Icons.flash_on,
                         ),
-                        label: Text(isSelected ? 'Template Selected' : 'Use Template'),
+                        label: Text(
+                            isSelected ? 'Template Selected' : 'Use Template'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
                               isSelected ? template.color : Colors.deepPurple,
@@ -460,14 +467,17 @@ class _CharacterCreationScreenEnhancedState
         // Basic appearance (optional)
         if (_hairColor != 'Brown') 'hair': _hairColor,
         if (_eyeColor != 'Brown') 'eyes': _eyeColor,
-        if (_outfitController.text.trim().isNotEmpty) 'outfit': _outfitController.text.trim(),
+        if (_outfitController.text.trim().isNotEmpty)
+          'outfit': _outfitController.text.trim(),
 
         // Avatar configuration
         'avatar': _avatar.toJson(),
 
         // Only include likes/dislikes if specified
-        if (_selectedQuickLikes.isNotEmpty) 'likes': _selectedQuickLikes.toList(),
-        if (_selectedQuickDislikes.isNotEmpty) 'dislikes': _selectedQuickDislikes.toList(),
+        if (_selectedQuickLikes.isNotEmpty)
+          'likes': _selectedQuickLikes.toList(),
+        if (_selectedQuickDislikes.isNotEmpty)
+          'dislikes': _selectedQuickDislikes.toList(),
       };
 
       final resp = await http.post(
@@ -564,53 +574,57 @@ class _CharacterCreationScreenEnhancedState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create a Character'),
-        backgroundColor: Colors.deepPurple,
-      ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildTemplateModeToggle(),
-              const SizedBox(height: 12),
-              if (_useTemplateMode) ...[
-                _buildTemplateSection(),
+    return LoadingOverlay(
+      isLoading: _isLoading,
+      message: _isLoading ? 'Creating your character...' : null,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Create a Character'),
+          backgroundColor: Colors.deepPurple,
+        ),
+        body: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildTemplateModeToggle(),
+                const SizedBox(height: 12),
+                if (_useTemplateMode) ...[
+                  _buildTemplateSection(),
+                  const SizedBox(height: 20),
+                ],
+                _buildBasicInfoSection(),
                 const SizedBox(height: 20),
-              ],
-              _buildBasicInfoSection(),
-              const SizedBox(height: 20),
-              _buildCharacterTypeSection(),
-              const SizedBox(height: 20),
-              if (_characterType == 'Superhero') ...[
-                _buildSuperheroSection(),
+                _buildCharacterTypeSection(),
                 const SizedBox(height: 20),
-              ],
-              _buildAppearanceSection(),
-              const SizedBox(height: 30),
-              ElevatedButton.icon(
-                onPressed: _isLoading ? null : _createCharacter,
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2),
-                      )
-                    : const Icon(Icons.check_circle),
-                label: Text(_isLoading ? 'Creating...' : 'Create Character'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  textStyle: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
+                if (_characterType == 'Superhero') ...[
+                  _buildSuperheroSection(),
+                  const SizedBox(height: 20),
+                ],
+                _buildAppearanceSection(),
+                const SizedBox(height: 30),
+                ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _createCharacter,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Icon(Icons.check_circle),
+                  label: Text(_isLoading ? 'Creating...' : 'Create Character'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -664,7 +678,8 @@ class _CharacterCreationScreenEnhancedState
             prefixIcon: const Icon(Icons.badge),
           ),
           maxLength: 50,
-          validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
+          validator: (v) =>
+              v == null || v.trim().isEmpty ? 'Name is required' : null,
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
@@ -811,9 +826,25 @@ class _CharacterCreationScreenEnhancedState
 
   Widget _buildCharacterTypeSection() {
     final types = [
-      {'name': 'Superhero', 'icon': Icons.flash_on, 'color': Colors.red, 'locked': !_hasPremium, 'unlockMsg': 'Premium feature - Use BYOK or subscribe'},
-      {'name': 'Princess/Prince', 'icon': Icons.castle, 'color': Colors.pink, 'locked': false},
-      {'name': 'Explorer', 'icon': Icons.explore, 'color': Colors.orange, 'locked': false},
+      {
+        'name': 'Superhero',
+        'icon': Icons.flash_on,
+        'color': Colors.red,
+        'locked': !_hasPremium,
+        'unlockMsg': 'Premium feature - Use BYOK or subscribe'
+      },
+      {
+        'name': 'Princess/Prince',
+        'icon': Icons.castle,
+        'color': Colors.pink,
+        'locked': false
+      },
+      {
+        'name': 'Explorer',
+        'icon': Icons.explore,
+        'color': Colors.orange,
+        'locked': false
+      },
       {
         'name': 'Wizard/Witch',
         'icon': Icons.auto_fix_high,
@@ -821,9 +852,25 @@ class _CharacterCreationScreenEnhancedState
         'locked': !_hasFantasyMode,
         'unlockMsg': 'Unlock at 5 stories!'
       },
-      {'name': 'Scientist', 'icon': Icons.science, 'color': Colors.blue, 'locked': false},
-      {'name': 'Animal Friend', 'icon': Icons.pets, 'color': Colors.green, 'locked': !_hasAnimalEarsTails, 'unlockMsg': 'Unlock at 10 stories!'},
-      {'name': 'Everyday Kid', 'icon': Icons.child_care, 'color': Colors.teal, 'locked': false},
+      {
+        'name': 'Scientist',
+        'icon': Icons.science,
+        'color': Colors.blue,
+        'locked': false
+      },
+      {
+        'name': 'Animal Friend',
+        'icon': Icons.pets,
+        'color': Colors.green,
+        'locked': !_hasAnimalEarsTails,
+        'unlockMsg': 'Unlock at 10 stories!'
+      },
+      {
+        'name': 'Everyday Kid',
+        'icon': Icons.child_care,
+        'color': Colors.teal,
+        'locked': false
+      },
     ];
 
     return _buildSectionCard(
@@ -840,15 +887,17 @@ class _CharacterCreationScreenEnhancedState
             final unlockMsg = type['unlockMsg'] as String?;
 
             return GestureDetector(
-              onTap: isLocked && unlockMsg != null ? () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(unlockMsg),
-                    backgroundColor: Colors.orange,
-                    duration: const Duration(seconds: 3),
-                  ),
-                );
-              } : null,
+              onTap: isLocked && unlockMsg != null
+                  ? () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(unlockMsg),
+                          backgroundColor: Colors.orange,
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                    }
+                  : null,
               child: ChoiceChip(
                 label: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -859,20 +908,25 @@ class _CharacterCreationScreenEnhancedState
                       Icon(
                         type['icon'] as IconData,
                         size: 18,
-                        color: isSelected ? Colors.white : type['color'] as Color,
+                        color:
+                            isSelected ? Colors.white : type['color'] as Color,
                       ),
                     const SizedBox(width: 6),
                     Text(typeName),
                   ],
                 ),
                 selected: isSelected,
-                onSelected: isLocked ? null : (selected) {
-                  setState(() => _characterType = typeName);
-                },
+                onSelected: isLocked
+                    ? null
+                    : (selected) {
+                        setState(() => _characterType = typeName);
+                      },
                 selectedColor: type['color'] as Color,
                 backgroundColor: isLocked ? Colors.grey.shade200 : null,
                 labelStyle: TextStyle(
-                  color: isLocked ? Colors.grey : (isSelected ? Colors.white : Colors.black87),
+                  color: isLocked
+                      ? Colors.grey
+                      : (isSelected ? Colors.white : Colors.black87),
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
@@ -995,7 +1049,8 @@ class _CharacterCreationScreenEnhancedState
           }).toList(),
           onChanged: (value) => setState(() {
             _hairStyle = value ?? _hairStyle;
-            _avatar = _avatar.copyWith(hairStyle: _mapHairStyleToAvataaars(value ?? _hairStyle));
+            _avatar = _avatar.copyWith(
+                hairStyle: _mapHairStyleToAvataaars(value ?? _hairStyle));
           }),
         ),
         const SizedBox(height: 12),
@@ -1143,8 +1198,7 @@ class _CharacterCreationScreenEnhancedState
     );
   }
 
-  Widget _buildSliderEndpoint(
-      IconData icon, String label, bool isLeftAligned) {
+  Widget _buildSliderEndpoint(IconData icon, String label, bool isLeftAligned) {
     return Expanded(
       child: Row(
         mainAxisAlignment:
@@ -1481,13 +1535,11 @@ class _CharacterCreationScreenEnhancedState
                 color: isSelected ? Colors.white : Colors.black87,
                 fontWeight: FontWeight.w600,
               ),
-              onSelected: (value) =>
-                  onSelected(value ? option.label : null),
+              onSelected: (value) => onSelected(value ? option.label : null),
             );
           }).toList(),
         ),
       ],
     );
   }
-
 }

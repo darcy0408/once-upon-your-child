@@ -11,6 +11,36 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## 🚀 PHASE 2 WAVE 2: READY TO START | 2025-12-04
+
+**Status:** 📋 READY FOR DEPLOYMENT  
+**Supervisor:** Claude (Session 3)  
+**Strategy:** 3 agents in parallel with non-overlapping scopes (state mgmt, tests, error handling)
+
+### Agent 2 - Riverpod State Management
+- **Branch:** `feature/riverpod-state-management`
+- **Instruction File:** `AGENT_2_RIVERPOD_TASK.md` ✅
+- **Scope:** Add Riverpod providers; convert `SavedStoriesScreen` + `SettingsScreen` to `ConsumerWidget`; wrap app with `ProviderScope`.
+- **Note:** Avoid touching test fixes and error-boundary work (owned by Agents 3 & 4).
+
+### Agent 3 - Test Improvements
+- **Branch:** `fix/test-improvements`
+- **Instruction File:** `AGENT_3_TEST_IMPROVEMENTS_TASK.md` ✅ (updated)
+- **Scope:** Fix `feelings_wheel_test.dart` and `character_creation_test.dart`; add backend coverage in `backend/tests/**`; mock network calls; keep changes minimal to widgets/services needed for tests.
+
+### Agent 4 - Error Handling & Loading UX
+- **Branch:** `feature/error-handling-improvements`
+- **Instruction File:** `AGENT_4_ERROR_HANDLING_TASK.md` ✅
+- **Scope:** Create `lib/widgets/error_boundary.dart` and `loading_overlay.dart`; wrap key screens (`interactive_story_screen.dart`, `story_result_screen.dart`, `character_creation_screen_enhanced.dart`, `onboarding_screen.dart`); improve error messages/logging in select services; avoid Riverpod files.
+- **Progress (ongoing):** ErrorBoundary + LoadingOverlay added; InteractiveStory, StoryResult, and CharacterCreation screens wrapped; ApiServiceManager error logging improved. Running analyze/tests next before commit.
+
+**Coordination Notes:**
+- Agent 2 owns `SavedStoriesScreen` + `SettingsScreen`; Agents 3/4 should not touch these files.
+- Agent 3 owns test files and limited widget/service tweaks only as needed.
+- Agent 4 focuses on reusable error/loading UI and service messaging; no backend changes.
+
+---
+
 ## 🎉 PHASE 2 WAVE 1: COMPLETE! | 2025-12-04
 
 **Status:** ✅ MERGED TO MAIN AND DEPLOYED
@@ -603,6 +633,304 @@ tests/test_webhook_handler.py::test_unknown_event_returns_200
 
 ### Issues Encountered
 - Local environment blocked binding to localhost (PermissionError) so manual server run and curl checks could not be completed.
+
+### Status
+✅ COMPLETE - Ready for supervisor verification
+
+## Agent 2 - Riverpod State Management | 2025-12-04
+
+### Task: Riverpod Implementation
+
+### Files Changed
+- Created: lib/providers/story_provider.dart
+- Created: lib/providers/story_provider.g.dart
+- Created: lib/providers/theme_provider.dart
+- Created: lib/providers/theme_provider.g.dart
+- Modified: lib/main.dart (ProviderScope, ConsumerStatefulWidget, dark theme)
+- Modified: lib/saved_stories_screen.dart (ConsumerWidget + filters via Riverpod)
+- Modified: lib/settings_screen.dart (ConsumerStatefulWidget + theme toggle)
+- Modified: pubspec.yaml / pubspec.lock (riverpod dependencies)
+
+### Test Results
+```
+00:00 +0: loading /mnt/c/dev/story-weaver-app/test/accessibility_test.dart
+00:01 +0: loading /mnt/c/dev/story-weaver-app/test/accessibility_test.dart
+00:02 +0: loading /mnt/c/dev/story-weaver-app/test/accessibility_test.dart
+00:03 +0: loading /mnt/c/dev/story-weaver-app/test/accessibility_test.dart
+00:04 +0: loading /mnt/c/dev/story-weaver-app/test/accessibility_test.dart
+00:05 +0: loading /mnt/c/dev/story-weaver-app/test/accessibility_test.dart
+00:06 +0: loading /mnt/c/dev/story-weaver-app/test/accessibility_test.dart
+00:07 +0: loading /mnt/c/dev/story-weaver-app/test/accessibility_test.dart
+00:07 +0: /mnt/c/dev/story-weaver-app/test/accessibility_test.dart: AppButton has semantic label via tooltip
+00:08 +0: /mnt/c/dev/story-weaver-app/test/accessibility_test.dart: AppButton has semantic label via tooltip
+00:09 +1: /mnt/c/dev/story-weaver-app/test/accessibility_test.dart: AppButton has semantic label via tooltip
+00:09 +2: /mnt/c/dev/story-weaver-app/test/accessibility_test.dart: AppButton has semantic label via tooltip
+00:09 +3: /mnt/c/dev/story-weaver-app/test/accessibility_test.dart: AppButton has semantic label via tooltip
+00:09 +4: /mnt/c/dev/story-weaver-app/test/accessibility_test.dart: AppButton has semantic label via tooltip
+00:09 +5: /mnt/c/dev/story-weaver-app/test/accessibility_test.dart: AppButton has semantic label via tooltip
+00:09 +6: /mnt/c/dev/story-weaver-app/test/accessibility_test.dart: AppButton has semantic label via tooltip
+00:09 +6: /mnt/c/dev/story-weaver-app/test/accessibility_test.dart: IconButton with tooltip has semantics
+00:09 +7: /mnt/c/dev/story-weaver-app/test/accessibility_test.dart: IconButton with tooltip has semantics
+00:10 +7: /mnt/c/dev/story-weaver-app/test/accessibility_test.dart: IconButton with tooltip has semantics
+00:11 +7: /mnt/c/dev/story-weaver-app/test/accessibility_test.dart: IconButton with tooltip has semantics
+00:11 +7: loading /mnt/c/dev/story-weaver-app/test/integration/offline_test.dart
+00:11 +7: /mnt/c/dev/story-weaver-app/test/integration/offline_test.dart: cacheStory persists and getCachedStory returns it
+00:11 +8: /mnt/c/dev/story-weaver-app/test/integration/offline_test.dart: cacheStory persists and getCachedStory returns it
+00:11 +8: /mnt/c/dev/story-weaver-app/test/integration/offline_test.dart: toggleFavorite flips favorite flag
+00:11 +9: /mnt/c/dev/story-weaver-app/test/integration/offline_test.dart: toggleFavorite flips favorite flag
+00:11 +9: /mnt/c/dev/story-weaver-app/test/integration/offline_test.dart: clearCache keeps favorites by default
+00:11 +10: /mnt/c/dev/story-weaver-app/test/integration/offline_test.dart: clearCache keeps favorites by default
+00:12 +10: /mnt/c/dev/story-weaver-app/test/integration/offline_test.dart: clearCache keeps favorites by default
+00:13 +10: /mnt/c/dev/story-weaver-app/test/integration/offline_test.dart: clearCache keeps favorites by default
+00:14 +10: /mnt/c/dev/story-weaver-app/test/integration/offline_test.dart: clearCache keeps favorites by default
+00:14 +10: loading /mnt/c/dev/story-weaver-app/test/integration/paywall_test.dart
+00:14 +10: /mnt/c/dev/story-weaver-app/test/integration/paywall_test.dart: Free tier blocks story creation after daily limit
+00:14 +11: /mnt/c/dev/story-weaver-app/test/integration/paywall_test.dart: Free tier blocks story creation after daily limit
+00:14 +11: /mnt/c/dev/story-weaver-app/test/integration/paywall_test.dart: Recording a story increments usage stats
+00:14 +12: /mnt/c/dev/story-weaver-app/test/integration/paywall_test.dart: Recording a story increments usage stats
+00:15 +12: /mnt/c/dev/story-weaver-app/test/integration/paywall_test.dart: Recording a story increments usage stats
+00:16 +12: /mnt/c/dev/story-weaver-app/test/integration/paywall_test.dart: Recording a story increments usage stats
+00:17 +12: /mnt/c/dev/story-weaver-app/test/integration/paywall_test.dart: Recording a story increments usage stats
+00:17 +12: loading /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart
+00:17 +12: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory returns story text from backend client
+00:17 +13: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory returns story text from backend client
+00:17 +13: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory includes additional characters in payload when present
+00:17 +14: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory includes additional characters in payload when present
+00:17 +14: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory retries failed backend calls before succeeding
+00:17 +14: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory retries failed backend calls before succeeding
+Story generation attempt 1 failed: HttpException: Failed to start story generation task: 500, uri = https://story-weaver-app-production.up.railway.app/generate-story
+Story generation attempt 2 failed: HttpException: Failed to start story generation task: 500, uri = https://story-weaver-app-production.up.railway.app/generate-story
+00:18 +15: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory retries failed backend calls before succeeding
+00:18 +15: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory verifies exponential backoff timing
+00:18 +15: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory verifies exponential backoff timing
+Story generation attempt 1 failed: HttpException: Failed to start story generation task: 500, uri = https://story-weaver-app-production.up.railway.app/generate-story
+Story generation attempt 2 failed: HttpException: Failed to start story generation task: 500, uri = https://story-weaver-app-production.up.railway.app/generate-story
+00:18 +16: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory verifies exponential backoff timing
+00:18 +16: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory throws HttpException after retries exhausted
+00:18 +16: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory throws HttpException after retries exhausted
+Story generation attempt 1 failed: HttpException: Failed to start story generation task: 503, uri = https://story-weaver-app-production.up.railway.app/generate-story
+Story generation attempt 2 failed: HttpException: Failed to start story generation task: 503, uri = https://story-weaver-app-production.up.railway.app/generate-story
+00:18 +17: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory throws HttpException after retries exhausted
+00:18 +17: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory throws TimeoutException when backend stalls
+00:18 +17: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory throws TimeoutException when backend stalls
+Story generation attempt 1 failed: TimeoutException after 0:00:00.020000: Future not completed
+Story generation attempt 2 failed: TimeoutException after 0:00:00.020000: Future not completed
+00:21 +18: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory throws TimeoutException when backend stalls
+00:21 +19: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory throws TimeoutException when backend stalls
+00:21 +20: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory throws TimeoutException when backend stalls
+00:21 +21: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory throws TimeoutException when backend stalls
+00:22 +21: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory throws TimeoutException when backend stalls
+00:23 +21: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory throws TimeoutException when backend stalls
+00:23 +22: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory throws TimeoutException when backend stalls
+00:24 +22: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory throws TimeoutException when backend stalls
+00:24 +22: /mnt/c/dev/story-weaver-app/test/integration/story_creation_flow_test.dart: ApiServiceManager.generateStory throws TimeoutException when backend stalls
+Story generation attempt 3 failed: TimeoutException after 0:00:00.020000: Future not completed
+00:24 +23: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: updates tier label when subscription stream emits
+00:24 +24: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: updates tier label when subscription stream emits
+00:25 +24: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: updates tier label when subscription stream emits
+00:25 +25: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: updates tier label when subscription stream emits
+00:25 +26: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: updates tier label when subscription stream emits
+00:25 +27: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: updates tier label when subscription stream emits
+00:25 +28: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: updates tier label when subscription stream emits
+00:26 +28: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: updates tier label when subscription stream emits
+00:26 +29: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: updates tier label when subscription stream emits
+00:26 +29: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: shows status changes when stream updates
+00:26 +30: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: shows status changes when stream updates
+00:27 +30: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: shows status changes when stream updates
+00:28 +30: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: shows status changes when stream updates
+00:29 +30: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: shows status changes when stream updates
+00:30 +30: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: shows status changes when stream updates
+00:31 +30: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: shows status changes when stream updates
+00:32 +30: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: shows status changes when stream updates
+00:33 +30: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: shows status changes when stream updates
+00:34 +30: /mnt/c/dev/story-weaver-app/test/subscription_status_banner_test.dart: shows status changes when stream updates
+00:34 +30: loading /mnt/c/dev/story-weaver-app/test/widgets/character_creation_test.dart
+00:34 +30: /mnt/c/dev/story-weaver-app/test/widgets/character_creation_test.dart: Character creation form validates required fields
+00:35 +30: /mnt/c/dev/story-weaver-app/test/widgets/character_creation_test.dart: Character creation form validates required fields
+00:36 +30: /mnt/c/dev/story-weaver-app/test/widgets/character_creation_test.dart: Character creation form validates required fields
+00:36 +30: /mnt/c/dev/story-weaver-app/test/widgets/character_creation_test.dart: Character creation form validates required fields
+🎭 Avatar URL: https://api.dicebear.com/7.x/avataaars/svg?seed=lightbrownshorthairshortflat&skinColor=light&hairColor=brown&top=shortHairShortFlat&eyes=happy&mouth=smile&clothes=hoodie&clothesColor=blue03
+00:41 +30: /mnt/c/dev/story-weaver-app/test/widgets/feelings_wheel_test.dart: Feelings wheel flows core → secondary → tertiary selection
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following StateError was thrown running a test:
+Bad state: No element
+
+When the exception was thrown, this was the stack:
+#0      Iterable.single (dart:core/iterable.dart:694:25)
+#1      WidgetController.element (package:flutter_test/src/controller.dart:864:30)
+#2      WidgetController.ensureVisible (package:flutter_test/src/controller.dart:2301:32)
+#3      main.<anonymous closure> (file:///mnt/c/dev/story-weaver-app/test/widgets/feelings_wheel_test.dart:23:18)
+<asynchronous suspension>
+#4      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#5      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1059:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+The test description was:
+  Feelings wheel flows core → secondary → tertiary selection
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:41 +30 -1: /mnt/c/dev/story-weaver-app/test/widgets/feelings_wheel_test.dart: Feelings wheel flows core → secondary → tertiary selection [E]
+  Test failed. See exception logs above.
+  The test description was: Feelings wheel flows core → secondary → tertiary selection
+  
+
+To run this test again: /home/darcy/flutter/bin/cache/dart-sdk/bin/dart test /mnt/c/dev/story-weaver-app/test/widgets/feelings_wheel_test.dart -p vm --plain-name 'Feelings wheel flows core → secondary → tertiary selection'
+00:41 +30 -1: /mnt/c/dev/story-weaver-app/test/widgets/character_creation_test.dart: Character creation form validates required fields
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following StateError was thrown running a test:
+Bad state: Invalid SVG data
+
+When the exception was thrown, this was the stack:
+#0      SvgParser._parseTree (package:vector_graphics_compiler/src/svg/parser.dart:810:7)
+#1      SvgParser.parse (package:vector_graphics_compiler/src/svg/parser.dart:817:5)
+#2      parse (package:vector_graphics_compiler/vector_graphics_compiler.dart:78:17)
+#3      encodeSvg (package:vector_graphics_compiler/vector_graphics_compiler.dart:147:5)
+#4      SvgLoader._load.<anonymous closure>.<anonymous closure> (package:flutter_svg/src/loaders.dart:162:16)
+#5      _testCompute (package:flutter_svg/src/utilities/compute.dart:14:38)
+#6      SvgLoader._load.<anonymous closure> (package:flutter_svg/src/loaders.dart:159:21)
+<asynchronous suspension>
+#12     _VectorGraphicWidgetState._loadPicture.<anonymous closure> (package:vector_graphics/src/vector_graphics.dart:362:40)
+<asynchronous suspension>
+#13     _VectorGraphicWidgetState._loadPicture.<anonymous closure> (package:vector_graphics/src/vector_graphics.dart:370:13)
+<asynchronous suspension>
+#14     _VectorGraphicWidgetState._loadAssetBytes (package:vector_graphics/src/vector_graphics.dart:409:33)
+<asynchronous suspension>
+(elided 5 frames from dart:async and package:stack_trace)
+
+The test description was:
+  Character creation form validates required fields
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:41 +30 -2: /mnt/c/dev/story-weaver-app/test/widgets/character_creation_test.dart: Character creation form validates required fields [E]
+  Test failed. See exception logs above.
+  The test description was: Character creation form validates required fields
+  
+Warning: At least one test in this suite creates an HttpClient. When running a test suite that uses
+TestWidgetsFlutterBinding, all HTTP requests will return status code 400, and no network request
+will actually be made. Any test expecting a real network connection and status code will fail.
+To test code that needs an HttpClient, provide your own HttpClient implementation to the code under
+test, so that your test can consistently provide a testable response to the code under test.
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following StateError was thrown running a test (but after the test had completed):
+Bad state: Invalid SVG data
+
+When the exception was thrown, this was the stack:
+#0      SvgParser._parseTree (package:vector_graphics_compiler/src/svg/parser.dart:810:7)
+#1      SvgParser.parse (package:vector_graphics_compiler/src/svg/parser.dart:817:5)
+#2      parse (package:vector_graphics_compiler/vector_graphics_compiler.dart:78:17)
+#3      encodeSvg (package:vector_graphics_compiler/vector_graphics_compiler.dart:147:5)
+#4      SvgLoader._load.<anonymous closure>.<anonymous closure> (package:flutter_svg/src/loaders.dart:162:16)
+#5      _testCompute (package:flutter_svg/src/utilities/compute.dart:14:38)
+#6      SvgLoader._load.<anonymous closure> (package:flutter_svg/src/loaders.dart:159:21)
+<asynchronous suspension>
+#12     _VectorGraphicWidgetState._loadPicture.<anonymous closure> (package:vector_graphics/src/vector_graphics.dart:362:40)
+<asynchronous suspension>
+#13     _VectorGraphicWidgetState._loadPicture.<anonymous closure> (package:vector_graphics/src/vector_graphics.dart:370:13)
+<asynchronous suspension>
+#14     _VectorGraphicWidgetState._loadAssetBytes (package:vector_graphics/src/vector_graphics.dart:409:33)
+<asynchronous suspension>
+(elided 5 frames from dart:async and package:stack_trace)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+  Test failed. See exception logs above.
+  The test description was: Character creation form validates required fields
+  
+🎭 Avatar URL: https://api.dicebear.com/7.x/avataaars/svg?seed=lightbrownshorthairshortflat&skinColor=light&hairColor=brown&top=shortHairShortFlat&eyes=happy&mouth=smile&clothes=hoodie&clothesColor=blue03
+00:43 +30 -2: loading /mnt/c/dev/story-weaver-app/test/widgets/story_result_test.dart
+00:43 +30 -2: /mnt/c/dev/story-weaver-app/test/widgets/story_result_test.dart: StoryResultScreen shows story text and wisdom gem
+00:44 +30 -2: /mnt/c/dev/story-weaver-app/test/widgets/story_result_test.dart: StoryResultScreen shows story text and wisdom gem
+00:45 +30 -2: /mnt/c/dev/story-weaver-app/test/widgets/story_result_test.dart: StoryResultScreen shows story text and wisdom gem
+00:46 +30 -2: /mnt/c/dev/story-weaver-app/test/widgets/story_result_test.dart: StoryResultScreen shows story text and wisdom gem
+00:47 +30 -2: /mnt/c/dev/story-weaver-app/test/widgets/story_result_test.dart: StoryResultScreen shows story text and wisdom gem
+00:48 +30 -2: /mnt/c/dev/story-weaver-app/test/widgets/story_result_test.dart: StoryResultScreen shows story text and wisdom gem
+00:48 +31 -2: /mnt/c/dev/story-weaver-app/test/widgets/story_result_test.dart: StoryResultScreen shows story text and wisdom gem
+00:48 +32 -2: /mnt/c/dev/story-weaver-app/test/widgets/story_result_test.dart: StoryResultScreen shows story text and wisdom gem
+00:49 +32 -2: /mnt/c/dev/story-weaver-app/test/widgets/story_result_test.dart: StoryResultScreen shows story text and wisdom gem
+00:49 +33 -2: /mnt/c/dev/story-weaver-app/test/widgets/story_result_test.dart: StoryResultScreen shows story text and wisdom gem
+00:49 +34 -2: /mnt/c/dev/story-weaver-app/test/widgets/story_result_test.dart: StoryResultScreen shows story text and wisdom gem
+00:50 +34 -2: /mnt/c/dev/story-weaver-app/test/widgets/story_result_test.dart: StoryResultScreen shows story text and wisdom gem
+00:50 +35 -2: /mnt/c/dev/story-weaver-app/test/widgets/subscription_ui_test.dart: SubscriptionStatusBanner shows loading state
+00:50 +36 -2: /mnt/c/dev/story-weaver-app/test/widgets/subscription_ui_test.dart: SubscriptionStatusBanner shows loading state
+00:50 +36 -2: /mnt/c/dev/story-weaver-app/test/widgets/subscription_ui_test.dart: SubscriptionStatusBanner shows subscription data
+00:50 +37 -2: /mnt/c/dev/story-weaver-app/test/widgets/subscription_ui_test.dart: SubscriptionStatusBanner shows subscription data
+00:51 +37 -2: /mnt/c/dev/story-weaver-app/test/widgets/subscription_ui_test.dart: SubscriptionStatusBanner shows subscription data
+00:52 +37 -2: /mnt/c/dev/story-weaver-app/test/widgets/subscription_ui_test.dart: SubscriptionStatusBanner shows subscription data
+00:53 +37 -2: /mnt/c/dev/story-weaver-app/test/widgets/subscription_ui_test.dart: SubscriptionStatusBanner shows subscription data
+00:54 +37 -2: /mnt/c/dev/story-weaver-app/test/widgets/subscription_ui_test.dart: SubscriptionStatusBanner shows subscription data
+00:54 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+00:55 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+00:56 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+00:57 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+00:58 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+00:59 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:00 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:01 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:02 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:03 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:04 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:05 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:06 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:07 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:08 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:09 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:10 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:11 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:12 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:13 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:14 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:15 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:16 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:17 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:18 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:19 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:20 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:21 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:22 +37 -2: loading /mnt/c/dev/story-weaver-app/test/widget_test.dart
+01:22 +37 -2: /mnt/c/dev/story-weaver-app/test/widgets/character_creation_test.dart: Character creation form validates required fields
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following assertion was thrown running a test (but after the test had completed):
+pumpAndSettle timed out
+
+When the exception was thrown, this was the stack:
+#0      WidgetTester.pumpAndSettle.<anonymous closure> (package:flutter_test/src/widget_tester.dart:717:11)
+<asynchronous suspension>
+#1      TestAsyncUtils.guard.<anonymous closure> (package:flutter_test/src/test_async_utils.dart:130:27)
+<asynchronous suspension>
+#2      main.<anonymous closure> (file:///mnt/c/dev/story-weaver-app/test/widgets/character_creation_test.dart:21:5)
+<asynchronous suspension>
+#3      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#4      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1059:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+01:22 +37 -2: /mnt/c/dev/story-weaver-app/test/widgets/character_creation_test.dart: Character creation form validates required fields [E]
+  Test failed. See exception logs above.
+  The test description was: Character creation form validates required fields
+  
+
+To run this test again: /home/darcy/flutter/bin/cache/dart-sdk/bin/dart test /mnt/c/dev/story-weaver-app/test/widgets/character_creation_test.dart -p vm --plain-name 'Character creation form validates required fields'
+01:22 +37 -2: Some tests failed.
+```
+
+### Manual Testing Results
+- [ ] Dark mode toggle works: NOT RUN
+- [ ] Dark mode persists after restart: NOT RUN
+- [ ] Story list updates on changes: NOT RUN
+- [ ] Favorite toggle works: NOT RUN
+- [ ] Delete story works: NOT RUN
+- [ ] Refresh works: NOT RUN
+- [ ] State persists across navigation: NOT RUN
+
+### Code Metrics
+- Screens converted to Riverpod: 2 (saved_stories, settings)
+- setState removed: Yes
+- Providers created: 4 (story list, favorites, theme, offline service)
+
+### Issues Encountered
+- Flutter tests failing in pre-existing suites (feelings_wheel_test.dart “Bad state: No element”; character_creation_test.dart “Invalid SVG data”/pumpAndSettle timeout). Agent 3 fixing on fix/test-improvements branch.
+- Manual app run not performed in this pass.
 
 ### Status
 ✅ COMPLETE - Ready for supervisor verification

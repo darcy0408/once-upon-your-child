@@ -40,6 +40,15 @@ class ApiServiceManager {
           )
           .timeout(timeout);
       return _decodeJsonResponse(response, uri);
+    } on TimeoutException catch (error) {
+      debugPrint('POST $uri timed out after ${timeout.inSeconds}s: $error');
+      throw TimeoutException(
+        'Request to ${uri.path} timed out. Please try again.',
+        timeout,
+      );
+    } on SocketException catch (error) {
+      debugPrint('Network error while calling $uri: $error');
+      rethrow;
     } finally {
       if (client == null && _testClient == null) {
         httpClient.close();
@@ -55,9 +64,17 @@ class ApiServiceManager {
     final httpClient = client ?? _testClient ?? http.Client();
     final uri = Uri.parse('$_localBackendUrl$path');
     try {
-      final response =
-          await httpClient.get(uri).timeout(timeout);
+      final response = await httpClient.get(uri).timeout(timeout);
       return _decodeJsonResponse(response, uri);
+    } on TimeoutException catch (error) {
+      debugPrint('GET $uri timed out after ${timeout.inSeconds}s: $error');
+      throw TimeoutException(
+        'Request to ${uri.path} timed out. Please try again.',
+        timeout,
+      );
+    } on SocketException catch (error) {
+      debugPrint('Network error while calling $uri: $error');
+      rethrow;
     } finally {
       if (client == null && _testClient == null) {
         httpClient.close();
@@ -161,8 +178,12 @@ class ApiServiceManager {
     Uri uri,
   ) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
+      final preview = _truncateForLog(response.body);
+      debugPrint(
+        'Request to $uri failed with ${response.statusCode}. Body preview: $preview',
+      );
       throw HttpException(
-        'Request failed (${response.statusCode})',
+        'Request to ${uri.path} failed with status ${response.statusCode}',
         uri: uri,
       );
     }
@@ -171,11 +192,21 @@ class ApiServiceManager {
       return const {};
     }
 
-    final decoded = jsonDecode(response.body);
-    if (decoded is Map<String, dynamic>) {
-      return decoded;
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      return {'data': decoded};
+    } on FormatException catch (error) {
+      debugPrint('Failed to parse JSON from $uri: ${error.message}');
+      throw const FormatException('Unexpected response format from server');
     }
-    return {'data': decoded};
+  }
+
+  static String _truncateForLog(String body, {int maxLength = 200}) {
+    if (body.length <= maxLength) return body;
+    return '${body.substring(0, maxLength)}...';
   }
 
   /// Generate story using direct Gemini API
@@ -193,7 +224,11 @@ class ApiServiceManager {
     Map<String, dynamic>? characterEvolution,
   }) async {
     final apiKey = await getUserApiKey();
-    if (apiKey == null) throw Exception('No API key configured');
+    if (apiKey == null) {
+      throw Exception(
+        'No API key configured. Add your Gemini key in Settings to generate stories directly.',
+      );
+    }
 
     final model = GenerativeModel(
       model: 'gemini-1.5-flash',
@@ -213,14 +248,30 @@ class ApiServiceManager {
       characterEvolution: characterEvolution,
     );
 
-    final response = await model.generateContent([Content.text(prompt)]);
-    final storyText = response.text ?? '';
-    return StoryGenerationResult(
-      storyText: storyText,
-      title: null,
-      wisdomGem: null,
-      usedUserKey: true,
-    );
+    try {
+      final response = await model.generateContent([Content.text(prompt)]);
+      final storyText = response.text ?? '';
+
+      if (storyText.isEmpty) {
+        throw StateError(
+            'Gemini returned an empty response for story content.');
+      }
+
+      return StoryGenerationResult(
+        storyText: storyText,
+        title: null,
+        wisdomGem: null,
+        usedUserKey: true,
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Gemini story generation failed: $error');
+      Error.throwWithStackTrace(
+        Exception(
+          'Could not generate story with Gemini at this time. Please try again shortly.',
+        ),
+        stackTrace,
+      );
+    }
   }
 
   static Future<StoryGenerationResult> _generateStoryWithBackendRetry({
@@ -266,9 +317,10 @@ class ApiServiceManager {
           client: client,
           requestTimeout: requestTimeout,
         );
-      } catch (error) {
+      } catch (error, stackTrace) {
         attempts++;
         debugPrint('Story generation attempt $attempts failed: $error');
+        debugPrintStack(stackTrace: stackTrace);
         if (attempts >= maxAttempts) rethrow;
         await Future.delayed(delay);
         delay *= 2;
@@ -320,14 +372,17 @@ class ApiServiceManager {
 
     try {
       // 1. Start the task
-      final generateResponse = await httpClient.post(
-        generateUri,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      ).timeout(requestTimeout);
+      final generateResponse = await httpClient
+          .post(
+            generateUri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(body),
+          )
+          .timeout(requestTimeout);
 
       if (generateResponse.statusCode == 200) {
-        final payload = jsonDecode(generateResponse.body) as Map<String, dynamic>;
+        final payload =
+            jsonDecode(generateResponse.body) as Map<String, dynamic>;
         final story = payload['story'] ?? payload['story_text'];
         if (story is String && story.isNotEmpty) {
           return StoryGenerationResult.fromBackend(payload);
@@ -339,13 +394,17 @@ class ApiServiceManager {
       }
 
       if (generateResponse.statusCode != 202) {
+        debugPrint(
+          'Failed to start story generation. Status ${generateResponse.statusCode}, body: ${_truncateForLog(generateResponse.body)}',
+        );
         throw HttpException(
           'Failed to start story generation task: ${generateResponse.statusCode}',
           uri: generateUri,
         );
       }
 
-      final generateData = jsonDecode(generateResponse.body) as Map<String, dynamic>;
+      final generateData =
+          jsonDecode(generateResponse.body) as Map<String, dynamic>;
       final taskId = generateData['task_id'] as String;
 
       // 2. Poll for the result
@@ -360,7 +419,11 @@ class ApiServiceManager {
 
         if (statusResponse.statusCode != 200) {
           // Continue polling on server error, but throw if it's a client error
-          if (statusResponse.statusCode >= 400 && statusResponse.statusCode < 500) {
+          if (statusResponse.statusCode >= 400 &&
+              statusResponse.statusCode < 500) {
+            debugPrint(
+              'Status check failed for task $taskId with ${statusResponse.statusCode}: ${_truncateForLog(statusResponse.body)}',
+            );
             throw HttpException(
               'Failed to get task status: ${statusResponse.statusCode}',
               uri: statusUri,
@@ -379,13 +442,28 @@ class ApiServiceManager {
             storyText: result as String,
           );
         } else if (status == 'failure') {
-          throw Exception('Story generation task failed: ${statusData['result']}');
+          throw Exception(
+              'Story generation task failed: ${statusData['result']}');
         }
         // If status is 'pending', continue polling
       }
 
       throw TimeoutException('Story generation polling timed out');
-
+    } on TimeoutException catch (error) {
+      debugPrint(
+        'Story generation timed out after ${requestTimeout.inSeconds}s: $error',
+      );
+      throw TimeoutException(
+        'Story generation took too long. Please try again.',
+        requestTimeout,
+      );
+    } on SocketException catch (error) {
+      debugPrint('Network error during story generation: $error');
+      rethrow;
+    } catch (error, stackTrace) {
+      debugPrint('Story generation failed unexpectedly: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      rethrow;
     } finally {
       if (client == null) {
         httpClient.close();
@@ -414,7 +492,8 @@ class ApiServiceManager {
     final intensity = currentFeeling['intensity'] as int?;
     final whatHappened = currentFeeling['what_happened'] as String?;
     final physicalSigns = currentFeeling['physical_signs'] as String?;
-    final copingStrategies = currentFeeling['coping_strategies'] as List<dynamic>?;
+    final copingStrategies =
+        currentFeeling['coping_strategies'] as List<dynamic>?;
 
     String intensityText = '';
     if (intensity != null) {
@@ -517,34 +596,45 @@ This is a FEELINGS-FIRST story. The emotion is the main character's journey.
     // Build character evolution context
     String evolutionContext = '';
     if (characterEvolution != null) {
-      final developmentStage = characterEvolution['development_stage'] as String?;
-      final therapeuticProgress = characterEvolution['therapeutic_progress'] as Map<String, dynamic>?;
-      final emotionMastery = characterEvolution['emotion_mastery'] as Map<String, dynamic>?;
-      final evolvedTraits = characterEvolution['evolved_traits'] as Map<String, dynamic>?;
+      final developmentStage =
+          characterEvolution['development_stage'] as String?;
+      final therapeuticProgress =
+          characterEvolution['therapeutic_progress'] as Map<String, dynamic>?;
+      final emotionMastery =
+          characterEvolution['emotion_mastery'] as Map<String, dynamic>?;
+      final evolvedTraits =
+          characterEvolution['evolved_traits'] as Map<String, dynamic>?;
       if (developmentStage != null) {
-        evolutionContext += '\n\nCHARACTER DEVELOPMENT STAGE: $characterName is at the "$developmentStage" stage of emotional development.';
+        evolutionContext +=
+            '\n\nCHARACTER DEVELOPMENT STAGE: $characterName is at the "$developmentStage" stage of emotional development.';
 
         // Adapt story complexity based on development stage
         switch (developmentStage.toLowerCase()) {
           case 'novice':
           case 'beginner':
-            evolutionContext += '\nCreate a simpler story with basic emotional learning. Focus on naming feelings and simple coping strategies.';
+            evolutionContext +=
+                '\nCreate a simpler story with basic emotional learning. Focus on naming feelings and simple coping strategies.';
             break;
           case 'intermediate':
-            evolutionContext += '\nCreate a moderately complex story. Include emotional regulation techniques and some problem-solving.';
+            evolutionContext +=
+                '\nCreate a moderately complex story. Include emotional regulation techniques and some problem-solving.';
             break;
           case 'advanced':
-            evolutionContext += '\nCreate a complex story with deeper emotional processing. Include perspective-taking and helping others.';
+            evolutionContext +=
+                '\nCreate a complex story with deeper emotional processing. Include perspective-taking and helping others.';
             break;
           case 'master':
-            evolutionContext += '\nCreate an advanced story focused on emotional leadership. Include teaching others and complex emotional situations.';
+            evolutionContext +=
+                '\nCreate an advanced story focused on emotional leadership. Include teaching others and complex emotional situations.';
             break;
         }
       }
 
       if (therapeuticProgress != null && therapeuticProgress.isNotEmpty) {
-        evolutionContext += '\n\nTHERAPEUTIC STRENGTHS: $characterName has experience with: ${therapeuticProgress.keys.join(", ")}.';
-        evolutionContext += '\nBuild upon these existing therapeutic skills in the story.';
+        evolutionContext +=
+            '\n\nTHERAPEUTIC STRENGTHS: $characterName has experience with: ${therapeuticProgress.keys.join(", ")}.';
+        evolutionContext +=
+            '\nBuild upon these existing therapeutic skills in the story.';
       }
 
       if (emotionMastery != null && emotionMastery.isNotEmpty) {
@@ -553,24 +643,30 @@ This is a FEELINGS-FIRST story. The emotion is the main character's journey.
             .map((e) => e.key)
             .toList();
         if (masteredEmotions.isNotEmpty) {
-          evolutionContext += '\n\nEMOTION MASTERY: $characterName is skilled with these emotions: ${masteredEmotions.join(", ")}.';
-          evolutionContext += '\nChallenge them with new emotional experiences or reinforce their mastery.';
+          evolutionContext +=
+              '\n\nEMOTION MASTERY: $characterName is skilled with these emotions: ${masteredEmotions.join(", ")}.';
+          evolutionContext +=
+              '\nChallenge them with new emotional experiences or reinforce their mastery.';
         }
       }
 
       if (evolvedTraits != null) {
         final confidence = evolvedTraits['confidence'] as int?;
         final empathy = evolvedTraits['empathy'] as int?;
-        final emotionalIntelligence = evolvedTraits['emotional_intelligence'] as int?;
+        final emotionalIntelligence =
+            evolvedTraits['emotional_intelligence'] as int?;
 
         if (confidence != null && confidence > 50) {
-          evolutionContext += '\n\nCHARACTER TRAIT: $characterName has grown confident (${confidence}%). Show them taking brave actions.';
+          evolutionContext +=
+              '\n\nCHARACTER TRAIT: $characterName has grown confident (${confidence}%). Show them taking brave actions.';
         }
         if (empathy != null && empathy > 50) {
-          evolutionContext += '\n\nCHARACTER TRAIT: $characterName has developed empathy (${empathy}%). Include opportunities to understand others\' feelings.';
+          evolutionContext +=
+              '\n\nCHARACTER TRAIT: $characterName has developed empathy (${empathy}%). Include opportunities to understand others\' feelings.';
         }
         if (emotionalIntelligence != null && emotionalIntelligence > 50) {
-          evolutionContext += '\n\nCHARACTER TRAIT: $characterName has strong emotional intelligence (${emotionalIntelligence}%). Create nuanced emotional challenges.';
+          evolutionContext +=
+              '\n\nCHARACTER TRAIT: $characterName has strong emotional intelligence (${emotionalIntelligence}%). Create nuanced emotional challenges.';
         }
       }
     }
@@ -672,35 +768,46 @@ Maintain plain text (no markdown fences).''';
     // Build character evolution context for adventure stories
     String evolutionContext = '';
     if (characterEvolution != null) {
-      final developmentStage = characterEvolution['development_stage'] as String?;
-      final therapeuticProgress = characterEvolution['therapeutic_progress'] as Map<String, dynamic>?;
-      final emotionMastery = characterEvolution['emotion_mastery'] as Map<String, dynamic>?;
-      final evolvedTraits = characterEvolution['evolved_traits'] as Map<String, dynamic>?;
+      final developmentStage =
+          characterEvolution['development_stage'] as String?;
+      final therapeuticProgress =
+          characterEvolution['therapeutic_progress'] as Map<String, dynamic>?;
+      final emotionMastery =
+          characterEvolution['emotion_mastery'] as Map<String, dynamic>?;
+      final evolvedTraits =
+          characterEvolution['evolved_traits'] as Map<String, dynamic>?;
 
       if (developmentStage != null) {
-        evolutionContext += '\n\nCHARACTER DEVELOPMENT STAGE: $characterName is at the "$developmentStage" stage of emotional development.';
+        evolutionContext +=
+            '\n\nCHARACTER DEVELOPMENT STAGE: $characterName is at the "$developmentStage" stage of emotional development.';
 
         // Adapt adventure complexity based on development stage
         switch (developmentStage.toLowerCase()) {
           case 'novice':
           case 'beginner':
-            evolutionContext += '\nCreate a simple adventure with clear emotional lessons. Focus on basic feelings and simple friendships.';
+            evolutionContext +=
+                '\nCreate a simple adventure with clear emotional lessons. Focus on basic feelings and simple friendships.';
             break;
           case 'intermediate':
-            evolutionContext += '\nCreate a moderately challenging adventure. Include teamwork, emotional awareness, and helping others.';
+            evolutionContext +=
+                '\nCreate a moderately challenging adventure. Include teamwork, emotional awareness, and helping others.';
             break;
           case 'advanced':
-            evolutionContext += '\nCreate a complex adventure with emotional depth. Include leadership, empathy, and complex social situations.';
+            evolutionContext +=
+                '\nCreate a complex adventure with emotional depth. Include leadership, empathy, and complex social situations.';
             break;
           case 'master':
-            evolutionContext += '\nCreate an epic adventure focused on emotional wisdom. Include mentoring others and profound emotional insights.';
+            evolutionContext +=
+                '\nCreate an epic adventure focused on emotional wisdom. Include mentoring others and profound emotional insights.';
             break;
         }
       }
 
       if (therapeuticProgress != null && therapeuticProgress.isNotEmpty) {
-        evolutionContext += '\n\nTHERAPEUTIC STRENGTHS: $characterName has experience with: ${therapeuticProgress.keys.join(", ")}.';
-        evolutionContext += '\nIncorporate these therapeutic themes naturally into the adventure.';
+        evolutionContext +=
+            '\n\nTHERAPEUTIC STRENGTHS: $characterName has experience with: ${therapeuticProgress.keys.join(", ")}.';
+        evolutionContext +=
+            '\nIncorporate these therapeutic themes naturally into the adventure.';
       }
 
       if (evolvedTraits != null) {
@@ -708,10 +815,12 @@ Maintain plain text (no markdown fences).''';
         final empathy = evolvedTraits['empathy'] as int?;
 
         if (confidence != null && confidence > 50) {
-          evolutionContext += '\n\nCHARACTER TRAIT: $characterName has grown confident (${confidence}%). Show them taking leadership in the adventure.';
+          evolutionContext +=
+              '\n\nCHARACTER TRAIT: $characterName has grown confident (${confidence}%). Show them taking leadership in the adventure.';
         }
         if (empathy != null && empathy > 50) {
-          evolutionContext += '\n\nCHARACTER TRAIT: $characterName has developed empathy (${empathy}%). Include moments where they understand and help others emotionally.';
+          evolutionContext +=
+              '\n\nCHARACTER TRAIT: $characterName has developed empathy (${empathy}%). Include moments where they understand and help others emotionally.';
         }
       }
     }
@@ -756,18 +865,22 @@ SAFETY: Keep content gentle, avoid violence/scares; keep tone warm and supportiv
 Maintain plain text (no markdown fences).''';
   }
 
-   static String _buildLearningToReadPrompt({
-     required String characterName,
-     required String theme,
-     required int age,
-     String? companion,
-     Map<String, dynamic>? characterDetails,
-     List<String>? additionalCharacters,
-   }) {
-     String detailSection = '';
+  static String _buildLearningToReadPrompt({
+    required String characterName,
+    required String theme,
+    required int age,
+    String? companion,
+    Map<String, dynamic>? characterDetails,
+    List<String>? additionalCharacters,
+  }) {
+    String detailSection = '';
     List<String>? extractStringList(dynamic raw) {
       if (raw is List) {
-        return raw.whereType<String>().map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+        return raw
+            .whereType<String>()
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList();
       }
       return null;
     }
@@ -790,8 +903,7 @@ Maintain plain text (no markdown fences).''';
     }
 
     if (additionalCharacters != null && additionalCharacters.isNotEmpty) {
-      detailSection +=
-          '\nFRIENDS IN STORY: ${additionalCharacters.join(", ")}';
+      detailSection += '\nFRIENDS IN STORY: ${additionalCharacters.join(", ")}';
     }
 
     String companionText = '';
@@ -815,7 +927,7 @@ THEME: $theme$companionText$detailSection
 
 Create the rhyming learning-to-read story about $characterName now:
 ''';
-   }
+  }
 
   static String _buildStoryPrompt({
     required String characterName,
@@ -975,7 +1087,6 @@ CHOICE RULES:
 Ensure text is vivid, age-tuned, playful, with a strong hook/problem and embodied feelings. Do NOT wrap JSON in backticks.
 ''';
 
-
     final response = await model.generateContent([Content.text(prompt)]);
     final responseText = response.text ?? '';
 
@@ -1010,7 +1121,8 @@ Ensure text is vivid, age-tuned, playful, with a strong hook/problem and embodie
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } else {
-      throw Exception('Failed to generate interactive story: ${response.statusCode}');
+      throw Exception(
+          'Failed to generate interactive story: ${response.statusCode}');
     }
   }
 
@@ -1082,7 +1194,6 @@ CHOICE RULES:
 - Keep each option under 14 words.
 Do NOT wrap JSON in backticks.
 ''';
-
 
     final response = await model.generateContent([Content.text(prompt)]);
     final responseText = response.text ?? '';

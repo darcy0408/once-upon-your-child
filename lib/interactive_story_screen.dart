@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:story_weaver_app/widgets/error_boundary.dart';
+import 'package:story_weaver_app/widgets/loading_overlay.dart';
 
 import 'models.dart';
 import 'storage_service.dart';
@@ -12,7 +14,6 @@ import 'theme/app_theme.dart';
 import 'widgets/app_button.dart';
 import 'widgets/app_card.dart';
 import 'widgets/error_message.dart';
-import 'widgets/loading_spinner.dart';
 
 class InteractiveStoryScreen extends StatefulWidget {
   const InteractiveStoryScreen({
@@ -71,8 +72,10 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
   String get _fullStoryText =>
       _segments.map((segment) => segment.text.trim()).join('\n\n');
 
-  int get _wordCount =>
-      _fullStoryText.split(RegExp(r'\s+')).where((word) => word.isNotEmpty).length;
+  int get _wordCount => _fullStoryText
+      .split(RegExp(r'\s+'))
+      .where((word) => word.isNotEmpty)
+      .length;
 
   Future<void> _loadOpeningSegment() async {
     setState(() {
@@ -265,87 +268,92 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
         Navigator.of(context).pop(_storySaved);
         return false;
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text('${widget.character.name}\'s Adventure'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).pop(_storySaved),
-          ),
-        ),
-        body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.surface, Colors.white],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+      child: ErrorBoundary(
+        onRetry: () {
+          final retry = _retryAction ?? _loadOpeningSegment;
+          retry();
+        },
+        child: LoadingOverlay(
+          isLoading: _isLoading || _isContinuing,
+          message: _isLoading
+              ? 'Summoning your adventure...'
+              : _isContinuing
+                  ? 'Continuing the adventure...'
+                  : null,
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text('${widget.character.name}\'s Adventure'),
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(_storySaved),
+              ),
             ),
-          ),
-          child: SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    AppSpacing.lg,
-                    AppSpacing.lg,
-                    AppSpacing.sm,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildHeaderCard(),
-                      if (_choiceHistory.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        _buildChoiceHistoryChips(),
-                      ],
-                      if (_errorMessage != null) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        _buildErrorBanner(),
-                      ],
-                    ],
-                  ),
+            body: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.surface, Colors.white],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
+              ),
+              child: SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                        AppSpacing.sm,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildHeaderCard(),
+                          if (_choiceHistory.isNotEmpty) ...[
+                            const SizedBox(height: AppSpacing.sm),
+                            _buildChoiceHistoryChips(),
+                          ],
+                          if (_errorMessage != null) ...[
+                            const SizedBox(height: AppSpacing.sm),
+                            _buildErrorBanner(),
+                          ],
+                        ],
+                      ),
                     ),
-                    child: _buildStoryList(),
-                  ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                        ),
+                        child: _buildStoryList(),
+                      ),
+                    ),
+                    if (_storyEnded) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.lg,
+                          AppSpacing.lg,
+                          AppSpacing.lg,
+                          AppSpacing.sm,
+                        ),
+                        child: _buildEndingCard(),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.lg,
+                          0,
+                          AppSpacing.lg,
+                          AppSpacing.lg,
+                        ),
+                        child: _buildSaveButton(),
+                      ),
+                    ] else
+                      const SizedBox(height: AppSpacing.lg),
+                  ],
                 ),
-                if (_isContinuing) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  const Center(
-                    child: LoadingSpinner(
-                      message: 'Continuing the adventure...',
-                      size: 36,
-                    ),
-                  ),
-                ],
-                if (_storyEnded) ...[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg,
-                      AppSpacing.lg,
-                      AppSpacing.lg,
-                      AppSpacing.sm,
-                    ),
-                    child: _buildEndingCard(),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg,
-                      0,
-                      AppSpacing.lg,
-                      AppSpacing.lg,
-                    ),
-                    child: _buildSaveButton(),
-                  ),
-                ] else
-                  const SizedBox(height: AppSpacing.lg),
-              ],
+              ),
             ),
           ),
         ),
@@ -388,7 +396,8 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
                       ? 'Adventure complete!'
                       : 'Choice $_currentChoiceNumber of 4',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: _storyEnded ? AppColors.secondary : AppColors.primary,
+                    color:
+                        _storyEnded ? AppColors.secondary : AppColors.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -441,13 +450,6 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
 
   Widget _buildStoryList() {
     final theme = Theme.of(context);
-    if (_isLoading) {
-      return const Center(
-        child: LoadingSpinner(
-          message: 'Summoning your adventure...',
-        ),
-      );
-    }
 
     if (_segments.isEmpty) {
       return Center(
@@ -456,7 +458,8 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.auto_stories, color: AppColors.primary, size: 32),
+              const Icon(Icons.auto_stories,
+                  color: AppColors.primary, size: 32),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Your story will appear here',
@@ -500,7 +503,8 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
                 const SizedBox(height: AppSpacing.md),
                 Row(
                   children: [
-                    const Icon(Icons.alt_route, size: 18, color: AppColors.primary),
+                    const Icon(Icons.alt_route,
+                        size: 18, color: AppColors.primary),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
                       'Choice ${_choiceIds.length + 1}',
@@ -556,7 +560,8 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
                     children: [
                       Icon(
                         isPending ? Icons.hourglass_bottom : Icons.alt_route,
-                        color: isPending ? AppColors.primary : AppColors.secondary,
+                        color:
+                            isPending ? AppColors.primary : AppColors.secondary,
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
