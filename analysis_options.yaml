@@ -14,6 +14,14 @@ analyzer:
     - 'story_weaver_core/**'
     - 'story_weaver_mvp/**'
     - 'therapy_companion/**'
+    - 'worktrees/**'
+    - '.dart_tool/**'
+    - 'build/**'
+    - '.git/**'
+    - 'android/**/build/**'
+    - 'android/.gradle/**'
+    - 'ios/Pods/**'
+    - '.idea/**'
 
 linter:
   # The lint rules applied to this project can be customized in the
