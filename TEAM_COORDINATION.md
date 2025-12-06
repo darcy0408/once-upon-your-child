@@ -11,6 +11,234 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## 🚨 CURRENT SESSION: POST-THANKSGIVING COMPLETION | 2025-12-05
+
+**Status:** 🔴 IN PROGRESS - BRANCH RECOVERY PHASE
+**Supervisor:** Claude (Agent 1 - Manager)
+**Date:** 2025-12-05
+**Session Goal:** Complete Post-Thanksgiving tasks (Backend Modularization, Security Hardening, Riverpod Expansion)
+
+### ⚠️ CRITICAL ISSUE - BRANCH CONFUSION
+
+**Problem:** Agent 2 and Agent 3 both ended up on `feature/security-hardening` (WRONG BRANCH)
+
+**Root Cause:** Agents not verifying branch before starting work
+
+**Recovery Status:**
+- ✅ Agent 2: **RECOVERING** - Following recovery steps to get on `feature/backend-modularization`
+- ✅ Agent 3: **RECOVERED** - Now on `feature/riverpod-expansion` with clean working tree
+- ❌ Agent 4: **MIA** - Gemini hit API quota limit, needs replacement (new Codex instance)
+
+---
+
+## 📋 CURRENT AGENT ASSIGNMENTS
+
+### Agent 2 (Codex WSL) - Backend Modularization
+
+**Branch:** `feature/backend-modularization` ⚠️ (recovering to this branch)
+**Status:** 🟡 BLOCKED - Executing recovery steps
+**Priority:** 🔴 HIGH
+**Task:** Extract 21 routes from backend/app.py to blueprints
+
+**Current Situation:**
+- Was accidentally on `feature/security-hardening`
+- Made minor unused import cleanup in `backend/app.py` (discarding)
+- Has stale worktree at `worktrees/backend-modularization` (removing)
+- Following 11-step recovery process to get on correct branch
+
+**Recovery Steps Agent 2 Must Complete:**
+1. ✅ Remove `.git/index.lock`
+2. ⏳ Discard app.py changes with `git restore backend/app.py`
+3. ⏳ Delete stale worktree: `rm -rf worktrees/backend-modularization`
+4. ⏳ Switch to main: `git checkout main`
+5. ⏳ Create branch: `git checkout -b feature/backend-modularization`
+6. ⏳ Verify branch: `git branch --show-current` (MUST show: feature/backend-modularization)
+7. ⏳ Start work on backend modularization
+
+**Files Agent 2 MUST Modify:**
+- ✅ `backend/app.py` (reduce from 1,128 to <300 lines)
+- ✅ `backend/routes/story_routes.py` (CREATE)
+- ✅ `backend/routes/character_routes.py` (CREATE)
+- ✅ `backend/routes/admin_routes.py` (CREATE)
+- ✅ `backend/routes/health_routes.py` (CREATE)
+
+**Files Agent 2 MUST NOT Touch:**
+- ❌ Any frontend files (`lib/**`)
+- ❌ Any other backend files besides app.py and routes/*
+
+**Next Update Expected:** After completing recovery and starting work
+
+---
+
+### Agent 3 (Codex WSL) - Riverpod Expansion
+
+**Branch:** `feature/riverpod-expansion` ✅ (confirmed on correct branch)
+**Status:** 🟢 READY TO START - Clean working tree after recovery
+**Priority:** 🟡 MEDIUM
+**Task:** Create 3 providers and convert 3 screens to Riverpod
+
+**Current Situation:**
+- ✅ Successfully recovered from wrong branch
+- ✅ Dropped problematic stash with mixed changes
+- ✅ Now on clean `feature/riverpod-expansion` branch
+- ✅ Ready to start work fresh
+
+**Task Details:**
+Read: `AGENT_2_RIVERPOD_EXPANSION_TASK.md` (full file)
+
+**Files Agent 3 MUST Create:**
+- ✅ `lib/providers/character_provider.dart`
+- ✅ `lib/providers/quick_story_provider.dart`
+- ✅ `lib/providers/subscription_provider.dart`
+
+**Files Agent 3 MUST Modify:**
+- ✅ `lib/quick_story_screen.dart`
+- ✅ `lib/character_creation_screen_enhanced.dart`
+- ✅ `lib/main_story.dart`
+
+**Files Agent 3 MUST NOT Touch:**
+- ❌ Any backend files (`backend/**`)
+- ❌ `lib/services/secure_storage_service.dart` (Agent 4's territory)
+- ❌ `lib/main.dart` (Agent 4's territory for Sentry)
+- ❌ Any other files not in the list above
+
+**CRITICAL RULE:** Before modifying ANY file, run:
+```bash
+git branch --show-current
+# MUST show: feature/riverpod-expansion
+# If it shows ANYTHING else, STOP and report to supervisor
+```
+
+**Next Update Expected:** After creating first provider file
+
+---
+
+### Agent 4 (NEW - Codex WSL) - Security Hardening
+
+**Branch:** `feature/security-hardening` ⚠️ (waiting for new agent)
+**Status:** 🔴 NEEDS REPLACEMENT - Previous agent (Gemini) hit API quota
+**Priority:** 🔴 HIGH
+**Task:** Secure Storage + Crash Reporting
+
+**Current Situation:**
+- Previous Agent 4 (Gemini) exhausted daily API quota
+- Needs fresh Codex instance in WSL to take over
+- Branch exists but no work completed yet
+
+**Task for New Agent 4:**
+Read in order:
+1. `AGENT_4_RECOVERY_INSTRUCTIONS.md` - **CRITICAL**
+2. `AGENT_TASK_ASSIGNMENTS.md` - Section "Agent 4"
+3. `POST_THANKSGIVING_TASKS.md` - Tasks 2 (lines 172-284) and 3 (lines 287-397)
+
+**Part 1: Secure Storage**
+- Uncomment `flutter_secure_storage: ^9.0.0` in pubspec.yaml
+- Create `lib/services/secure_storage_service.dart`
+- Migrate API keys from SharedPreferences to SecureStorage
+
+**Part 2: Crash Reporting**
+- Uncomment `sentry_flutter: ^7.14.0` in pubspec.yaml
+- Add Sentry initialization to `lib/main.dart`
+
+**Files New Agent 4 MUST Modify:**
+- ✅ `pubspec.yaml` (uncomment dependencies)
+- ✅ `lib/services/secure_storage_service.dart` (CREATE)
+- ✅ `lib/services/api_service_manager.dart` (migrate to secure storage)
+- ✅ `lib/screens/byok_setup_wizard.dart` (migrate to secure storage)
+- ✅ `lib/main.dart` (add Sentry only)
+
+**Files New Agent 4 MUST NOT Touch:**
+- ❌ Any backend files (`backend/**`)
+- ❌ Any provider files (`lib/providers/**` - Agent 3's territory)
+- ❌ Any screen files besides `byok_setup_wizard.dart`
+
+**Next Update Expected:** When new agent starts work
+
+---
+
+## 📊 SESSION PROGRESS TRACKING
+
+**Started:** 2025-12-05
+**Target Completion:** Today (8-11 hours of agent work)
+
+### Completion Checklist
+
+**Phase 1: Recovery** ⏳ IN PROGRESS
+- [x] Agent 3 recovered and on correct branch
+- [ ] Agent 2 recovered and on correct branch
+- [ ] Agent 4 replacement assigned
+- [ ] All agents verified on correct branches
+
+**Phase 2: Implementation** ⏳ WAITING
+- [ ] Agent 2 completes backend modularization
+- [ ] Agent 4 completes secure storage + crash reporting
+- [ ] Agent 3 completes Riverpod expansion
+
+**Phase 3: Testing** ⏳ WAITING
+- [ ] Backend tests pass: `python -m pytest tests/`
+- [ ] Frontend tests pass: `flutter test` (at least 35/38)
+
+**Phase 4: Merge** ⏳ WAITING
+- [ ] Merge `feature/backend-modularization` to main
+- [ ] Merge `feature/security-hardening` to main
+- [ ] Merge `feature/riverpod-expansion` to main
+
+**Phase 5: Deployment** ⏳ WAITING
+- [ ] Railway deployment succeeds
+- [ ] Production verification
+
+---
+
+## 🔔 AGENT CHECK-IN PROTOCOL
+
+**All agents MUST:**
+
+1. **Before starting ANY work:**
+   ```bash
+   git branch --show-current
+   # Verify output matches YOUR assigned branch
+   ```
+
+2. **After completing a file:**
+   ```bash
+   git add <file>
+   git commit -m "feat: <what you did>
+
+   🤖 Generated with [Claude Code](https://claude.com/claude-code)
+   Co-Authored-By: Claude <noreply@anthropic.com>"
+   ```
+
+3. **Update this file (TEAM_COORDINATION.md) after each major milestone:**
+   - Add entry under your agent section
+   - Report: files modified, tests run, blockers encountered
+   - Push to your branch
+
+4. **If you encounter ANY issue:**
+   - STOP work immediately
+   - Report blocker in TEAM_COORDINATION.md
+   - Wait for supervisor (Claude) guidance
+
+---
+
+## 📝 SUPERVISOR NOTES (Claude - Agent 1)
+
+**Session Started:** 2025-12-05 ~19:00 UTC
+**Current Focus:** Branch recovery for Agent 2 and Agent 3
+
+**Key Learnings:**
+- Agents have pattern of working on wrong branches
+- MUST enforce branch verification before ANY file modification
+- Git lock files causing issues (agents running concurrent git ops)
+- Stashes from wrong branches cause merge conflicts
+
+**Next Actions:**
+1. Monitor Agent 2 recovery completion
+2. Assign new Codex instance as Agent 4
+3. Verify all 3 agents on correct branches before allowing work to proceed
+4. Track progress via TEAM_COORDINATION.md updates
+
+---
+
 ## 🚀 PHASE 2 WAVE 3: READY TO START | 2025-12-04
 
 **Status:** 📋 READY FOR DEPLOYMENT
