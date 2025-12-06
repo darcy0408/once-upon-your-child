@@ -17,11 +17,18 @@ from backend.services.story_service import AdvancedStoryEngine, _safe_extract_ti
 
 logger = get_task_logger(__name__)
 
-# Create a Flask app for task context
-_config_name = os.getenv("FLASK_CONFIG") or "dev"
-if _config_name not in {"dev", "prod", "testing"}:
-    _config_name = "dev"
-flask_app = create_app(_config_name)
+# Lazy app initialization to avoid circular imports
+_flask_app = None
+
+def get_flask_app():
+    """Lazy initialization of Flask app to avoid circular imports."""
+    global _flask_app
+    if _flask_app is None:
+        _config_name = os.getenv("FLASK_CONFIG") or "dev"
+        if _config_name not in {"dev", "prod", "production", "testing"}:
+            _config_name = "dev"
+        _flask_app = create_app(_config_name)
+    return _flask_app
 
 
 def _fallback_story(theme: str, character_name: str) -> str:
@@ -58,7 +65,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         companion, therapeutic_prompt, feelings_prompt: Additional context
         character: Optional character name fallback when no ID is provided
     """
-    with flask_app.app_context():
+    with get_flask_app().app_context():
         character_id = kwargs.get("character_id")
         theme = kwargs.get("theme") or "Adventure"
         user_id = kwargs.get("user_id") or "anonymous"
