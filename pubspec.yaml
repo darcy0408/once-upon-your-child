@@ -37,12 +37,12 @@ dependencies:
   flutter_tts: ^4.2.3       # Text-to-speech for stories
   shared_preferences: ^2.2.2 # Local storage
   share_plus: ^11.0.0       # Share stories
-  flutter_riverpod: ^2.4.9
+  flutter_riverpod: ^2.6.1
   isar: ^3.1.0
   isar_flutter_libs: ^3.1.0
   uuid: ^4.5.1              # Generate unique IDs
   path_provider: ^2.1.1     # File paths
-  riverpod_annotation: ^2.3.3
+  riverpod_annotation: ^2.6.1
   google_generative_ai: ^0.4.6  # Direct Gemini API access for BYOK users
   firebase_core: ^2.24.2
   firebase_analytics: ^10.8.0
@@ -68,8 +68,8 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
   mockito: ^5.4.4
-  build_runner: ^2.4.6
-  riverpod_generator: ^2.3.9
+  build_runner: ^2.4.13
+  riverpod_generator: ^2.4.0
   isar_generator: ^3.1.0
 
 # For information on the generic Dart part of this file, see the
