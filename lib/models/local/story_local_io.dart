@@ -4,7 +4,7 @@ import 'package:isar/isar.dart';
 
 import '../../models.dart';
 
-part 'story_local.g.dart';
+part 'story_local_io.g.dart';
 
 @collection
 class StoryLocal {

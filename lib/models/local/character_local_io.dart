@@ -1,6 +1,6 @@
 import 'package:isar/isar.dart';
 
-part 'character_local.g.dart';
+part 'character_local_io.g.dart';
 
 @collection
 class CharacterLocal {
