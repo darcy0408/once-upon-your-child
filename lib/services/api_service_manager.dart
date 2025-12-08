@@ -164,6 +164,7 @@ class ApiServiceManager {
       age: age,
       companion: companion,
       characterDetails: characterDetails,
+<<<<<<< Updated upstream
       additionalCharacters: additionalCharacters,
       rhymeTimeMode: rhymeTimeMode,
       learningToReadMode: learningToReadMode,
@@ -182,6 +183,8 @@ class ApiServiceManager {
       debugPrint(
         'Request to $uri failed with ${response.statusCode}. Body preview: $preview',
       );
+=======
+>>>>>>> Stashed changes
       throw HttpException(
         'Request to ${uri.path} failed with status ${response.statusCode}',
         uri: uri,
@@ -865,6 +868,7 @@ SAFETY: Keep content gentle, avoid violence/scares; keep tone warm and supportiv
 Maintain plain text (no markdown fences).''';
   }
 
+<<<<<<< Updated upstream
   static String _buildLearningToReadPrompt({
     required String characterName,
     required String theme,
@@ -874,6 +878,17 @@ Maintain plain text (no markdown fences).''';
     List<String>? additionalCharacters,
   }) {
     String detailSection = '';
+=======
+   static String _buildLearningToReadPrompt({
+     required String characterName,
+     required String theme,
+     required int age,
+     String? companion,
+     Map<String, dynamic>? characterDetails,
+     List<String>? additionalCharacters,
+   }) {
+     String detailSection = '';
+>>>>>>> Stashed changes
     List<String>? extractStringList(dynamic raw) {
       if (raw is List) {
         return raw
@@ -1233,6 +1248,132 @@ Do NOT wrap JSON in backticks.
     } else {
       throw Exception(
           'Failed to continue interactive story: ${response.statusCode}');
+    }
+  }
+
+  /// Fetch illustrations asynchronously for a generated story
+  /// This is called after story generation completes to avoid timeout
+  static Future<List<Map<String, dynamic>>> fetchIllustrationsAsync({
+    required String storyText,
+    required String characterName,
+    required int age,
+    String style = "simple, colorful children's book illustration for early readers",
+    int numImages = 1,
+    Duration timeout = const Duration(minutes: 2), // Long timeout for images
+    http.Client? client,
+  }) async {
+    final httpClient = client ?? _testClient ?? http.Client();
+    final backendUrl = Environment.backendUrl;
+    final uri = Uri.parse('$backendUrl/generate-illustrations');
+
+    try {
+      final response = await httpClient
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'scene_description': storyText,
+              'character_name': characterName,
+              'age': age,
+              'style': style,
+              'num_images': numImages,
+            }),
+          )
+          .timeout(timeout);
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final data = decoded is Map<String, dynamic> ? decoded : {'data': decoded};
+        
+        final illustrations = (data['illustrations'] as List?)
+                ?.whereType<Map<String, dynamic>>()
+                .toList() ??
+            [];
+        return illustrations;
+      } else {
+        // Fallback decode for error message
+        final decoded = jsonDecode(response.body);
+        final data = decoded is Map<String, dynamic> ? decoded : {'data': decoded};
+        final errorMsg = data['error'] ?? 'Unknown error ${response.statusCode}';
+        throw HttpException(
+          'Failed to fetch illustrations: $errorMsg',
+          uri: uri,
+        );
+      }
+    } on TimeoutException {
+      throw HttpException(
+        'Illustration generation timed out after ${timeout.inSeconds}s',
+        uri: uri,
+      );
+    } catch (e) {
+      if (e is HttpException) rethrow;
+      throw HttpException(
+        'Failed to fetch illustrations: $e',
+        uri: uri,
+      );
+    }
+  }
+
+  /// Fetch illustrations asynchronously for a generated story
+  /// This is called after story generation completes to avoid timeout
+  static Future<List<Map<String, dynamic>>> fetchIllustrationsAsync({
+    required String storyText,
+    required String characterName,
+    required int age,
+    String style = "simple, colorful children's book illustration for early readers",
+    int numImages = 1,
+    Duration timeout = const Duration(minutes: 2), // Long timeout for images
+    http.Client? client,
+  }) async {
+    final httpClient = client ?? _testClient ?? http.Client();
+    final backendUrl = Environment.backendUrl;
+    final uri = Uri.parse('$backendUrl/generate-illustrations');
+
+    try {
+      final response = await httpClient
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'scene_description': storyText,
+              'character_name': characterName,
+              'age': age,
+              'style': style,
+              'num_images': numImages,
+            }),
+          )
+          .timeout(timeout);
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final data = decoded is Map<String, dynamic> ? decoded : {'data': decoded};
+        
+        final illustrations = (data['illustrations'] as List?)
+                ?.whereType<Map<String, dynamic>>()
+                .toList() ??
+            [];
+        return illustrations;
+      } else {
+        // Fallback decode for error message
+        final decoded = jsonDecode(response.body);
+        final data = decoded is Map<String, dynamic> ? decoded : {'data': decoded};
+        final errorMsg = data['error'] ?? 'Unknown error ${response.statusCode}';
+        throw HttpException(
+          'Failed to fetch illustrations: $errorMsg',
+          uri: uri,
+        );
+      }
+    } on TimeoutException {
+      throw HttpException(
+        'Illustration generation timed out after ${timeout.inSeconds}s',
+        uri: uri,
+      );
+    } catch (e) {
+      if (e is HttpException) rethrow;
+      throw HttpException(
+        'Failed to fetch illustrations: $e',
+        uri: uri,
+      );
     }
   }
 }

@@ -55,13 +55,20 @@ def create_story_blueprint(
             "character": payload.get("character"),
             "theme": theme,
             "user_id": user_id,
+            "user_id": user_id,
             "include_illustrations": payload.get("include_illustrations", False),
+            "async_illustrations": payload.get("async_illustrations", False),
             "rhyme_time_mode": payload.get("rhyme_time_mode", False),
             "learning_to_read_mode": payload.get("learning_to_read_mode", False),
             "companion": payload.get("companion"),
             "therapeutic_prompt": payload.get("therapeutic_prompt", ""),
             "feelings_prompt": payload.get("feelings_prompt"),
         }
+
+        # If async mode is requested, disable inline illustrations but pass the flag
+        if task_kwargs.get("async_illustrations"):
+            task_kwargs["include_illustrations"] = False
+            logger.info("Async illustrations enabled - skipping inline generation")
 
         try:
             task = generate_story_task.delay(**task_kwargs)
@@ -89,6 +96,7 @@ def create_story_blueprint(
                     "task_id": None,
                     "theme": story_payload.get("theme"),
                     "wisdom_gem": story_payload.get("wisdom_gem"),
+                    "async_illustrations": payload.get("async_illustrations", False),
                 }
                 return jsonify(response_payload), 200
             except Exception as fallback_exc:

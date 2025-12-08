@@ -25,28 +25,41 @@ class GeminiImageGenerator:
 
             genai.configure(api_key=self.api_key)
             self.genai = genai
-            # Use Gemini 2.0 Flash with image generation capability
-            self.image_model = genai.GenerativeModel("gemini-2.0-flash-exp-image-generation")
+            # Use Gemini 2.5 Flash Image (Nano Banana) - Free via Gemini API
+            self.image_model = genai.GenerativeModel("gemini-2.5-flash-image")
 
     def _ensure_model(self):
         if not self.image_model or not self.genai:
             raise RuntimeError("Gemini image model is not initialized")
 
     def _process_image_response(self, response, prompt) -> list:
-        """Helper to process the response from generate_content and extract images."""
+        """Helper to process the response from generate_content and extract images from Nano Banana."""
         images = []
-        if response.candidates:
-            for i, candidate in enumerate(response.candidates):
-                for part in candidate.content.parts:
-                    if part.mime_type and part.mime_type.startswith('image/'):
-                        image_data = part.inline_data.data
-                        images.append({
-                            'id': f"{uuid.uuid4()}_{i}",
-                            'prompt': prompt,
-                            'image_data': base64.b64encode(image_data).decode('utf-8'),
-                            'format': 'png',
-                            'generated_at': datetime.now().isoformat(),
-                        })
+        try:
+            if hasattr(response, 'candidates') and response.candidates:
+                for i, candidate in enumerate(response.candidates):
+                    if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
+                        for part in candidate.content.parts:
+                            # Nano Banana returns images differently - check for inline_data attribute
+                            if hasattr(part, 'inline_data') and part.inline_data:
+                                try:
+                                    image_data = part.inline_data.data
+                                    # Data is already bytes, encode to base64
+                                    images.append({
+                                        'id': f"{uuid.uuid4()}_{i}",
+                                        'prompt': prompt,
+                                        'image_data': base64.b64encode(image_data).decode('utf-8'),
+                                        'format': 'png',
+                                        'generated_at': datetime.now().isoformat(),
+                                    })
+                                    logger.info(f"Successfully extracted image {i} from Nano Banana response")
+                                except Exception as e:
+                                    logger.error(f"Failed to extract image data from part: {e}")
+            else:
+                logger.warning("Response has no candidates or unexpected structure")
+        except Exception as e:
+            logger.exception("Error processing image response from Nano Banana")
+        
         return images
 
     def generate_story_illustration(

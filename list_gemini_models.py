@@ -5,7 +5,12 @@ import google.generativeai as genai
 # Replace 'YOUR_GEMINI_API_KEY' with your actual Gemini API Key.
 # You can find this in your Railway project's environment variables.
 # Do NOT commit your API key to source control.
-GEMINI_API_KEY = "REDACTED-ROTATED-KEY" # <--- REPLACE THIS LINE
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path='backend/.env')
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+print(f"DEBUG: Loaded API Key: {GEMINI_API_KEY[:5]}...{GEMINI_API_KEY[-4:] if GEMINI_API_KEY else ''}")
+print(f"DEBUG: Current working directory: {os.getcwd()}")
 
 if not GEMINI_API_KEY or GEMINI_API_KEY == "YOUR_GEMINI_API_KEY":
     print("Error: Please replace 'YOUR_GEMINI_API_KEY' with your actual API key.")

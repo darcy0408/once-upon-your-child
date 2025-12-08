@@ -62,27 +62,36 @@ BorderRadius.circular(16)),
           ),
         ],
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '${_getFriendlyMessage()}\n\nDebug: $error',
-            style: const TextStyle(fontSize: 16),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue[50],
-              borderRadius: BorderRadius.circular(8),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _getFriendlyMessage(),
+              style: const TextStyle(fontSize: 16),
             ),
-            child: Text(
-              _getSuggestedAction(),
-              style: TextStyle(fontSize: 14, color: Colors.blue[900]),
+            const SizedBox(height: 16),
+            if (error.toString().contains('Debug:')) ...[
+              Text(
+                error.toString(),
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+            ],
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                _getSuggestedAction(),
+                style: TextStyle(fontSize: 14, color: Colors.blue[900]),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       actions: [
         if (onCancel != null)

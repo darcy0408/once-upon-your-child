@@ -535,6 +535,7 @@ class _StoryScreenState extends State<StoryScreen> {
             isRhyming: _rhymeTimeMode,
             backendIllustrations: storyResult.illustrations,
             subscription: _currentSubscription,
+            asyncIllustrations: storyResult.asyncIllustrations,
           ),
         ),
       );

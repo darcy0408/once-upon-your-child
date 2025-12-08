@@ -20,6 +20,15 @@ class User(db.Model):
     # Feature unlock tracking
     stories_created_count = db.Column(db.Integer, default=0, nullable=False)
 
+    # BYOK (Bring Your Own API Key) support
+    gemini_api_key_encrypted = db.Column(db.Text, nullable=True)  # Encrypted API key
+    has_byok = db.Column(db.Boolean, default=False, nullable=False)  # Quick flag for BYOK status
+    
+    # Monthly usage tracking for free tier limits
+    stories_generated_this_month = db.Column(db.Integer, default=0, nullable=False)
+    illustrations_generated_this_month = db.Column(db.Integer, default=0, nullable=False)
+    usage_reset_date = db.Column(db.DateTime, nullable=True)  # When to reset monthly counters
+
     # Relationships
     characters = db.relationship('Character', backref='user', lazy=True)
     stories = db.relationship('Story', backref='user', lazy=True)
@@ -43,4 +52,10 @@ class User(db.Model):
             'cancel_at_period_end': self.cancel_at_period_end,
             'stripe_customer_id': self.stripe_customer_id,
             'stories_created_count': self.stories_created_count,
+            # BYOK fields
+            'has_byok': self.has_byok,
+            'stories_generated_this_month': self.stories_generated_this_month,
+            'illustrations_generated_this_month': self.illustrations_generated_this_month,
+            'usage_reset_date': self.usage_reset_date.isoformat() if self.usage_reset_date else None,
+            # Note: Never expose gemini_api_key_encrypted in API responses
         }

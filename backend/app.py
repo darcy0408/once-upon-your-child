@@ -250,6 +250,10 @@ def create_app(config_name):
     app.register_blueprint(subscription_bp)
     app.register_blueprint(user_routes)
 
+    # Register API key routes
+    from .routes.api_key_routes import api_key_routes
+    app.register_blueprint(api_key_routes)
+
     from .routes.story_routes import create_story_blueprint
     from .routes.character_routes import create_character_blueprint
     from .routes.admin_routes import create_admin_blueprint

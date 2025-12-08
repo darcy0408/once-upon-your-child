@@ -79,11 +79,12 @@ class TestingConfig(Config):
 
 config_by_name = dict(
     dev=DevelopmentConfig,
+    development=DevelopmentConfig,
     prod=ProductionConfig,
-    production=ProductionConfig,  # Alias for prod
-    default=DevelopmentConfig,  # Default to development
+    production=ProductionConfig,
+    default=ProductionConfig,
     testing=TestingConfig
 )
 
 key = os.environ.get("FLASK_ENV", "prod")
-config = config_by_name[key]
+config = config_by_name.get(key, ProductionConfig)

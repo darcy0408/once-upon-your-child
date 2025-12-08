@@ -30,6 +30,7 @@ class _IllustratedStoryViewerState extends State<IllustratedStoryViewer> {
   late final StoryNarrator _narrator;
   int _currentPage = 0;
   bool _isNarrating = false;
+  bool _debugPremiumMode = false; // Debug toggle
 
   @override
   void initState() {
@@ -95,6 +96,11 @@ class _IllustratedStoryViewerState extends State<IllustratedStoryViewer> {
         backgroundColor: Colors.deepPurple,
         actions: [
           IconButton(
+            icon: Icon(_debugPremiumMode ? Icons.star : Icons.star_border),
+            onPressed: () => setState(() => _debugPremiumMode = !_debugPremiumMode),
+            tooltip: _debugPremiumMode ? 'Premium: ON' : 'Premium: OFF',
+          ),
+          IconButton(
             icon: Icon(_isNarrating ? Icons.pause : Icons.play_arrow),
             onPressed: _toggleNarration,
             tooltip: _isNarrating ? 'Pause' : 'Play',
@@ -107,8 +113,9 @@ class _IllustratedStoryViewerState extends State<IllustratedStoryViewer> {
 
   /// Build tier-specific view (free: sticky header, premium: page view)
   Widget _buildTierBasedView() {
-    final isFree = widget.subscriptionTier == null || 
-                    widget.subscriptionTier == 'free';
+    final isFree = _debugPremiumMode 
+        ? false // Debug override
+        : (widget.subscriptionTier == null || widget.subscriptionTier == 'free');
     
     if (isFree && widget.illustrations.isNotEmpty) {
       return _buildFreeView();

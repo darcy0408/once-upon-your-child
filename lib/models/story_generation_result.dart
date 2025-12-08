@@ -4,6 +4,7 @@ class StoryGenerationResult {
   final String? wisdomGem;
   final bool usedUserKey;
   final List<Map<String, dynamic>> illustrations;
+  final bool asyncIllustrations; // True if illustrations will be loaded asynchronously
 
   const StoryGenerationResult({
     required this.storyText,
@@ -11,6 +12,7 @@ class StoryGenerationResult {
     this.wisdomGem,
     this.usedUserKey = false,
     this.illustrations = const [],
+    this.asyncIllustrations = false,
   });
 
   factory StoryGenerationResult.fromBackend(Map<String, dynamic> json) {
@@ -27,6 +29,7 @@ class StoryGenerationResult {
       wisdomGem: json['wisdom_gem'] as String?,
       usedUserKey: json['used_user_key'] as bool? ?? false,
       illustrations: rawIllustrations,
+      asyncIllustrations: json['async_illustrations'] as bool? ?? false,
     );
   }
 }
