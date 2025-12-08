@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 enum Flavor {
@@ -82,7 +83,16 @@ class FlavorConfig {
         );
       default:
         // const devBackend = 'https://story-weaver-app-production.up.railway.app'; // Temporarily using Railway
-        const devBackend = 'http://127.0.0.1:5000'; // Switch back for local testing
+        String devBackend = 'http://127.0.0.1:5000'; 
+        
+        try {
+          if (Platform.isAndroid) {
+            devBackend = 'http://10.0.2.2:5000';
+          }
+        } catch (_) {
+          // Ignore platform check errors (e.g. on web)
+        }
+
         final backendUrl = customBackendOverride.isNotEmpty
             ? customBackendOverride
             : devBackend;
