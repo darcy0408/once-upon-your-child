@@ -25,8 +25,12 @@ class Config:
     JSON_SORT_KEYS = False
     
     # Gemini API
-    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-    GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-pro-latest")
+    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+    GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')
+    
+    # Celery Configuration - Run tasks synchronously in development (no Redis needed)
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
     
     # CORS - Build allowed origins dynamically
     @staticmethod
