@@ -49,8 +49,8 @@ class CharacterAvatar {
 
   /// Translate this avatar into an Avataaars URL for rich SVG rendering.
   String toAvataaarsUrl({bool circleBackground = true}) {
-    // Use DiceBear Avataaars style with specific parameters that actually customize the avatar
     final params = <String, String>{
+      // Seed keeps avatars consistent across sessions
       'seed': '$skinColor$hairColor$hairStyle'.toLowerCase(),
       'skinColor': _mapSkinColorToDiceBear(skinColor),
       'hairColor': _mapHairColorToDiceBear(hairColor),
@@ -60,10 +60,9 @@ class CharacterAvatar {
       'clothes': _mapClothingTypeToDiceBear(clothingStyle),
       'clothesColor': _mapClothingColorToDiceBear(clothingColor),
       if (circleBackground) 'backgroundColor': 'b6e3f4',
-    };
+    }..removeWhere((_, value) => value.isEmpty);
 
-    final queryString = params.entries.map((e) => '${e.key}=${e.value}').join('&');
-    return 'https://api.dicebear.com/7.x/avataaars/svg?$queryString';
+    return Uri.https('api.dicebear.com', '/7.x/avataaars/svg', params).toString();
   }
 
   /// Create a copy with optional parameter overrides
@@ -182,76 +181,81 @@ String _mapSkinColorToDiceBear(String value) {
   switch (value.toLowerCase()) {
     case 'yellow':
     case 'tanned':
-      return 'tanned';
+      return 'e4b899';
     case 'pale':
     case 'porcelainwhite':
     case 'verypale':
-      return 'pale';
+      return 'f5d5c4';
     case 'brown':
-      return 'brown';
+      return 'b57c57';
     case 'darkbrown':
     case 'deepbrown':
-      return 'darkBrown';
+      return '8d5524';
     case 'black':
     case 'verydark':
-      return 'black';
+      return '4a3228';
     default:
-      return 'light';
+      return 'fddac7';
   }
 }
 
 String _mapHairColorToDiceBear(String value) {
   switch (value.toLowerCase()) {
     case 'auburn':
-      return 'auburn';
+      return '7c2d12';
     case 'black':
-      return 'black';
+      return '1a1a1a';
     case 'blonde':
     case 'blondegolden':
-      return 'blonde';
+      return 'f1e2b8';
     case 'brown':
     case 'browndark':
-      return 'brown';
+      return '4a312c';
     case 'pastelpink':
-      return 'pastelPink';
+      return 'f59797';
     case 'platinum':
     case 'silvergray':
-      return 'silverGray';
+      return 'e8e1e1';
     case 'red':
-      return 'red';
+      return 'c93305';
     default:
-      return 'brown';
+      return '8d5524';
   }
 }
 
 String _mapClothingColorToDiceBear(String value) {
   switch (value.toLowerCase()) {
     case 'black':
-      return 'black';
+      return '262e33';
     case 'blue01':
+      return '65c9ff';
     case 'blue02':
+      return '5199e4';
     case 'blue03':
+      return '25557c';
     case 'pastelblue':
-      return 'blue03';
+      return 'b1e2ff';
     case 'gray01':
+      return 'e6e6e6';
     case 'gray02':
+      return '929598';
     case 'heather':
-      return 'heather';
+      return '3c4f5c';
     case 'pastelgreen':
-      return 'pastelGreen';
+      return 'a7ffc4';
     case 'pastelorange':
-      return 'pastelOrange';
+      return 'ffafb9';
     case 'pastelred':
     case 'red':
-      return 'pastelRed';
+      return 'ff5c5c';
     case 'pastelyellow':
-      return 'pastelYellow';
+      return 'ffffb1';
     case 'pink':
-      return 'pink';
+      return 'ff488e';
     case 'white':
-      return 'white';
+      return 'ffffff';
     default:
-      return 'blue03';
+      return '65c9ff';
   }
 }
 
@@ -259,29 +263,29 @@ String _mapTopTypeToDiceBear(String value) {
   // Map our hair styles to DiceBear's camelCase options
   switch (value) {
     case 'ShortHairShortFlat':
-      return 'shortHairShortFlat';
+      return 'shortFlat';
     case 'ShortHairShortCurly':
-      return 'shortHairShortCurly';
+      return 'shortCurly';
     case 'ShortHairShortWaved':
-      return 'shortHairShortWaved';
+      return 'shortWaved';
     case 'LongHairStraight':
-      return 'longHairStraight';
+      return 'straight02';
     case 'LongHairCurly':
-      return 'longHairCurly';
+      return 'curly';
     case 'LongHairBigHair':
-      return 'longHairBigHair';
+      return 'bigHair';
     case 'LongHairBun':
-      return 'longHairBun';
+      return 'bun';
     case 'LongHairBraids':
-      return 'longHairDreads';
+      return 'dreads01';
     case 'LongHairPonytail':
-      return 'shortHairShaggyMullet'; // closest
+      return 'longButNotTooLong';
     case 'Hijab':
       return 'hijab';
     case 'Hat':
       return 'hat';
     default:
-      return 'shortHairShortFlat';
+      return 'shortFlat';
   }
 }
 

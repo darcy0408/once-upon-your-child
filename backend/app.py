@@ -4,31 +4,61 @@ import logging
 import traceback
 from datetime import datetime
 import time
+import sys
+
+# Ensure backend package is importable when running as script
+if __name__ == '__main__' and __package__ is None:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 
-from .config import config, config_by_name
-from .database import db
-from .celery_config import celery
-# Import models in dependency order (Story and Character first, then User which references them)
-from .models.story import Story
-from .models.character import Character
-from .models.achievement import UserAchievement, AchievementStats
-from .models.user import User
+try:
+    from backend.config import config, config_by_name
+    from backend.database import db
+    from backend.celery_config import celery
+    # Import models in dependency order (Story and Character first, then User which references them)
+    from backend.models.story import Story
+    from backend.models.character import Character
+    from backend.models.achievement import UserAchievement, AchievementStats
+    from backend.models.user import User
 
-from .services.story_service import AdvancedStoryEngine
-from .cost_tracking import track_cost
-from .utils.app_helpers import (
-    get_user_identifier,
-    get_user_tier,
-    get_tier_limits,
-    is_production,
-    make_filter_story_content,
-    make_log_error,
-    make_add_request_id,
-    make_log_response,
-    make_handle_error,
-)
+    from backend.services.story_service import AdvancedStoryEngine
+    from backend.cost_tracking import track_cost
+    from backend.utils.app_helpers import (
+        get_user_identifier,
+        get_user_tier,
+        get_tier_limits,
+        is_production,
+        make_filter_story_content,
+        make_log_error,
+        make_add_request_id,
+        make_log_response,
+        make_handle_error,
+    )
+except ImportError:
+    # Fallback if backend package not found (e.g. running from inside backend dir without path fix)
+    from config import config, config_by_name
+    from database import db
+    from celery_config import celery
+    from models.story import Story
+    from models.character import Character
+    from models.achievement import UserAchievement, AchievementStats
+    from models.user import User
+
+    from services.story_service import AdvancedStoryEngine
+    from cost_tracking import track_cost
+    from utils.app_helpers import (
+        get_user_identifier,
+        get_user_tier,
+        get_tier_limits,
+        is_production,
+        make_filter_story_content,
+        make_log_error,
+        make_add_request_id,
+        make_log_response,
+        make_handle_error,
+    )
 
 from flask_jwt_extended import JWTManager
 from flask_limiter import Limiter
@@ -151,33 +181,49 @@ def create_app(config_name):
     GEMINI_MODEL = app.config.get("GEMINI_MODEL", "models/gemini-2.5-flash")
     api_key = None if testing_mode else app.config.get("GEMINI_API_KEY")
     genai = None
-    print(f"DEBUG: api_key from config = {api_key}")
-    print(f"DEBUG: bool(api_key) = {bool(api_key)}")
-    if not api_key:
-        logger.warning("GEMINI_API_KEY not set. Generation endpoints will use fallbacks.")
-        model = None
+    print(f"DEBUG: GEMINI_MODEL set to {GEMINI_MODEL}")
+    api_key = None if testing_mode else app.config.get("GEMINI_API_KEY")
+    genai = None
+    print(f"DEBUG: API key from app.config.get(\"GEMINI_API_KEY\") is present: {bool(api_key)}")
+    if api_key:
+        print(f"DEBUG: Masked API key in app.py: {api_key[:4]}...{api_key[-4:]}")
     else:
+        logger.warning("GEMINI_API_KEY not set in Flask app config. Generation endpoints will use fallbacks.")
+        model = None
+
+    if api_key:
         try:
             import google.generativeai as genai  # Local import to avoid slow startup in tests
+            logger.info("google.generativeai imported successfully.")
         except Exception as e:
-            logger.exception("Failed to import google.generativeai: %s", e)
+            logger.exception("Failed to import google.generativeai. Please ensure the library is installed: %s", e)
             genai = None
+
         if genai:
-            genai.configure(api_key=api_key)
-            print("DEBUG: Gemini configured with API key")
-            GEMINI_MODEL = app.config.get("GEMINI_MODEL", "models/gemini-2.5-flash")
             try:
-                model = genai.GenerativeModel(GEMINI_MODEL)
+                genai.configure(api_key=api_key)
+                logger.info("Gemini configured with API key.")
+                try:
+                    model = genai.GenerativeModel(GEMINI_MODEL)
+                    logger.info(f"Gemini model '{GEMINI_MODEL}' initialized successfully.")
+                except Exception as e:
+                    logger.exception(f"Failed to initialize Gemini model '{GEMINI_MODEL}': %s", e)
+                    model = None
             except Exception as e:
-                logger.exception("Failed to initialize Gemini model: %s", e)
+                logger.exception("Failed to configure Gemini with API key: %s", e)
+                genai = None
                 model = None
         else:
             model = None
             api_key = None
 
     # Initialize Stripe (configured via blueprint setup now)
-    from .routes.stripe_routes import stripe_routes, init_stripe_api
-    from .routes.webhook_handler import webhook_routes
+    try:
+        from backend.routes.stripe_routes import stripe_routes, init_stripe_api
+        from backend.routes.webhook_handler import webhook_routes
+    except ImportError:
+        from routes.stripe_routes import stripe_routes, init_stripe_api
+        from routes.webhook_handler import webhook_routes
 
     if not testing_mode:
         init_stripe_api(app)
@@ -189,12 +235,18 @@ def create_app(config_name):
     try:
         openrouter_key = os.getenv("OPENROUTER_API_KEY") if not testing_mode else None
         if openrouter_key:
-            from .openrouter_image_generator import OpenRouterImageGenerator
+            try:
+                from backend.openrouter_image_generator import OpenRouterImageGenerator
+            except ImportError:
+                from openrouter_image_generator import OpenRouterImageGenerator
 
             image_generator = OpenRouterImageGenerator(api_key=openrouter_key)
             logger.info("Image generator initialized with OpenRouter (cost-optimized)")
         elif api_key and not testing_mode:
-            from .gemini_image_generator import GeminiImageGenerator
+            try:
+                from backend.gemini_image_generator import GeminiImageGenerator
+            except ImportError:
+                from gemini_image_generator import GeminiImageGenerator
 
             image_generator = GeminiImageGenerator()
             logger.info("Image generator initialized with Gemini")
@@ -235,10 +287,16 @@ def create_app(config_name):
                 }
             )
 
-    from .analytics_routes import analytics_bp
-    from .routes.achievement_routes import achievement_bp
-    from .routes.subscription_routes import subscription_routes as subscription_bp
-    from .routes.user_routes import user_routes
+    try:
+        from backend.analytics_routes import analytics_bp
+        from backend.routes.achievement_routes import achievement_bp
+        from backend.routes.subscription_routes import subscription_routes as subscription_bp
+        from backend.routes.user_routes import user_routes
+    except ImportError:
+        from analytics_routes import analytics_bp
+        from routes.achievement_routes import achievement_bp
+        from routes.subscription_routes import subscription_routes as subscription_bp
+        from routes.user_routes import user_routes
 
     print(f"=== Registering routes ===")
     if stripe_routes:
@@ -250,11 +308,18 @@ def create_app(config_name):
     app.register_blueprint(subscription_bp)
     app.register_blueprint(user_routes)
 
-    from .routes.story_routes import create_story_blueprint
-    from .routes.character_routes import create_character_blueprint
-    from .routes.admin_routes import create_admin_blueprint
-    from .routes.health_routes import create_health_blueprint
-    from .routes.utility_routes import create_utility_blueprint
+    try:
+        from backend.routes.story_routes import create_story_blueprint
+        from backend.routes.character_routes import create_character_blueprint
+        from backend.routes.admin_routes import create_admin_blueprint
+        from backend.routes.health_routes import create_health_blueprint
+        from backend.routes.utility_routes import create_utility_blueprint
+    except ImportError:
+        from routes.story_routes import create_story_blueprint
+        from routes.character_routes import create_character_blueprint
+        from routes.admin_routes import create_admin_blueprint
+        from routes.health_routes import create_health_blueprint
+        from routes.utility_routes import create_utility_blueprint
 
     story_bp = create_story_blueprint(
         limiter=limiter,
@@ -285,3 +350,7 @@ def create_app(config_name):
     print(f"=== All routes registered successfully ===")
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
     return app
+
+if __name__ == '__main__':
+    app = create_app(os.getenv('FLASK_ENV') or 'development')
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)))

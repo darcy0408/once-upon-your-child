@@ -7,10 +7,16 @@ dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 if os.path.exists(dotenv_path):
     print(f"Loading .env from: {dotenv_path}")
     load_dotenv(dotenv_path=dotenv_path, override=True)
-    print(f"GEMINI_API_KEY loaded: {bool(os.environ.get('GEMINI_API_KEY'))}")
+    loaded_key = os.environ.get('GEMINI_API_KEY')
+    print(f"GEMINI_API_KEY loaded: {bool(loaded_key)}")
+    if loaded_key:
+        print(f"Masked GEMINI_API_KEY: {loaded_key[:4]}...{loaded_key[-4:]}")
 else:
     print(f"No .env file found at {dotenv_path}, using system environment variables")
-    print(f"GEMINI_API_KEY present: {bool(os.environ.get('GEMINI_API_KEY'))}")
+    system_key = os.environ.get('GEMINI_API_KEY')
+    print(f"GEMINI_API_KEY present: {bool(system_key)}")
+    if system_key:
+        print(f"Masked GEMINI_API_KEY: {system_key[:4]}...{system_key[-4:]}")
 
 class Config:
     """Base configuration."""
@@ -51,6 +57,8 @@ class Config:
                 "http://127.0.0.1:3000",
                 "http://localhost:5000",
                 "http://127.0.0.1:5000",
+                "http://10.0.2.2:8080",
+                "http://10.0.2.2:5000",
             ])
 
         return base_origins
@@ -79,9 +87,10 @@ class TestingConfig(Config):
 
 config_by_name = dict(
     dev=DevelopmentConfig,
+    development=DevelopmentConfig,
     prod=ProductionConfig,
-    production=ProductionConfig,  # Alias for prod
-    default=DevelopmentConfig,  # Default to development
+    production=ProductionConfig,
+    default=ProductionConfig,
     testing=TestingConfig
 )
 
