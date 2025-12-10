@@ -8,6 +8,30 @@
 
 ---
 
+## 🌿 IMPORTANT: Branch Setup
+
+**YOU MUST BE ON THE `feature/gui-redesign` BRANCH!**
+
+Before starting any tasks, run these commands:
+
+```bash
+git checkout feature/gui-redesign
+git pull origin feature/gui-redesign
+```
+
+**Verify you're on the right branch:**
+```bash
+git branch --show-current
+```
+
+**Expected output:** `feature/gui-redesign`
+
+If you see `main` or any other branch, **STOP** and checkout the correct branch first.
+
+**Why?** All the wizard files only exist on the `feature/gui-redesign` branch. If you're on `main`, you won't have the necessary files.
+
+---
+
 ## ✅ Prerequisites Check
 
 Before starting, verify these files exist:
@@ -254,6 +278,7 @@ Navigator.pushReplacement(
 ## ✅ Definition of Done
 
 You're done when:
+- [ ] **VERIFIED:** You're on `feature/gui-redesign` branch
 - [ ] User can navigate to the wizard from the main app
 - [ ] All 4 wizard steps are accessible
 - [ ] Moon phase progress indicator shows correctly
@@ -261,6 +286,7 @@ You're done when:
 - [ ] Tapping "Make Magic" does something (even if just a message)
 - [ ] No console errors during navigation
 - [ ] Code is committed to `feature/gui-redesign` branch
+- [ ] Changes are pushed to remote: `git push origin feature/gui-redesign`
 
 ---
 
@@ -268,15 +294,18 @@ You're done when:
 
 When done, commit with:
 
-```
-feat: Wire up wizard to main app navigation
+```bash
+git add .
+git commit -m "feat: Wire up wizard to main app navigation
 
 - Add navigation from main story screen to wizard
 - Update button to launch WizardStoryScreen
 - Test all 4 wizard steps accessible
 - Wizard flows from Step 1 → Step 4 without errors
 
-Next: API integration for story generation
+Next: API integration for story generation"
+
+git push origin feature/gui-redesign
 ```
 
 ---
