@@ -9,16 +9,21 @@ import 'avatar_models.dart';
 class CustomizableAvatarWidget extends StatelessWidget {
   final CharacterAvatar avatar;
   final double size;
+  final String? customSeed;
 
   const CustomizableAvatarWidget({
     super.key,
     required this.avatar,
     this.size = 120,
+    this.customSeed,
   });
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = avatar.toAvataaarsUrl(circleBackground: false);
+    final imageUrl = avatar.toAvataaarsUrl(
+      circleBackground: false,
+      customSeed: customSeed,
+    );
 
     // Debug: print the avatar URL
     print('?? Avatar URL: $imageUrl');

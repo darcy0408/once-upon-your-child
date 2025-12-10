@@ -62,70 +62,76 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
               horizontal: AppSpacing.lg,
               vertical: AppSpacing.xl,
             ),
-            child: Column(
-              children: [
-                // Title
-                Text(
-                  'Create a Character',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: AppColors.textDark,
-                        fontWeight: FontWeight.bold,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-
-                // Subtitle
-                Text(
-                  'Choose an archetype to start',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textDark.withAlpha(179), // 70% opacity
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.xl),
-
-                // Archetype cards (horizontal scroll)
-                SizedBox(
-                  height: 240,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                    itemCount: CharacterArchetypes.all.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(width: AppSpacing.md),
-                    itemBuilder: (context, index) {
-                      final archetype = CharacterArchetypes.all[index];
-                      final isSelected = _selectedArchetypeId == archetype.name;
-
-                      return ArchetypeCard(
-                        icon: archetype.icon,
-                        name: archetype.name,
-                        description: archetype.description,
-                        traits: archetype.traits,
-                        isSelected: isSelected,
-                        onUseTemplate: () => _selectArchetype(archetype),
-                      );
-                    },
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Title
+                  Text(
+                    'Create a Character',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: AppColors.textDark,
+                          fontWeight: FontWeight.bold,
+                        ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-                const Spacer(),
+                  const SizedBox(height: AppSpacing.sm),
 
-                // Continue button (only shown when archetype selected)
-                if (_canContinue)
-                  AnimatedOpacity(
-                    opacity: _canContinue ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 300),
-                    child: PillButton(
-                      emoji: '➡️',
-                      label: 'Continue',
-                      onTap: widget.onNext,
-                      variant: PillButtonVariant.purple,
-                      isSelected: true,
+                  // Subtitle
+                  Text(
+                    'Choose an archetype to start',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppColors.textDark.withAlpha(179), // 70% opacity
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // Archetype cards (horizontal scroll)
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minHeight: 200,
+                      maxHeight: 240,
+                    ),
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                      itemCount: CharacterArchetypes.all.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(width: AppSpacing.md),
+                      itemBuilder: (context, index) {
+                        final archetype = CharacterArchetypes.all[index];
+                        final isSelected = _selectedArchetypeId == archetype.name;
+
+                        return ArchetypeCard(
+                          icon: archetype.icon,
+                          name: archetype.name,
+                          description: archetype.description,
+                          traits: archetype.traits,
+                          isSelected: isSelected,
+                          onUseTemplate: () => _selectArchetype(archetype),
+                        );
+                      },
                     ),
                   ),
-                const SizedBox(height: AppSpacing.md),
-              ],
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // Continue button (only shown when archetype selected)
+                  if (_canContinue)
+                    AnimatedOpacity(
+                      opacity: _canContinue ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 300),
+                      child: PillButton(
+                        emoji: '➡️',
+                        label: 'Continue',
+                        onTap: widget.onNext,
+                        variant: PillButtonVariant.purple,
+                        isSelected: true,
+                      ),
+                    ),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+              ),
             ),
           ),
         ),

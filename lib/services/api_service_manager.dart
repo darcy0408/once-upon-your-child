@@ -64,7 +64,6 @@ class ApiServiceManager {
         'Request failed: ${error.message}\n\nPlease try again.',
       );
     }
-    }
   }
 
   Future<Map<String, dynamic>> get(
@@ -100,7 +99,6 @@ class ApiServiceManager {
       throw Exception(
         'Request failed: ${error.message}\n\nPlease try again.',
       );
-    }
     }
   }
 

@@ -48,10 +48,11 @@ class CharacterAvatar {
       };
 
   /// Translate this avatar into an Avataaars URL for rich SVG rendering.
-  String toAvataaarsUrl({bool circleBackground = true}) {
+  String toAvataaarsUrl({bool circleBackground = true, String? customSeed}) {
     final params = <String, String>{
       // Seed keeps avatars consistent across sessions
-      'seed': '$skinColor$hairColor$hairStyle'.toLowerCase(),
+      // Use customSeed if provided (e.g. character ID), otherwise fallback to attributes
+      'seed': customSeed ?? '$skinColor$hairColor$hairStyle'.toLowerCase(),
       // Turn off facial hair so kid avatars stay gender-neutral unless we add explicit options
       'facialHairProbability': '0',
       'skinColor': _mapSkinColorToDiceBear(skinColor),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/api_service_manager.dart';
+import '../../services/achievement_service.dart';
 import '../../story_result_screen.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/make_magic_button.dart';
@@ -60,6 +61,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
 
       if (mounted) {
         // Navigate to result
+        debugPrint('🚀 MagicReviewStep: Navigating to StoryResultScreen');
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (context) => StoryResultScreen(
@@ -72,6 +74,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
               // Track this as a new story
               trackStoryCreation: true,
               trackAnalytics: true,
+              achievementsService: AchievementService(),
+              storyCreatedAt: DateTime.now(),
             ),
           ),
         );

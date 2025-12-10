@@ -1379,6 +1379,7 @@ class _StoryScreenState extends State<StoryScreen> {
       child: CustomizableAvatarWidget(
         avatar: avatar,
         size: size - 8,
+        customSeed: character.id,
       ),
     );
   }
