@@ -1,0 +1,434 @@
+import 'package:flutter/material.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/pill_button.dart';
+import '../wizard_story_screen.dart';
+
+/// Step 2: The Feeling Selection
+///
+/// Layout:
+/// - Scenario carousel (swipeable cards)
+/// - Emoji focus chips (multi-select)
+/// - Parental override (discrete gear icon)
+/// - Continue button
+class FeelingSelectionStep extends StatefulWidget {
+  final WizardData wizardData;
+  final VoidCallback onNext;
+
+  const FeelingSelectionStep({
+    super.key,
+    required this.wizardData,
+    required this.onNext,
+  });
+
+  @override
+  State<FeelingSelectionStep> createState() => _FeelingSelectionStepState();
+}
+
+class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
+  String? _selectedScenario;
+  final Set<String> _selectedEmotions = {};
+  bool _showParentalInput = false;
+  final TextEditingController _parentalNoteController = TextEditingController();
+
+  final List<ScenarioCard> _scenarios = [
+    ScenarioCard(
+      id: 'school_jitters',
+      emoji: '😬',
+      title: 'School Jitters',
+      illustration: '🎒',
+      description: 'Nervous about school or new situations',
+    ),
+    ScenarioCard(
+      id: 'big_feelings',
+      emoji: '🌋',
+      title: 'Managing Big Feelings',
+      illustration: '😡➡️😌',
+      description: 'Learning to handle strong emotions',
+    ),
+    ScenarioCard(
+      id: 'making_friends',
+      emoji: '🤝',
+      title: 'Making Friends',
+      illustration: '👫',
+      description: 'Building friendships and social skills',
+    ),
+    ScenarioCard(
+      id: 'being_brave',
+      emoji: '🛡️',
+      title: 'Being Brave',
+      illustration: '🦁',
+      description: 'Facing fears with courage',
+    ),
+    ScenarioCard(
+      id: 'calm_moments',
+      emoji: '🌊',
+      title: 'Calm Moments',
+      illustration: '🧘',
+      description: 'Finding peace and relaxation',
+    ),
+    ScenarioCard(
+      id: 'creative_ideas',
+      emoji: '🎨',
+      title: 'Creative Ideas',
+      illustration: '💡',
+      description: 'Expressing through creativity',
+    ),
+  ];
+
+  final List<EmotionChip> _emotions = [
+    EmotionChip(emoji: '🌈', label: 'Shining Bright'),
+    EmotionChip(emoji: '🛡️', label: 'Being Brave'),
+    EmotionChip(emoji: '🤝', label: 'Making Friends'),
+    EmotionChip(emoji: '🌊', label: 'Calm Moments'),
+    EmotionChip(emoji: '🎨', label: 'Creative Ideas'),
+    EmotionChip(emoji: '😊', label: 'Feeling Happy'),
+    EmotionChip(emoji: '😢', label: 'Feeling Sad'),
+    EmotionChip(emoji: '😠', label: 'Feeling Mad'),
+  ];
+
+  void _selectScenario(String scenarioId) {
+    setState(() {
+      _selectedScenario = scenarioId;
+      widget.wizardData.selectedScenario = scenarioId;
+    });
+  }
+
+  void _toggleEmotion(String emotion) {
+    setState(() {
+      if (_selectedEmotions.contains(emotion)) {
+        _selectedEmotions.remove(emotion);
+      } else {
+        _selectedEmotions.add(emotion);
+      }
+      widget.wizardData.selectedEmotionChips = _selectedEmotions.toList();
+    });
+  }
+
+  bool get _canContinue =>
+      _selectedScenario != null || _selectedEmotions.isNotEmpty;
+
+  @override
+  void dispose() {
+    _parentalNoteController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Title with parental gear icon
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'What\'s the Story About?',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: AppColors.textDark,
+                          fontWeight: FontWeight.bold,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                // Parental override gear icon
+                IconButton(
+                  icon: Icon(
+                    _showParentalInput ? Icons.close : Icons.settings,
+                    color: AppColors.textDark.withAlpha(128), // 50% opacity
+                  ),
+                  onPressed: () {
+                    setState(() => _showParentalInput = !_showParentalInput);
+                  },
+                  tooltip: 'Parent settings',
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+
+            // Subtitle
+            Text(
+              'Pick a scenario or choose feelings',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: AppColors.textDark.withAlpha(179), // 70% opacity
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            // Parental input (if shown)
+            if (_showParentalInput) ...[
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.cream,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: AppColors.primary, width: 2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Parent Note (Private)',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextField(
+                      controller: _parentalNoteController,
+                      decoration: InputDecoration(
+                        hintText: 'e.g., Help with nail-biting habit',
+                        filled: true,
+                        fillColor: AppColors.surface,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                      ),
+                      maxLines: 2,
+                      onChanged: (value) {
+                        widget.wizardData.parentalNote = value;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+            ],
+
+            // Scenario carousel
+            SizedBox(
+              height: 200,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                itemCount: _scenarios.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(width: AppSpacing.md),
+                itemBuilder: (context, index) {
+                  final scenario = _scenarios[index];
+                  final isSelected = _selectedScenario == scenario.id;
+
+                  return _ScenarioCardWidget(
+                    scenario: scenario,
+                    isSelected: isSelected,
+                    onTap: () => _selectScenario(scenario.id),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            // Emotion chips
+            Text(
+              'Or pick feelings:',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.textDark,
+                    fontWeight: FontWeight.w600,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              alignment: WrapAlignment.center,
+              children: _emotions.map((emotion) {
+                final isSelected = _selectedEmotions.contains(emotion.label);
+                return _EmotionChipWidget(
+                  emotion: emotion,
+                  isSelected: isSelected,
+                  onTap: () => _toggleEmotion(emotion.label),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: AppSpacing.xxl),
+
+            // Continue button
+            if (_canContinue)
+              Center(
+                child: PillButton(
+                  emoji: '➡️',
+                  label: 'Continue',
+                  onTap: widget.onNext,
+                  variant: PillButtonVariant.purple,
+                  isSelected: true,
+                ),
+              ),
+            const SizedBox(height: AppSpacing.xl),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ScenarioCard {
+  final String id;
+  final String emoji;
+  final String title;
+  final String illustration;
+  final String description;
+
+  ScenarioCard({
+    required this.id,
+    required this.emoji,
+    required this.title,
+    required this.illustration,
+    required this.description,
+  });
+}
+
+class _ScenarioCardWidget extends StatelessWidget {
+  final ScenarioCard scenario;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ScenarioCardWidget({
+    required this.scenario,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: '${scenario.title}, ${scenario.description}',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Container(
+          width: 180,
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primaryLight.withAlpha(51) : AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: isSelected ? AppColors.primary : Colors.grey.shade300,
+              width: isSelected ? 2 : 1,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.goldLight.withAlpha(77),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                scenario.illustration,
+                style: const TextStyle(fontSize: 48),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                scenario.emoji,
+                style: const TextStyle(fontSize: 24),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                scenario.title,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textDark,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class EmotionChip {
+  final String emoji;
+  final String label;
+
+  EmotionChip({required this.emoji, required this.label});
+}
+
+class _EmotionChipWidget extends StatelessWidget {
+  final EmotionChip emotion;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _EmotionChipWidget({
+    required this.emotion,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: '${emotion.label} emotion chip',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.gold : AppColors.cream,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(
+              color: isSelected ? AppColors.primary : Colors.transparent,
+              width: isSelected ? 2 : 0,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.goldLight.withAlpha(77),
+                      blurRadius: 6,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                emotion.emoji,
+                style: const TextStyle(fontSize: 20),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                emotion.label,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: AppColors.textDark,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              if (isSelected) ...[
+                const SizedBox(width: AppSpacing.xs),
+                const Icon(
+                  Icons.check_circle,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
