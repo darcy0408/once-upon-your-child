@@ -43,27 +43,6 @@ class StoryGenerationProgress extends StatelessWidget {
           'Estimated time remaining: ${totalPhases - currentPhase - 1} seconds',
           style: Theme.of(context).textTheme.titleMedium,
         ),
-        const SizedBox(height: 40),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            children: [
-              Text(
-                'Fun Fact:',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 10),
-              Text(
-                funFact,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }

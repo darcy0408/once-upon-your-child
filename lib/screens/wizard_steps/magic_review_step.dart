@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../services/api_service_manager.dart';
+import '../../story_result_screen.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/make_magic_button.dart';
 import '../../widgets/character_preview.dart';
 import '../wizard_story_screen.dart';
+import 'wizard_data_mapper.dart';
 
 /// Step 4: Magic Review & Launch
 ///
@@ -40,30 +43,52 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
     setState(() => _isGenerating = true);
 
     try {
-      // TODO: Integrate with actual story generation API
-      // For now, just show the data we collected
-      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
+      // Prepared payload using the mapper
+      final requestData = WizardDataMapper.mapToStoryRequest(widget.wizardData);
+      
+      // Call the API
+      final result = await ApiServiceManager.generateStory(
+        characterName: requestData['characterName'],
+        age: requestData['age'],
+        theme: requestData['theme'],
+        companion: requestData['companion'],
+        characterDetails: requestData['characterDetails'],
+        currentFeeling: requestData['currentFeeling'],
+        // Default options for wizard flow
+        includeIllustrations: false, // Can be improved to check subscription
+      );
 
       if (mounted) {
-        // Navigate to story result or show success
-        // TODO: Navigate to StoryResultScreen with generated story
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Story generation started! 🎉'),
-            backgroundColor: AppColors.success,
+        // Navigate to result
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => StoryResultScreen(
+              title: result.title ?? 'My Magical Story',
+              storyText: result.storyText,
+              wisdomGem: result.wisdomGem ?? 'You are magic!',
+              characterName: requestData['characterName'],
+              theme: requestData['theme'],
+              characterAge: requestData['age'],
+              // Track this as a new story
+              trackStoryCreation: true,
+              trackAnalytics: true,
+            ),
           ),
         );
-
-        // Pop back to main screen
-        Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isGenerating = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text('Magic needed a recharge: $e'),
             backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: _launchStoryCreation,
+            ),
           ),
         );
       }

@@ -60,57 +60,60 @@ class ArchetypeCard extends StatelessWidget {
                     ]
                   : null,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Icon/Emoji
-                Text(
-                  icon,
-                  style: const TextStyle(fontSize: 36),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                // Archetype name
-                Text(
-                  name,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textDark,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                // Trait chips
-                Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  alignment: WrapAlignment.center,
-                  children: traits.map((trait) => _TraitChip(label: trait)).toList(),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                // "Use Template" button
-                ElevatedButton(
-                  onPressed: onUseTemplate,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.textLight,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.xs,
-                    ),
-                    minimumSize: const Size(0, 40),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(), // Prevent bounce effect on cards
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Icon/Emoji
+                  Text(
+                    icon,
+                    style: const TextStyle(fontSize: 36),
                   ),
-                  child: Text(
-                    'Use Template',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: AppColors.textLight,
-                          fontSize: 14,
+                  const SizedBox(height: AppSpacing.xs),
+                  // Archetype name
+                  Text(
+                    name,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textDark,
                         ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-              ],
+                  const SizedBox(height: AppSpacing.sm),
+                  // Trait chips
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    alignment: WrapAlignment.center,
+                    children: traits.map((trait) => _TraitChip(label: trait)).toList(),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  // "Use Template" button
+                  ElevatedButton(
+                    onPressed: onUseTemplate,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.textLight,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.xs,
+                      ),
+                      minimumSize: const Size(0, 40),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                    ),
+                    child: Text(
+                      'Use Template',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: AppColors.textLight,
+                            fontSize: 14,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

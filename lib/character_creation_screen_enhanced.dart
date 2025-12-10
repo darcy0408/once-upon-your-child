@@ -63,6 +63,7 @@ class _CharacterCreationScreenEnhancedState
   final _outfitController = TextEditingController();
   CharacterAvatar _avatar = CharacterAvatar.defaultAvatar;
   String? _selectedOutfitPreset;
+  bool _avatarCustomized = false;
 
   final Map<String, double> _personalitySliderValues =
       CharacterTraitsData.defaultSliderValues();
@@ -141,6 +142,9 @@ class _CharacterCreationScreenEnhancedState
       }
     });
 
+    _applyStylePreset(template.characterStyle);
+    _applyGenderPreset(_isA);
+
     CharacterAnalytics.trackTemplateSelected(
       templateKey: template.key,
       templateName: template.name,
@@ -161,6 +165,87 @@ class _CharacterCreationScreenEnhancedState
         trimmed != _selectedOutfitPreset &&
         mounted) {
       setState(() => _selectedOutfitPreset = null);
+    }
+  }
+
+  void _updateAvatar(CharacterAvatar newAvatar, {bool userDriven = true}) {
+    setState(() {
+      _avatar = newAvatar;
+      if (userDriven) {
+        _avatarCustomized = true;
+      }
+    });
+  }
+
+  void _applyGenderPreset(String gender) {
+    if (_avatarCustomized) return;
+    final lower = gender.toLowerCase();
+    if (lower == 'girl') {
+      _updateAvatar(
+        _avatar.copyWith(
+          hairStyle: 'LongHairStraight',
+          clothingStyle: 'ShirtScoopNeck',
+          clothingColor: 'PastelPink',
+          mouthType: 'Smile',
+          eyeType: 'Happy',
+        ),
+        userDriven: false,
+      );
+    } else if (lower == 'boy') {
+      _updateAvatar(
+        _avatar.copyWith(
+          hairStyle: 'ShortHairShortFlat',
+          clothingStyle: 'Hoodie',
+          clothingColor: 'Blue03',
+          mouthType: 'Smile',
+          eyeType: 'Happy',
+        ),
+        userDriven: false,
+      );
+    }
+  }
+
+  void _applyStylePreset(String style) {
+    if (_avatarCustomized) return;
+    switch (style) {
+      case 'Creative Artist':
+        _updateAvatar(
+          _avatar.copyWith(
+            clothingStyle: 'GraphicShirt',
+            clothingColor: 'PastelPink',
+            hairStyle: 'LongHairCurly',
+          ),
+          userDriven: false,
+        );
+        break;
+      case 'Sporty Kid':
+        _updateAvatar(
+          _avatar.copyWith(
+            clothingStyle: 'CollarSweater',
+            clothingColor: 'Blue02',
+            hairStyle: 'ShortHairShortWaved',
+          ),
+          userDriven: false,
+        );
+        break;
+      case 'Young Scientist':
+        _updateAvatar(
+          _avatar.copyWith(
+            clothingStyle: 'BlazerShirt',
+            clothingColor: 'Gray01',
+            hairStyle: 'ShortHairShortCurly',
+          ),
+          userDriven: false,
+        );
+        break;
+      default:
+        _updateAvatar(
+          _avatar.copyWith(
+            clothingStyle: 'Hoodie',
+            clothingColor: 'Blue03',
+          ),
+          userDriven: false,
+        );
     }
   }
 
@@ -236,6 +321,7 @@ class _CharacterCreationScreenEnhancedState
     if (result != null) {
       setState(() {
         _avatar = result.avatar;
+        _avatarCustomized = true;
         if (_nameController.text.trim().isEmpty) {
           _nameController.text = result.name;
         }
@@ -450,6 +536,9 @@ class _CharacterCreationScreenEnhancedState
         'age': ageToSend,
         'gender': _isA, // Send Boy/Girl for story pronouns
         'character_type': _characterType,
+        'character_style': _characterStyle,
+        'skin_tone': _skinTone,
+        'hairstyle': _hairStyle,
         if (_selectedTemplate != null) 'template_key': _selectedTemplate!.key,
 
         // Only include superhero fields if selected
@@ -463,8 +552,14 @@ class _CharacterCreationScreenEnhancedState
         },
 
         // Basic appearance (optional)
-        if (_hairColor != 'Brown') 'hair': _hairColor,
-        if (_eyeColor != 'Brown') 'eyes': _eyeColor,
+        if (_hairColor.isNotEmpty) ...{
+          'hair': _hairColor,
+          'hair_color': _hairColor,
+        },
+        if (_eyeColor.isNotEmpty) ...{
+          'eyes': _eyeColor,
+          'eye_color': _eyeColor,
+        },
         if (_outfitController.text.trim().isNotEmpty)
           'outfit': _outfitController.text.trim(),
 
@@ -589,10 +684,6 @@ class _CharacterCreationScreenEnhancedState
               children: [
                 _buildTemplateModeToggle(),
                 const SizedBox(height: 12),
-                if (_useTemplateMode) ...[
-                  _buildTemplateSection(),
-                  const SizedBox(height: 20),
-                ],
                 _buildBasicInfoSection(),
                 const SizedBox(height: 20),
                 _buildCharacterTypeSection(),
@@ -602,6 +693,10 @@ class _CharacterCreationScreenEnhancedState
                   const SizedBox(height: 20),
                 ],
                 _buildAppearanceSection(),
+                if (_useTemplateMode) ...[
+                  const SizedBox(height: 20),
+                  _buildTemplateSection(),
+                ],
                 const SizedBox(height: 30),
                 ElevatedButton.icon(
                   onPressed: _isLoading ? null : _createCharacter,
@@ -688,13 +783,17 @@ class _CharacterCreationScreenEnhancedState
             filled: true,
             fillColor: Colors.grey[50],
           ),
-          items: ['Boy', 'Girl', 'They']
+          items: ['Boy', 'Girl']
               .map((gender) => DropdownMenuItem(
                     value: gender,
                     child: Text(gender),
                   ))
               .toList(),
-          onChanged: (value) => setState(() => _isA = value!),
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() => _isA = value);
+            _applyGenderPreset(value);
+          },
           validator: (v) => v == null ? 'Please select gender' : null,
         ),
         const SizedBox(height: 12),
@@ -776,9 +875,12 @@ class _CharacterCreationScreenEnhancedState
                 items: const [
                   DropdownMenuItem(value: 'Girl', child: Text('Girl')),
                   DropdownMenuItem(value: 'Boy', child: Text('Boy')),
-                  DropdownMenuItem(value: 'They', child: Text('They')),
                 ],
-                onChanged: (v) => setState(() => _isA = v ?? 'Girl'),
+                onChanged: (v) {
+                  if (v == null) return;
+                  setState(() => _isA = v);
+                  _applyGenderPreset(v);
+                },
               ),
             ),
           ],
@@ -799,24 +901,19 @@ class _CharacterCreationScreenEnhancedState
             DropdownMenuItem(value: 'Girly Girl', child: Text('Girly Girl')),
             DropdownMenuItem(value: 'Tomboy', child: Text('Tomboy')),
             DropdownMenuItem(value: 'Sporty Kid', child: Text('Sporty Kid')),
+
             DropdownMenuItem(
                 value: 'Couch Potato', child: Text('Couch Potato')),
             DropdownMenuItem(
                 value: 'Creative Artist', child: Text('Creative Artist')),
             DropdownMenuItem(
                 value: 'Young Scientist', child: Text('Young Scientist')),
-            DropdownMenuItem(
-                value: 'Playful Puppy', child: Text('Playful Puppy')),
-            DropdownMenuItem(value: 'Curious Cat', child: Text('Curious Cat')),
-            DropdownMenuItem(value: 'Brave Bird', child: Text('Brave Bird')),
-            DropdownMenuItem(
-                value: 'Gentle Bunny', child: Text('Gentle Bunny')),
-            DropdownMenuItem(value: 'Wise Fox', child: Text('Wise Fox')),
-            DropdownMenuItem(
-                value: 'Magical Dragon', child: Text('Magical Dragon')),
           ],
-          onChanged: (v) =>
-              setState(() => _characterStyle = v ?? 'Regular Kid'),
+          onChanged: (v) {
+            final value = v ?? 'Regular Kid';
+            setState(() => _characterStyle = value);
+            _applyStylePreset(value);
+          },
         ),
       ],
     );
@@ -1030,6 +1127,7 @@ class _CharacterCreationScreenEnhancedState
           onSelected: (value) => setState(() {
             _skinTone = value;
             _avatar = _avatar.copyWith(skinColor: value);
+            _avatarCustomized = true;
           }),
         ),
         const SizedBox(height: 12),
@@ -1049,6 +1147,7 @@ class _CharacterCreationScreenEnhancedState
             _hairStyle = value ?? _hairStyle;
             _avatar = _avatar.copyWith(
                 hairStyle: _mapHairStyleToAvataaars(value ?? _hairStyle));
+            _avatarCustomized = true;
           }),
         ),
         const SizedBox(height: 12),
@@ -1059,6 +1158,7 @@ class _CharacterCreationScreenEnhancedState
           onSelected: (value) => setState(() {
             _hairColor = value;
             _avatar = _avatar.copyWith(hairColor: value);
+            _avatarCustomized = true;
           }),
         ),
         const SizedBox(height: 12),

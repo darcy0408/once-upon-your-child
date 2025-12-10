@@ -52,6 +52,8 @@ class CharacterAvatar {
     final params = <String, String>{
       // Seed keeps avatars consistent across sessions
       'seed': '$skinColor$hairColor$hairStyle'.toLowerCase(),
+      // Turn off facial hair so kid avatars stay gender-neutral unless we add explicit options
+      'facialHairProbability': '0',
       'skinColor': _mapSkinColorToDiceBear(skinColor),
       'hairColor': _mapHairColorToDiceBear(hairColor),
       'top': _mapTopTypeToDiceBear(hairStyle),
@@ -208,6 +210,8 @@ String _mapHairColorToDiceBear(String value) {
     case 'blonde':
     case 'blondegolden':
       return 'f1e2b8';
+    case 'bronze':
+      return 'b08d57';
     case 'brown':
     case 'browndark':
       return '4a312c';
@@ -215,9 +219,16 @@ String _mapHairColorToDiceBear(String value) {
       return 'f59797';
     case 'platinum':
     case 'silvergray':
+    case 'gray':
+    case 'silver':
       return 'e8e1e1';
     case 'red':
       return 'c93305';
+    case 'gold':
+    case 'blondegolden':
+      return 'f1e2b8';
+    case 'rainbow':
+      return 'f59797'; // Map rainbow to pastel pink as closest fantasy option
     default:
       return '8d5524';
   }
@@ -271,13 +282,13 @@ String _mapTopTypeToDiceBear(String value) {
     case 'LongHairStraight':
       return 'straight02';
     case 'LongHairCurly':
-      return 'curly';
+      return 'longButNotTooLong';
     case 'LongHairBigHair':
       return 'bigHair';
     case 'LongHairBun':
       return 'bun';
     case 'LongHairBraids':
-      return 'dreads01';
+      return 'dreads02';
     case 'LongHairPonytail':
       return 'longButNotTooLong';
     case 'Hijab':
@@ -340,14 +351,18 @@ String _mapClothingTypeToDiceBear(String value) {
   switch (value) {
     case 'Hoodie':
       return 'hoodie';
+    case 'CollarSweater':
+      return 'collarAndSweater';
     case 'Shirt':
     case 'ShirtCrewNeck':
     case 'ShirtScoopNeck':
+      return 'shirtCrewNeck';
     case 'GraphicShirt':
       return 'graphicShirt';
     case 'BlazerShirt':
-    case 'BlazerSweater':
       return 'blazerAndShirt';
+    case 'BlazerSweater':
+      return 'blazerAndSweater';
     case 'Overall':
       return 'overall';
     default:
