@@ -144,23 +144,67 @@ SwitchListTile(
 
 ---
 
-### Task 5: Test Basic Navigation
+### Task 5: Test Thoroughly
 
 **Run:** `flutter run -d chrome` (or your preferred device)
 
-**Test Steps:**
-1. ✅ App launches without errors
-2. ✅ Can navigate to wizard from main screen
-3. ✅ Wizard shows Step 1 (Hero Creator) with purple gradient
-4. ✅ Can select an archetype
-5. ✅ "Continue" button appears
-6. ✅ Can navigate to Step 2
-7. ✅ Can navigate to Step 3
-8. ✅ Can navigate to Step 4
-9. ✅ "Make Magic" button shows
-10. ✅ Tapping "Make Magic" shows success message or closes wizard
+**Complete Test Checklist:**
 
-**If you see errors:** Check the console for missing imports or typos.
+**Basic Navigation:**
+1. ✅ App launches without errors (no red screen)
+2. ✅ Can find and tap button to navigate to wizard from main screen
+3. ✅ Wizard shows Step 1 (Hero Creator) with purple/lavender gradient background
+4. ✅ Moon phase progress indicator shows at top (4 circles)
+5. ✅ Character preview shows at top with sparkle circle
+
+**Step 1: Hero Creator:**
+6. ✅ Can see 6 archetype cards in horizontal scroll
+7. ✅ Can tap an archetype card
+8. ✅ Selected archetype has gold glow/border
+9. ✅ Character emoji changes in preview
+10. ✅ "Continue" button appears after selection
+11. ✅ Tapping "Continue" advances to Step 2
+
+**Step 2: Feeling Selection:**
+12. ✅ Progress indicator shows Step 2 active (second circle glowing)
+13. ✅ Can see scenario cards in horizontal scroll
+14. ✅ Can select a scenario (gets gold border)
+15. ✅ Can see emotion chips below scenarios
+16. ✅ Can tap emotion chips (they get checkmarks)
+17. ✅ Gear icon in top-right for parental settings
+18. ✅ "Continue" button appears after selection
+19. ✅ Tapping "Continue" advances to Step 3
+
+**Step 3: Companion Selector:**
+20. ✅ Progress indicator shows Step 3 active
+21. ✅ Can see 6 companion cards in grid (2 columns)
+22. ✅ Tapping companion makes it bounce
+23. ✅ Greeting bubble appears briefly on tap
+24. ✅ Selected companion has gold glow and checkmark
+25. ✅ "Continue" button appears after selection
+26. ✅ Tapping "Continue" advances to Step 4
+
+**Step 4: Magic Review:**
+27. ✅ Progress indicator shows Step 4 active (all circles filled)
+28. ✅ Summary cards show all selections
+29. ✅ Character preview shows at top
+30. ✅ Big purple "Make Magic ✨" button shows
+31. ✅ Button has pulse animation
+32. ✅ Tapping "Make Magic" shows success message or navigates somewhere
+33. ✅ No crashes or errors during any step
+
+**Navigation:**
+34. ✅ Can tap back arrow to go to previous step
+35. ✅ Can tap close/X button on first step to exit wizard
+36. ✅ After completing wizard, can navigate back to main screen
+
+**Console Check:**
+37. ✅ No red errors in console
+38. ✅ No yellow warnings about missing imports
+39. ✅ No "Navigator" errors
+40. ✅ No "context" errors
+
+**If you see errors:** Check the console for missing imports or typos. Review the Troubleshooting section below.
 
 ---
 
@@ -279,6 +323,7 @@ Navigator.pushReplacement(
 
 You're done when:
 - [ ] **VERIFIED:** You're on `feature/gui-redesign` branch
+- [ ] **ALL 40 TEST ITEMS PASS** (see Task 5 checklist above)
 - [ ] User can navigate to the wizard from the main app
 - [ ] All 4 wizard steps are accessible
 - [ ] Moon phase progress indicator shows correctly
@@ -290,22 +335,110 @@ You're done when:
 
 ---
 
-## 📝 Commit Message Template
+## 🎯 Final Steps: Commit & Push
 
-When done, commit with:
+**ONLY DO THIS IF ALL TESTS PASS!**
+
+If you have any failing tests, fix them first before committing.
+
+### Step 1: Check Git Status
 
 ```bash
+git status
+```
+
+You should see modified files like:
+- `lib/main_story.dart` (or wherever you added navigation)
+- Possibly `lib/settings_screen.dart` if you added optional features
+
+### Step 2: Stage Your Changes
+
+```bash
+git add lib/main_story.dart
+# Add any other files you modified
+```
+
+Or stage everything:
+```bash
 git add .
+```
+
+### Step 3: Commit with Descriptive Message
+
+```bash
 git commit -m "feat: Wire up wizard to main app navigation
 
-- Add navigation from main story screen to wizard
-- Update button to launch WizardStoryScreen
-- Test all 4 wizard steps accessible
+- Add WizardStoryScreen import to main story screen
+- Update story creation button to launch wizard
+- Test all 4 wizard steps - navigation working
+- All 40 test items pass successfully
+- Moon phase progress indicator displays correctly
 - Wizard flows from Step 1 → Step 4 without errors
 
+Tested on: [chrome/Android/iOS - specify what you tested on]
 Next: API integration for story generation"
+```
 
+### Step 4: Push to Remote
+
+```bash
 git push origin feature/gui-redesign
+```
+
+### Step 5: Verify Push Success
+
+You should see output like:
+```
+To https://github.com/darcy0408/story-weaver-app.git
+   7f6677b..xxxxxxx  feature/gui-redesign -> feature/gui-redesign
+```
+
+### Step 6: Final Verification
+
+```bash
+git log -1 --oneline
+```
+
+This shows your latest commit. Verify it says something like:
+```
+xxxxxxx feat: Wire up wizard to main app navigation
+```
+
+---
+
+## 🎉 Success Criteria
+
+You've successfully completed the integration when:
+
+1. ✅ **All 40 tests pass**
+2. ✅ **Code is committed** with descriptive message
+3. ✅ **Changes are pushed** to remote
+4. ✅ **You can demonstrate** the full wizard flow working
+5. ✅ **No console errors** during operation
+
+---
+
+## 📊 Report Template
+
+After completing, report back with this summary:
+
+```
+✅ Wizard Integration Complete
+
+Branch: feature/gui-redesign
+Tests Passed: [X/40]
+Tested On: [chrome/Android/iOS]
+
+Changes Made:
+- File modified: lib/main_story.dart (added import, updated button)
+- [Any other changes]
+
+Commit Hash: [from git log]
+Pushed: Yes ✓
+
+Issues Encountered: [None / List any issues and how you solved them]
+
+Ready For: API integration / Further testing / Merge to main
 ```
 
 ---
