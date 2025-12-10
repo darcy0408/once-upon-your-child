@@ -16,22 +16,33 @@ Execute a git repository sync for the Story Weaver project:
    - Use actual timestamp
    - Description: What you accomplished (e.g., "Completed Stripe integration")
 
-4. Run: git pull origin main --strategy-option=ours --no-edit
-   - Fetch remote changes, keep local if conflicts
+4. Run: git pull origin <CURRENT_BRANCH> --no-edit
+   - Replace <CURRENT_BRANCH> with your actual branch name
+   - Use "main" if on main branch
+   - Use "feature/gui-redesign" if on that branch
+   - Use your feature branch name if working on a feature
 
-5. Run: git push origin main
-   - Push to GitHub
+5. Run: git push origin <CURRENT_BRANCH>
+   - Push to GitHub using the SAME branch name from step 4
 
 6. Run: git status && git log -1 --oneline
    - Verify clean state and report commit hash
 
 RULES:
-- Always use --strategy-option=ours (keeps local changes)
-- Target branch: main (no PRs)
-- Never force push
-- Don't commit .env files
+- Always sync to YOUR CURRENT BRANCH (not always main)
+- Never force push unless explicitly told to
+- Don't commit .env files or secrets
 - Sync after completing tasks, not mid-work
+- If conflicts occur, report them and ask for help
+
+EXAMPLE FOR feature/gui-redesign BRANCH:
+git pull origin feature/gui-redesign --no-edit
+git push origin feature/gui-redesign
+
+EXAMPLE FOR main BRANCH:
+git pull origin main --no-edit
+git push origin main
 
 ═══════════════════════════════════════════════════════════════
-For detailed instructions, see: GIT_SYNC_QUICK_COMMAND.md
+To check your current branch: git branch --show-current
 ═══════════════════════════════════════════════════════════════
