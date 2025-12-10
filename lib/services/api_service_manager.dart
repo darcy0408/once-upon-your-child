@@ -47,26 +47,23 @@ class ApiServiceManager {
         timeout,
       );
     } on SocketException catch (error) {
-      debugPrint('? Network error while calling $uri');
+      debugPrint('❌ Network error while calling $uri');
       debugPrint('   Error details: $error');
       debugPrint('   Backend URL: $_localBackendUrl');
       throw Exception(
         'Cannot connect to server. Please check your internet connection and try again.\n\nServer: $_localBackendUrl',
       );
     } on HandshakeException catch (error) {
-      debugPrint('? SSL/TLS error while calling $uri: $error');
+      debugPrint('❌ SSL/TLS error while calling $uri: $error');
       throw Exception(
         'Secure connection failed. This might be a certificate issue.\n\nDetails: $error',
       );
     } on http.ClientException catch (error) {
-      debugPrint('? HTTP Client error while calling $uri: $error');
+      debugPrint('❌ HTTP Client error while calling $uri: $error');
       throw Exception(
         'Request failed: ${error.message}\n\nPlease try again.',
       );
-    } finally {
-      if (client == null && _testClient == null) {
-        httpClient.close();
-      }
+    }
     }
   }
 
@@ -87,26 +84,23 @@ class ApiServiceManager {
         timeout,
       );
     } on SocketException catch (error) {
-      debugPrint('? Network error while calling $uri');
+      debugPrint('❌ Network error while calling $uri');
       debugPrint('   Error details: $error');
       debugPrint('   Backend URL: $_localBackendUrl');
       throw Exception(
         'Cannot connect to server. Please check your internet connection and try again.\n\nServer: $_localBackendUrl',
       );
     } on HandshakeException catch (error) {
-      debugPrint('? SSL/TLS error while calling $uri: $error');
+      debugPrint('❌ SSL/TLS error while calling $uri: $error');
       throw Exception(
         'Secure connection failed. This might be a certificate issue.\n\nDetails: $error',
       );
     } on http.ClientException catch (error) {
-      debugPrint('? HTTP Client error while calling $uri: $error');
+      debugPrint('❌ HTTP Client error while calling $uri: $error');
       throw Exception(
         'Request failed: ${error.message}\n\nPlease try again.',
       );
-    } finally {
-      if (client == null && _testClient == null) {
-        httpClient.close();
-      }
+    }
     }
   }
 
