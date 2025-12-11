@@ -1,6 +1,8 @@
 import random
 import re
 import json
+import time
+from google.api_core import exceptions as google_exceptions
 
 SAFETY_GUARDRAILS = """
 SAFETY RULES (non-negotiable):
@@ -232,12 +234,24 @@ Ensure text is vivid, age-tuned, playful, with a strong hook/problem and embodie
         if not active_model:
             raise ValueError("No valid Gemini model available (Server key missing and no User key provided)")
 
-        response = active_model.generate_content(prompt)
-        text = getattr(response, "text", "")
-        if not text:
-            raise ValueError("Empty model response for interactive story opening")
-
-        return self._parse_interactive_story_response(text)
+        max_retries = 5
+        base_delay = 1  # seconds
+        for attempt in range(max_retries):
+            try:
+                response = active_model.generate_content(prompt)
+                text = getattr(response, "text", "")
+                if not text:
+                    raise ValueError("Empty model response for interactive story opening")
+                return self._parse_interactive_story_response(text)
+            except google_exceptions.ResourceExhausted as e:
+                if attempt < max_retries - 1:
+                    delay = base_delay * (2 ** attempt)
+                    time.sleep(delay)
+                else:
+                    raise e
+        
+        # This part should be unreachable if the loop completes, but as a fallback:
+        raise ValueError("Failed to generate interactive story after multiple retries.")
 
     def continue_interactive_story(
         self,
@@ -317,12 +331,24 @@ Do NOT wrap JSON in backticks.
         if not active_model:
             raise ValueError("No valid Gemini model available (Server key missing and no User key provided)")
 
-        response = active_model.generate_content(prompt)
-        text = getattr(response, "text", "")
-        if not text:
-            raise ValueError("Empty model response for interactive story continuation")
-
-        return self._parse_interactive_story_response(text)
+        max_retries = 5
+        base_delay = 1  # seconds
+        for attempt in range(max_retries):
+            try:
+                response = active_model.generate_content(prompt)
+                text = getattr(response, "text", "")
+                if not text:
+                    raise ValueError("Empty model response for interactive story continuation")
+                return self._parse_interactive_story_response(text)
+            except google_exceptions.ResourceExhausted as e:
+                if attempt < max_retries - 1:
+                    delay = base_delay * (2 ** attempt)
+                    time.sleep(delay)
+                else:
+                    raise e
+        
+        # This part should be unreachable if the loop completes, but as a fallback:
+        raise ValueError("Failed to continue interactive story after multiple retries.")
 
     def _parse_interactive_story_response(self, text: str):
         def _try_load_json(raw: str):

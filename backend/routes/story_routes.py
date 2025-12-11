@@ -95,6 +95,38 @@ def create_story_blueprint(
                 logger.exception("Synchronous story generation failed: %s", fallback_exc)
                 return jsonify({"error": "Story generation failed"}), 500
 
+    @story_bp.route("/generate-story-mock", methods=["POST"])
+    def generate_story_mock_endpoint():
+        """
+        A mock endpoint for development and UI testing.
+        Returns a static story instantly without calling any AI model.
+        """
+        logger.info("Serving mock story for testing.")
+        payload = request.get_json(silent=True) or {}
+        character = payload.get("character", {})
+        character_name = character.get("name", "a brave hero")
+        theme = payload.get("theme", "Friendship")
+
+        mock_story = {
+            "status": "complete",
+            "result": {
+                "status": "complete",
+                "story": {
+                    "id": "mock-story-12345",
+                    "title": f"The Mock Adventure of {character_name}",
+                    "story_text": f"This is a sample story about {character_name} and a grand adventure about {theme.lower()}. In a land of pixels and placeholders, our hero discovered that the best treasure is a good friend. They met a friendly dragon who, instead of breathing fire, brewed the best tea in the kingdom. Together, they shared stories and laughed until the sun set, painting the sky in shades of orange and purple.",
+                    "theme": theme,
+                    "wisdom_gem": "A shared cup of tea is better than a lonely treasure.",
+                    "include_illustrations": payload.get("include_illustrations", False),
+                    "rhyme_time_mode": payload.get("rhyme_time_mode", False),
+                    "learning_to_read_mode": payload.get("learning_to_read_mode", False),
+                }
+            }
+        }
+        # The frontend expects the result of the task, not the task object itself
+        return jsonify(mock_story), 200
+
+
     @story_bp.route("/task-status/<task_id>", methods=["GET"])
     def get_task_status(task_id):
         task = celery.AsyncResult(task_id)
