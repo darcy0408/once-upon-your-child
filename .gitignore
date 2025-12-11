@@ -76,3 +76,5 @@ backend/.venv/
 # Windows artifacts
 nul
 worktrees/
+INSTRUCTIONS_FOR_USER.md
+instance/*.db
