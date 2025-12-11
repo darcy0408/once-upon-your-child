@@ -1,6 +1,7 @@
 import google.generativeai as genai
 import os
 import logging
+from backend.utils.gemini_utils import generate_with_retry
 
 logger = logging.getLogger(__name__)
 
@@ -11,13 +12,18 @@ class StoryGenerationService:
             raise ValueError("GEMINI_API_KEY not set")
 
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        # Use env var for model or default to current preferred model
+        model_name = os.getenv('GEMINI_MODEL', 'models/gemini-2.5-flash')
+        self.model = genai.GenerativeModel(model_name)
 
     def generate_story(self, prompt: str) -> str:
         """Generate story from prompt"""
         try:
             logger.info(f"Generating story with prompt: {prompt[:100]}...")
-            response = self.model.generate_content(prompt)
+            
+            # Use retry mechanism
+            response = generate_with_retry(self.model, prompt)
+            
             logger.info(f"API response received: {type(response)}")
             if response and hasattr(response, 'text') and response.text:
                 logger.info("Story generated successfully")

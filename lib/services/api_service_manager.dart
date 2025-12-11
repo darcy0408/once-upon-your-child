@@ -184,7 +184,6 @@ class ApiServiceManager {
       age: age,
       companion: companion,
       characterDetails: characterDetails,
-<<<<<<< Updated upstream
       additionalCharacters: additionalCharacters,
       rhymeTimeMode: rhymeTimeMode,
       learningToReadMode: learningToReadMode,
@@ -203,8 +202,6 @@ class ApiServiceManager {
       debugPrint(
         'Request to $uri failed with ${response.statusCode}. Body preview: $preview',
       );
-=======
->>>>>>> Stashed changes
       throw HttpException(
         'Request to ${uri.path} failed with status ${response.statusCode}',
         uri: uri,
@@ -888,7 +885,6 @@ SAFETY: Keep content gentle, avoid violence/scares; keep tone warm and supportiv
 Maintain plain text (no markdown fences).''';
   }
 
-<<<<<<< Updated upstream
   static String _buildLearningToReadPrompt({
     required String characterName,
     required String theme,
@@ -898,17 +894,6 @@ Maintain plain text (no markdown fences).''';
     List<String>? additionalCharacters,
   }) {
     String detailSection = '';
-=======
-   static String _buildLearningToReadPrompt({
-     required String characterName,
-     required String theme,
-     required int age,
-     String? companion,
-     Map<String, dynamic>? characterDetails,
-     List<String>? additionalCharacters,
-   }) {
-     String detailSection = '';
->>>>>>> Stashed changes
     List<String>? extractStringList(dynamic raw) {
       if (raw is List) {
         return raw

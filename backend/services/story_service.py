@@ -1,6 +1,7 @@
 import random
 import re
 import json
+from backend.utils.gemini_utils import generate_with_retry
 
 SAFETY_GUARDRAILS = """
 SAFETY RULES (non-negotiable):
@@ -232,7 +233,7 @@ Ensure text is vivid, age-tuned, playful, with a strong hook/problem and embodie
         if not active_model:
             raise ValueError("No valid Gemini model available (Server key missing and no User key provided)")
 
-        response = active_model.generate_content(prompt)
+        response = generate_with_retry(active_model, prompt)
         text = getattr(response, "text", "")
         if not text:
             raise ValueError("Empty model response for interactive story opening")
@@ -317,7 +318,7 @@ Do NOT wrap JSON in backticks.
         if not active_model:
             raise ValueError("No valid Gemini model available (Server key missing and no User key provided)")
 
-        response = active_model.generate_content(prompt)
+        response = generate_with_retry(active_model, prompt)
         text = getattr(response, "text", "")
         if not text:
             raise ValueError("Empty model response for interactive story continuation")
