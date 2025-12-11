@@ -1,4 +1,6 @@
 // lib/models.dart
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'avatar_models.dart';
 import 'services/avatar_service.dart';
@@ -61,6 +63,15 @@ class Character {
     final avatarJson = json['avatar'];
     if (avatarJson is Map<String, dynamic>) {
       avatar = CharacterAvatar.fromJson(avatarJson);
+    } else if (avatarJson is String) {
+      try {
+        final parsed = jsonDecode(avatarJson);
+        if (parsed is Map<String, dynamic>) {
+          avatar = CharacterAvatar.fromJson(parsed);
+        }
+      } catch (_) {
+        // leave avatar null if parsing fails
+      }
     }
     final dynamic ageValue = json['age'];
     final int parsedAge = ageValue is int

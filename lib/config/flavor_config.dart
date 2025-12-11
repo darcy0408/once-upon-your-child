@@ -83,7 +83,7 @@ class FlavorConfig {
         );
       default:
         // const devBackend = 'https://story-weaver-app-production.up.railway.app'; // Temporarily using Railway
-        String devBackend = 'http://127.0.0.1:5000'; 
+        String devBackend = 'http://127.0.0.1:5000';
         
         try {
           if (Platform.isAndroid) {

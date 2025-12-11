@@ -7,10 +7,16 @@ dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 if os.path.exists(dotenv_path):
     print(f"Loading .env from: {dotenv_path}")
     load_dotenv(dotenv_path=dotenv_path, override=True)
-    print(f"GEMINI_API_KEY loaded: {bool(os.environ.get('GEMINI_API_KEY'))}")
+    loaded_key = os.environ.get('GEMINI_API_KEY')
+    print(f"GEMINI_API_KEY loaded: {bool(loaded_key)}")
+    if loaded_key:
+        print(f"Masked GEMINI_API_KEY: {loaded_key[:4]}...{loaded_key[-4:]}")
 else:
     print(f"No .env file found at {dotenv_path}, using system environment variables")
-    print(f"GEMINI_API_KEY present: {bool(os.environ.get('GEMINI_API_KEY'))}")
+    system_key = os.environ.get('GEMINI_API_KEY')
+    print(f"GEMINI_API_KEY present: {bool(system_key)}")
+    if system_key:
+        print(f"Masked GEMINI_API_KEY: {system_key[:4]}...{system_key[-4:]}")
 
 class Config:
     """Base configuration."""
@@ -19,8 +25,12 @@ class Config:
     JSON_SORT_KEYS = False
     
     # Gemini API
-    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-    GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-pro-latest")
+    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+    GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash-exp')
+    
+    # Celery Configuration - Run tasks synchronously in development (no Redis needed)
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
     
     # CORS - Build allowed origins dynamically
     @staticmethod
@@ -89,4 +99,4 @@ config_by_name = dict(
 )
 
 key = os.environ.get("FLASK_ENV", "prod")
-config = config_by_name.get(key, ProductionConfig)
+config = config_by_name[key]

@@ -47,7 +47,7 @@ class AvatarService {
         .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
         .join('&');
 
-    return '$_baseUrl/$style/svg?$queryString';
+    return '$_baseUrl/$style/png?$queryString';
   }
 
   /// Map our hair color choices to DiceBear hair colors

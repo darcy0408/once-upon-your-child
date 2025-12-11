@@ -181,25 +181,37 @@ def create_app(config_name):
     GEMINI_MODEL = app.config.get("GEMINI_MODEL", "models/gemini-2.5-flash")
     api_key = None if testing_mode else app.config.get("GEMINI_API_KEY")
     genai = None
-    print(f"DEBUG: api_key from config = {api_key}")
-    print(f"DEBUG: bool(api_key) = {bool(api_key)}")
-    if not api_key:
-        logger.warning("GEMINI_API_KEY not set. Generation endpoints will use fallbacks.")
-        model = None
+    print(f"DEBUG: GEMINI_MODEL set to {GEMINI_MODEL}")
+    api_key = None if testing_mode else app.config.get("GEMINI_API_KEY")
+    genai = None
+    print(f"DEBUG: API key from app.config.get(\"GEMINI_API_KEY\") is present: {bool(api_key)}")
+    if api_key:
+        print(f"DEBUG: Masked API key in app.py: {api_key[:4]}...{api_key[-4:]}")
     else:
+        logger.warning("GEMINI_API_KEY not set in Flask app config. Generation endpoints will use fallbacks.")
+        model = None
+
+    if api_key:
         try:
             import google.generativeai as genai  # Local import to avoid slow startup in tests
+            logger.info("google.generativeai imported successfully.")
         except Exception as e:
-            logger.exception("Failed to import google.generativeai: %s", e)
+            logger.exception("Failed to import google.generativeai. Please ensure the library is installed: %s", e)
             genai = None
+
         if genai:
-            genai.configure(api_key=api_key)
-            print("DEBUG: Gemini configured with API key")
-            GEMINI_MODEL = app.config.get("GEMINI_MODEL", "models/gemini-2.5-flash")
             try:
-                model = genai.GenerativeModel(GEMINI_MODEL)
+                genai.configure(api_key=api_key)
+                logger.info("Gemini configured with API key.")
+                try:
+                    model = genai.GenerativeModel(GEMINI_MODEL)
+                    logger.info(f"Gemini model '{GEMINI_MODEL}' initialized successfully.")
+                except Exception as e:
+                    logger.exception(f"Failed to initialize Gemini model '{GEMINI_MODEL}': %s", e)
+                    model = None
             except Exception as e:
-                logger.exception("Failed to initialize Gemini model: %s", e)
+                logger.exception("Failed to configure Gemini with API key: %s", e)
+                genai = None
                 model = None
         else:
             model = None
@@ -295,13 +307,6 @@ def create_app(config_name):
     app.register_blueprint(achievement_bp, url_prefix='/achievement')
     app.register_blueprint(subscription_bp)
     app.register_blueprint(user_routes)
-
-    # Register API key routes
-    try:
-        from backend.routes.api_key_routes import api_key_routes
-    except ImportError:
-        from routes.api_key_routes import api_key_routes
-    app.register_blueprint(api_key_routes)
 
     try:
         from backend.routes.story_routes import create_story_blueprint

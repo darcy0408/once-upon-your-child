@@ -120,7 +120,7 @@ class CharacterTemplateService {
         color: Colors.teal,
         description: 'Kind, empathetic, loves to support friends.',
         suggestedAge: 6,
-        characterStyle: 'Gentle Bunny',
+        characterStyle: 'Regular Kid',
         characterType: 'Everyday Kid',
         comfortItem: 'Cozy blanket',
         personality: {
@@ -168,7 +168,7 @@ class CharacterTemplateService {
         color: Colors.indigo,
         description: 'Quiet, observant, thoughtful.',
         suggestedAge: 7,
-        characterStyle: 'Gentle Bunny',
+        characterStyle: 'Regular Kid',
         characterType: 'Everyday Kid',
         comfortItem: 'Favorite plushie',
         personality: {

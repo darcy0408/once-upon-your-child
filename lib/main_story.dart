@@ -46,6 +46,7 @@ import 'therapeutic_customization_screen.dart';
 import 'therapeutic_models.dart';
 import 'widgets/app_bottom_navigation.dart';
 import 'settings_screen.dart' deferred as settings_screen;
+import 'screens/wizard_story_screen.dart';
 
 
 class StoryCreatorApp extends StatelessWidget {
@@ -1096,12 +1097,10 @@ class _StoryScreenState extends State<StoryScreen> {
                     icon: const Icon(Icons.auto_awesome),
                     onPressed: (_gracePeriodStatus?.shouldShowHardLimit ?? false)
                         ? null
-                        : () async {
-                            setState(() => _magicPulse = true);
-                            await _onCreateButtonPressed();
-                            if (mounted) {
-                              setState(() => _magicPulse = false);
-                            }
+                        : () {
+                            Navigator.push(context, MaterialPageRoute(
+                              builder: (context) => const WizardStoryScreen()
+                            ));
                           },
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
@@ -1381,6 +1380,7 @@ class _StoryScreenState extends State<StoryScreen> {
       child: CustomizableAvatarWidget(
         avatar: avatar,
         size: size - 8,
+        customSeed: character.id,
       ),
     );
   }
@@ -1419,17 +1419,8 @@ class _StoryScreenState extends State<StoryScreen> {
     if (tone.contains('brown')) return 'Brown';
     if (tone.contains('black') || tone.contains('deep')) return 'Black';
 
-    const fallback = [
-      'Light',
-      'Pale',
-      'Tanned',
-      'Yellow',
-      'Brown',
-      'DarkBrown',
-      'Black'
-    ];
-    final index = characterId.hashCode.abs() % fallback.length;
-    return fallback[index];
+    // Avoid randomizing skin tone when data is missing; default to a light neutral base
+    return 'Light';
   }
 
   String _mapHairStyleToAvatar(String? style) {
@@ -1457,6 +1448,7 @@ class _StoryScreenState extends State<StoryScreen> {
     if (value.contains('platinum')) return 'Platinum';
     if (value.contains('blond')) return 'Blonde';
     if (value.contains('gold')) return 'BlondeGolden';
+    if (value.contains('bronze')) return 'Brown';
     if (value.contains('auburn')) return 'Auburn';
     if (value.contains('red') || value.contains('ginger')) return 'Red';
     if (value.contains('pink')) return 'PastelPink';
