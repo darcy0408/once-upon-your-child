@@ -24,7 +24,7 @@ class Config:
 
     # API Configuration
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-    GEMINI_MODEL = os.environ.get('GEMINI_MODEL') or 'gemini-1.5-flash'
+    GEMINI_MODEL = os.environ.get('GEMINI_MODEL') or 'gemini-2.0-flash-exp'
 
     # CORS Configuration
     ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', '*').split(',')
