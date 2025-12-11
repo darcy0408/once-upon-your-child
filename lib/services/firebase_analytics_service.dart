@@ -35,9 +35,15 @@ class FirebaseAnalyticsService {
   }
 
   static Future<void> logEvent(String eventName, Map<String, dynamic> parameters) async {
-    await analytics.logEvent(
-      name: eventName,
-      parameters: parameters,
-    );
+    try {
+      await analytics.logEvent(
+        name: eventName,
+        parameters: parameters,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('FirebaseAnalyticsService error: ${e.toString()}');
+      }
+    }
   }
 }

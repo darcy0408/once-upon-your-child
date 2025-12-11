@@ -90,7 +90,7 @@ class StoryAnalytics {
       await _analytics.logEvent(name: name, parameters: cleanParams);
     } catch (e) {
       // Do not let analytics failures crash the app (seen in web builds).
-      debugPrint('Analytics logEvent failed ($name): $e');
+      debugPrint('Analytics logEvent failed ($name): ${e.toString()}');
     }
   }
 }

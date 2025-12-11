@@ -22,7 +22,8 @@ class PerformanceAnalytics {
     } catch (e) {
       // Swallow analytics failures so startup never crashes.
       // ignore: avoid_print
-      print('Analytics logEvent failed (app_start): $e');
+      // ignore: avoid_print
+      debugPrint('Analytics logEvent failed (app_start): ${e.toString()}');
     }
   }
 
@@ -42,7 +43,8 @@ class PerformanceAnalytics {
       );
     } catch (e) {
       // ignore: avoid_print
-      print('Analytics logEvent failed (error_occurred): $e');
+      // ignore: avoid_print
+      debugPrint('Analytics logEvent failed (error_occurred): ${e.toString()}');
     }
   }
 }

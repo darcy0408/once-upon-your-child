@@ -12,16 +12,20 @@ class InteractiveStoryAnalytics {
     required String theme,
     required bool hasCompanion,
   }) async {
-    await _analytics.logEvent(
-      name: 'interactive_story_started',
-      parameters: {
-        'character_id': characterId,
-        'character_name_length': characterName.length,
-        'character_age': characterAge,
-        'theme': theme,
-        'has_companion': hasCompanion,
-      },
-    );
+    try {
+      await _analytics.logEvent(
+        name: 'interactive_story_started',
+        parameters: {
+          'character_id': characterId,
+          'character_name_length': characterName.length,
+          'character_age': characterAge,
+          'theme': theme,
+          'has_companion': hasCompanion,
+        },
+      );
+    } catch (e) {
+      debugPrint('InteractiveStoryAnalytics error: ${e.toString()}');
+    }
   }
 
   static Future<void> trackChoiceSelected({
@@ -32,17 +36,21 @@ class InteractiveStoryAnalytics {
     required int choiceTextLength,
     String? emotionalSkill,
   }) async {
-    await _analytics.logEvent(
-      name: 'interactive_choice_made',
-      parameters: {
-        'character_id': characterId,
-        'theme': theme,
-        'choice_id': choiceId,
-        'choice_number': choiceNumber,
-        'choice_text_length': choiceTextLength,
-        if (emotionalSkill != null) 'emotional_skill': emotionalSkill,
-      },
-    );
+    try {
+      await _analytics.logEvent(
+        name: 'interactive_choice_made',
+        parameters: {
+          'character_id': characterId,
+          'theme': theme,
+          'choice_id': choiceId,
+          'choice_number': choiceNumber,
+          'choice_text_length': choiceTextLength,
+          if (emotionalSkill != null) 'emotional_skill': emotionalSkill,
+        },
+      );
+    } catch (e) {
+      debugPrint('InteractiveStoryAnalytics error: ${e.toString()}');
+    }
   }
 
   static Future<void> trackStorySaved({
@@ -52,15 +60,19 @@ class InteractiveStoryAnalytics {
     required int segmentCount,
     required int wordCount,
   }) async {
-    await _analytics.logEvent(
-      name: 'interactive_story_saved',
-      parameters: {
-        'character_id': characterId,
-        'theme': theme,
-        'choice_count': choiceCount,
-        'segment_count': segmentCount,
-        'word_count': wordCount,
-      },
-    );
+    try {
+      await _analytics.logEvent(
+        name: 'interactive_story_saved',
+        parameters: {
+          'character_id': characterId,
+          'theme': theme,
+          'choice_count': choiceCount,
+          'segment_count': segmentCount,
+          'word_count': wordCount,
+        },
+      );
+    } catch (e) {
+      debugPrint('InteractiveStoryAnalytics error: ${e.toString()}');
+    }
   }
 }
