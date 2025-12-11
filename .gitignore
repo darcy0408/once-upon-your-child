@@ -58,6 +58,7 @@ backend/.env
 # Database (local development only)
 backend/characters.db
 backend/*.db
+backend/instance/*.db
 
 # Python virtual environment
 backend/.venv/
