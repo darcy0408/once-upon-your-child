@@ -25,9 +25,6 @@ class CustomizableAvatarWidget extends StatelessWidget {
       customSeed: customSeed,
     );
 
-    // Debug: print the avatar URL
-    print('?? Avatar URL: $imageUrl');
-
     return SizedBox(
       width: size,
       height: size,
