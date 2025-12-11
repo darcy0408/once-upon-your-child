@@ -1,7 +1,12 @@
 import random
 import re
 import json
+<<<<<<< HEAD
 from backend.utils.gemini_utils import generate_with_retry
+=======
+import time
+from google.api_core import exceptions as google_exceptions
+>>>>>>> 267cfd9f87c95f0d91b06a72260312b6a0ec9f4b
 
 SAFETY_GUARDRAILS = """
 SAFETY RULES (non-negotiable):

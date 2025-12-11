@@ -9,23 +9,31 @@ class RevenueAnalytics {
     required String planType,
     required double price,
   }) async {
-    await _analytics.logEvent(
-      name: 'subscription_started',
-      parameters: {
-        'plan_type': planType,
-        'price': price,
-      },
-    );
+    try {
+      await _analytics.logEvent(
+        name: 'subscription_started',
+        parameters: {
+          'plan_type': planType,
+          'price': price,
+        },
+      );
+    } catch (e) {
+      debugPrint('RevenueAnalytics error: ${e.toString()}');
+    }
   }
 
   static Future<void> trackPurchase({
     required String itemId,
     required double value,
   }) async {
-    await _analytics.logPurchase(
-      currency: 'USD',
-      value: value,
-      items: [AnalyticsEventItem(itemId: itemId)],
-    );
+    try {
+      await _analytics.logPurchase(
+        currency: 'USD',
+        value: value,
+        items: [AnalyticsEventItem(itemId: itemId)],
+      );
+    } catch (e) {
+      debugPrint('RevenueAnalytics error: ${e.toString()}');
+    }
   }
 }

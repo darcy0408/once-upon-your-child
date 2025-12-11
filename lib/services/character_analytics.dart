@@ -71,7 +71,7 @@ class CharacterAnalytics {
       });
       await _analytics.logEvent(name: name, parameters: cleanParams);
     } catch (e) {
-      debugPrint('Analytics logEvent failed ($name): $e');
+      debugPrint('Analytics logEvent failed ($name): ${e.toString()}');
     }
   }
 }

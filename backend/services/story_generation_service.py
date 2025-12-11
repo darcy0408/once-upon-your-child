@@ -40,3 +40,4 @@ class StoryGenerationService:
         except Exception as e:
             logger.error(f"Story generation failed: {e}", exc_info=True)
             return "Sorry, there was an error generating your story. Please try again."
+

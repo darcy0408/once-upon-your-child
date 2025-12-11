@@ -14,7 +14,7 @@ class GracePeriodAnalytics {
       );
     } catch (e) {
       if (kDebugMode) {
-        print('Analytics error (non-critical): $e');
+        debugPrint('Analytics error (non-critical): ${e.toString()}');
       }
     }
   }
@@ -35,7 +35,7 @@ class GracePeriodAnalytics {
       );
     } catch (e) {
       if (kDebugMode) {
-        print('Analytics error (non-critical): $e');
+        debugPrint('Analytics error (non-critical): ${e.toString()}');
       }
     }
   }
@@ -56,7 +56,7 @@ class GracePeriodAnalytics {
       );
     } catch (e) {
       if (kDebugMode) {
-        print('Analytics error (non-critical): $e');
+        debugPrint('Analytics error (non-critical): ${e.toString()}');
       }
     }
   }
@@ -69,7 +69,7 @@ class GracePeriodAnalytics {
       );
     } catch (e) {
       if (kDebugMode) {
-        print('Analytics error (non-critical): $e');
+        debugPrint('Analytics error (non-critical): ${e.toString()}');
       }
     }
   }

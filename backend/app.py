@@ -91,6 +91,9 @@ def create_app(config_name):
     db.init_app(app)
     print(f"=== Database initialized ===")
 
+    # Update Celery configuration
+    celery.conf.update(app.config)
+
     # Initialize AdvancedStoryEngine
     story_engine_instance = AdvancedStoryEngine()
 

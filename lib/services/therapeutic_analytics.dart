@@ -1,4 +1,5 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:flutter/foundation.dart';
 
 class TherapeuticAnalytics {
   TherapeuticAnalytics._();
@@ -10,26 +11,38 @@ class TherapeuticAnalytics {
     required int intensity,
     required List<String> copingStrategies,
   }) async {
-    await _analytics.logEvent(
-      name: 'feelings_check_in',
-      parameters: {
-        'emotion': emotionName,
-        'intensity': intensity,
-        'coping_strategies_count': copingStrategies.length,
-      },
-    );
+    try {
+      await _analytics.logEvent(
+        name: 'feelings_check_in',
+        parameters: {
+          'emotion': emotionName,
+          'intensity': intensity,
+          'coping_strategies_count': copingStrategies.length,
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('TherapeuticAnalytics error: ${e.toString()}');
+      }
+    }
   }
 
   static Future<void> trackTherapeuticFeedback({
     required int rating,
     required String feedbackText,
   }) async {
-    await _analytics.logEvent(
-      name: 'therapeutic_feedback',
-      parameters: {
-        'rating': rating,
-        'feedback_length': feedbackText.length,
-      },
-    );
+    try {
+      await _analytics.logEvent(
+        name: 'therapeutic_feedback',
+        parameters: {
+          'rating': rating,
+          'feedback_length': feedbackText.length,
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('TherapeuticAnalytics error: ${e.toString()}');
+      }
+    }
   }
 }

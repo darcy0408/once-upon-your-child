@@ -13,6 +13,8 @@ from backend.database import db
 from backend.models.character import Character
 from backend.models.story import Story
 from backend.services.story_generation_service import StoryGenerationService
+from backend.services.openrouter_story_generator import OpenRouterStoryGenerator
+from google.api_core import exceptions as google_exceptions
 from backend.services.story_service import AdvancedStoryEngine, _safe_extract_title_and_gem
 
 logger = get_task_logger(__name__)
@@ -41,14 +43,43 @@ def _fallback_story(theme: str, character_name: str) -> str:
 
 
 def _generate_story_text(prompt: str, theme: str, character_name: str) -> str:
-    """Generate story text with graceful fallback when the AI call fails."""
+    """
+    Generate story text with a tiered fallback system.
+    1. Try Gemini via StoryGenerationService.
+    2. On rate limit error, fall back to a free OpenRouter model.
+    3. If all else fails, use a local static story.
+    """
     try:
-        generator = StoryGenerationService()
-        story_text = generator.generate_story(prompt)
-        if story_text:
+        # 1. Try primary service (Gemini)
+        logger.info("Attempting story generation with primary service (Gemini)...")
+        gemini_generator = StoryGenerationService()
+        story_text = gemini_generator.generate_story(prompt)
+        # The retry logic is now inside the service, but we still check the output
+        if story_text and not story_text.startswith("Sorry"):
+            logger.info("Successfully generated story with primary service.")
             return story_text
+        logger.warning("Primary service returned a 'Sorry' message.")
+    except google_exceptions.ResourceExhausted:
+        # 2. On rate limit, fall back to secondary service (OpenRouter)
+        logger.warning("Primary service (Gemini) is rate-limited. Falling back to OpenRouter.")
+        try:
+            if os.getenv("OPENROUTER_API_KEY"):
+                logger.info("Attempting story generation with fallback service (OpenRouter)...")
+                openrouter_generator = OpenRouterStoryGenerator()
+                story_text = openrouter_generator.generate_story(prompt)
+                if story_text and not story_text.startswith("Sorry"):
+                    logger.info("Successfully generated story with fallback service.")
+                    return story_text
+                logger.warning("Fallback service returned a 'Sorry' message.")
+            else:
+                logger.warning("OPENROUTER_API_KEY not set. Cannot use fallback service.")
+        except Exception:
+            logger.exception("Fallback service (OpenRouter) also failed.")
     except Exception:
-        logger.exception("StoryGenerationService failed, using fallback story")
+        logger.exception("Primary service (Gemini) failed with an unexpected error.")
+
+    # 3. If all services fail, use the static local fallback
+    logger.error("All story generation services failed. Using static fallback story.")
     return _fallback_story(theme, character_name)
 
 
