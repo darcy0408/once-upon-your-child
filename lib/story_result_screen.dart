@@ -1964,60 +1964,6 @@ class ColoringGenerationDialog extends StatelessWidget {
       ),
     );
   }
-}
-=======
-// lib/story_result_screen.dart
-
-import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
-import 'dart:math';
-
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:share_plus/share_plus.dart';
-import 'story_reader_screen.dart';
-import 'storage_service.dart';
-import 'offline_story_cache.dart';
-import 'story_illustration_service.dart';
-import 'illustration_settings_dialog.dart';
-import 'illustrated_story_viewer.dart';
-import 'coloring_book_service.dart';
-import 'coloring_book_library_screen.dart';
-import 'models.dart';
-import 'therapeutic_focus_options.dart';
-import 'services/progression_service.dart';
-import 'unlock_celebration_dialog.dart';
-import 'services/achievement_service.dart';
-import 'achievement_celebration_dialog.dart';
-import 'config/environment.dart';
-import 'services/story_feedback_service.dart';
-import 'services/story_analytics.dart';
-import 'services/therapeutic_analytics.dart';
-import 'subscription_models.dart';
-import 'theme/app_theme.dart';
-import 'widgets/app_button.dart';
-import 'widgets/app_card.dart';
-import 'widgets/illustration_controls.dart';
-import 'widgets/user_friendly_error_dialog.dart';
-import 'widgets/quality_badge.dart';
-import 'premium_upgrade_screen.dart';
-import 'widgets/feature_tour_overlay.dart';
-import 'services/feature_tour_service.dart';
-
-class StoryResultScreen extends StatefulWidget {
-  final String title;
-  final String storyText;
-  final String wisdomGem;
-  final String? characterName;
-  final String? storyId;
-  final String? theme;
-  final String? characterId;
-  final int? characterAge;
-  final bool? isInteractive;
   final bool? isRhyming;
   final AchievementService? achievementsService;
   final DateTime? storyCreatedAt;
