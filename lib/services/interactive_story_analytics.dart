@@ -1,4 +1,5 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:flutter/foundation.dart';
 
 class InteractiveStoryAnalytics {
   InteractiveStoryAnalytics._();
@@ -24,7 +25,9 @@ class InteractiveStoryAnalytics {
         },
       );
     } catch (e) {
-      debugPrint('InteractiveStoryAnalytics error: ${e.toString()}');
+      if (kDebugMode) {
+        debugPrint('InteractiveStoryAnalytics error: ${e.toString()}');
+      }
     }
   }
 
@@ -49,7 +52,9 @@ class InteractiveStoryAnalytics {
         },
       );
     } catch (e) {
-      debugPrint('InteractiveStoryAnalytics error: ${e.toString()}');
+      if (kDebugMode) {
+        debugPrint('InteractiveStoryAnalytics error: ${e.toString()}');
+      }
     }
   }
 
@@ -72,7 +77,9 @@ class InteractiveStoryAnalytics {
         },
       );
     } catch (e) {
-      debugPrint('InteractiveStoryAnalytics error: ${e.toString()}');
+      if (kDebugMode) {
+        debugPrint('InteractiveStoryAnalytics error: ${e.toString()}');
+      }
     }
   }
 }

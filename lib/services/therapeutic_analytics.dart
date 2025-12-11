@@ -1,4 +1,5 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:flutter/foundation.dart';
 
 class TherapeuticAnalytics {
   TherapeuticAnalytics._();
@@ -20,7 +21,9 @@ class TherapeuticAnalytics {
         },
       );
     } catch (e) {
-      debugPrint('TherapeuticAnalytics error: ${e.toString()}');
+      if (kDebugMode) {
+        debugPrint('TherapeuticAnalytics error: ${e.toString()}');
+      }
     }
   }
 
@@ -37,7 +40,9 @@ class TherapeuticAnalytics {
         },
       );
     } catch (e) {
-      debugPrint('TherapeuticAnalytics error: ${e.toString()}');
+      if (kDebugMode) {
+        debugPrint('TherapeuticAnalytics error: ${e.toString()}');
+      }
     }
   }
 }
