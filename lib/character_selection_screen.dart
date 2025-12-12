@@ -128,20 +128,60 @@ class _CharacterSelectionScreenState extends State<CharacterSelectionScreen> {
     );
   }
 
+
   Widget _buildCharacterList(List<Character> characters) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(8.0),
+    return GridView.builder(
+      padding: const EdgeInsets.all(16.0),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16.0,
+        mainAxisSpacing: 16.0,
+        childAspectRatio: 0.75,
+      ),
       itemCount: characters.length,
       itemBuilder: (context, index) {
         final character = characters[index];
         return Card(
-          margin: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ListTile(
-            leading: const Icon(Icons.person, size: 40), // Placeholder for avatar
-            title: Text(character.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('Age: ${character.age}'),
-            trailing: const Icon(Icons.arrow_forward_ios),
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: InkWell(
             onTap: () => _selectCharacter(character),
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Hero(
+                      tag: 'avatar_${character.id}',
+                      child: character.buildAvatar(size: 100),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    character.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Age: ${character.age}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         );
       },

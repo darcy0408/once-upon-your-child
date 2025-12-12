@@ -13,7 +13,7 @@ class StoryGenerationService:
             raise ValueError("GEMINI_API_KEY not set")
 
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
 
     def generate_story(self, prompt: str) -> str:
         """Generate story from prompt with retry logic for rate limiting."""

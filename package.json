@@ -1,0 +1,7 @@
+{
+  "name": "railway-mcp",
+  "type": "module",
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}

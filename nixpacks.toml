@@ -1,11 +1,13 @@
 providers = ["python"]
 
 [phases.setup]
-nixPkgs = ["python312"]
+nixPkgs = ["python312", "postgresql", "pkg-config"]
 
 [phases.install]
 cmds = [
-  "python -m pip install --no-cache-dir -r backend/requirements.txt"
+  "python -m pip install --upgrade pip",
+  "python -m pip install --no-cache-dir -r backend/requirements.txt",
+  "python -c \"import psycopg2, sys; print('psycopg2 import ok', sys.version)\""
 ]
 
 [start]

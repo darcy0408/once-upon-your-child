@@ -34,42 +34,6 @@ Flask-JWT-Extended==4.6.0
 
 # Rate Limiting
 Flask-Limiter==3.5.0
-# Core Flask Dependencies
-Flask==3.1.1
-flask-cors==6.0.1
-Flask-SQLAlchemy==3.1.1
-gunicorn==21.2.0
-python-dotenv==1.1.1
-
-# Database
-SQLAlchemy==2.0.43
-psycopg2-binary==2.9.9
-
-# Google AI (Gemini)
-google-generativeai
-google-api-core
-google-auth
-
-# Utilities
-requests==2.32.3
-Jinja2==3.1.6
-MarkupSafe==3.0.2
-click==8.2.1
-Werkzeug==3.1.3
-Pillow
-cryptography==42.0.5
-
-# Error Monitoring
-sentry-sdk[flask]==2.33.2
-
-# Payment Processing
-stripe==10.12.0
-
-# JWT Authentication
-Flask-JWT-Extended==4.6.0
-
-# Rate Limiting
-Flask-Limiter==3.5.0
 
 # API Documentation
 apispec==6.3.0

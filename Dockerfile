@@ -4,10 +4,17 @@ FROM python:3.11-slim-buster
 # Set the working directory in the container
 WORKDIR /app
 
+# System deps required for psycopg2 and Pillow wheels; keep image lean
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential libpq-dev libjpeg62-turbo-dev zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install any needed packages specified in requirements.txt
 # Copy backend requirements separately to leverage Docker caching
 COPY backend/requirements.txt ./backend/requirements.txt
-RUN pip install --no-cache-dir -r ./backend/requirements.txt
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir -r ./backend/requirements.txt \
+    && pip show psycopg2-binary >/dev/null
 
 # Copy the rest of the application code
 COPY . .

@@ -60,6 +60,7 @@ class StoryResultScreen extends StatefulWidget {
   final UserSubscription? subscription;
   final bool isLearningToReadMode;
   final bool usedUserApiKey;
+  final bool asyncIllustrations;
 
   const StoryResultScreen({
     super.key,
@@ -81,6 +82,7 @@ class StoryResultScreen extends StatefulWidget {
     this.subscription,
     this.isLearningToReadMode = false,
     this.usedUserApiKey = false,
+    this.asyncIllustrations = false,
   })  : assert(!trackStoryCreation || achievementsService != null),
         assert(!trackStoryCreation || storyCreatedAt != null);
 

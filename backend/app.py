@@ -181,7 +181,7 @@ def create_app(config_name):
     app.register_error_handler(Exception, handle_error)
 
     # Gemini setup
-    GEMINI_MODEL = app.config.get("GEMINI_MODEL", "models/gemini-2.5-flash")
+    GEMINI_MODEL = app.config.get("GEMINI_MODEL", "gemini-2.0-flash-exp")
     api_key = None if testing_mode else app.config.get("GEMINI_API_KEY")
     genai = None
     print(f"DEBUG: GEMINI_MODEL set to {GEMINI_MODEL}")
