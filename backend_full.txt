@@ -1,0 +1,180 @@
+2025-12-13 18:25:08,746 - story_engine - INFO - google.generativeai imported successfully.
+2025-12-13 18:25:08,746 - story_engine - INFO - Gemini configured with API key.
+2025-12-13 18:25:08,746 - story_engine - INFO - Gemini model 'gemini-1.5-flash' initialized successfully.
+2025-12-13 18:25:10,764 - stripe_routes - WARNING - STRIPE_API_KEY not set in app config - Stripe routes may not function.
+2025-12-13 18:25:10,764 - story_engine - INFO - \u2713 Stripe Premium Price ID: NOT SET
+2025-12-13 18:25:10,764 - story_engine - INFO - \u2713 Stripe Family Price ID: NOT SET
+2025-12-13 18:25:10,765 - story_engine - INFO - Image generator initialized with Gemini
+backend init executed
+=== Creating Flask app with config: development ===
+=== Available configs: ['dev', 'development', 'production', 'testing', 'default'] ===
+=== Config loaded, initializing database ===
+=== Database initialized ===
+DEBUG: GEMINI_MODEL set to gemini-1.5-flash
+DEBUG: API key from app.config.get("GEMINI_API_KEY") is present: True
+DEBUG: Masked API key in app.py: AIza...rtqE
+=== Creating database tables ===
+=== Database tables created ===
+=== Registering routes ===
+=== All routes registered successfully ===
+=== Registered routes: ['/static/<path:filename>', '/api/stripe/create-checkout-session', '/api/stripe/subscription-status/<user_id>', '/api/stripe/webhook', '/api/webhooks/stripe', '/admin/analytics/overview', '/admin/analytics/story-stats', '/admin/analytics/user-activity', '/admin/analytics/feature-usage', '/admin/analytics/stories', '/admin/analytics/users', '/admin/cost-report', '/achievement/sync', '/achievement/data', '/achievement/record/story', '/achievement/record/character', '/achievement/stats', '/api/user/<user_id>/subscription', '/api/user/<user_id>/usage-stats', '/api/user/<user_id>/cancel-subscription', '/get-story-themes', '/generate-story', '/generate-story-mock', '/task-status/<task_id>', '/generate-interactive-story', '/continue-interactive-story', '/report-story', '/generate-illustrations', '/generate-coloring-pages', '/create-character', '/characters/<string:char_id>', '/characters/<string:char_id>', '/get-characters', '/characters/<string:char_id>', '/admin/run-db-optimization', '/admin/add-missing-columns', '/health', '/version', '/health/detailed', '/health/database', '/quality/score-story', '/debug-gemini', '/debug-openrouter', '/setup-test-account', '/auth/login', '/users/<string:user_id>/feature-unlocks', '/users/<string:user_id>/story-created'] ===
+ * Serving Flask app 'app'
+ * Debug mode: on
+2025-12-13 18:25:10,859 - werkzeug - INFO - WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.160.0.126:5000
+2025-12-13 18:25:10,859 - werkzeug - INFO - Press CTRL+C to quit
+2025-12-13 18:25:10,867 - werkzeug - INFO -  * Restarting with watchdog (windowsapi)
+2025-12-13 18:25:13,666 - story_engine - INFO - google.generativeai imported successfully.
+2025-12-13 18:25:13,666 - story_engine - INFO - Gemini configured with API key.
+2025-12-13 18:25:13,667 - story_engine - INFO - Gemini model 'gemini-1.5-flash' initialized successfully.
+2025-12-13 18:25:16,103 - stripe_routes - WARNING - STRIPE_API_KEY not set in app config - Stripe routes may not function.
+2025-12-13 18:25:16,103 - story_engine - INFO - \u2713 Stripe Premium Price ID: NOT SET
+2025-12-13 18:25:16,103 - story_engine - INFO - \u2713 Stripe Family Price ID: NOT SET
+2025-12-13 18:25:16,105 - story_engine - INFO - Image generator initialized with Gemini
+2025-12-13 18:25:16,193 - werkzeug - WARNING -  * Debugger is active!
+2025-12-13 18:25:16,196 - werkzeug - INFO -  * Debugger PIN: 852-567-899
+2025-12-13 18:25:17,174 - story_engine - INFO - [7f44b7d7] POST /generate-story
+2025-12-13 18:25:17,193 - story_engine - ERROR - Failed to ensure user existence: (sqlite3.OperationalError) no such column: user.stories_created_count
+[SQL: SELECT user.id AS user_id, user.username AS user_username, user.email AS user_email, user.password_hash AS user_password_hash, user.created_at AS user_created_at, user.subscription_tier AS user_subscription_tier, user.subscription_status AS user_subscription_status, user.current_period_end AS user_current_period_end, user.cancel_at_period_end AS user_cancel_at_period_end, user.stripe_customer_id AS user_stripe_customer_id, user.stories_created_count AS user_stories_created_count 
+FROM user 
+WHERE user.id = ?]
+[parameters: ('test_verifier',)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-12-13 18:25:17,221 - story_engine - INFO - google.generativeai imported successfully.
+2025-12-13 18:25:17,221 - story_engine - INFO - Gemini configured with API key.
+2025-12-13 18:25:17,221 - story_engine - INFO - Gemini model 'gemini-1.5-flash' initialized successfully.
+2025-12-13 18:25:17,221 - stripe_routes - WARNING - STRIPE_API_KEY not set in app config - Stripe routes may not function.
+2025-12-13 18:25:17,221 - story_engine - INFO - \u2713 Stripe Premium Price ID: NOT SET
+2025-12-13 18:25:17,221 - story_engine - INFO - \u2713 Stripe Family Price ID: NOT SET
+2025-12-13 18:25:17,221 - story_engine - INFO - Image generator initialized with Gemini
+2025-12-13 18:25:17,308 - backend.tasks.story_tasks - INFO - Custom Pet Found: {'name': 'Sparky', 'species': 'Dragon', 'personality': 'Loves eating marshmallows and sneezing glitter'}
+2025-12-13 18:25:17,308 - backend.tasks.story_tasks - INFO - Generated Prompt Snippet: You are an experienced children's author running the Engaging Storycraft v9.0 engine.
+Follow the exact output order and labels below. Keep everything age-appropriate and gentle.
+
+OUTPUT ORDER (use these exact labels):
+REQUEST SUMMARY
+STORY
+WISDOM GEM
+ADVENTURE REPORT
+
+REQUEST SUMMARY:
+- Child/Character: Alex (Age: 7), Traits: Brave, Curious
+- Theme: Magical Forest
+- Companion: Sparky (is a Dragon who act as a Loves eating marshmallows and sneezing glitter)
+- Mode: Linear story
+- Default length: ...
+2025-12-13 18:25:17,308 - backend.tasks.story_tasks - INFO - Attempting story generation with primary service (Gemini)...
+2025-12-13 18:25:17,309 - backend.services.story_generation_service - INFO - Generating story with prompt: You are an experienced children's author running the Engaging Storycraft v9.0 engine.
+Follow the exa... (Attempt 1)
+2025-12-13 18:25:17,675 - backend.services.story_generation_service - WARNING - Rate limit exceeded. Retrying in 1 seconds... (Attempt 1/5)
+2025-12-13 18:25:18,676 - backend.services.story_generation_service - INFO - Generating story with prompt: You are an experienced children's author running the Engaging Storycraft v9.0 engine.
+Follow the exa... (Attempt 2)
+2025-12-13 18:25:18,805 - backend.services.story_generation_service - WARNING - Rate limit exceeded. Retrying in 2 seconds... (Attempt 2/5)
+2025-12-13 18:25:20,806 - backend.services.story_generation_service - INFO - Generating story with prompt: You are an experienced children's author running the Engaging Storycraft v9.0 engine.
+Follow the exa... (Attempt 3)
+2025-12-13 18:25:20,937 - backend.services.story_generation_service - WARNING - Rate limit exceeded. Retrying in 4 seconds... (Attempt 3/5)
+2025-12-13 18:25:24,938 - backend.services.story_generation_service - INFO - Generating story with prompt: You are an experienced children's author running the Engaging Storycraft v9.0 engine.
+Follow the exa... (Attempt 4)
+2025-12-13 18:25:25,069 - backend.services.story_generation_service - WARNING - Rate limit exceeded. Retrying in 8 seconds... (Attempt 4/5)
+2025-12-13 18:25:33,070 - backend.services.story_generation_service - INFO - Generating story with prompt: You are an experienced children's author running the Engaging Storycraft v9.0 engine.
+Follow the exa... (Attempt 5)
+2025-12-13 18:25:33,191 - backend.services.story_generation_service - ERROR - Story generation failed after 5 retries due to rate limiting.
+Traceback (most recent call last):
+  File "C:\dev\story-weaver-app\backend\services\story_generation_service.py", line 26, in generate_story
+    response = self.model.generate_content(prompt)
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\google\generativeai\generative_models.py", line 331, in generate_content
+    response = self._client.generate_content(
+        request,
+        **request_options,
+    )
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\google\ai\generativelanguage_v1beta\services\generative_service\client.py", line 835, in generate_content
+    response = rpc(
+        request,
+    ...<2 lines>...
+        metadata=metadata,
+    )
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\google\api_core\gapic_v1\method.py", line 131, in __call__
+    return wrapped_func(*args, **kwargs)
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\google\api_core\retry\retry_unary.py", line 294, in retry_wrapped_func
+    return retry_target(
+        target,
+    ...<3 lines>...
+        on_error=on_error,
+    )
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\google\api_core\retry\retry_unary.py", line 156, in retry_target
+    next_sleep = _retry_error_helper(
+        exc,
+    ...<6 lines>...
+        timeout,
+    )
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\google\api_core\retry\retry_base.py", line 214, in _retry_error_helper
+    raise final_exc from source_exc
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\google\api_core\retry\retry_unary.py", line 147, in retry_target
+    result = target()
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\google\api_core\timeout.py", line 130, in func_with_timeout
+    return func(*args, **kwargs)
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\google\api_core\grpc_helpers.py", line 78, in error_remapped_callable
+    raise exceptions.from_grpc_error(exc) from exc
+google.api_core.exceptions.ResourceExhausted: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/usage?tab=rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-2.0-flash-exp
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash-exp
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash-exp
+Please retry in 26.736976535s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count"
+  quota_id: "GenerateContentInputTokensPerModelPerMinute-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash-exp"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash-exp"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.0-flash-exp"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+}
+, retry_delay {
+  seconds: 26
+}
+]
+2025-12-13 18:25:33,198 - backend.tasks.story_tasks - WARNING - Primary service (Gemini) is rate-limited. Falling back to OpenRouter.
+2025-12-13 18:25:33,199 - backend.tasks.story_tasks - WARNING - OPENROUTER_API_KEY not set. Cannot use fallback service.
+2025-12-13 18:25:33,199 - backend.tasks.story_tasks - ERROR - All story generation services failed. Using static fallback story.
+2025-12-13 18:25:33,201 - backend.tasks.story_tasks - ERROR - Task failed to ensure user existence: (sqlite3.OperationalError) no such column: user.stories_created_count
+[SQL: SELECT user.id AS user_id, user.username AS user_username, user.email AS user_email, user.password_hash AS user_password_hash, user.created_at AS user_created_at, user.subscription_tier AS user_subscription_tier, user.subscription_status AS user_subscription_status, user.current_period_end AS user_current_period_end, user.cancel_at_period_end AS user_cancel_at_period_end, user.stripe_customer_id AS user_stripe_customer_id, user.stories_created_count AS user_stories_created_count 
+FROM user 
+WHERE user.id = ?]
+[parameters: ('test_verifier',)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-12-13 18:25:33,236 - celery.app.trace - INFO - Task tasks.generate_story[7a911467-9432-4082-92a7-924502a889de] succeeded in 16.018934899999294s: {'status': 'complete', 'story': {'id': '9decdef5-b559-43a1-8a6d-3ce57cf55d70', 'title': 'A Magical Forest Adventure', 'story_text': '{\'name\': \'Alex\', \'age\': 7, \'personality_traits\': [\'Brave\', \'Curious\']} embarks on a quick quest about magical forest and discovers that courage grows with every kind choice.', 'theme': 'Magical Forest', 'wisdom_gem': 'Always be kind.', 'include_illustrations': False, 'rhyme_time_mode': False, 'learning_to_read_mode': False}}
+2025-12-13 18:25:33,236 - story_engine - ERROR - {"timestamp": "2025-12-14T01:25:33.236589", "type": "slow_request", "message": "Request took 16.06s", "details": {"method": "POST", "path": "/generate-story", "duration": 16.06241488456726, "status_code": 200}}
+2025-12-13 18:25:33,236 - story_engine - INFO - {"method": "POST", "path": "/generate-story", "status": 200, "duration_ms": 16062.41, "ip": "127.0.0.1", "request_id": "7f44b7d7"}
+2025-12-13 18:25:33,237 - werkzeug - INFO - 127.0.0.1 - - [13/Dec/2025 18:25:33] "POST /generate-story HTTP/1.1" 200 -

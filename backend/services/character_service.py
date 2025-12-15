@@ -90,6 +90,7 @@ def create_character(data: dict):
     new_character.fears = _as_list(data.get("fears", []))
     new_character.strengths = _as_list(data.get("strengths", []))
     new_character.goals = _as_list(data.get("goals", []))
+    new_character.pets = data.get("pets", [])
     new_character.comfort_item = data.get("comfort_item")
     character_repository.add_character(new_character)
     return new_character.to_dict(), 201
@@ -162,6 +163,8 @@ def update_character(char_id: str, data: dict):
         char.strengths = _as_list(data["strengths"])
     if "goals" in data:
         char.goals = _as_list(data["goals"])
+    if "pets" in data:
+        char.pets = data["pets"] if isinstance(data["pets"], list) else []
 
     character_repository.update_character(char)
     return char.to_dict(), 200

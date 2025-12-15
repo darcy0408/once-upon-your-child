@@ -1,21 +1,23 @@
 import os
 from celery import Celery
 
-# Get Redis URL from environment with a sensible default for local development
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+# Get Redis URL from environment
+# If not present, default to memory/cache to avoid connection errors on localhost
+REDIS_URL = os.getenv("REDIS_URL")
 
 # Initialize Celery app
 celery = Celery(
     "story_weaver",
-    broker=REDIS_URL,
-    backend=REDIS_URL,
+    broker=REDIS_URL if REDIS_URL else "memory://",
+    backend=REDIS_URL if REDIS_URL else "cache+memory://",
     include=["backend.tasks.story_tasks"],
 )
 
 # Celery configuration
 celery.conf.update(
-    broker_url='redis://localhost:6379/0',
-    result_backend='redis://localhost:6379/0',
+    # broker_url and result_backend are set via REDIS_URL or config.py
+    # broker_url='redis://localhost:6379/0',
+    # result_backend='redis://localhost:6379/0',
     task_serializer='json',
     accept_content=['json'],
     result_serializer='json',

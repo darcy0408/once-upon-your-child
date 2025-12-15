@@ -26,11 +26,22 @@ class Config:
     
     # Gemini API
     GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
-    GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash-exp')
+    GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.0-flash-exp')
     
-    # Celery Configuration - Run tasks synchronously in development (no Redis needed)
+    # Celery Configuration
+    # If REDIS_URL is present (Production with Redis), use it.
+    # Otherwise fallback to in-memory (Dev/Prod without Redis) to avoid connection errors.
+    if os.environ.get('REDIS_URL'):
+        CELERY_BROKER_URL = os.environ.get('REDIS_URL')
+        CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL')
+    else:
+        CELERY_BROKER_URL = 'memory://'
+        CELERY_RESULT_BACKEND = 'cache+memory://'
+
+    # Run tasks synchronously for now (simplifies deployment without separate worker)
     CELERY_TASK_ALWAYS_EAGER = True
     CELERY_TASK_EAGER_PROPAGATES = True
+    CELERY_TASK_STORE_EAGER_RESULT = True  # Required for polling to work in eager mode
     
     # CORS - Build allowed origins dynamically
     @staticmethod
@@ -53,7 +64,7 @@ class Config:
             base_origins.append(f"https://{railway_static_url}")
 
         # Add localhost origins only in development
-        if os.environ.get('FLASK_ENV') in ['dev', 'development']:
+        if os.environ.get('FLASK_ENV', 'development') in ['dev', 'development']:
             base_origins.extend([
                 "http://localhost:8080",
                 "http://127.0.0.1:8080",

@@ -1,6 +1,7 @@
 import '../models/subscription_status.dart';
 import 'subscription_sync_service.dart';
 import 'user_identity_service.dart';
+import 'stripe_service.dart';
 
 class SubscriptionService {
   SubscriptionService({SubscriptionSyncService? syncService})
@@ -23,6 +24,12 @@ class SubscriptionService {
     final resolvedId =
         userId ?? await UserIdentityService.getOrCreateUserId();
     await _syncService.syncSubscriptionStatus(userId: resolvedId);
+  }
+
+  Future<Map<String, dynamic>> getSubscriptionStatus([String? userId]) async {
+    final resolvedId = userId ?? await UserIdentityService.getOrCreateUserId();
+    final stripeService = StripeService(); 
+    return await stripeService.getSubscriptionStatus(resolvedId);
   }
 
   void dispose() {

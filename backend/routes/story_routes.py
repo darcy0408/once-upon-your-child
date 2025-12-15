@@ -5,6 +5,8 @@ from flask import Blueprint, jsonify, request
 from ..celery_config import celery
 from ..gemini_image_generator import GeminiImageGenerator
 from ..tasks.story_tasks import generate_story_task
+from ..models.user import User
+from ..database import db
 
 
 def create_story_blueprint(
@@ -46,6 +48,28 @@ def create_story_blueprint(
         payload = request.get_json(silent=True) or {}
         theme = payload.get("theme") or "Adventure"
         user_id = payload.get("user_id") or "anonymous"
+        # Sanitize user_id to match database schema (36 chars)
+        if user_id and user_id.startswith("user_"):
+            user_id = user_id.replace("user_", "")
+
+        # Ensure user exists (Lazy creation for anonymous/new users)
+        if user_id and user_id != "anonymous":
+            try:
+                user = db.session.get(User, user_id)
+                if not user:
+                    logger.info(f"Creating lazy user account for ID: {user_id}")
+                    # Create placeholder user
+                    new_user = User(
+                        id=user_id,
+                        username=f"user_{user_id[:8]}",
+                        email=f"{user_id}@storyweaver.app"
+                    )
+                    new_user.set_password("anonymous_guest")
+                    db.session.add(new_user)
+                    db.session.commit()
+            except Exception as e:
+                logger.error(f"Failed to ensure user existence: {e}")
+                db.session.rollback()
 
         if not payload.get("character_id") and not payload.get("character"):
             return jsonify({"error": "character_id or character is required"}), 400
@@ -53,14 +77,14 @@ def create_story_blueprint(
         task_kwargs = {
             "character_id": payload.get("character_id"),
             "character": payload.get("character"),
+            "character_details": payload.get("character_details"), 
             "theme": theme,
-            "user_id": user_id,
             "user_id": user_id,
             "include_illustrations": payload.get("include_illustrations", False),
             "async_illustrations": payload.get("async_illustrations", False),
             "rhyme_time_mode": payload.get("rhyme_time_mode", False),
             "learning_to_read_mode": payload.get("learning_to_read_mode", False),
-            "companion": payload.get("companion"),
+            "companion": payload.get("companion") or payload.get("companion_name"),
             "therapeutic_prompt": payload.get("therapeutic_prompt", ""),
             "feelings_prompt": payload.get("feelings_prompt"),
         }
@@ -70,20 +94,46 @@ def create_story_blueprint(
             task_kwargs["include_illustrations"] = False
             logger.info("Async illustrations enabled - skipping inline generation")
 
+        # Try synchronous execution first (to bypass polling issues on Railway)
         try:
-            task = generate_story_task.delay(**task_kwargs)
-            return (
-                jsonify(
-                    {
-                        "task_id": task.id,
-                        "status": "processing",
-                        "message": "Story generation started",
-                        "poll_url": f"/task-status/{task.id}",
-                    }
-                ),
-                202,
-            )
+            # Use .apply() to run synchronously in the same thread/process
+            sync_result = generate_story_task.apply(kwargs=task_kwargs).get()
+            
+            # Extract story payload from the task result
+            story_payload = (sync_result or {}).get("story", {})
+            if not story_payload:
+                 story_payload = (sync_result or {}).get("story_text", {})
+
+            response_payload = {
+                "status": sync_result.get("status", "complete"),
+                "title": story_payload.get("title"),
+                "story": story_payload.get("story_text"),
+                "story_text": story_payload.get("story_text"),
+                "task_id": "sync_task", # No task ID needed
+                "theme": story_payload.get("theme"),
+                "wisdom_gem": story_payload.get("wisdom_gem"),
+                "async_illustrations": payload.get("async_illustrations", False),
+            }
+            return jsonify(response_payload), 200
+
         except Exception as exc:
+            logger.exception("Synchronous story generation failed, attempting async fallback: %s", exc)
+            try:
+                task = generate_story_task.delay(**task_kwargs)
+                return (
+                    jsonify(
+                        {
+                            "task_id": task.id,
+                            "status": "processing",
+                            "message": "Story generation started (Async fallback)",
+                            "poll_url": f"/task-status/{task.id}",
+                        }
+                    ),
+                    202,
+                )
+            except Exception as async_exc:
+                logger.exception("Async fallback also failed: %s", async_exc)
+                return jsonify({"error": "Story generation failed completely"}), 500
             logger.exception("Falling back to synchronous story generation: %s", exc)
             try:
                 sync_result = generate_story_task.apply(kwargs=task_kwargs).get()

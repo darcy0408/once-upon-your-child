@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
+import '../../models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pill_button.dart';
 import '../wizard_story_screen.dart';
 
-/// Step 3: The Companion Selector
+/// Step 3: The Adventure Team Selector
 ///
 /// Layout:
-/// - Grid of cute animal companions
+/// - Shows saved characters (friends/family) at top
+/// - Grid of magical creature companions below
+/// - Multi-select: can choose characters + magical companions
 /// - Each companion has animation on tap
-/// - Selected companion gets gold glowing aura
+/// - Selected companions get gold glowing aura
 /// - Continue button
 class CompanionSelectorStep extends StatefulWidget {
   final WizardData wizardData;
   final VoidCallback onNext;
+  final List<Character> savedCharacters;
 
   const CompanionSelectorStep({
     super.key,
     required this.wizardData,
     required this.onNext,
+    this.savedCharacters = const [],
   });
 
   @override
@@ -25,65 +30,158 @@ class CompanionSelectorStep extends StatefulWidget {
 }
 
 class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
-  String? _selectedCompanion;
+  // Use a Set for multi-selection
+  final Set<String> _selectedCompanions = {};
 
-  final List<Companion> _companions = [
-    Companion(
-      id: 'dragon',
-      emoji: '🐉',
-      name: 'Tiny Dragon',
-      color: AppColors.dragonOrange,
-      greeting: 'I\'m ready to help!',
-    ),
-    Companion(
-      id: 'owl',
-      emoji: '🦉',
-      name: 'Wise Owl',
-      color: AppColors.owlBlue,
-      greeting: 'Let\'s be wise together!',
-    ),
-    Companion(
-      id: 'cat',
-      emoji: '🐱',
-      name: 'Playful Cat',
-      color: AppColors.catPurple,
-      greeting: 'Purr-fect adventure awaits!',
-    ),
-    Companion(
-      id: 'dog',
-      emoji: '🐕',
-      name: 'Loyal Dog',
-      color: AppColors.dogBrown,
-      greeting: 'I\'ll be your best friend!',
-    ),
-    Companion(
-      id: 'unicorn',
-      emoji: '🦄',
-      name: 'Magic Unicorn',
-      color: AppColors.primaryLight,
-      greeting: 'Let\'s make magic!',
-    ),
-    Companion(
-      id: 'fox',
-      emoji: '🦊',
-      name: 'Clever Fox',
+  List<Companion> get _savedCharacterCompanions {
+    // Convert saved characters to companions (friends/family)
+    return widget.savedCharacters.where((char) {
+      // Don't include the main character as a companion
+      return char.name != widget.wizardData.characterName;
+    }).map((char) => Companion(
+      id: 'character_${char.id}',
+      emoji: _getEmojiForAge(char.age),
+      name: char.name,
       color: AppColors.gold,
-      greeting: 'Ready for clever fun!',
-    ),
-  ];
+      greeting: 'Let\'s have an adventure!',
+    )).toList();
+  }
 
-  void _selectCompanion(Companion companion) {
+  String _getEmojiForAge(int age) {
+    if (age <= 5) return '👶';
+    if (age <= 12) return '🧒';
+    if (age <= 18) return '👦';
+    if (age <= 60) return '👨';
+    return '👴';
+  }
+
+  List<Companion> get _magicalCompanions {
+    final defaultCompanions = [
+      Companion(
+        id: 'dragon',
+        emoji: '🐉',
+        name: 'Tiny Dragon',
+        color: AppColors.dragonOrange,
+        greeting: 'I\'m ready to help!',
+      ),
+      Companion(
+        id: 'owl',
+        emoji: '🦉',
+        name: 'Wise Owl',
+        color: AppColors.owlBlue,
+        greeting: 'Let\'s be wise together!',
+      ),
+      Companion(
+        id: 'cat',
+        emoji: '🐱',
+        name: 'Playful Cat',
+        color: AppColors.catPurple,
+        greeting: 'Purr-fect adventure awaits!',
+      ),
+      Companion(
+        id: 'dog',
+        emoji: '🐕',
+        name: 'Loyal Dog',
+        color: AppColors.dogBrown,
+        greeting: 'I\'ll be your best friend!',
+      ),
+      Companion(
+        id: 'unicorn',
+        emoji: '🦄',
+        name: 'Magic Unicorn',
+        color: AppColors.primaryLight,
+        greeting: 'Let\'s make magic!',
+      ),
+      Companion(
+        id: 'fox',
+        emoji: '🦊',
+        name: 'Clever Fox',
+        color: AppColors.gold,
+        greeting: 'Ready for clever fun!',
+      ),
+    ];
+
+    final customPets = widget.wizardData.pets.map((pet) => Companion(
+      id: pet['name']!,
+      emoji: _getEmojiForSpecies(pet['species']),
+      name: pet['name']!,
+      color: AppColors.primary,
+      greeting: pet['personality']?.isNotEmpty == true ? pet['personality']! : 'I am your ${pet['species']}!',
+    )).toList();
+
+    return [...customPets, ...defaultCompanions];
+  }
+
+  String _getEmojiForSpecies(String? species) {
+    switch (species) {
+      case 'Dog': return '🐕';
+      case 'Cat': return '🐱';
+      case 'Bird': return '🐦';
+      case 'Hamster': return '🐹';
+      case 'Fish': return '🐠';
+      case 'Bunny': return '🐰';
+      case 'Reptile': return '🦎';
+      default: return '🐾';
+    }
+  }
+
+  void _toggleCompanion(Companion companion) {
     setState(() {
-      _selectedCompanion = companion.id;
-      widget.wizardData.selectedCompanion = companion.id;
-      widget.wizardData.companionName = companion.name;
+      if (_selectedCompanions.contains(companion.id)) {
+        _selectedCompanions.remove(companion.id);
+        
+        // Remove from wizardData
+        widget.wizardData.selectedCompanions.remove(companion.id);
+        if (widget.wizardData.companionNames.contains(companion.name)) {
+             widget.wizardData.companionNames.remove(companion.name);
+        }
+      } else {
+        _selectedCompanions.add(companion.id);
+        
+        // Add to wizardData
+        if (!widget.wizardData.selectedCompanions.contains(companion.id)) {
+            widget.wizardData.selectedCompanions.add(companion.id);
+            widget.wizardData.companionNames.add(companion.name);
+        }
+      }
+    });
+  }
+  
+  List<Companion> get _allCompanions => [
+        ..._savedCharacterCompanions,
+        ..._magicalCompanions,
+      ];
+
+  void _selectAll() {
+    setState(() {
+      final allCompanions = _allCompanions;
+      if (_selectedCompanions.length == allCompanions.length) {
+        // Deselect all
+        _selectedCompanions.clear();
+        widget.wizardData.selectedCompanions.clear();
+        widget.wizardData.companionNames.clear();
+      } else {
+        // Select all
+        _selectedCompanions.clear();
+        widget.wizardData.selectedCompanions.clear();
+        widget.wizardData.companionNames.clear();
+
+        for (var c in allCompanions) {
+          _selectedCompanions.add(c.id);
+          widget.wizardData.selectedCompanions.add(c.id);
+          widget.wizardData.companionNames.add(c.name);
+        }
+      }
     });
   }
 
-  bool get _canContinue => _selectedCompanion != null;
+  bool get _canContinue => _selectedCompanions.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
+    final allCompanions = _allCompanions;
+    final hasFriends = _savedCharacterCompanions.isNotEmpty;
+
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -91,18 +189,31 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
         children: [
           // Title
           Text(
-            'Choose a Companion',
+            'Build Your Adventure Team',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   color: AppColors.textDark,
                   fontWeight: FontWeight.bold,
                 ),
             textAlign: TextAlign.center,
           ),
+
+          // Select All Button
+          TextButton(
+            onPressed: _selectAll,
+            child: Text(
+                _selectedCompanions.length == allCompanions.length
+                    ? 'Deselect All'
+                    : 'Select All (${allCompanions.length})'
+            ),
+          ),
+
           const SizedBox(height: AppSpacing.sm),
 
           // Subtitle
           Text(
-            'Pick a friend to join your adventure',
+            hasFriends
+                ? 'Choose friends, family, or magical companions'
+                : 'Pick magical companions for your adventure',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: AppColors.textDark.withAlpha(179), // 70% opacity
                 ),
@@ -110,26 +221,79 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
           ),
           const SizedBox(height: AppSpacing.xl),
 
-          // Companion grid
+          // Companion grid (with sections)
           Expanded(
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: AppSpacing.lg,
-                mainAxisSpacing: AppSpacing.lg,
-                childAspectRatio: 1.0,
-              ),
-              itemCount: _companions.length,
-              itemBuilder: (context, index) {
-                final companion = _companions[index];
-                final isSelected = _selectedCompanion == companion.id;
+            child: ListView(
+              children: [
+                // Friends & Family section (if any)
+                if (hasFriends) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    child: Text(
+                      '👨‍👩‍👧‍👦 Friends & Family',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: AppColors.textDark,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: AppSpacing.lg,
+                      mainAxisSpacing: AppSpacing.lg,
+                      childAspectRatio: 1.0,
+                    ),
+                    itemCount: _savedCharacterCompanions.length,
+                    itemBuilder: (context, index) {
+                      final companion = _savedCharacterCompanions[index];
+                      final isSelected = _selectedCompanions.contains(companion.id);
 
-                return _CompanionCard(
-                  companion: companion,
-                  isSelected: isSelected,
-                  onTap: () => _selectCompanion(companion),
-                );
-              },
+                      return _CompanionCard(
+                        companion: companion,
+                        isSelected: isSelected,
+                        onTap: () => _toggleCompanion(companion),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                ],
+
+                // Magical Companions section
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: Text(
+                    '🦄 Magical Companions',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: AppColors.textDark,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: AppSpacing.lg,
+                    mainAxisSpacing: AppSpacing.lg,
+                    childAspectRatio: 1.0,
+                  ),
+                  itemCount: _magicalCompanions.length,
+                  itemBuilder: (context, index) {
+                    final companion = _magicalCompanions[index];
+                    final isSelected = _selectedCompanions.contains(companion.id);
+
+                    return _CompanionCard(
+                      companion: companion,
+                      isSelected: isSelected,
+                      onTap: () => _toggleCompanion(companion),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
           const SizedBox(height: AppSpacing.lg),

@@ -66,9 +66,10 @@ class StoryCreatorApp extends StatelessWidget {
         ),
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const StoryScreen(),
+      home: const WizardStoryScreen(), // Go directly to wizard
       routes: {
         '/subscription-success': (context) => const SubscriptionSuccessScreen(),
+        '/story-home': (context) => const StoryScreen(), // Keep old screen accessible
       },
       debugShowCheckedModeBanner: false,
     );
@@ -579,12 +580,27 @@ class _StoryScreenState extends State<StoryScreen> {
     }
   }
 
-  Future<void> _onCreateButtonPressed() async {
+   Future<void> _onCreateButtonPressed() async {
     if (_isLoading) return;
-    if (_interactiveMode) {
-      await _startInteractiveStory();
-    } else {
-      await _createStory();
+    
+    // Navigate to the new Wizard Story Screen
+    // This replaces the old legacy quick story flow
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WizardStoryScreen(
+          initialCharacter: _selectedCharacter,
+          availableCharacters: _characters,
+        ),
+      ),
+    );
+
+    // If wizard returns success or a new character, refresh
+    if (result == true || result != null) {
+      if (mounted) {
+        await _loadCharacters();
+        await _loadSubscriptionInfo(); // Refresh limits
+      }
     }
   }
 
@@ -1098,9 +1114,7 @@ class _StoryScreenState extends State<StoryScreen> {
                     onPressed: (_gracePeriodStatus?.shouldShowHardLimit ?? false)
                         ? null
                         : () {
-                            Navigator.push(context, MaterialPageRoute(
-                              builder: (context) => const WizardStoryScreen()
-                            ));
+                            _onCreateButtonPressed();
                           },
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),

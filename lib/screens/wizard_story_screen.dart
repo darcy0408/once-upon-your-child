@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../models.dart'; // Import Character model
 import '../theme/app_theme.dart';
 import '../widgets/moon_phase_progress.dart';
+import '../services/isar_service.dart';
 import 'wizard_steps/hero_creator_step.dart';
 import 'wizard_steps/feeling_selection_step.dart';
 import 'wizard_steps/companion_selector_step.dart';
@@ -14,8 +16,16 @@ import 'wizard_steps/magic_review_step.dart';
 /// - 4 steps: Hero Creator, Feeling Selection, Companion Selector, Review & Launch
 /// - Smooth page transitions
 /// - All data collected and passed to final step
+/// - Loads saved characters automatically on init
 class WizardStoryScreen extends StatefulWidget {
-  const WizardStoryScreen({super.key});
+  final Character? initialCharacter;
+  final List<Character> availableCharacters;
+
+  const WizardStoryScreen({
+    super.key,
+    this.initialCharacter,
+    this.availableCharacters = const [],
+  });
 
   @override
   State<WizardStoryScreen> createState() => _WizardStoryScreenState();
@@ -26,7 +36,52 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
   int _currentStep = 0;
 
   // Wizard data collected across steps
-  final WizardData _wizardData = WizardData();
+  late final WizardData _wizardData;
+
+  // Loaded data
+  List<Character> _savedCharacters = [];
+  bool _isLoadingCharacters = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _wizardData = WizardData();
+    if (widget.initialCharacter != null) {
+      _initializeFromCharacter(widget.initialCharacter!);
+    }
+    _loadSavedCharacters();
+  }
+
+  Future<void> _loadSavedCharacters() async {
+    try {
+      final characters = await IsarService.getAllCharacters();
+      if (mounted) {
+        setState(() {
+          _savedCharacters = characters;
+          _isLoadingCharacters = false;
+        });
+        debugPrint('✅ Loaded ${characters.length} saved characters');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error loading characters: $e');
+      if (mounted) {
+        setState(() => _isLoadingCharacters = false);
+      }
+    }
+  }
+
+  void _initializeFromCharacter(Character character) {
+    _wizardData.characterName = character.name;
+    _wizardData.characterAge = character.age;
+    _wizardData.selectedArchetypeId = character.role; // Best guess mapping
+    
+    // Map appearance if available
+    if (character.avatar != null) {
+        // Simple mapping for now, more detailed one could be added
+        // _wizardData.selectedHairStyle = character.avatarConfig!['hairStyle'] ?? '';
+    }
+  }
+
 
   @override
   void dispose() {
@@ -105,6 +160,7 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
                     HeroCreatorStep(
                       wizardData: _wizardData,
                       onNext: _nextStep,
+                      availableCharacters: _savedCharacters,
                     ),
                     // Step 2: Feeling Selection
                     FeelingSelectionStep(
@@ -115,6 +171,7 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
                     CompanionSelectorStep(
                       wizardData: _wizardData,
                       onNext: _nextStep,
+                      savedCharacters: _savedCharacters,
                     ),
                     // Step 4: Review & Launch
                     MagicReviewStep(
@@ -135,6 +192,8 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
 class WizardData {
   // Step 1: Hero Creator
   String? selectedArchetypeId;
+  String? characterId; // To link to existing or saved character
+  String characterGender = 'Girl'; // Default, toggleable in Step 1
   Map<String, int> personalitySliders = {
     'energy': 50,
     'sociability': 50,
@@ -144,10 +203,19 @@ class WizardData {
     'adventurousness': 50,
   };
   String characterName = '';
-  String characterAge = '8';
+  int characterAge = 8;
   String selectedHairStyle = '';
   String selectedSkinTone = '';
   String selectedOutfit = '';
+
+  // Advanced character features
+  List<String> fears = [];
+  List<String> strengths = [];
+  String? comfortItem;
+
+  // Custom Pets & Additional Characters
+  List<Map<String, String>> pets = [];
+  List<String> additionalCharacters = [];
 
   // Step 2: Feeling Selection
   String? selectedScenario;
@@ -155,8 +223,14 @@ class WizardData {
   String? parentalNote;
 
   // Step 3: Companion Selector
-  String? selectedCompanion;
-  String? companionName;
+  List<String> selectedCompanions = [];
+  List<String> companionNames = [];
+
+  // Step 4: Story Settings
+  bool rhymeTimeMode = false;
+  bool learningToReadMode = false;
+  bool interactiveMode = false;
+  bool includeIllustrations = true; // Default to true
 
   // Helper methods
   bool get isStep1Complete =>
@@ -165,13 +239,15 @@ class WizardData {
   bool get isStep2Complete =>
       selectedScenario != null || selectedEmotionChips.isNotEmpty;
 
-  bool get isStep3Complete => selectedCompanion != null;
+  bool get isStep3Complete => selectedCompanions.isNotEmpty;
 
   bool get isComplete =>
       isStep1Complete && isStep2Complete && isStep3Complete;
 
   Map<String, dynamic> toJson() {
     return {
+      'characterId': characterId,
+      'gender': characterGender,
       'archetype': selectedArchetypeId,
       'personality': personalitySliders,
       'name': characterName,
@@ -181,11 +257,20 @@ class WizardData {
         'skin': selectedSkinTone,
         'outfit': selectedOutfit,
       },
+      'fears': fears,
+      'strengths': strengths,
+      'comfortItem': comfortItem,
+      'pets': pets,
+      'additionalCharacters': additionalCharacters,
       'scenario': selectedScenario,
       'emotions': selectedEmotionChips,
       'parentalNote': parentalNote,
-      'companion': selectedCompanion,
-      'companionName': companionName,
+      'companions': selectedCompanions,
+      'companionNames': companionNames,
+      'rhymeTimeMode': rhymeTimeMode,
+      'learningToReadMode': learningToReadMode,
+      'interactiveMode': interactiveMode,
+      'includeIllustrations': includeIllustrations,
     };
   }
 }

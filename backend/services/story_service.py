@@ -47,9 +47,16 @@ class CompanionDynamics:
         "Tiny Dragon": {"contribution": "provides aerial view and dragon wisdom"},
     }
     @classmethod
-    def get_companion_info(cls, companion_name: str | None):
+    def get_companion_info(cls, companion_name: str | None, custom_pet: dict | None = None):
         if not companion_name:
             return None
+        
+        if custom_pet and custom_pet.get("name") == companion_name:
+             # It's a custom pet!
+             species = custom_pet.get("species", "animal")
+             personality = custom_pet.get("personality", "loyal friend")
+             return {"contribution": f"is a {species} who act as a {personality}"}
+
         return cls.COMPANION_ROLES.get(companion_name, {"contribution": "provides emotional support"})
 
 class WisdomGems:
@@ -67,16 +74,34 @@ class AdvancedStoryEngine:
         self.story_structures = StoryStructures()
         self.companion_dynamics = CompanionDynamics()
         self.wisdom_gems = WisdomGems()
+    
+    def _format_character_line(self, character: str | dict, additional_characters: list[str] | None) -> str:
+        if isinstance(character, dict):
+            name = character.get("name", "Hero")
+            age = character.get("age", "Unknown")
+            traits = character.get("personality_traits", [])
+            char_str = f"- Child/Character: {name} (Age: {age})"
+            if traits:
+                char_str += f", Traits: {', '.join(traits)}"
+        else:
+            char_str = f"- Child/Character: {character}"
+        
+        if additional_characters:
+            char_str += f"\n- Additional Characters/Friends: {', '.join(additional_characters)}"
+            
+        return char_str
 
     def generate_enhanced_prompt(
         self,
         character: str,
         theme: str,
         companion: str | None,
+        custom_pet: dict | None = None,
+        additional_characters: list[str] | None = None,
         therapeutic_prompt: str = "",
         feelings_prompt: str | None = None,
     ):
-        companion_info = self.companion_dynamics.get_companion_info(companion)
+        companion_info = self.companion_dynamics.get_companion_info(companion, custom_pet)
         wisdom = self.wisdom_gems.get_wisdom(theme)
         companion_line = (
             f"- Companion: {companion} ({companion_info['contribution']})"
@@ -95,7 +120,7 @@ class AdvancedStoryEngine:
             "ADVENTURE REPORT",
             "",
             "REQUEST SUMMARY:",
-            f"- Child/Character: {character}",
+            self._format_character_line(character, additional_characters),
             f"- Theme: {theme}",
             companion_line,
             "- Mode: Linear story",

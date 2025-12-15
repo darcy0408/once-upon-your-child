@@ -1,6 +1,7 @@
+import 'package:isar/isar.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../models/local/character_local.dart';
-import '../services/isar_service.dart';
+import '../models/local/character_local_io.dart';
+import '../services/isar_service_io.dart';
 
 part 'character_provider.g.dart';
 

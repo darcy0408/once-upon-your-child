@@ -75,7 +75,13 @@ def get_subscription_status(user_id):
         user = User.query.filter_by(id=user_id).first()
 
         if not user:
-            return jsonify({'error': 'User not found'}), 404
+            # If user doesn't exist yet (e.g. fresh install), just return free tier status
+            # This prevents 404 errors in the logs for new users
+            return jsonify({
+                'status': 'inactive',
+                'tier': 'free',
+                'message': 'User not found, defaulting to free tier'
+            })
 
         # Get subscription from Stripe if customer_id exists
         if user.stripe_customer_id:

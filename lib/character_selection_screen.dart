@@ -119,9 +119,9 @@ class _CharacterSelectionScreenState extends State<CharacterSelectionScreen> {
             style: TextStyle(fontSize: 16, color: Colors.grey),
           ),
           const SizedBox(height: 24),
-          AppButton(
+          AppButton.primary(
             onPressed: _navigateToCharacterCreation,
-            text: 'Create a Character',
+            label: 'Create a Character',
           ),
         ],
       ),

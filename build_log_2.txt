@@ -1,0 +1,68 @@
+[INFO] Generating build script...
+[INFO] Generating build script completed, took 540ms
+
+[INFO] Initializing inputs
+[INFO] Reading cached asset graph...
+[INFO] Reading cached asset graph completed, took 177ms
+
+[INFO] Checking for updates since last build...
+[INFO] Checking for updates since last build completed, took 1.5s
+
+[INFO] Running build...
+[WARNING] riverpod_generator on lib/providers/quick_story_provider.dart:
+Your current `analyzer` version may not fully support your current SDK version.
+
+Analyzer language version: 3.1.0
+SDK language version: 3.9.0
+
+Please update to the latest `analyzer` version (9.0.0) by running
+`flutter packages upgrade`.
+
+If you are not getting the latest version by running the above command, you
+can try adding a constraint like the following to your pubspec to start
+diagnosing why you can't get the latest version:
+
+dev_dependencies:
+  analyzer: ^9.0.0
+
+[INFO] 1.8s elapsed, 14/54 actions completed.
+[INFO] 2.9s elapsed, 38/75 actions completed.
+[INFO] 4.0s elapsed, 120/161 actions completed.
+[INFO] 5.0s elapsed, 184/185 actions completed.
+[INFO] 6.2s elapsed, 276/277 actions completed.
+[INFO] 7.2s elapsed, 316/330 actions completed.
+[INFO] 8.3s elapsed, 373/385 actions completed.
+[INFO] 9.3s elapsed, 434/441 actions completed.
+[INFO] 10.3s elapsed, 487/495 actions completed.
+[INFO] 11.3s elapsed, 544/556 actions completed.
+[INFO] 12.4s elapsed, 596/597 actions completed.
+[INFO] 22.0s elapsed, 596/597 actions completed.
+[INFO] Running build completed, took 22.3s
+
+[INFO] Caching finalized dependency graph...
+[INFO] Caching finalized dependency graph completed, took 158ms
+
+[SEVERE] riverpod_generator on lib/screens/wizard_steps/hero_creator_step.dart (cached):
+
+This builder requires Dart inputs without syntax errors.
+However, package:story_weaver_app/screens/wizard_steps/hero_creator_step.dart (or an existing part) contains the following errors.
+hero_creator_step.dart:123:19: Expected an identifier.
+hero_creator_step.dart:123:19: Expected to find ')'.
+hero_creator_step.dart:201:9: Expected an identifier.
+And 3 more...
+
+Try fixing the errors and re-running the build.
+
+[SEVERE] isar_generator on lib/screens/wizard_steps/hero_creator_step.dart (cached):
+
+This builder requires Dart inputs without syntax errors.
+However, package:story_weaver_app/screens/wizard_steps/hero_creator_step.dart (or an existing part) contains the following errors.
+hero_creator_step.dart:123:19: Expected an identifier.
+hero_creator_step.dart:123:19: Expected to find ')'.
+hero_creator_step.dart:201:9: Expected an identifier.
+And 3 more...
+
+Try fixing the errors and re-running the build.
+
+[SEVERE] Failed after 22.4s
+Failed to update packages.

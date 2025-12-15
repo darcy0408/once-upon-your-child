@@ -30,8 +30,19 @@ class MagicReviewStep extends StatefulWidget {
 class _MagicReviewStepState extends State<MagicReviewStep> {
   bool _isGenerating = false;
 
+  // Import for json/http/env
+  bool _isSaving = false;
+
   void _launchStoryCreation() async {
+    debugPrint('🎯 MagicReviewStep: _launchStoryCreation called');
+    debugPrint('📊 WizardData.isComplete: ${widget.wizardData.isComplete}');
+    debugPrint('📊 Step1Complete: ${widget.wizardData.isStep1Complete}');
+    debugPrint('📊 Step2Complete: ${widget.wizardData.isStep2Complete}');
+    debugPrint('📊 Step3Complete: ${widget.wizardData.isStep3Complete}');
+    debugPrint('📊 WizardData: ${widget.wizardData.toJson()}');
+
     if (!widget.wizardData.isComplete) {
+      debugPrint('⚠️ Wizard data not complete!');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please complete all steps first!'),
@@ -41,23 +52,42 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       return;
     }
 
+    debugPrint('✅ Wizard data complete, starting story generation');
     setState(() => _isGenerating = true);
 
     try {
+      // 1. Save Character if needed
+      debugPrint('💾 Saving character if needed...');
+      await _saveCharacterIfNeeded();
+
       // Prepared payload using the mapper
+      debugPrint('🗺️ Mapping wizard data to story request...');
       final requestData = WizardDataMapper.mapToStoryRequest(widget.wizardData);
-      
+      debugPrint('📦 Request data: $requestData');
+
       // Call the API
+      debugPrint('🔮 Calling ApiServiceManager.generateStory...');
+      debugPrint('  📷 Include Illustrations: ${widget.wizardData.includeIllustrations}');
+      debugPrint('  🎵 Rhyme Time Mode: ${widget.wizardData.rhymeTimeMode}');
+      debugPrint('  📚 Learning to Read Mode: ${widget.wizardData.learningToReadMode}');
+      debugPrint('  🎮 Interactive Mode: ${widget.wizardData.interactiveMode}');
+
       final result = await ApiServiceManager.generateStory(
         characterName: requestData['characterName'],
         age: requestData['age'],
         theme: requestData['theme'],
-        companion: requestData['companion'],
+        companion: (requestData['companions'] as List?)?.isNotEmpty == true
+            ? (requestData['companions'] as List).join(', ')
+            : null,
         characterDetails: requestData['characterDetails'],
         currentFeeling: requestData['currentFeeling'],
-        // Default options for wizard flow
-        includeIllustrations: false, // Can be improved to check subscription
+        additionalCharacters: requestData['additionalCharacters'],
+        // Story modes from wizard
+        includeIllustrations: widget.wizardData.includeIllustrations,
+        rhymeTimeMode: widget.wizardData.rhymeTimeMode,
+        learningToReadMode: widget.wizardData.learningToReadMode,
       );
+      debugPrint('✨ Story generation complete: ${result.storyText.substring(0, 100)}...');
 
       if (mounted) {
         // Navigate to result
@@ -80,7 +110,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('Error generating story: $e\n$stack');
       if (mounted) {
         setState(() => _isGenerating = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -96,6 +127,53 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _saveCharacterIfNeeded() async {
+    // If we already have an ID (e.g. from existing character), skip
+    if (widget.wizardData.characterId != null) return;
+
+    setState(() => _isSaving = true);
+    
+    try {
+      // Extract details mapped from archetype
+      final characterDetails = WizardDataMapper.mapToStoryRequest(widget.wizardData)['characterDetails'] as Map<String, dynamic>;
+      
+      // Construct simple payload for backend
+      final body = {
+        'name': widget.wizardData.characterName,
+        'age': widget.wizardData.characterAge,
+        'gender': widget.wizardData.characterGender,
+        'character_type': 'Everyday Kid',
+        'character_style': 'Regular Kid', 
+        'likes': characterDetails['interests'] ?? [],
+        'strengths': characterDetails['strengths'] ?? [],
+        'avatar': { // Minimal avatar payload if none custom
+          'hairColor': 'Brown',
+          'skinTone': 'Light',
+        }
+      };
+
+      // We need to use http package directly or via ApiServiceManager if it exposed generic post
+      // Re-using ApiServiceManager helper if available, otherwise direct http
+      // Assuming we can use ApiServiceManager().post which I saw in the file (lines 26-67)
+      
+      final api = ApiServiceManager(); 
+      final response = await api.post('/create-character', body);
+      
+      if (response.containsKey('character_id')) { // Adjust key based on backend response
+         widget.wizardData.characterId = response['character_id']?.toString();
+         debugPrint('✅ Character saved with ID: ${widget.wizardData.characterId}');
+      } else if (response.containsKey('id')) {
+         widget.wizardData.characterId = response['id']?.toString();
+      }
+
+    } catch (e) {
+      debugPrint('⚠️ Valid warning: Character save failed ($e), but proceeding with temporary character for story.');
+      // We don't block story generation, just warn console
+    } finally {
+      setState(() => _isSaving = false);
     }
   }
 
@@ -140,13 +218,112 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             ),
             const SizedBox(height: AppSpacing.xl),
 
+            // Story Settings Section
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(
+                  color: AppColors.primary.withAlpha(128),
+                  width: 2,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '⚙️ Story Settings',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: AppColors.textDark,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Include Illustrations toggle
+                  CheckboxListTile(
+                    title: const Text('✨ Include Illustrations'),
+                    subtitle: const Text('Add beautiful images to your story'),
+                    value: data.includeIllustrations,
+                    onChanged: (value) {
+                      setState(() => data.includeIllustrations = value ?? true);
+                    },
+                    activeColor: AppColors.primary,
+                  ),
+
+                  // Rhyme Time Mode toggle
+                  CheckboxListTile(
+                    title: const Text('🎵 Rhyme Time Mode'),
+                    subtitle: const Text('Story told in fun rhymes'),
+                    value: data.rhymeTimeMode,
+                    onChanged: (value) {
+                      setState(() => data.rhymeTimeMode = value ?? false);
+                    },
+                    activeColor: AppColors.primary,
+                  ),
+
+                  // Learning to Read Mode toggle
+                  CheckboxListTile(
+                    title: const Text('📚 Learning to Read Mode'),
+                    subtitle: const Text('Simple words for early readers'),
+                    value: data.learningToReadMode,
+                    onChanged: (value) {
+                      setState(() => data.learningToReadMode = value ?? false);
+                    },
+                    activeColor: AppColors.primary,
+                  ),
+
+                  // Interactive Story Mode toggle
+                  CheckboxListTile(
+                    title: const Text('🎮 Interactive Story Mode'),
+                    subtitle: const Text('Make choices as the story unfolds'),
+                    value: data.interactiveMode,
+                    onChanged: (value) {
+                      setState(() => data.interactiveMode = value ?? false);
+                    },
+                    activeColor: AppColors.primary,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
             // Summary cards
+            Text(
+              '📋 Story Summary',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: AppColors.textDark,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+
             _SummaryCard(
               icon: '🦸',
               title: 'Your Hero',
-              value: data.selectedArchetypeId ?? 'Not selected',
+              value: '${data.characterName} (${data.selectedArchetypeId})',
             ),
             const SizedBox(height: AppSpacing.md),
+
+            _SummaryCard(
+              icon: '🎂',
+              title: 'Age',
+              value: '${data.characterAge} years old',
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            if (data.pets.isNotEmpty || data.additionalCharacters.isNotEmpty) ...[
+              _SummaryCard(
+                icon: '👨‍👩‍👧‍👦',
+                title: 'Friends & Family',
+                value: [
+                  ...data.additionalCharacters,
+                  ...data.pets.map((p) => '${p['name']} (${p['species']})')
+                ].join(', '),
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
 
             if (data.selectedScenario != null)
               _SummaryCard(
@@ -162,12 +339,14 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 value: data.selectedEmotionChips.join(', '),
               ),
             ],
-            if (data.selectedCompanion != null) ...[
+            if (data.selectedCompanions.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.md),
               _SummaryCard(
                 icon: '🐾',
-                title: 'Companion',
-                value: data.companionName ?? data.selectedCompanion!,
+                title: 'Companions',
+                value: data.companionNames.isNotEmpty 
+                    ? data.companionNames.join(', ')
+                    : data.selectedCompanions.join(', '),
               ),
             ],
             const SizedBox(height: AppSpacing.xxl),

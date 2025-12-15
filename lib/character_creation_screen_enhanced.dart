@@ -902,6 +902,7 @@ class _CharacterCreationScreenEnhancedState
             DropdownMenuItem(value: 'Tomboy', child: Text('Tomboy')),
             DropdownMenuItem(value: 'Sporty Kid', child: Text('Sporty Kid')),
 
+            DropdownMenuItem(value: 'Explorer', child: Text('Explorer')),
             DropdownMenuItem(
                 value: 'Couch Potato', child: Text('Couch Potato')),
             DropdownMenuItem(

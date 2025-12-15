@@ -31,6 +31,7 @@ class Character(db.Model):
     fears = db.Column(db.JSON, default=list)
     strengths = db.Column(db.JSON, default=list)
     goals = db.Column(db.JSON, default=list)
+    pets = db.Column(db.JSON, default=list)
 
     comfort_item = db.Column(db.String(200))
     created_at = db.Column(db.DateTime, default=db.func.now(), index=True)
@@ -59,6 +60,7 @@ class Character(db.Model):
             "fears": self.fears or [],
             "strengths": self.strengths or [],
             "goals": self.goals or [],
+            "pets": self.pets or [],
             "comfort_item": self.comfort_item,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

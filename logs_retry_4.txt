@@ -1,0 +1,501 @@
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.ForeignKeyViolation) insert or update on table "story" violates foreign key constraint "story_user_id_fkey"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+DETAIL:  Key (user_id)=(5f5cc0c8-d94a-43d9-8419-72a9e635bae6) is not present in table "user".
+
+[SQL: INSERT INTO story (id, user_id, title, created_at) VALUES (%(id)s, %(user_id)s, %(title)s, %(created_at)s)]
+[parameters: {'id': 'bf5cff0f-47c6-47dc-828f-19e5e914ab4b', 'user_id': '5f5cc0c8-d94a-43d9-8419-72a9e635bae6', 'title': 'A Brave Little Adventure', 'created_at': datetime.datetime(2025, 12, 12, 23, 24, 45, 467037)}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2025-12-12 23:24:45,482 - story_engine - ERROR - Falling back to synchronous story generation: (psycopg2.errors.ForeignKeyViolation) insert or update on table "story" violates foreign key constraint "story_user_id_fkey"
+DETAIL:  Key (user_id)=(5f5cc0c8-d94a-43d9-8419-72a9e635bae6) is not present in table "user".
+
+[SQL: INSERT INTO story (id, user_id, title, created_at) VALUES (%(id)s, %(user_id)s, %(title)s, %(created_at)s)]
+[parameters: {'id': 'bf5cff0f-47c6-47dc-828f-19e5e914ab4b', 'user_id': '5f5cc0c8-d94a-43d9-8419-72a9e635bae6', 'title': 'A Brave Little Adventure', 'created_at': datetime.datetime(2025, 12, 12, 23, 24, 45, 467037)}]
+    cursor.execute(statement, parameters)
+psycopg2.errors.ForeignKeyViolation: insert or update on table "story" violates foreign key constraint "story_user_id_fkey"
+    return self.apply_async(args, kwargs)
+DETAIL:  Key (user_id)=(5f5cc0c8-d94a-43d9-8419-72a9e635bae6) is not present in table "user".
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 591, in apply_async
+
+    return self.apply(args, kwargs, task_id=task_id or uuid(),
+The above exception was the direct cause of the following exception:
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 818, in apply
+    ret = tracer(task_id, args, kwargs, request)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 494, in trace_task
+Traceback (most recent call last):
+  File "/app/backend/routes/story_routes.py", line 98, in generate_story_endpoint
+    task = generate_story_task.delay(**task_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 444, in delay
+    I, R, state, retval = on_error(task_request, exc)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 477, in trace_task
+    R = retval = fun(*args, **kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/app/backend/tasks/story_tasks.py", line 152, in generate_story_task
+    db.session.commit()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/scoping.py", line 599, in commit
+    return self._proxied.commit()
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+    _emit_insert_statements(
+    self.session.flush()
+    rec.execute(self)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 1233, in _emit_insert_statements
+    result = connection.execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4345, in flush
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4480, in _flush
+    self._flush(objects)
+    util.preloaded.orm_persistence.save_obj(
+    with util.safe_reraise():
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4441, in _flush
+    flush_context.execute()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+             ^^^^^^^^^^^^^^^^^^^
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+           ^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.ForeignKeyViolation) insert or update on table "story" violates foreign key constraint "story_user_id_fkey"
+DETAIL:  Key (user_id)=(5f5cc0c8-d94a-43d9-8419-72a9e635bae6) is not present in table "user".
+
+[SQL: INSERT INTO story (id, user_id, title, created_at) VALUES (%(id)s, %(user_id)s, %(title)s, %(created_at)s)]
+[parameters: {'id': 'bf5cff0f-47c6-47dc-828f-19e5e914ab4b', 'user_id': '5f5cc0c8-d94a-43d9-8419-72a9e635bae6', 'title': 'A Brave Little Adventure', 'created_at': datetime.datetime(2025, 12, 12, 23, 24, 45, 467037)}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2025-12-12 23:24:45,485 - backend.tasks.story_tasks - INFO - Attempting story generation with primary service (Gemini)...
+2025-12-12 23:24:45,485 - backend.services.story_generation_service - INFO - Generating story with prompt: You are an experienced children's author running the Engaging Storycraft v9.0 engine.
+Follow the exa... (Attempt 1)
+2025-12-12 23:24:55,487 - backend.services.story_generation_service - INFO - API response received: <class 'google.generativeai.types.generation_types.GenerateContentResponse'>
+2025-12-12 23:24:55,487 - backend.services.story_generation_service - INFO - Story generated successfully
+2025-12-12 23:24:55,488 - backend.tasks.story_tasks - INFO - Successfully generated story with primary service.
+2025-12-12 23:24:55,491 - backend.tasks.story_tasks - ERROR - Task failed to ensure user existence: (psycopg2.errors.UndefinedColumn) column user.gemini_api_key_encrypted does not exist
+LINE 1: ...ries_created_count AS user_stories_created_count, "user".gem...
+                                                             ^
+
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[SQL: SELECT "user".id AS user_id, "user".username AS user_username, "user".email AS user_email, "user".password_hash AS user_password_hash, "user".created_at AS user_created_at, "user".subscription_tier AS user_subscription_tier, "user".subscription_status AS user_subscription_status, "user".current_period_end AS user_current_period_end, "user".cancel_at_period_end AS user_cancel_at_period_end, "user".stripe_customer_id AS user_stripe_customer_id, "user".stories_created_count AS user_stories_created_count, "user".gemini_api_key_encrypted AS user_gemini_api_key_encrypted, "user".has_byok AS user_has_byok, "user".stories_generated_this_month AS user_stories_generated_this_month, "user".illustrations_generated_this_month AS user_illustrations_generated_this_month, "user".usage_reset_date AS user_usage_reset_date, "user".progression_data AS user_progression_data 
+FROM "user" 
+WHERE "user".id = %(pk_1)s]
+[parameters: {'pk_1': '5f5cc0c8-d94a-43d9-8419-72a9e635bae6'}]
+DETAIL:  Key (user_id)=(5f5cc0c8-d94a-43d9-8419-72a9e635bae6) is not present in table "user".
+
+
+2025-12-12 23:24:55,495 - backend.tasks.story_tasks - ERROR - generate_story_task failed: (psycopg2.errors.ForeignKeyViolation) insert or update on table "story" violates foreign key constraint "story_user_id_fkey"
+The above exception was the direct cause of the following exception:
+DETAIL:  Key (user_id)=(5f5cc0c8-d94a-43d9-8419-72a9e635bae6) is not present in table "user".
+
+
+[SQL: INSERT INTO story (id, user_id, title, created_at) VALUES (%(id)s, %(user_id)s, %(title)s, %(created_at)s)]
+[parameters: {'id': 'c3856f3d-f673-40cc-bfe0-0aceef6fcf9c', 'user_id': '5f5cc0c8-d94a-43d9-8419-72a9e635bae6', 'title': 'A Brave Little Adventure', 'created_at': datetime.datetime(2025, 12, 12, 23, 24, 55, 493328)}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.ForeignKeyViolation: insert or update on table "story" violates foreign key constraint "story_user_id_fkey"
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 591, in apply_async
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    return self.apply(args, kwargs, task_id=task_id or uuid(),
+Traceback (most recent call last):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 477, in trace_task
+  File "/app/backend/routes/story_routes.py", line 98, in generate_story_endpoint
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 818, in apply
+    R = retval = fun(*args, **kwargs)
+    ret = tracer(task_id, args, kwargs, request)
+    task = generate_story_task.delay(**task_kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/backend/tasks/story_tasks.py", line 152, in generate_story_task
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 494, in trace_task
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 444, in delay
+    I, R, state, retval = on_error(task_request, exc)
+    return self.apply_async(args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    db.session.commit()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/scoping.py", line 599, in commit
+    return self._proxied.commit()
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+    self.session.flush()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4345, in flush
+    self._flush(objects)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4480, in _flush
+           ^^^^^
+    with util.safe_reraise():
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    return connection._execute_clauseelement(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    _emit_insert_statements(
+    raise exc_value.with_traceback(exc_tb)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 1233, in _emit_insert_statements
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4441, in _flush
+    flush_context.execute()
+    result = connection.execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    util.preloaded.orm_persistence.save_obj(
+    return meth(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.ForeignKeyViolation) insert or update on table "story" violates foreign key constraint "story_user_id_fkey"
+DETAIL:  Key (user_id)=(5f5cc0c8-d94a-43d9-8419-72a9e635bae6) is not present in table "user".
+
+[SQL: INSERT INTO story (id, user_id, title, created_at) VALUES (%(id)s, %(user_id)s, %(title)s, %(created_at)s)]
+[parameters: {'id': 'bf5cff0f-47c6-47dc-828f-19e5e914ab4b', 'user_id': '5f5cc0c8-d94a-43d9-8419-72a9e635bae6', 'title': 'A Brave Little Adventure', 'created_at': datetime.datetime(2025, 12, 12, 23, 24, 45, 467037)}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.ForeignKeyViolation: insert or update on table "story" violates foreign key constraint "story_user_id_fkey"
+DETAIL:  Key (user_id)=(5f5cc0c8-d94a-43d9-8419-72a9e635bae6) is not present in table "user".
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/app/backend/tasks/story_tasks.py", line 152, in generate_story_task
+    db.session.commit()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/scoping.py", line 599, in commit
+    return self._proxied.commit()
+           ^^^^^^^^^^^^^^^^^^^^^^
+    self.session.flush()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+    trans.commit(_to_root=True)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4345, in flush
+  File "<string>", line 2, in commit
+    self._flush(objects)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4480, in _flush
+                ^^^^^^^^^^^^^^^^^^^^
+    with util.safe_reraise():
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+    self._prepare_impl()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+  File "<string>", line 2, in _prepare_impl
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+    raise exc_value.with_traceback(exc_tb)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4441, in _flush
+    flush_context.execute()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 1233, in _emit_insert_statements
+    result = connection.execute(
+             ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.ForeignKeyViolation) insert or update on table "story" violates foreign key constraint "story_user_id_fkey"
+DETAIL:  Key (user_id)=(5f5cc0c8-d94a-43d9-8419-72a9e635bae6) is not present in table "user".
+
+[SQL: INSERT INTO story (id, user_id, title, created_at) VALUES (%(id)s, %(user_id)s, %(title)s, %(created_at)s)]
+[parameters: {'id': 'c3856f3d-f673-40cc-bfe0-0aceef6fcf9c', 'user_id': '5f5cc0c8-d94a-43d9-8419-72a9e635bae6', 'title': 'A Brave Little Adventure', 'created_at': datetime.datetime(2025, 12, 12, 23, 24, 55, 493328)}]
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2025-12-12 23:24:55,514 - story_engine - ERROR - Synchronous story generation failed: (psycopg2.errors.ForeignKeyViolation) insert or update on table "story" violates foreign key constraint "story_user_id_fkey"
+DETAIL:  Key (user_id)=(5f5cc0c8-d94a-43d9-8419-72a9e635bae6) is not present in table "user".
+
+[SQL: INSERT INTO story (id, user_id, title, created_at) VALUES (%(id)s, %(user_id)s, %(title)s, %(created_at)s)]
+[parameters: {'id': 'c3856f3d-f673-40cc-bfe0-0aceef6fcf9c', 'user_id': '5f5cc0c8-d94a-43d9-8419-72a9e635bae6', 'title': 'A Brave Little Adventure', 'created_at': datetime.datetime(2025, 12, 12, 23, 24, 55, 493328)}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.ForeignKeyViolation: insert or update on table "story" violates foreign key constraint "story_user_id_fkey"
+DETAIL:  Key (user_id)=(5f5cc0c8-d94a-43d9-8419-72a9e635bae6) is not present in table "user".
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+    I, R, state, retval = on_error(task_request, exc)
+  File "/app/backend/routes/story_routes.py", line 98, in generate_story_endpoint
+    task = generate_story_task.delay(**task_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 444, in delay
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 477, in trace_task
+    return self.apply_async(args, kwargs)
+    R = retval = fun(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 591, in apply_async
+                 ^^^^^^^^^^^^^^^^^^^^
+    return self.apply(args, kwargs, task_id=task_id or uuid(),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 818, in apply
+    ret = tracer(task_id, args, kwargs, request)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 494, in trace_task
+    self._flush(objects)
+  File "/app/backend/tasks/story_tasks.py", line 152, in generate_story_task
+    db.session.commit()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/scoping.py", line 599, in commit
+    return self._proxied.commit()
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+    self.session.flush()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4345, in flush
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4480, in _flush
+           ^^^^^
+    with util.safe_reraise():
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    raise exc_value.with_traceback(exc_tb)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4441, in _flush
+    _emit_insert_statements(
+    flush_context.execute()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 1233, in _emit_insert_statements
+    rec.execute(self)
+    result = connection.execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+             ^^^^^^^^^^^^^^^^^^^
+    util.preloaded.orm_persistence.save_obj(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.ForeignKeyViolation) insert or update on table "story" violates foreign key constraint "story_user_id_fkey"
+    return connection._execute_clauseelement(
+DETAIL:  Key (user_id)=(5f5cc0c8-d94a-43d9-8419-72a9e635bae6) is not present in table "user".
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+
+[SQL: INSERT INTO story (id, user_id, title, created_at) VALUES (%(id)s, %(user_id)s, %(title)s, %(created_at)s)]
+  File "/app/backend/routes/story_routes.py", line 113, in generate_story_endpoint
+[parameters: {'id': 'bf5cff0f-47c6-47dc-828f-19e5e914ab4b', 'user_id': '5f5cc0c8-d94a-43d9-8419-72a9e635bae6', 'title': 'A Brave Little Adventure', 'created_at': datetime.datetime(2025, 12, 12, 23, 24, 45, 467037)}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+
+During handling of the above exception, another exception occurred:
+    cursor.execute(statement, parameters)
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+psycopg2.errors.ForeignKeyViolation: insert or update on table "story" violates foreign key constraint "story_user_id_fkey"
+DETAIL:  Key (user_id)=(5f5cc0c8-d94a-43d9-8419-72a9e635bae6) is not present in table "user".
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+    sync_result = generate_story_task.apply(kwargs=task_kwargs).get()
+  File "<string>", line 2, in commit
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 818, in apply
+    ret = tracer(task_id, args, kwargs, request)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 494, in trace_task
+    I, R, state, retval = on_error(task_request, exc)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 477, in trace_task
+    R = retval = fun(*args, **kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/app/backend/tasks/story_tasks.py", line 152, in generate_story_task
+    db.session.commit()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/scoping.py", line 599, in commit
+    return self._proxied.commit()
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+    trans.commit(_to_root=True)
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+    raise exc_value.with_traceback(exc_tb)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4441, in _flush
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+                ^^^^^^^^^^^^^^^^^^^^
+    flush_context.execute()
+    self.session.flush()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4345, in flush
+    self._prepare_impl()
+    rec.execute(self)
+    self._flush(objects)
+  File "<string>", line 2, in _prepare_impl
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4480, in _flush
+    ret_value = fn(self, *arg, **kw)
+    with util.safe_reraise():
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 1233, in _emit_insert_statements
+    result = connection.execute(
+             ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.IntegrityError: (psycopg2.errors.ForeignKeyViolation) insert or update on table "story" violates foreign key constraint "story_user_id_fkey"
+DETAIL:  Key (user_id)=(5f5cc0c8-d94a-43d9-8419-72a9e635bae6) is not present in table "user".
+
+[SQL: INSERT INTO story (id, user_id, title, created_at) VALUES (%(id)s, %(user_id)s, %(title)s, %(created_at)s)]
+Railway rate limit of 500 logs/sec reached for replica, update your application to reduce the logging rate. Messages dropped: 4
+2025-12-12 23:30:51,200 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 2.47, "ip": "100.64.0.9", "request_id": "ca2592a3"}
+2025-12-12 23:30:49,727 - story_engine - INFO - [ecd5b0c8] GET /health
+2025-12-12 23:30:49,730 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 2.82, "ip": "100.64.0.7", "request_id": "ecd5b0c8"}
+2025-12-12 23:30:50,442 - story_engine - INFO - [63b46ea3] GET /get-story-themes
+2025-12-12 23:30:50,443 - story_engine - INFO - {"method": "GET", "path": "/get-story-themes", "status": 200, "duration_ms": 0.37, "ip": "100.64.0.8", "request_id": "63b46ea3"}
+2025-12-12 23:30:51,198 - story_engine - INFO - [ca2592a3] GET /health

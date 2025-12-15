@@ -6,7 +6,7 @@ part of 'quick_story_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$quickStoryHash() => r'2afe31f0ed611f8836f9b2154cdd53dfcab8c1d7';
+String _$quickStoryHash() => r'3f7a65c9a0cb64a4ac6a679dd6d97375c5301574';
 
 /// See also [QuickStory].
 @ProviderFor(QuickStory)

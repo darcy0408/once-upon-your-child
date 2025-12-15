@@ -6,7 +6,7 @@ import '../wizard_story_screen.dart';
 class WizardDataMapper {
   static Map<String, dynamic> mapToStoryRequest(WizardData data) {
     // 1. Map Age
-    final int age = int.tryParse(data.characterAge) ?? 7;
+    final int age = data.characterAge;
 
     // 2. Map Emotion (Take the first one if multiple, or map simplified ones)
     Map<String, dynamic>? currentFeeling;
@@ -26,6 +26,10 @@ class WizardDataMapper {
       characterDetails['outfit'] = data.selectedOutfit;
     }
 
+    if (data.pets.isNotEmpty) {
+      characterDetails['pets'] = data.pets;
+    }
+
     // 4. Map Scenario to Theme
     final theme = _mapScenarioToTheme(data.selectedScenario);
 
@@ -33,13 +37,17 @@ class WizardDataMapper {
       'characterName': data.characterName,
       'age': age,
       'theme': theme,
-      'companion': data.selectedCompanion == 'None' ? null : data.selectedCompanion,
+      'companion': (data.selectedCompanions.isNotEmpty) 
+          ? data.selectedCompanions.join(', ')
+          : null,
+      'additionalCharacters': data.additionalCharacters,
       'characterDetails': characterDetails,
       'currentFeeling': currentFeeling,
       // Default settings for wizard stories
       'lengthGuideline': 'Short', 
       'rhymeTimeMode': false,
       'learningToReadMode': false, // Could be toggled based on age < 5
+      'includeIllustrations': true, // User requested illustrations
     };
   }
 

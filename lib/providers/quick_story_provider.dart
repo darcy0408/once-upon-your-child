@@ -44,19 +44,16 @@ class QuickStory extends _$QuickStory {
     state = state.copyWith(isGenerating: true, error: null);
 
     try {
-      final apiService = ApiServiceManager();
-      final result = await apiService.generateStory(
-        params: {
-          'character_name': characterName,
-          'character_age': characterAge,
-          'theme': theme,
-          if (emotion != null) 'emotion': emotion,
-        },
+      final result = await ApiServiceManager.generateStory(
+        characterName: characterName,
+        age: characterAge,
+        theme: theme,
+        currentFeeling: emotion != null ? {'text': emotion} : null,
       );
 
       state = state.copyWith(
         isGenerating: false,
-        storyText: result['story_text'] as String?,
+        storyText: result.storyText,
       );
     } catch (e) {
       state = state.copyWith(

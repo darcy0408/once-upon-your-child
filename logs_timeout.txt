@@ -1,0 +1,391 @@
+Starting Container
+[2025-12-13 01:53:06 +0000] [2] [INFO] Starting gunicorn 21.2.0
+[2025-12-13 01:53:06 +0000] [2] [INFO] Listening at: http://0.0.0.0:8080 (2)
+[2025-12-13 01:53:06 +0000] [2] [INFO] Using worker: sync
+[2025-12-13 01:53:06 +0000] [3] [INFO] Booting worker with pid: 3
+[2025-12-13 01:53:06 +0000] [4] [INFO] Booting worker with pid: 4
+2025-12-13 01:53:07,801 - story_engine - INFO - google.generativeai imported successfully.
+2025-12-13 01:53:07,801 - story_engine - INFO - Gemini configured with API key.
+2025-12-13 01:53:07,801 - story_engine - INFO - Gemini model 'models/gemini-2.5-flash' initialized successfully.
+2025-12-13 01:53:07,850 - story_engine - INFO - google.generativeai imported successfully.
+2025-12-13 01:53:07,851 - story_engine - INFO - Gemini configured with API key.
+2025-12-13 01:53:07,851 - story_engine - INFO - Gemini model 'models/gemini-2.5-flash' initialized successfully.
+2025-12-13 01:53:08,381 - stripe_routes - WARNING - STRIPE_API_KEY not set in app config - Stripe routes may not function.
+2025-12-13 01:53:08,381 - story_engine - INFO - Γ£ô Stripe Premium Price ID: price_1SWmbUHrachXBOvWbGRzORj5
+2025-12-13 01:53:08,381 - story_engine - INFO - Γ£ô Stripe Family Price ID: price_1SWmgAHrachXBOvWtQbFhGB3
+2025-12-13 01:53:08,384 - story_engine - INFO - Image generator initialized with OpenRouter (cost-optimized)
+2025-12-13 01:53:08,474 - stripe_routes - WARNING - STRIPE_API_KEY not set in app config - Stripe routes may not function.
+2025-12-13 01:53:08,475 - story_engine - INFO - Γ£ô Stripe Premium Price ID: price_1SWmbUHrachXBOvWbGRzORj5
+2025-12-13 01:53:08,475 - story_engine - INFO - Γ£ô Stripe Family Price ID: price_1SWmgAHrachXBOvWtQbFhGB3
+2025-12-13 01:53:08,475 - story_engine - INFO - Image generator initialized with OpenRouter (cost-optimized)
+2025-12-13 01:53:08,626 - story_engine - INFO - [f741b512] GET /health
+2025-12-13 01:53:08,629 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 3.26, "ip": "100.64.0.2", "request_id": "f741b512"}
+2025-12-13 01:55:51,372 - backend.services.story_generation_service - INFO - Generating story with prompt: You are an experienced children's author running the Engaging Storycraft v9.0 engine.
+2025-12-13 01:55:51,150 - kombu.connection - WARNING - No hostname was supplied. Reverting to default 'localhost'
+2025-12-13 01:55:51,157 - story_engine - INFO - google.generativeai imported successfully.
+2025-12-13 01:55:51,158 - story_engine - INFO - Gemini configured with API key.
+2025-12-13 01:55:51,158 - story_engine - INFO - Gemini model 'models/gemini-2.5-flash' initialized successfully.
+2025-12-13 01:55:51,158 - stripe_routes - WARNING - STRIPE_API_KEY not set in app config - Stripe routes may not function.
+2025-12-13 01:55:51,158 - story_engine - INFO - Γ£ô Stripe Premium Price ID: price_1SWmbUHrachXBOvWbGRzORj5
+2025-12-13 01:55:51,158 - story_engine - INFO - Γ£ô Stripe Family Price ID: price_1SWmgAHrachXBOvWtQbFhGB3
+2025-12-13 01:55:50,376 - story_engine - INFO - [8898c2dc] OPTIONS /generate-story
+2025-12-13 01:55:51,158 - story_engine - INFO - Image generator initialized with OpenRouter (cost-optimized)
+2025-12-13 01:55:50,377 - story_engine - INFO - {"method": "OPTIONS", "path": "/generate-story", "status": 200, "duration_ms": 0.26, "ip": "100.64.0.3", "request_id": "8898c2dc"}
+2025-12-13 01:55:51,372 - backend.tasks.story_tasks - INFO - Attempting story generation with primary service (Gemini)...
+2025-12-13 01:55:50,886 - story_engine - INFO - [700ce1d0] POST /generate-story
+2025-12-13 01:55:50,910 - story_engine - INFO - Creating lazy user account for ID: 5f5cc0c8-d94a-43d9-8419-72a9e635bae6
+Follow the exa... (Attempt 1)
+2025-12-13 01:55:59,123 - backend.services.story_generation_service - INFO - API response received: <class 'google.generativeai.types.generation_types.GenerateContentResponse'>
+2025-12-13 01:55:59,123 - backend.services.story_generation_service - INFO - Story generated successfully
+2025-12-13 01:55:59,123 - backend.tasks.story_tasks - INFO - Successfully generated story with primary service.
+2025-12-13 01:55:59,144 - celery.app.trace - INFO - Task tasks.generate_story[a56ab813-ca7d-4db4-b92f-636d2bb53d34] succeeded in 7.989336349070072s: {'status': 'complete', 'story': {'id': '4efac569-80a7-4d75-92c9-8340ed6d3f0a', 'title': 'A Brave Little Adventure', 'story_text': 'REQUEST SUMMARY:
+- Child/Character: Thinker
+- Theme: Managing Big Emotions
+- Companion: dragon (provides emotional support)
+- Mode: Linear story
+- Default length: Short
+
+STORY:
+STORY START
+Thinker the turtle loved collecting shiny pebbles. His shell was always overflowing! But sometimes, big, HUGE feelings would bubble up inside him, like a fizzy drink about to explode. Today, that bubbly feeling was back, making his little flippers tremble.
+
+"Oh, Sparky," Thinker whispered to his best friend, a small, shimmering dragon with scales like amethyst. "I feel like...like I swallowed a whole cloud of grumpy bees! Mrs. Heron said my pebble tower was too wobbly and might fall, and now I don\'t want to build *anything* ever again!"
+
+Sparky nuzzled Thinker\'s cheek with his snout. "Wobbly towers *are* frustrating," he rumbled, his voice like warm honey. "It makes my tail twitch with...', 'th...', ...}}
+2025-12-13 01:55:59,145 - story_engine - ERROR - {"timestamp": "2025-12-13T01:55:59.145329", "type": "slow_request", "message": "Request took 8.26s", "details": {"method": "POST", "path": "/generate-story", "duration": 8.259130954742432, "status_code": 202}}
+2025-12-13 01:55:59,145 - story_engine - INFO - {"method": "POST", "path": "/generate-story", "status": 202, "duration_ms": 8259.13, "ip": "100.64.0.3", "request_id": "700ce1d0"}
+2025-12-13 01:56:02,223 - story_engine - INFO - [52dc7d0f] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+/usr/local/lib/python3.11/site-packages/celery/backends/base.py:577: RuntimeWarning: Results are not stored in backend and should not be retrieved when task_always_eager is enabled, unless task_store_eager_result is enabled.
+  warnings.warn(
+2025-12-13 01:56:02,224 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 1.01, "ip": "100.64.0.3", "request_id": "52dc7d0f"}
+2025-12-13 01:56:05,331 - story_engine - INFO - [d4a39ed9] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:56:05,331 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.52, "ip": "100.64.0.4", "request_id": "d4a39ed9"}
+2025-12-13 01:56:08,194 - story_engine - INFO - [5ecd3da6] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+/usr/local/lib/python3.11/site-packages/celery/backends/base.py:577: RuntimeWarning: Results are not stored in backend and should not be retrieved when task_always_eager is enabled, unless task_store_eager_result is enabled.
+  warnings.warn(
+2025-12-13 01:56:08,205 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 11.21, "ip": "100.64.0.4", "request_id": "5ecd3da6"}
+2025-12-13 01:56:11,200 - story_engine - INFO - [104e0c1b] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:56:11,200 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.45, "ip": "100.64.0.4", "request_id": "104e0c1b"}
+2025-12-13 01:56:14,193 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.37, "ip": "100.64.0.4", "request_id": "64ceac62"}
+2025-12-13 01:56:14,192 - story_engine - INFO - [64ceac62] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:56:17,204 - story_engine - INFO - [3d75ddaa] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:56:17,204 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.3, "ip": "100.64.0.4", "request_id": "3d75ddaa"}
+2025-12-13 01:56:20,191 - story_engine - INFO - [2aa01cf6] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:56:20,192 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.42, "ip": "100.64.0.4", "request_id": "2aa01cf6"}
+2025-12-13 01:56:23,206 - story_engine - INFO - [3ecc8447] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:56:23,206 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.51, "ip": "100.64.0.4", "request_id": "3ecc8447"}
+2025-12-13 01:56:26,204 - story_engine - INFO - [08fe35ad] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:56:26,204 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.41, "ip": "100.64.0.4", "request_id": "08fe35ad"}
+2025-12-13 01:56:29,300 - story_engine - INFO - [c0d08c84] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:56:29,300 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.37, "ip": "100.64.0.4", "request_id": "c0d08c84"}
+2025-12-13 01:56:32,192 - story_engine - INFO - [9ca8d6b5] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:56:32,193 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.49, "ip": "100.64.0.4", "request_id": "9ca8d6b5"}
+2025-12-13 01:56:35,632 - story_engine - INFO - [f85e65d5] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:56:35,633 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.4, "ip": "100.64.0.5", "request_id": "f85e65d5"}
+2025-12-13 01:56:39,200 - story_engine - INFO - [1cbad24f] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:56:39,201 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.37, "ip": "100.64.0.5", "request_id": "1cbad24f"}
+2025-12-13 01:56:42,198 - story_engine - INFO - [158cd917] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:56:42,199 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.37, "ip": "100.64.0.5", "request_id": "158cd917"}
+2025-12-13 01:56:48,245 - story_engine - INFO - [c6c0ab6f] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:56:48,245 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.28, "ip": "100.64.0.6", "request_id": "c6c0ab6f"}
+2025-12-13 01:56:51,482 - story_engine - INFO - [58497d2f] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:56:51,483 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.38, "ip": "100.64.0.6", "request_id": "58497d2f"}
+2025-12-13 01:56:54,201 - story_engine - INFO - [e5f4d90e] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:56:54,201 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.43, "ip": "100.64.0.6", "request_id": "e5f4d90e"}
+2025-12-13 01:56:57,227 - story_engine - INFO - [5f2218e0] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:56:57,227 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.28, "ip": "100.64.0.6", "request_id": "5f2218e0"}
+2025-12-13 01:57:00,385 - story_engine - INFO - [d447ba29] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:57:00,385 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.36, "ip": "100.64.0.7", "request_id": "d447ba29"}
+2025-12-13 01:57:03,187 - story_engine - INFO - [2614f1e2] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:57:03,188 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.46, "ip": "100.64.0.7", "request_id": "2614f1e2"}
+2025-12-13 01:57:06,603 - story_engine - INFO - [eb723126] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:57:06,603 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.36, "ip": "100.64.0.7", "request_id": "eb723126"}
+2025-12-13 01:57:10,206 - story_engine - INFO - [d6ef37fd] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:57:10,206 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.45, "ip": "100.64.0.7", "request_id": "d6ef37fd"}
+2025-12-13 01:57:13,195 - story_engine - INFO - [a81bfaa1] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:57:13,196 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.65, "ip": "100.64.0.7", "request_id": "a81bfaa1"}
+2025-12-13 01:57:16,206 - story_engine - INFO - [c4b413df] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:57:16,206 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.57, "ip": "100.64.0.7", "request_id": "c4b413df"}
+2025-12-13 01:57:19,348 - story_engine - INFO - [97739ed4] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:57:19,348 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.24, "ip": "100.64.0.6", "request_id": "97739ed4"}
+2025-12-13 01:57:22,198 - story_engine - INFO - [1bf3b86f] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:57:22,198 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.37, "ip": "100.64.0.6", "request_id": "1bf3b86f"}
+2025-12-13 01:57:25,196 - story_engine - INFO - [ddacd60a] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:57:25,196 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.27, "ip": "100.64.0.6", "request_id": "ddacd60a"}
+2025-12-13 01:57:28,201 - story_engine - INFO - [09c6b777] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:57:28,203 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 1.38, "ip": "100.64.0.6", "request_id": "09c6b777"}
+2025-12-13 01:57:31,208 - story_engine - INFO - [93e889b1] GET /task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34
+2025-12-13 01:57:31,209 - story_engine - INFO - {"method": "GET", "path": "/task-status/a56ab813-ca7d-4db4-b92f-636d2bb53d34", "status": 200, "duration_ms": 0.47, "ip": "100.64.0.6", "request_id": "93e889b1"}
+2025-12-13 01:57:34,206 - story_engine - INFO - [6d91b1b0] OPTIONS /generate-story
+2025-12-13 01:57:34,206 - story_engine - INFO - {"method": "OPTIONS", "path": "/generate-story", "status": 200, "duration_ms": 0.28, "ip": "100.64.0.6", "request_id": "6d91b1b0"}
+2025-12-13 01:57:34,805 - story_engine - INFO - [63f74f34] POST /generate-story
+2025-12-13 01:57:34,978 - kombu.connection - WARNING - No hostname was supplied. Reverting to default 'localhost'
+2025-12-13 01:57:34,986 - story_engine - INFO - google.generativeai imported successfully.
+2025-12-13 01:57:34,986 - story_engine - INFO - Gemini configured with API key.
+2025-12-13 01:57:34,986 - story_engine - INFO - Gemini model 'models/gemini-2.5-flash' initialized successfully.
+2025-12-13 01:57:34,986 - stripe_routes - WARNING - STRIPE_API_KEY not set in app config - Stripe routes may not function.
+2025-12-13 01:57:34,986 - story_engine - INFO - Γ£ô Stripe Premium Price ID: price_1SWmbUHrachXBOvWbGRzORj5
+2025-12-13 01:57:34,986 - story_engine - INFO - Γ£ô Stripe Family Price ID: price_1SWmgAHrachXBOvWtQbFhGB3
+2025-12-13 01:57:34,986 - story_engine - INFO - Image generator initialized with OpenRouter (cost-optimized)
+2025-12-13 01:57:35,185 - backend.tasks.story_tasks - INFO - Attempting story generation with primary service (Gemini)...
+2025-12-13 01:57:35,185 - backend.services.story_generation_service - INFO - Generating story with prompt: You are an experienced children's author running the Engaging Storycraft v9.0 engine.
+Follow the exa... (Attempt 1)
+2025-12-13 01:57:44,098 - backend.services.story_generation_service - INFO - API response received: <class 'google.generativeai.types.generation_types.GenerateContentResponse'>
+2025-12-13 01:57:44,098 - backend.services.story_generation_service - INFO - Story generated successfully
+2025-12-13 01:57:44,098 - backend.tasks.story_tasks - INFO - Successfully generated story with primary service.
+2025-12-13 01:57:44,118 - celery.app.trace - INFO - Task tasks.generate_story[1444f62d-af18-4b2b-9f19-a2623f5f856c] succeeded in 9.135016806423664s: {'status': 'complete', 'story': {'id': '0170f542-3192-42e2-8c6c-b7c7bceea97e', 'title': 'A Brave Little Adventure', 'story_text': 'REQUEST SUMMARY:
+- Child/Character: Thinker
+- Theme: Managing Big Emotions
+- Companion: dragon (provides emotional support)
+- Mode: Linear story
+- Default length: Short (aim for ~400-700 words)
+
+STORY:
+STORY START
+Thinker loved to think. He thought about clouds that looked like cotton candy, and why squirrels buried nuts, and if stars had stories to tell. But sometimes, Thinker\'s thoughts felt too BIG. Like a giant bouncy ball stuck in his small chest.
+
+Today, the bouncy ball was HUGE. ThinkerΓÇÖs class was putting on a play, and he wanted the part of the brave knight more than anything. But what if he forgot his lines? What if everyone laughed? His tummy did a twisty-turny dance.
+
+ΓÇ£Whoa there, little thinker,ΓÇ¥ a warm, rumbling voice said. Sparky, ThinkerΓÇÖs dragon friend, nudged him gently with his snout. Sparky was small and emerald green, with scales that shimmered like a thousand...', ...}}
+2025-12-13 01:57:44,118 - story_engine - ERROR - {"timestamp": "2025-12-13T01:57:44.118734", "type": "slow_request", "message": "Request took 9.31s", "details": {"method": "POST", "path": "/generate-story", "duration": 9.313477754592896, "status_code": 202}}
+2025-12-13 01:57:44,118 - story_engine - INFO - {"method": "POST", "path": "/generate-story", "status": 202, "duration_ms": 9313.48, "ip": "100.64.0.6", "request_id": "63f74f34"}
+2025-12-13 01:57:47,191 - story_engine - INFO - [bedcfbb3] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:57:47,192 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.34, "ip": "100.64.0.6", "request_id": "bedcfbb3"}
+2025-12-13 01:57:50,215 - story_engine - INFO - [d94bccf1] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:57:50,215 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.44, "ip": "100.64.0.6", "request_id": "d94bccf1"}
+2025-12-13 01:57:53,192 - story_engine - INFO - [50817110] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:57:53,192 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.27, "ip": "100.64.0.6", "request_id": "50817110"}
+2025-12-13 01:57:56,204 - story_engine - INFO - [903ea89c] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:57:56,204 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.3, "ip": "100.64.0.6", "request_id": "903ea89c"}
+2025-12-13 01:57:59,201 - story_engine - INFO - [4a0fce16] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:57:59,201 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.49, "ip": "100.64.0.6", "request_id": "4a0fce16"}
+2025-12-13 01:58:02,214 - story_engine - INFO - [05b9ca97] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:02,214 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.27, "ip": "100.64.0.6", "request_id": "05b9ca97"}
+2025-12-13 01:58:05,203 - story_engine - INFO - [1c27a480] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:05,203 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.41, "ip": "100.64.0.6", "request_id": "1c27a480"}
+2025-12-13 01:58:08,202 - story_engine - INFO - [e915e1ce] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:08,202 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.64, "ip": "100.64.0.6", "request_id": "e915e1ce"}
+2025-12-13 01:58:11,203 - story_engine - INFO - [1a12f6a0] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:11,205 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 1.56, "ip": "100.64.0.6", "request_id": "1a12f6a0"}
+2025-12-13 01:58:14,202 - story_engine - INFO - [c3a5e0fc] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:14,202 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.31, "ip": "100.64.0.6", "request_id": "c3a5e0fc"}
+2025-12-13 01:58:17,197 - story_engine - INFO - [acb4018a] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:17,198 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.34, "ip": "100.64.0.6", "request_id": "acb4018a"}
+2025-12-13 01:58:20,222 - story_engine - INFO - [d0232727] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:20,222 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.3, "ip": "100.64.0.6", "request_id": "d0232727"}
+2025-12-13 01:58:23,194 - story_engine - INFO - [4ab5fbec] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:23,194 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.33, "ip": "100.64.0.6", "request_id": "4ab5fbec"}
+2025-12-13 01:58:26,218 - story_engine - INFO - [81309d08] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:26,218 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.44, "ip": "100.64.0.6", "request_id": "81309d08"}
+2025-12-13 01:58:29,206 - story_engine - INFO - [3266d213] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:29,207 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.41, "ip": "100.64.0.6", "request_id": "3266d213"}
+2025-12-13 01:58:32,225 - story_engine - INFO - [fc5e7ba2] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:32,226 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.43, "ip": "100.64.0.6", "request_id": "fc5e7ba2"}
+2025-12-13 01:58:35,203 - story_engine - INFO - [b673de41] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:35,203 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.43, "ip": "100.64.0.6", "request_id": "b673de41"}
+2025-12-13 01:58:37,788 - story_engine - INFO - [f64cc80f] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:37,788 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.33, "ip": "100.64.0.6", "request_id": "f64cc80f"}
+2025-12-13 01:58:40,211 - story_engine - INFO - [38f0fed2] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:40,212 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.34, "ip": "100.64.0.6", "request_id": "38f0fed2"}
+2025-12-13 01:58:42,614 - story_engine - INFO - [f20d61ec] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:42,614 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.29, "ip": "100.64.0.6", "request_id": "f20d61ec"}
+2025-12-13 01:58:45,029 - story_engine - INFO - [6404aabd] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:45,029 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.32, "ip": "100.64.0.6", "request_id": "6404aabd"}
+2025-12-13 01:58:48,203 - story_engine - INFO - [52c2ad06] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:48,204 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.4, "ip": "100.64.0.6", "request_id": "52c2ad06"}
+2025-12-13 01:58:51,214 - story_engine - INFO - [542092c9] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:51,215 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.62, "ip": "100.64.0.6", "request_id": "542092c9"}
+2025-12-13 01:58:54,556 - story_engine - INFO - [5b880b08] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:54,556 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.3, "ip": "100.64.0.6", "request_id": "5b880b08"}
+2025-12-13 01:58:57,154 - story_engine - INFO - [565378b8] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:57,154 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.36, "ip": "100.64.0.6", "request_id": "565378b8"}
+2025-12-13 01:58:59,731 - story_engine - INFO - [4cf10896] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:58:59,731 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.39, "ip": "100.64.0.8", "request_id": "4cf10896"}
+2025-12-13 01:59:02,146 - story_engine - INFO - [042c2634] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:59:02,147 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.33, "ip": "100.64.0.8", "request_id": "042c2634"}
+2025-12-13 01:59:04,566 - story_engine - INFO - [2d695420] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:59:04,566 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.25, "ip": "100.64.0.8", "request_id": "2d695420"}
+2025-12-13 01:59:07,303 - story_engine - INFO - [62782ce1] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:59:07,303 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.35, "ip": "100.64.0.8", "request_id": "62782ce1"}
+2025-12-13 01:59:09,710 - story_engine - INFO - [e47a14b8] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:59:09,711 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.24, "ip": "100.64.0.8", "request_id": "e47a14b8"}
+2025-12-13 01:59:12,132 - story_engine - INFO - [d3623293] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:59:12,132 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.35, "ip": "100.64.0.8", "request_id": "d3623293"}
+2025-12-13 01:59:14,548 - story_engine - INFO - [29690eb3] GET /task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c
+2025-12-13 01:59:14,548 - story_engine - INFO - {"method": "GET", "path": "/task-status/1444f62d-af18-4b2b-9f19-a2623f5f856c", "status": 200, "duration_ms": 0.33, "ip": "100.64.0.8", "request_id": "29690eb3"}
+2025-12-13 01:59:19,090 - story_engine - INFO - [45b04a9d] OPTIONS /generate-story
+2025-12-13 01:59:19,091 - story_engine - INFO - {"method": "OPTIONS", "path": "/generate-story", "status": 200, "duration_ms": 0.21, "ip": "100.64.0.8", "request_id": "45b04a9d"}
+2025-12-13 01:59:19,558 - story_engine - INFO - [445cfd3b] POST /generate-story
+2025-12-13 01:59:19,562 - backend.tasks.story_tasks - INFO - Attempting story generation with primary service (Gemini)...
+2025-12-13 01:59:19,563 - backend.services.story_generation_service - INFO - Generating story with prompt: You are an experienced children's author running the Engaging Storycraft v9.0 engine.
+Follow the exa... (Attempt 1)
+2025-12-13 01:59:29,556 - backend.services.story_generation_service - INFO - API response received: <class 'google.generativeai.types.generation_types.GenerateContentResponse'>
+2025-12-13 01:59:29,556 - backend.services.story_generation_service - INFO - Story generated successfully
+2025-12-13 01:59:29,556 - backend.tasks.story_tasks - INFO - Successfully generated story with primary service.
+2025-12-13 01:59:29,567 - celery.app.trace - INFO - Task tasks.generate_story[0a998c10-4d9f-4868-b98b-962bb0b9d10d] succeeded in 10.004852995276451s: {'status': 'complete', 'story': {'id': 'e0b73ddf-885e-4b38-a697-a31b783a2a59', 'title': 'A Brave Little Adventure', 'story_text': 'REQUEST SUMMARY:
+- Child/Character: Thinker
+- Theme: Managing Big Emotions
+- Companion: dragon (provides emotional support)
+- Mode: Linear story
+- Default length: Short (aim for ~400-700 words) unless context suggests otherwise.
+
+STORY:
+STORY START
+Thinker loved maps. Not just any maps, but maps of feelings! HeΓÇÖd drawn one of "Happy Hills" with sunshine rivers, and another of "Grumpy Gulch" filled with prickly pear trees. But his newest map, the "Land of Bigness," was giving him trouble. It feltΓÇªtoo big.
+
+Thinker slumped against his friend, Sparky, a small, comforting dragon whose scales shimmered like amethysts. "Sparky," he sighed, "I can\'t finish this map. It\'s supposed to show all the big feelings ΓÇô anger, sadness, worry ΓÇô but they feelΓÇªgigantic! I donΓÇÖt know where to even begin." ThinkerΓÇÖs tummy felt twisty and tight, like a rubber band pulled too far.
+
+Sparky nuzzled...', , ...}}
+2025-12-13 01:59:29,567 - story_engine - ERROR - {"timestamp": "2025-12-13T01:59:29.567733", "type": "slow_request", "message": "Request took 10.01s", "details": {"method": "POST", "path": "/generate-story", "duration": 10.009242534637451, "status_code": 202}}
+2025-12-13 01:59:29,567 - story_engine - INFO - {"method": "POST", "path": "/generate-story", "status": 202, "duration_ms": 10009.24, "ip": "100.64.0.8", "request_id": "445cfd3b"}
+2025-12-13 01:59:32,154 - story_engine - INFO - [16360ba4] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 01:59:32,154 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.49, "ip": "100.64.0.8", "request_id": "16360ba4"}
+2025-12-13 01:59:34,567 - story_engine - INFO - [58d04027] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 01:59:34,568 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.31, "ip": "100.64.0.8", "request_id": "58d04027"}
+2025-12-13 01:59:37,305 - story_engine - INFO - [e98e4283] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 01:59:37,305 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.26, "ip": "100.64.0.8", "request_id": "e98e4283"}
+2025-12-13 01:59:39,968 - story_engine - INFO - [c39c5954] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 01:59:39,969 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 1.37, "ip": "100.64.0.8", "request_id": "c39c5954"}
+2025-12-13 01:59:42,464 - story_engine - INFO - [a2e1c351] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 01:59:42,464 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.55, "ip": "100.64.0.8", "request_id": "a2e1c351"}
+2025-12-13 01:59:44,869 - story_engine - INFO - [030ddedb] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 01:59:44,869 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.29, "ip": "100.64.0.8", "request_id": "030ddedb"}
+2025-12-13 01:59:47,333 - story_engine - INFO - [bd000ff6] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 01:59:47,334 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.36, "ip": "100.64.0.8", "request_id": "bd000ff6"}
+2025-12-13 01:59:49,758 - story_engine - INFO - [e916efd8] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 01:59:49,759 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.28, "ip": "100.64.0.8", "request_id": "e916efd8"}
+2025-12-13 01:59:52,468 - story_engine - INFO - [946814be] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 01:59:52,469 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.33, "ip": "100.64.0.8", "request_id": "946814be"}
+2025-12-13 01:59:55,129 - story_engine - INFO - [2014d113] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 01:59:55,130 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.56, "ip": "100.64.0.8", "request_id": "2014d113"}
+2025-12-13 01:59:57,644 - story_engine - INFO - [66528ce6] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 01:59:57,644 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.33, "ip": "100.64.0.8", "request_id": "66528ce6"}
+2025-12-13 02:00:00,155 - story_engine - INFO - [d449d97b] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:00,156 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.34, "ip": "100.64.0.8", "request_id": "d449d97b"}
+2025-12-13 02:00:02,652 - story_engine - INFO - [18e72b79] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:02,653 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.49, "ip": "100.64.0.8", "request_id": "18e72b79"}
+2025-12-13 02:00:05,256 - story_engine - INFO - [ccade7e2] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:05,256 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.46, "ip": "100.64.0.8", "request_id": "ccade7e2"}
+2025-12-13 02:00:07,669 - story_engine - INFO - [744c9f1f] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:07,670 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.4, "ip": "100.64.0.8", "request_id": "744c9f1f"}
+2025-12-13 02:00:10,337 - story_engine - INFO - [495a76ce] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:10,337 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.28, "ip": "100.64.0.8", "request_id": "495a76ce"}
+2025-12-13 02:00:12,992 - story_engine - INFO - [7d9dca01] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:12,992 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.31, "ip": "100.64.0.8", "request_id": "7d9dca01"}
+2025-12-13 02:00:15,412 - story_engine - INFO - [9e554bdd] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:15,413 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.4, "ip": "100.64.0.8", "request_id": "9e554bdd"}
+2025-12-13 02:00:17,879 - story_engine - INFO - [8a3039da] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:17,879 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.41, "ip": "100.64.0.8", "request_id": "8a3039da"}
+2025-12-13 02:00:20,312 - story_engine - INFO - [6a16312a] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:20,312 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.35, "ip": "100.64.0.8", "request_id": "6a16312a"}
+2025-12-13 02:00:22,946 - story_engine - INFO - [9fec719b] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:22,947 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.46, "ip": "100.64.0.8", "request_id": "9fec719b"}
+2025-12-13 02:00:25,368 - story_engine - INFO - [af574768] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:25,369 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.43, "ip": "100.64.0.8", "request_id": "af574768"}
+2025-12-13 02:00:27,825 - story_engine - INFO - [d641c89e] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:27,826 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.43, "ip": "100.64.0.8", "request_id": "d641c89e"}
+2025-12-13 02:00:30,718 - story_engine - INFO - [505e96e3] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:30,718 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.28, "ip": "100.64.0.8", "request_id": "505e96e3"}
+2025-12-13 02:00:33,263 - story_engine - INFO - [9e9a2200] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:33,263 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.43, "ip": "100.64.0.8", "request_id": "9e9a2200"}
+2025-12-13 02:00:35,695 - story_engine - INFO - [13a1bca2] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:35,696 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.51, "ip": "100.64.0.8", "request_id": "13a1bca2"}
+2025-12-13 02:00:38,617 - story_engine - INFO - [e56fcd23] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:38,617 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.42, "ip": "100.64.0.8", "request_id": "e56fcd23"}
+2025-12-13 02:00:41,210 - story_engine - INFO - [e8c19b03] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:41,211 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.42, "ip": "100.64.0.8", "request_id": "e8c19b03"}
+2025-12-13 02:00:43,672 - story_engine - INFO - [8f252396] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:43,672 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.35, "ip": "100.64.0.8", "request_id": "8f252396"}
+2025-12-13 02:00:46,091 - story_engine - INFO - [79cf3991] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:46,091 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.3, "ip": "100.64.0.8", "request_id": "79cf3991"}
+2025-12-13 02:00:48,557 - story_engine - INFO - [791ca892] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:48,558 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.31, "ip": "100.64.0.8", "request_id": "791ca892"}
+2025-12-13 02:00:50,966 - story_engine - INFO - [fa68b578] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:50,966 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.36, "ip": "100.64.0.8", "request_id": "fa68b578"}
+2025-12-13 02:00:53,402 - story_engine - INFO - [8ea78cb5] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:53,402 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.38, "ip": "100.64.0.8", "request_id": "8ea78cb5"}
+2025-12-13 02:00:56,042 - story_engine - INFO - [0b365696] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:56,042 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.25, "ip": "100.64.0.8", "request_id": "0b365696"}
+2025-12-13 02:00:58,871 - story_engine - INFO - [254db94c] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:00:58,872 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.44, "ip": "100.64.0.8", "request_id": "254db94c"}
+2025-12-13 02:01:01,308 - story_engine - INFO - [c22d5a00] GET /task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d
+2025-12-13 02:01:01,309 - story_engine - INFO - {"method": "GET", "path": "/task-status/0a998c10-4d9f-4868-b98b-962bb0b9d10d", "status": 200, "duration_ms": 0.55, "ip": "100.64.0.8", "request_id": "c22d5a00"}
+2025-12-13 02:01:16,648 - story_engine - INFO - {"method": "OPTIONS", "path": "/generate-story", "status": 200, "duration_ms": 0.23, "ip": "100.64.0.8", "request_id": "c51e508e"}
+2025-12-13 02:01:17,053 - story_engine - INFO - [c4faa8d1] POST /generate-story
+2025-12-13 02:01:17,059 - backend.tasks.story_tasks - INFO - Attempting story generation with primary service (Gemini)...
+2025-12-13 02:01:17,059 - backend.services.story_generation_service - INFO - Generating story with prompt: You are an experienced children's author running the Engaging Storycraft v9.0 engine.
+2025-12-13 02:01:16,647 - story_engine - INFO - [c51e508e] OPTIONS /generate-story
+Follow the exa... (Attempt 1)
+2025-12-13 02:01:26,553 - backend.services.story_generation_service - INFO - API response received: <class 'google.generativeai.types.generation_types.GenerateContentResponse'>
+2025-12-13 02:01:26,554 - backend.services.story_generation_service - INFO - Story generated successfully
+2025-12-13 02:01:26,554 - backend.tasks.story_tasks - INFO - Successfully generated story with primary service.
+2025-12-13 02:01:26,565 - celery.app.trace - INFO - Task tasks.generate_story[3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636] succeeded in 9.507077917456627s: {'status': 'complete', 'story': {'id': '7438b67c-7270-432b-9065-1a9648a501ff', 'title': 'A Brave Little Adventure', 'story_text': 'REQUEST SUMMARY:
+- Child/Character: Thinker
+- Theme: Managing Big Emotions
+- Companion: dragon (provides emotional support)
+- Mode: Linear story
+- Default length: Short (aim for ~400-700 words)
+
+STORY:
+STORY START
+Flora was a Thinker. She thought about everything. About why squirrels buried nuts, about whether clouds tickled the sky, and especially about her feelings. And sometimes, FloraΓÇÖs feelings felt HUGE.
+
+One sunny Tuesday, Flora woke up with a Big Grumpy feeling. It sat right in the middle of her tummy, like a grumpy frog. ΓÇ£Oh dear,ΓÇ¥ she whispered to Sparky, her little dragon companion, who was curled up on her pillow. ΓÇ£I have the grumps.ΓÇ¥
+
+Sparky, whose scales shimmered like amethysts in the sunlight, nuzzled her cheek. "Grumps are okay, Flora," he rumbled softly. "Everyone gets them sometimes. What started it?"
+
+"I don\'t know!" Flora wailed, her voice cracking. That was...', ...}}
+2025-12-13 02:01:26,566 - story_engine - ERROR - {"timestamp": "2025-12-13T02:01:26.566166", "type": "slow_request", "message": "Request took 9.51s", "details": {"method": "POST", "path": "/generate-story", "duration": 9.512828588485718, "status_code": 202}}
+2025-12-13 02:01:26,566 - story_engine - INFO - {"method": "POST", "path": "/generate-story", "status": 202, "duration_ms": 9512.83, "ip": "100.64.0.8", "request_id": "c4faa8d1"}
+2025-12-13 02:01:29,937 - story_engine - INFO - [e735bc61] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:01:29,938 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.53, "ip": "100.64.0.8", "request_id": "e735bc61"}
+2025-12-13 02:01:32,640 - story_engine - INFO - [fe903b76] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:01:32,641 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.47, "ip": "100.64.0.8", "request_id": "fe903b76"}
+2025-12-13 02:01:35,284 - story_engine - INFO - [7f3de919] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:01:35,285 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.31, "ip": "100.64.0.8", "request_id": "7f3de919"}
+2025-12-13 02:01:37,799 - story_engine - INFO - [bfcbdc2b] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:01:37,800 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.26, "ip": "100.64.0.8", "request_id": "bfcbdc2b"}
+2025-12-13 02:01:40,208 - story_engine - INFO - [533fbaf6] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:01:40,208 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.45, "ip": "100.64.0.8", "request_id": "533fbaf6"}
+2025-12-13 02:01:42,617 - story_engine - INFO - [1ec3dbae] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:01:42,617 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.45, "ip": "100.64.0.8", "request_id": "1ec3dbae"}
+2025-12-13 02:01:45,187 - story_engine - INFO - [c52cfa6f] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:01:45,187 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.29, "ip": "100.64.0.5", "request_id": "c52cfa6f"}
+2025-12-13 02:01:47,648 - story_engine - INFO - [3299a07d] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:01:47,648 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.49, "ip": "100.64.0.5", "request_id": "3299a07d"}
+2025-12-13 02:01:50,230 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.47, "ip": "100.64.0.5", "request_id": "5febd59c"}
+2025-12-13 02:01:50,229 - story_engine - INFO - [5febd59c] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:01:53,105 - story_engine - INFO - [80a76b53] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:01:53,105 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.27, "ip": "100.64.0.5", "request_id": "80a76b53"}
+2025-12-13 02:01:55,702 - story_engine - INFO - [e0121891] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:01:55,702 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.52, "ip": "100.64.0.5", "request_id": "e0121891"}
+2025-12-13 02:01:58,178 - story_engine - INFO - [7018a736] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:01:58,178 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.45, "ip": "100.64.0.5", "request_id": "7018a736"}
+2025-12-13 02:02:00,601 - story_engine - INFO - [f1020f8c] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:02:00,601 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.55, "ip": "100.64.0.5", "request_id": "f1020f8c"}
+2025-12-13 02:02:04,367 - story_engine - INFO - [d31b9c1e] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:02:04,367 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.38, "ip": "100.64.0.4", "request_id": "d31b9c1e"}
+2025-12-13 02:02:07,212 - story_engine - INFO - [3a0b0233] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:02:07,212 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.24, "ip": "100.64.0.4", "request_id": "3a0b0233"}
+2025-12-13 02:02:10,216 - story_engine - INFO - [22c39a30] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:02:10,216 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.27, "ip": "100.64.0.4", "request_id": "22c39a30"}
+2025-12-13 02:02:13,209 - story_engine - INFO - [cf606a5b] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:02:13,209 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.3, "ip": "100.64.0.4", "request_id": "cf606a5b"}
+2025-12-13 02:02:16,216 - story_engine - INFO - [04769774] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:02:16,216 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.38, "ip": "100.64.0.4", "request_id": "04769774"}
+2025-12-13 02:02:19,634 - story_engine - INFO - [7becd8ec] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:02:19,634 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.47, "ip": "100.64.0.6", "request_id": "7becd8ec"}
+2025-12-13 02:02:22,205 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.52, "ip": "100.64.0.6", "request_id": "feeae46a"}
+2025-12-13 02:02:22,205 - story_engine - INFO - [feeae46a] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:02:25,209 - story_engine - INFO - [d8688ce5] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:02:25,209 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.39, "ip": "100.64.0.6", "request_id": "d8688ce5"}
+2025-12-13 02:02:28,205 - story_engine - INFO - [af51e7b6] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:02:28,205 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.34, "ip": "100.64.0.6", "request_id": "af51e7b6"}
+2025-12-13 02:02:31,390 - story_engine - INFO - [e2fa927b] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:02:31,390 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.46, "ip": "100.64.0.3", "request_id": "e2fa927b"}
+2025-12-13 02:02:34,312 - story_engine - INFO - [25f5f84c] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:02:34,313 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.4, "ip": "100.64.0.3", "request_id": "25f5f84c"}
+2025-12-13 02:02:37,208 - story_engine - INFO - [27279e1e] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:02:37,209 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.41, "ip": "100.64.0.3", "request_id": "27279e1e"}
+2025-12-13 02:02:40,428 - story_engine - INFO - [b55673cd] GET /task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636
+2025-12-13 02:02:40,428 - story_engine - INFO - {"method": "GET", "path": "/task-status/3b4d0c75-7f2c-47c0-b8a9-bed3ce7e9636", "status": 200, "duration_ms": 0.43, "ip": "100.64.0.5", "request_id": "b55673cd"}

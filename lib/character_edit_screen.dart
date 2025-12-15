@@ -586,6 +586,7 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
             DropdownMenuItem(value: 'Girly Girl', child: Text('Girly Girl')),
             DropdownMenuItem(value: 'Tomboy', child: Text('Tomboy')),
             DropdownMenuItem(value: 'Sporty Kid', child: Text('Sporty Kid')),
+            DropdownMenuItem(value: 'Explorer', child: Text('Explorer')),
             DropdownMenuItem(
                 value: 'Couch Potato', child: Text('Couch Potato')),
             DropdownMenuItem(

@@ -1,0 +1,501 @@
+    self.update_state(state="PROCESSING", meta={"status": "Generating story..."})
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 999, in update_state
+           ^^^^^^^^^^^^^^^^^^^^
+    self.backend.store_result(
+  File "/usr/local/lib/python3.11/site-packages/redis/commands/core.py", line 1829, in get
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 526, in store_result
+    return self.execute_command("GET", name)
+    self._store_result(task_id, result, state, traceback,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 973, in _store_result
+  File "/usr/local/lib/python3.11/site-packages/redis/client.py", line 533, in execute_command
+    current_meta = self._get_task_meta_for(task_id)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 995, in _get_task_meta_for
+    meta = self.get(self.get_key_for_task(task_id))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    conn = self.connection or pool.get_connection(command_name, **options)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 1086, in get_connection
+    connection.connect()
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 270, in connect
+    raise ConnectionError(self._error_message(e))
+redis.exceptions.ConnectionError: Error 111 connecting to localhost:6379. Connection refused.
+2025-12-12 16:26:38,514 - story_engine - ERROR - Falling back to synchronous story generation: Error 111 connecting to localhost:6379. Connection refused.
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 264, in connect
+    sock = self.retry.call_with_retry(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/retry.py", line 46, in call_with_retry
+    return do()
+           ^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 265, in <lambda>
+    lambda: self._connect(), lambda error: self.disconnect(error)
+            ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 627, in _connect
+    raise err
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 615, in _connect
+    sock.connect(socket_address)
+ConnectionRefusedError: [Errno 111] Connection refused
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/backend/tasks/story_tasks.py", line 116, in generate_story_task
+    self.update_state(state="PROCESSING", meta={"status": "Generating story..."})
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 999, in update_state
+    self.backend.store_result(
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 526, in store_result
+    self._store_result(task_id, result, state, traceback,
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 973, in _store_result
+    current_meta = self._get_task_meta_for(task_id)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 995, in _get_task_meta_for
+    meta = self.get(self.get_key_for_task(task_id))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/redis.py", line 376, in get
+    return self.client.get(key)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/commands/core.py", line 1829, in get
+    return self.execute_command("GET", name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/client.py", line 533, in execute_command
+    conn = self.connection or pool.get_connection(command_name, **options)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 1086, in get_connection
+    connection.connect()
+    return do()
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 270, in connect
+    raise ConnectionError(self._error_message(e))
+redis.exceptions.ConnectionError: Error 111 connecting to localhost:6379. Connection refused.
+           ^^^^
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 264, in connect
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 265, in <lambda>
+    sock = self.retry.call_with_retry(
+    lambda: self._connect(), lambda error: self.disconnect(error)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/retry.py", line 46, in call_with_retry
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 627, in _connect
+    raise err
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 615, in _connect
+    sock.connect(socket_address)
+ConnectionRefusedError: [Errno 111] Connection refused
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/backend/routes/story_routes.py", line 74, in generate_story_endpoint
+    task = generate_story_task.delay(**task_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 444, in delay
+    return self.apply_async(args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 591, in apply_async
+    return self.apply(args, kwargs, task_id=task_id or uuid(),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 818, in apply
+    ret = tracer(task_id, args, kwargs, request)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 494, in trace_task
+    I, R, state, retval = on_error(task_request, exc)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    meta = self.get(self.get_key_for_task(task_id))
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 477, in trace_task
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    R = retval = fun(*args, **kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/redis.py", line 376, in get
+  File "/app/backend/tasks/story_tasks.py", line 152, in generate_story_task
+    return self.client.get(key)
+    self.update_state(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 999, in update_state
+  File "/usr/local/lib/python3.11/site-packages/redis/commands/core.py", line 1829, in get
+    self.backend.store_result(
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 526, in store_result
+    self._store_result(task_id, result, state, traceback,
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 973, in _store_result
+    current_meta = self._get_task_meta_for(task_id)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 995, in _get_task_meta_for
+    return self.execute_command("GET", name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/client.py", line 533, in execute_command
+    conn = self.connection or pool.get_connection(command_name, **options)
+Traceback (most recent call last):
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 1086, in get_connection
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 264, in connect
+    connection.connect()
+    sock = self.retry.call_with_retry(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 270, in connect
+    raise ConnectionError(self._error_message(e))
+  File "/usr/local/lib/python3.11/site-packages/redis/retry.py", line 46, in call_with_retry
+redis.exceptions.ConnectionError: Error 111 connecting to localhost:6379. Connection refused.
+    return do()
+2025-12-12 16:26:38,518 - backend.tasks.story_tasks - ERROR - generate_story_task failed: Error 111 connecting to localhost:6379. Connection refused.
+           ^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 265, in <lambda>
+    lambda: self._connect(), lambda error: self.disconnect(error)
+            ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 627, in _connect
+    raise err
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 615, in _connect
+    sock.connect(socket_address)
+ConnectionRefusedError: [Errno 111] Connection refused
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/backend/tasks/story_tasks.py", line 116, in generate_story_task
+    self.update_state(state="PROCESSING", meta={"status": "Generating story..."})
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 999, in update_state
+    self.backend.store_result(
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 526, in store_result
+    self._store_result(task_id, result, state, traceback,
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 973, in _store_result
+    current_meta = self._get_task_meta_for(task_id)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 995, in _get_task_meta_for
+    meta = self.get(self.get_key_for_task(task_id))
+Traceback (most recent call last):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/redis.py", line 376, in get
+    return self.client.get(key)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 264, in connect
+  File "/usr/local/lib/python3.11/site-packages/redis/commands/core.py", line 1829, in get
+    return self.execute_command("GET", name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/client.py", line 533, in execute_command
+    conn = self.connection or pool.get_connection(command_name, **options)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 1086, in get_connection
+    connection.connect()
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 270, in connect
+    raise ConnectionError(self._error_message(e))
+redis.exceptions.ConnectionError: Error 111 connecting to localhost:6379. Connection refused.
+
+During handling of the above exception, another exception occurred:
+
+    sock = self.retry.call_with_retry(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/retry.py", line 46, in call_with_retry
+    return do()
+           ^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 265, in <lambda>
+    lambda: self._connect(), lambda error: self.disconnect(error)
+            ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 627, in _connect
+    raise err
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 615, in _connect
+    sock.connect(socket_address)
+ConnectionRefusedError: [Errno 111] Connection refused
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/backend/routes/story_routes.py", line 74, in generate_story_endpoint
+    task = generate_story_task.delay(**task_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 444, in delay
+    return self.apply_async(args, kwargs)
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 973, in _store_result
+  File "/app/backend/tasks/story_tasks.py", line 152, in generate_story_task
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    self.update_state(
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 591, in apply_async
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 494, in trace_task
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 999, in update_state
+    return self.apply(args, kwargs, task_id=task_id or uuid(),
+    I, R, state, retval = on_error(task_request, exc)
+    self.backend.store_result(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 526, in store_result
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 477, in trace_task
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 818, in apply
+    self._store_result(task_id, result, state, traceback,
+    R = retval = fun(*args, **kwargs)
+    ret = tracer(task_id, args, kwargs, request)
+                 ^^^^^^^^^^^^^^^^^^^^
+    current_meta = self._get_task_meta_for(task_id)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 995, in _get_task_meta_for
+    meta = self.get(self.get_key_for_task(task_id))
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 1086, in get_connection
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    connection.connect()
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/redis.py", line 376, in get
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 270, in connect
+    return self.client.get(key)
+           ^^^^^^^^^^^^^^^^^^^^
+    raise ConnectionError(self._error_message(e))
+  File "/usr/local/lib/python3.11/site-packages/redis/commands/core.py", line 1829, in get
+redis.exceptions.ConnectionError: Error 111 connecting to localhost:6379. Connection refused.
+    return self.execute_command("GET", name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/client.py", line 533, in execute_command
+    conn = self.connection or pool.get_connection(command_name, **options)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 264, in connect
+    sock = self.retry.call_with_retry(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/retry.py", line 46, in call_with_retry
+    return do()
+           ^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 265, in <lambda>
+    lambda: self._connect(), lambda error: self.disconnect(error)
+            ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 627, in _connect
+    raise err
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 615, in _connect
+    sock.connect(socket_address)
+ConnectionRefusedError: [Errno 111] Connection refused
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/backend/tasks/story_tasks.py", line 116, in generate_story_task
+    self.update_state(state="PROCESSING", meta={"status": "Generating story..."})
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 999, in update_state
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    self.backend.store_result(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/client.py", line 533, in execute_command
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 526, in store_result
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/redis.py", line 376, in get
+    self._store_result(task_id, result, state, traceback,
+    return self.client.get(key)
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 973, in _store_result
+           ^^^^^^^^^^^^^^^^^^^^
+    current_meta = self._get_task_meta_for(task_id)
+  File "/usr/local/lib/python3.11/site-packages/redis/commands/core.py", line 1829, in get
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    return self.execute_command("GET", name)
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 995, in _get_task_meta_for
+    meta = self.get(self.get_key_for_task(task_id))
+    sock = self.retry.call_with_retry(
+    conn = self.connection or pool.get_connection(command_name, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/retry.py", line 46, in call_with_retry
+    return do()
+           ^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 265, in <lambda>
+    lambda: self._connect(), lambda error: self.disconnect(error)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 1086, in get_connection
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 627, in _connect
+    connection.connect()
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 270, in connect
+    raise ConnectionError(self._error_message(e))
+redis.exceptions.ConnectionError: Error 111 connecting to localhost:6379. Connection refused.
+2025-12-12 16:26:38,531 - story_engine - ERROR - Synchronous story generation failed: Error 111 connecting to localhost:6379. Connection refused.
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 264, in connect
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 973, in _store_result
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/redis.py", line 376, in get
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 995, in _get_task_meta_for
+    raise err
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    meta = self.get(self.get_key_for_task(task_id))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 615, in _connect
+    current_meta = self._get_task_meta_for(task_id)
+    sock.connect(socket_address)
+ConnectionRefusedError: [Errno 111] Connection refused
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/backend/tasks/story_tasks.py", line 116, in generate_story_task
+    self.update_state(state="PROCESSING", meta={"status": "Generating story..."})
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 999, in update_state
+    self.backend.store_result(
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 526, in store_result
+    self._store_result(task_id, result, state, traceback,
+    return self.client.get(key)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/commands/core.py", line 1829, in get
+    return self.execute_command("GET", name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/client.py", line 533, in execute_command
+    conn = self.connection or pool.get_connection(command_name, **options)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 1086, in get_connection
+    connection.connect()
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 270, in connect
+    raise ConnectionError(self._error_message(e))
+redis.exceptions.ConnectionError: Error 111 connecting to localhost:6379. Connection refused.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 264, in connect
+    sock = self.retry.call_with_retry(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/retry.py", line 46, in call_with_retry
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    return do()
+           ^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 591, in apply_async
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 265, in <lambda>
+    return self.apply(args, kwargs, task_id=task_id or uuid(),
+    lambda: self._connect(), lambda error: self.disconnect(error)
+            ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 627, in _connect
+    raise err
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 615, in _connect
+    sock.connect(socket_address)
+ConnectionRefusedError: [Errno 111] Connection refused
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/backend/routes/story_routes.py", line 74, in generate_story_endpoint
+    task = generate_story_task.delay(**task_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 444, in delay
+    return self.apply_async(args, kwargs)
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 526, in store_result
+    self._store_result(task_id, result, state, traceback,
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 973, in _store_result
+    current_meta = self._get_task_meta_for(task_id)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 995, in _get_task_meta_for
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 818, in apply
+    ret = tracer(task_id, args, kwargs, request)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 494, in trace_task
+    I, R, state, retval = on_error(task_request, exc)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 477, in trace_task
+    R = retval = fun(*args, **kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/app/backend/tasks/story_tasks.py", line 152, in generate_story_task
+    self.update_state(
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 999, in update_state
+    self.backend.store_result(
+    meta = self.get(self.get_key_for_task(task_id))
+    connection.connect()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/redis.py", line 376, in get
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 270, in connect
+    return self.client.get(key)
+    raise ConnectionError(self._error_message(e))
+           ^^^^^^^^^^^^^^^^^^^^
+redis.exceptions.ConnectionError: Error 111 connecting to localhost:6379. Connection refused.
+  File "/usr/local/lib/python3.11/site-packages/redis/commands/core.py", line 1829, in get
+
+    return self.execute_command("GET", name)
+During handling of the above exception, another exception occurred:
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/redis/client.py", line 533, in execute_command
+Traceback (most recent call last):
+    conn = self.connection or pool.get_connection(command_name, **options)
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 264, in connect
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 1086, in get_connection
+    self.update_state(state="PROCESSING", meta={"status": "Generating story..."})
+    sock.connect(socket_address)
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 999, in update_state
+    sock = self.retry.call_with_retry(
+ConnectionRefusedError: [Errno 111] Connection refused
+    self.backend.store_result(
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 526, in store_result
+
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+During handling of the above exception, another exception occurred:
+  File "/usr/local/lib/python3.11/site-packages/redis/retry.py", line 46, in call_with_retry
+
+            ^^^^^^^^^^^^^^^
+    return do()
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 627, in _connect
+  File "/app/backend/tasks/story_tasks.py", line 116, in generate_story_task
+           ^^^^
+    raise err
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 265, in <lambda>
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 615, in _connect
+    lambda: self._connect(), lambda error: self.disconnect(error)
+    self._store_result(task_id, result, state, traceback,
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 1086, in get_connection
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 973, in _store_result
+    connection.connect()
+    current_meta = self._get_task_meta_for(task_id)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 270, in connect
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 995, in _get_task_meta_for
+    meta = self.get(self.get_key_for_task(task_id))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/redis.py", line 376, in get
+    return self.client.get(key)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/commands/core.py", line 1829, in get
+    return self.execute_command("GET", name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/client.py", line 533, in execute_command
+    conn = self.connection or pool.get_connection(command_name, **options)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    raise ConnectionError(self._error_message(e))
+redis.exceptions.ConnectionError: Error 111 connecting to localhost:6379. Connection refused.
+
+
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 615, in _connect
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 264, in connect
+During handling of the above exception, another exception occurred:
+    sock.connect(socket_address)
+During handling of the above exception, another exception occurred:
+    sock = self.retry.call_with_retry(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ConnectionRefusedError: [Errno 111] Connection refused
+
+    lambda: self._connect(), lambda error: self.disconnect(error)
+  File "/usr/local/lib/python3.11/site-packages/redis/retry.py", line 46, in call_with_retry
+            ^^^^^^^^^^^^^^^
+Traceback (most recent call last):
+    return do()
+           ^^^^
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 627, in _connect
+  File "/usr/local/lib/python3.11/site-packages/redis/connection.py", line 265, in <lambda>
+    raise err
+    self._store_result(task_id, result, state, traceback,
+
+Traceback (most recent call last):
+  File "/app/backend/routes/story_routes.py", line 89, in generate_story_endpoint
+    sync_result = generate_story_task.apply(kwargs=task_kwargs).get()
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 818, in apply
+    ret = tracer(task_id, args, kwargs, request)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 494, in trace_task
+    I, R, state, retval = on_error(task_request, exc)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 477, in trace_task
+    R = retval = fun(*args, **kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/app/backend/tasks/story_tasks.py", line 152, in generate_story_task
+    self.update_state(
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 999, in update_state
+    self.backend.store_result(
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 526, in store_result
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 973, in _store_result
+    current_meta = self._get_task_meta_for(task_id)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/backends/base.py", line 995, in _get_task_meta_for
+redis.exceptions.ConnectionError: Error 111 connecting to localhost:6379. Connection refused.
+Railway rate limit of 500 logs/sec reached for replica, update your application to reduce the logging rate. Messages dropped: 345

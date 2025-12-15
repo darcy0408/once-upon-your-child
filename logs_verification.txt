@@ -1,0 +1,501 @@
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    return self._exec_single_context(
+    self.dialect.do_execute(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    cursor.execute(statement, parameters)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+sqlalchemy.exc.DataError: (psycopg2.errors.StringDataRightTruncation) value too long for type character varying(36)
+
+[SQL: INSERT INTO story (id, user_id, title, created_at) VALUES (%(id)s, %(user_id)s, %(title)s, %(created_at)s)]
+[parameters: {'id': '222cc6d5-97fc-452b-ac2f-596a6de7c040', 'user_id': 'user_5f5cc0c8-d94a-43d9-8419-72a9e635bae6', 'title': 'A Brave Little Adventure', 'created_at': datetime.datetime(2025, 12, 12, 17, 7, 19, 428353)}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+
+2025-12-12 17:07:19,442 - story_engine - ERROR - Falling back to synchronous story generation: (psycopg2.errors.StringDataRightTruncation) value too long for type character varying(36)
+
+The above exception was the direct cause of the following exception:
+
+[SQL: INSERT INTO story (id, user_id, title, created_at) VALUES (%(id)s, %(user_id)s, %(title)s, %(created_at)s)]
+
+[parameters: {'id': '222cc6d5-97fc-452b-ac2f-596a6de7c040', 'user_id': 'user_5f5cc0c8-d94a-43d9-8419-72a9e635bae6', 'title': 'A Brave Little Adventure', 'created_at': datetime.datetime(2025, 12, 12, 17, 7, 19, 428353)}]
+Traceback (most recent call last):
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+  File "/app/backend/routes/story_routes.py", line 74, in generate_story_endpoint
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    task = generate_story_task.delay(**task_kwargs)
+    self.dialect.do_execute(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.StringDataRightTruncation: value too long for type character varying(36)
+    I, R, state, retval = on_error(task_request, exc)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 477, in trace_task
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 444, in delay
+    R = retval = fun(*args, **kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^
+    return self.apply_async(args, kwargs)
+  File "/app/backend/tasks/story_tasks.py", line 132, in generate_story_task
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    db.session.commit()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/scoping.py", line 599, in commit
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 591, in apply_async
+    return self._proxied.commit()
+    return self.apply(args, kwargs, task_id=task_id or uuid(),
+           ^^^^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 818, in apply
+    ret = tracer(task_id, args, kwargs, request)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 494, in trace_task
+    with util.safe_reraise():
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+    raise exc_value.with_traceback(exc_tb)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+    self.session.flush()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4345, in flush
+    self._flush(objects)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4480, in _flush
+    ret = self._execute_context(
+    rec.execute(self)
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 1233, in _emit_insert_statements
+    result = connection.execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4441, in _flush
+             ^^^^^^^^^^^^^^^^^^^
+    flush_context.execute()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    return meth(
+           ^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    self.dialect.do_execute(
+    return self._exec_single_context(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    cursor.execute(statement, parameters)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+sqlalchemy.exc.DataError: (psycopg2.errors.StringDataRightTruncation) value too long for type character varying(36)
+    self._handle_dbapi_exception(
+
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+[SQL: INSERT INTO story (id, user_id, title, created_at) VALUES (%(id)s, %(user_id)s, %(title)s, %(created_at)s)]
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+[parameters: {'id': '222cc6d5-97fc-452b-ac2f-596a6de7c040', 'user_id': 'user_5f5cc0c8-d94a-43d9-8419-72a9e635bae6', 'title': 'A Brave Little Adventure', 'created_at': datetime.datetime(2025, 12, 12, 17, 7, 19, 428353)}]
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+2025-12-12 17:07:19,445 - backend.tasks.story_tasks - INFO - Attempting story generation with primary service (Gemini)...
+2025-12-12 17:07:19,446 - backend.services.story_generation_service - INFO - Generating story with prompt: You are an experienced children's author running the Engaging Storycraft v9.0 engine.
+Follow the exa... (Attempt 1)
+2025-12-12 17:07:30,608 - backend.services.story_generation_service - INFO - API response received: <class 'google.generativeai.types.generation_types.GenerateContentResponse'>
+2025-12-12 17:07:30,609 - backend.services.story_generation_service - INFO - Story generated successfully
+2025-12-12 17:07:30,609 - backend.tasks.story_tasks - INFO - Successfully generated story with primary service.
+2025-12-12 17:07:30,617 - backend.tasks.story_tasks - ERROR - generate_story_task failed: (psycopg2.errors.StringDataRightTruncation) value too long for type character varying(36)
+
+[SQL: INSERT INTO story (id, user_id, title, created_at) VALUES (%(id)s, %(user_id)s, %(title)s, %(created_at)s)]
+[parameters: {'id': '73fafde8-de81-4eb5-bf4c-df2df8f95e16', 'user_id': 'user_5f5cc0c8-d94a-43d9-8419-72a9e635bae6', 'title': 'A Brave Little Adventure', 'created_at': datetime.datetime(2025, 12, 12, 17, 7, 30, 611918)}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.StringDataRightTruncation: value too long for type character varying(36)
+
+
+
+    return self.apply_async(args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The above exception was the direct cause of the following exception:
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 477, in trace_task
+    task = generate_story_task.delay(**task_kwargs)
+    R = retval = fun(*args, **kwargs)
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 444, in delay
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 494, in trace_task
+    I, R, state, retval = on_error(task_request, exc)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 591, in apply_async
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 818, in apply
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/backend/routes/story_routes.py", line 74, in generate_story_endpoint
+    ret = tracer(task_id, args, kwargs, request)
+    return self.apply(args, kwargs, task_id=task_id or uuid(),
+    ret_value = fn(self, *arg, **kw)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/scoping.py", line 599, in commit
+                ^^^^^^^^^^^^^^^^^^^^
+    return self._proxied.commit()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+    self.session.flush()
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4345, in flush
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+                 ^^^^^^^^^^^^^^^^^^^^
+    trans.commit(_to_root=True)
+  File "/app/backend/tasks/story_tasks.py", line 132, in generate_story_task
+  File "<string>", line 2, in commit
+    db.session.commit()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    self._flush(objects)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4480, in _flush
+    with util.safe_reraise():
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4441, in _flush
+    flush_context.execute()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 1233, in _emit_insert_statements
+    result = connection.execute(
+             ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+[SQL: INSERT INTO story (id, user_id, title, created_at) VALUES (%(id)s, %(user_id)s, %(title)s, %(created_at)s)]
+    ret = self._execute_context(
+    return self._exec_single_context(
+    cursor.execute(statement, parameters)
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+sqlalchemy.exc.DataError: (psycopg2.errors.StringDataRightTruncation) value too long for type character varying(36)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+[parameters: {'id': '222cc6d5-97fc-452b-ac2f-596a6de7c040', 'user_id': 'user_5f5cc0c8-d94a-43d9-8419-72a9e635bae6', 'title': 'A Brave Little Adventure', 'created_at': datetime.datetime(2025, 12, 12, 17, 7, 19, 428353)}]
+    db.session.commit()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/scoping.py", line 599, in commit
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+
+    return self._proxied.commit()
+During handling of the above exception, another exception occurred:
+           ^^^^^^^^^^^^^^^^^^^^^^
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.StringDataRightTruncation: value too long for type character varying(36)
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/app/backend/tasks/story_tasks.py", line 132, in generate_story_task
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+    self.session.flush()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4345, in flush
+    self._flush(objects)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4480, in _flush
+    with util.safe_reraise():
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4441, in _flush
+    flush_context.execute()
+    return meth(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    self._handle_dbapi_exception(
+    rec.execute(self)
+           ^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+    util.preloaded.orm_persistence.save_obj(
+    return connection._execute_clauseelement(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.DataError: (psycopg2.errors.StringDataRightTruncation) value too long for type character varying(36)
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 444, in delay
+    _emit_insert_statements(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+Traceback (most recent call last):
+
+    cursor.execute(statement, parameters)
+    return self.apply_async(args, kwargs)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 1233, in _emit_insert_statements
+    ret = self._execute_context(
+    cursor.execute(statement, parameters)
+  File "/app/backend/routes/story_routes.py", line 74, in generate_story_endpoint
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+[SQL: INSERT INTO story (id, user_id, title, created_at) VALUES (%(id)s, %(user_id)s, %(title)s, %(created_at)s)]
+psycopg2.errors.StringDataRightTruncation: value too long for type character varying(36)
+          ^^^^^^^^^^^^^^^^^^^^^^
+    result = connection.execute(
+[parameters: {'id': '73fafde8-de81-4eb5-bf4c-df2df8f95e16', 'user_id': 'user_5f5cc0c8-d94a-43d9-8419-72a9e635bae6', 'title': 'A Brave Little Adventure', 'created_at': datetime.datetime(2025, 12, 12, 17, 7, 30, 611918)}]
+    task = generate_story_task.delay(**task_kwargs)
+
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+             ^^^^^^^^^^^^^^^^^^^
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    return self._exec_single_context(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+2025-12-12 17:07:30,637 - story_engine - ERROR - Synchronous story generation failed: (psycopg2.errors.StringDataRightTruncation) value too long for type character varying(36)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+[SQL: INSERT INTO story (id, user_id, title, created_at) VALUES (%(id)s, %(user_id)s, %(title)s, %(created_at)s)]
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+[parameters: {'id': '73fafde8-de81-4eb5-bf4c-df2df8f95e16', 'user_id': 'user_5f5cc0c8-d94a-43d9-8419-72a9e635bae6', 'title': 'A Brave Little Adventure', 'created_at': datetime.datetime(2025, 12, 12, 17, 7, 30, 611918)}]
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/backend/tasks/story_tasks.py", line 132, in generate_story_task
+    trans.commit(_to_root=True)
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 591, in apply_async
+           ^^^^^^^^^^^^^^^^^^^^^^
+    return self.apply(args, kwargs, task_id=task_id or uuid(),
+    db.session.commit()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/scoping.py", line 599, in commit
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 818, in apply
+    return self._proxied.commit()
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 494, in trace_task
+    ret = tracer(task_id, args, kwargs, request)
+    I, R, state, retval = on_error(task_request, exc)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 477, in trace_task
+    R = retval = fun(*args, **kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 2, in commit
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4441, in _flush
+    ret_value = fn(self, *arg, **kw)
+    self.session.flush()
+    flush_context.execute()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4345, in flush
+                ^^^^^^^^^^^^^^^^^^^^
+    self._flush(objects)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4480, in _flush
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+    self._prepare_impl()
+    with util.safe_reraise():
+  File "<string>", line 2, in _prepare_impl
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    raise exc_value.with_traceback(exc_tb)
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    rec.execute(self)
+    return connection._execute_clauseelement(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    util.preloaded.orm_persistence.save_obj(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    _emit_insert_statements(
+    ret = self._execute_context(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 1233, in _emit_insert_statements
+          ^^^^^^^^^^^^^^^^^^^^^^
+    result = connection.execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+             ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+    return self._exec_single_context(
+           ^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+
+    self._handle_dbapi_exception(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+During handling of the above exception, another exception occurred:
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+
+    self.dialect.do_execute(
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.DataError: (psycopg2.errors.StringDataRightTruncation) value too long for type character varying(36)
+
+[SQL: INSERT INTO story (id, user_id, title, created_at) VALUES (%(id)s, %(user_id)s, %(title)s, %(created_at)s)]
+[parameters: {'id': '222cc6d5-97fc-452b-ac2f-596a6de7c040', 'user_id': 'user_5f5cc0c8-d94a-43d9-8419-72a9e635bae6', 'title': 'A Brave Little Adventure', 'created_at': datetime.datetime(2025, 12, 12, 17, 7, 19, 428353)}]
+
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 477, in trace_task
+The above exception was the direct cause of the following exception:
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+
+  File "/usr/local/lib/python3.11/site-packages/celery/app/task.py", line 818, in apply
+    self.dialect.do_execute(
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+  File "/app/backend/routes/story_routes.py", line 89, in generate_story_endpoint
+    ret = tracer(task_id, args, kwargs, request)
+    sync_result = generate_story_task.apply(kwargs=task_kwargs).get()
+    cursor.execute(statement, parameters)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.StringDataRightTruncation: value too long for type character varying(36)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/celery/app/trace.py", line 494, in trace_task
+    I, R, state, retval = on_error(task_request, exc)
+    R = retval = fun(*args, **kwargs)
+                 ^^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+  File "/app/backend/tasks/story_tasks.py", line 132, in generate_story_task
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+    self.session.flush()
+    trans.commit(_to_root=True)
+    db.session.commit()
+  File "<string>", line 2, in commit
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/scoping.py", line 599, in commit
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    return self._proxied.commit()
+    ret_value = fn(self, *arg, **kw)
+    self._prepare_impl()
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+  File "<string>", line 2, in _prepare_impl
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/state_changes.py", line 137, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+    result = connection.execute(
+             ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4345, in flush
+    self._flush(objects)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4480, in _flush
+    with util.safe_reraise():
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 4441, in _flush
+    flush_context.execute()
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/persistence.py", line 1233, in _emit_insert_statements
+           ^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.DataError: (psycopg2.errors.StringDataRightTruncation) value too long for type character varying(36)
+
+[SQL: INSERT INTO story (id, user_id, title, created_at) VALUES (%(id)s, %(user_id)s, %(title)s, %(created_at)s)]
+[parameters: {'id': '73fafde8-de81-4eb5-bf4c-df2df8f95e16', 'user_id': 'user_5f5cc0c8-d94a-43d9-8419-72a9e635bae6', 'title': 'A Brave Little Adventure', 'created_at': datetime.datetime(2025, 12, 12, 17, 7, 30, 611918)}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+2025-12-12 17:07:30,643 - story_engine - ERROR - {"timestamp": "2025-12-12T17:07:30.643761", "type": "slow_request", "message": "Request took 21.47s", "details": {"method": "POST", "path": "/generate-story", "duration": 21.47135305404663, "status_code": 500}}
+2025-12-12 17:07:30,643 - story_engine - INFO - {"method": "POST", "path": "/generate-story", "status": 500, "duration_ms": 21471.35, "ip": "100.64.0.5", "request_id": "b5297f8c"}
+2025-12-12 17:13:10,753 - story_engine - INFO - [8cf5c60f] GET /health
+2025-12-12 17:13:10,756 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 3.14, "ip": "100.64.0.6", "request_id": "8cf5c60f"}
+2025-12-12 17:13:11,421 - story_engine - INFO - [822ba0d5] GET /get-story-themes
+2025-12-12 17:13:11,421 - story_engine - INFO - {"method": "GET", "path": "/get-story-themes", "status": 200, "duration_ms": 0.35, "ip": "100.64.0.7", "request_id": "822ba0d5"}
+2025-12-12 17:13:12,065 - story_engine - INFO - [f3782634] GET /health
+2025-12-12 17:13:12,068 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 2.37, "ip": "100.64.0.7", "request_id": "f3782634"}
+2025-12-12 17:34:21,979 - story_engine - INFO - [66cb9a16] GET /health
+2025-12-12 17:34:21,985 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 6.57, "ip": "100.64.0.8", "request_id": "66cb9a16"}
+2025-12-12 17:34:22,718 - story_engine - INFO - [d750e818] GET /get-story-themes
+2025-12-12 17:34:22,718 - story_engine - INFO - {"method": "GET", "path": "/get-story-themes", "status": 200, "duration_ms": 0.33, "ip": "100.64.0.7", "request_id": "d750e818"}
+2025-12-12 17:34:23,370 - story_engine - INFO - [28272ba4] GET /health
+2025-12-12 17:34:23,373 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 2.77, "ip": "100.64.0.9", "request_id": "28272ba4"}
+2025-12-12 17:50:39,456 - story_engine - INFO - [30051b7d] GET /health
+2025-12-12 17:50:39,458 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 2.43, "ip": "100.64.0.10", "request_id": "30051b7d"}
+2025-12-12 17:50:40,056 - story_engine - INFO - [09fff404] GET /get-story-themes
+2025-12-12 17:50:40,056 - story_engine - INFO - {"method": "GET", "path": "/get-story-themes", "status": 200, "duration_ms": 0.25, "ip": "100.64.0.11", "request_id": "09fff404"}
+2025-12-12 17:50:40,599 - story_engine - INFO - [028f1e8c] GET /health
+2025-12-12 17:50:40,608 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 8.97, "ip": "100.64.0.7", "request_id": "028f1e8c"}
+2025-12-12 18:20:50,239 - story_engine - INFO - [42ba0054] GET /get-story-themes
+2025-12-12 18:20:50,240 - story_engine - INFO - {"method": "GET", "path": "/get-story-themes", "status": 200, "duration_ms": 0.26, "ip": "100.64.0.12", "request_id": "42ba0054"}
+2025-12-12 18:20:50,841 - story_engine - INFO - [01f8bf58] GET /health
+2025-12-12 18:20:50,861 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 20.38, "ip": "100.64.0.7", "request_id": "01f8bf58"}
+2025-12-12 18:20:49,200 - story_engine - INFO - [437d80e9] GET /health
+2025-12-12 18:20:49,374 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 174.28, "ip": "100.64.0.10", "request_id": "437d80e9"}
+2025-12-12 18:51:39,680 - story_engine - INFO - [8920846d] GET /health
+2025-12-12 18:51:39,685 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 4.59, "ip": "100.64.0.6", "request_id": "8920846d"}
+2025-12-12 18:51:40,332 - story_engine - INFO - [caed683b] GET /get-story-themes
+2025-12-12 18:51:40,332 - story_engine - INFO - {"method": "GET", "path": "/get-story-themes", "status": 200, "duration_ms": 0.24, "ip": "100.64.0.10", "request_id": "caed683b"}
+2025-12-12 18:51:40,914 - story_engine - INFO - [3e93fda8] GET /health
+2025-12-12 18:51:40,916 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 2.46, "ip": "100.64.0.6", "request_id": "3e93fda8"}

@@ -1,0 +1,98 @@
+Starting Container
+[2025-12-12 16:04:57 +0000] [2] [INFO] Listening at: http://0.0.0.0:8080 (2)
+[2025-12-12 16:04:57 +0000] [2] [INFO] Using worker: sync
+[2025-12-12 16:04:57 +0000] [3] [INFO] Booting worker with pid: 3
+[2025-12-12 16:04:57 +0000] [4] [INFO] Booting worker with pid: 4
+[2025-12-12 16:04:57 +0000] [2] [INFO] Starting gunicorn 21.2.0
+2025-12-12 16:04:59,090 - story_engine - INFO - google.generativeai imported successfully.
+2025-12-12 16:04:59,090 - story_engine - INFO - Gemini configured with API key.
+2025-12-12 16:04:59,090 - story_engine - INFO - Gemini model 'models/gemini-2.5-flash' initialized successfully.
+2025-12-12 16:04:59,147 - story_engine - INFO - google.generativeai imported successfully.
+2025-12-12 16:04:59,147 - story_engine - INFO - Gemini configured with API key.
+2025-12-12 16:04:59,147 - story_engine - INFO - Gemini model 'models/gemini-2.5-flash' initialized successfully.
+2025-12-12 16:04:59,661 - story_engine - INFO - Γ£ô Stripe Premium Price ID: price_1SWmbUHrachXBOvWbGRzORj5
+2025-12-12 16:04:59,661 - story_engine - INFO - Γ£ô Stripe Family Price ID: price_1SWmgAHrachXBOvWtQbFhGB3
+2025-12-12 16:04:59,663 - story_engine - INFO - Image generator initialized with OpenRouter (cost-optimized)
+2025-12-12 16:04:59,661 - stripe_routes - WARNING - STRIPE_API_KEY not set in app config - Stripe routes may not function.
+2025-12-12 16:04:59,811 - stripe_routes - WARNING - STRIPE_API_KEY not set in app config - Stripe routes may not function.
+2025-12-12 16:04:59,811 - story_engine - INFO - Γ£ô Stripe Premium Price ID: price_1SWmbUHrachXBOvWbGRzORj5
+2025-12-12 16:04:59,811 - story_engine - INFO - Γ£ô Stripe Family Price ID: price_1SWmgAHrachXBOvWtQbFhGB3
+2025-12-12 16:04:59,811 - story_engine - INFO - Image generator initialized with OpenRouter (cost-optimized)
+[2025-12-12 16:06:58 +0000] [2] [CRITICAL] WORKER TIMEOUT (pid:3)
+[2025-12-12 16:06:58 +0000] [2] [CRITICAL] WORKER TIMEOUT (pid:4)
+[2025-12-12 16:06:59 +0000] [2] [ERROR] Worker (pid:3) was sent SIGKILL! Perhaps out of memory?
+[2025-12-12 16:06:59 +0000] [2] [ERROR] Worker (pid:4) was sent SIGKILL! Perhaps out of memory?
+[2025-12-12 16:06:59 +0000] [7] [INFO] Booting worker with pid: 7
+[2025-12-12 16:06:59 +0000] [8] [INFO] Booting worker with pid: 8
+2025-12-12 16:07:00,067 - story_engine - INFO - google.generativeai imported successfully.
+2025-12-12 16:07:00,067 - story_engine - INFO - Gemini configured with API key.
+2025-12-12 16:07:00,067 - story_engine - INFO - Gemini model 'models/gemini-2.5-flash' initialized successfully.
+2025-12-12 16:07:00,173 - story_engine - INFO - google.generativeai imported successfully.
+2025-12-12 16:07:00,173 - story_engine - INFO - Gemini configured with API key.
+2025-12-12 16:07:00,173 - story_engine - INFO - Gemini model 'models/gemini-2.5-flash' initialized successfully.
+2025-12-12 16:07:00,638 - stripe_routes - WARNING - STRIPE_API_KEY not set in app config - Stripe routes may not function.
+2025-12-12 16:07:00,638 - story_engine - INFO - Γ£ô Stripe Premium Price ID: price_1SWmbUHrachXBOvWbGRzORj5
+2025-12-12 16:07:00,638 - story_engine - INFO - Γ£ô Stripe Family Price ID: price_1SWmgAHrachXBOvWtQbFhGB3
+2025-12-12 16:07:00,638 - story_engine - INFO - Image generator initialized with OpenRouter (cost-optimized)
+2025-12-12 16:07:00,782 - stripe_routes - WARNING - STRIPE_API_KEY not set in app config - Stripe routes may not function.
+2025-12-12 16:07:00,782 - story_engine - INFO - Γ£ô Stripe Premium Price ID: price_1SWmbUHrachXBOvWbGRzORj5
+2025-12-12 16:07:00,782 - story_engine - INFO - Γ£ô Stripe Family Price ID: price_1SWmgAHrachXBOvWtQbFhGB3
+2025-12-12 16:07:00,783 - story_engine - INFO - Image generator initialized with OpenRouter (cost-optimized)
+2025-12-12 16:07:00,875 - story_engine - INFO - [584238a8] GET /health
+2025-12-12 16:07:00,878 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 2.44, "ip": "100.64.0.2", "request_id": "584238a8"}
+2025-12-12 16:07:00,880 - story_engine - INFO - [09d7ccbc] GET /health
+2025-12-12 16:07:00,881 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 1.25, "ip": "100.64.0.2", "request_id": "09d7ccbc"}
+2025-12-12 16:07:00,883 - story_engine - INFO - [065f8d59] GET /health
+2025-12-12 16:07:00,884 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 1.12, "ip": "100.64.0.2", "request_id": "065f8d59"}
+2025-12-12 16:07:00,885 - story_engine - INFO - [6cf381d0] GET /health
+2025-12-12 16:07:00,886 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 0.82, "ip": "100.64.0.2", "request_id": "6cf381d0"}
+2025-12-12 16:07:00,888 - story_engine - INFO - [adc39cb0] GET /health
+2025-12-12 16:07:00,889 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 0.88, "ip": "100.64.0.2", "request_id": "adc39cb0"}
+2025-12-12 16:07:00,890 - story_engine - INFO - [42d69159] GET /health
+2025-12-12 16:07:00,891 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 0.91, "ip": "100.64.0.2", "request_id": "42d69159"}
+2025-12-12 16:07:00,892 - story_engine - INFO - [639e0cfb] GET /health
+2025-12-12 16:07:00,893 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 1.09, "ip": "100.64.0.2", "request_id": "639e0cfb"}
+2025-12-12 16:16:19,147 - story_engine - INFO - {"method": "GET", "path": "/get-story-themes", "status": 200, "duration_ms": 0.34, "ip": "100.64.0.4", "request_id": "9a71c9de"}
+2025-12-12 16:16:18,541 - story_engine - INFO - [35ffa751] GET /health
+2025-12-12 16:16:18,543 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 1.58, "ip": "100.64.0.3", "request_id": "35ffa751"}
+2025-12-12 16:16:19,147 - story_engine - INFO - [9a71c9de] GET /get-story-themes
+2025-12-12 16:16:19,753 - story_engine - INFO - [c197d0b4] GET /health
+2025-12-12 16:16:19,756 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 2.65, "ip": "100.64.0.5", "request_id": "c197d0b4"}
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/flask/ctx.py", line 362, in match_request
+  File "/usr/local/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+    rv = self.dispatch_request()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
+  File "/usr/local/lib/python3.11/site-packages/flask/app.py", line 891, in dispatch_request
+    self.raise_routing_exception(req)
+  File "/usr/local/lib/python3.11/site-packages/flask/app.py", line 500, in raise_routing_exception
+    raise request.routing_exception  # type: ignore[misc]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-12 16:21:13,197 - story_engine - INFO - [b7d84afc] GET /
+2025-12-12 16:21:13,197 - story_engine - ERROR - {"timestamp": "2025-12-12T16:21:13.197788", "type": "unhandled_error", "message": "404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.", "details": {"request_id": "b7d84afc", "method": "GET", "path": "/", "error_class": "NotFound"}}
+2025-12-12 16:21:13,197 - story_engine - ERROR - [b7d84afc] Unhandled error: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+  File "/usr/local/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    raise NotFound() from None
+    rv = self.dispatch_request()
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+         ^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-12 16:21:13,200 - story_engine - INFO - {"method": "GET", "path": "/", "status": 500, "duration_ms": 2.36, "ip": "100.64.0.6", "request_id": "b7d84afc"}
+  File "/usr/local/lib/python3.11/site-packages/flask/app.py", line 891, in dispatch_request
+2025-12-12 16:21:14,141 - story_engine - INFO - [dc318008] GET /favicon.ico
+    self.raise_routing_exception(req)
+2025-12-12 16:21:14,141 - story_engine - ERROR - {"timestamp": "2025-12-12T16:21:14.141576", "type": "unhandled_error", "message": "404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.", "details": {"request_id": "dc318008", "method": "GET", "path": "/favicon.ico", "error_class": "NotFound"}}
+2025-12-12 16:21:14,141 - story_engine - ERROR - [dc318008] Unhandled error: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+  File "/usr/local/lib/python3.11/site-packages/flask/app.py", line 500, in raise_routing_exception
+Traceback (most recent call last):
+    raise request.routing_exception  # type: ignore[misc]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/flask/ctx.py", line 362, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/werkzeug/routing/map.py", line 629, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2025-12-12 16:21:14,144 - story_engine - INFO - {"method": "GET", "path": "/favicon.ico", "status": 500, "duration_ms": 2.86, "ip": "100.64.0.6", "request_id": "dc318008"}
