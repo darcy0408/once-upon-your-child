@@ -436,39 +436,99 @@ class _SiblingsSection extends StatelessWidget {
                   decoration: const InputDecoration(labelText: 'Role'),
                 ),
                 const SizedBox(height: 12),
-                Row(
-                   children: [
-                     Expanded(child: Text('Age: $age')),
-                     Expanded(
-                       flex: 2,
-                       child: SizedBox(
-                         height: 80,
-                         child: ListWheelScrollView.useDelegate(
-                           itemExtent: 40,
-                           perspective: 0.005,
-                           physics: const FixedExtentScrollPhysics(),
-                           controller: FixedExtentScrollController(initialItem: age - 1),
-                           onSelectedItemChanged: (index) {
-                             setState(() => age = index + 1);
-                           },
-                           childDelegate: ListWheelChildBuilderDelegate(
-                             builder: (context, index) {
-                                return Center(
-                                  child: Text(
-                                    '${index + 1}',
-                                    style: (index + 1) == age
-                                        ? const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)
-                                        : const TextStyle(fontSize: 16, color: Colors.grey),
+                // Age selector with both wheel and direct input
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Age:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        // Direct age input
+                        Expanded(
+                          child: TextField(
+                            decoration: const InputDecoration(
+                              labelText: 'Type age',
+                              hintText: '1-99',
+                              border: OutlineInputBorder(),
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (v) {
+                              final parsed = int.tryParse(v);
+                              if (parsed != null && parsed >= 1 && parsed <= 99) {
+                                setState(() => age = parsed);
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        const Text('or scroll →'),
+                        const SizedBox(width: 8),
+                        // Wheel picker with visible border
+                        Container(
+                          width: 80,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppColors.primary, width: 2),
+                            borderRadius: BorderRadius.circular(8),
+                            color: AppColors.surface.withAlpha(128),
+                          ),
+                          child: Stack(
+                            children: [
+                              // Selection indicator line
+                              Positioned(
+                                top: 40,
+                                left: 0,
+                                right: 0,
+                                child: Container(
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withAlpha(51),
+                                    border: Border(
+                                      top: BorderSide(color: AppColors.primary, width: 2),
+                                      bottom: BorderSide(color: AppColors.primary, width: 2),
+                                    ),
                                   ),
-                                );
-                             },
-                             childCount: 99, // 1-99 age range
-                           ),
-                         ),
-                       ),
-                     ),
-                   ],
-                 ),
+                                ),
+                              ),
+                              // Wheel
+                              ListWheelScrollView.useDelegate(
+                                itemExtent: 40,
+                                perspective: 0.005,
+                                diameterRatio: 1.5,
+                                physics: const FixedExtentScrollPhysics(),
+                                controller: FixedExtentScrollController(initialItem: age - 1),
+                                onSelectedItemChanged: (index) {
+                                  setState(() => age = index + 1);
+                                },
+                                childDelegate: ListWheelChildBuilderDelegate(
+                                  builder: (context, index) {
+                                    return Center(
+                                      child: Text(
+                                        '${index + 1}',
+                                        style: (index + 1) == age
+                                            ? const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary)
+                                            : const TextStyle(fontSize: 16, color: Colors.grey),
+                                      ),
+                                    );
+                                  },
+                                  childCount: 99, // 1-99 age range
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Center(
+                      child: Text(
+                        'Selected: $age years old',
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                      ),
+                    ),
+                  ],
+                ),
                ],
             ),
             actions: [

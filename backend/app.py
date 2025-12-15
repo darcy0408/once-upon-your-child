@@ -13,6 +13,17 @@ if __name__ == '__main__' and __package__ is None:
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 
+# Configure logging to file
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("backend_errors.log"),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger(__name__)
+
 try:
     from backend.config import config, config_by_name
     from backend.database import db

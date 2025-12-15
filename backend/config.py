@@ -26,7 +26,7 @@ class Config:
     
     # Gemini API
     GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
-    GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.0-flash-exp')
+    GEMINI_MODEL = 'gemini-2.0-flash-exp' # os.environ.get('GEMINI_MODEL', 'gemini-2.0-flash-exp')
     
     # Celery Configuration
     # If REDIS_URL is present (Production with Redis), use it.

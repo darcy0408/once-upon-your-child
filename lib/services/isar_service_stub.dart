@@ -1,6 +1,8 @@
 // Stub implementation of IsarService for web platform
 // Web doesn't support Isar (FFI-based database)
+// Web doesn't support Isar (FFI-based database)
 
+import '../models.dart';
 // Create a stub Isar type that matches the API surface we need
 class Isar {
   // Stub class for web
@@ -20,6 +22,10 @@ class IsarService {
   static Isar get instance {
     _isar ??= Isar();
     return _isar!;
+  }
+
+  static Future<List<Character>> getAllCharacters() async {
+    return [];
   }
 
   static Future<void> close() async {

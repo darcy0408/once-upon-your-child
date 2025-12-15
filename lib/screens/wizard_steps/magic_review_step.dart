@@ -111,14 +111,27 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
         );
       }
     } catch (e, stack) {
-      debugPrint('Error generating story: $e\n$stack');
+      debugPrint('❌ Error generating story: $e');
+      debugPrint('📚 Stack trace: $stack');
+
+      // Parse error for better user message
+      String userMessage = 'Magic needed a recharge';
+      if (e.toString().contains('500')) {
+        userMessage = 'Server error (500). The backend had trouble generating your story.';
+        debugPrint('🔍 This is a server-side error. Check backend logs for details.');
+      } else if (e.toString().contains('timeout')) {
+        userMessage = 'Story generation timed out. Please try again.';
+      } else if (e.toString().contains('Cannot connect')) {
+        userMessage = 'Cannot connect to server. Is the backend running?';
+      }
+
       if (mounted) {
         setState(() => _isGenerating = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Magic needed a recharge: $e'),
+            content: Text('$userMessage\n\nTechnical: $e'),
             backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 4),
+            duration: const Duration(seconds: 8),
             action: SnackBarAction(
               label: 'Retry',
               textColor: Colors.white,

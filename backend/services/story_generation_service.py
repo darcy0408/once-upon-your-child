@@ -13,8 +13,8 @@ class StoryGenerationService:
             raise ValueError("GEMINI_API_KEY not set")
 
         genai.configure(api_key=api_key)
-        # Use configured model from env (defaults to gemini-1.5-flash-002)
-        model_name = os.getenv('GEMINI_MODEL', 'gemini-1.5-flash-002')
+        # Use configured model from env (defaults to gemini-2.0-flash-exp - FREE experimental model)
+        model_name = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash-exp')
         logger.info(f"Initializing Gemini with model: {model_name}")
         self.model = genai.GenerativeModel(model_name)
 
