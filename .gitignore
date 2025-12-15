@@ -48,8 +48,11 @@ app.*.map.json
 GenericButNotTurds.png
 turds.png
 
-# Secrets
+# Secrets - Protect ALL .env files
+.env
+*.env
 backend/.env
+**/.env
 
 # Claude Code (ignore settings, keep commands)
 .claude/settings.local.json
@@ -79,3 +82,4 @@ nul
 worktrees/
 INSTRUCTIONS_FOR_USER.md
 instance/*.db
+/bin/
