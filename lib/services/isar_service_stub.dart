@@ -22,6 +22,10 @@ class IsarService {
     return _isar!;
   }
 
+  static Future<List<Character>> getAllCharacters() async {
+    return [];
+  }
+
   static Future<void> close() async {
     _isar = null;
   }

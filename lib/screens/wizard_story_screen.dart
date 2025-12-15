@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import '../config/environment.dart';
 import '../models.dart'; // Import Character model
 import '../theme/app_theme.dart';
 import '../widgets/moon_phase_progress.dart';
-import '../services/isar_service.dart';
 import 'wizard_steps/hero_creator_step.dart';
 import 'wizard_steps/feeling_selection_step.dart';
 import 'wizard_steps/companion_selector_step.dart';
@@ -53,19 +55,39 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
   }
 
   Future<void> _loadSavedCharacters() async {
+    final url = Uri.parse('${Environment.backendUrl}/get-characters');
     try {
-      final characters = await IsarService.getAllCharacters();
-      if (mounted) {
-        setState(() {
-          _savedCharacters = characters;
-          _isLoadingCharacters = false;
-        });
-        debugPrint('✅ Loaded ${characters.length} saved characters');
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        final List<dynamic> characterList = decoded['characters'] ?? [];
+        final characters = characterList
+            .map((data) => Character.fromJson(data))
+            .toList();
+
+        if (mounted) {
+          setState(() {
+            _savedCharacters = characters;
+            _isLoadingCharacters = false;
+          });
+          debugPrint('✅ Loaded ${characters.length} saved characters from backend');
+        }
+      } else {
+        debugPrint('⚠️ Failed to load characters: ${response.statusCode}');
+        if (mounted) {
+          setState(() {
+            _savedCharacters = [];
+            _isLoadingCharacters = false;
+          });
+        }
       }
     } catch (e) {
       debugPrint('⚠️ Error loading characters: $e');
       if (mounted) {
-        setState(() => _isLoadingCharacters = false);
+        setState(() {
+          _savedCharacters = [];
+          _isLoadingCharacters = false;
+        });
       }
     }
   }

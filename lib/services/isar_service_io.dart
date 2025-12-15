@@ -27,6 +27,22 @@ class IsarService {
     return _isar!;
   }
 
+  static Future<List<Character>> getAllCharacters() async {
+    final isar = await getInstance();
+    final localCharacters = await isar.characterLocals.where().findAll();
+    
+    // Map to domain model
+    return localCharacters.map((lc) => Character(
+      id: lc.characterId,
+      name: lc.name,
+      age: lc.age,
+      role: 'Hero', // Default role for saved heroes
+      avatar: lc.avatarUrl != null ? CharacterAvatar(token: '', background: '', skin: '') : null, // Partial mapping or fetch full logic if needed
+      // Note: Full mapping would require more fields in CharacterLocal or a robust mapper.
+      // For now, mapping essential fields to prevent build errors.
+    )).toList();
+  }
+
   static Future<void> close() async {
     await _isar?.close();
     _isar = null;
