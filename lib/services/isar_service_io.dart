@@ -4,6 +4,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../models/local/character_local_io.dart';
 import '../models/local/story_local_io.dart';
+import '../models.dart'; // Domain models
 
 class IsarService {
   static Isar? _isar;

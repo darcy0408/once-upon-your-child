@@ -40,6 +40,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
       // Auto-fill wizard data with archetype
       widget.wizardData.selectedArchetypeId = archetype.name;
       widget.wizardData.personalitySliders = Map.from(archetype.attributes);
+      // Ensure default age is set if 0 or uninitialized
+      if (widget.wizardData.characterAge < 1) {
+        widget.wizardData.characterAge = 5; 
+      }
       // widget.wizardData.characterName = archetype.name.replaceAll('The ', ''); // User requested to remove this
     });
   }
@@ -168,19 +172,40 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                         Text('Age: ${widget.wizardData.characterAge.round()}', 
+                         Text('Age: ${widget.wizardData.characterAge}', 
                               style: Theme.of(context).textTheme.titleSmall),
-                         Slider(
-                           value: widget.wizardData.characterAge.toDouble().clamp(1.0, 100.0),
-                           min: 1,
-                           max: 100,
-                           divisions: 99,
-                           label: widget.wizardData.characterAge.round().toString(),
-                           onChanged: (v) {
-                             setState(() {
-                               widget.wizardData.characterAge = v.toInt();
-                             });
-                           },
+                         const SizedBox(height: 8),
+                         SizedBox(
+                           height: 100, // Explicit height for the scroller
+                           child: ListWheelScrollView.useDelegate(
+                             itemExtent: 50,
+                             perspective: 0.005,
+                             diameterRatio: 1.2,
+                             physics: const FixedExtentScrollPhysics(),
+                             onSelectedItemChanged: (index) {
+                               setState(() {
+                                 widget.wizardData.characterAge = index + 1;
+                               });
+                             },
+                             controller: FixedExtentScrollController(initialItem: widget.wizardData.characterAge - 1),
+                             childDelegate: ListWheelChildBuilderDelegate(
+                               builder: (context, index) {
+                                  final isSelected = (index + 1) == widget.wizardData.characterAge;
+                                  return Center(
+                                    child: Text(
+                                      '${index + 1}',
+                                      style: isSelected 
+                                          ? Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.bold)
+                                          : Theme.of(context).textTheme.titleLarge?.copyWith(
+                                              color: Colors.grey.withAlpha(100)),
+                                    ),
+                                  );
+                               },
+                               childCount: 100,
+                             ),
+                           ),
                          ),
                       ],
                     ),
@@ -411,16 +436,35 @@ class _SiblingsSection extends StatelessWidget {
                   decoration: const InputDecoration(labelText: 'Role'),
                 ),
                 const SizedBox(height: 12),
-                 Row(
+                Row(
                    children: [
                      Expanded(child: Text('Age: $age')),
                      Expanded(
                        flex: 2,
-                       child: Slider(
-                         value: age.toDouble().clamp(1.0, 100.0),
-                         min: 1, max: 100, divisions: 99,
-                         label: age.toString(),
-                         onChanged: (v) => setState(() => age = v.toInt()),
+                       child: SizedBox(
+                         height: 80,
+                         child: ListWheelScrollView.useDelegate(
+                           itemExtent: 40,
+                           perspective: 0.005,
+                           physics: const FixedExtentScrollPhysics(),
+                           controller: FixedExtentScrollController(initialItem: age - 1),
+                           onSelectedItemChanged: (index) {
+                             setState(() => age = index + 1);
+                           },
+                           childDelegate: ListWheelChildBuilderDelegate(
+                             builder: (context, index) {
+                                return Center(
+                                  child: Text(
+                                    '${index + 1}',
+                                    style: (index + 1) == age
+                                        ? const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)
+                                        : const TextStyle(fontSize: 16, color: Colors.grey),
+                                  ),
+                                );
+                             },
+                             childCount: 99, // 1-99 age range
+                           ),
+                         ),
                        ),
                      ),
                    ],
