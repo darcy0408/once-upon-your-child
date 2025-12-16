@@ -1070,7 +1070,7 @@ Create the rhyming learning-to-read story about $characterName now:
     if (apiKey == null) throw Exception('No API key configured');
 
     final model = GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash-exp',
       apiKey: apiKey,
     );
 
@@ -1186,7 +1186,7 @@ Ensure text is vivid, age-tuned, playful, with a strong hook/problem and embodie
     if (apiKey == null) throw Exception('No API key configured');
 
     final model = GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash-exp',
       apiKey: apiKey,
     );
 

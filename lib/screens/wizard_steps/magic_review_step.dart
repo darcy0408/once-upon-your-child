@@ -76,9 +76,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
         characterName: requestData['characterName'],
         age: requestData['age'],
         theme: requestData['theme'],
-        companion: (requestData['companions'] as List?)?.isNotEmpty == true
-            ? (requestData['companions'] as List).join(', ')
-            : null,
+        companion: requestData['companion'], // Fixed: was 'companions' (plural)
         characterDetails: requestData['characterDetails'],
         currentFeeling: requestData['currentFeeling'],
         additionalCharacters: requestData['additionalCharacters'],
@@ -315,7 +313,10 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             _SummaryCard(
               icon: '🦸',
               title: 'Your Hero',
-              value: '${data.characterName} (${data.selectedArchetypeId})',
+              value: data.characterName.isEmpty 
+                  ? 'MISSING NAME (Go back to Step 1)' 
+                  : '${data.characterName} (${data.selectedArchetypeId})',
+              isError: data.characterName.isEmpty,
             ),
             const SizedBox(height: AppSpacing.md),
 
@@ -425,41 +426,36 @@ class _SummaryCard extends StatelessWidget {
   final String icon;
   final String title;
   final String value;
+  final bool isError;
 
   const _SummaryCard({
     required this.icon,
     required this.title,
     required this.value,
+    this.isError = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
         border: Border.all(
-          color: AppColors.gold.withAlpha(128), // 50% opacity
-          width: 2,
+          color: isError ? AppColors.error : AppColors.primary.withAlpha(51), // 20% opacity
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.goldLight.withAlpha(51), // 20% opacity
-            blurRadius: 8,
-            spreadRadius: 1,
-          ),
-        ],
       ),
       child: Row(
         children: [
-          // Icon
           Text(
             icon,
-            style: const TextStyle(fontSize: 32),
+            style: const TextStyle(fontSize: 24),
           ),
           const SizedBox(width: AppSpacing.md),
-          // Content
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -467,16 +463,14 @@ class _SummaryCard extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: AppColors.textDark.withAlpha(179), // 70% opacity
-                        fontWeight: FontWeight.w600,
+                        color: AppColors.textDark.withAlpha(128), // 50% opacity
                       ),
                 ),
-                const SizedBox(height: 4),
                 Text(
                   value,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.textDark,
-                        fontWeight: FontWeight.bold,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: isError ? AppColors.error : AppColors.textDark,
+                        fontWeight: isError ? FontWeight.bold : FontWeight.normal,
                       ),
                 ),
               ],

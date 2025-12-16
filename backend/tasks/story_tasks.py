@@ -169,6 +169,27 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             story_text = _generate_story_text(prompt, theme, character_name, companion)
             title, wisdom_gem, story_body = _safe_extract_title_and_gem(story_text, theme)
 
+            # Generate illustration if requested
+            illustrations = []
+            if include_illustrations:
+                try:
+                    from backend.gemini_image_generator import GeminiImageGenerator
+                    logger.info("Generating illustration for story...")
+                    image_generator = GeminiImageGenerator()
+                    # Create scene description from first paragraph or summary
+                    scene_desc = story_body[:500] if story_body else f"{character_name} in a {theme} adventure"
+                    illustrations = image_generator.generate_story_illustration(
+                        scene_description=scene_desc,
+                        character_name=character_name,
+                        style="whimsical children's book illustration",
+                        num_images=1,
+                        age=10,  # Default age, can be passed from kwargs if available
+                    )
+                    logger.info(f"Generated {len(illustrations)} illustration(s)")
+                except Exception as img_exc:
+                    logger.exception(f"Failed to generate illustration: {img_exc}")
+                    # Continue without illustration rather than failing the whole story
+
             # Ensure user exists before inserting story (Prevent ForeignKeyViolation)
             if user_id and user_id != "anonymous":
                 try:
@@ -200,6 +221,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     "theme": theme,
                     "wisdom_gem": wisdom_gem,
                     "include_illustrations": include_illustrations,
+                    "illustrations": illustrations,  # Include generated images
                     "rhyme_time_mode": rhyme_time_mode,
                     "learning_to_read_mode": learning_to_read_mode,
                 },

@@ -11,6 +11,13 @@ SAFETY RULES (non-negotiable):
 - Avoid bullying, insults, or harm to self/others.
 - Focus on kindness, courage, teamwork, inclusion, and seeking help.
 - Keep language friendly, encouraging, and therapeutic.
+
+PERSONALIZATION RULES (critical for immersion):
+- DO NOT invent family members (siblings, parents, cousins) unless explicitly provided
+- DO NOT add characters that weren't specified in the request
+- If a companion is specified, they MUST appear and play a meaningful role in the story
+- Use ONLY the character details provided - don't make up backstory elements
+- The child should feel "this story is really about ME"
 """
 
 # ----------------------
@@ -516,8 +523,29 @@ def _safe_extract_title_and_gem(text: str, theme: str):
     else:
         wisdom_gem = WisdomGems.get_wisdom(theme)
 
+    # Remove title and wisdom gem markers
     story_body = _TITLE_RE.sub("", text or "").strip()
     story_body = _GEM_RE.sub("", story_body).strip()
+
+    # Clean up template artifacts from the story
+    # Remove REQUEST SUMMARY section
+    if "REQUEST SUMMARY" in story_body:
+        parts = story_body.split("STORY:")
+        if len(parts) > 1:
+            story_body = parts[1].strip()
+
+    # Remove STORY START/END markers
+    story_body = story_body.replace("STORY START", "").strip()
+    story_body = story_body.replace("STORY END", "").strip()
+
+    # Remove ADVENTURE REPORT section (everything after it)
+    if "ADVENTURE REPORT:" in story_body:
+        story_body = story_body.split("ADVENTURE REPORT:")[0].strip()
+
+    # Remove WISDOM GEM line if it appears as plain text (not in brackets)
+    if "\nWISDOM GEM:" in story_body:
+        story_body = story_body.split("\nWISDOM GEM:")[0].strip()
+
     return title, wisdom_gem, story_body
 
 

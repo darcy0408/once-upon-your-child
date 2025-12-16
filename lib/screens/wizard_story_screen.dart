@@ -159,11 +159,16 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
                           : _previousStep,
                       tooltip: _currentStep == 0 ? 'Close' : 'Back',
                     ),
-                    const Spacer(),
-                    // Progress indicator
-                    MoonPhaseProgress(currentStep: _currentStep),
-                    const Spacer(),
-                    // Placeholder for symmetry
+                    // Progress indicator (responsive)
+                    Expanded(
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: MoonPhaseProgress(currentStep: _currentStep),
+                        ),
+                      ),
+                    ),
+                    // Placeholder for symmetry (matches IconButton width approx)
                     const SizedBox(width: 48),
                   ],
                 ),
@@ -261,7 +266,7 @@ class WizardData {
   bool get isStep2Complete =>
       selectedScenario != null || selectedEmotionChips.isNotEmpty;
 
-  bool get isStep3Complete => selectedCompanions.isNotEmpty;
+  bool get isStep3Complete => true; // selectedCompanions is optional
 
   bool get isComplete =>
       isStep1Complete && isStep2Complete && isStep3Complete;

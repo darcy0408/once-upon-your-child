@@ -19,8 +19,10 @@ import 'customizable_avatar_widget.dart';
 import 'dialogs/upgrade_prompt_dialog.dart';
 import 'feelings_corner_screen.dart';
 import 'interactive_story_screen.dart';
-import 'storage_service.dart';
 import 'saved_stories_screen.dart';
+import 'services/isar_service.dart';
+import 'services/offline_story_service.dart';
+import 'models/local/story_local.dart';
 import 'models.dart';
 import 'models/achievement.dart';
 import 'services/user_identity_service.dart';
@@ -501,7 +503,10 @@ class _StoryScreenState extends State<StoryScreen> {
         isInteractive: false,
         wisdomGem: wisdomGem,
       );
-      await StorageService().saveStory(saved);
+      
+      // Save to Isar for Library visibility
+      final storyLocal = StoryLocal.fromSavedStory(saved);
+      await OfflineStoryService(IsarService.instance).saveStory(storyLocal);
 
       // Update character evolution (no feelings data for now)
       await _updateCharacterEvolution(allSelectedCharacters, _therapeuticCustomization, null);

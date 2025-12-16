@@ -154,6 +154,9 @@ class UnlockCelebrationDialog extends StatelessWidget {
     }
   }
 
+  // Track which unlocks have been shown to prevent duplicates
+  static final Set<String> _shownUnlocks = {};
+
   /// Show the unlock celebration dialog
   static Future<void> show(
     BuildContext context,
@@ -161,13 +164,28 @@ class UnlockCelebrationDialog extends StatelessWidget {
   ) async {
     if (unlockedFeatures.isEmpty) return;
 
+    // Filter out unlocks that have already been shown
+    final newUnlocks = unlockedFeatures
+        .where((feature) => !_shownUnlocks.contains(feature))
+        .toList();
+
+    if (newUnlocks.isEmpty) return;
+
+    // Mark these as shown
+    _shownUnlocks.addAll(newUnlocks);
+
     await showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true, // Allow dismiss by tapping outside
       builder: (context) => UnlockCelebrationDialog(
-        unlockedFeatures: unlockedFeatures,
+        unlockedFeatures: newUnlocks,
         progressionService: ProgressionService(),
       ),
     );
+  }
+
+  /// Clear the shown unlocks cache (for testing)
+  static void clearShownUnlocks() {
+    _shownUnlocks.clear();
   }
 }

@@ -175,7 +175,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
     });
   }
 
-  bool get _canContinue => _selectedCompanions.isNotEmpty;
+  bool get _canContinue => true; // Optional step
 
   @override
   Widget build(BuildContext context) {

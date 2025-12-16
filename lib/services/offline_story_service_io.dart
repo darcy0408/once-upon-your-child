@@ -24,6 +24,10 @@ class OfflineStoryService {
     });
   }
 
+  Future<StoryLocal?> getStory(String storyId) async {
+    return _findByIdentifier(storyId);
+  }
+
   Future<List<StoryLocal>> getAllStories() async {
     return _isar.storyLocals.where().sortByCreatedAtDesc().findAll();
   }

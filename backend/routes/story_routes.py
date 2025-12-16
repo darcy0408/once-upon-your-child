@@ -74,10 +74,26 @@ def create_story_blueprint(
         if not payload.get("character_id") and not payload.get("character"):
             return jsonify({"error": "character_id or character is required"}), 400
 
+        # Extract current_feeling and convert to feelings_prompt if provided
+        current_feeling = payload.get("current_feeling")
+        feelings_prompt_text = None
+        if current_feeling and isinstance(current_feeling, dict):
+            emotion_name = current_feeling.get("emotion_name", "")
+            emotion_description = current_feeling.get("emotion_description", "")
+            coping_strategies = current_feeling.get("coping_strategies", [])
+            if emotion_name:
+                feelings_prompt_text = f"The child is feeling {emotion_name}. {emotion_description}"
+                if coping_strategies:
+                    feelings_prompt_text += f" Coping strategies: {', '.join(coping_strategies)}"
+
+        # Extract character_details to get additional_characters if available
+        character_details = payload.get("character_details") or {}
+        additional_chars = payload.get("additional_characters") or character_details.get("additionalCharacters")
+
         task_kwargs = {
             "character_id": payload.get("character_id"),
             "character": payload.get("character"),
-            "character_details": payload.get("character_details"), 
+            "character_details": character_details,
             "theme": theme,
             "user_id": user_id,
             "include_illustrations": payload.get("include_illustrations", False),
@@ -86,7 +102,7 @@ def create_story_blueprint(
             "learning_to_read_mode": payload.get("learning_to_read_mode", False),
             "companion": payload.get("companion") or payload.get("companion_name"),
             "therapeutic_prompt": payload.get("therapeutic_prompt", ""),
-            "feelings_prompt": payload.get("feelings_prompt"),
+            "feelings_prompt": feelings_prompt_text or payload.get("feelings_prompt"),
         }
 
         # If async mode is requested, disable inline illustrations but pass the flag
@@ -112,6 +128,7 @@ def create_story_blueprint(
                 "task_id": "sync_task", # No task ID needed
                 "theme": story_payload.get("theme"),
                 "wisdom_gem": story_payload.get("wisdom_gem"),
+                "illustrations": story_payload.get("illustrations", []),  # Include illustrations
                 "async_illustrations": payload.get("async_illustrations", False),
             }
             return jsonify(response_payload), 200

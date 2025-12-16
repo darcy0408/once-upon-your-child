@@ -241,8 +241,8 @@ def create_app(config_name):
 
     if not testing_mode:
         init_stripe_api(app)
-        logger.info(f"✓ Stripe Premium Price ID: {os.getenv('STRIPE_PRICE_ID_PREMIUM', 'NOT SET')}")
-        logger.info(f"✓ Stripe Family Price ID: {os.getenv('STRIPE_PRICE_ID_FAMILY', 'NOT SET')}")
+        logger.info(f"Stripe Premium Price ID: {os.getenv('STRIPE_PRICE_ID_PREMIUM', 'NOT SET')}")
+        logger.info(f"Stripe Family Price ID: {os.getenv('STRIPE_PRICE_ID_FAMILY', 'NOT SET')}")
 
     # Initialize image generator (prefer low-cost OpenRouter SDXL if available)
     global image_generator

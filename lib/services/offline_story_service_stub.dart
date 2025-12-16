@@ -29,7 +29,7 @@ class OfflineStoryService {
     // No-op
   }
 
-  Future<StoryLocal?> getStoryById(String storyId) async {
+  Future<StoryLocal?> getStory(String storyId) async {
     return null;
   }
 }

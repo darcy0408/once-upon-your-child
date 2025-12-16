@@ -12,8 +12,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import 'story_reader_screen.dart';
-import 'storage_service.dart';
-import 'offline_story_cache.dart';
+import 'services/isar_service.dart';
+import 'package:isar/isar.dart';
+import 'services/offline_story_service.dart';
+import 'models/local/story_local.dart';
 import 'story_illustration_service.dart';
 import 'illustration_settings_dialog.dart';
 import 'illustrated_story_viewer.dart';
@@ -91,8 +93,7 @@ class StoryResultScreen extends StatefulWidget {
 }
 
 class _StoryResultScreenState extends State<StoryResultScreen> {
-  final _storage = StorageService();
-  final _cache = OfflineStoryCache();
+  late final OfflineStoryService _offlineService;
   final _illustrationService =
       GeminiIllustrationService(); // Using Gemini Imagen 3.0 via backend
   final _coloringService =
@@ -183,12 +184,13 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   @override
   void initState() {
     super.initState();
+    _offlineService = OfflineStoryService(IsarService.instance);
     _storyPages = _paginateStory(widget.storyText);
     _pageController = PageController();
     _loadSwipeTutorialState();
     _loadCharacterDetails();
     _loadFavoriteStatus();
-    _cacheStoryForOffline();
+    // Cache is now automatic via main_story.dart
     _loadCachedIllustrations();
     _loadCachedColoringPages();
     _decodeInlineIllustrations();
@@ -364,21 +366,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     );
   }
 
-  /// Automatically cache the story for offline access
-  Future<void> _cacheStoryForOffline() async {
-    final cachedStory = CachedStory(
-      id: widget.storyId ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      title: widget.title,
-      storyText: widget.storyText,
-      characterName: widget.characterName ?? 'Unknown',
-      theme: widget.theme ?? 'Adventure',
-      companion: null, // You can add companion if available
-      cachedAt: DateTime.now(),
-      isFavorite: false,
-    );
-
-    await _cache.cacheStory(cachedStory);
-  }
+  // Cache logic moved to main_story.dart (auto-save)
 
   /// Load character info so we can adapt prompts for age and focus
   Future<void> _loadCharacterDetails() async {
@@ -1229,21 +1217,14 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   }
 
   Future<void> _saveStory() async {
-    final cachedStory = CachedStory(
-      id: widget.storyId ?? 'offline_${DateTime.now().millisecondsSinceEpoch}',
-      title: widget.title,
-      storyText: widget.storyText,
-      characterName: widget.characterName ?? 'Unknown hero',
-      theme: widget.theme ?? 'Adventure',
-      cachedAt: DateTime.now(),
-      isFavorite: true,
-    );
-
-    await _cache.cacheStory(cachedStory);
-    _trackResultAction('story_saved_offline');
+    // Story is already saved via main_story.dart
     if (mounted) {
-      _showSnackBar('Story saved for offline reading!',
-          backgroundColor: Colors.green);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Story is already saved in your Library!'),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
   }
 
@@ -1485,7 +1466,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   Future<void> _loadFavoriteStatus() async {
     if (widget.storyId != null) {
-      final story = await _storage.findStoryById(widget.storyId!);
+      final story = await _offlineService.getStory(widget.storyId!);
       if (mounted) {
         setState(() {
           _isFavorite = story?.isFavorite ?? false;
@@ -1500,7 +1481,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   Future<void> _toggleFavorite() async {
     if (widget.storyId == null) return;
 
-    await _storage.toggleFavorite(widget.storyId!);
+    await _offlineService.toggleFavorite(widget.storyId!);
     setState(() => _isFavorite = !_isFavorite);
     _trackResultAction(
       _isFavorite ? 'favorite_added' : 'favorite_removed',
@@ -1523,53 +1504,120 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     return ErrorBoundary(
       onRetry: _retryLoadData,
       child: Scaffold(
-        backgroundColor: AppColors.surface,
+        extendBodyBehindAppBar: true,
+        backgroundColor: Colors.transparent, // Allow gradient to show through
         appBar: AppBar(
-          title: const Text('Story Summary'),
+          title: const Text(''), // Hide default title for cleaner look
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.arrow_back, color: Colors.white),
+            ),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
           actions: [
             if (widget.storyId != null && !_isLoading)
-              IconButton(
-                icon: Icon(
-                  _isFavorite ? Icons.favorite : Icons.favorite_border,
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: _isFavorite ? Colors.redAccent : Colors.white,
+                    ),
+                  ),
+                  tooltip: _isFavorite
+                      ? 'Remove from favorites'
+                      : 'Add to favorites',
+                  onPressed: _toggleFavorite,
                 ),
-                tooltip:
-                    _isFavorite ? 'Remove from favorites' : 'Add to favorites',
-                onPressed: _toggleFavorite,
               ),
           ],
         ),
-        body: SafeArea(
-          child: Stack(
-            children: [
-              SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            widget.title,
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.primary.withOpacity(0.8),
+                AppColors.secondary.withOpacity(0.6),
+                Colors.deepPurple.shade900,
+              ],
+            ),
+          ),
+          child: SafeArea(
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 100), // Increased bottom padding for FABs
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 10),
+                      // Magical Title
+                      Text(
+                        widget.title,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 32,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.3),
+                              offset: const Offset(0, 2),
+                              blurRadius: 4,
                             ),
-                          ),
+                          ],
                         ),
-                        if (_qualityData != null)
-                          QualityBadge(
-                            qualityBadge:
-                                _qualityData!['quality_badge'] ?? 'Unknown',
-                            overallScore: _qualityData!['overall_score'] ?? 0,
-                            onTap: () => QualityBadge.showQualityDetails(
-                                context, _qualityData!),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    if (_shouldShowMetaCard) _buildStoryMetaCard(),
-                    if (_shouldShowMetaCard)
-                      const SizedBox(height: AppSpacing.sm),
+                      ),
+                      const SizedBox(height: 24),
+                      // Main Story Card (The "Book" page)
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.95),
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [ 
+                             if (_qualityData != null) ...[
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    QualityBadge(
+                                      qualityBadge:
+                                          _qualityData!['quality_badge'] ?? 'Unknown',
+                                      overallScore: _qualityData!['overall_score'] ?? 0,
+                                      onTap: () => QualityBadge.showQualityDetails(
+                                          context, _qualityData!),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                             ],
+                            if (_shouldShowMetaCard) _buildStoryMetaCard(),
+                            if (_shouldShowMetaCard)
+                              const SizedBox(height: AppSpacing.md),
                     if (!_shouldShowMetaCard)
                       const SizedBox(height: AppSpacing.sm),
                     if (_inlineIllustrations.isNotEmpty) ...[
@@ -1695,10 +1743,14 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
+                            // Close main "Book" card
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+                  ),
                 ),
-              ),
               Align(
                 alignment: Alignment.bottomRight,
                 child: Padding(
