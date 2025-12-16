@@ -33,11 +33,59 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   String? _selectedArchetypeId;
   String _characterEmoji = '👧';
   late TextEditingController _nameController;
+  Character? _selectedExistingCharacter;
+  bool _isCreatingNew = true; // Toggle between creating new vs selecting existing
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.wizardData.characterName);
+
+    // If wizard data already has a characterId, try to find and select it
+    if (widget.wizardData.characterId != null && widget.availableCharacters.isNotEmpty) {
+      _selectedExistingCharacter = widget.availableCharacters.firstWhere(
+        (c) => c.id == widget.wizardData.characterId,
+        orElse: () => widget.availableCharacters.first,
+      );
+      if (_selectedExistingCharacter != null) {
+        _isCreatingNew = false;
+        _loadExistingCharacter(_selectedExistingCharacter!);
+      }
+    }
+  }
+
+  void _loadExistingCharacter(Character character) {
+    setState(() {
+      _selectedExistingCharacter = character;
+      widget.wizardData.characterId = character.id;
+      widget.wizardData.characterName = character.name;
+      widget.wizardData.characterAge = character.age;
+      widget.wizardData.characterGender = character.gender ?? 'Girl';
+      widget.wizardData.selectedArchetypeId = character.role;
+      _selectedArchetypeId = character.role;
+      _nameController.text = character.name;
+
+      // Set emoji based on role
+      if (character.role.contains('Adventurer')) _characterEmoji = '🗺️';
+      else if (character.role.contains('Thinker')) _characterEmoji = '💭';
+      else if (character.role.contains('Artist')) _characterEmoji = '🎨';
+      else if (character.role.contains('Helper')) _characterEmoji = '🤝';
+      else if (character.role.contains('Athlete')) _characterEmoji = '⚡';
+      else _characterEmoji = '👧';
+    });
+  }
+
+  void _switchToNewCharacter() {
+    setState(() {
+      _isCreatingNew = true;
+      _selectedExistingCharacter = null;
+      widget.wizardData.characterId = null;
+      widget.wizardData.characterName = '';
+      widget.wizardData.characterAge = 8;
+      _selectedArchetypeId = null;
+      _nameController.clear();
+      _characterEmoji = '👧';
+    });
   }
 
   @override
@@ -64,6 +112,19 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 
   bool get _canContinue => _selectedArchetypeId != null && widget.wizardData.characterName.trim().isNotEmpty;
 
+  String _getEmojiForCharacter(Character character) {
+    final role = character.role;
+    if (role.contains('Adventurer')) return '🗺️';
+    if (role.contains('Thinker')) return '💭';
+    if (role.contains('Artist')) return '🎨';
+    if (role.contains('Helper')) return '🤝';
+    if (role.contains('Athlete')) return '⚡';
+    if (role.contains('Shy')) return '😊';
+    // Default based on gender
+    if (character.gender == 'Boy') return '👦';
+    return '👧';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -89,7 +150,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                 children: [
                   // Title
                   Text(
-                    'Create a Character',
+                    _isCreatingNew ? 'Create a Character' : 'Select Your Hero',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           color: AppColors.textDark,
                           fontWeight: FontWeight.bold,
@@ -98,8 +159,111 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Character Name
-                  TextField(
+                  // Saved Characters Section (if any exist)
+                  if (widget.availableCharacters.isNotEmpty) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SegmentedButton<bool>(
+                          segments: const [
+                            ButtonSegment(value: false, label: Text('My Characters')),
+                            ButtonSegment(value: true, label: Text('Create New')),
+                          ],
+                          selected: {_isCreatingNew},
+                          onSelectionChanged: (Set<bool> newSelection) {
+                            if (newSelection.first && !_isCreatingNew) {
+                              _switchToNewCharacter();
+                            } else if (!newSelection.first && _isCreatingNew) {
+                              setState(() => _isCreatingNew = false);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Show saved characters if in selection mode
+                  if (!_isCreatingNew && widget.availableCharacters.isNotEmpty) ...[
+                    Text(
+                      'Choose your hero for this adventure',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.textDark.withAlpha(179),
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 140,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                        itemCount: widget.availableCharacters.length,
+                        separatorBuilder: (context, index) => const SizedBox(width: 12),
+                        itemBuilder: (context, index) {
+                          final character = widget.availableCharacters[index];
+                          final isSelected = _selectedExistingCharacter?.id == character.id;
+
+                          return GestureDetector(
+                            onTap: () => _loadExistingCharacter(character),
+                            child: Container(
+                              width: 120,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: isSelected ? AppColors.primary : AppColors.surface,
+                                borderRadius: BorderRadius.circular(AppRadius.md),
+                                border: Border.all(
+                                  color: isSelected ? AppColors.gold : AppColors.primary.withAlpha(128),
+                                  width: isSelected ? 3 : 2,
+                                ),
+                                boxShadow: isSelected ? [
+                                  BoxShadow(
+                                    color: AppColors.gold.withAlpha(128),
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
+                                  ),
+                                ] : null,
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    _getEmojiForCharacter(character),
+                                    style: const TextStyle(fontSize: 36),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    character.name,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: isSelected ? AppColors.textLight : AppColors.textDark,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${character.age} yrs',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: isSelected ? AppColors.textLight.withAlpha(204) : AppColors.textDark.withAlpha(179),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // Character Name (only editable when creating new)
+                  if (_isCreatingNew)
+                    TextField(
                     controller: _nameController,
                     decoration: const InputDecoration(
                       labelText: 'Hero Name', 
@@ -114,20 +278,24 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                       });
                     },
                   ),
-                  const SizedBox(height: 24),
+                  if (_isCreatingNew)
+                    const SizedBox(height: 24),
 
-                  // Subtitle
-                  Text(
-                    'Then, choose an archetype to start',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textDark.withAlpha(179), // 70% opacity
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
+                  // Subtitle (only for new characters)
+                  if (_isCreatingNew)
+                    Text(
+                      'Then, choose an archetype to start',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.textDark.withAlpha(179), // 70% opacity
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                  if (_isCreatingNew)
+                    const SizedBox(height: 12),
 
-                  // Archetype cards (horizontal scroll)
-                  ConstrainedBox(
+                  // Archetype cards (horizontal scroll) - only for new characters
+                  if (_isCreatingNew)
+                    ConstrainedBox(
                     constraints: const BoxConstraints(
                       minHeight: 200,
                       maxHeight: 240,
@@ -153,10 +321,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                       },
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  if (_isCreatingNew)
+                    const SizedBox(height: 16),
 
-                  // Name & Age Section
-                  if (_canContinue) ...[
+                  // Name & Age Section (show if creating new and archetype selected, or if existing character selected)
+                  if (_canContinue || !_isCreatingNew) ...[
                     // Gender Selection
                     Row(
                       children: [
@@ -197,17 +366,17 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                   ],
 
                   // Custom Pets Section
-                  if (_canContinue)
+                  if (_canContinue || !_isCreatingNew)
                      _PetsSection(
                         wizardData: widget.wizardData,
                         onUpdate: () => setState(() {}),
                      ),
-                  
-                  if (_canContinue)
+
+                  if (_canContinue || !_isCreatingNew)
                      const SizedBox(height: 16),
 
                   // Siblings/Friends Section
-                  if (_canContinue)
+                  if (_canContinue || !_isCreatingNew)
                      _SiblingsSection(
                         wizardData: widget.wizardData,
                         onUpdate: () => setState(() {}),
@@ -216,11 +385,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                             .toList(),
                      ),
 
-                  if (_canContinue)
+                  if (_canContinue || !_isCreatingNew)
                      const SizedBox(height: 16),
 
-                  // Continue button (only shown when archetype selected)
-                  if (_canContinue)
+                  // Continue button
+                  if (_canContinue || (!_isCreatingNew && _selectedExistingCharacter != null))
                     AnimatedOpacity(
                       opacity: _canContinue ? 1.0 : 0.0,
                       duration: const Duration(milliseconds: 300),

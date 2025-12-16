@@ -5,6 +5,7 @@ import '../config/environment.dart';
 import '../models.dart'; // Import Character model
 import '../theme/app_theme.dart';
 import '../widgets/moon_phase_progress.dart';
+import 'character_library_screen.dart';
 import 'wizard_steps/hero_creator_step.dart';
 import 'wizard_steps/feeling_selection_step.dart';
 import 'wizard_steps/companion_selector_step.dart';
@@ -169,8 +170,23 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
                         ),
                       ),
                     ),
-                    // Placeholder for symmetry (matches IconButton width approx)
-                    const SizedBox(width: 48),
+                    // Character Library button
+                    IconButton(
+                      icon: const Icon(
+                        Icons.people,
+                        color: AppColors.textDark,
+                      ),
+                      onPressed: () async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const CharacterLibraryScreen(),
+                          ),
+                        );
+                        // Reload characters after returning
+                        _loadSavedCharacters();
+                      },
+                      tooltip: 'My Characters',
+                    ),
                   ],
                 ),
               ),

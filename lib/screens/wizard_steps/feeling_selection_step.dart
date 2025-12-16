@@ -33,57 +33,57 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   final List<ScenarioCard> _scenarios = [
     ScenarioCard(
       id: 'school_jitters',
-      emoji: '😬',
-      title: 'School Jitters',
-      illustration: '🎒',
-      description: 'Nervous about school or new situations',
+      emoji: '🎒',
+      title: 'The First Day Quest',
+      illustration: '🏫',
+      description: 'A brave journey to a new place',
     ),
     ScenarioCard(
       id: 'big_feelings',
-      emoji: '🌋',
-      title: 'Managing Big Feelings',
-      illustration: '😡➡️😌',
-      description: 'Learning to handle strong emotions',
+      emoji: '🐉',
+      title: 'The Dragon Inside',
+      illustration: '🔥',
+      description: 'Taming the roars within',
     ),
     ScenarioCard(
       id: 'making_friends',
       emoji: '🤝',
-      title: 'Making Friends',
-      illustration: '👫',
-      description: 'Building friendships and social skills',
+      title: 'The Friendly Forest',
+      illustration: '🌲',
+      description: 'Finding new companions',
     ),
     ScenarioCard(
       id: 'being_brave',
       emoji: '🛡️',
-      title: 'Being Brave',
+      title: 'The Cave of Courage',
       illustration: '🦁',
-      description: 'Facing fears with courage',
+      description: 'Facing the shadows',
     ),
     ScenarioCard(
       id: 'calm_moments',
-      emoji: '🌊',
-      title: 'Calm Moments',
-      illustration: '🧘',
-      description: 'Finding peace and relaxation',
+      emoji: '☁️',
+      title: 'The Cloud Castle',
+      illustration: '🏰',
+      description: 'Floating in peaceful skies',
     ),
     ScenarioCard(
       id: 'creative_ideas',
       emoji: '🎨',
-      title: 'Creative Ideas',
-      illustration: '💡',
-      description: 'Expressing through creativity',
+      title: 'The Paintbrush Kingdom',
+      illustration: '🌈',
+      description: 'Coloring the world',
     ),
   ];
 
   final List<EmotionChip> _emotions = [
-    EmotionChip(emoji: '🌈', label: 'Shining Bright'),
-    EmotionChip(emoji: '🛡️', label: 'Being Brave'),
-    EmotionChip(emoji: '🤝', label: 'Making Friends'),
-    EmotionChip(emoji: '🌊', label: 'Calm Moments'),
-    EmotionChip(emoji: '🎨', label: 'Creative Ideas'),
-    EmotionChip(emoji: '😊', label: 'Feeling Happy'),
-    EmotionChip(emoji: '😢', label: 'Feeling Sad'),
-    EmotionChip(emoji: '😠', label: 'Feeling Mad'),
+    EmotionChip(emoji: '✨', label: 'Shining Bright'),
+    EmotionChip(emoji: '🦁', label: 'Brave Heart'),
+    EmotionChip(emoji: '🤝', label: 'Friendly'),
+    EmotionChip(emoji: '🌊', label: 'Peaceful'),
+    EmotionChip(emoji: '🎨', label: 'Creative'),
+    EmotionChip(emoji: '😊', label: 'Joyful'),
+    EmotionChip(emoji: '😢', label: 'Blue'),
+    EmotionChip(emoji: '😠', label: 'Stormy'),
   ];
 
   void _selectScenario(String scenarioId) {
@@ -126,10 +126,11 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
               children: [
                 Expanded(
                   child: Text(
-                    'What\'s the Story About?',
+                    'Choose Your Adventure!',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           color: AppColors.textDark,
                           fontWeight: FontWeight.bold,
+                          fontFamily: 'Outfit', // Ensure nice font
                         ),
                     textAlign: TextAlign.center,
                   ),
@@ -151,7 +152,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
             // Subtitle
             Text(
-              'Pick a scenario or choose feelings',
+              'Where shall we go today?',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: AppColors.textDark.withAlpha(179), // 70% opacity
                   ),
@@ -202,10 +203,10 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
             // Scenario carousel
             SizedBox(
-              height: 260,
+              height: 320, // Increased height to prevent overflow
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 10),
                 itemCount: _scenarios.length,
                 separatorBuilder: (context, index) =>
                     const SizedBox(width: AppSpacing.md),
@@ -225,7 +226,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
             // Emotion chips
             Text(
-              'Or pick feelings:',
+              'Or how are you feeling?',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: AppColors.textDark,
                     fontWeight: FontWeight.w600,
@@ -253,8 +254,8 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             if (_canContinue)
               Center(
                 child: PillButton(
-                  emoji: '➡️',
-                  label: 'Continue',
+                  emoji: '✨',
+                  label: 'Start Adventure!',
                   onTap: widget.onNext,
                   variant: PillButtonVariant.purple,
                   isSelected: true,
@@ -303,47 +304,92 @@ class _ScenarioCardWidget extends StatelessWidget {
       label: '${scenario.title}, ${scenario.description}',
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        child: Container(
-          width: 180,
-          padding: const EdgeInsets.all(AppSpacing.md),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          width: 220, // Slightly wider to accommodate text
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.md,
+          ),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primaryLight.withAlpha(51) : AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.md),
+            gradient: isSelected
+                ? const LinearGradient(
+                    colors: [AppColors.goldLight, AppColors.surface],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : const LinearGradient(
+                    colors: [Colors.white, Color(0xFFF8F9FA)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+            borderRadius: BorderRadius.circular(AppRadius.xl),
             border: Border.all(
-              color: isSelected ? AppColors.primary : Colors.grey.shade300,
-              width: isSelected ? 2 : 1,
+              color: isSelected ? AppColors.gold : Colors.grey.shade200,
+              width: isSelected ? 3 : 1,
             ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: AppColors.goldLight.withAlpha(77),
-                      blurRadius: 8,
+                      color: AppColors.gold.withOpacity(0.4),
+                      blurRadius: 15,
                       spreadRadius: 2,
+                      offset: const Offset(0, 4),
                     ),
                   ]
-                : null,
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min, // Wrap content
             children: [
-              Text(
-                scenario.illustration,
-                style: const TextStyle(fontSize: 48),
+              Container(
+                padding: const EdgeInsets.all(8), // Reduced padding
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.white.withOpacity(0.5) : AppColors.secondaryLight.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  scenario.illustration,
+                  style: const TextStyle(fontSize: 40), // Reduced font size
+                ),
               ),
               const SizedBox(height: AppSpacing.sm),
-              Text(
-                scenario.emoji,
-                style: const TextStyle(fontSize: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(scenario.emoji),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      scenario.title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textDark,
+                          ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                scenario.title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textDark,
+                scenario.description,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textDark.withOpacity(0.7),
                     ),
                 textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -380,27 +426,34 @@ class _EmotionChipWidget extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
+            horizontal: AppSpacing.lg,
             vertical: AppSpacing.sm,
           ),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.gold : AppColors.cream,
+            color: isSelected ? AppColors.gold : Colors.white,
             borderRadius: BorderRadius.circular(AppRadius.pill),
             border: Border.all(
-              color: isSelected ? AppColors.primary : Colors.transparent,
-              width: isSelected ? 2 : 0,
+              color: isSelected ? AppColors.primary : Colors.grey.shade200,
+              width: isSelected ? 2 : 1,
             ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: AppColors.goldLight.withAlpha(77),
-                      blurRadius: 6,
-                      spreadRadius: 1,
+                      color: AppColors.gold.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
                   ]
-                : null,
+                : [
+                     BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -409,19 +462,19 @@ class _EmotionChipWidget extends StatelessWidget {
                 emotion.emoji,
                 style: const TextStyle(fontSize: 20),
               ),
-              const SizedBox(width: AppSpacing.xs),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 emotion.label,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: AppColors.textDark,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.bold,
                     ),
               ),
               if (isSelected) ...[
                 const SizedBox(width: AppSpacing.xs),
                 const Icon(
-                  Icons.check_circle,
-                  size: 16,
+                  Icons.star_rounded, // Star instead of check
+                  size: 18,
                   color: AppColors.primary,
                 ),
               ],

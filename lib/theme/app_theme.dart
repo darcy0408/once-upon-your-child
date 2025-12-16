@@ -37,6 +37,8 @@ class AppColors {
 
   // Legacy colors (for gradual migration)
   static const secondary = primary;
+  static const secondaryLight = primaryLight; // Alias for backward compatibility
+  static const purple = primary; // Alias for explicit usage
   static const accent = gold;
 }
 
@@ -61,6 +63,7 @@ class AppRadius {
   static const sm = 8.0;
   static const md = 16.0;
   static const lg = 24.0;
+  static const xl = 32.0; // Added missing xl radius
   static const pill = 1000.0; // Full pill shape
 }
 

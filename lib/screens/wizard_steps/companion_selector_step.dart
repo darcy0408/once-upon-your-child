@@ -32,19 +32,31 @@ class CompanionSelectorStep extends StatefulWidget {
 class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
   // Use a Set for multi-selection
   final Set<String> _selectedCompanions = {};
+  final bool _isLoading = false; // Added state variable
 
   List<Companion> get _savedCharacterCompanions {
     // Convert saved characters to companions (friends/family)
     return widget.savedCharacters.where((char) {
       // Don't include the main character as a companion
       return char.name != widget.wizardData.characterName;
-    }).map((char) => Companion(
-      id: 'character_${char.id}',
-      emoji: _getEmojiForAge(char.age),
-      name: char.name,
-      color: AppColors.gold,
-      greeting: 'Let\'s have an adventure!',
-    )).toList();
+    }).map((char) {
+      // Generate a description based on traits/interests
+      String description = 'Ready for adventure!';
+      if (char.personalityTraits?.isNotEmpty == true) {
+        description = 'Known for being ${char.personalityTraits!.first.toLowerCase()}';
+      } else if (char.likes?.isNotEmpty == true) { // Fixed: interests -> likes
+        description = 'Loves ${char.likes!.first.toLowerCase()}'; // Fixed: interests -> likes
+      }
+
+      return Companion(
+        id: 'character_${char.id}',
+        emoji: _getEmojiForAge(char.age),
+        name: char.name,
+        color: AppColors.gold,
+        greeting: 'Let\'s have an adventure!',
+        description: description,
+      );
+    }).toList();
   }
 
   String _getEmojiForAge(int age) {
@@ -63,6 +75,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
         name: 'Tiny Dragon',
         color: AppColors.dragonOrange,
         greeting: 'I\'m ready to help!',
+        description: '✨ A magical friend with fiery courage',
       ),
       Companion(
         id: 'owl',
@@ -70,6 +83,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
         name: 'Wise Owl',
         color: AppColors.owlBlue,
         greeting: 'Let\'s be wise together!',
+        description: '✨ Sees everything, even in the dark',
       ),
       Companion(
         id: 'cat',
@@ -77,6 +91,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
         name: 'Playful Cat',
         color: AppColors.catPurple,
         greeting: 'Purr-fect adventure awaits!',
+        description: '✨ Always lands on their feet',
       ),
       Companion(
         id: 'dog',
@@ -84,6 +99,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
         name: 'Loyal Dog',
         color: AppColors.dogBrown,
         greeting: 'I\'ll be your best friend!',
+        description: '✨ Faithful and true',
       ),
       Companion(
         id: 'unicorn',
@@ -91,6 +107,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
         name: 'Magic Unicorn',
         color: AppColors.primaryLight,
         greeting: 'Let\'s make magic!',
+        description: '✨ Spreads sparkles everywhere',
       ),
       Companion(
         id: 'fox',
@@ -98,6 +115,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
         name: 'Clever Fox',
         color: AppColors.gold,
         greeting: 'Ready for clever fun!',
+        description: '✨ Quick-witted and tricky',
       ),
     ];
 
@@ -107,6 +125,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
       name: pet['name']!,
       color: AppColors.primary,
       greeting: pet['personality']?.isNotEmpty == true ? pet['personality']! : 'I am your ${pet['species']}!',
+      description: 'Your faithful ${pet['species']} companion',
     )).toList();
 
     return [...customPets, ...defaultCompanions];
@@ -124,6 +143,9 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
       default: return '🐾';
     }
   }
+
+  // Combined list for general display if needed, though we split them in UI
+  List<Companion> get _companions => [..._savedCharacterCompanions, ..._magicalCompanions];
 
   void _toggleCompanion(Companion companion) {
     setState(() {
@@ -147,10 +169,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
     });
   }
   
-  List<Companion> get _allCompanions => [
-        ..._savedCharacterCompanions,
-        ..._magicalCompanions,
-      ];
+  List<Companion> get _allCompanions => _companions; // Alias for internal use if needed
 
   void _selectAll() {
     setState(() {
@@ -179,138 +198,116 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
 
   @override
   Widget build(BuildContext context) {
-    final allCompanions = _allCompanions;
-    final hasFriends = _savedCharacterCompanions.isNotEmpty;
-
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Title
-          Text(
-            'Build Your Adventure Team',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: AppColors.textDark,
-                  fontWeight: FontWeight.bold,
-                ),
-            textAlign: TextAlign.center,
-          ),
-
-          // Select All Button
-          TextButton(
-            onPressed: _selectAll,
-            child: Text(
-                _selectedCompanions.length == allCompanions.length
-                    ? 'Deselect All'
-                    : 'Select All (${allCompanions.length})'
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Title
+            Text(
+              'Choose a Travel Buddy',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: AppColors.textDark,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Outfit',
+                  ),
+              textAlign: TextAlign.center,
             ),
-          ),
-
-          const SizedBox(height: AppSpacing.sm),
-
-          // Subtitle
-          Text(
-            hasFriends
-                ? 'Choose friends, family, or magical companions'
-                : 'Pick magical companions for your adventure',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textDark.withAlpha(179), // 70% opacity
-                ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppSpacing.xl),
-
-          // Companion grid (with sections)
-          Expanded(
-            child: ListView(
-              children: [
-                // Friends & Family section (if any)
-                if (hasFriends) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                    child: Text(
-                      '👨‍👩‍👧‍👦 Friends & Family',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: AppColors.textDark,
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Who will join you on this adventure?',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: AppColors.textDark.withOpacity(0.7),
                   ),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: AppSpacing.lg,
-                      mainAxisSpacing: AppSpacing.lg,
-                      childAspectRatio: 1.0,
-                    ),
-                    itemCount: _savedCharacterCompanions.length,
-                    itemBuilder: (context, index) {
-                      final companion = _savedCharacterCompanions[index];
-                      final isSelected = _selectedCompanions.contains(companion.id);
-
-                      return _CompanionCard(
-                        companion: companion,
-                        isSelected: isSelected,
-                        onTap: () => _toggleCompanion(companion),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.xxl),
-                ],
-
-                // Magical Companions section
-                Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                  child: Text(
-                    '🦄 Magical Companions',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppColors.textDark,
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                ),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: AppSpacing.lg,
-                    mainAxisSpacing: AppSpacing.lg,
-                    childAspectRatio: 1.0,
-                  ),
-                  itemCount: _magicalCompanions.length,
-                  itemBuilder: (context, index) {
-                    final companion = _magicalCompanions[index];
-                    final isSelected = _selectedCompanions.contains(companion.id);
-
-                    return _CompanionCard(
-                      companion: companion,
-                      isSelected: isSelected,
-                      onTap: () => _toggleCompanion(companion),
-                    );
-                  },
-                ),
-              ],
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.xl),
 
-          // Continue button
-          if (_canContinue)
-            Center(
-              child: PillButton(
-                emoji: '➡️',
-                label: 'Continue',
-                onTap: widget.onNext,
-                variant: PillButtonVariant.purple,
-                isSelected: true,
+            // 1. Saved Characters (Friends)
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_savedCharacterCompanions.isNotEmpty) ...[ // Use specific list for clarity
+              Text(
+                'Your Friends',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
+              const SizedBox(height: AppSpacing.md),
+              ListView.separated(
+                physics: const NeverScrollableScrollPhysics(),
+                shrinkWrap: true,
+                itemCount: _savedCharacterCompanions.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: AppSpacing.md),
+                itemBuilder: (context, index) {
+                  final companion = _savedCharacterCompanions[index];
+                  final isSelected =
+                      _selectedCompanions.contains(companion.id); // Fixed: set contains check
+                  return _CompanionCard(
+                    companion: companion,
+                    isSelected: isSelected,
+                    onTap: () => _toggleCompanion(companion),
+                  );
+                },
+              ),
+              const SizedBox(height: AppSpacing.xl),
+            ],
+
+            // 2. Magical Creatures (Presets)
+            Text(
+              'Magical Creatures',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
-          const SizedBox(height: AppSpacing.md),
-        ],
+            const SizedBox(height: AppSpacing.md),
+            ..._magicalCompanions.map((creature) {
+              final isSelected =
+                  _selectedCompanions.contains(creature.id); // Fixed: set contains check
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: _CompanionCard(
+                  companion: creature,
+                  isSelected: isSelected,
+                  onTap: () => _toggleCompanion(creature),
+                  isMagical: true,
+                ),
+              );
+            }).toList(),
+
+            const SizedBox(height: AppSpacing.xxl),
+
+            // Navigation
+            if (_selectedCompanions.isNotEmpty)
+              Center(
+                child: PillButton(
+                  emoji: '✨',
+                  label: 'Gather Party!',
+                  onTap: widget.onNext,
+                  variant: PillButtonVariant.purple,
+                  isSelected: true,
+                ),
+              )
+            else
+              Center(
+                child: TextButton(
+                  onPressed: widget.onNext,
+                  child: Text(
+                    'Go Solo (Be Brave!)',
+                    style: TextStyle(
+                      color: AppColors.textDark.withOpacity(0.6),
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+            const SizedBox(height: AppSpacing.xl),
+          ],
+        ),
       ),
     );
   }
@@ -322,6 +319,7 @@ class Companion {
   final String name;
   final Color color;
   final String greeting;
+  final String description;
 
   Companion({
     required this.id,
@@ -329,171 +327,130 @@ class Companion {
     required this.name,
     required this.color,
     required this.greeting,
+    this.description = '',
   });
 }
 
-class _CompanionCard extends StatefulWidget {
+class _CompanionCard extends StatelessWidget {
   final Companion companion;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool isMagical;
 
   const _CompanionCard({
     required this.companion,
     required this.isSelected,
     required this.onTap,
+    this.isMagical = false,
   });
-
-  @override
-  State<_CompanionCard> createState() => _CompanionCardState();
-}
-
-class _CompanionCardState extends State<_CompanionCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _bounceController;
-  late Animation<double> _bounceAnimation;
-  bool _showGreeting = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _bounceController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-
-    _bounceAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _bounceController,
-      curve: Curves.elasticOut,
-    ));
-  }
-
-  @override
-  void dispose() {
-    _bounceController.dispose();
-    super.dispose();
-  }
-
-  void _handleTap() {
-    widget.onTap();
-    _bounceController.forward(from: 0.0);
-    setState(() => _showGreeting = true);
-    Future.delayed(const Duration(milliseconds: 2000), () {
-      if (mounted) {
-        setState(() => _showGreeting = false);
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      selected: widget.isSelected,
-      label: '${widget.companion.name} companion',
-      hint: widget.companion.greeting,
+      selected: isSelected,
+      label: 'Select ${companion.name}',
       child: InkWell(
-        onTap: _handleTap,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        child: Container(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: widget.isSelected
-                ? widget.companion.color.withAlpha(51)
-                : AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
+            color: isSelected ? AppColors.surface : Colors.white,
+            gradient: isSelected
+                ? LinearGradient(
+                    colors: [AppColors.goldLight.withOpacity(0.3), Colors.white],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            borderRadius: BorderRadius.circular(AppRadius.xl),
             border: Border.all(
-              color: widget.isSelected
-                  ? widget.companion.color
-                  : Colors.grey.shade300,
-              width: widget.isSelected ? 3 : 1,
+              color: isSelected ? AppColors.gold : Colors.grey.shade200,
+              width: isSelected ? 2 : 1,
             ),
-            boxShadow: widget.isSelected
+            boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: AppColors.goldLight.withAlpha(128),
-                      blurRadius: 16,
-                      spreadRadius: 4,
-                    ),
+                      color: AppColors.gold.withOpacity(0.2),
+                      blurRadius: 10,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 4),
+                    )
                   ]
-                : null,
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
-          child: Stack(
-            alignment: Alignment.center,
+          child: Row(
             children: [
-              // Companion emoji with bounce animation
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ScaleTransition(
-                    scale: _bounceAnimation,
-                    child: Text(
-                      widget.companion.emoji,
-                      style: const TextStyle(fontSize: 64),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    widget.companion.name,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textDark,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-
-              // Greeting bubble (appears on tap)
-              if (_showGreeting)
-                Positioned(
-                  top: 8,
-                  child: AnimatedOpacity(
-                    opacity: _showGreeting ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 300),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: AppSpacing.xs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: widget.companion.color,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      child: Text(
-                        widget.companion.greeting,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: AppColors.textLight,
-                              fontSize: 12,
-                            ),
-                      ),
-                    ),
+              // Avatar / Emoji
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.white : AppColors.secondaryLight.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    companion.emoji,
+                    style: const TextStyle(fontSize: 32),
                   ),
                 ),
+              ),
+              const SizedBox(width: AppSpacing.md),
 
-              // Selected checkmark
-              if (widget.isSelected)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: AppColors.gold,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.primary,
-                        width: 2,
-                      ),
+              // Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      companion.name,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textDark,
+                          ),
                     ),
-                    child: const Icon(
-                      Icons.check,
-                      color: AppColors.textLight,
-                      size: 20,
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        if (isMagical)
+                          const Icon(Icons.auto_awesome, size: 14, color: AppColors.purple),
+                        if (isMagical) const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            companion.description,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: AppColors.textDark.withOpacity(0.7),
+                                  fontStyle: FontStyle.italic,
+                                ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
+                  ],
+                ),
+              ),
+
+              // Selection Checkmark
+              if (isSelected)
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
                   ),
+                  child: const Icon(Icons.check, color: Colors.white, size: 16),
                 ),
             ],
           ),
