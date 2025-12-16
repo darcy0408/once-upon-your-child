@@ -202,7 +202,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
             // Scenario carousel
             SizedBox(
-              height: 200,
+              height: 260,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),

@@ -29,17 +29,10 @@ class MagicReviewStep extends StatefulWidget {
 
 class _MagicReviewStepState extends State<MagicReviewStep> {
   bool _isGenerating = false;
-
-  // Import for json/http/env
   bool _isSaving = false;
 
   void _launchStoryCreation() async {
     debugPrint('🎯 MagicReviewStep: _launchStoryCreation called');
-    debugPrint('📊 WizardData.isComplete: ${widget.wizardData.isComplete}');
-    debugPrint('📊 Step1Complete: ${widget.wizardData.isStep1Complete}');
-    debugPrint('📊 Step2Complete: ${widget.wizardData.isStep2Complete}');
-    debugPrint('📊 Step3Complete: ${widget.wizardData.isStep3Complete}');
-    debugPrint('📊 WizardData: ${widget.wizardData.toJson()}');
 
     if (!widget.wizardData.isComplete) {
       debugPrint('⚠️ Wizard data not complete!');
@@ -57,26 +50,16 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
 
     try {
       // 1. Save Character if needed
-      debugPrint('💾 Saving character if needed...');
       await _saveCharacterIfNeeded();
 
       // Prepared payload using the mapper
-      debugPrint('🗺️ Mapping wizard data to story request...');
       final requestData = WizardDataMapper.mapToStoryRequest(widget.wizardData);
-      debugPrint('📦 Request data: $requestData');
-
-      // Call the API
-      debugPrint('🔮 Calling ApiServiceManager.generateStory...');
-      debugPrint('  📷 Include Illustrations: ${widget.wizardData.includeIllustrations}');
-      debugPrint('  🎵 Rhyme Time Mode: ${widget.wizardData.rhymeTimeMode}');
-      debugPrint('  📚 Learning to Read Mode: ${widget.wizardData.learningToReadMode}');
-      debugPrint('  🎮 Interactive Mode: ${widget.wizardData.interactiveMode}');
 
       final result = await ApiServiceManager.generateStory(
         characterName: requestData['characterName'],
         age: requestData['age'],
         theme: requestData['theme'],
-        companion: requestData['companion'], // Fixed: was 'companions' (plural)
+        companion: requestData['companion'],
         characterDetails: requestData['characterDetails'],
         currentFeeling: requestData['currentFeeling'],
         additionalCharacters: requestData['additionalCharacters'],
@@ -89,7 +72,6 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
 
       if (mounted) {
         // Navigate to result
-        debugPrint('🚀 MagicReviewStep: Navigating to StoryResultScreen');
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (context) => StoryResultScreen(
@@ -112,22 +94,21 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       debugPrint('❌ Error generating story: $e');
       debugPrint('📚 Stack trace: $stack');
 
-      // Parse error for better user message
       String userMessage = 'Magic needed a recharge';
       if (e.toString().contains('500')) {
         userMessage = 'Server error (500). The backend had trouble generating your story.';
-        debugPrint('🔍 This is a server-side error. Check backend logs for details.');
       } else if (e.toString().contains('timeout')) {
         userMessage = 'Story generation timed out. Please try again.';
-      } else if (e.toString().contains('Cannot connect')) {
-        userMessage = 'Cannot connect to server. Is the backend running?';
+      } else if (e.toString().contains('Cannot connect') || e.toString().contains('XMLHttpRequest')) {
+         // "failed to fetch" often comes up as XMLHttpRequest error in Flutter Web
+        userMessage = 'Cannot connect to server. Please check your internet or try again.';
       }
 
       if (mounted) {
         setState(() => _isGenerating = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$userMessage\n\nTechnical: $e'),
+            content: Text('$userMessage\n\n${e.toString().length > 100 ? e.toString().substring(0, 100) + '...' : e.toString()}'),
             backgroundColor: AppColors.error,
             duration: const Duration(seconds: 8),
             action: SnackBarAction(
@@ -148,10 +129,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
     setState(() => _isSaving = true);
     
     try {
-      // Extract details mapped from archetype
       final characterDetails = WizardDataMapper.mapToStoryRequest(widget.wizardData)['characterDetails'] as Map<String, dynamic>;
       
-      // Construct simple payload for backend
       final body = {
         'name': widget.wizardData.characterName,
         'age': widget.wizardData.characterAge,
@@ -160,29 +139,23 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
         'character_style': 'Regular Kid', 
         'likes': characterDetails['interests'] ?? [],
         'strengths': characterDetails['strengths'] ?? [],
-        'avatar': { // Minimal avatar payload if none custom
+        'avatar': { 
           'hairColor': 'Brown',
           'skinTone': 'Light',
         }
       };
 
-      // We need to use http package directly or via ApiServiceManager if it exposed generic post
-      // Re-using ApiServiceManager helper if available, otherwise direct http
-      // Assuming we can use ApiServiceManager().post which I saw in the file (lines 26-67)
-      
-      final api = ApiServiceManager(); 
+      final api = ApiServiceManager();
       final response = await api.post('/create-character', body);
-      
-      if (response.containsKey('character_id')) { // Adjust key based on backend response
+
+      if (response.containsKey('character_id')) {
          widget.wizardData.characterId = response['character_id']?.toString();
-         debugPrint('✅ Character saved with ID: ${widget.wizardData.characterId}');
       } else if (response.containsKey('id')) {
          widget.wizardData.characterId = response['id']?.toString();
       }
 
     } catch (e) {
-      debugPrint('⚠️ Valid warning: Character save failed ($e), but proceeding with temporary character for story.');
-      // We don't block story generation, just warn console
+      debugPrint('⚠️ Character save failed: $e');
     } finally {
       setState(() => _isSaving = false);
     }
@@ -213,7 +186,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             Text(
               'Review your story setup',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textDark.withAlpha(179), // 70% opacity
+                    color: AppColors.textDark.withAlpha(179),
                   ),
               textAlign: TextAlign.center,
             ),
@@ -229,84 +202,98 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Story Settings Section
+            // Story Settings Section (Magical Card)
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(
-                  color: AppColors.primary.withAlpha(128),
-                  width: 2,
+                // Gradient background instead of solid white
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white,
+                    AppColors.primary.withOpacity(0.05),
+                  ],
                 ),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.2),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.1),
+                    blurRadius: 15,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '⚙️ Story Settings',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppColors.textDark,
-                          fontWeight: FontWeight.bold,
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          shape: BoxShape.circle,
                         ),
+                        child: const Text('⚙️', style: TextStyle(fontSize: 20)),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        'Story Settings',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: AppColors.textDark,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: AppSpacing.md),
+                  const Divider(height: 1, color: Colors.black12),
+                  const SizedBox(height: AppSpacing.sm),
 
-                  // Include Illustrations toggle
-                  CheckboxListTile(
-                    title: const Text('✨ Include Illustrations'),
-                    subtitle: const Text('Add beautiful images to your story'),
-                    value: data.includeIllustrations,
-                    onChanged: (value) {
-                      setState(() => data.includeIllustrations = value ?? true);
-                    },
-                    activeColor: AppColors.primary,
+                  _buildSwitchTile(
+                    '✨ Include Illustrations',
+                    'Add beautiful images',
+                    data.includeIllustrations,
+                    (v) => setState(() => data.includeIllustrations = v),
                   ),
-
-                  // Rhyme Time Mode toggle
-                  CheckboxListTile(
-                    title: const Text('🎵 Rhyme Time Mode'),
-                    subtitle: const Text('Story told in fun rhymes'),
-                    value: data.rhymeTimeMode,
-                    onChanged: (value) {
-                      setState(() => data.rhymeTimeMode = value ?? false);
-                    },
-                    activeColor: AppColors.primary,
+                  _buildSwitchTile(
+                    '🎵 Rhyme Time Mode',
+                    'Story told in fun rhymes',
+                    data.rhymeTimeMode,
+                    (v) => setState(() => data.rhymeTimeMode = v),
                   ),
-
-                  // Learning to Read Mode toggle
-                  CheckboxListTile(
-                    title: const Text('📚 Learning to Read Mode'),
-                    subtitle: const Text('Simple words for early readers'),
-                    value: data.learningToReadMode,
-                    onChanged: (value) {
-                      setState(() => data.learningToReadMode = value ?? false);
-                    },
-                    activeColor: AppColors.primary,
+                  _buildSwitchTile(
+                    '📚 Learning to Read',
+                    'Simple words for early readers',
+                    data.learningToReadMode,
+                    (v) => setState(() => data.learningToReadMode = v),
                   ),
-
-                  // Interactive Story Mode toggle
-                  CheckboxListTile(
-                    title: const Text('🎮 Interactive Story Mode'),
-                    subtitle: const Text('Make choices as the story unfolds'),
-                    value: data.interactiveMode,
-                    onChanged: (value) {
-                      setState(() => data.interactiveMode = value ?? false);
-                    },
-                    activeColor: AppColors.primary,
+                  _buildSwitchTile(
+                    '🎮 Interactive Mode',
+                    'Make choices as you go',
+                    data.interactiveMode,
+                    (v) => setState(() => data.interactiveMode = v),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Summary cards
-            Text(
-              '📋 Story Summary',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppColors.textDark,
-                    fontWeight: FontWeight.bold,
-                  ),
+            // Summary cards header
+             Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(
+                '📋 Story Summary',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: AppColors.textDark,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
 
@@ -317,6 +304,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                   ? 'MISSING NAME (Go back to Step 1)' 
                   : '${data.characterName} (${data.selectedArchetypeId})',
               isError: data.characterName.isEmpty,
+              color: AppColors.primary,
             ),
             const SizedBox(height: AppSpacing.md),
 
@@ -324,6 +312,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
               icon: '🎂',
               title: 'Age',
               value: '${data.characterAge} years old',
+              color: Colors.orange,
             ),
             const SizedBox(height: AppSpacing.md),
 
@@ -335,6 +324,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                   ...data.additionalCharacters,
                   ...data.pets.map((p) => '${p['name']} (${p['species']})')
                 ].join(', '),
+                color: Colors.green,
               ),
               const SizedBox(height: AppSpacing.md),
             ],
@@ -344,6 +334,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 icon: '📖',
                 title: 'Story Theme',
                 value: _formatScenario(data.selectedScenario!),
+                color: Colors.blue,
               ),
             if (data.selectedEmotionChips.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.md),
@@ -351,6 +342,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 icon: '💫',
                 title: 'Feelings',
                 value: data.selectedEmotionChips.join(', '),
+                color: Colors.purple,
               ),
             ],
             if (data.selectedCompanions.isNotEmpty) ...[
@@ -361,6 +353,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 value: data.companionNames.isNotEmpty 
                     ? data.companionNames.join(', ')
                     : data.selectedCompanions.join(', '),
+                color: Colors.brown,
               ),
             ],
             const SizedBox(height: AppSpacing.xxl),
@@ -377,32 +370,25 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                     ),
             ),
             const SizedBox(height: AppSpacing.xl),
-
-            // Debug info (can be removed later)
-            if (false) // Set to true for debugging
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: Colors.black.withAlpha(26), // 10% opacity
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                child: Text(
-                  'Debug: ${data.toJson()}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontFamily: 'monospace',
-                    color: AppColors.textDark,
-                  ),
-                ),
-              ),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildSwitchTile(String title, String subtitle, bool value, Function(bool) onChanged) {
+    return SwitchListTile(
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+      subtitle: Text(subtitle, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+      value: value,
+      onChanged: onChanged,
+      activeColor: AppColors.primary,
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+    );
+  }
+
   String _getCharacterEmoji() {
-    // Map archetype to emoji
     final archetype = widget.wizardData.selectedArchetypeId ?? '';
     if (archetype.contains('Adventurer')) return '🗺️';
     if (archetype.contains('Thinker')) return '💭';
@@ -414,7 +400,6 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
   }
 
   String _formatScenario(String scenarioId) {
-    // Convert scenario ID to display name
     return scenarioId
         .split('_')
         .map((word) => word[0].toUpperCase() + word.substring(1))
@@ -427,33 +412,56 @@ class _SummaryCard extends StatelessWidget {
   final String title;
   final String value;
   final bool isError;
+  final Color color;
 
   const _SummaryCard({
     required this.icon,
     required this.title,
     required this.value,
     this.isError = false,
+    this.color = AppColors.primary,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.md,
-      ),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg), // Improved Radius
         border: Border.all(
-          color: isError ? AppColors.error : AppColors.primary.withAlpha(51), // 20% opacity
+          color: isError ? AppColors.error : color.withOpacity(0.3),
+          width: 2, // Thicker border
         ),
+        gradient: LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+             // Subtle tint based on the category color
+             color.withOpacity(0.05),
+             Colors.white,
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Text(
-            icon,
-            style: const TextStyle(fontSize: 24),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isError ? AppColors.error.withOpacity(0.1) : color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              icon,
+              style: const TextStyle(fontSize: 24),
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -461,16 +469,19 @@ class _SummaryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: AppColors.textDark.withAlpha(128), // 50% opacity
+                  title.toUpperCase(),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: color, 
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
                       ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   value,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: isError ? AppColors.error : AppColors.textDark,
-                        fontWeight: isError ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isError ? FontWeight.bold : FontWeight.w600,
                       ),
                 ),
               ],

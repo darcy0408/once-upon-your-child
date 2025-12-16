@@ -98,8 +98,10 @@ class Config:
                 "http://127.0.0.1:3003",
                 "http://localhost:5000",
                 "http://127.0.0.1:5000",
+                "http://127.0.0.1:5000",
                 "http://10.0.2.2:8080",
                 "http://10.0.2.2:5000",
+                "*"  # Allow all origins in dev to support random Flutter web ports
             ])
 
         return base_origins

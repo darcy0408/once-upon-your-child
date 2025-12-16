@@ -60,7 +60,8 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body);
-        final List<dynamic> characterList = decoded['characters'] ?? [];
+        // Backend returns a list directly, not wrapped in {'characters': [...]}
+        final List<dynamic> characterList = decoded is List ? decoded : (decoded['characters'] ?? []);
         final characters = characterList
             .map((data) => Character.fromJson(data))
             .toList();
