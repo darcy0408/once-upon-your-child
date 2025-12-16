@@ -1,6 +1,10 @@
 import os
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(override=True)
+
+# FORCE gemini-2.0-flash-exp to fix persistent reversion issue
+os.environ['GEMINI_MODEL'] = 'gemini-2.0-flash-exp'
+print(f"🔧 FORCED GEMINI_MODEL = {os.environ.get('GEMINI_MODEL')}")
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key'
@@ -31,6 +35,8 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
+    # Explicitly force latest free experimental model
+    GEMINI_MODEL = 'gemini-2.0-flash-exp'
 
 class ProductionConfig(Config):
     DEBUG = False
