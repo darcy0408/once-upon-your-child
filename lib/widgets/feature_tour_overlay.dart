@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 class FeatureTourStep {
   final String title;
@@ -53,7 +54,7 @@ class FeatureTourOverlay extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surface, // Use theme surface color
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
@@ -70,15 +71,15 @@ class FeatureTourOverlay extends StatelessWidget {
                         children: [
                           CircleAvatar(
                             backgroundColor:
-                                Colors.deepPurple.withValues(alpha: 0.12),
-                            child: Icon(step.icon, color: Colors.deepPurple),
+                                AppColors.primary.withValues(alpha: 0.12),
+                            child: Icon(step.icon, color: AppColors.primary),
                           ),
                           const SizedBox(width: 12),
                           Text(
                             'Feature Tour • $progress',
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
-                              color: Colors.deepPurple,
+                              color: AppColors.primary,
                             ),
                           ),
                         ],
@@ -117,8 +118,8 @@ class FeatureTourOverlay extends StatelessWidget {
                                   : 'Next',
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.deepPurple,
-                              foregroundColor: Colors.white,
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.textLight,
                             ),
                           ),
                         ],

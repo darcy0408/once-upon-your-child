@@ -145,6 +145,8 @@ def update_character(char_id: str, data: dict):
         char.siblings = _as_list(data["siblings"])
     if "friends" in data:
         char.friends = _as_list(data["friends"])
+    if "pets" in data:
+        char.pets = data.get("pets", [])  # Pets are already list of dicts, don't use _as_list
     if "comfort_item" in data:
         char.comfort_item = data["comfort_item"]
     if "character_type" in data:

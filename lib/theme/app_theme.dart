@@ -19,7 +19,7 @@ class AppColors {
   static const cream = Color(0xFFFFF8E1); // Cream for pill buttons
 
   // Semantic colors
-  static const surface = Color(0xFFFAFAFA); // Clean white surface
+  static const surface = Color(0xFFF3E5F5); // Very light lavender surface (matches magical theme)
   static const error = Color(0xFFD32F2F);
   static const warning = Color(0xFFFFA000);
   static const success = Color(0xFF388E3C);
@@ -111,7 +111,7 @@ class AppTheme {
 
     final base = ThemeData.light();
     return base.copyWith(
-      scaffoldBackgroundColor: Colors.white,
+      scaffoldBackgroundColor: AppColors.gradientStart, // Use lavender instead of white
       colorScheme: ColorScheme.fromSeed(
         seedColor: effectiveAccent,
         primary: effectivePrimary,
@@ -120,11 +120,11 @@ class AppTheme {
         error: error,
       ),
       textTheme: _textTheme(base.textTheme),
-      cardTheme: const CardThemeData(
-        color: Colors.white,
+      cardTheme: CardThemeData(
+        color: surface, // Use theme surface color
         elevation: 4,
-        margin: EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
+        margin: const EdgeInsets.all(16),
+        shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
       ),
@@ -153,28 +153,28 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: surface, // Use theme surface color instead of white
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
           vertical: AppSpacing.sm,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: AppColors.primary.withAlpha(77)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: effectivePrimary, width: 2),
         ),
       ),
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: effectivePrimary,
+        backgroundColor: AppColors.primary, // Use primary purple instead of white
+        foregroundColor: AppColors.textLight, // White text on purple
         titleTextStyle: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: effectivePrimary,
+          color: AppColors.textLight, // White text for visibility
         ),
       ),
       snackBarTheme: SnackBarThemeData(

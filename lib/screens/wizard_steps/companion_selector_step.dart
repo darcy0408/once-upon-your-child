@@ -40,12 +40,18 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
       // Don't include the main character as a companion
       return char.name != widget.wizardData.characterName;
     }).map((char) {
-      // Generate a description based on traits/interests
-      String description = 'Ready for adventure!';
-      if (char.personalityTraits?.isNotEmpty == true) {
+      // Generate a varied description based on character data
+      String description = '${char.age} years old';
+
+      if (char.role != null && char.role!.isNotEmpty && char.role != 'Hero') {
+        description = char.role!;
+      } else if (char.personalityTraits?.isNotEmpty == true) {
         description = 'Known for being ${char.personalityTraits!.first.toLowerCase()}';
-      } else if (char.likes?.isNotEmpty == true) { // Fixed: interests -> likes
-        description = 'Loves ${char.likes!.first.toLowerCase()}'; // Fixed: interests -> likes
+      } else if (char.likes?.isNotEmpty == true && char.likes!.length > 1) {
+        // Use 2nd like if available to add variety
+        description = 'Loves ${char.likes![1].toLowerCase()}';
+      } else if (char.likes?.isNotEmpty == true) {
+        description = 'Loves ${char.likes!.first.toLowerCase()}';
       }
 
       return Companion(
@@ -358,33 +364,45 @@ class _CompanionCard extends StatelessWidget {
           curve: Curves.easeInOut,
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.surface : Colors.white,
+            color: isSelected 
+                ? Colors.white.withValues(alpha: 0.85) 
+                : Colors.white.withValues(alpha: 0.5), // Glassmorphic base
             gradient: isSelected
                 ? LinearGradient(
-                    colors: [AppColors.goldLight.withOpacity(0.3), Colors.white],
+                    colors: [
+                      AppColors.goldLight.withValues(alpha: 0.4),
+                      Colors.white.withValues(alpha: 0.9),
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )
-                : null,
+                : LinearGradient(
+                    colors: [
+                      Colors.white.withValues(alpha: 0.6),
+                      Colors.white.withValues(alpha: 0.3),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
             borderRadius: BorderRadius.circular(AppRadius.xl),
             border: Border.all(
-              color: isSelected ? AppColors.gold : Colors.grey.shade200,
-              width: isSelected ? 2 : 1,
+              color: isSelected ? AppColors.gold : Colors.white.withValues(alpha: 0.6),
+              width: isSelected ? 2 : 1.5,
             ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: AppColors.gold.withOpacity(0.2),
-                      blurRadius: 10,
-                      spreadRadius: 1,
+                      color: AppColors.gold.withValues(alpha: 0.25),
+                      blurRadius: 12,
+                      spreadRadius: 2,
                       offset: const Offset(0, 4),
                     )
                   ]
                 : [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+                      color: AppColors.primary.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
                     ),
                   ],
           ),
@@ -395,8 +413,22 @@ class _CompanionCard extends StatelessWidget {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.white : AppColors.secondaryLight.withOpacity(0.2),
+                  color: isSelected 
+                      ? Colors.white.withValues(alpha: 0.9) 
+                      : AppColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected ? AppColors.gold : Colors.white.withValues(alpha: 0.5),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    if (isSelected)
+                      BoxShadow(
+                        color: AppColors.gold.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        spreadRadius: 1,
+                      ),
+                  ],
                 ),
                 child: Center(
                   child: Text(
