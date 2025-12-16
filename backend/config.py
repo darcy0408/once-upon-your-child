@@ -7,6 +7,9 @@ dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 if os.path.exists(dotenv_path):
     print(f"Loading .env from: {dotenv_path}")
     load_dotenv(dotenv_path=dotenv_path, override=True)
+    # FORCE the model to latest experimental version
+    os.environ['GEMINI_MODEL'] = 'gemini-2.0-flash-exp'
+    print(f"🔧 FORCED GEMINI_MODEL = {os.environ.get('GEMINI_MODEL')}")
     loaded_key = os.environ.get('GEMINI_API_KEY')
     print(f"GEMINI_API_KEY loaded: {bool(loaded_key)}")
     if loaded_key:
@@ -87,6 +90,10 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(basedir, 'characters.db')}"
     # Force the latest free experimental model
     GEMINI_MODEL = 'gemini-2.0-flash-exp'
+
+# Debug print
+print(f"🔍 DevelopmentConfig.GEMINI_MODEL = {DevelopmentConfig.GEMINI_MODEL}")
+print(f"🔍 Config.GEMINI_MODEL = {Config.GEMINI_MODEL}")
 
 class ProductionConfig(Config):
     """Production configuration."""
