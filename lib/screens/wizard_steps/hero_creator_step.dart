@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import '../../models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/archetype_card.dart';
@@ -176,35 +177,21 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                               style: Theme.of(context).textTheme.titleSmall),
                          const SizedBox(height: 8),
                          SizedBox(
-                           height: 100, // Explicit height for the scroller
-                           child: ListWheelScrollView.useDelegate(
-                             itemExtent: 50,
-                             perspective: 0.005,
-                             diameterRatio: 1.2,
-                             physics: const FixedExtentScrollPhysics(),
+                           height: 120,
+                           child: CupertinoPicker(
+                             itemExtent: 32,
                              onSelectedItemChanged: (index) {
                                setState(() {
                                  widget.wizardData.characterAge = index + 1;
                                });
                              },
-                             controller: FixedExtentScrollController(initialItem: widget.wizardData.characterAge - 1),
-                             childDelegate: ListWheelChildBuilderDelegate(
-                               builder: (context, index) {
-                                  final isSelected = (index + 1) == widget.wizardData.characterAge;
-                                  return Center(
-                                    child: Text(
-                                      '${index + 1}',
-                                      style: isSelected 
-                                          ? Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                              color: AppColors.primary,
-                                              fontWeight: FontWeight.bold)
-                                          : Theme.of(context).textTheme.titleLarge?.copyWith(
-                                              color: Colors.grey.withAlpha(100)),
-                                    ),
-                                  );
-                               },
-                               childCount: 100,
-                             ),
+                             scrollController: FixedExtentScrollController(initialItem: widget.wizardData.characterAge - 1),
+                             children: List.generate(100, (index) => Center(
+                               child: Text(
+                                 '${index + 1}',
+                                 style: const TextStyle(fontSize: 20, color: AppColors.textDark),
+                               ),
+                             )),
                            ),
                          ),
                       ],
@@ -490,32 +477,22 @@ class _SiblingsSection extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-                              ),
-                              // Wheel
-                              ListWheelScrollView.useDelegate(
-                                itemExtent: 40,
-                                perspective: 0.005,
-                                diameterRatio: 1.5,
-                                physics: const FixedExtentScrollPhysics(),
-                                controller: FixedExtentScrollController(initialItem: age - 1),
-                                onSelectedItemChanged: (index) {
-                                  setState(() => age = index + 1);
-                                },
-                                childDelegate: ListWheelChildBuilderDelegate(
-                                  builder: (context, index) {
-                                    return Center(
-                                      child: Text(
-                                        '${index + 1}',
-                                        style: (index + 1) == age
-                                            ? const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary)
-                                            : const TextStyle(fontSize: 16, color: Colors.grey),
-                                      ),
-                                    );
-                                  },
-                                  childCount: 99, // 1-99 age range
-                                ),
-                              ),
-                            ],
+                             SizedBox(
+                         height: 100,
+                         child: CupertinoPicker(
+                           itemExtent: 32,
+                           scrollController: FixedExtentScrollController(initialItem: age - 1),
+                           onSelectedItemChanged: (index) {
+                             setState(() => age = index + 1);
+                           },
+                           children: List.generate(100, (index) => Center(
+                             child: Text(
+                               '${index + 1}',
+                               style: const TextStyle(fontSize: 18, color: AppColors.textDark),
+                             ),
+                           )),
+                         ),
+                       ),     ],
                           ),
                         ),
                       ],

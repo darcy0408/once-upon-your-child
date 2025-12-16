@@ -26,7 +26,7 @@ class Config:
     
     # Gemini API
     GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
-    GEMINI_MODEL = 'gemini-2.0-flash-exp' # os.environ.get('GEMINI_MODEL', 'gemini-2.0-flash-exp')
+    GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.0-flash-exp')  # Read from .env or default to latest free model
     
     # Celery Configuration
     # If REDIS_URL is present (Production with Redis), use it.
@@ -85,6 +85,8 @@ class DevelopmentConfig(Config):
     DEBUG = True
     basedir = os.path.abspath(os.path.dirname(__file__))
     SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(basedir, 'characters.db')}"
+    # Force the latest free experimental model
+    GEMINI_MODEL = 'gemini-2.0-flash-exp'
 
 class ProductionConfig(Config):
     """Production configuration."""
