@@ -19,7 +19,7 @@ class AppColors {
   static const cream = Color(0xFFFFF8E1); // Cream for pill buttons
 
   // Semantic colors
-  static const surface = Color(0xFFF3E5F5); // Very light lavender surface (matches magical theme)
+  static const surface = Color(0xFFB2DFDB); // Light teal surface (contrasts with lavender background)
   static const error = Color(0xFFD32F2F);
   static const warning = Color(0xFFFFA000);
   static const success = Color(0xFF388E3C);

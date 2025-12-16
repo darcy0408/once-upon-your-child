@@ -40,18 +40,17 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
       // Don't include the main character as a companion
       return char.name != widget.wizardData.characterName;
     }).map((char) {
-      // Generate a varied description based on character data
+      // Show personalized description based on character's actual data
       String description = '${char.age} years old';
 
+      // Only show data that was actually entered by the user
       if (char.role != null && char.role!.isNotEmpty && char.role != 'Hero') {
         description = char.role!;
       } else if (char.personalityTraits?.isNotEmpty == true) {
-        description = 'Known for being ${char.personalityTraits!.first.toLowerCase()}';
-      } else if (char.likes?.isNotEmpty == true && char.likes!.length > 1) {
-        // Use 2nd like if available to add variety
-        description = 'Loves ${char.likes![1].toLowerCase()}';
-      } else if (char.likes?.isNotEmpty == true) {
-        description = 'Loves ${char.likes!.first.toLowerCase()}';
+        description = char.personalityTraits!.join(', ');
+      } else {
+        // Just show age if no other data was entered
+        description = 'Age ${char.age}';
       }
 
       return Companion(

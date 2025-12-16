@@ -65,6 +65,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
       _selectedArchetypeId = character.role;
       _nameController.text = character.name;
 
+      // Load existing pets and friends
+      if (character.pets != null) {
+         widget.wizardData.pets = List.from(character.pets!);
+      }
+      if (character.friends != null) {
+         widget.wizardData.additionalCharacters = List.from(character.friends!);
+      }
+
       // Set emoji based on role
       if (character.role.contains('Adventurer')) _characterEmoji = '🗺️';
       else if (character.role.contains('Thinker')) _characterEmoji = '💭';

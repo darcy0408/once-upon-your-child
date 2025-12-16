@@ -56,7 +56,12 @@ class Character {
     this.currentEmotion,
     this.currentEmotionCore,
     this.avatar,
+    this.pets,
+    this.friends,
   });
+
+  final List<Map<String, dynamic>>? pets;
+  final List<String>? friends;
 
   factory Character.fromJson(Map<String, dynamic> json) {
     CharacterAvatar? avatar;
@@ -119,6 +124,8 @@ class Character {
       currentEmotion: json['current_emotion'],
       currentEmotionCore: json['current_emotion_core'],
       avatar: avatar,
+      pets: json['pets'] != null ? List<Map<String, dynamic>>.from(json['pets']) : null,
+      friends: json['friends'] != null ? List<String>.from(json['friends']) : null,
     );
   }
 
@@ -147,6 +154,8 @@ class Character {
         'current_emotion': currentEmotion,
         'current_emotion_core': currentEmotionCore,
         if (avatar != null) 'avatar': avatar!.toJson(),
+        'pets': pets,
+        'friends': friends,
       };
 
   /// Generate avatar URL for this character using DiceBear API

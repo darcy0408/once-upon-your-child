@@ -33,18 +33,22 @@ class WizardDataMapper {
     // 4. Map Scenario to Theme
     final theme = _mapScenarioToTheme(data.selectedScenario);
 
+    // Extract companion names (convert IDs to names)
+    final companionNames = data.companionNames.isNotEmpty
+        ? data.companionNames
+        : data.selectedCompanions;
+
     return {
       'characterName': data.characterName,
       'age': age,
       'theme': theme,
-      'companion': (data.selectedCompanions.isNotEmpty) 
-          ? data.selectedCompanions.join(', ')
-          : null,
+      'companion': companionNames.isNotEmpty ? companionNames.first : null, // Send first companion only for now
+      'companions': companionNames, // Send full list for future multi-companion support
       'additionalCharacters': data.additionalCharacters,
       'characterDetails': characterDetails,
       'currentFeeling': currentFeeling,
       // Default settings for wizard stories
-      'lengthGuideline': 'Short', 
+      'lengthGuideline': 'Short',
       'rhymeTimeMode': false,
       'learningToReadMode': false, // Could be toggled based on age < 5
       'includeIllustrations': true, // User requested illustrations

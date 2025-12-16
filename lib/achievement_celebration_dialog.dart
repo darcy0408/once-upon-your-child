@@ -84,9 +84,9 @@ class _AchievementCelebrationDialogState
                 ),
               ],
             ),
-            padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
+              constraints: const BoxConstraints(maxWidth: 400),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -110,9 +110,9 @@ class _AchievementCelebrationDialogState
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     SizedBox(
-                      height: 220,
+                      height: 260, // Increased to fit the content (120 circle + text + badges)
                       child: PageView.builder(
                         controller: _pageController,
                         itemCount: widget.achievements.length,
@@ -131,17 +131,17 @@ class _AchievementCelebrationDialogState
                         },
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12), // Reduced spacing
                     if (widget.achievements.length > 1)
                       _PageDots(
                         count: widget.achievements.length,
                         activeIndex: _currentPage,
                       ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16), // Reduced spacing
                     ElevatedButton(
                       onPressed: () => Navigator.of(context).pop(),
                       style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(180, 48),
+                        minimumSize: const Size(180, 44), // Slightly smaller button
                         backgroundColor: theme.colorScheme.primary,
                         foregroundColor: theme.colorScheme.onPrimary,
                         shape: RoundedRectangleBorder(
@@ -243,8 +243,8 @@ class _AchievementSlide extends StatelessWidget {
             ScaleTransition(
               scale: Tween<double>(begin: 0.92, end: 1.0).animate(animation),
               child: Container(
-                width: 160,
-                height: 160,
+                width: 120, // Reduced from 160
+                height: 120, // Reduced from 160
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
@@ -258,15 +258,15 @@ class _AchievementSlide extends StatelessWidget {
                   boxShadow: [
                     BoxShadow(
                       color: rarityColor.withValues(alpha: 0.4),
-                      blurRadius: 25,
-                      offset: const Offset(0, 12),
+                      blurRadius: 20, // Reduced blur
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
                 child: Center(
                   child: Icon(
                     achievement.icon,
-                    size: 72,
+                    size: 56, // Reduced from 72
                     color: Colors.white,
                   ),
                 ),

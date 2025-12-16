@@ -123,9 +123,6 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
   }
 
   Future<void> _saveCharacterIfNeeded() async {
-    // If we already have an ID (e.g. from existing character), skip
-    if (widget.wizardData.characterId != null) return;
-
     setState(() => _isSaving = true);
     
     try {
@@ -135,10 +132,13 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
         'name': widget.wizardData.characterName,
         'age': widget.wizardData.characterAge,
         'gender': widget.wizardData.characterGender,
+        'role': widget.wizardData.selectedArchetypeId, // Ensure role is updated
         'character_type': 'Everyday Kid',
         'character_style': 'Regular Kid', 
         'likes': characterDetails['interests'] ?? [],
         'strengths': characterDetails['strengths'] ?? [],
+        'pets': widget.wizardData.pets,
+        'friends': widget.wizardData.additionalCharacters,
         'avatar': { 
           'hairColor': 'Brown',
           'skinTone': 'Light',
@@ -146,16 +146,26 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       };
 
       final api = ApiServiceManager();
-      final response = await api.post('/create-character', body);
+      
+      if (widget.wizardData.characterId != null) {
+          // UPDATE EXISTING
+          debugPrint('🔄 Updating existing character: ${widget.wizardData.characterId}');
+          // using PATCH to update only changed fields is safer, but providing all is fine too
+          await api.patch('/characters/${widget.wizardData.characterId}', body);
+      } else {
+          // CREATE NEW
+          debugPrint('✨ Creating new character');
+          final response = await api.post('/create-character', body);
 
-      if (response.containsKey('character_id')) {
-         widget.wizardData.characterId = response['character_id']?.toString();
-      } else if (response.containsKey('id')) {
-         widget.wizardData.characterId = response['id']?.toString();
+          if (response.containsKey('character_id')) {
+             widget.wizardData.characterId = response['character_id']?.toString();
+          } else if (response.containsKey('id')) {
+             widget.wizardData.characterId = response['id']?.toString();
+          }
       }
 
     } catch (e) {
-      debugPrint('⚠️ Character save failed: $e');
+      debugPrint('⚠️ Character save/update failed: $e');
     } finally {
       setState(() => _isSaving = false);
     }

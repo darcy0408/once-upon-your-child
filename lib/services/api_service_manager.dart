@@ -66,6 +66,88 @@ class ApiServiceManager {
     }
   }
 
+  Future<Map<String, dynamic>> put(
+    String path,
+    Map<String, dynamic> payload, {
+    Duration timeout = const Duration(seconds: 15),
+    http.Client? client,
+  }) async {
+    final httpClient = client ?? _testClient ?? http.Client();
+    final uri = Uri.parse('$_localBackendUrl$path');
+    try {
+      final response = await httpClient
+          .put(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(payload),
+          )
+          .timeout(timeout);
+      return _decodeJsonResponse(response, uri);
+    } on TimeoutException catch (error) {
+      debugPrint('PUT $uri timed out after ${timeout.inSeconds}s: $error');
+      throw TimeoutException(
+        'Request to ${uri.path} timed out. Please try again.',
+        timeout,
+      );
+    } on SocketException catch (error) {
+      debugPrint('❌ Network error while calling $uri');
+      throw Exception(
+        'Cannot connect to server. Please check your internet connection and try again.\n\nServer: $_localBackendUrl',
+      );
+    } on HandshakeException catch (error) {
+      debugPrint('❌ SSL/TLS error while calling $uri: $error');
+      throw Exception(
+        'Secure connection failed. This might be a certificate issue.',
+      );
+    } on http.ClientException catch (error) {
+      debugPrint('❌ HTTP Client error while calling $uri: $error');
+      throw Exception(
+        'Request failed: ${error.message}\n\nPlease try again.',
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> patch(
+    String path,
+    Map<String, dynamic> payload, {
+    Duration timeout = const Duration(seconds: 15),
+    http.Client? client,
+  }) async {
+    final httpClient = client ?? _testClient ?? http.Client();
+    final uri = Uri.parse('$_localBackendUrl$path');
+    try {
+      final response = await httpClient
+          .patch(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(payload),
+          )
+          .timeout(timeout);
+      return _decodeJsonResponse(response, uri);
+    } on TimeoutException catch (error) {
+      debugPrint('PATCH $uri timed out after ${timeout.inSeconds}s: $error');
+      throw TimeoutException(
+        'Request to ${uri.path} timed out. Please try again.',
+        timeout,
+      );
+    } on SocketException catch (error) {
+      debugPrint('❌ Network error while calling $uri');
+      throw Exception(
+        'Cannot connect to server. Please check your internet connection and try again.\n\nServer: $_localBackendUrl',
+      );
+    } on HandshakeException catch (error) {
+      debugPrint('❌ SSL/TLS error while calling $uri: $error');
+      throw Exception(
+        'Secure connection failed. This might be a certificate issue.',
+      );
+    } on http.ClientException catch (error) {
+      debugPrint('❌ HTTP Client error while calling $uri: $error');
+      throw Exception(
+        'Request failed: ${error.message}\n\nPlease try again.',
+      );
+    }
+  }
+
   Future<Map<String, dynamic>> get(
     String path, {
     Duration timeout = const Duration(seconds: 15),
