@@ -429,7 +429,11 @@ class AchievementService {
 
       return false;
     } catch (e) {
-      print('Failed to sync achievements with backend: $e');
+      if (e.toString().contains('401')) {
+        print('⚠️ Sync skipped: User not logged in (401)');
+      } else {
+        print('Failed to sync achievements with backend: $e');
+      }
       return false;
     }
   }

@@ -150,7 +150,7 @@ class ProgressionService {
       case UnlockableFeatures.customColors:
         return 15;
       case UnlockableFeatures.rhymeTimeMode:
-        return 0;
+        return 1; // Unlock after first story
       case UnlockableFeatures.superheroMode:
       case UnlockableFeatures.interactiveStories:
         return null; // Premium only, no story requirement
@@ -226,8 +226,8 @@ class ProgressionService {
       progress.unlockedFeatures.add(UnlockableFeatures.customColors);
     }
 
-    // Rhyme Time Mode at 0 stories (always unlocked for testing)
-    if (progress.storiesCreated >= 0 &&
+    // Rhyme Time Mode at 1 story
+    if (progress.storiesCreated >= 1 &&
         !progress.hasUnlocked(UnlockableFeatures.rhymeTimeMode)) {
       newUnlocks.add(UnlockableFeatures.rhymeTimeMode);
       progress.unlockedFeatures.add(UnlockableFeatures.rhymeTimeMode);

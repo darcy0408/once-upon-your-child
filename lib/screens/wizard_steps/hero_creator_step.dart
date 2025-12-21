@@ -6,6 +6,8 @@ import '../../widgets/archetype_card.dart';
 import '../../widgets/character_preview.dart';
 import '../../widgets/pill_button.dart';
 import '../wizard_story_screen.dart';
+import '../../services/api_service_manager.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Step 1: The Hero Creator
 ///
@@ -32,6 +34,136 @@ class HeroCreatorStep extends StatefulWidget {
 class _HeroCreatorStepState extends State<HeroCreatorStep> {
   String? _selectedArchetypeId;
   String _characterEmoji = '👧';
+  late TextEditingController _nameController;
+  Character? _selectedExistingCharacter;
+  bool _isCreatingNew = true; // Toggle between creating new vs selecting existing
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.wizardData.characterName);
+
+    // If wizard data already has a characterId, try to find and select it
+    if (widget.wizardData.characterId != null && widget.availableCharacters.isNotEmpty) {
+      _selectedExistingCharacter = widget.availableCharacters.firstWhere(
+        (c) => c.id == widget.wizardData.characterId,
+        orElse: () => widget.availableCharacters.first,
+      );
+      if (_selectedExistingCharacter != null) {
+        _isCreatingNew = false;
+        _loadExistingCharacter(_selectedExistingCharacter!);
+      }
+    }
+  }
+
+  void _loadExistingCharacter(Character character) {
+    try {
+      setState(() {
+        _selectedExistingCharacter = character;
+        widget.wizardData.characterId = character.id;
+        widget.wizardData.characterName = character.name;
+        widget.wizardData.characterAge = character.age;
+        widget.wizardData.characterGender = character.gender ?? 'Girl';
+        widget.wizardData.selectedArchetypeId = character.role;
+        _selectedArchetypeId = character.role;
+        _nameController.text = character.name;
+
+        // Load existing pets with validation
+        if (character.pets != null) {
+          final safePets = <Map<String, String>>[];
+          for (var p in character.pets!) {
+            try {
+               // Ensure p is a map and convert contents to strings safely
+               if (p is Map) {
+                 safePets.add(p.map((key, value) => MapEntry(
+                   key.toString(), 
+                   value?.toString() ?? ''
+                 )));
+               }
+            } catch (e) {
+              debugPrint('Warning: Skipping invalid pet data: $p ($e)');
+            }
+          }
+          widget.wizardData.pets = safePets;
+        }
+
+        // Load friends with validation
+        if (character.friends != null) {
+           widget.wizardData.additionalCharacters = [];
+           for (var f in character.friends!) {
+             if (f is String) {
+               widget.wizardData.additionalCharacters.add(f);
+             } else {
+               widget.wizardData.additionalCharacters.add(f.toString());
+             }
+           }
+        }
+
+        if (character.personalitySliders != null) {
+        widget.wizardData.personalitySliders = Map<String, int>.from(character.personalitySliders!);
+      }
+
+      // Set emoji based on role
+      if (character.role.contains('Adventurer')) _characterEmoji = '🗺️';
+      else if (character.role.contains('Thinker')) _characterEmoji = '💭';
+      else if (character.role.contains('Artist')) _characterEmoji = '🎨';
+        else if (character.role.contains('Helper')) _characterEmoji = '🤝';
+        else if (character.role.contains('Athlete')) _characterEmoji = '⚡';
+        else _characterEmoji = '👧';
+      });
+    } catch (e, stack) {
+      debugPrint('❌ Error loading character: $e\n$stack');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not load character: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  /// Auto-save the character when pets are modified
+  Future<void> _autoSaveCharacter() async {
+    // Only auto-save if we have a character ID (existing character)
+    if (widget.wizardData.characterId == null) {
+      debugPrint('[Hero Creator] Skipping auto-save - no character ID yet');
+      return;
+    }
+
+    try {
+      debugPrint('[Hero Creator] Auto-saving character pets...');
+      final body = {
+        'name': widget.wizardData.characterName,
+        'age': widget.wizardData.characterAge,
+        'gender': widget.wizardData.characterGender,
+        'role': widget.wizardData.selectedArchetypeId,
+        'pets': widget.wizardData.pets,
+        'friends': widget.wizardData.additionalCharacters,
+      };
+
+      final api = ApiServiceManager();
+      await api.patch('/characters/${widget.wizardData.characterId}', body);
+      debugPrint('[Hero Creator] Auto-save successful - pets saved!');
+    } catch (e) {
+      debugPrint('[Hero Creator] Auto-save failed: $e');
+    }
+  }
+
+  void _switchToNewCharacter() {
+    setState(() {
+      _isCreatingNew = true;
+      _selectedExistingCharacter = null;
+      widget.wizardData.characterId = null;
+      widget.wizardData.characterName = '';
+      widget.wizardData.characterAge = 8;
+      _selectedArchetypeId = null;
+      _nameController.clear();
+      _characterEmoji = '👧';
+    });
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
 
   void _selectArchetype(ArchetypeData archetype) {
     setState(() {
@@ -40,7 +172,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 
       // Auto-fill wizard data with archetype
       widget.wizardData.selectedArchetypeId = archetype.name;
-      widget.wizardData.personalitySliders = Map.from(archetype.attributes);
+      widget.wizardData.personalitySliders = Map<String, int>.from(archetype.attributes);
       // Ensure default age is set if 0 or uninitialized
       if (widget.wizardData.characterAge < 1) {
         widget.wizardData.characterAge = 5; 
@@ -49,26 +181,42 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     });
   }
 
-  bool get _canContinue => _selectedArchetypeId != null;
+  bool get _canContinue => _selectedArchetypeId != null && widget.wizardData.characterName.trim().isNotEmpty;
+
+  String _getEmojiForCharacter(Character character) {
+    final role = character.role;
+    if (role.contains('Adventurer')) return '🗺️';
+    if (role.contains('Thinker')) return '💭';
+    if (role.contains('Artist')) return '🎨';
+    if (role.contains('Helper')) return '🤝';
+    if (role.contains('Athlete')) return '⚡';
+    if (role.contains('Shy')) return '😊';
+    // Default based on gender
+    if (character.gender == 'Boy') return '👦';
+    return '👧';
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Top 50%: Character Preview
+        // Top 40%: Character Preview
         Expanded(
+          flex: 2, 
           child: CharacterPreview(
             placeholderEmoji: _characterEmoji,
             showSparkles: true,
           ),
         ),
 
-        // Bottom 50%: Archetype Selection
+        // Bottom 60%: Archetype Selection
         Expanded(
+          flex: 3,
           child: Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.lg,
-              vertical: AppSpacing.xl,
+
+              vertical: AppSpacing.md, // Reduced from XL
             ),
             child: SingleChildScrollView(
               child: Column(
@@ -76,27 +224,152 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                 children: [
                   // Title
                   Text(
-                    'Create a Character',
+                    _isCreatingNew ? 'Create a Character' : 'Select Your Hero',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: AppColors.textDark,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      color: AppColors.textDark,
+                      fontWeight: FontWeight.bold,
+                    ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: 16),
 
-                  // Subtitle
-                  Text(
-                    'Choose an archetype to start',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.textDark.withAlpha(179), // 70% opacity
+                  // Saved Characters Section (if any exist)
+                  if (widget.availableCharacters.isNotEmpty) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SegmentedButton<bool>(
+                          segments: const [
+                            ButtonSegment(value: false, label: Text('My Characters')),
+                            ButtonSegment(value: true, label: Text('Create New')),
+                          ],
+                          selected: {_isCreatingNew},
+                          onSelectionChanged: (Set<bool> newSelection) {
+                            if (newSelection.first && !_isCreatingNew) {
+                              _switchToNewCharacter();
+                            } else if (!newSelection.first && _isCreatingNew) {
+                              setState(() => _isCreatingNew = false);
+                            }
+                          },
                         ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
-                  // Archetype cards (horizontal scroll)
-                  ConstrainedBox(
+                  // Show saved characters if in selection mode
+                  if (!_isCreatingNew && widget.availableCharacters.isNotEmpty) ...[
+                    Text(
+                      'Choose your hero for this adventure',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.textDark.withAlpha(179),
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 140,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                        itemCount: widget.availableCharacters.length,
+                        separatorBuilder: (context, index) => const SizedBox(width: 12),
+                        itemBuilder: (context, index) {
+                          final character = widget.availableCharacters[index];
+                          final isSelected = _selectedExistingCharacter?.id == character.id;
+
+                          return GestureDetector(
+                            onTap: () => _loadExistingCharacter(character),
+                            child: Container(
+                              width: 120,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: isSelected ? AppColors.primary : AppColors.surface,
+                                borderRadius: BorderRadius.circular(AppRadius.md),
+                                border: Border.all(
+                                  color: isSelected ? AppColors.gold : AppColors.primary.withAlpha(128),
+                                  width: isSelected ? 3 : 2,
+                                ),
+                                boxShadow: isSelected ? [
+                                  BoxShadow(
+                                    color: AppColors.gold.withAlpha(128),
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
+                                  ),
+                                ] : null,
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    _getEmojiForCharacter(character),
+                                    style: const TextStyle(fontSize: 36),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    character.name,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: isSelected ? AppColors.textLight : AppColors.textDark,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${character.age} yrs',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: isSelected ? AppColors.textLight.withAlpha(204) : AppColors.textDark.withAlpha(179),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // Character Name (only editable when creating new)
+                  if (_isCreatingNew)
+                    TextField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Hero Name', 
+                      hintText: 'e.g. Vivian or Lydia',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.person),
+                      contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                    ),
+                    onChanged: (v) {
+                      setState(() {
+                         widget.wizardData.characterName = v;
+                      });
+                    },
+                  ),
+                  if (_isCreatingNew)
+                    const SizedBox(height: 24),
+
+                  // Subtitle (only for new characters)
+                  if (_isCreatingNew)
+                    Text(
+                      'Then, choose an archetype to start',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.textDark.withAlpha(179), // 70% opacity
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                  if (_isCreatingNew)
+                    const SizedBox(height: 12),
+
+                  // Archetype cards (horizontal scroll) - only for new characters
+                  if (_isCreatingNew)
+                    ConstrainedBox(
                     constraints: const BoxConstraints(
                       minHeight: 200,
                       maxHeight: 240,
@@ -115,6 +388,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                           icon: archetype.icon,
                           name: archetype.name,
                           description: archetype.description,
+                          specialAbility: archetype.specialAbility,
                           traits: archetype.traits,
                           isSelected: isSelected,
                           onUseTemplate: () => _selectArchetype(archetype),
@@ -122,29 +396,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                       },
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xl),
+                  if (_isCreatingNew)
+                    const SizedBox(height: 16),
 
-
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // Name & Age Section
-                  if (_canContinue) ...[
-                    // Character Name
-                    TextField(
-                      controller: TextEditingController(text: widget.wizardData.characterName)
-                        ..selection = TextSelection.fromPosition(TextPosition(offset: widget.wizardData.characterName.length)),
-                      decoration: const InputDecoration(
-                        labelText: 'Hero Name', 
-                        hintText: 'e.g. Vivian or Lydia',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.person),
-                      ),
-                      onChanged: (v) {
-                        widget.wizardData.characterName = v;
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-
+                  // Name & Age Section (show if creating new and archetype selected, or if existing character selected)
+                  if (_canContinue || !_isCreatingNew) ...[
                     // Gender Selection
                     Row(
                       children: [
@@ -167,63 +423,41 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: 12),
 
-                    // Age Slider
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                         Text('Age: ${widget.wizardData.characterAge}', 
-                              style: Theme.of(context).textTheme.titleSmall),
-                         const SizedBox(height: 8),
-                         SizedBox(
-                           height: 120,
-                           child: CupertinoPicker(
-                             itemExtent: 32,
-                             onSelectedItemChanged: (index) {
-                               setState(() {
-                                 widget.wizardData.characterAge = index + 1;
-                               });
-                             },
-                             scrollController: FixedExtentScrollController(initialItem: widget.wizardData.characterAge - 1),
-                             children: List.generate(100, (index) => Center(
-                               child: Text(
-                                 '${index + 1}',
-                                 style: const TextStyle(fontSize: 20, color: AppColors.textDark),
-                               ),
-                             )),
-                           ),
-                         ),
-                      ],
+                    // Age Picker
+                    _ImprovedAgePicker(
+                      label: 'Hero Age',
+                      age: widget.wizardData.characterAge,
+                      minAge: 1,
+                      maxAge: 99,
+                      onAgeChanged: (newAge) {
+                        setState(() {
+                          widget.wizardData.characterAge = newAge;
+                        });
+                      },
                     ),
-                    const SizedBox(height: AppSpacing.xl),
+                    const SizedBox(height: 16),
                   ],
 
                   // Custom Pets Section
-                  if (_canContinue)
+                  if (_canContinue || !_isCreatingNew)
                      _PetsSection(
                         wizardData: widget.wizardData,
                         onUpdate: () => setState(() {}),
-                     ),
-                  
-                  if (_canContinue)
-                     const SizedBox(height: AppSpacing.xl),
-
-                  // Siblings/Friends Section
-                  if (_canContinue)
-                     _SiblingsSection(
-                        wizardData: widget.wizardData,
-                        onUpdate: () => setState(() {}),
-                        availableCharacters: widget.availableCharacters
-                            .where((c) => c.name != widget.wizardData.characterName)
-                            .toList(),
+                        onAutoSave: _autoSaveCharacter,
                      ),
 
-                  if (_canContinue)
-                     const SizedBox(height: AppSpacing.xl),
+                  if (_canContinue || !_isCreatingNew)
+                     const SizedBox(height: 16),
 
-                  // Continue button (only shown when archetype selected)
-                  if (_canContinue)
+// Siblings section removed per user request
+
+                  if (_canContinue || !_isCreatingNew)
+                     const SizedBox(height: 16),
+
+                  // Continue button
+                  if (_canContinue || (!_isCreatingNew && _selectedExistingCharacter != null))
                     AnimatedOpacity(
                       opacity: _canContinue ? 1.0 : 0.0,
                       duration: const Duration(milliseconds: 300),
@@ -249,12 +483,19 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 class _PetsSection extends StatelessWidget {
   final WizardData wizardData;
   final VoidCallback onUpdate;
+  final VoidCallback onAutoSave;
 
-  const _PetsSection({required this.wizardData, required this.onUpdate});
+  const _PetsSection({
+    required this.wizardData,
+    required this.onUpdate,
+    required this.onAutoSave,
+  });
 
   void _showAddPetDialog(BuildContext context) {
     final nameController = TextEditingController();
+    final colorController = TextEditingController();
     String species = 'Dog';
+    String gender = 'Boy';
     String personality = '';
     
     showDialog(
@@ -285,6 +526,24 @@ class _PetsSection extends StatelessWidget {
                   decoration: const InputDecoration(labelText: 'Species'),
                 ),
                 const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: gender,
+                  items: ['Boy', 'Girl']
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                      .toList(),
+                  onChanged: (v) {
+                     if (v != null) setState(() => gender = v);
+                  },
+                  decoration: const InputDecoration(labelText: 'Gender'),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: colorController,
+                  decoration: const InputDecoration(
+                      labelText: 'Color / Looks', 
+                      hintText: 'e.g. Black with white paws'),
+                ),
+                const SizedBox(height: 16),
                 TextField(
                   decoration: const InputDecoration(
                       labelText: 'Personality / Fun Fact', 
@@ -296,16 +555,20 @@ class _PetsSection extends StatelessWidget {
             actions: [
               TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
               ElevatedButton(
-                onPressed: nameController.text.trim().isEmpty 
-                    ? null 
+                onPressed: nameController.text.trim().isEmpty
+                    ? null
                     : () {
                         wizardData.pets.add({
                           'name': nameController.text.trim(),
                           'species': species,
+                          'gender': gender,
+                          'color': colorController.text.trim(),
                           'personality': personality,
                         });
                         onUpdate();
                         Navigator.pop(context);
+                        // Auto-save the character with the new pet
+                        onAutoSave();
                       },
                 child: const Text('Add Pet'),
               ),
@@ -360,6 +623,8 @@ class _PetsSection extends StatelessWidget {
                 onDeleted: () {
                    wizardData.pets.remove(pet);
                    onUpdate();
+                   // Auto-save the character with updated pets
+                   onAutoSave();
                 },
               );
             }).toList(),
@@ -383,225 +648,212 @@ class _PetsSection extends StatelessWidget {
 
 }
 
-class _SiblingsSection extends StatelessWidget {
-  final WizardData wizardData;
-  final VoidCallback onUpdate;
-  final List<Character> availableCharacters;
 
-  const _SiblingsSection({
-    required this.wizardData,
-    required this.onUpdate,
-    this.availableCharacters = const [],
+
+/// Improved Age Picker Widget
+///
+/// Features:
+/// - Large, clickable age display
+/// - Direct text input field
+/// - Scrollable wheel picker
+/// - Better visual feedback
+class _ImprovedAgePicker extends StatefulWidget {
+  final String label;
+  final int age;
+  final int minAge;
+  final int maxAge;
+  final ValueChanged<int> onAgeChanged;
+
+  const _ImprovedAgePicker({
+    required this.label,
+    required this.age,
+    required this.minAge,
+    required this.maxAge,
+    required this.onAgeChanged,
   });
 
-  void _showAddDialog(BuildContext context) {
-    String name = '';
-    String role = 'Friend';
-    int age = wizardData.characterAge;
+  @override
+  State<_ImprovedAgePicker> createState() => _ImprovedAgePickerState();
+}
 
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: const Text('Add Friend or Sibling 👫'),
-            content: Column(
-               mainAxisSize: MainAxisSize.min,
-               children: [
-                 TextField(
-                  decoration: const InputDecoration(labelText: 'Name', hintText: 'e.g. Sam'),
-                  onChanged: (v) => name = v,
-                  autofocus: true,
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: role,
-                  items: ['Friend', 'Brother', 'Sister', 'Cousin', 'Classmate', 'Neighbor']
-                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                      .toList(),
-                  onChanged: (v) => setState(() => role = v!),
-                  decoration: const InputDecoration(labelText: 'Role'),
-                ),
-                const SizedBox(height: 12),
-                // Age selector with both wheel and direct input
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Age:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        // Direct age input
-                        Expanded(
-                          child: TextField(
-                            decoration: const InputDecoration(
-                              labelText: 'Type age',
-                              hintText: '1-99',
-                              border: OutlineInputBorder(),
-                            ),
-                            keyboardType: TextInputType.number,
-                            onChanged: (v) {
-                              final parsed = int.tryParse(v);
-                              if (parsed != null && parsed >= 1 && parsed <= 99) {
-                                setState(() => age = parsed);
-                              }
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        const Text('or scroll →'),
-                        const SizedBox(width: 8),
-                        // Wheel picker with visible border
-                        Container(
-                          width: 80,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: AppColors.primary, width: 2),
-                            borderRadius: BorderRadius.circular(8),
-                            color: AppColors.surface.withAlpha(128),
-                          ),
-                          child: Stack(
-                            children: [
-                              // Selection indicator line
-                              Positioned(
-                                top: 40,
-                                left: 0,
-                                right: 0,
-                                child: Container(
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withAlpha(51),
-                                    border: Border(
-                                      top: BorderSide(color: AppColors.primary, width: 2),
-                                      bottom: BorderSide(color: AppColors.primary, width: 2),
-                                    ),
-                                  ),
-                                ),
-                             SizedBox(
-                         height: 100,
-                         child: CupertinoPicker(
-                           itemExtent: 32,
-                           scrollController: FixedExtentScrollController(initialItem: age - 1),
-                           onSelectedItemChanged: (index) {
-                             setState(() => age = index + 1);
-                           },
-                           children: List.generate(100, (index) => Center(
-                             child: Text(
-                               '${index + 1}',
-                               style: const TextStyle(fontSize: 18, color: AppColors.textDark),
-                             ),
-                           )),
-                         ),
-                       ),     ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Center(
-                      child: Text(
-                        'Selected: $age years old',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
-                      ),
-                    ),
-                  ],
-                ),
-               ],
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-              ElevatedButton(
-                onPressed: () {
-                  if (name.isNotEmpty) {
-                     // Format: "Name (Role, Age)"
-                     wizardData.additionalCharacters.add('$name ($role, $age)');
-                     onUpdate();
-                     Navigator.pop(context);
-                  }
-                },
-                child: const Text('Add'),
-              ),
-            ],
-          );
-        }
-      ),
+class _ImprovedAgePickerState extends State<_ImprovedAgePicker> {
+  late TextEditingController _textController;
+  late FixedExtentScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController(text: widget.age.toString());
+    _scrollController = FixedExtentScrollController(
+      initialItem: widget.age - widget.minAge,
     );
   }
 
-  void _addExistingCharacter(Character character) {
-    wizardData.additionalCharacters.add('${character.name} (${character.role}, ${character.age})');
-    onUpdate();
+  @override
+  void dispose() {
+    _textController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _updateAge(int newAge) {
+    if (newAge >= widget.minAge && newAge <= widget.maxAge) {
+      widget.onAgeChanged(newAge);
+      _textController.text = newAge.toString();
+    }
+  }
+
+  void _showQuickEditDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final controller = TextEditingController(text: widget.age.toString());
+        return AlertDialog(
+          title: Text('Enter ${widget.label}'),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'Age',
+              hintText: '${widget.minAge}-${widget.maxAge}',
+              border: const OutlineInputBorder(),
+              suffixText: 'years',
+            ),
+            autofocus: true,
+            onSubmitted: (value) {
+              final parsed = int.tryParse(value);
+              if (parsed != null) {
+                _updateAge(parsed);
+                Navigator.pop(context);
+              }
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final parsed = int.tryParse(controller.text);
+                if (parsed != null) {
+                  _updateAge(parsed);
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Done'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Row(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Friends & Siblings',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
-                  ),
+        // Label
+        Expanded(
+          flex: 2,
+          child: Text(
+            widget.label,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: AppColors.textDark,
             ),
-            Row(
+          ),
+        ),
+
+        // Clickable age display
+        GestureDetector(
+          onTap: _showQuickEditDialog,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                 // Existing Character Dropdown (Popup Menu)
-                 if (availableCharacters.isNotEmpty)
-                   PopupMenuButton<Character>(
-                     icon: const Icon(Icons.person_add_alt_1, color: AppColors.primary),
-                     tooltip: 'Add existing character',
-                     onSelected: _addExistingCharacter,
-                     itemBuilder: (context) {
-                       return availableCharacters
-                        .where((c) => !wizardData.additionalCharacters.any((added) => added.startsWith(c.name)))
-                        .map((c) => PopupMenuItem(
-                           value: c,
-                           child: Text('${c.name} (${c.role})'),
-                        )).toList();
-                     },
-                   ),
-                 
-                 TextButton.icon(
-                  onPressed: () => _showAddDialog(context),
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Create New'),
-                  style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+                Text(
+                  '${widget.age}',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textLight,
+                  ),
                 ),
+                const SizedBox(width: 2),
+                const Text(
+                  'yrs',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textLight,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.edit, size: 12, color: AppColors.textLight),
               ],
             ),
-          ],
-        ),
-        if (wizardData.additionalCharacters.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Text(
-              'Who else is in the story? Add friends or siblings.',
-              style: TextStyle(color: AppColors.textDark.withAlpha(128), fontStyle: FontStyle.italic, fontSize: 13),
-            ),
-          )
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: wizardData.additionalCharacters.map((name) {
-              return Chip(
-                avatar: const Text('👤'),
-                label: Text(name),
-                backgroundColor: AppColors.surface,
-                side: BorderSide(color: AppColors.primary.withAlpha(50)),
-                onDeleted: () {
-                   wizardData.additionalCharacters.remove(name);
-                   onUpdate();
-                },
-              );
-            }).toList(),
           ),
+        ),
+
+        const SizedBox(width: 8),
+
+        // Compact wheel picker
+        Container(
+          width: 60,
+          height: 80,
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.primary, width: 2),
+            borderRadius: BorderRadius.circular(8),
+            color: AppColors.primary.withAlpha(26),
+          ),
+          child: Stack(
+            children: [
+              // Selection indicator
+              Positioned(
+                top: 28,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withAlpha(51),
+                    border: const Border(
+                      top: BorderSide(color: AppColors.primary, width: 1),
+                      bottom: BorderSide(color: AppColors.primary, width: 1),
+                    ),
+                  ),
+                ),
+              ),
+              // Wheel picker
+              CupertinoPicker(
+                scrollController: _scrollController,
+                itemExtent: 24,
+                onSelectedItemChanged: (index) {
+                  _updateAge(index + widget.minAge);
+                },
+                children: List.generate(
+                  widget.maxAge - widget.minAge + 1,
+                  (index) => Center(
+                    child: Text(
+                      '${index + widget.minAge}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

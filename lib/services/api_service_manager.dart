@@ -66,6 +66,88 @@ class ApiServiceManager {
     }
   }
 
+  Future<Map<String, dynamic>> put(
+    String path,
+    Map<String, dynamic> payload, {
+    Duration timeout = const Duration(seconds: 15),
+    http.Client? client,
+  }) async {
+    final httpClient = client ?? _testClient ?? http.Client();
+    final uri = Uri.parse('$_localBackendUrl$path');
+    try {
+      final response = await httpClient
+          .put(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(payload),
+          )
+          .timeout(timeout);
+      return _decodeJsonResponse(response, uri);
+    } on TimeoutException catch (error) {
+      debugPrint('PUT $uri timed out after ${timeout.inSeconds}s: $error');
+      throw TimeoutException(
+        'Request to ${uri.path} timed out. Please try again.',
+        timeout,
+      );
+    } on SocketException catch (error) {
+      debugPrint('❌ Network error while calling $uri');
+      throw Exception(
+        'Cannot connect to server. Please check your internet connection and try again.\n\nServer: $_localBackendUrl',
+      );
+    } on HandshakeException catch (error) {
+      debugPrint('❌ SSL/TLS error while calling $uri: $error');
+      throw Exception(
+        'Secure connection failed. This might be a certificate issue.',
+      );
+    } on http.ClientException catch (error) {
+      debugPrint('❌ HTTP Client error while calling $uri: $error');
+      throw Exception(
+        'Request failed: ${error.message}\n\nPlease try again.',
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> patch(
+    String path,
+    Map<String, dynamic> payload, {
+    Duration timeout = const Duration(seconds: 15),
+    http.Client? client,
+  }) async {
+    final httpClient = client ?? _testClient ?? http.Client();
+    final uri = Uri.parse('$_localBackendUrl$path');
+    try {
+      final response = await httpClient
+          .patch(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(payload),
+          )
+          .timeout(timeout);
+      return _decodeJsonResponse(response, uri);
+    } on TimeoutException catch (error) {
+      debugPrint('PATCH $uri timed out after ${timeout.inSeconds}s: $error');
+      throw TimeoutException(
+        'Request to ${uri.path} timed out. Please try again.',
+        timeout,
+      );
+    } on SocketException catch (error) {
+      debugPrint('❌ Network error while calling $uri');
+      throw Exception(
+        'Cannot connect to server. Please check your internet connection and try again.\n\nServer: $_localBackendUrl',
+      );
+    } on HandshakeException catch (error) {
+      debugPrint('❌ SSL/TLS error while calling $uri: $error');
+      throw Exception(
+        'Secure connection failed. This might be a certificate issue.',
+      );
+    } on http.ClientException catch (error) {
+      debugPrint('❌ HTTP Client error while calling $uri: $error');
+      throw Exception(
+        'Request failed: ${error.message}\n\nPlease try again.',
+      );
+    }
+  }
+
   Future<Map<String, dynamic>> get(
     String path, {
     Duration timeout = const Duration(seconds: 15),
@@ -144,6 +226,9 @@ class ApiServiceManager {
     int maxAttempts = 3,
     Duration retryInitialDelay = const Duration(seconds: 2),
     Duration requestTimeout = const Duration(seconds: 90),
+    List<Map<String, dynamic>>? companionPets,
+    List<dynamic>? companionCharacters,
+    String storyLength = 'standard',
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
     final userId = await UserIdentityService.getOrCreateUserId();
@@ -175,6 +260,9 @@ class ApiServiceManager {
         maxAttempts: maxAttempts,
         initialDelay: retryInitialDelay,
         requestTimeout: requestTimeout,
+        companionPets: companionPets,
+        companionCharacters: companionCharacters,
+        storyLength: storyLength,
       );
     }
 
@@ -190,6 +278,9 @@ class ApiServiceManager {
       includeIllustrations: includeIllustrations,
       currentFeeling: currentFeeling,
       characterEvolution: characterEvolution,
+      companionPets: companionPets,
+      companionCharacters: companionCharacters,
+      storyLength: storyLength,
     );
   }
 
@@ -242,6 +333,9 @@ class ApiServiceManager {
     bool includeIllustrations = false,
     Map<String, dynamic>? currentFeeling,
     Map<String, dynamic>? characterEvolution,
+    List<Map<String, dynamic>>? companionPets,
+    List<dynamic>? companionCharacters,
+    String storyLength = 'standard',
   }) async {
     final apiKey = await getUserApiKey();
     if (apiKey == null) {
@@ -266,6 +360,9 @@ class ApiServiceManager {
       learningToReadMode: learningToReadMode,
       currentFeeling: currentFeeling,
       characterEvolution: characterEvolution,
+      companionPets: companionPets,
+      companionCharacters: companionCharacters,
+      storyLength: storyLength,
     );
 
     try {
@@ -313,6 +410,9 @@ class ApiServiceManager {
     required int maxAttempts,
     required Duration initialDelay,
     required Duration requestTimeout,
+    List<Map<String, dynamic>>? companionPets,
+    List<dynamic>? companionCharacters,
+    required String storyLength,
   }) async {
     var attempts = 0;
     var delay = initialDelay;
@@ -336,6 +436,9 @@ class ApiServiceManager {
           characterEvolution: characterEvolution,
           client: client,
           requestTimeout: requestTimeout,
+          companionPets: companionPets,
+          companionCharacters: companionCharacters,
+          storyLength: storyLength,
         );
       } catch (error, stackTrace) {
         attempts++;
@@ -367,6 +470,9 @@ class ApiServiceManager {
     Map<String, dynamic>? characterEvolution,
     http.Client? client,
     required Duration requestTimeout,
+    List<Map<String, dynamic>>? companionPets,
+    List<dynamic>? companionCharacters,
+    required String storyLength,
   }) async {
     final httpClient = client ?? _testClient ?? http.Client();
     final generateUri = Uri.parse('$_localBackendUrl/generate-story');
@@ -385,6 +491,9 @@ class ApiServiceManager {
       'include_illustrations': includeIllustrations,
       'subscription_tier': subscriptionTier,
       'user_id': userId,
+      'companion_pets': companionPets,
+      'companion_characters': companionCharacters,
+      'story_length': storyLength,
     };
     if (userApiKey != null && userApiKey.isNotEmpty) {
       body['user_api_key'] = userApiKey;
@@ -959,10 +1068,52 @@ Create the rhyming learning-to-read story about $characterName now:
     bool learningToReadMode = false,
     Map<String, dynamic>? currentFeeling,
     Map<String, dynamic>? characterEvolution,
+    List<Map<String, dynamic>>? companionPets,
+    List<dynamic>? companionCharacters,
+    String storyLength = 'standard',
   }) {
-    final guidelines = StoryComplexityService.getAgeGuidelines(age);
-    final lengthGuideline =
-        (guidelines['length_guideline'] as String?) ?? '200-300 words';
+    // Map story length to word count targets (matching backend)
+    String lengthGuideline;
+    switch (storyLength) {
+      case 'quick':
+        lengthGuideline = '300-400 words';
+        break;
+      case 'epic':
+        lengthGuideline = '1000-1200 words';
+        break;
+      case 'standard':
+      default:
+        lengthGuideline = '600-800 words';
+        break;
+    }
+
+    // Merge companions for prompt building
+    final effectiveAdditionalChars = additionalCharacters != null 
+        ? List<String>.from(additionalCharacters) 
+        : <String>[];
+    
+    if (companionCharacters != null) {
+      for (final char in companionCharacters) {
+        if (char is String) {
+          effectiveAdditionalChars.add(char);
+        } else if (char is Map) {
+          final name = char['name'] ?? 'Friend';
+          final desc = char['description'] ?? char['role'] ?? '';
+          final power = char['signaturePower'];
+          
+          String entry = name;
+          if (desc.isNotEmpty) entry += ' ($desc)';
+          if (power != null) entry += ' [Magic: $power]';
+          
+          effectiveAdditionalChars.add(entry);
+        }
+      }
+    }
+    if (companionPets != null) {
+      for (final p in companionPets) {
+        effectiveAdditionalChars.add('${p['name']} (a ${p['species']})');
+      }
+    }
 
     if (learningToReadMode) {
       return _buildLearningToReadPrompt(
@@ -984,7 +1135,7 @@ Create the rhyming learning-to-read story about $characterName now:
         currentFeeling: currentFeeling,
         companion: companion,
         characterDetails: characterDetails,
-        additionalCharacters: additionalCharacters,
+        additionalCharacters: effectiveAdditionalChars,
       );
     } else {
       return _buildAdventurePrompt(
@@ -994,7 +1145,7 @@ Create the rhyming learning-to-read story about $characterName now:
         lengthGuideline: lengthGuideline,
         companion: companion,
         characterDetails: characterDetails,
-        additionalCharacters: additionalCharacters,
+        additionalCharacters: effectiveAdditionalChars,
       );
     }
   }
@@ -1070,7 +1221,7 @@ Create the rhyming learning-to-read story about $characterName now:
     if (apiKey == null) throw Exception('No API key configured');
 
     final model = GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash-exp',
       apiKey: apiKey,
     );
 
@@ -1186,7 +1337,7 @@ Ensure text is vivid, age-tuned, playful, with a strong hook/problem and embodie
     if (apiKey == null) throw Exception('No API key configured');
 
     final model = GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash-exp',
       apiKey: apiKey,
     );
 

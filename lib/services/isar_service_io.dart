@@ -3,6 +3,7 @@ import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/local/character_local_io.dart';
+import '../avatar_models.dart';
 import '../models/local/story_local_io.dart';
 import '../models.dart'; // Domain models
 
@@ -38,7 +39,7 @@ class IsarService {
       name: lc.name,
       age: lc.age,
       role: 'Hero', // Default role for saved heroes
-      avatar: lc.avatarUrl != null ? CharacterAvatar(token: '', background: '', skin: '') : null, // Partial mapping or fetch full logic if needed
+      avatar: lc.avatarUrl != null ? CharacterAvatar.defaultAvatar : null, // Partial mapping as local schema lacks full avatar details
       // Note: Full mapping would require more fields in CharacterLocal or a robust mapper.
       // For now, mapping essential fields to prevent build errors.
     )).toList();

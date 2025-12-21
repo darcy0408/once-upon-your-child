@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import '../../services/api_service_manager.dart';
 import '../../services/achievement_service.dart';
 import '../../story_result_screen.dart';
+import '../../interactive_story_screen.dart';
+import '../../models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/make_magic_button.dart';
 import '../../widgets/character_preview.dart';
 import '../wizard_story_screen.dart';
 import 'wizard_data_mapper.dart';
+import '../../data/spark_tools.dart';
 
 /// Step 4: Magic Review & Launch
 ///
@@ -29,17 +32,10 @@ class MagicReviewStep extends StatefulWidget {
 
 class _MagicReviewStepState extends State<MagicReviewStep> {
   bool _isGenerating = false;
-
-  // Import for json/http/env
   bool _isSaving = false;
 
   void _launchStoryCreation() async {
     debugPrint('🎯 MagicReviewStep: _launchStoryCreation called');
-    debugPrint('📊 WizardData.isComplete: ${widget.wizardData.isComplete}');
-    debugPrint('📊 Step1Complete: ${widget.wizardData.isStep1Complete}');
-    debugPrint('📊 Step2Complete: ${widget.wizardData.isStep2Complete}');
-    debugPrint('📊 Step3Complete: ${widget.wizardData.isStep3Complete}');
-    debugPrint('📊 WizardData: ${widget.wizardData.toJson()}');
 
     if (!widget.wizardData.isComplete) {
       debugPrint('⚠️ Wizard data not complete!');
@@ -57,28 +53,16 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
 
     try {
       // 1. Save Character if needed
-      debugPrint('💾 Saving character if needed...');
       await _saveCharacterIfNeeded();
 
       // Prepared payload using the mapper
-      debugPrint('🗺️ Mapping wizard data to story request...');
       final requestData = WizardDataMapper.mapToStoryRequest(widget.wizardData);
-      debugPrint('📦 Request data: $requestData');
-
-      // Call the API
-      debugPrint('🔮 Calling ApiServiceManager.generateStory...');
-      debugPrint('  📷 Include Illustrations: ${widget.wizardData.includeIllustrations}');
-      debugPrint('  🎵 Rhyme Time Mode: ${widget.wizardData.rhymeTimeMode}');
-      debugPrint('  📚 Learning to Read Mode: ${widget.wizardData.learningToReadMode}');
-      debugPrint('  🎮 Interactive Mode: ${widget.wizardData.interactiveMode}');
 
       final result = await ApiServiceManager.generateStory(
-        characterName: requestData['characterName'],
-        age: requestData['age'],
-        theme: requestData['theme'],
-        companion: (requestData['companions'] as List?)?.isNotEmpty == true
-            ? (requestData['companions'] as List).join(', ')
-            : null,
+        characterName: requestData['character'] ?? 'Hero',
+        age: requestData['age'] ?? 5,
+        theme: requestData['theme'] ?? 'Magical Adventure',
+        companion: requestData['companion'] ?? '',  // Provide empty string if null
         characterDetails: requestData['characterDetails'],
         currentFeeling: requestData['currentFeeling'],
         additionalCharacters: requestData['additionalCharacters'],
@@ -86,50 +70,79 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
         includeIllustrations: widget.wizardData.includeIllustrations,
         rhymeTimeMode: widget.wizardData.rhymeTimeMode,
         learningToReadMode: widget.wizardData.learningToReadMode,
+        companionPets: requestData['companion_pets'],
+        companionCharacters: requestData['companion_characters'],
+        storyLength: requestData['storyLength'] ?? 'standard',
       );
       debugPrint('✨ Story generation complete: ${result.storyText.substring(0, 100)}...');
 
       if (mounted) {
-        // Navigate to result
-        debugPrint('🚀 MagicReviewStep: Navigating to StoryResultScreen');
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => StoryResultScreen(
-              title: result.title ?? 'My Magical Story',
-              storyText: result.storyText,
-              wisdomGem: result.wisdomGem ?? 'You are magic!',
-              characterName: requestData['characterName'],
-              theme: requestData['theme'],
-              characterAge: requestData['age'],
-              // Track this as a new story
-              trackStoryCreation: true,
-              trackAnalytics: true,
-              achievementsService: AchievementService(),
-              storyCreatedAt: DateTime.now(),
+        // Check if interactive mode is enabled
+        if (widget.wizardData.interactiveMode) {
+          debugPrint('🎮 Interactive mode enabled, routing to InteractiveStoryScreen');
+
+          // Create a Character object from wizard data
+          final character = Character(
+            id: widget.wizardData.characterId ?? 'temp-${DateTime.now().millisecondsSinceEpoch}',
+            name: widget.wizardData.characterName,
+            age: widget.wizardData.characterAge,
+            role: widget.wizardData.selectedArchetypeId ?? 'Adventurer',
+            gender: widget.wizardData.characterGender,
+            personalitySliders: widget.wizardData.personalitySliders,
+          );
+
+          // Navigate to interactive story screen
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => InteractiveStoryScreen(
+                character: character,
+                theme: requestData['theme'],
+                companion: widget.wizardData.selectedCompanions.isNotEmpty
+                    ? widget.wizardData.selectedCompanions.first
+                    : null,
+              ),
             ),
-          ),
-        );
+          );
+        } else {
+          // Navigate to standard story result
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => StoryResultScreen(
+                title: result.title ?? 'My Magical Story',
+                storyText: result.storyText,
+                wisdomGem: result.wisdomGem ?? 'You are magic!',
+                characterName: requestData['characterName'],
+                theme: requestData['theme'],
+                characterAge: requestData['age'],
+                // Track this as a new story
+                trackStoryCreation: true,
+                trackAnalytics: true,
+                achievementsService: AchievementService(),
+                storyCreatedAt: DateTime.now(),
+              ),
+            ),
+          );
+        }
       }
     } catch (e, stack) {
       debugPrint('❌ Error generating story: $e');
       debugPrint('📚 Stack trace: $stack');
 
-      // Parse error for better user message
       String userMessage = 'Magic needed a recharge';
       if (e.toString().contains('500')) {
         userMessage = 'Server error (500). The backend had trouble generating your story.';
-        debugPrint('🔍 This is a server-side error. Check backend logs for details.');
       } else if (e.toString().contains('timeout')) {
         userMessage = 'Story generation timed out. Please try again.';
-      } else if (e.toString().contains('Cannot connect')) {
-        userMessage = 'Cannot connect to server. Is the backend running?';
+      } else if (e.toString().contains('Cannot connect') || e.toString().contains('XMLHttpRequest')) {
+         // "failed to fetch" often comes up as XMLHttpRequest error in Flutter Web
+        userMessage = 'Cannot connect to server. Please check your internet or try again.';
       }
 
       if (mounted) {
         setState(() => _isGenerating = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$userMessage\n\nTechnical: $e'),
+            content: Text('$userMessage\n\n${e.toString().length > 100 ? e.toString().substring(0, 100) + '...' : e.toString()}'),
             backgroundColor: AppColors.error,
             duration: const Duration(seconds: 8),
             action: SnackBarAction(
@@ -144,47 +157,49 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
   }
 
   Future<void> _saveCharacterIfNeeded() async {
-    // If we already have an ID (e.g. from existing character), skip
-    if (widget.wizardData.characterId != null) return;
-
     setState(() => _isSaving = true);
     
     try {
-      // Extract details mapped from archetype
       final characterDetails = WizardDataMapper.mapToStoryRequest(widget.wizardData)['characterDetails'] as Map<String, dynamic>;
       
-      // Construct simple payload for backend
       final body = {
         'name': widget.wizardData.characterName,
         'age': widget.wizardData.characterAge,
         'gender': widget.wizardData.characterGender,
+        'role': widget.wizardData.selectedArchetypeId, // Ensure role is updated
         'character_type': 'Everyday Kid',
         'character_style': 'Regular Kid', 
         'likes': characterDetails['interests'] ?? [],
         'strengths': characterDetails['strengths'] ?? [],
-        'avatar': { // Minimal avatar payload if none custom
+        'pets': widget.wizardData.pets,
+        'friends': widget.wizardData.additionalCharacters,
+        'avatar': { 
           'hairColor': 'Brown',
           'skinTone': 'Light',
         }
       };
 
-      // We need to use http package directly or via ApiServiceManager if it exposed generic post
-      // Re-using ApiServiceManager helper if available, otherwise direct http
-      // Assuming we can use ApiServiceManager().post which I saw in the file (lines 26-67)
+      final api = ApiServiceManager();
       
-      final api = ApiServiceManager(); 
-      final response = await api.post('/create-character', body);
-      
-      if (response.containsKey('character_id')) { // Adjust key based on backend response
-         widget.wizardData.characterId = response['character_id']?.toString();
-         debugPrint('✅ Character saved with ID: ${widget.wizardData.characterId}');
-      } else if (response.containsKey('id')) {
-         widget.wizardData.characterId = response['id']?.toString();
+      if (widget.wizardData.characterId != null) {
+          // UPDATE EXISTING
+          debugPrint('🔄 Updating existing character: ${widget.wizardData.characterId}');
+          // using PATCH to update only changed fields is safer, but providing all is fine too
+          await api.patch('/characters/${widget.wizardData.characterId}', body);
+      } else {
+          // CREATE NEW
+          debugPrint('✨ Creating new character');
+          final response = await api.post('/create-character', body);
+
+          if (response.containsKey('character_id')) {
+             widget.wizardData.characterId = response['character_id']?.toString();
+          } else if (response.containsKey('id')) {
+             widget.wizardData.characterId = response['id']?.toString();
+          }
       }
 
     } catch (e) {
-      debugPrint('⚠️ Valid warning: Character save failed ($e), but proceeding with temporary character for story.');
-      // We don't block story generation, just warn console
+      debugPrint('⚠️ Character save/update failed: $e');
     } finally {
       setState(() => _isSaving = false);
     }
@@ -215,7 +230,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             Text(
               'Review your story setup',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textDark.withAlpha(179), // 70% opacity
+                    color: AppColors.textDark.withAlpha(179),
                   ),
               textAlign: TextAlign.center,
             ),
@@ -231,91 +246,311 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Story Settings Section
+            // Story Settings Section (Magical Card)
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(
-                  color: AppColors.primary.withAlpha(128),
-                  width: 2,
+                // Gradient background instead of solid white
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white,
+                    AppColors.primary.withOpacity(0.05),
+                  ],
                 ),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.2),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.1),
+                    blurRadius: 15,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '⚙️ Story Settings',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppColors.textDark,
-                          fontWeight: FontWeight.bold,
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          shape: BoxShape.circle,
                         ),
+                        child: const Text('⚙️', style: TextStyle(fontSize: 20)),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        'Story Settings',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: AppColors.textDark,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: AppSpacing.md),
+                  const Divider(height: 1, color: Colors.black12),
+                  const SizedBox(height: AppSpacing.sm),
 
-                  // Include Illustrations toggle
-                  CheckboxListTile(
-                    title: const Text('✨ Include Illustrations'),
-                    subtitle: const Text('Add beautiful images to your story'),
-                    value: data.includeIllustrations,
-                    onChanged: (value) {
-                      setState(() => data.includeIllustrations = value ?? true);
-                    },
-                    activeColor: AppColors.primary,
+                  _buildSwitchTile(
+                    '✨ Include Illustrations',
+                    'Add beautiful images',
+                    data.includeIllustrations,
+                    (v) => setState(() => data.includeIllustrations = v),
                   ),
-
-                  // Rhyme Time Mode toggle
-                  CheckboxListTile(
-                    title: const Text('🎵 Rhyme Time Mode'),
-                    subtitle: const Text('Story told in fun rhymes'),
-                    value: data.rhymeTimeMode,
-                    onChanged: (value) {
-                      setState(() => data.rhymeTimeMode = value ?? false);
-                    },
-                    activeColor: AppColors.primary,
+                  _buildSwitchTile(
+                    '🎵 Rhyme Time Mode',
+                    'Story told in fun rhymes',
+                    data.rhymeTimeMode,
+                    (v) => setState(() => data.rhymeTimeMode = v),
                   ),
-
-                  // Learning to Read Mode toggle
-                  CheckboxListTile(
-                    title: const Text('📚 Learning to Read Mode'),
-                    subtitle: const Text('Simple words for early readers'),
-                    value: data.learningToReadMode,
-                    onChanged: (value) {
-                      setState(() => data.learningToReadMode = value ?? false);
-                    },
-                    activeColor: AppColors.primary,
+                  _buildSwitchTile(
+                    '📚 Learning to Read',
+                    'Simple words for early readers',
+                    data.learningToReadMode,
+                    (v) => setState(() => data.learningToReadMode = v),
                   ),
-
-                  // Interactive Story Mode toggle
-                  CheckboxListTile(
-                    title: const Text('🎮 Interactive Story Mode'),
-                    subtitle: const Text('Make choices as the story unfolds'),
-                    value: data.interactiveMode,
-                    onChanged: (value) {
-                      setState(() => data.interactiveMode = value ?? false);
-                    },
-                    activeColor: AppColors.primary,
+                  _buildSwitchTile(
+                    '🎮 Interactive Mode',
+                    'Make choices as you go',
+                    data.interactiveMode,
+                    (v) => setState(() => data.interactiveMode = v),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Summary cards
-            Text(
-              '📋 Story Summary',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppColors.textDark,
-                    fontWeight: FontWeight.bold,
+            // Story Length Section
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white,
+                    AppColors.gold.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(
+                  color: AppColors.gold.withOpacity(0.3),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.gold.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.gold.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Text('⏱️', style: TextStyle(fontSize: 20)),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        'Story Length',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: AppColors.textDark,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Choose how long your adventure should be',
+                    style: TextStyle(
+                      color: AppColors.textDark.withAlpha(179),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Segmented button style selector
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _LengthOption(
+                          emoji: '⚡',
+                          label: 'Quick',
+                          subtitle: '5 min',
+                          isSelected: data.storyLength == 'quick',
+                          onTap: () => setState(() => data.storyLength = 'quick'),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: _LengthOption(
+                          emoji: '📖',
+                          label: 'Standard',
+                          subtitle: '10 min',
+                          isSelected: data.storyLength == 'standard',
+                          onTap: () => setState(() => data.storyLength = 'standard'),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: _LengthOption(
+                          emoji: '🏰',
+                          label: 'Epic',
+                          subtitle: '15 min',
+                          isSelected: data.storyLength == 'epic',
+                          onTap: () => setState(() => data.storyLength = 'epic'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            // Spark Tool Section
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Text('⚡', style: TextStyle(fontSize: 20)),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        'Spark Tool',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: AppColors.textDark,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Choose a special item to help on your adventure!',
+                    style: TextStyle(
+                      color: AppColors.textDark.withAlpha(179),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  DropdownButtonFormField<String>(
+                    value: data.selectedSparkTool,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      filled: true,
+                      fillColor: AppColors.surface,
+                    ),
+                    items: sparkTools.map((tool) {
+                      return DropdownMenuItem(
+                        value: tool.name,
+                        child: Text('${tool.emoji} ${tool.name}'),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        data.selectedSparkTool = val;
+                      });
+                    },
+                    hint: const Text('Select a magical tool...'),
+                  ),
+                  if (data.selectedSparkTool != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12.0),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.gold.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.info_outline, size: 16, color: AppColors.textDark),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                sparkTools
+                                    .firstWhere((t) => t.name == data.selectedSparkTool)
+                                    .description,
+                                style: const TextStyle(
+                                  fontStyle: FontStyle.italic,
+                                  color: AppColors.textDark,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            // Summary cards header
+             Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(
+                '📋 Story Summary',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: AppColors.textDark,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
 
             _SummaryCard(
               icon: '🦸',
               title: 'Your Hero',
-              value: '${data.characterName} (${data.selectedArchetypeId})',
+              value: data.characterName.isEmpty 
+                  ? 'MISSING NAME (Go back to Step 1)' 
+                  : '${data.characterName} (${data.selectedArchetypeId})',
+              isError: data.characterName.isEmpty,
+              color: AppColors.primary,
             ),
             const SizedBox(height: AppSpacing.md),
 
@@ -323,6 +558,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
               icon: '🎂',
               title: 'Age',
               value: '${data.characterAge} years old',
+              color: Colors.orange,
             ),
             const SizedBox(height: AppSpacing.md),
 
@@ -334,6 +570,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                   ...data.additionalCharacters,
                   ...data.pets.map((p) => '${p['name']} (${p['species']})')
                 ].join(', '),
+                color: Colors.green,
               ),
               const SizedBox(height: AppSpacing.md),
             ],
@@ -343,6 +580,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 icon: '📖',
                 title: 'Story Theme',
                 value: _formatScenario(data.selectedScenario!),
+                color: Colors.blue,
               ),
             if (data.selectedEmotionChips.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.md),
@@ -350,6 +588,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 icon: '💫',
                 title: 'Feelings',
                 value: data.selectedEmotionChips.join(', '),
+                color: Colors.purple,
               ),
             ],
             if (data.selectedCompanions.isNotEmpty) ...[
@@ -360,9 +599,20 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 value: data.companionNames.isNotEmpty 
                     ? data.companionNames.join(', ')
                     : data.selectedCompanions.join(', '),
+                color: Colors.brown,
               ),
             ],
             const SizedBox(height: AppSpacing.xxl),
+
+            if (data.selectedSparkTool != null) ...[
+               _SummaryCard(
+                icon: '⚡',
+                title: 'Spark Tool',
+                value: data.selectedSparkTool!,
+                color: Colors.amber,
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
 
             // Big "Make Magic" button
             Center(
@@ -376,32 +626,25 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                     ),
             ),
             const SizedBox(height: AppSpacing.xl),
-
-            // Debug info (can be removed later)
-            if (false) // Set to true for debugging
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: Colors.black.withAlpha(26), // 10% opacity
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                child: Text(
-                  'Debug: ${data.toJson()}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontFamily: 'monospace',
-                    color: AppColors.textDark,
-                  ),
-                ),
-              ),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildSwitchTile(String title, String subtitle, bool value, Function(bool) onChanged) {
+    return SwitchListTile(
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+      subtitle: Text(subtitle, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+      value: value,
+      onChanged: onChanged,
+      activeColor: AppColors.primary,
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+    );
+  }
+
   String _getCharacterEmoji() {
-    // Map archetype to emoji
     final archetype = widget.wizardData.selectedArchetypeId ?? '';
     if (archetype.contains('Adventurer')) return '🗺️';
     if (archetype.contains('Thinker')) return '💭';
@@ -413,7 +656,6 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
   }
 
   String _formatScenario(String scenarioId) {
-    // Convert scenario ID to display name
     return scenarioId
         .split('_')
         .map((word) => word[0].toUpperCase() + word.substring(1))
@@ -425,11 +667,15 @@ class _SummaryCard extends StatelessWidget {
   final String icon;
   final String title;
   final String value;
+  final bool isError;
+  final Color color;
 
   const _SummaryCard({
     required this.icon,
     required this.title,
     required this.value,
+    this.isError = false,
+    this.color = AppColors.primary,
   });
 
   @override
@@ -437,52 +683,149 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg), // Improved Radius
         border: Border.all(
-          color: AppColors.gold.withAlpha(128), // 50% opacity
-          width: 2,
+          color: isError ? AppColors.error : color.withOpacity(0.3),
+          width: 2, // Thicker border
+        ),
+        gradient: LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+             // Subtle tint based on the category color
+             color.withOpacity(0.05),
+             Colors.white,
+          ],
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.goldLight.withAlpha(51), // 20% opacity
+            color: color.withOpacity(0.1),
             blurRadius: 8,
-            spreadRadius: 1,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Row(
         children: [
-          // Icon
-          Text(
-            icon,
-            style: const TextStyle(fontSize: 32),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isError ? AppColors.error.withOpacity(0.1) : color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              icon,
+              style: const TextStyle(fontSize: 24),
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
-          // Content
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: AppColors.textDark.withAlpha(179), // 70% opacity
-                        fontWeight: FontWeight.w600,
+                  title.toUpperCase(),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: color, 
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
                       ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   value,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.textDark,
-                        fontWeight: FontWeight.bold,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: isError ? AppColors.error : AppColors.textDark,
+                        fontWeight: isError ? FontWeight.bold : FontWeight.w600,
                       ),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Story length selection button
+class _LengthOption extends StatelessWidget {
+  final String emoji;
+  final String label;
+  final String subtitle;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _LengthOption({
+    required this.emoji,
+    required this.label,
+    required this.subtitle,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.gold : Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color: isSelected ? AppColors.gold : AppColors.textDark.withOpacity(0.2),
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.gold.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
+        ),
+        child: Column(
+          children: [
+            Text(
+              emoji,
+              style: TextStyle(
+                fontSize: 28,
+                shadows: isSelected
+                    ? [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                        ),
+                      ]
+                    : [],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: isSelected ? AppColors.textDark : AppColors.textDark.withOpacity(0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: isSelected ? AppColors.textDark.withOpacity(0.7) : AppColors.textDark.withOpacity(0.5),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

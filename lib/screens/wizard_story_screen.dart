@@ -5,6 +5,7 @@ import '../config/environment.dart';
 import '../models.dart'; // Import Character model
 import '../theme/app_theme.dart';
 import '../widgets/moon_phase_progress.dart';
+import 'character_library_screen.dart';
 import 'wizard_steps/hero_creator_step.dart';
 import 'wizard_steps/feeling_selection_step.dart';
 import 'wizard_steps/companion_selector_step.dart';
@@ -60,7 +61,9 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body);
-        final List<dynamic> characterList = decoded['characters'] ?? [];
+        // Backend returns a list directly, not wrapped in {'characters': [...]}
+        final List<dynamic> characterList = decoded is List ? decoded : (decoded['characters'] ?? []);
+        debugPrint('🔍 _loadSavedCharacters: Fetched ${characterList.length} raw items from backend');
         final characters = characterList
             .map((data) => Character.fromJson(data))
             .toList();
@@ -71,6 +74,9 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
             _isLoadingCharacters = false;
           });
           debugPrint('✅ Loaded ${characters.length} saved characters from backend');
+          for (var c in characters) {
+            debugPrint('   - Character: ${c.name}, Role: ${c.role}, ID: ${c.id}');
+          }
         }
       } else {
         debugPrint('⚠️ Failed to load characters: ${response.statusCode}');
@@ -159,12 +165,32 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
                           : _previousStep,
                       tooltip: _currentStep == 0 ? 'Close' : 'Back',
                     ),
-                    const Spacer(),
-                    // Progress indicator
-                    MoonPhaseProgress(currentStep: _currentStep),
-                    const Spacer(),
-                    // Placeholder for symmetry
-                    const SizedBox(width: 48),
+                    // Progress indicator (responsive)
+                    Expanded(
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: MoonPhaseProgress(currentStep: _currentStep),
+                        ),
+                      ),
+                    ),
+                    // Character Library button
+                    IconButton(
+                      icon: const Icon(
+                        Icons.people,
+                        color: AppColors.textDark,
+                      ),
+                      onPressed: () async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const CharacterLibraryScreen(),
+                          ),
+                        );
+                        // Reload characters after returning
+                        _loadSavedCharacters();
+                      },
+                      tooltip: 'My Characters',
+                    ),
                   ],
                 ),
               ),
@@ -253,6 +279,8 @@ class WizardData {
   bool learningToReadMode = false;
   bool interactiveMode = false;
   bool includeIllustrations = true; // Default to true
+  String? selectedSparkTool;
+  String storyLength = 'standard'; // Options: 'quick', 'standard', 'epic'
 
   // Helper methods
   bool get isStep1Complete =>
@@ -261,7 +289,7 @@ class WizardData {
   bool get isStep2Complete =>
       selectedScenario != null || selectedEmotionChips.isNotEmpty;
 
-  bool get isStep3Complete => selectedCompanions.isNotEmpty;
+  bool get isStep3Complete => true; // selectedCompanions is optional
 
   bool get isComplete =>
       isStep1Complete && isStep2Complete && isStep3Complete;
@@ -293,6 +321,8 @@ class WizardData {
       'learningToReadMode': learningToReadMode,
       'interactiveMode': interactiveMode,
       'includeIllustrations': includeIllustrations,
+      'sparkTool': selectedSparkTool,
+      'storyLength': storyLength,
     };
   }
 }
