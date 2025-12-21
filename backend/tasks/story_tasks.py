@@ -17,7 +17,7 @@ from backend.models.user import User
 from backend.services.story_generation_service import StoryGenerationService
 from backend.services.openrouter_story_generator import OpenRouterStoryGenerator
 from google.api_core import exceptions as google_exceptions
-from backend.services.story_service import AdvancedStoryEngine, _safe_extract_title_and_gem
+from backend.services.story_service import AdvancedStoryEngine, _safe_extract_title_and_gem, _build_learning_to_read_prompt, _build_rhyme_time_prompt
 
 logger = get_task_logger(__name__)
 
@@ -113,57 +113,98 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         include_illustrations = kwargs.get("include_illustrations", False)
         rhyme_time_mode = kwargs.get("rhyme_time_mode", False)
         learning_to_read_mode = kwargs.get("learning_to_read_mode", False)
-        companion = kwargs.get("companion")
+        story_length = kwargs.get("story_length", "standard")  # 'quick', 'standard', or 'epic'
+        companion = kwargs.get("companion")  # Legacy support
         character_name = kwargs.get("character") or "a brave adventurer"
         char_details = kwargs.get("character_details") or {}
 
+        # NEW: Extract structured companion data
+        companion_pets = kwargs.get("companion_pets", [])  # List of pet dicts
+        companion_characters = kwargs.get("companion_characters", [])  # List of character names
+
         try:
             character = Character.query.get(character_id) if character_id else None
-            custom_pet = None
             if character:
                 character_name = character.name
-                if companion:
-                    # Check if the chosen companion is one of the character's custom pets
-                    pets = character.pets or []
-                    # Handle if pets is stored as JSON string or list
-                    if isinstance(pets, str):
-                        try:
-                             import json
-                             pets = json.loads(pets)
-                        except:
-                             pets = []
-                    
-                    for pet in pets:
-                         if isinstance(pet, dict) and pet.get("name") == companion:
-                             custom_pet = pet
-                             break
-
             elif character_id:
                 raise ValueError(f"Character {character_id} not found")
 
-            # Fallback: Check character_details from payload (for Wizard flow)
-            if not custom_pet:
-
-                # pets might be a list of dicts directly
-                pets = char_details.get("pets") or []
-                for pet in pets:
-                     if isinstance(pet, dict) and pet.get("name") == companion:
-                         custom_pet = pet
-                         break
-
             self.update_state(state="PROCESSING", meta={"status": "Generating story..."})
 
+            # Fetch companion character details from database or use provided dicts
+            companion_character_details = []
+            if companion_characters:
+                for char_data in companion_characters:
+                    if isinstance(char_data, dict):
+                        # It's already a full companion object (from frontend mapping)
+                        companion_character_details.append(char_data)
+                    else:
+                        # It's a name string, try to look up in DB
+                        char_name = str(char_data)
+                        char_record = Character.query.filter_by(name=char_name).first()
+                        if char_record:
+                            companion_character_details.append({
+                                'name': char_record.name,
+                                'age': char_record.age,
+                                'role': char_record.role,
+                                'gender': char_record.gender,
+                            })
+                            logger.info(f"Found companion character: {char_name} (age {char_record.age}, {char_record.role})")
+                        else:
+                            # Character not found in database, just pass the name
+                            logger.warning(f"Companion character '{char_name}' not found in database")
+                            companion_character_details.append({'name': char_name})
+
             engine = AdvancedStoryEngine()
-            prompt = engine.generate_enhanced_prompt(
-                character=character_name,
-                theme=theme,
-                companion=companion,
-                custom_pet=custom_pet,
-                additional_characters=char_details.get("additionalCharacters"),
-                therapeutic_prompt=kwargs.get("therapeutic_prompt", ""),
-                feelings_prompt=kwargs.get("feelings_prompt"),
-            )
-            logger.info(f"Custom Pet Found: {custom_pet}")
+
+            # Use specialized prompts based on story mode flags
+            if learning_to_read_mode:
+                logger.info(f"Using Learning to Read prompt (length: {story_length})")
+                age = kwargs.get("age", 5)
+                prompt = _build_learning_to_read_prompt(
+                    character_name=character_name,
+                    theme=theme,
+                    age=age,
+                    character_details=char_details,
+                    companion=companion,
+                    extra_characters=char_details.get("additionalCharacters"),
+                    story_length=story_length,
+                )
+            elif rhyme_time_mode:
+                logger.info(f"Using Rhyme Time prompt (length: {story_length})")
+                age = kwargs.get("age", 8)
+                prompt = _build_rhyme_time_prompt(
+                    character_name=character_name,
+                    theme=theme,
+                    age=age,
+                    character_details=char_details,
+                    companion_pets=companion_pets,
+                    companion_characters=companion_characters,
+                    extra_characters=char_details.get("additionalCharacters"),
+                    story_length=story_length,
+                )
+            else:
+                # Standard enhanced prompt
+                logger.info(f"Using standard enhanced prompt (length: {story_length})")
+                prompt = engine.generate_enhanced_prompt(
+                    character=character_name,
+                    theme=theme,
+                    companion=companion,  # Legacy: keep for backward compatibility
+                    companion_pets=companion_pets,  # NEW: List of pet companions
+                    companion_characters=companion_character_details,  # NEW: List of character companion DETAILS
+                    spark_tool=kwargs.get("spark_tool"), # NEW
+                    mood_physics=kwargs.get("mood_physics"), # NEW
+                    conflict_hook=kwargs.get("conflict_hook"), # NEW
+                    sensory_palette=kwargs.get("sensory_palette"), # NEW
+                    additional_characters=char_details.get("additionalCharacters"),
+                    therapeutic_prompt=kwargs.get("therapeutic_prompt", ""),
+                    feelings_prompt=kwargs.get("feelings_prompt"),
+                    character_details=char_details,
+                    story_length=story_length,  # NEW: Story length option
+                )
+
+            logger.info(f"Companion Pets: {companion_pets}")
+            logger.info(f"Companion Character Details: {companion_character_details}")
             logger.info(f"Generated Prompt Snippet: {prompt[:500]}...")
 
             story_text = _generate_story_text(prompt, theme, character_name, companion)

@@ -1,4 +1,5 @@
 import os
+import re
 from dotenv import load_dotenv
 
 # Load environment variables from .env file ONLY if it exists
@@ -71,6 +72,11 @@ class Config:
             "https://story-weaver-app.netlify.app",
             "https://*.netlify.app",  # Allow Netlify preview deploys
         ]
+
+        # Always allow localhost dynamic ports (fixes CORS for Flutter run -d chrome random ports)
+        # Using regex to match any port on localhost or 127.0.0.1
+        base_origins.append(re.compile(r"^http://localhost:\d+$"))
+        base_origins.append(re.compile(r"^http://127\.0\.0\.1:\d+$"))
 
         # Add Railway frontend URL if available
         railway_frontend = os.environ.get('RAILWAY_FRONTEND_URL')

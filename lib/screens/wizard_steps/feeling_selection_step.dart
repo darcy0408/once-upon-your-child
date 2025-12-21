@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pill_button.dart';
 import '../wizard_story_screen.dart';
+import '../../data/scenario_data.dart';
 
 /// Step 2: The Feeling Selection
 ///
@@ -30,50 +31,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   bool _showParentalInput = false;
   final TextEditingController _parentalNoteController = TextEditingController();
 
-  final List<ScenarioCard> _scenarios = [
-    ScenarioCard(
-      id: 'school_jitters',
-      emoji: '🎒',
-      title: 'The First Day Quest',
-      illustration: '🏫',
-      description: 'A brave journey to a new place',
-    ),
-    ScenarioCard(
-      id: 'big_feelings',
-      emoji: '🐉',
-      title: 'The Dragon Inside',
-      illustration: '🔥',
-      description: 'Taming the roars within',
-    ),
-    ScenarioCard(
-      id: 'making_friends',
-      emoji: '🤝',
-      title: 'The Friendly Forest',
-      illustration: '🌲',
-      description: 'Finding new companions',
-    ),
-    ScenarioCard(
-      id: 'being_brave',
-      emoji: '🛡️',
-      title: 'The Cave of Courage',
-      illustration: '🦁',
-      description: 'Facing the shadows',
-    ),
-    ScenarioCard(
-      id: 'calm_moments',
-      emoji: '☁️',
-      title: 'The Cloud Castle',
-      illustration: '🏰',
-      description: 'Floating in peaceful skies',
-    ),
-    ScenarioCard(
-      id: 'creative_ideas',
-      emoji: '🎨',
-      title: 'The Paintbrush Kingdom',
-      illustration: '🌈',
-      description: 'Coloring the world',
-    ),
-  ];
+  final List<ScenarioCard> _scenarios = ScenarioData.all;
 
   final List<EmotionChip> _emotions = [
     EmotionChip(emoji: '✨', label: 'Shining Bright'),
@@ -269,21 +227,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   }
 }
 
-class ScenarioCard {
-  final String id;
-  final String emoji;
-  final String title;
-  final String illustration;
-  final String description;
 
-  ScenarioCard({
-    required this.id,
-    required this.emoji,
-    required this.title,
-    required this.illustration,
-    required this.description,
-  });
-}
 
 class _ScenarioCardWidget extends StatelessWidget {
   final ScenarioCard scenario;

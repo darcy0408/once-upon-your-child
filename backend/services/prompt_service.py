@@ -12,6 +12,9 @@ class PromptService:
         theme: str,
         age: int,
         companion: str = None,
+        companion_characters: list = None,
+        spark_tool: str = None,
+        mood_physics: dict = None,
         current_feeling: dict = None,
         rhyme_time_mode: bool = False,
         learning_to_read_mode: bool = False,
@@ -25,9 +28,25 @@ class PromptService:
         # Base story setup
         sections.append(f"Create a story for {character} (age {age})")
         sections.append(f"Theme: {theme}")
+        
+        # Companion Setup (Enhanced)
+        if companion_characters:
+            sections.append(PromptService._build_companion_section(companion_characters))
+        elif companion:
+             sections.append(f"Companion: {companion}")
 
-        if companion:
-            sections.append(f"Companion: {companion}")
+        # Spark Tool Instruction
+        if spark_tool:
+            sections.append(f"HERO TOOL: The hero has a special tool called '{spark_tool}'. It MUST be used exactly once, either at the midpoint or the climax, to help solve a specific problem.")
+
+        # Mood Physics (World Rules)
+        if mood_physics:
+             sections.append(f"""
+             WORLD PHYSICS RULE (The world bends to the mood '{mood_physics.get('mood_name')}'):
+             - RULE: {mood_physics.get('world_rule')}
+             - SENSORY CHANGE: {mood_physics.get('sensory_change')}
+             - NOTE: This is a literal rule of the magic world for this story.
+             """)
 
         # Feelings integration
         if current_feeling:
@@ -35,6 +54,19 @@ class PromptService:
                 character, current_feeling
             )
             sections.append(feelings_section)
+
+        # Climax Instruction (Three-Key Lock)
+        # We only add this for standard or rhyme modes, not ultra-short learning-to-read
+        if not learning_to_read_mode:
+            sections.append(f"""
+            CLIMAX REQUIREMENT (The Three-Key Lock):
+            The story's climax MUST require three things to resolve:
+            1. The Hero's Special Ability or Strength (from character details).
+            2. The Companion's Unique Power (if present). Note: The companion ENABLES the hero, they do not solve it themselves.
+            3. A feature of the setting or the 'Spark Tool' (if one was selected).
+            
+            All three elements must combine in a cinematic moment to save the day.
+            """)
 
         # Age-appropriate content
         age_guidelines = PromptService._get_age_guidelines(age)
@@ -145,10 +177,34 @@ Create the rhyming learning-to-read story about {character_name} now:
         """
 
     @staticmethod
+    def _build_companion_section(companion_characters: list) -> str:
+        """Build detailed companion section with powers/constraints"""
+        lines = ["COMPANIONS:"]
+        for comp in companion_characters:
+            if isinstance(comp, dict) and 'signature_power' in comp:
+                lines.append(f"- Name: {comp.get('name')}")
+                lines.append(f"  Description: {comp.get('description')}")
+                lines.append(f"  Signature Power: {comp.get('signature_power')}")
+                lines.append(f"  Constraint: {comp.get('power_constraint')}")
+                lines.append(f"  Sensory Tell: {comp.get('sensory_tell')}")
+            elif isinstance(comp, dict):
+                 lines.append(f"- {comp.get('name')}")
+            else:
+                 lines.append(f"- {comp}")
+        return "\n".join(lines)
+
+    @staticmethod
     def _build_character_details(character_details: dict) -> str:
         """Build character details section for prompt"""
-        # This would be more complex, extracting fears, strengths, etc.
-        return ""
+        details = ["CHARACTER DETAILS:"]
+        
+        if 'special_ability' in character_details:
+            details.append(f"SPECIAL ABILITY: {character_details['special_ability']}")
+            
+        if 'personality_sliders' in character_details:
+             details.append(f"Personality: {character_details['personality_sliders']}")
+
+        return "\n".join(details)
 
     @staticmethod
     def _build_character_evolution_context(character_name: str, character_evolution: dict) -> str:

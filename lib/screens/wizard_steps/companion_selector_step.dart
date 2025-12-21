@@ -3,6 +3,7 @@ import '../../models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pill_button.dart';
 import '../wizard_story_screen.dart';
+import '../../data/companion_data.dart';
 
 /// Step 3: The Adventure Team Selector
 ///
@@ -77,50 +78,50 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
       Companion(
         id: 'dragon',
         emoji: '🐉',
-        name: 'Tiny Dragon',
+        name: 'a tiny dragon',
         color: AppColors.dragonOrange,
         greeting: 'I\'m ready to help!',
-        description: '✨ A magical friend with fiery courage',
+        description: '✨ Breathes rainbow fire that reveals hidden paths',
       ),
       Companion(
         id: 'owl',
         emoji: '🦉',
-        name: 'Wise Owl',
+        name: 'a wise owl',
         color: AppColors.owlBlue,
         greeting: 'Let\'s be wise together!',
-        description: '✨ Sees everything, even in the dark',
+        description: '✨ Can see through time to show what will happen',
       ),
       Companion(
         id: 'cat',
         emoji: '🐱',
-        name: 'Playful Cat',
+        name: 'a shadow cat',
         color: AppColors.catPurple,
-        greeting: 'Purr-fect adventure awaits!',
-        description: '✨ Always lands on their feet',
+        greeting: 'Meow! I\'m ready!',
+        description: '✨ Walks through walls and brings things from dreams',
       ),
       Companion(
         id: 'dog',
         emoji: '🐕',
-        name: 'Loyal Dog',
+        name: 'a star dog',
         color: AppColors.dogBrown,
         greeting: 'I\'ll be your best friend!',
-        description: '✨ Faithful and true',
+        description: '✨ Barks constellations into existence to guide the way',
       ),
       Companion(
         id: 'unicorn',
         emoji: '🦄',
-        name: 'Magic Unicorn',
+        name: 'a magic unicorn',
         color: AppColors.primaryLight,
         greeting: 'Let\'s make magic!',
-        description: '✨ Spreads sparkles everywhere',
+        description: '✨ Creates bridges made of starlight and moonbeams',
       ),
       Companion(
         id: 'fox',
         emoji: '🦊',
-        name: 'Clever Fox',
+        name: 'a clever fox',
         color: AppColors.gold,
         greeting: 'Ready for clever fun!',
-        description: '✨ Quick-witted and tricky',
+        description: '✨ Transforms into any shape to solve impossible puzzles',
       ),
     ];
 
@@ -203,6 +204,18 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
 
   @override
   Widget build(BuildContext context) {
+    // Debug logging for missing companions
+    if (_savedCharacterCompanions.isEmpty && widget.savedCharacters.isNotEmpty) {
+      debugPrint('🔍 CompanionSelectorStep: Received ${widget.savedCharacters.length} saved characters');
+      debugPrint('🔍 CompanionSelectorStep: Showing ${_savedCharacterCompanions.length} companions after filtering');
+      debugPrint('⚠️ WARNING: Characters hidden by filter! Current Hero: ${widget.wizardData.characterName}');
+      for(var c in widget.savedCharacters) {
+         debugPrint('   - Hidden Candidate: ${c.name}, ID: ${c.id}');
+      }
+    } else if (widget.savedCharacters.isNotEmpty) {
+       debugPrint('✅ CompanionSelectorStep: Showing ${_savedCharacterCompanions.length}/${widget.savedCharacters.length} characters.');
+    }
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -232,7 +245,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             // 1. Saved Characters (Friends)
             if (_isLoading)
               const Center(child: CircularProgressIndicator())
-            else if (_savedCharacterCompanions.isNotEmpty) ...[ // Use specific list for clarity
+            else if (_savedCharacterCompanions.isNotEmpty) ...[ 
               Text(
                 'Your Friends',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(

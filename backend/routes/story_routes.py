@@ -90,6 +90,10 @@ def create_story_blueprint(
         character_details = payload.get("character_details") or {}
         additional_chars = payload.get("additional_characters") or character_details.get("additionalCharacters")
 
+        # Extract companion data (new structured format)
+        companion_pets = payload.get("companion_pets", [])
+        companion_characters = payload.get("companion_characters", [])
+
         task_kwargs = {
             "character_id": payload.get("character_id"),
             "character": payload.get("character"),
@@ -100,9 +104,16 @@ def create_story_blueprint(
             "async_illustrations": payload.get("async_illustrations", False),
             "rhyme_time_mode": payload.get("rhyme_time_mode", False),
             "learning_to_read_mode": payload.get("learning_to_read_mode", False),
-            "companion": payload.get("companion") or payload.get("companion_name"),
+            "companion": payload.get("companion") or payload.get("companion_name"),  # Legacy support
+            "companion_pets": companion_pets,  # NEW: List of pet companions with species
+            "companion_characters": companion_characters,  # NEW: List of character companions
+            "spark_tool": payload.get("sparkTool"), # NEW: Spark Tool
+            "mood_physics": payload.get("moodPhysics"), # NEW: Mood Physics
+            "conflict_hook": payload.get("conflictHook"), # NEW: Plot Driver
+            "sensory_palette": payload.get("sensoryPalette"), # NEW: Atmosphere
             "therapeutic_prompt": payload.get("therapeutic_prompt", ""),
             "feelings_prompt": feelings_prompt_text or payload.get("feelings_prompt"),
+            "story_length": payload.get("story_length", "standard"),
         }
 
         # If async mode is requested, disable inline illustrations but pass the flag

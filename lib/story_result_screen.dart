@@ -9,11 +9,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'story_reader_screen.dart';
 import 'services/isar_service.dart';
-import 'package:isar/isar.dart';
 import 'services/offline_story_service.dart';
 import 'models/local/story_local.dart';
 import 'story_illustration_service.dart';
@@ -24,9 +23,7 @@ import 'coloring_book_library_screen.dart';
 import 'models.dart';
 import 'therapeutic_focus_options.dart';
 import 'services/progression_service.dart';
-import 'unlock_celebration_dialog.dart';
 import 'services/achievement_service.dart';
-import 'achievement_celebration_dialog.dart';
 import 'config/environment.dart';
 import 'services/story_feedback_service.dart';
 import 'services/story_analytics.dart';
@@ -35,10 +32,8 @@ import 'subscription_models.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_button.dart';
 import 'widgets/app_card.dart';
-import 'widgets/illustration_controls.dart';
 import 'widgets/error_boundary.dart';
 import 'widgets/user_friendly_error_dialog.dart';
-import 'widgets/quality_badge.dart';
 import 'premium_upgrade_screen.dart';
 import 'widgets/feature_tour_overlay.dart';
 import 'services/feature_tour_service.dart';
@@ -108,28 +103,21 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   List<ColoringPage>? _cachedColoringPages;
   int? _characterAge;
   String? _activeTherapeuticFocus;
-  bool _isGeneratingIllustrations = false;
-  bool _isGeneratingColoringPages = false;
   late final PageController _pageController;
   late List<String> _storyPages;
   int _currentPageIndex = 0;
   double _textScale = 1.0;
   bool _highContrastMode = false;
-  bool _showWisdomDetails = false;
-  bool _screenReaderHints = true;
+
   bool _isSubmittingFeedback = false;
   double _storyRating = 4.0;
-  bool _isStoryHovered = false;
-  bool _showSwipeTutorial = false;
+
   List<_InlineIllustration> _inlineIllustrations = [];
 
   // Quality scoring
   Map<String, dynamic>? _qualityData;
   bool _isLoadingQuality = false;
-  bool _showFeatureTour = false;
-  int _featureTourStepIndex = 0;
-  List<FeatureTourStep> _featureTourSteps = const [];
-
+  
   String get _analyticsStoryId =>
       widget.storyId ?? widget.title.hashCode.toString();
 
@@ -150,8 +138,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   void _retryLoadData() {
     setState(() {
       _isLoading = true;
-      _isGeneratingIllustrations = false;
-      _isGeneratingColoringPages = false;
     });
     _loadFavoriteStatus();
     _loadCharacterDetails();
@@ -171,7 +157,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   void _handlePageChanged(int index) {
     setState(() => _currentPageIndex = index);
-    _dismissSwipeTutorial();
+
     _trackResultAction(
       'story_page_viewed',
       extra: {
@@ -187,7 +173,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     _offlineService = OfflineStoryService(IsarService.instance);
     _storyPages = _paginateStory(widget.storyText);
     _pageController = PageController();
-    _loadSwipeTutorialState();
+
     _loadCharacterDetails();
     _loadFavoriteStatus();
     // Cache is now automatic via main_story.dart
@@ -203,84 +189,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     }
   }
 
-  Future<void> _loadSwipeTutorialState() async {
-    final prefs = await SharedPreferences.getInstance();
-    final hasSeen = prefs.getBool('seen_swipe_hint') ?? false;
-    if (!hasSeen && mounted) {
-      setState(() {
-        _showSwipeTutorial = true;
-      });
-    }
-  }
 
-  Future<void> _dismissSwipeTutorial() async {
-    if (!_showSwipeTutorial) return;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('seen_swipe_hint', true);
-    if (mounted) {
-      setState(() {
-        _showSwipeTutorial = false;
-      });
-    }
-  }
 
-  void _startFeatureTourIfNeeded() async {
-    final shouldShow = await FeatureTourService.shouldShowTour();
-    if (!shouldShow || !mounted) return;
 
-    setState(() {
-      _featureTourSteps = const [
-        FeatureTourStep(
-          title: 'Library keeps every story',
-          description: 'Find all of your creations in the Library tab anytime.',
-          icon: Icons.library_books,
-        ),
-        FeatureTourStep(
-          title: 'Try Interactive Stories',
-          description:
-              'Tap Interactive mode before creating to let kids make choices.',
-          icon: Icons.gamepad,
-        ),
-        FeatureTourStep(
-          title: 'Add Coloring Pages',
-          description:
-              'Open Coloring Pages to turn scenes into printable line art.',
-          icon: Icons.brush,
-        ),
-        FeatureTourStep(
-          title: 'Bring Your Own API Key',
-          description:
-              'In Settings, add your own key (BYOK) to unlock more creativity.',
-          icon: Icons.vpn_key,
-        ),
-      ];
-      _featureTourStepIndex = 0;
-      _showFeatureTour = true;
-    });
-  }
-
-  Future<void> _advanceFeatureTour() async {
-    if (_featureTourStepIndex >= _featureTourSteps.length - 1) {
-      await FeatureTourService.markCompleted();
-      if (mounted) {
-        setState(() => _showFeatureTour = false);
-      }
-      return;
-    }
-
-    if (mounted) {
-      setState(() {
-        _featureTourStepIndex++;
-      });
-    }
-  }
-
-  Future<void> _skipFeatureTour() async {
-    await FeatureTourService.markDismissed();
-    if (mounted) {
-      setState(() => _showFeatureTour = false);
-    }
-  }
 
   void _decodeInlineIllustrations() {
     final raw = widget.backendIllustrations;
@@ -339,18 +250,21 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         timestamp: widget.storyCreatedAt,
       );
       if (mounted && achievementUnlocks.isNotEmpty) {
-        await AchievementCelebrationDialog.show(context, achievementUnlocks);
+        // Disabled per user feedback: "annoying popups"
+        // await AchievementCelebrationDialog.show(context, achievementUnlocks);
+        debugPrint('Achievement unlocked (dialog suppressed): $achievementUnlocks');
       }
     }
 
     final newFeatureUnlocks =
         await _progressionService.incrementStoriesCreated();
     if (mounted && newFeatureUnlocks.isNotEmpty) {
-      await UnlockCelebrationDialog.show(context, newFeatureUnlocks);
+      // Disabled per user feedback
+      // await UnlockCelebrationDialog.show(context, newFeatureUnlocks);
+      debugPrint('Feature unlocked (dialog suppressed): $newFeatureUnlocks');
     }
 
     await FeatureTourService.incrementStoryCount();
-    _startFeatureTourIfNeeded();
   }
 
   Future<void> _trackStoryView() async {
@@ -477,7 +391,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     if (mounted) {
       setState(() {
         _activeTherapeuticFocus = therapeuticFocus;
-        _isGeneratingIllustrations = true;
       });
     }
 
@@ -538,25 +451,13 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       }
       if (mounted) {
         setState(() {
-          _isGeneratingIllustrations = false;
+          // Reset generating state is no longer needed as field is removed
         });
       }
     }
   }
 
-  Future<void> _generateMoreIllustrations() async {
-    if (!_canGenerateIllustrations()) {
-      _showIllustrationLimitMessage();
-      return;
-    }
-    await _generateIllustrations();
-  }
 
-  Future<void> _openSubscriptionUpgrade() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const PremiumUpgradeScreen()),
-    );
-  }
 
   /// View story with illustrations
   void _viewIllustratedStory(List<StoryIllustration> illustrations) {
@@ -684,97 +585,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   int get _totalWords =>
       widget.storyText.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
 
-  int get _estimatedMinutes => max(1, (_totalWords / 150).ceil());
-
-  double get _pageProgress =>
-      _storyPages.isEmpty ? 0 : (_currentPageIndex + 1) / _storyPages.length;
-
-  Color get _storyTextColor =>
-      _highContrastMode ? Colors.white : Colors.black87;
-
-  Color get _storyBackgroundColor =>
-      _highContrastMode ? Colors.black : Colors.white;
-
-  Widget _buildReadingProgressHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: LinearProgressIndicator(
-                value: _pageProgress,
-                backgroundColor: Colors.grey.shade200,
-                color: Colors.deepPurple,
-                minHeight: 10,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '${(_pageProgress * 100).toStringAsFixed(0)}%',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Page ${_currentPageIndex + 1} of ${_storyPages.length} · ≈ $_estimatedMinutes min read',
-          style: const TextStyle(
-            fontSize: 13,
-            color: Colors.black54,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAccessibilityPanel() {
-    final theme = Theme.of(context);
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Reading comfort',
-            style: theme.textTheme.titleMedium,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            children: [
-              const Text('Text size'),
-              Expanded(
-                child: Slider(
-                  value: _textScale,
-                  min: 0.9,
-                  max: 1.6,
-                  divisions: 7,
-                  label: _textScale.toStringAsFixed(1),
-                  onChanged: (value) => setState(() => _textScale = value),
-                ),
-              ),
-            ],
-          ),
-          SwitchListTile.adaptive(
-            title: const Text('High contrast mode'),
-            dense: true,
-            value: _highContrastMode,
-            onChanged: (value) => setState(() => _highContrastMode = value),
-          ),
-          SwitchListTile.adaptive(
-            title: const Text('Screen reader hints'),
-            dense: true,
-            value: _screenReaderHints,
-            onChanged: (value) => setState(() => _screenReaderHints = value),
-          ),
-        ],
-      ),
-    );
-  }
-
   List<InlineSpan> _buildStorySpans(String pageText) {
     final heroName = widget.characterName;
     if (heroName == null || heroName.trim().isEmpty) {
@@ -804,233 +614,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     return spans;
   }
 
-  Widget _buildStoryPager(double maxHeight) {
-    final pageHeight = max(320.0, min(maxHeight * 0.55, 520.0));
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildReadingProgressHeader(),
-        const SizedBox(height: 12),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: Container(
-            color: _storyBackgroundColor,
-            child: Stack(
-              children: [
-                SizedBox(
-                  height: pageHeight,
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: _storyPages.length,
-                    onPageChanged: _handlePageChanged,
-                    itemBuilder: (context, index) {
-                      final page = _storyPages[index];
-                      return MouseRegion(
-                        onEnter: (_) => setState(() => _isStoryHovered = true),
-                        onExit: (_) => setState(() => _isStoryHovered = false),
-                        cursor: SystemMouseCursors.click,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: _isStoryHovered
-                                ? (_highContrastMode
-                                    ? Colors.grey.shade900
-                                    : Colors.deepPurple.shade50)
-                                : Colors.transparent,
-                            border: Border(
-                              left: BorderSide(
-                                color: Colors.deepPurple.shade100,
-                                width: 4,
-                              ),
-                            ),
-                          ),
-                          child: SingleChildScrollView(
-                            child: SelectableText.rich(
-                              TextSpan(
-                                style: TextStyle(
-                                  fontSize: 18 * _textScale,
-                                  height: 1.5,
-                                  color: _storyTextColor,
-                                ),
-                                children: _buildStorySpans(page),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                if (_showSwipeTutorial)
-                  Positioned(
-                    bottom: 12,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.65),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(Icons.swipe, color: Colors.white, size: 18),
-                            SizedBox(width: 8),
-                            Text(
-                              'Swipe left or right to see the next page',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Swipe horizontally or use arrow keys to turn the page.',
-          style: TextStyle(
-            fontSize: 12,
-            color: _highContrastMode ? Colors.white70 : Colors.black54,
-          ),
-        ),
-        const SizedBox(height: 10),
-        if (_storyPages.length > 1)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              _storyPages.length,
-              (index) => AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: index == _currentPageIndex ? 14 : 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: index == _currentPageIndex
-                      ? AppColors.primary
-                      : Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
 
-  bool get _shouldShowMetaCard {
-    final hasName =
-        widget.characterName != null && widget.characterName!.trim().isNotEmpty;
-    final hasFocus =
-        _activeTherapeuticFocus != null && _activeTherapeuticFocus!.isNotEmpty;
-    return hasName || widget.characterId != null || hasFocus;
-  }
-
-  Widget _buildBackendIllustrationsCard() {
-    if (_inlineIllustrations.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Story Illustrations',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          ..._inlineIllustrations.map(
-            (illustration) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.memory(
-                  illustration.bytes,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStoryMetaCard() {
-    final heroName = (widget.characterName != null &&
-            widget.characterName!.trim().isNotEmpty)
-        ? widget.characterName!.trim()
-        : 'Your hero';
-    final focusText = _activeTherapeuticFocus?.trim() ?? '';
-    final hasFocus = focusText.isNotEmpty;
-    final usingDefaultAge =
-        _characterAge == null || _characterAge! < 3 || _characterAge! > 100;
-
-    final chips = <Widget>[
-      Chip(
-        avatar:
-            const Icon(Icons.cake_outlined, size: 18, color: Colors.deepPurple),
-        label: Text(
-          'Age $_effectiveAge${usingDefaultAge ? ' (default)' : ''}',
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: Colors.deepPurple.shade50,
-      ),
-    ];
-
-    if (hasFocus) {
-      chips.add(
-        Chip(
-          avatar:
-              const Icon(Icons.self_improvement, size: 18, color: Colors.teal),
-          label: Text(
-            focusText,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          backgroundColor: Colors.teal.shade50,
-        ),
-      );
-    }
-
-    final theme = Theme.of(context);
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Story for $heroName',
-            style: theme.textTheme.titleMedium,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.xs,
-            runSpacing: AppSpacing.xs,
-            children: chips,
-          ),
-          if (hasFocus) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'We\'ll gently highlight themes about ${focusText.toLowerCase()}.',
-              style: theme.textTheme.bodySmall,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
 
   /// Generate coloring pages from the story
   Future<void> _generateColoringPages() async {
@@ -1051,7 +635,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     if (mounted) {
       setState(() {
         _activeTherapeuticFocus = therapeuticFocus;
-        _isGeneratingColoringPages = true;
       });
     }
 
@@ -1121,7 +704,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       }
       if (mounted) {
         setState(() {
-          _isGeneratingColoringPages = false;
+          // Reset generating state is no longer needed as field is removed
         });
       }
     }
@@ -1307,6 +890,39 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
               ),
             ],
           ),
+          const SizedBox(height: AppSpacing.md),
+          const Divider(),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            'Actions',
+            style: theme.textTheme.titleMedium,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+               SizedBox(
+                width: 200,
+                child: AppButton.secondary(
+                  label: 'Save to Library',
+                  icon: Icons.bookmark_add_outlined,
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _saveStory();
+                  },
+                ),
+              ),
+               SizedBox(
+                width: 200,
+                child: AppButton.primary(
+                  label: 'Create New Story',
+                  icon: Icons.auto_awesome,
+                  onPressed: _createAnotherStory,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -1357,112 +973,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     }
   }
 
-  Widget _buildFeedbackCard() {
-    final theme = Theme.of(context);
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'How helpful was this story?',
-            style: theme.textTheme.titleMedium,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            children: [
-              Expanded(
-                child: Slider(
-                  value: _storyRating,
-                  min: 1,
-                  max: 5,
-                  divisions: 8,
-                  label: _storyRating.toStringAsFixed(1),
-                  onChanged: (value) => setState(() => _storyRating = value),
-                ),
-              ),
-              Text('${_storyRating.toStringAsFixed(1)}/5'),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          TextField(
-            controller: _feedbackController,
-            maxLength: 240,
-            minLines: 2,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              labelText: 'Share anything the story helped with',
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Align(
-            alignment: Alignment.centerRight,
-            child: SizedBox(
-              width: 220,
-              child: AppButton.primary(
-                label: _isSubmittingFeedback ? 'Sending...' : 'Send feedback',
-                icon:
-                    _isSubmittingFeedback ? Icons.hourglass_bottom : Icons.send,
-                onPressed: _isSubmittingFeedback ? null : _submitFeedback,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildWisdomGemCard() {
-    final theme = Theme.of(context);
-    final isExpanded = _showWisdomDetails;
-    final cardColor = isExpanded ? AppColors.primary : Colors.white;
-    final textColor = isExpanded ? Colors.white : AppColors.primary;
-
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () => setState(() => _showWisdomDetails = !isExpanded),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          child: AppCard(
-            color: cardColor,
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              children: [
-                Text(
-                  'Wisdom Gem',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: textColor,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  widget.wisdomGem,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontStyle: FontStyle.italic,
-                    color: textColor,
-                  ),
-                ),
-                if (isExpanded) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    'Tap to hide. Share this gem to reinforce the lesson.',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.9),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   Future<void> _loadFavoriteStatus() async {
     if (widget.storyId != null) {
@@ -1498,325 +1009,349 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ErrorBoundary(
-      onRetry: _retryLoadData,
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-        backgroundColor: Colors.transparent, // Allow gradient to show through
-        appBar: AppBar(
-          title: const Text(''), // Hide default title for cleaner look
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.arrow_back, color: Colors.white),
-            ),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          actions: [
-            if (widget.storyId != null && !_isLoading)
-              Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: IconButton(
-                  icon: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      _isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: _isFavorite ? Colors.redAccent : Colors.white,
-                    ),
-                  ),
-                  tooltip: _isFavorite
-                      ? 'Remove from favorites'
-                      : 'Add to favorites',
-                  onPressed: _toggleFavorite,
-                ),
-              ),
-          ],
+  void _showReadingOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.primary.withOpacity(0.8),
-                AppColors.secondary.withOpacity(0.6),
-                Colors.deepPurple.shade900,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Reading Magic',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Quicksand',
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                const Icon(Icons.text_fields, color: Colors.black54),
+                const SizedBox(width: 16),
+                const Text('Text Size', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => setState(() => _textScale = max(0.8, _textScale - 0.1)),
+                  icon: const Icon(Icons.remove_circle_outline),
+                  color: AppColors.primary,
+                ),
+                Text(
+                  '${(_textScale * 100).round()}%',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                IconButton(
+                  onPressed: () => setState(() => _textScale = min(2.0, _textScale + 0.1)),
+                  icon: const Icon(Icons.add_circle_outline),
+                  color: AppColors.primary,
+                ),
               ],
             ),
-          ),
-          child: SafeArea(
-            child: Stack(
-              children: [
-                SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 100), // Increased bottom padding for FABs
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 10),
-                      // Magical Title
-                      Text(
-                        widget.title,
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          fontSize: 32,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.3),
-                              offset: const Offset(0, 2),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      // Main Story Card (The "Book" page)
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.95),
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [ 
-                             if (_qualityData != null) ...[
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    QualityBadge(
-                                      qualityBadge:
-                                          _qualityData!['quality_badge'] ?? 'Unknown',
-                                      overallScore: _qualityData!['overall_score'] ?? 0,
-                                      onTap: () => QualityBadge.showQualityDetails(
-                                          context, _qualityData!),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                             ],
-                            if (_shouldShowMetaCard) _buildStoryMetaCard(),
-                            if (_shouldShowMetaCard)
-                              const SizedBox(height: AppSpacing.md),
-                    if (!_shouldShowMetaCard)
-                      const SizedBox(height: AppSpacing.sm),
-                    if (_inlineIllustrations.isNotEmpty) ...[
-                      _buildBackendIllustrationsCard(),
-                      const SizedBox(height: AppSpacing.sm),
-                    ],
-
-                    LayoutBuilder(
-                      builder: (context, constraints) =>
-                          _buildStoryPager(MediaQuery.of(context).size.height),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    _buildAccessibilityPanel(),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Make the Wisdom Gem stand out
-                    if (widget.wisdomGem.isNotEmpty)
-                      Center(child: _buildWisdomGemCard()),
-                    if (widget.wisdomGem.isNotEmpty)
-                      const SizedBox(height: AppSpacing.lg),
-
-                    _buildShareActions(),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    IllustrationControls(
-                      subscriptionTier:
-                          widget.subscription?.tier.name ?? 'free',
-                      isLearningToReadMode: widget.isLearningToReadMode,
-                      hasUserApiKey: widget.usedUserApiKey,
-                      currentIllustrationCount: _currentIllustrationCount,
-                      onGenerateMore: _generateMoreIllustrations,
-                      onUpgrade: _openSubscriptionUpgrade,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    _buildFeedbackCard(),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Favorite button if story is saved
-                    if (widget.storyId != null && !_isLoading)
-                      Center(
-                        child: SizedBox(
-                          width: 280,
-                          child: AppButton.secondary(
-                            label: _isFavorite
-                                ? 'Remove from favorites'
-                                : 'Add to favorites',
-                            icon: _isFavorite
-                                ? Icons.favorite
-                                : Icons.favorite_border,
-                            onPressed: _toggleFavorite,
-                          ),
-                        ),
-                      ),
-                    if (widget.storyId != null && !_isLoading)
-                      const SizedBox(height: AppSpacing.md),
-
-                    // READ TO ME BUTTON
-                    Center(
-                      child: SizedBox(
-                        width: 360,
-                        child: AppButton.primary(
-                          label: 'Read to Me',
-                          icon: Icons.volume_up,
-                          onPressed: () {
-                            _trackResultAction('read_to_me');
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => StoryReaderScreen(
-                                  title: widget.title,
-                                  storyText: widget.storyText,
-                                  characterName: widget.characterName,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-
-                    // COLORING BOOK BUTTON
-                    Center(
-                      child: Tooltip(
-                        message: _isGeneratingColoringPages
-                            ? 'Creating coloring pages...'
-                            : _cachedColoringPages != null
-                                ? 'View your generated coloring pages'
-                                : 'Generate coloring pages from this story',
-                        child: ElevatedButton.icon(
-                          onPressed: _isGeneratingColoringPages
-                              ? null
-                              : (_cachedColoringPages != null
-                                  ? _openColoringBook
-                                  : _generateColoringPages),
-                          icon: Icon(
-                            _isGeneratingColoringPages
-                                ? Icons.hourglass_top
-                                : _cachedColoringPages != null
-                                    ? Icons.palette
-                                    : Icons.color_lens,
-                            size: 28,
-                          ),
-                          label: Text(
-                            _isGeneratingColoringPages
-                                ? 'Creating coloring pages...'
-                                : _cachedColoringPages != null
-                                    ? 'View Coloring Pages (${_cachedColoringPages!.length})'
-                                    : 'Create Coloring Pages',
-                            style: const TextStyle(fontSize: 18),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.secondary,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 32,
-                              vertical: 16,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                            // Close main "Book" card
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                    ],
-                  ),
-                ),
-              Align(
-                alignment: Alignment.bottomRight,
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 16, bottom: 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      FloatingActionButton.small(
-                        heroTag: 'fab_share',
-                        backgroundColor: Colors.blueAccent,
-                        tooltip: 'Share story',
-                        onPressed: () {
-                          _trackResultAction('fab_action',
-                              extra: {'action': 'share'});
-                          _shareStory();
-                        },
-                        child: const Icon(Icons.share),
-                      ),
-                      const SizedBox(height: 12),
-                      FloatingActionButton.small(
-                        heroTag: 'fab_regenerate',
-                        backgroundColor: Colors.orangeAccent,
-                        tooltip: 'Regenerate story',
-                        onPressed: _isLoading
-                            ? null
-                            : () {
-                                _trackResultAction(
-                                  'fab_action',
-                                  extra: {'action': 'regenerate'},
-                                );
-                                _createAnotherStory();
-                              },
-                        child: const Icon(Icons.refresh),
-                      ),
-                      const SizedBox(height: 12),
-                      FloatingActionButton.extended(
-                        heroTag: 'fab_save',
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        icon: const Icon(Icons.save),
-                        label: const Text('Save Story'),
-                        tooltip: 'Save story for offline reading',
-                        onPressed: () {
-                          _trackResultAction('fab_action',
-                              extra: {'action': 'save'});
-                          _saveStory();
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (_showFeatureTour && _featureTourSteps.isNotEmpty)
-                FeatureTourOverlay(
-                  steps: _featureTourSteps,
-                  currentIndex: _featureTourStepIndex,
-                  onNext: _advanceFeatureTour,
-                  onSkip: _skipFeatureTour,
-                ),
-            ],
-          ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('High Contrast Mode', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+              secondary: const Icon(Icons.contrast, color: Colors.black54),
+              value: _highContrastMode,
+              activeColor: AppColors.primary,
+              onChanged: (value) => setState(() {
+                _highContrastMode = value;
+              }),
+            ),
+            const SizedBox(height: 24),
+          ],
         ),
-      ),
       ),
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return ErrorBoundary(
+      onRetry: _retryLoadData,
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: AppGradients.magicalBackground,
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                // Magical App Bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      if (widget.wisdomGem.isNotEmpty)
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AppColors.gold.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.auto_awesome, color: AppColors.gold, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    widget.wisdomGem,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.quicksand(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      const SizedBox(width: 8),
+                      // Favorite Button
+                      Container(
+                        decoration: BoxDecoration(
+                          color: _isFavorite
+                              ? AppColors.gold.withValues(alpha: 0.2)
+                              : Colors.white.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: Icon(
+                            _isFavorite ? Icons.favorite : Icons.favorite_border,
+                            color: _isFavorite ? AppColors.gold : Colors.white,
+                          ),
+                          onPressed: _toggleFavorite,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Settings Button
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.settings, color: Colors.white),
+                          onPressed: _showReadingOptions,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Story Book Area
+                Expanded(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 800),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 20),
+                            Text(
+                              widget.title,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.merriweather(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    offset: const Offset(0, 2),
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Expanded(
+                              child: _isLoading 
+                                ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                                : Container(
+                                    decoration: BoxDecoration(
+                                      color: _highContrastMode ? Colors.black : const Color(0xFFFFF8E7), // Magical parchment
+                                      borderRadius: const BorderRadius.all(Radius.circular(24)),
+                                      border: _highContrastMode ? null : Border.all(
+                                        color: AppColors.gold.withValues(alpha: 0.3),
+                                        width: 2,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.15),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 8),
+                                        ),
+                                        if (!_highContrastMode)
+                                          BoxShadow(
+                                            color: AppColors.gold.withValues(alpha: 0.1),
+                                            blurRadius: 0,
+                                            spreadRadius: 4, 
+                                            offset: const Offset(0, 0),
+                                          ),
+                                      ],
+                                    ),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: Column(
+                                      children: [
+                                        // Story Content
+                                        Expanded(
+                                          child: PageView.builder(
+                                            controller: _pageController,
+                                            onPageChanged: _handlePageChanged,
+                                            itemCount: _storyPages.length,
+                                            itemBuilder: (context, index) {
+                                              return SingleChildScrollView(
+                                                padding: const EdgeInsets.all(32),
+                                                child: SelectableText.rich(
+                                                  TextSpan(
+                                                    style: GoogleFonts.merriweather(
+                                                      fontSize: 20 * _textScale,
+                                                      height: 1.8,
+                                                      color: _highContrastMode ? Colors.white : const Color(0xFF2C3E50),
+                                                    ),
+                                                    children: _buildStorySpans(_storyPages[index]),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                        // Footer controls
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                                          decoration: BoxDecoration(
+                                            color: _highContrastMode ? Colors.grey[900] : Colors.grey[50],
+                                            border: Border(
+                                              top: BorderSide(
+                                                color: _highContrastMode ? Colors.grey[800]! : Colors.grey[200]!,
+                                              ),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Text(
+                                                'Page ${_currentPageIndex + 1} of ${_storyPages.length}',
+                                                style: TextStyle(
+                                                  color: _highContrastMode ? Colors.white70 : Colors.grey[600],
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              const Spacer(),
+                                              // Simple Feedback
+                                              Row(
+                                                children: List.generate(5, (index) {
+                                                  return InkWell(
+                                                    onTap: () {
+                                                      setState(() => _storyRating = index + 1.0);
+                                                      _submitFeedback();
+                                                    },
+                                                    child: Padding(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                                                      child: Icon(
+                                                        index < _storyRating ? Icons.star_rounded : Icons.star_outline_rounded,
+                                                        color: AppColors.gold,
+                                                        size: 28,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        floatingActionButton: _isLoading ? null : Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+                FloatingActionButton.extended(
+                heroTag: 'read_fab',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => StoryReaderScreen(
+                        storyText: widget.storyText,
+                        title: widget.title,
+                      ),
+                    ),
+                  );
+                },
+                backgroundColor: AppColors.primary,
+                icon: const Icon(Icons.record_voice_over_rounded),
+                label: const Text('Read'),
+              ),
+              const SizedBox(width: 16),
+              FloatingActionButton.extended(
+                heroTag: 'color_fab',
+                onPressed: _generateColoringPages,
+                backgroundColor: AppColors.secondary,
+                icon: const Icon(Icons.palette_rounded),
+                label: const Text('Color'),
+              ),
+              const SizedBox(width: 16),
+              FloatingActionButton(
+                heroTag: 'share_fab',
+                onPressed: () => showModalBottomSheet(
+                  context: context, 
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => _buildShareActions(),
+                ),
+                backgroundColor: Colors.white,
+                foregroundColor: AppColors.primary,
+                child: const Icon(Icons.more_vert_rounded),
+                // label: const Text('More'),
+              ),
+            ],
+          ),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      ),
+    );
+  }
+
 }
 
 class ColoringSettingsDialog extends StatefulWidget {

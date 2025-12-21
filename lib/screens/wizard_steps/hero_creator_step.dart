@@ -6,6 +6,8 @@ import '../../widgets/archetype_card.dart';
 import '../../widgets/character_preview.dart';
 import '../../widgets/pill_button.dart';
 import '../wizard_story_screen.dart';
+import '../../services/api_service_manager.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Step 1: The Hero Creator
 ///
@@ -55,32 +57,93 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   }
 
   void _loadExistingCharacter(Character character) {
-    setState(() {
-      _selectedExistingCharacter = character;
-      widget.wizardData.characterId = character.id;
-      widget.wizardData.characterName = character.name;
-      widget.wizardData.characterAge = character.age;
-      widget.wizardData.characterGender = character.gender ?? 'Girl';
-      widget.wizardData.selectedArchetypeId = character.role;
-      _selectedArchetypeId = character.role;
-      _nameController.text = character.name;
+    try {
+      setState(() {
+        _selectedExistingCharacter = character;
+        widget.wizardData.characterId = character.id;
+        widget.wizardData.characterName = character.name;
+        widget.wizardData.characterAge = character.age;
+        widget.wizardData.characterGender = character.gender ?? 'Girl';
+        widget.wizardData.selectedArchetypeId = character.role;
+        _selectedArchetypeId = character.role;
+        _nameController.text = character.name;
 
-      // Load existing pets and friends
-      if (character.pets != null) {
-         widget.wizardData.pets = List.from(character.pets!);
-      }
-      if (character.friends != null) {
-         widget.wizardData.additionalCharacters = List.from(character.friends!);
+        // Load existing pets with validation
+        if (character.pets != null) {
+          final safePets = <Map<String, String>>[];
+          for (var p in character.pets!) {
+            try {
+               // Ensure p is a map and convert contents to strings safely
+               if (p is Map) {
+                 safePets.add(p.map((key, value) => MapEntry(
+                   key.toString(), 
+                   value?.toString() ?? ''
+                 )));
+               }
+            } catch (e) {
+              debugPrint('Warning: Skipping invalid pet data: $p ($e)');
+            }
+          }
+          widget.wizardData.pets = safePets;
+        }
+
+        // Load friends with validation
+        if (character.friends != null) {
+           widget.wizardData.additionalCharacters = [];
+           for (var f in character.friends!) {
+             if (f is String) {
+               widget.wizardData.additionalCharacters.add(f);
+             } else {
+               widget.wizardData.additionalCharacters.add(f.toString());
+             }
+           }
+        }
+
+        if (character.personalitySliders != null) {
+        widget.wizardData.personalitySliders = Map<String, int>.from(character.personalitySliders!);
       }
 
       // Set emoji based on role
       if (character.role.contains('Adventurer')) _characterEmoji = '🗺️';
       else if (character.role.contains('Thinker')) _characterEmoji = '💭';
       else if (character.role.contains('Artist')) _characterEmoji = '🎨';
-      else if (character.role.contains('Helper')) _characterEmoji = '🤝';
-      else if (character.role.contains('Athlete')) _characterEmoji = '⚡';
-      else _characterEmoji = '👧';
-    });
+        else if (character.role.contains('Helper')) _characterEmoji = '🤝';
+        else if (character.role.contains('Athlete')) _characterEmoji = '⚡';
+        else _characterEmoji = '👧';
+      });
+    } catch (e, stack) {
+      debugPrint('❌ Error loading character: $e\n$stack');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not load character: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  /// Auto-save the character when pets are modified
+  Future<void> _autoSaveCharacter() async {
+    // Only auto-save if we have a character ID (existing character)
+    if (widget.wizardData.characterId == null) {
+      debugPrint('[Hero Creator] Skipping auto-save - no character ID yet');
+      return;
+    }
+
+    try {
+      debugPrint('[Hero Creator] Auto-saving character pets...');
+      final body = {
+        'name': widget.wizardData.characterName,
+        'age': widget.wizardData.characterAge,
+        'gender': widget.wizardData.characterGender,
+        'role': widget.wizardData.selectedArchetypeId,
+        'pets': widget.wizardData.pets,
+        'friends': widget.wizardData.additionalCharacters,
+      };
+
+      final api = ApiServiceManager();
+      await api.patch('/characters/${widget.wizardData.characterId}', body);
+      debugPrint('[Hero Creator] Auto-save successful - pets saved!');
+    } catch (e) {
+      debugPrint('[Hero Creator] Auto-save failed: $e');
+    }
   }
 
   void _switchToNewCharacter() {
@@ -109,7 +172,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 
       // Auto-fill wizard data with archetype
       widget.wizardData.selectedArchetypeId = archetype.name;
-      widget.wizardData.personalitySliders = Map.from(archetype.attributes);
+      widget.wizardData.personalitySliders = Map<String, int>.from(archetype.attributes);
       // Ensure default age is set if 0 or uninitialized
       if (widget.wizardData.characterAge < 1) {
         widget.wizardData.characterAge = 5; 
@@ -137,20 +200,23 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Top 50%: Character Preview
+        // Top 40%: Character Preview
         Expanded(
+          flex: 2, 
           child: CharacterPreview(
             placeholderEmoji: _characterEmoji,
             showSparkles: true,
           ),
         ),
 
-        // Bottom 50%: Archetype Selection
+        // Bottom 60%: Archetype Selection
         Expanded(
+          flex: 3,
           child: Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.lg,
-              vertical: AppSpacing.xl,
+
+              vertical: AppSpacing.md, // Reduced from XL
             ),
             child: SingleChildScrollView(
               child: Column(
@@ -160,9 +226,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                   Text(
                     _isCreatingNew ? 'Create a Character' : 'Select Your Hero',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: AppColors.textDark,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      color: AppColors.textDark,
+                      fontWeight: FontWeight.bold,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
@@ -322,6 +388,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                           icon: archetype.icon,
                           name: archetype.name,
                           description: archetype.description,
+                          specialAbility: archetype.specialAbility,
                           traits: archetype.traits,
                           isSelected: isSelected,
                           onUseTemplate: () => _selectArchetype(archetype),
@@ -378,20 +445,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                      _PetsSection(
                         wizardData: widget.wizardData,
                         onUpdate: () => setState(() {}),
+                        onAutoSave: _autoSaveCharacter,
                      ),
 
                   if (_canContinue || !_isCreatingNew)
                      const SizedBox(height: 16),
 
-                  // Siblings/Friends Section
-                  if (_canContinue || !_isCreatingNew)
-                     _SiblingsSection(
-                        wizardData: widget.wizardData,
-                        onUpdate: () => setState(() {}),
-                        availableCharacters: widget.availableCharacters
-                            .where((c) => c.name != widget.wizardData.characterName)
-                            .toList(),
-                     ),
+// Siblings section removed per user request
 
                   if (_canContinue || !_isCreatingNew)
                      const SizedBox(height: 16),
@@ -423,12 +483,19 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 class _PetsSection extends StatelessWidget {
   final WizardData wizardData;
   final VoidCallback onUpdate;
+  final VoidCallback onAutoSave;
 
-  const _PetsSection({required this.wizardData, required this.onUpdate});
+  const _PetsSection({
+    required this.wizardData,
+    required this.onUpdate,
+    required this.onAutoSave,
+  });
 
   void _showAddPetDialog(BuildContext context) {
     final nameController = TextEditingController();
+    final colorController = TextEditingController();
     String species = 'Dog';
+    String gender = 'Boy';
     String personality = '';
     
     showDialog(
@@ -459,6 +526,24 @@ class _PetsSection extends StatelessWidget {
                   decoration: const InputDecoration(labelText: 'Species'),
                 ),
                 const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: gender,
+                  items: ['Boy', 'Girl']
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                      .toList(),
+                  onChanged: (v) {
+                     if (v != null) setState(() => gender = v);
+                  },
+                  decoration: const InputDecoration(labelText: 'Gender'),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: colorController,
+                  decoration: const InputDecoration(
+                      labelText: 'Color / Looks', 
+                      hintText: 'e.g. Black with white paws'),
+                ),
+                const SizedBox(height: 16),
                 TextField(
                   decoration: const InputDecoration(
                       labelText: 'Personality / Fun Fact', 
@@ -470,16 +555,20 @@ class _PetsSection extends StatelessWidget {
             actions: [
               TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
               ElevatedButton(
-                onPressed: nameController.text.trim().isEmpty 
-                    ? null 
+                onPressed: nameController.text.trim().isEmpty
+                    ? null
                     : () {
                         wizardData.pets.add({
                           'name': nameController.text.trim(),
                           'species': species,
+                          'gender': gender,
+                          'color': colorController.text.trim(),
                           'personality': personality,
                         });
                         onUpdate();
                         Navigator.pop(context);
+                        // Auto-save the character with the new pet
+                        onAutoSave();
                       },
                 child: const Text('Add Pet'),
               ),
@@ -534,6 +623,8 @@ class _PetsSection extends StatelessWidget {
                 onDeleted: () {
                    wizardData.pets.remove(pet);
                    onUpdate();
+                   // Auto-save the character with updated pets
+                   onAutoSave();
                 },
               );
             }).toList(),
@@ -557,156 +648,7 @@ class _PetsSection extends StatelessWidget {
 
 }
 
-class _SiblingsSection extends StatelessWidget {
-  final WizardData wizardData;
-  final VoidCallback onUpdate;
-  final List<Character> availableCharacters;
 
-  const _SiblingsSection({
-    required this.wizardData,
-    required this.onUpdate,
-    this.availableCharacters = const [],
-  });
-
-  void _showAddDialog(BuildContext context) {
-    String name = '';
-    String role = 'Friend';
-    int age = wizardData.characterAge;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: const Text('Add Friend or Sibling 👫'),
-            content: Column(
-               mainAxisSize: MainAxisSize.min,
-               children: [
-                 TextField(
-                  decoration: const InputDecoration(labelText: 'Name', hintText: 'e.g. Sam'),
-                  onChanged: (v) => name = v,
-                  autofocus: true,
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: role,
-                  items: ['Friend', 'Brother', 'Sister', 'Cousin', 'Classmate', 'Neighbor']
-                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                      .toList(),
-                  onChanged: (v) => setState(() => role = v!),
-                  decoration: const InputDecoration(labelText: 'Role'),
-                ),
-                const SizedBox(height: 12),
-                // Age Picker
-                _ImprovedAgePicker(
-                  label: 'Friend Age',
-                  age: age,
-                  minAge: 1,
-                  maxAge: 99,
-                  onAgeChanged: (newAge) {
-                    setState(() => age = newAge);
-                  },
-                ),
-               ],
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-              ElevatedButton(
-                onPressed: () {
-                  if (name.isNotEmpty) {
-                     // Format: "Name (Role, Age)"
-                     wizardData.additionalCharacters.add('$name ($role, $age)');
-                     onUpdate();
-                     Navigator.pop(context);
-                  }
-                },
-                child: const Text('Add'),
-              ),
-            ],
-          );
-        }
-      ),
-    );
-  }
-
-  void _addExistingCharacter(Character character) {
-    wizardData.additionalCharacters.add('${character.name} (${character.role}, ${character.age})');
-    onUpdate();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Friends & Siblings',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
-                  ),
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                 // Existing Character Dropdown (Popup Menu)
-                 if (availableCharacters.isNotEmpty)
-                   PopupMenuButton<Character>(
-                     icon: const Icon(Icons.person_add_alt_1, color: AppColors.primary),
-                     tooltip: 'Add existing character',
-                     onSelected: _addExistingCharacter,
-                     itemBuilder: (context) {
-                       return availableCharacters
-                        .where((c) => !wizardData.additionalCharacters.any((added) => added.startsWith(c.name)))
-                        .map((c) => PopupMenuItem(
-                           value: c,
-                           child: Text('${c.name} (${c.role})'),
-                        )).toList();
-                     },
-                   ),
-                 
-                 TextButton.icon(
-                  onPressed: () => _showAddDialog(context),
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Create New'),
-                  style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-                ),
-              ],
-            ),
-          ],
-        ),
-        if (wizardData.additionalCharacters.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Text(
-              'Who else is in the story? Add friends or siblings.',
-              style: TextStyle(color: AppColors.textDark.withAlpha(128), fontStyle: FontStyle.italic, fontSize: 13),
-            ),
-          )
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: wizardData.additionalCharacters.map((name) {
-              return Chip(
-                avatar: const Text('👤'),
-                label: Text(name),
-                backgroundColor: AppColors.surface,
-                side: BorderSide(color: AppColors.primary.withAlpha(50)),
-                onDeleted: () {
-                   wizardData.additionalCharacters.remove(name);
-                   onUpdate();
-                },
-              );
-            }).toList(),
-          ),
-      ],
-    );
-  }
-}
 
 /// Improved Age Picker Widget
 ///

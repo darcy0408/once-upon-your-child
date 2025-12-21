@@ -63,6 +63,7 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
         final decoded = json.decode(response.body);
         // Backend returns a list directly, not wrapped in {'characters': [...]}
         final List<dynamic> characterList = decoded is List ? decoded : (decoded['characters'] ?? []);
+        debugPrint('🔍 _loadSavedCharacters: Fetched ${characterList.length} raw items from backend');
         final characters = characterList
             .map((data) => Character.fromJson(data))
             .toList();
@@ -73,6 +74,9 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
             _isLoadingCharacters = false;
           });
           debugPrint('✅ Loaded ${characters.length} saved characters from backend');
+          for (var c in characters) {
+            debugPrint('   - Character: ${c.name}, Role: ${c.role}, ID: ${c.id}');
+          }
         }
       } else {
         debugPrint('⚠️ Failed to load characters: ${response.statusCode}');
@@ -275,6 +279,8 @@ class WizardData {
   bool learningToReadMode = false;
   bool interactiveMode = false;
   bool includeIllustrations = true; // Default to true
+  String? selectedSparkTool;
+  String storyLength = 'standard'; // Options: 'quick', 'standard', 'epic'
 
   // Helper methods
   bool get isStep1Complete =>
@@ -315,6 +321,8 @@ class WizardData {
       'learningToReadMode': learningToReadMode,
       'interactiveMode': interactiveMode,
       'includeIllustrations': includeIllustrations,
+      'sparkTool': selectedSparkTool,
+      'storyLength': storyLength,
     };
   }
 }

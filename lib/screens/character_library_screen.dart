@@ -5,6 +5,7 @@ import '../config/environment.dart';
 import '../models.dart';
 import '../theme/app_theme.dart';
 import 'wizard_story_screen.dart';
+import 'character_editor_screen.dart';
 
 /// Character Library Screen
 ///
@@ -143,7 +144,22 @@ class _CharacterLibraryScreenState extends State<CharacterLibraryScreen> {
           availableCharacters: _characters,
         ),
       ),
-    );
+    ).then((_) => _loadCharacters());
+  }
+
+  void _editCharacter(Character character) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CharacterEditorScreen(
+          character: character,
+        ),
+      ),
+    ).then((edited) {
+      if (edited == true) {
+        _loadCharacters(); // Reload if character was edited
+      }
+    });
   }
 
   String _getEmojiForCharacter(Character character) {
@@ -267,6 +283,7 @@ class _CharacterLibraryScreenState extends State<CharacterLibraryScreen> {
                               character: character,
                               emoji: _getEmojiForCharacter(character),
                               onDelete: () => _deleteCharacter(character),
+                              onEdit: () => _editCharacter(character),
                               onCreateStory: () => _createStoryWithCharacter(character),
                             );
                           },
@@ -297,12 +314,14 @@ class _CharacterCard extends StatelessWidget {
   final Character character;
   final String emoji;
   final VoidCallback onDelete;
+  final VoidCallback onEdit;
   final VoidCallback onCreateStory;
 
   const _CharacterCard({
     required this.character,
     required this.emoji,
     required this.onDelete,
+    required this.onEdit,
     required this.onCreateStory,
   });
 
@@ -415,12 +434,20 @@ class _CharacterCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
+                IconButton(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit_outlined),
+                  color: AppColors.primary,
+                  tooltip: 'Edit',
+                  iconSize: 20,
+                ),
                 IconButton(
                   onPressed: onDelete,
                   icon: const Icon(Icons.delete_outline),
                   color: AppColors.error,
                   tooltip: 'Delete',
+                  iconSize: 20,
                 ),
               ],
             ),

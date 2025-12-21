@@ -61,6 +61,9 @@ def _as_list(v):
     return [str(v)]
 
 def create_character(data: dict):
+    print(f"\n[DEBUG create_character] Received data: {data}")
+    print(f"[DEBUG create_character] Pets field: {data.get('pets', 'NOT PROVIDED')}")
+
     missing = [k for k in ("name", "age") if not data.get(k)]
     if missing:
         return {"error": f"Missing required field(s): {', '.join(missing)}"}, 400
@@ -92,7 +95,13 @@ def create_character(data: dict):
     new_character.goals = _as_list(data.get("goals", []))
     new_character.pets = data.get("pets", [])
     new_character.comfort_item = data.get("comfort_item")
+
+    print(f"[DEBUG create_character] Setting pets to: {new_character.pets}")
+
     character_repository.add_character(new_character)
+
+    print(f"[DEBUG create_character] After save, character.pets: {new_character.pets}")
+
     return new_character.to_dict(), 201
 
 def get_characters():
@@ -108,9 +117,15 @@ def get_character(char_id: str):
 
 def update_character(char_id: str, data: dict):
     """Partial update allowed."""
+    print(f"\n[DEBUG update_character] Character ID: {char_id}")
+    print(f"[DEBUG update_character] Received data: {data}")
+    print(f"[DEBUG update_character] Pets field: {data.get('pets', 'NOT PROVIDED')}")
+
     char = character_repository.get_character_by_id(char_id)
     if not char:
         return {"error": "Character not found"}, 404
+
+    print(f"[DEBUG update_character] Current pets before update: {char.pets}")
 
     if "name" in data:
         char.name = (data["name"] or "").strip() or char.name
@@ -167,8 +182,14 @@ def update_character(char_id: str, data: dict):
         char.goals = _as_list(data["goals"])
     if "pets" in data:
         char.pets = data["pets"] if isinstance(data["pets"], list) else []
+        print(f"[DEBUG update_character] Set pets to: {char.pets}")
+
+    print(f"[DEBUG update_character] Final pets before save: {char.pets}")
 
     character_repository.update_character(char)
+
+    print(f"[DEBUG update_character] After save, character.pets: {char.pets}")
+
     return char.to_dict(), 200
 
 def delete_character(char_id: str):

@@ -1,8 +1,10 @@
 // lib/story_reader_screen.dart
-// Simple read-aloud experience with word highlighting using Flutter TTS.
-
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:story_weaver_app/theme/app_theme.dart';
+import 'package:story_weaver_app/widgets/error_boundary.dart';
 
 class StoryReaderScreen extends StatefulWidget {
   final String title;
@@ -20,12 +22,17 @@ class StoryReaderScreen extends StatefulWidget {
   State<StoryReaderScreen> createState() => _StoryReaderScreenState();
 }
 
-class _StoryReaderScreenState extends State<StoryReaderScreen> {
+class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTickerProviderStateMixin {
   late final FlutterTts _tts;
   late final List<_StoryToken> _tokens;
   late final List<int> _wordTokenIndices;
   bool _isPlaying = false;
   int _currentWordIndex = -1;
+  double _speechRate = 0.52; // Default slow/comfortable pace for kids
+
+  // Animation for the "active" reading state
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
@@ -33,6 +40,15 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> {
     _tts = FlutterTts();
     _configureTts();
     _prepareTokens();
+    
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
   }
 
   void _prepareTokens() {
@@ -47,8 +63,10 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> {
 
   Future<void> _configureTts() async {
     await _tts.setLanguage('en-US');
-    await _tts.setSpeechRate(0.52);
+    await _tts.setSpeechRate(_speechRate);
     await _tts.setPitch(1.0);
+
+    // Optimize for web if needed -> handled by flutter_tts mostly
 
     _tts.setProgressHandler((text, start, end, word) {
       if (!mounted) return;
@@ -60,9 +78,8 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> {
           nextIndex++) {
         final token = _tokens[_wordTokenIndices[nextIndex]];
         final tokenNormalized = _normalize(token.text);
-        if (tokenNormalized.isEmpty) {
-          continue;
-        }
+        if (tokenNormalized.isEmpty) continue;
+        
         if (tokenNormalized == normalizedWord) {
           setState(() {
             _currentWordIndex = nextIndex;
@@ -77,6 +94,7 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> {
       setState(() {
         _isPlaying = false;
         _currentWordIndex = -1;
+        _pulseController.stop();
       });
     });
 
@@ -85,26 +103,33 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> {
       setState(() {
         _isPlaying = false;
         _currentWordIndex = -1;
+        _pulseController.stop();
       });
     });
 
     _tts.setPauseHandler(() {
       if (!mounted) return;
-      setState(() => _isPlaying = false);
+      setState(() {
+        _isPlaying = false;
+        _pulseController.stop();
+      });
     });
   }
 
   @override
   void dispose() {
     _tts.stop();
+    _pulseController.dispose();
     super.dispose();
   }
 
   Future<void> _startReading() async {
-    await _tts.stop();
+    await _tts.stop(); // Ensure clean start
+    await _tts.setSpeechRate(_speechRate);
     setState(() {
       _isPlaying = true;
       _currentWordIndex = -1;
+      _pulseController.repeat(reverse: true);
     });
     await _tts.speak(widget.storyText);
   }
@@ -112,7 +137,10 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> {
   Future<void> _pauseReading() async {
     final result = await _tts.pause();
     if (result == 1) {
-      setState(() => _isPlaying = false);
+      setState(() {
+        _isPlaying = false;
+        _pulseController.stop();
+      });
     }
   }
 
@@ -122,13 +150,12 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> {
     setState(() {
       _isPlaying = false;
       _currentWordIndex = -1;
+      _pulseController.stop();
     });
   }
 
   List<_StoryToken> _tokenize(String input) {
-    if (input.isEmpty) {
-      return [];
-    }
+    if (input.isEmpty) return [];
 
     final tokens = <_StoryToken>[];
     final buffer = StringBuffer();
@@ -156,7 +183,6 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> {
 
       buffer.write(char);
     }
-
     flush();
     return tokens;
   }
@@ -167,104 +193,244 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        backgroundColor: theme.colorScheme.primary,
-      ),
-      body: Column(
-        children: [
-          if (widget.characterName != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
-                'Featuring ${widget.characterName}',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              color: Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AppGradients.magicalBackground,
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Custom Navigation Bar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
                   children: [
-                    const Text(
-                      'Read-Aloud Controls',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 12,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: _isPlaying ? null : _startReading,
-                          icon: const Icon(Icons.play_arrow),
-                          label: const Text('Play'),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        widget.title,
+                        style: GoogleFonts.merriweather(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.3),
+                              offset: const Offset(0, 2),
+                              blurRadius: 4,
+                            ),
+                          ],
                         ),
-                        ElevatedButton.icon(
-                          onPressed: _isPlaying ? _pauseReading : null,
-                          icon: const Icon(Icons.pause),
-                          label: const Text('Pause'),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: _isPlaying || _currentWordIndex != -1
-                              ? _stopReading
-                              : null,
-                          icon: const Icon(Icons.stop),
-                          label: const Text('Stop'),
-                        ),
-                      ],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                padding: const EdgeInsets.all(20),
-                child: SingleChildScrollView(
-                  child: RichText(
-                    text: TextSpan(
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        height: 1.5,
-                        color: Colors.black87,
-                        fontSize: 18,
+
+              if (widget.characterName != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.star, color: AppColors.gold, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'A story for ${widget.characterName}',
+                        style: GoogleFonts.quicksand(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                      children: _buildSpans(theme),
+                    ],
+                  ),
+                ),
+
+              // Main Story Area
+              Expanded(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 800),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF8E7), // Magical parchment
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: AppColors.gold.withOpacity(0.3),
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.15),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                  BoxShadow(
+                                    color: AppColors.gold.withOpacity(0.1),
+                                    blurRadius: 0,
+                                    spreadRadius: 4, 
+                                    offset: const Offset(0, 0),
+                                  ),
+                                ],
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: Column(
+                                children: [
+                                  // Controls Header
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF9F1DC), // Slightly darker parchment
+                                      border: Border(
+                                        bottom: BorderSide(
+                                          color: AppColors.gold.withOpacity(0.2),
+                                          width: 1,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        _buildControlButton(
+                                          icon: Icons.stop_rounded,
+                                          label: "Stop",
+                                          onPressed: _isPlaying || _currentWordIndex != -1 ? _stopReading : null,
+                                          isPrimary: false,
+                                        ),
+                                        const SizedBox(width: 16),
+                                        ScaleTransition(
+                                          scale: _pulseAnimation,
+                                          child: _buildControlButton(
+                                            icon: _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                            label: _isPlaying ? "Pause" : "Read",
+                                            onPressed: _isPlaying ? _pauseReading : _startReading,
+                                            isPrimary: true,
+                                            size: 56,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  
+                                  // Text Content
+                                  Expanded(
+                                    child: SingleChildScrollView(
+                                      padding: const EdgeInsets.all(32),
+                                      child: RichText(
+                                        textAlign: TextAlign.left,
+                                        text: TextSpan(
+                                          style: GoogleFonts.merriweather(
+                                            fontSize: 22,
+                                            height: 1.8,
+                                            color: const Color(0xFF2C3E50),
+                                          ),
+                                          children: _buildSpans(),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  List<InlineSpan> _buildSpans(ThemeData theme) {
+  Widget _buildControlButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback? onPressed,
+    required bool isPrimary,
+    double size = 48,
+  }) {
+    final isEnabled = onPressed != null;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            gradient: isPrimary && isEnabled
+              ? AppGradients.purpleGlow 
+              : null,
+            color: !isPrimary && isEnabled 
+              ? Colors.white 
+              : (isEnabled ? null : Colors.grey.withOpacity(0.1)),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isEnabled 
+                ? (isPrimary ? Colors.transparent : AppColors.primary) 
+                : Colors.grey.withOpacity(0.3),
+              width: 2,
+            ),
+            boxShadow: isEnabled
+                ? [
+                    BoxShadow(
+                      color: (isPrimary ? AppColors.primary : Colors.black).withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    )
+                  ]
+                : null,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onPressed,
+              customBorder: const CircleBorder(),
+              child: Icon(
+                icon,
+                color: isPrimary && isEnabled 
+                  ? Colors.white 
+                  : (isEnabled ? AppColors.primary : Colors.grey.withOpacity(0.5)),
+                size: size * 0.6,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: GoogleFonts.quicksand(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: isEnabled ? AppColors.primary : Colors.grey.withOpacity(0.5),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<InlineSpan> _buildSpans() {
     final spans = <InlineSpan>[];
     for (var i = 0; i < _tokens.length; i++) {
       final token = _tokens[i];
@@ -279,8 +445,13 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> {
               ? null
               : TextStyle(
                   backgroundColor: isHighlighted
-                      ? theme.colorScheme.secondary.withValues(alpha: 0.4)
+                      ? AppColors.gold.withOpacity(0.4)
                       : null,
+                  decoration: isHighlighted 
+                      ? TextDecoration.underline 
+                      : null,
+                  decorationColor: AppColors.gold,
+                  decorationThickness: 2,
                   fontWeight:
                       isHighlighted ? FontWeight.w700 : FontWeight.normal,
                 ),
@@ -294,6 +465,5 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> {
 class _StoryToken {
   final String text;
   final bool isWhitespace;
-
   const _StoryToken(this.text, this.isWhitespace);
 }

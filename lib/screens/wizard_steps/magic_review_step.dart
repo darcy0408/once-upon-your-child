@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import '../../services/api_service_manager.dart';
 import '../../services/achievement_service.dart';
 import '../../story_result_screen.dart';
+import '../../interactive_story_screen.dart';
+import '../../models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/make_magic_button.dart';
 import '../../widgets/character_preview.dart';
 import '../wizard_story_screen.dart';
 import 'wizard_data_mapper.dart';
+import '../../data/spark_tools.dart';
 
 /// Step 4: Magic Review & Launch
 ///
@@ -56,10 +59,10 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       final requestData = WizardDataMapper.mapToStoryRequest(widget.wizardData);
 
       final result = await ApiServiceManager.generateStory(
-        characterName: requestData['characterName'],
-        age: requestData['age'],
-        theme: requestData['theme'],
-        companion: requestData['companion'],
+        characterName: requestData['character'] ?? 'Hero',
+        age: requestData['age'] ?? 5,
+        theme: requestData['theme'] ?? 'Magical Adventure',
+        companion: requestData['companion'] ?? '',  // Provide empty string if null
         characterDetails: requestData['characterDetails'],
         currentFeeling: requestData['currentFeeling'],
         additionalCharacters: requestData['additionalCharacters'],
@@ -67,28 +70,59 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
         includeIllustrations: widget.wizardData.includeIllustrations,
         rhymeTimeMode: widget.wizardData.rhymeTimeMode,
         learningToReadMode: widget.wizardData.learningToReadMode,
+        companionPets: requestData['companion_pets'],
+        companionCharacters: requestData['companion_characters'],
+        storyLength: requestData['storyLength'] ?? 'standard',
       );
       debugPrint('✨ Story generation complete: ${result.storyText.substring(0, 100)}...');
 
       if (mounted) {
-        // Navigate to result
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => StoryResultScreen(
-              title: result.title ?? 'My Magical Story',
-              storyText: result.storyText,
-              wisdomGem: result.wisdomGem ?? 'You are magic!',
-              characterName: requestData['characterName'],
-              theme: requestData['theme'],
-              characterAge: requestData['age'],
-              // Track this as a new story
-              trackStoryCreation: true,
-              trackAnalytics: true,
-              achievementsService: AchievementService(),
-              storyCreatedAt: DateTime.now(),
+        // Check if interactive mode is enabled
+        if (widget.wizardData.interactiveMode) {
+          debugPrint('🎮 Interactive mode enabled, routing to InteractiveStoryScreen');
+
+          // Create a Character object from wizard data
+          final character = Character(
+            id: widget.wizardData.characterId ?? 'temp-${DateTime.now().millisecondsSinceEpoch}',
+            name: widget.wizardData.characterName,
+            age: widget.wizardData.characterAge,
+            role: widget.wizardData.selectedArchetypeId ?? 'Adventurer',
+            gender: widget.wizardData.characterGender,
+            personalitySliders: widget.wizardData.personalitySliders,
+          );
+
+          // Navigate to interactive story screen
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => InteractiveStoryScreen(
+                character: character,
+                theme: requestData['theme'],
+                companion: widget.wizardData.selectedCompanions.isNotEmpty
+                    ? widget.wizardData.selectedCompanions.first
+                    : null,
+              ),
             ),
-          ),
-        );
+          );
+        } else {
+          // Navigate to standard story result
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => StoryResultScreen(
+                title: result.title ?? 'My Magical Story',
+                storyText: result.storyText,
+                wisdomGem: result.wisdomGem ?? 'You are magic!',
+                characterName: requestData['characterName'],
+                theme: requestData['theme'],
+                characterAge: requestData['age'],
+                // Track this as a new story
+                trackStoryCreation: true,
+                trackAnalytics: true,
+                achievementsService: AchievementService(),
+                storyCreatedAt: DateTime.now(),
+              ),
+            ),
+          );
+        }
       }
     } catch (e, stack) {
       debugPrint('❌ Error generating story: $e');
@@ -294,6 +328,208 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             ),
             const SizedBox(height: AppSpacing.xl),
 
+            // Story Length Section
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white,
+                    AppColors.gold.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(
+                  color: AppColors.gold.withOpacity(0.3),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.gold.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.gold.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Text('⏱️', style: TextStyle(fontSize: 20)),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        'Story Length',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: AppColors.textDark,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Choose how long your adventure should be',
+                    style: TextStyle(
+                      color: AppColors.textDark.withAlpha(179),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Segmented button style selector
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _LengthOption(
+                          emoji: '⚡',
+                          label: 'Quick',
+                          subtitle: '5 min',
+                          isSelected: data.storyLength == 'quick',
+                          onTap: () => setState(() => data.storyLength = 'quick'),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: _LengthOption(
+                          emoji: '📖',
+                          label: 'Standard',
+                          subtitle: '10 min',
+                          isSelected: data.storyLength == 'standard',
+                          onTap: () => setState(() => data.storyLength = 'standard'),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: _LengthOption(
+                          emoji: '🏰',
+                          label: 'Epic',
+                          subtitle: '15 min',
+                          isSelected: data.storyLength == 'epic',
+                          onTap: () => setState(() => data.storyLength = 'epic'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            // Spark Tool Section
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Text('⚡', style: TextStyle(fontSize: 20)),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        'Spark Tool',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: AppColors.textDark,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Choose a special item to help on your adventure!',
+                    style: TextStyle(
+                      color: AppColors.textDark.withAlpha(179),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  DropdownButtonFormField<String>(
+                    value: data.selectedSparkTool,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      filled: true,
+                      fillColor: AppColors.surface,
+                    ),
+                    items: sparkTools.map((tool) {
+                      return DropdownMenuItem(
+                        value: tool.name,
+                        child: Text('${tool.emoji} ${tool.name}'),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        data.selectedSparkTool = val;
+                      });
+                    },
+                    hint: const Text('Select a magical tool...'),
+                  ),
+                  if (data.selectedSparkTool != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12.0),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.gold.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.info_outline, size: 16, color: AppColors.textDark),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                sparkTools
+                                    .firstWhere((t) => t.name == data.selectedSparkTool)
+                                    .description,
+                                style: const TextStyle(
+                                  fontStyle: FontStyle.italic,
+                                  color: AppColors.textDark,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
             // Summary cards header
              Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -367,6 +603,16 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
               ),
             ],
             const SizedBox(height: AppSpacing.xxl),
+
+            if (data.selectedSparkTool != null) ...[
+               _SummaryCard(
+                icon: '⚡',
+                title: 'Spark Tool',
+                value: data.selectedSparkTool!,
+                color: Colors.amber,
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
 
             // Big "Make Magic" button
             Center(
@@ -498,6 +744,88 @@ class _SummaryCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Story length selection button
+class _LengthOption extends StatelessWidget {
+  final String emoji;
+  final String label;
+  final String subtitle;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _LengthOption({
+    required this.emoji,
+    required this.label,
+    required this.subtitle,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.gold : Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color: isSelected ? AppColors.gold : AppColors.textDark.withOpacity(0.2),
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.gold.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
+        ),
+        child: Column(
+          children: [
+            Text(
+              emoji,
+              style: TextStyle(
+                fontSize: 28,
+                shadows: isSelected
+                    ? [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                        ),
+                      ]
+                    : [],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: isSelected ? AppColors.textDark : AppColors.textDark.withOpacity(0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: isSelected ? AppColors.textDark.withOpacity(0.7) : AppColors.textDark.withOpacity(0.5),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

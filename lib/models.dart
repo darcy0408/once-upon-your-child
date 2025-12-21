@@ -84,48 +84,82 @@ class Character {
         : ageValue is num
             ? ageValue.toInt()
             : int.tryParse(ageValue?.toString() ?? '') ?? 0;
+            
+    // Robustly parse personality sliders
     Map<String, int>? sliderValues;
     final sliderJson = json['personality_sliders'];
-    if (sliderJson is Map<String, dynamic>) {
+    if (sliderJson is Map) {
       final sanitized = <String, int>{};
       sliderJson.forEach((key, value) {
         final parsed = _parseSliderValue(value);
         if (parsed != null) {
-          sanitized[key] = parsed;
+          sanitized[key.toString()] = parsed;
         }
       });
       if (sanitized.isNotEmpty) {
         sliderValues = sanitized;
       }
     }
+
+    // Robustly parse pets
+    List<Map<String, dynamic>>? petsList;
+    if (json['pets'] is List) {
+      try {
+        petsList = (json['pets'] as List)
+            .where((item) => item is Map)
+            .map((item) {
+              try {
+                return Map<String, dynamic>.from(item as Map);
+              } catch (_) {
+                return null;
+              }
+            })
+            // Filter out nulls from failed conversions
+            .where((item) => item != null)
+            .cast<Map<String, dynamic>>()
+            .toList();
+      } catch (e) {
+        debugPrint('Error parsing pets: $e');
+        petsList = [];
+      }
+    }
+
+    // Robustly parse friends
+    List<String>? friendsList;
+    if (json['friends'] is List) {
+      friendsList = (json['friends'] as List)
+          .map((e) => e.toString())
+          .toList();
+    }
+
     return Character(
-      id: json['id'] ?? '',
-      name: json['name'] ?? 'Unknown',
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? 'Unknown',
       age: parsedAge,
-      role: json['role'] ?? 'Hero',
-      gender: json['gender'],
-      characterStyle: json['character_style'],
-      magicType: json['magic_type'],
-      challenge: json['challenge'],
-      likes: json['likes'] != null ? List<String>.from(json['likes']) : null,
+      role: json['role']?.toString() ?? 'Hero',
+      gender: json['gender']?.toString(),
+      characterStyle: json['character_style']?.toString(),
+      magicType: json['magic_type']?.toString(),
+      challenge: json['challenge']?.toString(),
+      likes: json['likes'] != null ? (json['likes'] as List).map((e) => e.toString()).toList() : null,
       dislikes:
-          json['dislikes'] != null ? List<String>.from(json['dislikes']) : null,
-      fears: json['fears'] != null ? List<String>.from(json['fears']) : null,
-      strengths: json['strengths'] != null ? List<String>.from(json['strengths']) : null,
-      personalityTraits: json['personality_traits'] != null ? List<String>.from(json['personality_traits']) : null,
+          json['dislikes'] != null ? (json['dislikes'] as List).map((e) => e.toString()).toList() : null,
+      fears: json['fears'] != null ? (json['fears'] as List).map((e) => e.toString()).toList() : null,
+      strengths: json['strengths'] != null ? (json['strengths'] as List).map((e) => e.toString()).toList() : null,
+      personalityTraits: json['personality_traits'] != null ? (json['personality_traits'] as List).map((e) => e.toString()).toList() : null,
       personalitySliders: sliderValues,
-      goals: json['goals'] != null ? List<String>.from(json['goals']) : null,
-      comfortItem: json['comfort_item'],
-      hair: json['hair'],
-      eyes: json['eyes'],
-      skinTone: json['skin_tone'],
-      hairstyle: json['hairstyle'],
-      outfit: json['outfit'],
-      currentEmotion: json['current_emotion'],
-      currentEmotionCore: json['current_emotion_core'],
+      goals: json['goals'] != null ? (json['goals'] as List).map((e) => e.toString()).toList() : null,
+      comfortItem: json['comfort_item']?.toString(),
+      hair: json['hair']?.toString(),
+      eyes: json['eyes']?.toString(),
+      skinTone: json['skin_tone']?.toString(),
+      hairstyle: json['hairstyle']?.toString(),
+      outfit: json['outfit']?.toString(),
+      currentEmotion: json['current_emotion']?.toString(),
+      currentEmotionCore: json['current_emotion_core']?.toString(),
       avatar: avatar,
-      pets: json['pets'] != null ? List<Map<String, dynamic>>.from(json['pets']) : null,
-      friends: json['friends'] != null ? List<String>.from(json['friends']) : null,
+      pets: petsList,
+      friends: friendsList,
     );
   }
 

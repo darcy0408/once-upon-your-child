@@ -226,6 +226,9 @@ class ApiServiceManager {
     int maxAttempts = 3,
     Duration retryInitialDelay = const Duration(seconds: 2),
     Duration requestTimeout = const Duration(seconds: 90),
+    List<Map<String, dynamic>>? companionPets,
+    List<dynamic>? companionCharacters,
+    String storyLength = 'standard',
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
     final userId = await UserIdentityService.getOrCreateUserId();
@@ -257,6 +260,9 @@ class ApiServiceManager {
         maxAttempts: maxAttempts,
         initialDelay: retryInitialDelay,
         requestTimeout: requestTimeout,
+        companionPets: companionPets,
+        companionCharacters: companionCharacters,
+        storyLength: storyLength,
       );
     }
 
@@ -272,6 +278,9 @@ class ApiServiceManager {
       includeIllustrations: includeIllustrations,
       currentFeeling: currentFeeling,
       characterEvolution: characterEvolution,
+      companionPets: companionPets,
+      companionCharacters: companionCharacters,
+      storyLength: storyLength,
     );
   }
 
@@ -324,6 +333,9 @@ class ApiServiceManager {
     bool includeIllustrations = false,
     Map<String, dynamic>? currentFeeling,
     Map<String, dynamic>? characterEvolution,
+    List<Map<String, dynamic>>? companionPets,
+    List<dynamic>? companionCharacters,
+    String storyLength = 'standard',
   }) async {
     final apiKey = await getUserApiKey();
     if (apiKey == null) {
@@ -348,6 +360,9 @@ class ApiServiceManager {
       learningToReadMode: learningToReadMode,
       currentFeeling: currentFeeling,
       characterEvolution: characterEvolution,
+      companionPets: companionPets,
+      companionCharacters: companionCharacters,
+      storyLength: storyLength,
     );
 
     try {
@@ -395,6 +410,9 @@ class ApiServiceManager {
     required int maxAttempts,
     required Duration initialDelay,
     required Duration requestTimeout,
+    List<Map<String, dynamic>>? companionPets,
+    List<dynamic>? companionCharacters,
+    required String storyLength,
   }) async {
     var attempts = 0;
     var delay = initialDelay;
@@ -418,6 +436,9 @@ class ApiServiceManager {
           characterEvolution: characterEvolution,
           client: client,
           requestTimeout: requestTimeout,
+          companionPets: companionPets,
+          companionCharacters: companionCharacters,
+          storyLength: storyLength,
         );
       } catch (error, stackTrace) {
         attempts++;
@@ -449,6 +470,9 @@ class ApiServiceManager {
     Map<String, dynamic>? characterEvolution,
     http.Client? client,
     required Duration requestTimeout,
+    List<Map<String, dynamic>>? companionPets,
+    List<dynamic>? companionCharacters,
+    required String storyLength,
   }) async {
     final httpClient = client ?? _testClient ?? http.Client();
     final generateUri = Uri.parse('$_localBackendUrl/generate-story');
@@ -467,6 +491,9 @@ class ApiServiceManager {
       'include_illustrations': includeIllustrations,
       'subscription_tier': subscriptionTier,
       'user_id': userId,
+      'companion_pets': companionPets,
+      'companion_characters': companionCharacters,
+      'story_length': storyLength,
     };
     if (userApiKey != null && userApiKey.isNotEmpty) {
       body['user_api_key'] = userApiKey;
@@ -1041,10 +1068,52 @@ Create the rhyming learning-to-read story about $characterName now:
     bool learningToReadMode = false,
     Map<String, dynamic>? currentFeeling,
     Map<String, dynamic>? characterEvolution,
+    List<Map<String, dynamic>>? companionPets,
+    List<dynamic>? companionCharacters,
+    String storyLength = 'standard',
   }) {
-    final guidelines = StoryComplexityService.getAgeGuidelines(age);
-    final lengthGuideline =
-        (guidelines['length_guideline'] as String?) ?? '200-300 words';
+    // Map story length to word count targets (matching backend)
+    String lengthGuideline;
+    switch (storyLength) {
+      case 'quick':
+        lengthGuideline = '300-400 words';
+        break;
+      case 'epic':
+        lengthGuideline = '1000-1200 words';
+        break;
+      case 'standard':
+      default:
+        lengthGuideline = '600-800 words';
+        break;
+    }
+
+    // Merge companions for prompt building
+    final effectiveAdditionalChars = additionalCharacters != null 
+        ? List<String>.from(additionalCharacters) 
+        : <String>[];
+    
+    if (companionCharacters != null) {
+      for (final char in companionCharacters) {
+        if (char is String) {
+          effectiveAdditionalChars.add(char);
+        } else if (char is Map) {
+          final name = char['name'] ?? 'Friend';
+          final desc = char['description'] ?? char['role'] ?? '';
+          final power = char['signaturePower'];
+          
+          String entry = name;
+          if (desc.isNotEmpty) entry += ' ($desc)';
+          if (power != null) entry += ' [Magic: $power]';
+          
+          effectiveAdditionalChars.add(entry);
+        }
+      }
+    }
+    if (companionPets != null) {
+      for (final p in companionPets) {
+        effectiveAdditionalChars.add('${p['name']} (a ${p['species']})');
+      }
+    }
 
     if (learningToReadMode) {
       return _buildLearningToReadPrompt(
@@ -1066,7 +1135,7 @@ Create the rhyming learning-to-read story about $characterName now:
         currentFeeling: currentFeeling,
         companion: companion,
         characterDetails: characterDetails,
-        additionalCharacters: additionalCharacters,
+        additionalCharacters: effectiveAdditionalChars,
       );
     } else {
       return _buildAdventurePrompt(
@@ -1076,7 +1145,7 @@ Create the rhyming learning-to-read story about $characterName now:
         lengthGuideline: lengthGuideline,
         companion: companion,
         characterDetails: characterDetails,
-        additionalCharacters: additionalCharacters,
+        additionalCharacters: effectiveAdditionalChars,
       );
     }
   }

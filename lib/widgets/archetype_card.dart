@@ -13,6 +13,7 @@ class ArchetypeCard extends StatelessWidget {
   final String icon;
   final String name;
   final String description; // For parent tooltips only
+  final String specialAbility; // NEW: Displayed on card
   final List<String> traits;
   final VoidCallback onUseTemplate;
   final bool isSelected;
@@ -22,6 +23,7 @@ class ArchetypeCard extends StatelessWidget {
     required this.icon,
     required this.name,
     required this.description,
+    required this.specialAbility,
     required this.traits,
     required this.onUseTemplate,
     this.isSelected = false,
@@ -68,7 +70,7 @@ class ArchetypeCard extends StatelessWidget {
                   // Icon/Emoji
                   Text(
                     icon,
-                    style: const TextStyle(fontSize: 36),
+                    style: const TextStyle(fontSize: 64),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   // Archetype name
@@ -88,30 +90,40 @@ class ArchetypeCard extends StatelessWidget {
                     alignment: WrapAlignment.center,
                     children: traits.map((trait) => _TraitChip(label: trait)).toList(),
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  // "Use Template" button
-                  ElevatedButton(
-                    onPressed: onUseTemplate,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.textLight,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.xs,
-                      ),
-                      minimumSize: const Size(0, 40),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                    ),
-                    child: Text(
-                      'Use Template',
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: AppColors.textLight,
-                            fontSize: 14,
-                          ),
-                    ),
+                  const SizedBox(height: AppSpacing.md),
+                  
+                  // Special Ability Display
+                  Container(
+                     padding: const EdgeInsets.all(8),
+                     decoration: BoxDecoration(
+                       color: AppColors.primary.withOpacity(0.1),
+                       borderRadius: BorderRadius.circular(AppRadius.sm),
+                       border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                     ),
+                     child: Text(
+                        specialAbility, 
+                        style: TextStyle(
+                          fontSize: 11, 
+                          fontStyle: FontStyle.italic,
+                          color: AppColors.textDark,
+                        ),
+                        textAlign: TextAlign.center,
+                     ),
                   ),
+
+                  // "Use Template" button
+                  if (!isSelected) // Hint text instead of button
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        'Tap to Select',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textDark.withAlpha(128),
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -136,10 +148,10 @@ class _TraitChip extends StatelessWidget {
         vertical: 4,
       ),
       decoration: BoxDecoration(
-        color: AppColors.gold.withAlpha(51), // 20% opacity
+        color: AppColors.gold.withAlpha(80), // Increased opacity
         borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(
-          color: AppColors.gold.withAlpha(128), // 50% opacity
+          color: AppColors.gold.withAlpha(200), // Darker border
           width: 1,
         ),
       ),
@@ -158,10 +170,11 @@ class _TraitChip extends StatelessWidget {
 /// Predefined character archetypes
 class CharacterArchetypes {
   static const adventurer = ArchetypeData(
-    icon: '🗺️',
-    name: 'The Adventurer',
-    description: 'Brave, curious, and loves exploration',
+    icon: '⚡',
+    name: 'The Storm Rider',
+    description: 'Commands wind and weather, brave explorer',
     traits: ['Brave', 'Curious', 'Determined'],
+    specialAbility: 'Can command wind and weather to soar through storms',
     attributes: {
       'energy': 80,
       'sociability': 70,
@@ -173,10 +186,11 @@ class CharacterArchetypes {
   );
 
   static const thinker = ArchetypeData(
-    icon: '💭',
-    name: 'The Thinker',
-    description: 'Thoughtful, analytical, loves to learn',
+    icon: '🧩',
+    name: 'The Ancient Riddle-Solver',
+    description: 'Deciphers secret maps and ancient puzzles',
     traits: ['Smart', 'Modest', 'Curious'],
+    specialAbility: 'Can decipher secret maps and unlock ancient mysteries',
     attributes: {
       'energy': 40,
       'sociability': 30,
@@ -189,9 +203,10 @@ class CharacterArchetypes {
 
   static const artist = ArchetypeData(
     icon: '🎨',
-    name: 'The Artist',
-    description: 'Creative, imaginative, loves colors',
-    traits: ['Creative', 'Expressive', 'Hint'],
+    name: 'The Master Creator',
+    description: 'Magic paintbrush brings drawings to life',
+    traits: ['Creative', 'Expressive', 'Imaginative'],
+    specialAbility: 'Has a magic paintbrush that brings drawings to life',
     attributes: {
       'energy': 60,
       'sociability': 50,
@@ -203,10 +218,11 @@ class CharacterArchetypes {
   );
 
   static const helper = ArchetypeData(
-    icon: '🤝',
-    name: 'The Helper',
-    description: 'Kind, empathetic, loves to support',
+    icon: '💚',
+    name: 'The Heart Healer',
+    description: 'Senses emotions and heals broken spirits',
     traits: ['Caring', 'Patient', 'Loyal'],
+    specialAbility: 'Can sense emotions and heal broken spirits with kindness',
     attributes: {
       'energy': 50,
       'sociability': 85,
@@ -218,10 +234,11 @@ class CharacterArchetypes {
   );
 
   static const athlete = ArchetypeData(
-    icon: '⚡',
-    name: 'The Athlete',
-    description: 'Energetic, competitive, loves team play',
-    traits: ['Energetic', 'Empathy', 'Determined'],
+    icon: '🏃',
+    name: 'The Lightning Runner',
+    description: 'Moves faster than sound, leaves stardust trails',
+    traits: ['Energetic', 'Fast', 'Determined'],
+    specialAbility: 'Moves faster than sound and leaves trails of stardust',
     attributes: {
       'energy': 95,
       'sociability': 75,
@@ -233,10 +250,11 @@ class CharacterArchetypes {
   );
 
   static const shyOne = ArchetypeData(
-    icon: '😊',
-    name: 'The Shy One',
-    description: 'Quiet, observant, meaningful',
-    traits: ['Thoughtful', 'Quirks', 'Observant'],
+    icon: '🦉',
+    name: 'The Animal Whisperer',
+    description: 'Talks to animals and hears nature\'s secrets',
+    traits: ['Kind', 'Observant', 'Gentle'],
+    specialAbility: 'Can talk to animals and move unseen like a shadow',
     attributes: {
       'energy': 35,
       'sociability': 25,
@@ -263,6 +281,7 @@ class ArchetypeData {
   final String description;
   final List<String> traits;
   final Map<String, int> attributes;
+  final String specialAbility; // New: physics-defying power for adventures
 
   const ArchetypeData({
     required this.icon,
@@ -270,5 +289,6 @@ class ArchetypeData {
     required this.description,
     required this.traits,
     required this.attributes,
+    required this.specialAbility,
   });
 }
