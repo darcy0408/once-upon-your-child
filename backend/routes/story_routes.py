@@ -455,17 +455,25 @@ def create_story_blueprint(
                         "count": len(transformed_illustrations),
                         "used_user_key": using_user_key,
                         "debug_info": {
-                            "generator_type": type(generator).__name__ if generator else "None",
-                            "scene_length": len(scene_description),
                         },
                     }
                 ),
                 200,
             )
 
-        except Exception as e:
+        except Exception as exc:
+            import traceback
+            error_trace = traceback.format_exc()
             logger.exception("Illustration generation failed")
-            return jsonify({"error": str(e), "hint": "Image generation failed. Check your API key quota or try again later."}), 500
+            
+            # Write error to file for debugging
+            try:
+                with open("backend_last_error.log", "w") as f:
+                    f.write(error_trace)
+            except Exception:
+                pass
+
+            return jsonify({"error": str(exc), "hint": "Image generation failed. Check your API key quota or try again later."}), 500
 
     @limiter.limit("10 per hour")
     @story_bp.route("/generate-coloring-pages", methods=["POST"])
