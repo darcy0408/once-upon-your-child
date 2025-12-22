@@ -111,6 +111,7 @@ def create_story_blueprint(
             "mood_physics": payload.get("moodPhysics"), # NEW: Mood Physics
             "conflict_hook": payload.get("conflictHook"), # NEW: Plot Driver
             "sensory_palette": payload.get("sensoryPalette"), # NEW: Atmosphere
+            "custom_elements": payload.get("customElements", ""), # NEW: Free-form custom story requests
             "therapeutic_prompt": payload.get("therapeutic_prompt", ""),
             "feelings_prompt": feelings_prompt_text or payload.get("feelings_prompt"),
             "story_length": payload.get("story_length", "standard"),
