@@ -195,27 +195,27 @@ class WizardDataMapper {
         if (archetypeId.contains('Storm Rider') || archetypeId.contains('Adventurer')) {
           details['strengths'] = ['Bravery', 'Curiosity'];
           details['interests'] = ['Exploring', 'Maps', 'Nature'];
-          details['special_ability'] = 'Can command wind and weather to soar through storms';
+          details['specialAbility'] = 'Can command wind and weather to soar through storms';
         } else if (archetypeId.contains('Riddle-Solver') || archetypeId.contains('Thinker')) {
            details['strengths'] = ['Problem solving', 'Focus'];
            details['interests'] = ['Puzzles', 'Reading', 'Science'];
-           details['special_ability'] = 'Can decipher secret maps and unlock ancient mysteries';
+           details['specialAbility'] = 'Can decipher secret maps and unlock ancient mysteries';
         } else if (archetypeId.contains('Master Creator') || archetypeId.contains('Artist')) {
            details['strengths'] = ['Creativity', 'Vision'];
            details['interests'] = ['Painting', 'Colors', 'Music'];
-           details['special_ability'] = 'Has a magic paintbrush that brings drawings to life';
+           details['specialAbility'] = 'Has a magic paintbrush that brings drawings to life';
         } else if (archetypeId.contains('Heart Healer') || archetypeId.contains('Helper')) {
            details['strengths'] = ['Kindness', 'Empathy'];
            details['interests'] = ['Animals', 'Helping friends'];
-           details['special_ability'] = 'Can sense emotions and heal broken spirits with kindness';
+           details['specialAbility'] = 'Can sense emotions and heal broken spirits with kindness';
         } else if (archetypeId.contains('Lightning Runner') || archetypeId.contains('Athlete')) {
            details['strengths'] = ['Energy', 'Teamwork'];
            details['interests'] = ['Sports', 'Running', 'Games'];
-           details['special_ability'] = 'Moves faster than sound and leaves trails of stardust';
+           details['specialAbility'] = 'Moves faster than sound and leaves trails of stardust';
         } else if (archetypeId.contains('Animal Whisperer') || archetypeId.contains('Shy')) {
            details['strengths'] = ['Kindness', 'Nature Magic']; 
            details['interests'] = ['Animals', 'Nature', 'Secrets'];
-           details['special_ability'] = 'Can talk to animals and move unseen like a shadow';
+           details['specialAbility'] = 'Can talk to animals and move unseen like a shadow';
         }
       } catch (e) {
         debugPrint('Error mapping archetype details: $e');
