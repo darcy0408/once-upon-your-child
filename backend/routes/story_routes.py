@@ -114,6 +114,7 @@ def create_story_blueprint(
             "therapeutic_prompt": payload.get("therapeutic_prompt", ""),
             "feelings_prompt": feelings_prompt_text or payload.get("feelings_prompt"),
             "story_length": payload.get("story_length", "standard"),
+            "age": payload.get("age", 5),
         }
 
         # If async mode is requested, disable inline illustrations but pass the flag

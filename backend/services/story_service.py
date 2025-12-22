@@ -114,11 +114,13 @@ class AdvancedStoryEngine:
         mood_physics: dict | None = None, # NEW: Mood Physics
         conflict_hook: str | None = None, # NEW: Plot Driver
         sensory_palette: str | None = None, # NEW: Atmosphere
+        custom_elements: str = "",  # NEW: Free-form custom story requests
         additional_characters: list[str] | None = None,
         therapeutic_prompt: str = "",
         feelings_prompt: str | None = None,
         character_details: dict | None = None, # Passed for prompt building
         story_length: str = "standard",  # NEW: 'quick', 'standard', or 'epic'
+        age: int = 5,  # NEW: Age for calibration
     ):
         # Map story length to word count targets
         word_count_targets = {
@@ -266,6 +268,16 @@ class AdvancedStoryEngine:
              if sensory_palette:
                  scenario_section += f"\n- SENSORY PALETTE: {sensory_palette}"
 
+        # CUSTOM ELEMENTS INJECTION (Free-Form Requests)
+        custom_elements_section = ""
+        if custom_elements and custom_elements.strip():
+            custom_elements_section = (
+                f"\n💭 CUSTOM STORY ELEMENTS (MUST INCLUDE):\n"
+                f"The storyteller specifically requested: \"{custom_elements.strip()}\"\n"
+                f"CRITICAL: These custom elements MUST appear in the story as plot-relevant features, not background details.\n"
+                f"Elevate them to be important, magical, or pivotal to the adventure."
+            )
+
         # SPECIAL ABILITY EXTRACTION
         hero_special_ability = ""
         if character_details and character_details.get("specialAbility"):
@@ -303,10 +315,12 @@ class AdvancedStoryEngine:
             spark_tool_section, # NEW: Spark Tool
             mood_physics_section, # NEW: Mood Physics
             scenario_section, # NEW: Scenario details
+            custom_elements_section, # NEW: Custom story requests
             "- IMPORTANT: The companions listed above MUST speak and act in the story.",
             "- CRITICAL: Character Companions are REAL PEOPLE (children/humans), NOT stuffed animals, toys, or imaginary friends.",
             "- Mode: Immersive Adventure",
             f"- Target length: {target_word_count} for deep engagement.",
+            _build_age_instruction_block(age),  # Integrated Age Calibration
             "",
             "STORY:",
             "STORY START",

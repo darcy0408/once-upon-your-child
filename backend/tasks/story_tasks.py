@@ -117,6 +117,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         companion = kwargs.get("companion")  # Legacy support
         character_name = kwargs.get("character") or "a brave adventurer"
         char_details = kwargs.get("character_details") or {}
+        custom_elements = kwargs.get("custom_elements", "")  # Free-form custom story requests
 
         # NEW: Extract structured companion data
         companion_pets = kwargs.get("companion_pets", [])  # List of pet dicts
@@ -196,11 +197,13 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     mood_physics=kwargs.get("mood_physics"), # NEW
                     conflict_hook=kwargs.get("conflict_hook"), # NEW
                     sensory_palette=kwargs.get("sensory_palette"), # NEW
+                    custom_elements=custom_elements,  # NEW: Free-form custom story requests
                     additional_characters=char_details.get("additionalCharacters"),
                     therapeutic_prompt=kwargs.get("therapeutic_prompt", ""),
                     feelings_prompt=kwargs.get("feelings_prompt"),
                     character_details=char_details,
                     story_length=story_length,  # NEW: Story length option
+                    age=kwargs.get("age", 5),   # NEW: Pass age for calibration
                 )
 
             logger.info(f"Companion Pets: {companion_pets}")

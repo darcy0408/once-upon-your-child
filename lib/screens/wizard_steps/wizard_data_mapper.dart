@@ -103,6 +103,7 @@ class WizardDataMapper {
       'currentFeeling': currentFeeling,
       'sparkTool': data.selectedSparkTool, // NEW: Spark Tool
       'moodPhysics': moodPhysics, // NEW: Mood Physics
+      'customElements': data.customElements, // NEW: Free-form custom story requests
       // Story mode settings from wizard
       'storyLength': data.storyLength, // quick, standard, or epic
       'rhymeTimeMode': data.rhymeTimeMode,
