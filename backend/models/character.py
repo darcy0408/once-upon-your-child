@@ -21,6 +21,19 @@ class Character(db.Model):
     eyes = db.Column(db.String(50))
     outfit = db.Column(db.String(200))
 
+    # AI-Generated Avatar Data
+    avatar_data = db.Column(db.JSON, nullable=True, default=None)
+    # Structure: {
+    #   'id': str,
+    #   'image_base64': str (data:image/png;base64,...),
+    #   'seed': str,
+    #   'style': str (pixar|watercolor|cartoon|clay),
+    #   'attributes': {hair_style, hair_color, skin_tone, outfit, expression},
+    #   'emotion_data': {core, eye_type, mouth_type},
+    #   'generated_at': str (ISO),
+    #   'version': int
+    # }
+
     # SQLite JSON (persists as TEXT)
     personality_traits = db.Column(db.JSON, default=list)
     personality_sliders = db.Column(db.JSON, default=dict)
@@ -62,5 +75,6 @@ class Character(db.Model):
             "goals": self.goals or [],
             "pets": self.pets or [],
             "comfort_item": self.comfort_item,
+            "avatar_data": self.avatar_data,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

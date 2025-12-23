@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'dart:convert';
 import '../theme/app_theme.dart';
+import '../models/generated_avatar.dart';
 
 /// CharacterPreview - Large character display with magical sparkle circle
 ///
@@ -8,10 +10,11 @@ import '../theme/app_theme.dart';
 /// - Takes up top 50% of screen
 /// - Dotted circle frame around character
 /// - Floating sparkles that rotate
-/// - Placeholder support until real 3D characters are implemented
+/// - Supports AI-generated avatars, network images, or emoji placeholders
 /// - Scales and animates on character change
 class CharacterPreview extends StatefulWidget {
   final String? characterImageUrl;
+  final GeneratedAvatar? generatedAvatar;
   final String placeholderEmoji;
   final Color backgroundColor;
   final bool showSparkles;
@@ -19,6 +22,7 @@ class CharacterPreview extends StatefulWidget {
   const CharacterPreview({
     super.key,
     this.characterImageUrl,
+    this.generatedAvatar,
     this.placeholderEmoji = '👧',
     this.backgroundColor = AppColors.gradientMid,
     this.showSparkles = true,
@@ -68,7 +72,8 @@ class _CharacterPreviewState extends State<CharacterPreview>
   void didUpdateWidget(CharacterPreview oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.placeholderEmoji != widget.placeholderEmoji ||
-        oldWidget.characterImageUrl != widget.characterImageUrl) {
+        oldWidget.characterImageUrl != widget.characterImageUrl ||
+        oldWidget.generatedAvatar?.id != widget.generatedAvatar?.id) {
       // Trigger scale animation on character change
       _scaleController.reset();
       _scaleController.forward();
@@ -177,8 +182,12 @@ class _CharacterPreviewState extends State<CharacterPreview>
   }
 
   Widget _buildCharacter(double size) {
-    if (widget.characterImageUrl != null) {
-      // Real character image (placeholder for future implementation)
+    // Priority: Generated Avatar > Network Image > Emoji Placeholder
+    if (widget.generatedAvatar != null) {
+      // AI-generated avatar
+      return _buildGeneratedAvatar(size);
+    } else if (widget.characterImageUrl != null) {
+      // Network image (future use)
       return ClipOval(
         child: Image.network(
           widget.characterImageUrl!,
@@ -191,6 +200,42 @@ class _CharacterPreviewState extends State<CharacterPreview>
         ),
       );
     } else {
+      return _buildPlaceholder(size);
+    }
+  }
+
+  Widget _buildGeneratedAvatar(double size) {
+    try {
+      // Decode base64 image (remove data URI prefix if present)
+      final base64String = widget.generatedAvatar!.imageBase64.split(',').last;
+      final imageBytes = base64Decode(base64String);
+
+      return Container(
+        width: size * 0.8,
+        height: size * 0.8,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withAlpha(102), // 40% opacity - stronger for generated avatars
+              blurRadius: 25,
+              spreadRadius: 8,
+            ),
+          ],
+        ),
+        child: ClipOval(
+          child: Image.memory(
+            imageBytes,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              debugPrint('Error displaying generated avatar: $error');
+              return _buildPlaceholder(size);
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error decoding generated avatar: $e');
       return _buildPlaceholder(size);
     }
   }

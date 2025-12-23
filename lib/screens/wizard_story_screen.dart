@@ -161,7 +161,11 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
                         color: AppColors.textDark,
                       ),
                       onPressed: _currentStep == 0
-                          ? () => Navigator.of(context).pop()
+                          ? () {
+                              if (Navigator.of(context).canPop()) {
+                                Navigator.of(context).pop();
+                              }
+                            }
                           : _previousStep,
                       tooltip: _currentStep == 0 ? 'Close' : 'Back',
                     ),

@@ -8,6 +8,8 @@ import '../../widgets/pill_button.dart';
 import '../wizard_story_screen.dart';
 import '../../services/api_service_manager.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../models/generated_avatar.dart';
+import '../../widgets/avatar_creator_overlay.dart';
 
 /// Step 1: The Hero Creator
 ///
@@ -37,6 +39,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   late TextEditingController _nameController;
   Character? _selectedExistingCharacter;
   bool _isCreatingNew = true; // Toggle between creating new vs selecting existing
+  GeneratedAvatar? _generatedAvatar; // AI-generated avatar
 
   @override
   void initState() {
@@ -175,10 +178,37 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
       widget.wizardData.personalitySliders = Map<String, int>.from(archetype.attributes);
       // Ensure default age is set if 0 or uninitialized
       if (widget.wizardData.characterAge < 1) {
-        widget.wizardData.characterAge = 5; 
+        widget.wizardData.characterAge = 5;
       }
       // widget.wizardData.characterName = archetype.name.replaceAll('The ', ''); // User requested to remove this
     });
+  }
+
+  void _showAvatarCreator() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AvatarCreatorOverlay(
+        characterName: widget.wizardData.characterName,
+        age: widget.wizardData.characterAge,
+        onCancel: () => Navigator.pop(context),
+        onAvatarCreated: (avatar) {
+          setState(() {
+            _generatedAvatar = avatar;
+          });
+          Navigator.pop(context);
+
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Avatar created! It will appear in your stories!'),
+              backgroundColor: Color(0xFF4CAF50),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   bool get _canContinue => _selectedArchetypeId != null && widget.wizardData.characterName.trim().isNotEmpty;
@@ -437,6 +467,36 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                         });
                       },
                     ),
+                    const SizedBox(height: 20),
+
+                    // Create Avatar Button
+                    if (widget.wizardData.characterName.isNotEmpty)
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _showAvatarCreator(),
+                          icon: Icon(
+                            _generatedAvatar != null ? Icons.edit : Icons.face,
+                            color: const Color(0xFFFFD93D),
+                          ),
+                          label: Text(
+                            _generatedAvatar != null
+                                ? 'Change Avatar'
+                                : 'Create Magic Avatar',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: const BorderSide(color: Color(0xFFFFD93D), width: 2),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 16),
                   ],
 

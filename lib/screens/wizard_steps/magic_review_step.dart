@@ -92,7 +92,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
           );
 
           // Navigate to interactive story screen
-          Navigator.of(context).pushReplacement(
+          await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => InteractiveStoryScreen(
                 character: character,
@@ -105,7 +105,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
           );
         } else {
           // Navigate to standard story result
-          Navigator.of(context).pushReplacement(
+          await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => StoryResultScreen(
                 title: result.title ?? 'My Magical Story',
@@ -139,7 +139,6 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       }
 
       if (mounted) {
-        setState(() => _isGenerating = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('$userMessage\n\n${e.toString().length > 100 ? e.toString().substring(0, 100) + '...' : e.toString()}'),
@@ -152,6 +151,10 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             ),
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isGenerating = false);
       }
     }
   }

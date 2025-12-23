@@ -4,7 +4,7 @@ import json
 import time
 
 def verify_backend():
-    url = "http://127.0.0.1:5000/generate-story"
+    url = "http://127.0.0.1:5000/generate-story"  # Use real endpoint for verification
     
     # Payload simulating a 5-year-old Storm Rider with Barnaby
     # Designed to trigger both Age Calibration and Three-Key Lock

@@ -209,6 +209,70 @@ Design style: Clean line art coloring page, therapeutic and story-based, for {ag
             logger.exception("Error generating coloring page with Gemini")
             return []
 
+    def generate_character_avatar(
+        self,
+        prompt: str,
+        character_name: str,
+        age: int,
+        style: str = "pixar",
+        num_images: int = 1
+    ) -> list:
+        """
+        Generate a magical, non-photorealistic character avatar for children.
+
+        This method is specifically designed for avatar generation with strict
+        safety controls to ensure non-photorealistic, child-safe output.
+
+        Args:
+            prompt: Complete avatar generation prompt (from AvatarPromptService)
+            character_name: Character's name
+            age: Character age (3-17)
+            style: Art style (pixar|watercolor|cartoon|clay)
+            num_images: Number of avatar variations to generate (default: 1)
+
+        Returns:
+            List of image dicts with base64-encoded PNG data
+        """
+        if not self.image_model:
+            logger.warning("Gemini image generator unavailable; skipping avatar generation")
+            return []
+
+        # Add Gemini-specific safety reinforcement to the prompt
+        # The prompt already comes with safety rules from AvatarPromptService
+        # We add model-specific parameters here
+        enhanced_prompt = f"""{prompt}
+
+CRITICAL REMINDER FOR IMAGE MODEL:
+- This is for a {age}-year-old child's personalized story character
+- Output MUST be {style} artistic style - absolutely NO photorealism
+- Portrait orientation, shoulders up, frontal view
+- Professional children's character design quality
+- Magical, whimsical, and delightful
+- 1:1 aspect ratio (square format) for avatar display
+"""
+
+        try:
+            logger.info(f"Generating {style} avatar for {character_name}, age {age}")
+            logger.debug(f"Avatar prompt preview: {enhanced_prompt[:250].replace(chr(10), ' ')}...")
+
+            # Generate avatar with Gemini 2.5 Flash Image model
+            response = self.image_model.generate_content(enhanced_prompt)
+
+            # Process response and extract images
+            images = self._process_image_response(response, enhanced_prompt)
+
+            candidate_count = len(getattr(response, "candidates", []) or [])
+            logger.info(f"Avatar generation returned {candidate_count} candidates and {len(images)} image(s)")
+
+            if not images:
+                logger.warning(f"No images generated for avatar: {character_name}")
+
+            return images
+
+        except Exception as e:
+            logger.exception(f"Error generating character avatar with Gemini: {e}")
+            return []
+
 
 # Example usage
 if __name__ == "__main__":

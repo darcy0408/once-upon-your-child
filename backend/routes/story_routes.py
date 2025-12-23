@@ -128,6 +128,12 @@ def create_story_blueprint(
             # Use .apply() to run synchronously in the same thread/process
             sync_result = generate_story_task.apply(kwargs=task_kwargs).get()
             
+            # Debugging: Log the result type
+            logger.info(f"Sync task result type: {type(sync_result)}")
+            if isinstance(sync_result, str):
+                logger.error(f"Sync task returned string instead of dict: {sync_result[:200]}...")
+                raise Exception(f"Task returned invalid format (str): {sync_result}")
+
             # Extract story payload from the task result
             story_payload = (sync_result or {}).get("story", {})
             if not story_payload:
@@ -147,11 +153,22 @@ def create_story_blueprint(
             return jsonify(response_payload), 200
 
         except Exception as exc:
+            import traceback
+            error_trace = traceback.format_exc()
+            logger.exception("Synchronous story generation failed, attempting async fallback: %s", exc)
+            
+            # Write error to file for debugging
+            try:
+                with open("backend_last_error.log", "w") as f:
+                    f.write(error_trace)
+            except Exception:
+                pass
+
             if "429" in str(exc) or "ResourceExhausted" in str(exc) or "Quota exceeded" in str(exc):
                 logger.warning(f"Quota exceeded in sync generation: {exc}")
                 return jsonify({"error": "QUOTA_EXCEEDED", "message": "Google Geminin API quota exceeded. Please try again later.", "details": str(exc)}), 429
             
-            logger.exception("Synchronous story generation failed, attempting async fallback: %s", exc)
+            logger.error(f"Full task_kwargs that failed: {task_kwargs}")
             try:
                 task = generate_story_task.delay(**task_kwargs)
                 return (
@@ -171,7 +188,8 @@ def create_story_blueprint(
                      return jsonify({"error": "QUOTA_EXCEEDED", "message": "Google Gemini API quota exceeded. Please try again later.", "details": str(async_exc)}), 429
                 
                 logger.exception("Async fallback also failed: %s", async_exc)
-                return jsonify({"error": "Story generation failed completely"}), 500
+                logger.error(f"Full error response: {str(async_exc)}")
+                return jsonify({"error": "Story generation failed completely", "details": str(async_exc)}), 500
             logger.exception("Falling back to synchronous story generation: %s", exc)
             try:
                 sync_result = generate_story_task.apply(kwargs=task_kwargs).get()

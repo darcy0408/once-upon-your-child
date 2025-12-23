@@ -274,6 +274,25 @@ def create_app(config_name):
     print(f"=== Creating database tables ===")
     with app.app_context():
         db.create_all()
+        # Ensure anonymous user exists for story generation
+        try:
+            anonymous_user = db.session.get(User, 'anonymous')
+            if not anonymous_user:
+                logger.info("Creating anonymous user for story generation...")
+                anon = User(
+                    id='anonymous',
+                    username='anonymous',
+                    email='anonymous@storyweaver.app'
+                )
+                anon.set_password('anonymous_guest_password')
+                db.session.add(anon)
+                db.session.commit()
+                logger.info("Anonymous user created successfully")
+            else:
+                logger.info("Anonymous user already exists")
+        except Exception as e:
+            logger.error(f"Failed to create anonymous user: {e}")
+            db.session.rollback()
     print(f"=== Database tables created ===")
 
     # JWT setup
@@ -326,12 +345,14 @@ def create_app(config_name):
         from backend.routes.story_routes import create_story_blueprint
         from backend.routes.character_routes import create_character_blueprint
         from backend.routes.admin_routes import create_admin_blueprint
+        from backend.routes.avatar_routes import avatar_bp
         from backend.routes.health_routes import create_health_blueprint
         from backend.routes.utility_routes import create_utility_blueprint
     except ImportError:
         from routes.story_routes import create_story_blueprint
         from routes.character_routes import create_character_blueprint
         from routes.admin_routes import create_admin_blueprint
+        from routes.avatar_routes import avatar_bp
         from routes.health_routes import create_health_blueprint
         from routes.utility_routes import create_utility_blueprint
 
@@ -360,6 +381,7 @@ def create_app(config_name):
     app.register_blueprint(admin_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(utility_bp)
+    app.register_blueprint(avatar_bp, url_prefix='/avatar')
 
     print(f"=== All routes registered successfully ===")
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
