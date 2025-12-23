@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../config/environment.dart';
 import '../models.dart'; // Import Character model
+import '../models/generated_avatar.dart';
 import '../theme/app_theme.dart';
 import '../widgets/moon_phase_progress.dart';
 import 'character_library_screen.dart';
@@ -259,6 +260,7 @@ class WizardData {
   String selectedHairStyle = '';
   String selectedSkinTone = '';
   String selectedOutfit = '';
+  GeneratedAvatar? generatedAvatar; // AI-generated avatar
 
   // Advanced character features
   List<String> fears = [];
@@ -312,6 +314,7 @@ class WizardData {
         'skin': selectedSkinTone,
         'outfit': selectedOutfit,
       },
+      if (generatedAvatar != null) 'generated_avatar': generatedAvatar!.toJson(),
       'fears': fears,
       'strengths': strengths,
       'comfortItem': comfortItem,

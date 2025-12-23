@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'avatar_models.dart';
 import 'services/avatar_service.dart';
+import 'models/generated_avatar.dart';
 
 class Character {
   final String id;
@@ -29,7 +30,8 @@ class Character {
   final String? outfit;
   final String? currentEmotion;
   final String? currentEmotionCore;
-  final CharacterAvatar? avatar;
+  final CharacterAvatar? avatar; // DiceBear avatar (legacy)
+  final GeneratedAvatar? generatedAvatar; // AI-generated avatar (new)
 
   Character({
     required this.id,
@@ -56,6 +58,7 @@ class Character {
     this.currentEmotion,
     this.currentEmotionCore,
     this.avatar,
+    this.generatedAvatar,
     this.pets,
     this.friends,
   });
@@ -132,6 +135,17 @@ class Character {
           .toList();
     }
 
+    // Parse generated avatar
+    GeneratedAvatar? generatedAvatar;
+    final generatedAvatarJson = json['generated_avatar'];
+    if (generatedAvatarJson is Map<String, dynamic>) {
+      try {
+        generatedAvatar = GeneratedAvatar.fromJson(generatedAvatarJson);
+      } catch (e) {
+        debugPrint('Error parsing generated avatar: $e');
+      }
+    }
+
     return Character(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? 'Unknown',
@@ -158,6 +172,7 @@ class Character {
       currentEmotion: json['current_emotion']?.toString(),
       currentEmotionCore: json['current_emotion_core']?.toString(),
       avatar: avatar,
+      generatedAvatar: generatedAvatar,
       pets: petsList,
       friends: friendsList,
     );
@@ -188,6 +203,7 @@ class Character {
         'current_emotion': currentEmotion,
         'current_emotion_core': currentEmotionCore,
         if (avatar != null) 'avatar': avatar!.toJson(),
+        if (generatedAvatar != null) 'generated_avatar': generatedAvatar!.toJson(),
         'pets': pets,
         'friends': friends,
       };

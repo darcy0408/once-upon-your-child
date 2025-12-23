@@ -195,6 +195,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         onAvatarCreated: (avatar) {
           setState(() {
             _generatedAvatar = avatar;
+            widget.wizardData.generatedAvatar = avatar; // Save to wizard data
           });
           Navigator.pop(context);
 
@@ -232,8 +233,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
       children: [
         // Top 40%: Character Preview
         Expanded(
-          flex: 2, 
+          flex: 2,
           child: CharacterPreview(
+            generatedAvatar: _generatedAvatar,
             placeholderEmoji: _characterEmoji,
             showSparkles: true,
           ),
