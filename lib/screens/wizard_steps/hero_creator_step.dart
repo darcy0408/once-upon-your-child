@@ -78,10 +78,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
             try {
                // Ensure p is a map and convert contents to strings safely
                if (p is Map) {
-                 safePets.add(p.map((key, value) => MapEntry(
-                   key.toString(), 
-                   value?.toString() ?? ''
-                 )));
+                 safePets.add(Map<String, String>.from(p));
                }
             } catch (e) {
               debugPrint('Warning: Skipping invalid pet data: $p ($e)');

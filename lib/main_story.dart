@@ -44,7 +44,6 @@ import 'story_intent_card.dart';
 import 'story_result_screen.dart';
 import 'subscription_models.dart';
 import 'subscription_service.dart';
-import 'therapeutic_customization_screen.dart';
 import 'therapeutic_models.dart';
 import 'widgets/app_bottom_navigation.dart';
 import 'settings_screen.dart' deferred as settings_screen;
@@ -90,7 +89,7 @@ class _StoryScreenState extends State<StoryScreen> {
   Character? _selectedCharacter;
   final Set<String> _additionalCharacterIds = {};
 
-  String _selectedTheme = 'Adventure';
+  final String _selectedTheme = 'Adventure';
   String _selectedCompanion = 'None';
   bool _interactiveMode = false;
   bool _isLoading = false;
@@ -110,7 +109,7 @@ class _StoryScreenState extends State<StoryScreen> {
   final _progressionService = ProgressionService();
   int _storiesCreated = 0;
   bool _hasRhymeTime = false;
-  bool _magicPulse = false;
+  final bool _magicPulse = false;
   final _achievementService = AchievementService();
   AchievementSummary? _achievementSummary;
   final _random = Random();
@@ -1059,7 +1058,7 @@ class _StoryScreenState extends State<StoryScreen> {
                   ),
                   subtitle: Text(_hasRhymeTime
                       ? 'Silly rhyming stories with playful verses!'
-                      : 'Unlock at 0 stories! ($_storiesCreated/0)'),
+                      : 'Unlock after creating 1 story! ($_storiesCreated/1)'),
                   value: _rhymeTimeMode && _hasRhymeTime,
                   thumbColor: WidgetStateProperty.all<Color>(Colors.orange),
                   secondary: const Icon(Icons.music_note, color: Colors.orange),

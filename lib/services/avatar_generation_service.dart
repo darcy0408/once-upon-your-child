@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/generated_avatar.dart';
-import '../config.dart';
+import '../config/environment.dart';
 
 /// Service for generating AI-powered avatars using the backend API
 class AvatarGenerationService {
   final String baseUrl;
 
   AvatarGenerationService({String? baseUrl})
-      : baseUrl = baseUrl ?? Config.apiBaseUrl;
+      : baseUrl = baseUrl ?? Environment.backendUrl;
 
   /// Generate a new avatar
   ///

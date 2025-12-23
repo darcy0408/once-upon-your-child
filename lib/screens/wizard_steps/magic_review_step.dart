@@ -58,30 +58,12 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       // Prepared payload using the mapper
       final requestData = WizardDataMapper.mapToStoryRequest(widget.wizardData);
 
-      final result = await ApiServiceManager.generateStory(
-        characterName: requestData['character'] ?? 'Hero',
-        age: requestData['age'] ?? 5,
-        theme: requestData['theme'] ?? 'Magical Adventure',
-        companion: requestData['companion'] ?? '',  // Provide empty string if null
-        characterDetails: requestData['characterDetails'],
-        currentFeeling: requestData['currentFeeling'],
-        additionalCharacters: requestData['additionalCharacters'],
-        // Story modes from wizard
-        includeIllustrations: widget.wizardData.includeIllustrations,
-        rhymeTimeMode: widget.wizardData.rhymeTimeMode,
-        learningToReadMode: widget.wizardData.learningToReadMode,
-        companionPets: requestData['companion_pets'],
-        companionCharacters: requestData['companion_characters'],
-        storyLength: requestData['storyLength'] ?? 'standard',
-      );
-      debugPrint('✨ Story generation complete: ${result.storyText.substring(0, 100)}...');
-
-      if (mounted) {
-        // Check if interactive mode is enabled
-        if (widget.wizardData.interactiveMode) {
-          debugPrint('🎮 Interactive mode enabled, routing to InteractiveStoryScreen');
-
-          // Create a Character object from wizard data
+      // 2. CHECK MODE: If interactive, skip standard generation and go straight to screen
+      if (widget.wizardData.interactiveMode) {
+        debugPrint('🎮 Interactive mode enabled, skipping standard generation & routing to InteractiveStoryScreen');
+        
+        if (mounted) {
+           // Create a Character object from wizard data
           final character = Character(
             id: widget.wizardData.characterId ?? 'temp-${DateTime.now().millisecondsSinceEpoch}',
             name: widget.wizardData.characterName,
@@ -89,9 +71,10 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             role: widget.wizardData.selectedArchetypeId ?? 'Adventurer',
             gender: widget.wizardData.characterGender,
             personalitySliders: widget.wizardData.personalitySliders,
+            // Map simple fields if needed, or rely on defaults
           );
 
-          // Navigate to interactive story screen
+          // Navigate directly
           await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => InteractiveStoryScreen(
@@ -103,7 +86,28 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
               ),
             ),
           );
-        } else {
+        }
+      } else {
+        // 3. STANDARD MODE: Generate story first, then show result
+        final result = await ApiServiceManager.generateStory(
+          characterName: requestData['character'] ?? 'Hero',
+          age: requestData['age'] ?? 5,
+          theme: requestData['theme'] ?? 'Magical Adventure',
+          companion: requestData['companion'] ?? '',  // Provide empty string if null
+          characterDetails: requestData['characterDetails'],
+          currentFeeling: requestData['currentFeeling'],
+          additionalCharacters: requestData['additionalCharacters'],
+          // Story modes from wizard
+          includeIllustrations: widget.wizardData.includeIllustrations,
+          rhymeTimeMode: widget.wizardData.rhymeTimeMode,
+          learningToReadMode: widget.wizardData.learningToReadMode,
+          companionPets: requestData['companion_pets'],
+          companionCharacters: requestData['companion_characters'],
+          storyLength: requestData['storyLength'] ?? 'standard',
+        );
+        debugPrint('✨ Story generation complete: ${result.storyText.substring(0, 100)}...');
+
+        if (mounted) {
           // Navigate to standard story result
           await Navigator.of(context).push(
             MaterialPageRoute(
@@ -124,6 +128,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
           );
         }
       }
+
     } catch (e, stack) {
       debugPrint('❌ Error generating story: $e');
       debugPrint('📚 Stack trace: $stack');
