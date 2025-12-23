@@ -184,6 +184,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     extra_characters=char_details.get("additionalCharacters"),
                     story_length=story_length,
                 )
+                logger.info(f"Full prompt for rhyme time mode: {prompt}")
             else:
                 # Standard enhanced prompt
                 logger.info(f"Using standard enhanced prompt (length: {story_length})")

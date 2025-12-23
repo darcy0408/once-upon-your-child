@@ -57,14 +57,9 @@ class Config:
     GEMINI_MODEL = os.environ.get('GEMINI_MODEL') or 'gemini-2.0-flash-exp'
 
     # Celery Configuration (NEW FORMAT - Celery 5.x+)
-    # If REDIS_URL is present (Production with Redis), use it.
-    # Otherwise fallback to in-memory (Dev/Prod without Redis) to avoid connection errors.
-    if os.environ.get('REDIS_URL'):
-        broker_url = os.environ.get('REDIS_URL')
-        result_backend = os.environ.get('REDIS_URL')
-    else:
-        broker_url = 'memory://'
-        result_backend = 'cache+memory://'
+    # Fallback to in-memory (Dev/Prod without Redis) to avoid connection errors.
+    broker_url = 'memory://'
+    result_backend = 'cache+memory://'
 
     # Run tasks synchronously for now (simplifies deployment without separate worker)
     task_always_eager = True
