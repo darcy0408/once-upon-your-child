@@ -23,6 +23,69 @@ PERSONALIZATION RULES (critical for immersion):
 # ----------------------
 # Story components
 # ----------------------
+# ----------------------
+# Helper Functions (Defined early to avoid NameErrors)
+# ----------------------
+def _get_age_guidelines(age: int) -> dict:
+    if age <= 5:
+        return {
+            "length_guideline": "100-150 words",
+            "vocabulary_level": "very simple vocabulary (CVC + sight words)",
+            "sentence_structure": "3-6 word sentences with repetition",
+            "vocabulary_examples": "cat, dog, hop, sun, play, happy",
+            "concepts": "tangible, concrete ideas only",
+            "special_instructions": "Use rhyme, rhythm, and repeatable frames.",
+        }
+    if age <= 8:
+        return {
+            "length_guideline": "150-250 words",
+            "vocabulary_level": "simple (sight words + basic phonics)",
+            "sentence_structure": "short, clear, mostly present-tense sentences",
+            "vocabulary_examples": "magic, brave, puzzle, curious",
+            "concepts": "simple cause/effect with predictable plots",
+            "special_instructions": "Include dialogue and phonics-friendly words.",
+        }
+    if age <= 12:
+        return {
+            "length_guideline": "250-400 words",
+            "vocabulary_level": "grade-level vocabulary",
+            "sentence_structure": "mix of short and complex sentences",
+            "vocabulary_examples": "determined, shimmering, mysterious, courageous",
+            "concepts": "character growth with layered plots and emotional arcs",
+            "special_instructions": "Highlight problem-solving and empathy.",
+        }
+    if age <= 15:
+        return {
+            "length_guideline": "400-600 words",
+            "vocabulary_level": "advanced / expressive vocabulary",
+            "sentence_structure": "sophisticated and varied sentences",
+            "vocabulary_examples": "contemplated, resilience, luminous, intricate",
+            "concepts": "identity exploration, moral dilemmas, nuanced relationships",
+            "special_instructions": "Use nuanced emotions and real-world parallels.",
+        }
+    return {
+        "length_guideline": "600-800 words",
+        "vocabulary_level": "mature / literary vocabulary",
+        "sentence_structure": "complex, literary prose",
+        "vocabulary_examples": "introspective, paradoxical, cathartic, transcendent",
+        "concepts": "philosophical questions and mature themes",
+        "special_instructions": "Employ literary devices, symbolism, and deep psychology.",
+    }
+
+
+def _build_age_instruction_block(age: int) -> str:
+    guidelines = _get_age_guidelines(age)
+    return (
+        f"AGE-APPROPRIATE GUIDELINES FOR {age}-YEAR-OLD:\n"
+        f"- LENGTH: {guidelines['length_guideline']} (strict requirement)\n"
+        f"- VOCABULARY: {guidelines['vocabulary_level']}\n"
+        f"- SENTENCE STYLE: {guidelines['sentence_structure']}\n"
+        f"- WORD EXAMPLES: {guidelines['vocabulary_examples']}\n"
+        f"- CONCEPTS: {guidelines['concepts']}\n"
+        f"- SPECIAL NOTES: {guidelines['special_instructions']}"
+    )
+
+
 class StoryStructures:
     ADVENTURE_TEMPLATES = [
         {"name": "The Quest", "structure": "Hero receives mission -> Faces obstacles -> Finds strength -> Achieves goal"},
@@ -161,7 +224,7 @@ class AdvancedStoryEngine:
                 if isinstance(char_data, dict):
                     # It's a full companion object
                     char_name = char_data.get('name', 'Friend')
-                    age = char_data.get('age')
+                    char_age = char_data.get('age')
                     role = char_data.get('role')
                     gender = char_data.get('gender')
                     # Enhanced fields
@@ -172,8 +235,8 @@ class AdvancedStoryEngine:
 
                     # Build detailed description
                     details = []
-                    if age:
-                        details.append(f"{age} years old")
+                    if char_age:
+                        details.append(f"{char_age} years old")
                     if gender:
                         details.append(gender.lower())
                     if role:
@@ -248,7 +311,7 @@ class AdvancedStoryEngine:
 
         # MOOD PHYSICS INJECTION
         mood_physics_section = ""
-        if mood_physics:
+        if mood_physics and isinstance(mood_physics, dict):
             mood_name = mood_physics.get('mood', 'Magic')
             world_rule = mood_physics.get('worldRule', 'The world is full of wonder.')
             sensory_change = mood_physics.get('sensoryChange', '')
@@ -920,64 +983,7 @@ def _build_character_integration(character_name, fears, strengths, likes, dislik
     return "\n".join(parts)
 
 
-def _get_age_guidelines(age: int) -> dict:
-    if age <= 5:
-        return {
-            "length_guideline": "100-150 words",
-            "vocabulary_level": "very simple vocabulary (CVC + sight words)",
-            "sentence_structure": "3-6 word sentences with repetition",
-            "vocabulary_examples": "cat, dog, hop, sun, play, happy",
-            "concepts": "tangible, concrete ideas only",
-            "special_instructions": "Use rhyme, rhythm, and repeatable frames.",
-        }
-    if age <= 8:
-        return {
-            "length_guideline": "150-250 words",
-            "vocabulary_level": "simple (sight words + basic phonics)",
-            "sentence_structure": "short, clear, mostly present-tense sentences",
-            "vocabulary_examples": "magic, brave, puzzle, curious",
-            "concepts": "simple cause/effect with predictable plots",
-            "special_instructions": "Include dialogue and phonics-friendly words.",
-        }
-    if age <= 12:
-        return {
-            "length_guideline": "250-400 words",
-            "vocabulary_level": "grade-level vocabulary",
-            "sentence_structure": "mix of short and complex sentences",
-            "vocabulary_examples": "determined, shimmering, mysterious, courageous",
-            "concepts": "character growth with layered plots and emotional arcs",
-            "special_instructions": "Highlight problem-solving and empathy.",
-        }
-    if age <= 15:
-        return {
-            "length_guideline": "400-600 words",
-            "vocabulary_level": "advanced / expressive vocabulary",
-            "sentence_structure": "sophisticated and varied sentences",
-            "vocabulary_examples": "contemplated, resilience, luminous, intricate",
-            "concepts": "identity exploration, moral dilemmas, nuanced relationships",
-            "special_instructions": "Use nuanced emotions and real-world parallels.",
-        }
-    return {
-        "length_guideline": "600-800 words",
-        "vocabulary_level": "mature / literary vocabulary",
-        "sentence_structure": "complex, literary prose",
-        "vocabulary_examples": "introspective, paradoxical, cathartic, transcendent",
-        "concepts": "philosophical questions and mature themes",
-        "special_instructions": "Employ literary devices, symbolism, and deep psychology.",
-    }
 
-
-def _build_age_instruction_block(age: int) -> str:
-    guidelines = _get_age_guidelines(age)
-    return (
-        f"AGE-APPROPRIATE GUIDELINES FOR {age}-YEAR-OLD:\n"
-        f"- LENGTH: {guidelines['length_guideline']} (strict requirement)\n"
-        f"- VOCABULARY: {guidelines['vocabulary_level']}\n"
-        f"- SENTENCE STYLE: {guidelines['sentence_structure']}\n"
-        f"- WORD EXAMPLES: {guidelines['vocabulary_examples']}\n"
-        f"- CONCEPTS: {guidelines['concepts']}\n"
-        f"- SPECIAL NOTES: {guidelines['special_instructions']}"
-    )
 
 
 def _build_learning_to_read_prompt(character_name, theme, age, character_details, companion=None, extra_characters=None, story_length="standard"):

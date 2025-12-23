@@ -90,7 +90,7 @@ class WizardDataMapper {
     }
 
     return {
-      'character': data.characterName,
+      'character': data.characterName.isNotEmpty ? data.characterName : 'Hero',
       'age': age,
       'theme': theme,
       'conflictHook': conflictHook, // NEW

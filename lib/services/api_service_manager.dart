@@ -478,7 +478,7 @@ class ApiServiceManager {
     final generateUri = Uri.parse('$_localBackendUrl/generate-story');
 
     final body = {
-      'character': characterName,
+      'character': characterName.isNotEmpty ? characterName : 'Hero',
       'theme': theme,
       'companion': companion,
       'character_age': age,

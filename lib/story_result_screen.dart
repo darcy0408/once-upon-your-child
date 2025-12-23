@@ -493,7 +493,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   }
 
   Future<void> _loadQualityData() async {
-    if (_isLoadingQuality) return;
+    if (_isLoadingQuality || !mounted) return;
 
     setState(() => _isLoadingQuality = true);
 
@@ -505,9 +505,11 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
           'story_text': widget.storyText,
           'age': widget.characterAge ?? 7,
         }),
-      );
+      ).timeout(const Duration(seconds: 10));
 
-      if (response.statusCode == 200 && mounted) {
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
           _qualityData = data;
@@ -517,6 +519,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         setState(() => _isLoadingQuality = false);
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoadingQuality = false);
     }
   }
@@ -985,7 +988,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         });
       }
     } else {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -993,6 +998,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     if (widget.storyId == null) return;
 
     await _offlineService.toggleFavorite(widget.storyId!);
+
+    if (!mounted) return;
+
     setState(() => _isFavorite = !_isFavorite);
     _trackResultAction(
       _isFavorite ? 'favorite_added' : 'favorite_removed',

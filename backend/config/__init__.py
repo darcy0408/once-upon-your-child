@@ -28,22 +28,29 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key'
 
     # Fix Railway's postgres:// to postgresql:// for SQLAlchemy 2.0+
-    database_url = os.environ.get('DATABASE_URL') or 'sqlite:///app.db'
-    if database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
-    SQLALCHEMY_DATABASE_URI = database_url
+    database_url = os.environ.get('DATABASE_URL')
 
+    # If no DATABASE_URL, use SQLite (works for Railway deployment without Postgres)
+    if not database_url or database_url.strip() == '':
+        database_url = 'sqlite:///app.db'
+        SQLALCHEMY_ENGINE_OPTIONS = {}  # SQLite doesn't need pooling
+        print("Using SQLite database (no DATABASE_URL provided)")
+    else:
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        # Database connection pooling for PostgreSQL
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_size': 10,
+            'pool_recycle': 3600,
+            'pool_pre_ping': True,
+            'max_overflow': 20,
+            'pool_timeout': 30,
+        }
+        print(f"Using PostgreSQL database: {database_url[:30]}...")
+
+    SQLALCHEMY_DATABASE_URI = database_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JSON_SORT_KEYS = False
-
-    # Database connection pooling for better performance
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_size': 10,              # Number of connections to keep open
-        'pool_recycle': 3600,          # Recycle connections after 1 hour
-        'pool_pre_ping': True,         # Check connection health before use
-        'max_overflow': 20,            # Allow 20 extra connections if needed
-        'pool_timeout': 30,            # Timeout for getting connection from pool
-    }
 
     # API Configuration
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
