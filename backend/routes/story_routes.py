@@ -388,6 +388,12 @@ def create_story_blueprint(
             therapeutic_focus = data.get("therapeutic_focus")
             user_api_key = data.get("user_api_key")  # BYOK support
 
+            # Get character appearance/avatar details
+            character_appearance = data.get("character_appearance") or data.get("appearance")
+
+            # Get companions (could be magical companions, pets, or friends)
+            companions = data.get("companions") or data.get("companion_pets") or []
+
             if not scene_description.strip():
                 return jsonify({"error": "Scene description is required"}), 400
 
@@ -420,10 +426,25 @@ def create_story_blueprint(
                 num_images=num_images,
                 age=age,
                 therapeutic_focus=therapeutic_focus,
+                character_appearance=character_appearance,
+                companions=companions,
             )
 
             if not illustrations:
                 logger.warning(f"No illustrations generated for scene: {scene_description[:50]}...")
+                # Return success with empty illustrations instead of error
+                return (
+                    jsonify(
+                        {
+                            "illustrations": [],
+                            "count": 0,
+                            "used_user_key": using_user_key,
+                            "message": "Illustration generation is temporarily unavailable due to API quota limits. Your story is ready, but illustrations couldn't be generated at this time.",
+                            "hint": "Try again later or contact support to increase your quota.",
+                        }
+                    ),
+                    200,
+                )
 
             transformed_illustrations = []
             try:

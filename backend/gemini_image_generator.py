@@ -25,8 +25,8 @@ class GeminiImageGenerator:
 
             genai.configure(api_key=self.api_key)
             self.genai = genai
-            # Use Gemini 2.5 Flash Image (Nano Banana) - Free via Gemini API
-            self.image_model = genai.GenerativeModel("gemini-2.5-flash-image")
+            # Use Gemini 2.0 Flash Image Generation - Experimental model for image generation
+            self.image_model = genai.GenerativeModel("gemini-2.0-flash-exp-image-generation")
 
     def _ensure_model(self):
         if not self.image_model or not self.genai:
@@ -69,7 +69,9 @@ class GeminiImageGenerator:
         style: str = "children's book illustration",
         num_images: int = 1,
         age: int = 7,
-        therapeutic_focus: str | None = None
+        therapeutic_focus: str | None = None,
+        character_appearance: dict | None = None,
+        companions: list | None = None
     ) -> list:
         """
         Generate therapeutic story illustrations using Gemini 1.5 Pro.
@@ -96,13 +98,66 @@ class GeminiImageGenerator:
         if therapeutic_focus:
             therapeutic_context = f"\nTherapeutic focus: Emphasize {therapeutic_focus} through positive, empowering imagery"
 
+        # Build character appearance description
+        character_description = f"Main character: {character_name}"
+        if character_appearance:
+            appearance_details = []
+
+            # Add physical characteristics
+            if character_appearance.get('hair'):
+                appearance_details.append(f"hair: {character_appearance['hair']}")
+            if character_appearance.get('skin'):
+                appearance_details.append(f"skin tone: {character_appearance['skin']}")
+            if character_appearance.get('outfit'):
+                appearance_details.append(f"wearing: {character_appearance['outfit']}")
+            if character_appearance.get('gender'):
+                appearance_details.append(f"gender: {character_appearance['gender']}")
+
+            # Add avatar details if available
+            if character_appearance.get('avatar'):
+                avatar = character_appearance['avatar']
+                if avatar.get('hairStyle'):
+                    appearance_details.append(f"hairstyle: {avatar['hairStyle']}")
+                if avatar.get('hairColor'):
+                    appearance_details.append(f"hair color: {avatar['hairColor']}")
+                if avatar.get('skinColor'):
+                    appearance_details.append(f"skin: {avatar['skinColor']}")
+                if avatar.get('topType'):
+                    appearance_details.append(f"clothing: {avatar['topType']}")
+
+            if appearance_details:
+                character_description += f" ({', '.join(appearance_details)})"
+
+        # Build companions description
+        companions_text = ""
+        if companions and len(companions) > 0:
+            companion_descriptions = []
+            for companion in companions:
+                if isinstance(companion, dict):
+                    comp_name = companion.get('name', 'companion')
+                    comp_type = companion.get('type', '')
+                    if comp_type:
+                        companion_descriptions.append(f"{comp_name} (a {comp_type})")
+                    else:
+                        companion_descriptions.append(comp_name)
+                elif isinstance(companion, str):
+                    companion_descriptions.append(companion)
+
+            if companion_descriptions:
+                companions_text = f"\nCompanions/Friends: {', '.join(companion_descriptions)} - IMPORTANT: Include these characters in the scene!"
+
         prompt = f"""
 Create {num_images} vibrant, engaging {style} that depicts this scene from a therapeutic story.
 
 Scene: {scene_description}
-Main character: {character_name}
+{character_description}
 Target audience: {age_descriptor} (person is {age} years old)
-Detail level: {detail_level}{therapeutic_context}
+Detail level: {detail_level}{therapeutic_context}{companions_text}
+
+CRITICAL CHARACTER REQUIREMENTS:
+- The main character MUST match the description exactly: {character_description}
+- Keep character appearance consistent with the description provided
+- If companions are listed, they MUST appear in the illustration{companions_text if companions_text else ""}
 
 Visual requirements:
 - Full color, vibrant and appealing
@@ -115,6 +170,7 @@ Visual requirements:
 - No text or words in the image
 - Therapeutic value: promote emotional expression, growth, and positivity
 - Respectful, safe, and appropriate for the intended age group
+- MATCH THE CHARACTER APPEARANCE EXACTLY as described above
 
         Style: {style}, optimized for {age_descriptor}
 """
@@ -128,7 +184,15 @@ Visual requirements:
             logger.info("Gemini image generation returned %s candidates and %s image(s)", candidate_count, len(images))
             return images
         except Exception as e:
-            logger.exception("Error generating image with Gemini")
+            # Check for quota errors
+            error_msg = str(e).lower()
+            if '429' in str(e) or 'quota' in error_msg or 'exceeded' in error_msg:
+                logger.warning("Gemini API quota exceeded. Please check your billing or wait for quota reset.")
+                logger.warning(f"Quota error details: {str(e)[:200]}")
+            elif 'resource_exhausted' in error_msg or 'rate' in error_msg:
+                logger.warning("Gemini API rate limit reached. Requests are being throttled.")
+            else:
+                logger.exception("Error generating image with Gemini")
             return []
 
     def generate_coloring_page(
