@@ -84,3 +84,7 @@ worktrees/
 INSTRUCTIONS_FOR_USER.md
 instance/*.db
 /bin/
+
+# Development test scripts
+test_*.py
+check_*.py
