@@ -1261,13 +1261,8 @@ Ensure text is vivid, age-tuned, playful, with a strong hook/problem and embodie
     final response = await model.generateContent([Content.text(prompt)]);
     final responseText = response.text ?? '';
 
-    // Extract JSON from response (it might have markdown code blocks)
-    String jsonText = responseText;
-    if (jsonText.contains('```json')) {
-      jsonText = jsonText.split('```json')[1].split('```')[0].trim();
-    } else if (jsonText.contains('```')) {
-      jsonText = jsonText.split('```')[1].split('```')[0].trim();
-    }
+    // Extract JSON from response (robustly)
+    final jsonText = cleanJsonForTesting(responseText);
 
     return jsonDecode(jsonText) as Map<String, dynamic>;
   }
@@ -1369,13 +1364,8 @@ Do NOT wrap JSON in backticks.
     final response = await model.generateContent([Content.text(prompt)]);
     final responseText = response.text ?? '';
 
-    // Extract JSON from response
-    String jsonText = responseText;
-    if (jsonText.contains('```json')) {
-      jsonText = jsonText.split('```json')[1].split('```')[0].trim();
-    } else if (jsonText.contains('```')) {
-      jsonText = jsonText.split('```')[1].split('```')[0].trim();
-    }
+    // Extract JSON from response (robustly)
+    final jsonText = cleanJsonForTesting(responseText);
 
     return jsonDecode(jsonText) as Map<String, dynamic>;
   }
@@ -1405,5 +1395,30 @@ Do NOT wrap JSON in backticks.
       throw Exception(
           'Failed to continue interactive story: ${response.statusCode}');
     }
+  }
+  // Helper for rigorous JSON extraction
+  // Visible for testing
+  static String cleanJsonForTesting(String text) {
+    text = text.trim();
+    
+    // 1. Try to find JSON inside code blocks
+    // Matches ```json {...} ``` or ``` {...} ```
+    final codeBlockRegex = RegExp(r'```(?:json)?\s*(\{[\s\S]*?\})\s*```', caseSensitive: false);
+    final codeBlockMatch = codeBlockRegex.firstMatch(text);
+    if (codeBlockMatch != null) {
+      return codeBlockMatch.group(1)!;
+    }
+
+    // 2. Try to find the first '{' and last '}' to extract the outermost JSON object
+    // This handles cases where Gemini replies "Here is the JSON: {...}" without code blocks
+    final int start = text.indexOf('{');
+    final int end = text.lastIndexOf('}');
+    
+    if (start != -1 && end != -1 && end > start) {
+      return text.substring(start, end + 1);
+    }
+
+    // 3. Fallback: return original text if no structure found (will likely fail parse, but we tried)
+    return text;
   }
 }

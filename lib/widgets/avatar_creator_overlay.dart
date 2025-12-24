@@ -416,6 +416,8 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
   Future<void> _rerollAvatar() async {
     if (_rerollCount >= _maxRerolls) return;
 
+    debugPrint('🔄 Re-rolling avatar (attempt ${_rerollCount + 1}/$_maxRerolls)');
+
     setState(() {
       _isGenerating = true;
       _rerollCount++;
@@ -434,15 +436,24 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
         },
       );
 
-      setState(() {
-        _generatedAvatar = avatar;
-        _isGenerating = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isGenerating = false;
-      });
-      print('Avatar re-roll error: $e');
+      debugPrint('✅ Avatar re-rolled successfully!');
+
+      if (mounted) {
+        setState(() {
+          _generatedAvatar = avatar;
+          _isGenerating = false;
+        });
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Avatar re-roll error: $e');
+      debugPrint('Stack trace: $stackTrace');
+
+      if (mounted) {
+        setState(() {
+          _isGenerating = false;
+          _errorMessage = 'Oops! The re-roll magic fizzled. Try again!\n\nError: ${e.toString().substring(0, e.toString().length > 100 ? 100 : e.toString().length)}';
+        });
+      }
     }
   }
 }

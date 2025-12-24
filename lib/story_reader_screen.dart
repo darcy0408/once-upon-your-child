@@ -206,12 +206,15 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
                 child: Row(
                   children: [
                     Container(
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        tooltip: 'Back',
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                     ),
@@ -406,12 +409,17 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
             child: InkWell(
               onTap: onPressed,
               customBorder: const CircleBorder(),
-              child: Icon(
-                icon,
-                color: isPrimary && isEnabled 
-                  ? Colors.white 
-                  : (isEnabled ? AppColors.primary : Colors.grey.withOpacity(0.5)),
-                size: size * 0.6,
+              child: Semantics(
+                button: true,
+                enabled: isEnabled,
+                label: label,
+                child: Icon(
+                  icon,
+                  color: isPrimary && isEnabled 
+                    ? Colors.white 
+                    : (isEnabled ? AppColors.primary : Colors.grey.withOpacity(0.5)),
+                  size: size * 0.6,
+                ),
               ),
             ),
           ),

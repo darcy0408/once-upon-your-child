@@ -182,14 +182,32 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   }
 
   void _showAvatarCreator() {
+    // Validate that character name is not empty
+    if (widget.wizardData.characterName.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter your hero\'s name first!'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    debugPrint('🎨 Opening avatar creator for ${widget.wizardData.characterName}');
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AvatarCreatorOverlay(
         characterName: widget.wizardData.characterName,
         age: widget.wizardData.characterAge,
-        onCancel: () => Navigator.pop(context),
+        onCancel: () {
+          debugPrint('❌ Avatar creation cancelled');
+          Navigator.pop(context);
+        },
         onAvatarCreated: (avatar) {
+          debugPrint('✅ Avatar created and saved to wizard data');
           setState(() {
             _generatedAvatar = avatar;
             widget.wizardData.generatedAvatar = avatar; // Save to wizard data
