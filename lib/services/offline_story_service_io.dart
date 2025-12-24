@@ -89,4 +89,88 @@ class OfflineStoryService {
     }
     return null;
   }
+
+  // Interactive adventure story methods
+
+  /// Get all in-progress interactive stories (not completed)
+  Future<List<StoryLocal>> getInProgressStories() async {
+    return _isar.storyLocals
+        .filter()
+        .isInteractiveEqualTo(true)
+        .isCompletedEqualTo(false)
+        .sortByCreatedAtDesc()
+        .findAll();
+  }
+
+  /// Get all completed interactive stories
+  Future<List<StoryLocal>> getCompletedInteractiveStories() async {
+    return _isar.storyLocals
+        .filter()
+        .isInteractiveEqualTo(true)
+        .isCompletedEqualTo(true)
+        .sortByCreatedAtDesc()
+        .findAll();
+  }
+
+  /// Save or update interactive story progress
+  Future<void> saveInteractiveProgress(StoryLocal story) async {
+    if (!story.isInteractive) {
+      story.isInteractive = true;
+    }
+
+    if (story.storyId.isEmpty) {
+      story.storyId = DateTime.now().millisecondsSinceEpoch.toString();
+    }
+
+    await _isar.writeTxn(() async {
+      final existing = await _isar.storyLocals
+          .filter()
+          .storyIdEqualTo(story.storyId)
+          .findFirst();
+      if (existing != null) {
+        story.id = existing.id;
+      }
+      await _isar.storyLocals.put(story);
+    });
+  }
+
+  /// Load interactive story progress
+  Future<StoryLocal?> loadInteractiveProgress(String storyId) async {
+    return _isar.storyLocals
+        .filter()
+        .storyIdEqualTo(storyId)
+        .isInteractiveEqualTo(true)
+        .findFirst();
+  }
+
+  /// Mark interactive story as completed
+  Future<void> markInteractiveAsCompleted(String storyId,
+      {String? finalStoryText}) async {
+    final story = await _findByIdentifier(storyId);
+    if (story == null) return;
+
+    story.isCompleted = true;
+    if (finalStoryText != null && finalStoryText.isNotEmpty) {
+      story.storyText = finalStoryText;
+    }
+
+    await _isar.writeTxn(() async {
+      await _isar.storyLocals.put(story);
+    });
+  }
+
+  /// Delete interactive story progress (only if not completed)
+  Future<bool> deleteInteractiveProgress(String storyId) async {
+    final story = await _findByIdentifier(storyId);
+    if (story == null || !story.isInteractive) return false;
+
+    // Don't allow deleting completed stories through this method
+    if (story.isCompleted) return false;
+
+    await _isar.writeTxn(() async {
+      await _isar.storyLocals.delete(story.id);
+    });
+
+    return true;
+  }
 }

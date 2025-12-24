@@ -5,13 +5,188 @@ import 'package:http/http.dart' as http;
 import '../models.dart';
 import '../config/environment.dart';
 
-/// Simple client for fetching interactive story segments from the backend.
+/// Response from starting a new interactive adventure story
+class StartStoryResponse {
+  final String storyId;
+  final String title;
+  final StorySegmentData segment;
+  final List<InventoryItemData> inventory;
+  final StoryStateData state;
+  final bool isCompleted;
+
+  StartStoryResponse({
+    required this.storyId,
+    required this.title,
+    required this.segment,
+    required this.inventory,
+    required this.state,
+    required this.isCompleted,
+  });
+
+  factory StartStoryResponse.fromJson(Map<String, dynamic> json) {
+    return StartStoryResponse(
+      storyId: json['story_id'] ?? '',
+      title: json['title'] ?? '',
+      segment: StorySegmentData.fromJson(json['segment'] ?? {}),
+      inventory: (json['inventory'] as List<dynamic>?)
+              ?.map((i) => InventoryItemData.fromJson(i))
+              .toList() ??
+          [],
+      state: json['state'] != null
+          ? StoryStateData.fromJson(json['state'])
+          : StoryStateData.empty(),
+      isCompleted: json['is_completed'] ?? false,
+    );
+  }
+}
+
+/// Response from continuing an interactive story
+class ContinueStoryResponse {
+  final String storyId;
+  final StorySegmentData segment;
+  final List<InventoryItemData> inventory;
+  final StoryStateData state;
+  final bool isCompleted;
+
+  ContinueStoryResponse({
+    required this.storyId,
+    required this.segment,
+    required this.inventory,
+    required this.state,
+    required this.isCompleted,
+  });
+
+  factory ContinueStoryResponse.fromJson(Map<String, dynamic> json) {
+    return ContinueStoryResponse(
+      storyId: json['story_id'] ?? '',
+      segment: StorySegmentData.fromJson(json['segment'] ?? {}),
+      inventory: (json['inventory'] as List<dynamic>?)
+              ?.map((i) => InventoryItemData.fromJson(i))
+              .toList() ??
+          [],
+      state: json['state'] != null
+          ? StoryStateData.fromJson(json['state'])
+          : StoryStateData.empty(),
+      isCompleted: json['is_completed'] ?? false,
+    );
+  }
+}
+
+/// Client for interactive adventure story API
 class InteractiveStoryService {
   const InteractiveStoryService();
 
   static String get _baseUrl => Environment.backendUrl;
 
-  /// Request the opening segment and choices.
+  /// Start a new interactive adventure story
+  Future<StartStoryResponse> startInteractiveStory({
+    required String userId,
+    required String characterId,
+    required String theme,
+    String tone = 'whimsical',
+    String length = 'medium',
+    int? age,
+    List<String>? interests,
+    List<String>? mustInclude,
+    List<String>? avoid,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/generate-interactive-story');
+    final response = await http
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'user_id': userId,
+            'character_id': characterId,
+            'theme': theme,
+            'tone': tone,
+            'length': length,
+            if (age != null) 'age': age,
+            if (interests != null && interests.isNotEmpty) 'interests': interests,
+            if (mustInclude != null && mustInclude.isNotEmpty)
+              'must_include': mustInclude,
+            if (avoid != null && avoid.isNotEmpty) 'avoid': avoid,
+          }),
+        )
+        .timeout(const Duration(seconds: 30));
+
+    if (response.statusCode != 200) {
+      final error = _parseError(response);
+      throw InteractiveStoryException(
+        'Unable to start story (code ${response.statusCode}): $error',
+      );
+    }
+
+    final Map<String, dynamic> data =
+        jsonDecode(response.body) as Map<String, dynamic>;
+    return StartStoryResponse.fromJson(data);
+  }
+
+  /// Continue story based on choice selection
+  Future<ContinueStoryResponse> continueInteractiveStory({
+    required String storyId,
+    required String choiceId,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/continue-interactive-story');
+    final response = await http
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'story_id': storyId,
+            'choice_id': choiceId,
+          }),
+        )
+        .timeout(const Duration(seconds: 30));
+
+    if (response.statusCode != 200) {
+      final error = _parseError(response);
+      throw InteractiveStoryException(
+        'Unable to continue story (code ${response.statusCode}): $error',
+      );
+    }
+
+    final Map<String, dynamic> data =
+        jsonDecode(response.body) as Map<String, dynamic>;
+    return ContinueStoryResponse.fromJson(data);
+  }
+
+  /// Get full story with all segments
+  Future<InteractiveStoryData> getStory(String storyId) async {
+    final uri = Uri.parse('$_baseUrl/interactive-story/$storyId');
+    final response = await http.get(uri).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode != 200) {
+      final error = _parseError(response);
+      throw InteractiveStoryException(
+        'Unable to get story (code ${response.statusCode}): $error',
+      );
+    }
+
+    final Map<String, dynamic> data =
+        jsonDecode(response.body) as Map<String, dynamic>;
+    return InteractiveStoryData.fromJson(data);
+  }
+
+  /// Resume an in-progress story from current segment
+  Future<ContinueStoryResponse> resumeStory(String storyId) async {
+    final uri = Uri.parse('$_baseUrl/interactive-story/$storyId/resume');
+    final response = await http.get(uri).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode != 200) {
+      final error = _parseError(response);
+      throw InteractiveStoryException(
+        'Unable to resume story (code ${response.statusCode}): $error',
+      );
+    }
+
+    final Map<String, dynamic> data =
+        jsonDecode(response.body) as Map<String, dynamic>;
+    return ContinueStoryResponse.fromJson(data);
+  }
+
+  /// Legacy method: Request the opening segment (old API - deprecated)
+  @Deprecated('Use startInteractiveStory instead')
   Future<StorySegment> fetchOpeningSegment({
     required Character character,
     required String theme,
@@ -49,7 +224,8 @@ class InteractiveStoryService {
     return StorySegment.fromJson(data);
   }
 
-  /// Continue the story with the given choice.
+  /// Legacy method: Continue story (old API - deprecated)
+  @Deprecated('Use continueInteractiveStory instead')
   Future<StorySegment> continueStory({
     required Character character,
     required String theme,
@@ -94,6 +270,15 @@ class InteractiveStoryService {
 
   String _buildStorySoFar(List<StorySegment> segments) {
     return segments.map((segment) => segment.text.trim()).join('\n\n');
+  }
+
+  String _parseError(http.Response response) {
+    try {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return data['error'] ?? data['hint'] ?? 'Unknown error';
+    } catch (_) {
+      return response.body;
+    }
   }
 }
 

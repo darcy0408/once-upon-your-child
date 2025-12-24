@@ -27,6 +27,14 @@ class StoryLocal {
   String? wisdomGem;
   String? charactersJson;
 
+  // Interactive adventure story progress fields
+  int? currentSegmentNumber;
+  String? inventoryJson; // JSON string of InventoryItemData list
+  String? stateJson; // JSON string of StoryStateData
+  bool isCompleted = false;
+  String? tone; // whimsical, mystery, sci-fi, fantasy, cozy-adventure
+  String? length; // short, medium, long
+
   static StoryLocal fromJson(Map<String, dynamic> json) {
     return StoryLocal()
       ..storyId = json['id']?.toString() ?? json['storyId']?.toString() ?? ''
@@ -110,5 +118,79 @@ class StoryLocal {
       // Ignore malformed payloads and default to empty list.
     }
     return [];
+  }
+
+  // Interactive story progress helpers
+  @ignore
+  List<InventoryItemData> get inventory => _decodeInventory();
+
+  @ignore
+  StoryStateData? get state => _decodeState();
+
+  List<InventoryItemData> _decodeInventory() {
+    if (inventoryJson == null || inventoryJson!.isEmpty) {
+      return [];
+    }
+    try {
+      final decoded = jsonDecode(inventoryJson!) as List;
+      return decoded
+          .whereType<Map<String, dynamic>>()
+          .map(InventoryItemData.fromJson)
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  StoryStateData? _decodeState() {
+    if (stateJson == null || stateJson!.isEmpty) {
+      return null;
+    }
+    try {
+      final decoded = jsonDecode(stateJson!) as Map<String, dynamic>;
+      return StoryStateData.fromJson(decoded);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static String? _encodeInventory(List<InventoryItemData>? inventory) {
+    if (inventory == null || inventory.isEmpty) return null;
+    return jsonEncode(inventory.map((i) => i.toJson()).toList());
+  }
+
+  static String? _encodeState(StoryStateData? state) {
+    if (state == null) return null;
+    return jsonEncode(state.toJson());
+  }
+
+  /// Create StoryLocal from InteractiveStoryData for progress tracking
+  static StoryLocal fromInteractiveStory({
+    required String storyId,
+    required String title,
+    required String theme,
+    required String tone,
+    required String length,
+    required int currentSegmentNumber,
+    required bool isCompleted,
+    required DateTime createdAt,
+    List<InventoryItemData>? inventory,
+    StoryStateData? state,
+    List<Character>? characters,
+  }) {
+    return StoryLocal()
+      ..storyId = storyId
+      ..title = title
+      ..storyText = '' // Will be filled when completed
+      ..theme = theme
+      ..tone = tone
+      ..length = length
+      ..isInteractive = true
+      ..currentSegmentNumber = currentSegmentNumber
+      ..inventoryJson = _encodeInventory(inventory)
+      ..stateJson = _encodeState(state)
+      ..isCompleted = isCompleted
+      ..createdAt = createdAt
+      ..charactersJson = _encodeCharacters(characters ?? []);
   }
 }
