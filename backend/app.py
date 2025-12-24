@@ -103,7 +103,7 @@ def create_app(config_name):
     print(f"=== Database initialized ===")
 
     # Update Celery configuration
-    celery.conf.update(app.config)
+    celery.config_from_object(app.config, namespace='CELERY')
 
     # Initialize AdvancedStoryEngine
     story_engine_instance = AdvancedStoryEngine()
@@ -388,5 +388,5 @@ def create_app(config_name):
     return app
 
 if __name__ == '__main__':
-    app = create_app(os.getenv('FLASK_ENV') or 'development')
+    app = create_app(os.getenv('FLASK_ENV') or 'production')
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)))

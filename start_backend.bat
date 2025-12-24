@@ -1,5 +1,3 @@
 @echo off
-echo Starting Story Weaver Backend...
-cd /d "%~dp0"
+set FLASK_ENV=production
 python backend/app.py
-pause

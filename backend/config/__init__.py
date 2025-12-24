@@ -58,13 +58,13 @@ class Config:
 
     # Celery Configuration (NEW FORMAT - Celery 5.x+)
     # Fallback to in-memory (Dev/Prod without Redis) to avoid connection errors.
-    broker_url = 'memory://'
-    result_backend = 'cache+memory://'
+    CELERY_BROKER_URL = 'memory://'
+    CELERY_RESULT_BACKEND = 'cache+memory://'
 
     # Run tasks synchronously for now (simplifies deployment without separate worker)
-    task_always_eager = True
-    task_eager_propagates = True
-    task_store_eager_result = True  # Required for polling to work in eager mode
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
+    CELERY_TASK_STORE_EAGER_RESULT = True  # Required for polling to work in eager mode
 
     # CORS - Build allowed origins dynamically
     @staticmethod
@@ -135,6 +135,8 @@ class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     # Disable rate limiting in tests
     RATELIMIT_ENABLED = False
+    # Disable caching in tests to avoid serialization issues
+    CACHE_TYPE = 'null'
 
 config_by_name = {
     'dev': DevelopmentConfig,
