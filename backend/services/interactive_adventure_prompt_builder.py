@@ -120,6 +120,18 @@ class InteractiveAdventurePromptBuilder:
         # Build companion context
         companion_context = cls._build_companion_context(companions) if companions else "solo on this adventure"
 
+        # Pre-calculate choice templates based on count
+        choice_templates = [
+            '    {"id": "choice_1", "text": "First choice option"}',
+            '    {"id": "choice_2", "text": "Second choice option"}'
+        ]
+        if choice_count >= 3:
+            choice_templates.append('    {"id": "choice_3", "text": "Third choice option"}')
+        if choice_count >= 4:
+            choice_templates.append('    {"id": "choice_4", "text": "Fourth choice option"}')
+        
+        choices_json = ",\n".join(choice_templates)
+
         # Build the comprehensive prompt
         prompt = f"""# Interactive Children's Adventure Story Weaver
 
@@ -188,8 +200,7 @@ You are generating interactive, personalized adventure stories for a children's 
     "time_pressure": null
   }},
   "choices": [
-    {{"id": "choice_1", "text": "First choice option"}},
-    {{"id": "choice_2", "text": "Second choice option"}}{"," + chr(10) + ' ' * 4 + '{"id": "choice_3", "text": "Third choice option"}' if choice_count >= 3 else ""}{"," + chr(10) + ' ' * 4 + '{"id": "choice_4", "text": "Fourth choice option"}' if choice_count >= 4 else ""}
+{choices_json}
   ],
   "is_ending": false
 }}
@@ -267,6 +278,22 @@ Now generate the opening segment as valid JSON."""
         elif should_conclude:
             continuation_guidance = f"\n**FINAL SEGMENT**: This is the concluding segment {next_segment_number}. Deliver the 'Impossible Moment' climax and warm resolution. Set is_ending to true and provide NO choices."
 
+        # Pre-calculate choice templates based on count
+        choice_templates = [
+            '    {"id": "choice_1", "text": "First choice"}'
+        ]
+        if not should_conclude:
+            choice_templates.append('    {"id": "choice_2", "text": "Second choice"}')
+            if choice_count >= 3:
+                choice_templates.append('    {"id": "choice_3", "text": "Third choice"}')
+            if choice_count >= 4:
+                choice_templates.append('    {"id": "choice_4", "text": "Fourth choice"}')
+        else:
+            # If concluding, no choices
+            choice_templates = []
+        
+        choices_json = ",\n".join(choice_templates)
+
         prompt = f"""# Continue Interactive Adventure
 
 ## Story Context
@@ -320,7 +347,7 @@ The hero chose: "{selected_choice}"
     "time_pressure": "Optional urgency element"
   }},
   "choices": [
-    {{"id": "choice_1", "text": "First choice"}}{"," + chr(10) + ' ' * 4 + '{"id": "choice_2", "text": "Second choice"}' if not should_conclude else ''}{"," + chr(10) + ' ' * 4 + '{"id": "choice_3", "text": "Third choice"}' if choice_count >= 3 and not should_conclude else ''}{"," + chr(10) + ' ' * 4 + '{"id": "choice_4", "text": "Fourth choice"}' if choice_count >= 4 and not should_conclude else ''}
+{choices_json}
   ],
   "is_ending": {str(should_conclude).lower()}
 }}

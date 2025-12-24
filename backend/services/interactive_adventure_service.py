@@ -202,10 +202,16 @@ class InteractiveAdventureService:
 
         # Create choices
         for choice_data in segment_data.get('choices', []):
+            # Parse choice number from prompt ID (e.g., "choice_1" -> 1)
+            try:
+                choice_num = int(choice_data.get('id', 'choice_1').split('_')[1])
+            except (IndexError, ValueError):
+                choice_num = 1 # Fallback
+
             choice = StoryChoice(
-                id=choice_data.get('id', str(uuid.uuid4())),
+                id=str(uuid.uuid4()), # Always generate unique ID for DB
                 segment_id=segment.id,
-                choice_number=int(choice_data.get('id', 'choice_1').split('_')[1]),
+                choice_number=choice_num,
                 text=choice_data.get('text'),
                 consequence_type=None,
                 is_selected=False
@@ -313,10 +319,16 @@ class InteractiveAdventureService:
         # Create choices for new segment (if not ending)
         if not segment_data.get('is_ending', False):
             for choice_data in segment_data.get('choices', []):
+                # Parse choice number from prompt ID
+                try:
+                    choice_num = int(choice_data.get('id', 'choice_1').split('_')[1])
+                except (IndexError, ValueError):
+                    choice_num = 1
+
                 new_choice = StoryChoice(
-                    id=choice_data.get('id', str(uuid.uuid4())),
+                    id=str(uuid.uuid4()), # Always generate unique ID for DB
                     segment_id=new_segment.id,
-                    choice_number=int(choice_data.get('id', 'choice_1').split('_')[1]),
+                    choice_number=choice_num,
                     text=choice_data.get('text'),
                     consequence_type=None,
                     is_selected=False
