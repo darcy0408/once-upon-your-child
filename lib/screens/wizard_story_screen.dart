@@ -287,7 +287,7 @@ class WizardData {
   bool includeIllustrations = true; // Default to true
   String storyLength = 'standard'; // Options: 'quick', 'standard', 'epic'
   String customElements = ''; // Free-form text: "What do you want in your story?"
-  // Removed selectedSparkTool (deprecated)
+  String? selectedSparkTool;
 
   // Helper methods
   bool get isStep1Complete =>
