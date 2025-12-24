@@ -9,7 +9,6 @@ import '../../widgets/make_magic_button.dart';
 import '../../widgets/character_preview.dart';
 import '../wizard_story_screen.dart';
 import 'wizard_data_mapper.dart';
-import '../../data/spark_tools.dart';
 
 /// Step 4: Magic Review & Launch
 ///
@@ -437,51 +436,6 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Spark Tool Section
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Text('⚡', style: TextStyle(fontSize: 20)),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text(
-                        'Spark Tool',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: AppColors.textDark,
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  // Spark Tool selector removed - replaced by customElements free-form text
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
             // Custom Elements Section (Free-Form Input)
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -678,8 +632,6 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
               ),
             ],
             const SizedBox(height: AppSpacing.xxl),
-
-            // Spark Tool summary card removed - replaced by customElements
 
             // Big "Make Magic" button
             Center(
