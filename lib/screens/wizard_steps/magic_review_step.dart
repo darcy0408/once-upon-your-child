@@ -176,15 +176,18 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
         'gender': widget.wizardData.characterGender,
         'role': widget.wizardData.selectedArchetypeId, // Ensure role is updated
         'character_type': 'Everyday Kid',
-        'character_style': 'Regular Kid', 
+        'character_style': 'Regular Kid',
         'likes': characterDetails['interests'] ?? [],
         'strengths': characterDetails['strengths'] ?? [],
         'pets': widget.wizardData.pets,
         'friends': widget.wizardData.additionalCharacters,
-        'avatar': { 
+        'avatar': {
           'hairColor': 'Brown',
           'skinTone': 'Light',
-        }
+        },
+        // Include generated avatar if available
+        if (widget.wizardData.generatedAvatar != null)
+          'avatar_data': widget.wizardData.generatedAvatar!.toJson(),
       };
 
       final api = ApiServiceManager();
@@ -248,6 +251,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             SizedBox(
               height: 200,
               child: CharacterPreview(
+                generatedAvatar: data.generatedAvatar,
                 placeholderEmoji: _getCharacterEmoji(),
                 showSparkles: true,
               ),

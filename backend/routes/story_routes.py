@@ -6,7 +6,9 @@ from ..celery_config import celery
 from ..gemini_image_generator import GeminiImageGenerator
 from ..tasks.story_tasks import generate_story_task
 from ..models.user import User
+from ..models import Character
 from ..database import db
+from ..services.interactive_adventure_service import InteractiveAdventureService
 
 
 def create_story_blueprint(
@@ -278,38 +280,72 @@ def create_story_blueprint(
     @limiter.limit("5 per minute")  # Rate limit for interactive story start
     @story_bp.route("/generate-interactive-story", methods=["POST"])
     def generate_interactive_story_endpoint():
+        """
+        Create new interactive adventure story with first segment.
+        Request body:
+            - character_id: str (optional)
+            - user_id: str (required)
+            - theme: str (Adventure, Magic, Dragons, etc.)
+            - tone: str (whimsical, mystery, sci-fi, fantasy, cozy-adventure)
+            - length: str (short, medium, long)
+            - age: int (optional, overrides character age)
+            - interests: list[str] (optional)
+            - must_include: list[str] (optional)
+            - avoid: list[str] (optional)
+        """
         logger.info("POST /generate-interactive-story called")
         payload = request.get_json(silent=True) or {}
-        character_name = payload.get("character", "a brave adventurer")
+
+        user_id = payload.get("user_id")
+        character_id = payload.get("character_id")
         theme = payload.get("theme", "Adventure")
-        companion = payload.get("companion")
-        character_age = payload.get("age", 7)
-        user_api_key = payload.get("user_api_key")
+        tone = payload.get("tone", "whimsical")
+        length = payload.get("length", "medium")
+        age = payload.get("age")
+        interests = payload.get("interests")
+        must_include = payload.get("must_include")
+        avoid = payload.get("avoid")
+
+        # Validate required fields
+        if not user_id:
+            return jsonify({"error": "user_id is required"}), 400
 
         try:
-            # Use story_engine_instance which has the interactive story methods
-            interactive_story_segment = story_engine_instance.generate_interactive_story(
-                character_name=character_name,
+            # Initialize service
+            service = InteractiveAdventureService(gemini_api_key=api_key)
+
+            # Create story
+            result = service.create_story(
+                user_id=user_id,
+                character_id=character_id,
                 theme=theme,
-                companion=companion,
-                character_age=character_age,
-                model=model,  # Pass the initialized model
-                user_api_key=user_api_key,  # Allow BYOK
+                tone=tone,
+                length=length,
+                age=age,
+                interests=interests,
+                must_include=must_include,
+                avoid=avoid
             )
-            text, flagged = filter_story_content(interactive_story_segment.get("text", ""))
-            interactive_story_segment["text"] = text
+
+            # Filter content
+            segment_content = result['segment']['content']
+            filtered_content, flagged = filter_story_content(segment_content)
+            result['segment']['content'] = filtered_content
+
             if flagged:
                 logger.warning("Interactive story opening flagged by content filter")
 
-            return jsonify(interactive_story_segment), 200
+            logger.info(f"Interactive story created: {result['story_id']}")
+            return jsonify(result), 200
+
         except Exception as e:
             log_error(
                 error_type="interactive_story_generation_failed",
                 message=str(e),
                 details={
-                    "character_name": character_name,
+                    "user_id": user_id,
+                    "character_id": character_id,
                     "theme": theme,
-                    "age": character_age,
                     "error_class": e.__class__.__name__,
                 },
             )
@@ -324,43 +360,131 @@ def create_story_blueprint(
     @limiter.limit("5 per minute")  # Rate limit for continuing interactive stories
     @story_bp.route("/continue-interactive-story", methods=["POST"])
     def continue_interactive_story_endpoint():
+        """
+        Continue interactive story based on choice selection.
+        Request body:
+            - story_id: str (required)
+            - choice_id: str (required)
+        """
         logger.info("POST /continue-interactive-story called")
         payload = request.get_json(silent=True) or {}
-        character_name = payload.get("character", "a brave adventurer")
-        theme = payload.get("theme", "Adventure")
-        companion = payload.get("companion")
-        choice_text = payload.get("choice", "")
-        story_so_far = payload.get("story_so_far", "")
-        choices_made = payload.get("choices_made", [])
-        character_age = payload.get("age", 7)
-        user_api_key = payload.get("user_api_key")
+
+        story_id = payload.get("story_id")
+        choice_id = payload.get("choice_id")
+
+        # Validate required fields
+        if not story_id or not choice_id:
+            return jsonify({"error": "story_id and choice_id are required"}), 400
 
         try:
-            interactive_story_segment = story_engine_instance.continue_interactive_story(
-                character_name=character_name,
-                theme=theme,
-                companion=companion,
-                choice_text=choice_text,
-                story_so_far=story_so_far,
-                choices_made=choices_made,
-                character_age=character_age,
-                model=model,  # Pass the initialized model
-                user_api_key=user_api_key,  # Allow BYOK
+            # Initialize service
+            service = InteractiveAdventureService(gemini_api_key=api_key)
+
+            # Continue story
+            result = service.continue_story(
+                story_id=story_id,
+                choice_id=choice_id
             )
-            text, flagged = filter_story_content(interactive_story_segment.get("text", ""))
-            interactive_story_segment["text"] = text
+
+            # Filter content
+            segment_content = result['segment']['content']
+            filtered_content, flagged = filter_story_content(segment_content)
+            result['segment']['content'] = filtered_content
+
             if flagged:
                 logger.warning("Interactive continuation flagged by content filter")
 
-            return jsonify(interactive_story_segment), 200
+            logger.info(f"Story {story_id} continued to segment {result['segment']['segment_number']}")
+            return jsonify(result), 200
+
+        except ValueError as e:
+            logger.warning(f"Invalid request: {e}")
+            return jsonify({"error": str(e)}), 404
+
         except Exception as e:
             logger.exception("Continuing interactive story failed")
+            log_error(
+                error_type="interactive_story_continuation_failed",
+                message=str(e),
+                details={
+                    "story_id": story_id,
+                    "choice_id": choice_id,
+                    "error_class": e.__class__.__name__,
+                },
+            )
             return jsonify(
                 {
                     "error": str(e),
                     "hint": "Continuing interactive story failed on the backend.",
                 }
             ), 500
+
+    @story_bp.route("/interactive-story/<story_id>", methods=["GET"])
+    def get_interactive_story(story_id):
+        """
+        Get full interactive story with all segments and current state.
+        """
+        logger.info(f"GET /interactive-story/{story_id} called")
+
+        try:
+            # Initialize service
+            service = InteractiveAdventureService(gemini_api_key=api_key)
+
+            # Get story
+            result = service.get_story(story_id)
+
+            return jsonify(result), 200
+
+        except ValueError as e:
+            logger.warning(f"Story not found: {e}")
+            return jsonify({"error": str(e)}), 404
+
+        except Exception as e:
+            logger.exception("Getting interactive story failed")
+            return jsonify({"error": str(e)}), 500
+
+    @story_bp.route("/interactive-story/<story_id>/resume", methods=["GET"])
+    def resume_interactive_story(story_id):
+        """
+        Resume an in-progress story from current segment.
+        Returns current segment, inventory, and state.
+        """
+        logger.info(f"GET /interactive-story/{story_id}/resume called")
+
+        try:
+            from backend.models import InteractiveStory
+
+            # Load story
+            story = InteractiveStory.query.filter_by(id=story_id).first()
+            if not story:
+                return jsonify({"error": f"Story {story_id} not found"}), 404
+
+            if story.is_completed:
+                return jsonify({"error": "Story is already completed"}), 400
+
+            # Get current segment
+            current_segment = story.segments.filter_by(
+                id=story.current_segment_id
+            ).first()
+
+            if not current_segment:
+                return jsonify({"error": "Current segment not found"}), 404
+
+            result = {
+                'story_id': story.id,
+                'title': story.title,
+                'current_segment_number': story.current_segment_number,
+                'segment': current_segment.to_dict(),
+                'inventory': [item.to_dict() for item in story.inventory.filter_by(is_active=True).all()],
+                'state': story.state.to_dict() if story.state else None,
+                'is_completed': story.is_completed
+            }
+
+            return jsonify(result), 200
+
+        except Exception as e:
+            logger.exception("Resuming interactive story failed")
+            return jsonify({"error": str(e)}), 500
 
     @story_bp.route("/report-story", methods=["POST"])
     def report_story():

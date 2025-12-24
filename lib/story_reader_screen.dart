@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
-import 'package:story_weaver_app/widgets/error_boundary.dart';
 
 class StoryReaderScreen extends StatefulWidget {
   final String title;
@@ -28,7 +27,7 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
   late final List<int> _wordTokenIndices;
   bool _isPlaying = false;
   int _currentWordIndex = -1;
-  double _speechRate = 0.52; // Default slow/comfortable pace for kids
+  final double _speechRate = 0.52; // Default slow/comfortable pace for kids
 
   // Animation for the "active" reading state
   late AnimationController _pulseController;

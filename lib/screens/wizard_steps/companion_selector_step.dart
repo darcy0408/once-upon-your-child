@@ -3,7 +3,6 @@ import '../../models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pill_button.dart';
 import '../wizard_story_screen.dart';
-import '../../data/companion_data.dart';
 
 /// Step 3: The Adventure Team Selector
 ///
@@ -45,8 +44,8 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
       String description = '${char.age} years old';
 
       // Only show data that was actually entered by the user
-      if (char.role != null && char.role!.isNotEmpty && char.role != 'Hero') {
-        description = char.role!;
+      if (char.role.isNotEmpty && char.role != 'Hero') {
+        description = char.role;
       } else if (char.personalityTraits?.isNotEmpty == true) {
         description = char.personalityTraits!.join(', ');
       } else {
@@ -295,7 +294,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
                   isMagical: true,
                 ),
               );
-            }).toList(),
+            }),
 
             const SizedBox(height: AppSpacing.xxl),
 

@@ -23,7 +23,7 @@ class WizardDataMapper {
       data.selectedArchetypeId,
       data.personalitySliders,
     );
-    
+
     // Add appearance to details
     if (data.selectedOutfit.isNotEmpty) {
       characterDetails['outfit'] = data.selectedOutfit;
@@ -31,6 +31,11 @@ class WizardDataMapper {
 
     if (data.pets.isNotEmpty) {
       characterDetails['pets'] = data.pets;
+    }
+
+    // Add generated avatar data if available
+    if (data.generatedAvatar != null) {
+      characterDetails['generatedAvatar'] = data.generatedAvatar!.toJson();
     }
 
     // 4. Map Scenario to Theme and new Fields

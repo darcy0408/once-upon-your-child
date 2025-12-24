@@ -367,6 +367,12 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
   }
 
   Future<void> _generateAvatar() async {
+    debugPrint('🎨 Starting avatar generation...');
+    debugPrint('   Character: ${widget.characterName}, Age: ${widget.age}');
+    debugPrint('   Style: $_selectedStyle');
+    debugPrint('   Hair: $_selectedHairStyle ($_selectedHairColor)');
+    debugPrint('   Skin: $_selectedSkinTone, Outfit: $_selectedOutfit');
+
     setState(() {
       _isGenerating = true;
       _errorMessage = null;
@@ -386,16 +392,24 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
         },
       );
 
-      setState(() {
-        _generatedAvatar = avatar;
-        _isGenerating = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isGenerating = false;
-        _errorMessage = 'Oops! Our magic paintbrush needs a moment. Try again!';
-      });
-      print('Avatar generation error: $e');
+      debugPrint('✅ Avatar generated successfully!');
+
+      if (mounted) {
+        setState(() {
+          _generatedAvatar = avatar;
+          _isGenerating = false;
+        });
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Avatar generation error: $e');
+      debugPrint('Stack trace: $stackTrace');
+
+      if (mounted) {
+        setState(() {
+          _isGenerating = false;
+          _errorMessage = 'Oops! Our magic paintbrush needs a moment. Try again!\n\nError: ${e.toString().substring(0, e.toString().length > 100 ? 100 : e.toString().length)}';
+        });
+      }
     }
   }
 

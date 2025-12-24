@@ -401,3 +401,252 @@ class StorySegment {
         'can_conclude': canConclude,
       };
 }
+
+// ---------------------
+// NEW INTERACTIVE ADVENTURE STORY MODELS
+// ---------------------
+
+/// Represents the full interactive adventure story with metadata
+class InteractiveStoryData {
+  final String id;
+  final String title;
+  final String theme;
+  final String tone;
+  final String length;
+  final int age;
+  final int currentSegmentNumber;
+  final bool isCompleted;
+  final DateTime createdAt;
+  final List<InventoryItemData> inventory;
+  final StoryStateData state;
+
+  InteractiveStoryData({
+    required this.id,
+    required this.title,
+    required this.theme,
+    required this.tone,
+    required this.length,
+    required this.age,
+    required this.currentSegmentNumber,
+    required this.isCompleted,
+    required this.createdAt,
+    required this.inventory,
+    required this.state,
+  });
+
+  factory InteractiveStoryData.fromJson(Map<String, dynamic> json) {
+    return InteractiveStoryData(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      theme: json['theme'] ?? '',
+      tone: json['tone'] ?? 'whimsical',
+      length: json['length'] ?? 'medium',
+      age: json['age'] ?? 8,
+      currentSegmentNumber: json['current_segment_number'] ?? 0,
+      isCompleted: json['is_completed'] ?? false,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
+      inventory: (json['inventory'] as List<dynamic>?)
+              ?.map((i) => InventoryItemData.fromJson(i))
+              .toList() ??
+          [],
+      state: json['state'] != null
+          ? StoryStateData.fromJson(json['state'])
+          : StoryStateData.empty(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'theme': theme,
+        'tone': tone,
+        'length': length,
+        'age': age,
+        'current_segment_number': currentSegmentNumber,
+        'is_completed': isCompleted,
+        'created_at': createdAt.toIso8601String(),
+        'inventory': inventory.map((i) => i.toJson()).toList(),
+        'state': state.toJson(),
+      };
+}
+
+/// Represents a single story segment with content and choices
+class StorySegmentData {
+  final String id;
+  final int segmentNumber;
+  final String? title;
+  final String content;
+  final String? imageDescription;
+  final String? imageUrl;
+  final List<StoryChoiceData> choices;
+  final DateTime? createdAt;
+
+  StorySegmentData({
+    required this.id,
+    required this.segmentNumber,
+    this.title,
+    required this.content,
+    this.imageDescription,
+    this.imageUrl,
+    required this.choices,
+    this.createdAt,
+  });
+
+  factory StorySegmentData.fromJson(Map<String, dynamic> json) {
+    return StorySegmentData(
+      id: json['id'] ?? '',
+      segmentNumber: json['segment_number'] ?? 1,
+      title: json['title'],
+      content: json['content'] ?? '',
+      imageDescription: json['image_description'],
+      imageUrl: json['image_url'],
+      choices: (json['choices'] as List<dynamic>?)
+              ?.map((c) => StoryChoiceData.fromJson(c))
+              .toList() ??
+          [],
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'segment_number': segmentNumber,
+        if (title != null) 'title': title,
+        'content': content,
+        if (imageDescription != null) 'image_description': imageDescription,
+        if (imageUrl != null) 'image_url': imageUrl,
+        'choices': choices.map((c) => c.toJson()).toList(),
+        if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
+      };
+}
+
+/// Represents a choice option in a story segment
+class StoryChoiceData {
+  final String id;
+  final int choiceNumber;
+  final String text;
+  final String? consequenceType;
+  final bool isSelected;
+  final DateTime? selectedAt;
+
+  StoryChoiceData({
+    required this.id,
+    required this.choiceNumber,
+    required this.text,
+    this.consequenceType,
+    this.isSelected = false,
+    this.selectedAt,
+  });
+
+  factory StoryChoiceData.fromJson(Map<String, dynamic> json) {
+    return StoryChoiceData(
+      id: json['id'] ?? '',
+      choiceNumber: json['choice_number'] ?? 1,
+      text: json['text'] ?? '',
+      consequenceType: json['consequence_type'],
+      isSelected: json['is_selected'] ?? false,
+      selectedAt: json['selected_at'] != null
+          ? DateTime.parse(json['selected_at'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'choice_number': choiceNumber,
+        'text': text,
+        if (consequenceType != null) 'consequence_type': consequenceType,
+        'is_selected': isSelected,
+        if (selectedAt != null) 'selected_at': selectedAt!.toIso8601String(),
+      };
+}
+
+/// Represents an item in the hero's inventory
+class InventoryItemData {
+  final String id;
+  final String name;
+  final String? description;
+  final int acquiredAtSegment;
+  final bool isActive;
+
+  InventoryItemData({
+    required this.id,
+    required this.name,
+    this.description,
+    required this.acquiredAtSegment,
+    this.isActive = true,
+  });
+
+  factory InventoryItemData.fromJson(Map<String, dynamic> json) {
+    return InventoryItemData(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      description: json['description'],
+      acquiredAtSegment: json['acquired_at_segment'] ?? 0,
+      isActive: json['is_active'] ?? true,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        if (description != null) 'description': description,
+        'acquired_at_segment': acquiredAtSegment,
+        'is_active': isActive,
+      };
+}
+
+/// Represents the current state of the adventure
+class StoryStateData {
+  final String currentLocation;
+  final String currentGoal;
+  final List<String> keyClues;
+  final String companionStatus;
+  final String? timePressure;
+  final Map<String, dynamic>? additionalState;
+
+  StoryStateData({
+    required this.currentLocation,
+    required this.currentGoal,
+    required this.keyClues,
+    required this.companionStatus,
+    this.timePressure,
+    this.additionalState,
+  });
+
+  factory StoryStateData.fromJson(Map<String, dynamic> json) {
+    return StoryStateData(
+      currentLocation: json['current_location'] ?? '',
+      currentGoal: json['current_goal'] ?? '',
+      keyClues: (json['key_clues'] as List<dynamic>?)
+              ?.map((c) => c.toString())
+              .toList() ??
+          [],
+      companionStatus: json['companion_status'] ?? '',
+      timePressure: json['time_pressure'],
+      additionalState: json['additional_state'] as Map<String, dynamic>?,
+    );
+  }
+
+  factory StoryStateData.empty() {
+    return StoryStateData(
+      currentLocation: '',
+      currentGoal: '',
+      keyClues: [],
+      companionStatus: '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'current_location': currentLocation,
+        'current_goal': currentGoal,
+        'key_clues': keyClues,
+        'companion_status': companionStatus,
+        if (timePressure != null) 'time_pressure': timePressure,
+        if (additionalState != null) 'additional_state': additionalState,
+      };
+}

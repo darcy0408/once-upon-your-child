@@ -3,7 +3,7 @@ import '../models/local/story_local.dart';
 
 class OfflineStoryService {
   // Stub constructor that accepts any argument
-  OfflineStoryService(dynamic _isar);
+  OfflineStoryService(dynamic isar);
 
   Future<void> saveStory(StoryLocal story) async {
     // No-op on web, use API calls instead
