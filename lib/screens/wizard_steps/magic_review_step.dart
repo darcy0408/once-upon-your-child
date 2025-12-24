@@ -472,67 +472,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                     ],
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    'Choose a special item to help on your adventure!',
-                    style: TextStyle(
-                      color: AppColors.textDark.withAlpha(179),
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  DropdownButtonFormField<String>(
-                    value: data.selectedSparkTool,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      filled: true,
-                      fillColor: AppColors.surface,
-                    ),
-                    items: sparkTools.map((tool) {
-                      return DropdownMenuItem(
-                        value: tool.name,
-                        child: Text('${tool.emoji} ${tool.name}'),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      setState(() {
-                        data.selectedSparkTool = val;
-                      });
-                    },
-                    hint: const Text('Select a magical tool...'),
-                  ),
-                  if (data.selectedSparkTool != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12.0),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.gold.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                          border: Border.all(color: AppColors.gold.withOpacity(0.3)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.info_outline, size: 16, color: AppColors.textDark),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                sparkTools
-                                    .firstWhere((t) => t.name == data.selectedSparkTool)
-                                    .description,
-                                style: const TextStyle(
-                                  fontStyle: FontStyle.italic,
-                                  color: AppColors.textDark,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  // Spark Tool selector removed - replaced by customElements free-form text
                 ],
               ),
             ),
@@ -735,15 +675,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             ],
             const SizedBox(height: AppSpacing.xxl),
 
-            if (data.selectedSparkTool != null) ...[
-               _SummaryCard(
-                icon: '⚡',
-                title: 'Spark Tool',
-                value: data.selectedSparkTool!,
-                color: Colors.amber,
-              ),
-              const SizedBox(height: AppSpacing.md),
-            ],
+            // Spark Tool summary card removed - replaced by customElements
 
             // Big "Make Magic" button
             Center(
