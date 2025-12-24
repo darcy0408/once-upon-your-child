@@ -4,7 +4,7 @@
     "context7": {
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
-      "enabled": true,
+      "enabled": false,
       "headers": {
         "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}"
       }
@@ -12,7 +12,7 @@
     "gh_grep": {
       "type": "remote", 
       "url": "https://mcp.grep.app",
-      "enabled": true
+      "enabled": false
     },
     "filesystem": {
       "type": "local",

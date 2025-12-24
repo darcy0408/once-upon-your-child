@@ -1,3 +1,3 @@
 @echo off
-set FLASK_ENV=production
+set FLASK_ENV=development
 python backend/app.py
