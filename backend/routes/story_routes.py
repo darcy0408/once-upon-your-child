@@ -1,6 +1,8 @@
 import base64
+import io
 import requests
 from flask import Blueprint, jsonify, request
+from PIL import Image
 
 from ..celery_config import celery
 from ..gemini_image_generator import GeminiImageGenerator
@@ -590,7 +592,19 @@ def create_story_blueprint(
                             logger.info(f"Downloading illustration from {image_url[:50]}...")
                             img_resp = requests.get(image_url, timeout=10)
                             if img_resp.status_code == 200:
-                                b64_data = base64.b64encode(img_resp.content).decode("utf-8")
+                                image_bytes = img_resp.content
+                                
+                                # Resize downloaded image to max 1024x1024
+                                try:
+                                    with Image.open(io.BytesIO(image_bytes)) as img:
+                                        img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+                                        buffer = io.BytesIO()
+                                        img.save(buffer, format="PNG")
+                                        image_bytes = buffer.getvalue()
+                                except Exception as resize_err:
+                                    logger.warning(f"Failed to resize downloaded image: {resize_err}")
+
+                                b64_data = base64.b64encode(image_bytes).decode("utf-8")
                                 new_img["image_data"] = b64_data
                                 logger.info("Successfully converted image URL to base64 data")
                             else:
@@ -651,6 +665,12 @@ def create_story_blueprint(
             therapeutic_focus = data.get("therapeutic_focus")
             user_api_key = data.get("user_api_key")
 
+            # Get character appearance/avatar details
+            character_appearance = data.get("character_appearance") or data.get("appearance")
+
+            # Get companions (could be magical companions, pets, or friends)
+            companions = data.get("companions") or data.get("companion_pets") or []
+
             if not scene_description.strip():
                 return jsonify({"error": "Scene description is required"}), 400
 
@@ -685,6 +705,8 @@ def create_story_blueprint(
                 num_images=num_images,
                 age=age,
                 therapeutic_focus=therapeutic_focus,
+                character_appearance=character_appearance,
+                companions=companions,
             )
 
             return jsonify({"coloring_pages": coloring_pages, "count": len(coloring_pages)}), 200

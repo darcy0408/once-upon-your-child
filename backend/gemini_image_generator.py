@@ -44,6 +44,17 @@ class GeminiImageGenerator:
                             if hasattr(part, 'inline_data') and part.inline_data:
                                 try:
                                     image_data = part.inline_data.data
+                                    
+                                    # Resize image to max 1024x1024 to save memory
+                                    try:
+                                        with Image.open(io.BytesIO(image_data)) as img:
+                                            img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+                                            buffer = io.BytesIO()
+                                            img.save(buffer, format="PNG")
+                                            image_data = buffer.getvalue()
+                                    except Exception as e:
+                                        logger.warning(f"Failed to resize image: {e}")
+
                                     # Data is already bytes, encode to base64
                                     images.append({
                                         'id': f"{uuid.uuid4()}_{i}",
@@ -201,7 +212,9 @@ Visual requirements:
         character_name: str = "the hero",
         num_images: int = 1,
         age: int = 7,
-        therapeutic_focus: str | None = None
+        therapeutic_focus: str | None = None,
+        character_appearance: dict | None = None,
+        companions: list | None = None
     ) -> list:
         """
         Generate therapeutic coloring book pages with black and white line art.
@@ -232,14 +245,62 @@ Visual requirements:
         if therapeutic_focus:
             therapeutic_context = f"\nTherapeutic purpose: Design promotes {therapeutic_focus} through calming, positive imagery"
 
+        # Build character appearance description
+        character_description = f"Main character: {character_name}"
+        if character_appearance:
+            appearance_details = []
+
+            # Add physical characteristics
+            if character_appearance.get('hair'):
+                appearance_details.append(f"hair: {character_appearance['hair']}")
+            if character_appearance.get('skin'):
+                appearance_details.append(f"skin tone: {character_appearance['skin']}")
+            if character_appearance.get('outfit'):
+                appearance_details.append(f"wearing: {character_appearance['outfit']}")
+            if character_appearance.get('gender'):
+                appearance_details.append(f"gender: {character_appearance['gender']}")
+
+            # Add avatar details if available
+            if character_appearance.get('avatar'):
+                avatar = character_appearance['avatar']
+                if avatar.get('hairStyle'):
+                    appearance_details.append(f"hairstyle: {avatar['hairStyle']}")
+                if avatar.get('hairColor'):
+                    appearance_details.append(f"hair color: {avatar['hairColor']}")
+                if avatar.get('skinColor'):
+                    appearance_details.append(f"skin: {avatar['skinColor']}")
+                if avatar.get('topType'):
+                    appearance_details.append(f"clothing: {avatar['topType']}")
+
+            if appearance_details:
+                character_description += f" ({', '.join(appearance_details)})"
+
+        # Build companions description
+        companions_text = ""
+        if companions and len(companions) > 0:
+            companion_descriptions = []
+            for companion in companions:
+                if isinstance(companion, dict):
+                    comp_name = companion.get('name', 'companion')
+                    comp_type = companion.get('type', '')
+                    if comp_type:
+                        companion_descriptions.append(f"{comp_name} (a {comp_type})")
+                    else:
+                        companion_descriptions.append(comp_name)
+                elif isinstance(companion, str):
+                    companion_descriptions.append(companion)
+
+            if companion_descriptions:
+                companions_text = f"\nCompanions/Friends: {', '.join(companion_descriptions)} - IMPORTANT: Include these characters in the scene!"
+
         prompt = f"""
 Create {num_images} therapeutic coloring book page(s) featuring elements from a personalized story.
 
 Story context: {scene_description}
-Main character: {character_name}
+{character_description}
 Target audience: {age_descriptor} (person is {age} years old)
 Intricacy level: {intricacy}
-Line style: {line_thickness}{therapeutic_context}
+Line style: {line_thickness}{therapeutic_context}{companions_text}
 
 Critical requirements:
 - BLACK LINE ART ONLY on pure white background
@@ -256,6 +317,8 @@ Critical requirements:
 - Safe therapeutic content: respectful and appropriate for the intended age
 - No text or words in the image
 - Printable quality (suitable for app display or printing)
+- MATCH THE CHARACTER APPEARANCE EXACTLY: {character_description}
+- If companions are listed, they MUST appear in the coloring page{companions_text if companions_text else ""}
 
 Design style: Clean line art coloring page, therapeutic and story-based, for {age_descriptor}
         Output: Pure black lines on white background only
