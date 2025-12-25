@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/generated_avatar.dart';
 import '../services/avatar_generation_service.dart';
+import '../services/avatar_generation_state.dart';
 
 /// Full-screen overlay for creating personalized avatars
 class AvatarCreatorOverlay extends StatefulWidget {
@@ -9,6 +10,7 @@ class AvatarCreatorOverlay extends StatefulWidget {
   final int age;
   final VoidCallback onCancel;
   final Function(GeneratedAvatar) onAvatarCreated;
+  final bool allowAsync; // Whether to allow background generation
 
   const AvatarCreatorOverlay({
     Key? key,
@@ -16,6 +18,7 @@ class AvatarCreatorOverlay extends StatefulWidget {
     required this.age,
     required this.onCancel,
     required this.onAvatarCreated,
+    this.allowAsync = true, // Default to allowing async
   }) : super(key: key);
 
   @override
@@ -274,8 +277,13 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
           ),
           const SizedBox(height: 10),
           const Text(
-            'This may take 10-30 seconds',
+            'This may take 1-2 minutes',
             style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+          const SizedBox(height: 5),
+          const Text(
+            'The AI is painting every detail!',
+            style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
           ),
         ],
       ),
@@ -346,28 +354,95 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
 
     return Container(
       padding: const EdgeInsets.all(20),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: _isGenerating ? null : _generateAvatar,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFFFD93D),
-            padding: const EdgeInsets.symmetric(vertical: 18),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+      child: Column(
+        children: [
+          // Async generation button (recommended)
+          if (widget.allowAsync)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isGenerating ? null : _generateAvatarAsync,
+                icon: const Icon(Icons.rocket_launch, color: Colors.white),
+                label: const Text(
+                  'Generate in Background',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6C63FF),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          if (widget.allowAsync) const SizedBox(height: 12),
+          if (widget.allowAsync)
+            const Text(
+              'Continue with your story while your avatar generates!',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          if (widget.allowAsync) const SizedBox(height: 12),
+          // Sync generation button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: _isGenerating ? null : _generateAvatar,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                side: const BorderSide(color: Color(0xFFFFD93D), width: 2),
+              ),
+              child: Text(
+                widget.allowAsync ? 'Wait Here Instead' : 'Generate My Avatar',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
             ),
           ),
-          child: const Text(
-            'Generate My Avatar',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
+        ],
       ),
     );
   }
 
+  /// Start avatar generation in background and close dialog
+  Future<void> _generateAvatarAsync() async {
+    debugPrint('🚀 Starting ASYNC avatar generation...');
+    final features = {
+      'hair_style': _selectedHairStyle,
+      'hair_color': _selectedHairColor,
+      'skin_tone': _selectedSkinTone,
+      'outfit': _selectedOutfit,
+      'expression': 'Happy',
+    };
+
+    // Mark as generating in global state
+    AvatarGenerationState().startGeneration();
+
+    // Close the dialog immediately
+    widget.onCancel();
+
+    // Start generation in background (don't await)
+    _avatarService.generateAvatar(
+      characterName: widget.characterName,
+      age: widget.age,
+      style: _selectedStyle,
+      features: features,
+    ).then((avatar) {
+      // Success - update state and notify
+      AvatarGenerationState().completeGeneration(avatar);
+      widget.onAvatarCreated(avatar);
+    }).catchError((error) {
+      // Failure - update state with error
+      AvatarGenerationState().failGeneration(error.toString());
+    });
+  }
+
+  /// Generate avatar synchronously (wait for result)
   Future<void> _generateAvatar() async {
-    debugPrint('🎨 Starting avatar generation...');
+    debugPrint('🎨 Starting SYNC avatar generation...');
     debugPrint('   Character: ${widget.characterName}, Age: ${widget.age}');
     debugPrint('   Style: $_selectedStyle');
     debugPrint('   Hair: $_selectedHairStyle ($_selectedHairColor)');

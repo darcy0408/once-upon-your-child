@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/generated_avatar.dart';
 import '../config/environment.dart';
@@ -33,21 +34,27 @@ class AvatarGenerationService {
     };
 
     try {
+      debugPrint('📡 Sending avatar generation request to $url');
+      debugPrint('   Payload: ${json.encode(payload)}');
+
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
         body: json.encode(payload),
       ).timeout(
-        const Duration(seconds: 60), // Avatar generation can take 10-30 seconds
+        const Duration(seconds: 150), // Increased to 2.5 minutes - Gemini image generation is slow
         onTimeout: () {
-          throw TimeoutException('Avatar generation timed out after 60 seconds');
+          throw TimeoutException('Avatar generation timed out after 2.5 minutes');
         },
       );
+
+      debugPrint('📡 Backend responded with status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
 
         if (data['status'] == 'success') {
+          debugPrint('✅ Avatar generated successfully!');
           return GeneratedAvatar.fromJson(data['avatar'] as Map<String, dynamic>);
         } else {
           throw AvatarGenerationException(
@@ -66,8 +73,10 @@ class AvatarGenerationService {
         );
       }
     } on TimeoutException {
+      debugPrint('⏱️ Avatar generation timed out');
       rethrow;
     } catch (e) {
+      debugPrint('❌ Avatar generation error: $e');
       if (e is AvatarGenerationException || e is AvatarValidationException) {
         rethrow;
       }

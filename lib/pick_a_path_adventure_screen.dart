@@ -2,22 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:story_weaver_app/widgets/error_boundary.dart';
-import 'package:story_weaver_app/widgets/loading_overlay.dart';
 
 import 'models.dart';
 import 'storage_service.dart';
 import 'services/interactive_story_analytics.dart';
 import 'services/interactive_story_service.dart';
 import 'subscription_service.dart';
-import 'theme/app_theme.dart';
-import 'widgets/app_button.dart';
 import 'widgets/app_card.dart';
 import 'widgets/error_message.dart';
 
-/// New interactive adventure screen with inventory, state tracking, and age-calibrated content
-class InteractiveAdventureScreen extends StatefulWidget {
-  const InteractiveAdventureScreen({
+/// Pick-A-Path Adventures: Interactive stories with inventory, state tracking, and age-calibrated content
+class PickAPathAdventureScreen extends StatefulWidget {
+  const PickAPathAdventureScreen({
     super.key,
     required this.userId,
     required this.character,
@@ -41,12 +37,12 @@ class InteractiveAdventureScreen extends StatefulWidget {
   final String? existingStoryId;
 
   @override
-  State<InteractiveAdventureScreen> createState() =>
-      _InteractiveAdventureScreenState();
+  State<PickAPathAdventureScreen> createState() =>
+      _PickAPathAdventureScreenState();
 }
 
-class _InteractiveAdventureScreenState
-    extends State<InteractiveAdventureScreen> {
+class _PickAPathAdventureScreenState
+    extends State<PickAPathAdventureScreen> {
   final ScrollController _scrollController = ScrollController();
   final InteractiveStoryService _storyService =
       const InteractiveStoryService();
@@ -314,7 +310,7 @@ class _InteractiveAdventureScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_storyTitle ?? 'Interactive Adventure'),
+        title: Text(_storyTitle ?? 'Pick-A-Path Adventure'),
         actions: [
           if (!_isLoading && _currentSegment != null)
             Padding(

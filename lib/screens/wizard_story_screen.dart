@@ -6,6 +6,7 @@ import '../models.dart'; // Import Character model
 import '../models/generated_avatar.dart';
 import '../theme/app_theme.dart';
 import '../widgets/moon_phase_progress.dart';
+import '../widgets/avatar_generation_banner.dart';
 import 'character_library_screen.dart';
 import 'wizard_steps/hero_creator_step.dart';
 import 'wizard_steps/feeling_selection_step.dart';
@@ -150,6 +151,9 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
         child: SafeArea(
           child: Column(
             children: [
+              // Avatar generation banner (shows when generating in background)
+              const AvatarGenerationBanner(),
+
               // Top bar with back button and progress
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),

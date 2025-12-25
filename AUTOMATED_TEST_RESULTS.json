@@ -1,42 +1,42 @@
 {
-  "test_run": "2025-12-23T19:34:45.540830",
+  "test_run": "2025-12-24T14:14:56.744967",
   "summary": {
     "total_tests": 5,
-    "passed": 5,
-    "failed": 0,
-    "success_rate": "100.0%",
-    "phase_3_ready": true
+    "passed": 0,
+    "failed": 5,
+    "success_rate": "0.0%",
+    "phase_3_ready": false
   },
   "tests": [
     {
       "name": "Backend Health Check",
-      "status": "PASS",
-      "duration_ms": 21,
-      "details": "Backend responding correctly"
+      "status": "FAIL",
+      "duration_ms": 2055,
+      "details": "Backend not responding"
     },
     {
       "name": "Custom Elements - Single Element",
-      "status": "PASS",
-      "duration_ms": 10297,
-      "details": "Single custom element integrated successfully"
+      "status": "FAIL",
+      "duration_ms": 2064,
+      "details": "Single element integration failed"
     },
     {
       "name": "Custom Elements - Multiple Elements",
-      "status": "PASS",
-      "duration_ms": 9284,
-      "details": "Multiple custom elements integrated successfully"
+      "status": "FAIL",
+      "duration_ms": 2048,
+      "details": "Multiple elements integration failed"
     },
     {
       "name": "Story Length Options",
-      "status": "PASS",
-      "duration_ms": 30972,
-      "details": "All story lengths generated correctly"
+      "status": "FAIL",
+      "duration_ms": 17829,
+      "details": "Story length options failed"
     },
     {
       "name": "Phase 3 Complete Test Suite",
-      "status": "PASS",
-      "duration_ms": 72203,
-      "details": "All Phase 3 tests passed"
+      "status": "FAIL",
+      "duration_ms": 480153,
+      "details": "Some Phase 3 tests failed"
     }
   ]
 }

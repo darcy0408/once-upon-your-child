@@ -18,7 +18,7 @@ import 'config/environment.dart';
 import 'customizable_avatar_widget.dart';
 import 'dialogs/upgrade_prompt_dialog.dart';
 import 'feelings_corner_screen.dart';
-import 'interactive_story_screen.dart';
+import 'pick_a_path_adventure_screen.dart';
 import 'saved_stories_screen.dart';
 import 'services/isar_service.dart';
 import 'services/offline_story_service.dart';
@@ -569,12 +569,15 @@ class _StoryScreenState extends State<StoryScreen> {
     if (!mounted) return;
     setState(() => _isLoading = false);
 
+    // Navigate to Pick-A-Path Adventure (new interactive system)
     final bool? storySaved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => InteractiveStoryScreen(
+        builder: (_) => PickAPathAdventureScreen(
+          userId: _userId ?? 'guest',
           character: _selectedCharacter!,
           theme: _selectedTheme,
-          companion: _selectedCompanion != 'None' ? _selectedCompanion : null,
+          tone: 'whimsical',
+          length: 'medium',
         ),
       ),
     );

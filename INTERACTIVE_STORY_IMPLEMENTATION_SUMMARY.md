@@ -1,8 +1,8 @@
-# Interactive Children's Adventure Story - Implementation Summary
+# Pick-A-Path Adventures - Implementation Summary
 
 ## 🎉 Implementation Status: 95% Complete
 
-The interactive children's adventure story system has been successfully implemented with full age calibration, inventory tracking, story state management, and database persistence.
+The Pick-A-Path Adventures system has been successfully implemented with full age calibration, inventory tracking, story state management, and database persistence.
 
 ---
 
@@ -156,7 +156,7 @@ The interactive children's adventure story system has been successfully implemen
 
 ### Navigation Integration (In Progress)
 
-The only remaining task is to integrate the new `InteractiveAdventureScreen` into the app's navigation flow.
+The only remaining task is to integrate the new `PickAPathAdventureScreen` into the app's navigation flow.
 
 #### Option 1: Add to Wizard Flow (Recommended)
 
@@ -173,7 +173,7 @@ if (storyType == StoryType.interactive) {
   Navigator.push(
     context,
     MaterialPageRoute(
-      builder: (_) => InteractiveAdventureScreen(
+      builder: (_) => PickAPathAdventureScreen(
         userId: _userId,
         character: _selectedCharacter,
         theme: _selectedTheme,
@@ -192,7 +192,7 @@ if (storyType == StoryType.interactive) {
 
 **Files to update:**
 1. Find all references to `InteractiveStoryScreen` (old)
-2. Replace with `InteractiveAdventureScreen` (new)
+2. Replace with `PickAPathAdventureScreen` (new)
 3. Update constructor parameters
 
 **Search command:**
@@ -202,7 +202,7 @@ grep -r "InteractiveStoryScreen" lib/ --include="*.dart"
 
 #### Option 3: Add as Separate Menu Option
 
-Add "Interactive Adventure" as a new option in the main menu or story type selector.
+Add "Pick-A-Path Adventure" as a new option in the main menu or story type selector.
 
 ---
 

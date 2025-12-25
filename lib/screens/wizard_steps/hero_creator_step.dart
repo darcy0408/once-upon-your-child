@@ -10,6 +10,7 @@ import '../../services/api_service_manager.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/generated_avatar.dart';
 import '../../widgets/avatar_creator_overlay.dart';
+import '../../services/avatar_generation_state.dart';
 
 /// Step 1: The Hero Creator
 ///
@@ -46,6 +47,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     super.initState();
     _nameController = TextEditingController(text: widget.wizardData.characterName);
 
+    // Listen for completed avatar from background generation
+    AvatarGenerationState().addListener(_onAvatarStateChanged);
+
     // If wizard data already has a characterId, try to find and select it
     if (widget.wizardData.characterId != null && widget.availableCharacters.isNotEmpty) {
       _selectedExistingCharacter = widget.availableCharacters.firstWhere(
@@ -57,6 +61,39 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         _loadExistingCharacter(_selectedExistingCharacter!);
       }
     }
+  }
+
+  void _onAvatarStateChanged() {
+    final state = AvatarGenerationState();
+
+    // If avatar completed and not already consumed, apply it
+    if (state.completedAvatar != null && _generatedAvatar == null) {
+      setState(() {
+        _generatedAvatar = state.completedAvatar;
+        widget.wizardData.generatedAvatar = state.completedAvatar;
+      });
+
+      // Show success notification
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✨ Your avatar is ready!'),
+            backgroundColor: Color(0xFF4CAF50),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+
+      // Consume the avatar so it doesn't get applied again
+      state.consumeAvatar();
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    AvatarGenerationState().removeListener(_onAvatarStateChanged);
+    super.dispose();
   }
 
   void _loadExistingCharacter(Character character) {

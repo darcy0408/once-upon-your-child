@@ -209,7 +209,7 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
@@ -228,7 +228,7 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
                           fontWeight: FontWeight.bold,
                           shadows: [
                             Shadow(
-                              color: Colors.black.withOpacity(0.3),
+                              color: Colors.black.withValues(alpha: 0.3),
                               offset: const Offset(0, 2),
                               blurRadius: 4,
                             ),
@@ -252,7 +252,7 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
                       Text(
                         'A story for ${widget.characterName}',
                         style: GoogleFonts.quicksand(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -276,17 +276,17 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
                                 color: const Color(0xFFFFF8E7), // Magical parchment
                                 borderRadius: BorderRadius.circular(24),
                                 border: Border.all(
-                                  color: AppColors.gold.withOpacity(0.3),
+                                  color: AppColors.gold.withValues(alpha: 0.3),
                                   width: 2,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.15),
+                                    color: Colors.black.withValues(alpha: 0.15),
                                     blurRadius: 20,
                                     offset: const Offset(0, 8),
                                   ),
                                   BoxShadow(
-                                    color: AppColors.gold.withOpacity(0.1),
+                                    color: AppColors.gold.withValues(alpha: 0.1),
                                     blurRadius: 0,
                                     spreadRadius: 4, 
                                     offset: const Offset(0, 0),
@@ -303,7 +303,7 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
                                       color: const Color(0xFFF9F1DC), // Slightly darker parchment
                                       border: Border(
                                         bottom: BorderSide(
-                                          color: AppColors.gold.withOpacity(0.2),
+                                          color: AppColors.gold.withValues(alpha: 0.2),
                                           width: 1,
                                         ),
                                       ),
@@ -386,18 +386,18 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
               : null,
             color: !isPrimary && isEnabled 
               ? Colors.white 
-              : (isEnabled ? null : Colors.grey.withOpacity(0.1)),
+              : (isEnabled ? null : Colors.grey.withValues(alpha: 0.1)),
             shape: BoxShape.circle,
             border: Border.all(
               color: isEnabled 
                 ? (isPrimary ? Colors.transparent : AppColors.primary) 
-                : Colors.grey.withOpacity(0.3),
+                : Colors.grey.withValues(alpha: 0.3),
               width: 2,
             ),
             boxShadow: isEnabled
                 ? [
                     BoxShadow(
-                      color: (isPrimary ? AppColors.primary : Colors.black).withOpacity(0.2),
+                      color: (isPrimary ? AppColors.primary : Colors.black).withValues(alpha: 0.2),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     )
@@ -417,7 +417,7 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
                   icon,
                   color: isPrimary && isEnabled 
                     ? Colors.white 
-                    : (isEnabled ? AppColors.primary : Colors.grey.withOpacity(0.5)),
+                    : (isEnabled ? AppColors.primary : Colors.grey.withValues(alpha: 0.5)),
                   size: size * 0.6,
                 ),
               ),
@@ -430,7 +430,7 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
           style: GoogleFonts.quicksand(
             fontSize: 12,
             fontWeight: FontWeight.bold,
-            color: isEnabled ? AppColors.primary : Colors.grey.withOpacity(0.5),
+            color: isEnabled ? AppColors.primary : Colors.grey.withValues(alpha: 0.5),
           ),
         ),
       ],
@@ -452,7 +452,7 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
               ? null
               : TextStyle(
                   backgroundColor: isHighlighted
-                      ? AppColors.gold.withOpacity(0.4)
+                      ? AppColors.gold.withValues(alpha: 0.4)
                       : null,
                   decoration: isHighlighted 
                       ? TextDecoration.underline 

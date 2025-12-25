@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/api_service_manager.dart';
 import '../../services/achievement_service.dart';
 import '../../story_result_screen.dart';
-import '../../interactive_story_screen.dart';
+import '../../pick_a_path_adventure_screen.dart';
 import '../../models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/make_magic_button.dart';
@@ -57,10 +57,10 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       // Prepared payload using the mapper
       final requestData = WizardDataMapper.mapToStoryRequest(widget.wizardData);
 
-      // 2. CHECK MODE: If interactive, skip standard generation and go straight to screen
+      // 2. CHECK MODE: If Pick-A-Path, skip standard generation and go to interactive screen
       if (widget.wizardData.interactiveMode) {
-        debugPrint('🎮 Interactive mode enabled, skipping standard generation & routing to InteractiveStoryScreen');
-        
+        debugPrint('🎮 Pick-A-Path mode enabled, routing to PickAPathAdventureScreen');
+
         if (mounted) {
            // Create a Character object from wizard data
           final character = Character(
@@ -73,14 +73,23 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             // Map simple fields if needed, or rely on defaults
           );
 
-          // Navigate directly
+          // Navigate to Pick-A-Path Adventure
           await Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => InteractiveStoryScreen(
+              builder: (context) => PickAPathAdventureScreen(
+                userId: 'guest',  // TODO: Add userId to WizardData if needed
                 character: character,
-                theme: requestData['theme'],
-                companion: widget.wizardData.selectedCompanions.isNotEmpty
-                    ? widget.wizardData.selectedCompanions.first
+                theme: requestData['theme'] ?? 'Adventure',
+                tone: 'whimsical',  // TODO: Add tone selector to wizard if desired
+                length: _mapStoryLength(widget.wizardData.storyLength),
+                interests: widget.wizardData.selectedEmotionChips.isNotEmpty
+                    ? widget.wizardData.selectedEmotionChips
+                    : null,
+                mustInclude: widget.wizardData.customElements.isNotEmpty
+                    ? [widget.wizardData.customElements]
+                    : null,
+                avoid: widget.wizardData.fears.isNotEmpty
+                    ? widget.wizardData.fears
                     : null,
               ),
             ),
@@ -679,6 +688,19 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
         .split('_')
         .map((word) => word[0].toUpperCase() + word.substring(1))
         .join(' ');
+  }
+
+  /// Map wizard story length to Pick-A-Path length
+  String _mapStoryLength(String wizardLength) {
+    switch (wizardLength) {
+      case 'quick':
+        return 'short';
+      case 'epic':
+        return 'long';
+      case 'standard':
+      default:
+        return 'medium';
+    }
   }
 }
 
