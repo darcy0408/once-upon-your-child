@@ -294,7 +294,7 @@ Visual requirements:
                 companions_text = f"\nCompanions/Friends: {', '.join(companion_descriptions)} - IMPORTANT: Include these characters in the scene!"
 
         prompt = f"""
-Create {num_images} therapeutic coloring book page(s) featuring elements from a personalized story.
+Create {num_images} whimsical, high-quality therapeutic coloring book page(s) featuring elements from a personalized story.
 
 Story context: {scene_description}
 {character_description}
@@ -306,21 +306,24 @@ Critical requirements:
 - BLACK LINE ART ONLY on pure white background
 - ABSOLUTELY NO colors, fills, shading, or gray tones
 - 100% black outlines for coloring
-- Story-relevant elements: characters, settings, key objects from the scene
 - {intricacy}
-- Balanced composition covering 70%+ of story themes
+- Balanced composition covering 70%+ of the page with interesting things to color
 - High contrast for easy visibility
-- Engaging elements tied to the narrative
 - Positive, uplifting content only
 - Age-appropriate for {age_descriptor}
-- Promotes creativity, mindfulness, and emotional processing
-- Safe therapeutic content: respectful and appropriate for the intended age
 - No text or words in the image
 - Printable quality (suitable for app display or printing)
 - MATCH THE CHARACTER APPEARANCE EXACTLY: {character_description}
 - If companions are listed, they MUST appear in the coloring page{companions_text if companions_text else ""}
 
-Design style: Clean line art coloring page, therapeutic and story-based, for {age_descriptor}
+DELIGHTFUL DETAILS FOR CHILDREN:
+- Incorporate fun, magical background elements related to the story
+- Add interesting patterns (stars, swirls, flowers, gears) in the environment
+- Include small hidden details like tiny forest creatures, hidden stars, or little bugs for the child to discover and color
+- Ensure the scene feels full of wonder and discovery
+- Use clear, closed shapes so that coloring stays within the lines easily
+
+Design style: Clean line art coloring page, therapeutic and story-based, full of whimsical details for {age_descriptor}
         Output: Pure black lines on white background only
 """
 

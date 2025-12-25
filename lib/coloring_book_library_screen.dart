@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'coloring_book_service.dart';
 import 'coloring_screen.dart';
+import 'config/environment.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
@@ -17,7 +18,9 @@ class ColoringBookLibraryScreen extends StatefulWidget {
 }
 
 class _ColoringBookLibraryScreenState extends State<ColoringBookLibraryScreen> {
-  final _coloringService = MockColoringBookService(); // Use mock for now
+  final _coloringService = GeminiColoringBookService(
+    backendUrl: Environment.backendUrl,
+  );
   List<ColoringPage> _coloringPages = [];
   bool _isLoading = true;
 

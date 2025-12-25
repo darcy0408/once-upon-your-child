@@ -196,11 +196,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     });
   }
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
-  }
+
 
   void _selectArchetype(ArchetypeData archetype) {
     setState(() {

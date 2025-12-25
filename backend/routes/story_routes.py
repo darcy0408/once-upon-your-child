@@ -655,12 +655,23 @@ def create_story_blueprint(
     @limiter.limit("10 per hour")
     @story_bp.route("/generate-coloring-pages", methods=["POST"])
     def generate_coloring_pages_endpoint():
-        """Generate coloring book pages for a story scene"""
+        """Generate coloring book pages for story scene(s)"""
         try:
             data = request.get_json(silent=True) or {}
+            
+            # Support both singular 'scene_description' and plural 'scenes'
             scene_description = data.get("scene_description", "")
+            scenes = data.get("scenes", [])
+            
+            # If scenes list is provided, use it, otherwise fall back to scene_description
+            if not scenes and scene_description:
+                scenes = [{"description": scene_description}]
+            
+            if not scenes:
+                return jsonify({"error": "Scene description or scenes list is required"}), 400
+
             character_name = data.get("character_name", "the hero")
-            num_images = min(int(data.get("num_images", 1)), 3)  # Max 3 pages
+            num_images_per_scene = min(int(data.get("num_images", 1)), 3)
             age = int(data.get("age", 7))
             therapeutic_focus = data.get("therapeutic_focus")
             user_api_key = data.get("user_api_key")
@@ -670,9 +681,6 @@ def create_story_blueprint(
 
             # Get companions (could be magical companions, pets, or friends)
             companions = data.get("companions") or data.get("companion_pets") or []
-
-            if not scene_description.strip():
-                return jsonify({"error": "Scene description is required"}), 400
 
             generator = None
             if user_api_key:
@@ -687,29 +695,49 @@ def create_story_blueprint(
             elif image_generator is not None:
                 generator = image_generator
             else:
-                # Graceful fallback when image generation is unavailable (no key/model).
                 return (
                     jsonify(
                         {
                             "coloring_pages": [],
                             "count": 0,
-                            "warning": "Image generation unavailable; configure GEMINI_API_KEY or provide user_api_key.",
+                            "warning": "Image generation unavailable",
                         }
                     ),
                     200,
                 )
 
-            coloring_pages = generator.generate_coloring_page(
-                scene_description=scene_description,
-                character_name=character_name,
-                num_images=num_images,
-                age=age,
-                therapeutic_focus=therapeutic_focus,
-                character_appearance=character_appearance,
-                companions=companions,
-            )
+            all_coloring_pages = []
+            for scene_item in scenes:
+                # Handle both string and dict in scenes list
+                if isinstance(scene_item, str):
+                    current_desc = scene_item
+                    scene_title = "Coloring Page"
+                else:
+                    current_desc = scene_item.get("description", "")
+                    scene_title = scene_item.get("title", "Coloring Page")
+                
+                if not current_desc:
+                    continue
 
-            return jsonify({"coloring_pages": coloring_pages, "count": len(coloring_pages)}), 200
+                pages = generator.generate_coloring_page(
+                    scene_description=current_desc,
+                    character_name=character_name,
+                    num_images=num_images_per_scene,
+                    age=age,
+                    therapeutic_focus=therapeutic_focus,
+                    character_appearance=character_appearance,
+                    companions=companions,
+                )
+                
+                # Add metadata to each page
+                for p in pages:
+                    p["scene_title"] = scene_title
+                    all_coloring_pages.append(p)
+
+            return jsonify({
+                "coloring_pages": all_coloring_pages, 
+                "count": len(all_coloring_pages)
+            }), 200
 
         except Exception as e:
             logger.exception("Coloring page generation failed")

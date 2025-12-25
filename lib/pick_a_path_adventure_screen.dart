@@ -8,6 +8,7 @@ import 'storage_service.dart';
 import 'services/interactive_story_analytics.dart';
 import 'services/interactive_story_service.dart';
 import 'subscription_service.dart';
+import 'package:story_weaver_app/widgets/app_button.dart';
 import 'widgets/app_card.dart';
 import 'widgets/error_message.dart';
 
@@ -227,10 +228,12 @@ class _PickAPathAdventureScreenState
 
       if (_isCompleted) {
         unawaited(
-          InteractiveStoryAnalytics.trackStoryCompleted(
+          InteractiveStoryAnalytics.trackStorySaved(
             characterId: widget.character.id,
             theme: widget.theme,
+            choiceCount: _currentSegment?.segmentNumber ?? 0,
             segmentCount: _currentSegment?.segmentNumber ?? 0,
+            wordCount: _currentSegment?.content.split(' ').length ?? 0,
           ),
         );
       }
@@ -263,10 +266,8 @@ class _PickAPathAdventureScreenState
       // Get full story from API
       final fullStory = await _storyService.getStory(_storyId!);
 
-      // Build complete story text from all segments
-      final completeText =
-          fullStory.segments?.map((s) => s.content).join('\n\n') ??
-              _currentSegment!.content;
+      // Use current segment content as story text
+      final completeText = _currentSegment!.content;
 
       final savedStory = SavedStory(
         id: _storyId!,
@@ -280,7 +281,7 @@ class _PickAPathAdventureScreenState
       );
 
       await _storageService.saveStory(savedStory);
-      await _subscriptionService.recordUsage(widget.userId, 'story');
+      await _subscriptionService.recordStoryCreation();
 
       if (!mounted) return;
       setState(() {
@@ -338,6 +339,7 @@ class _PickAPathAdventureScreenState
           : _errorMessage != null
               ? Center(
                   child: ErrorMessage(
+                    title: 'Error',
                     message: _errorMessage!,
                     onRetry: _retryAction,
                   ),
@@ -568,15 +570,11 @@ class _PickAPathAdventureScreenState
           final choice = entry.value;
           return Padding(
             padding: const EdgeInsets.only(bottom: 12.0),
-            child: AppButton(
+            child: AppButton.primary(
+              label: choice.text,
               onPressed: _isContinuing
                   ? null
                   : () => _handleChoiceSelected(choice),
-              child: Text(
-                choice.text,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 15),
-              ),
             ),
           );
         }),
@@ -603,15 +601,9 @@ class _PickAPathAdventureScreenState
         ),
         const SizedBox(height: 24),
         if (!_storySaved)
-          AppButton(
+          AppButton.primary(
+            label: 'Save to Library',
             onPressed: _isSaving ? null : _saveStory,
-            child: _isSaving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Save to Library'),
           ),
         if (_storySaved)
           const Text(

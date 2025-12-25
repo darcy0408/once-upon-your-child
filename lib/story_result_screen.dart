@@ -21,6 +21,7 @@ import 'illustrated_story_viewer.dart';
 import 'coloring_book_service.dart';
 import 'coloring_book_library_screen.dart';
 import 'models.dart';
+import 'character_appearance_converter.dart';
 import 'therapeutic_focus_options.dart';
 import 'services/progression_service.dart';
 import 'services/achievement_service.dart';
@@ -99,6 +100,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   final TextEditingController _feedbackController = TextEditingController();
   bool _isFavorite = false;
   bool _isLoading = true;
+  Character? _character;
   List<StoryIllustration>? _cachedIllustrations;
   List<ColoringPage>? _cachedColoringPages;
   int? _characterAge;
@@ -299,6 +301,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         final character = Character.fromJson(data);
         if (!mounted) return;
         setState(() {
+          _character = character;
           _characterAge = character.age > 0 ? character.age : null;
         });
       } else {
@@ -662,7 +665,10 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
             widget.storyId ?? DateTime.now().millisecondsSinceEpoch.toString(),
         storyTitle: widget.title,
         scenes: scenes,
-        characterAppearance: null, // TODO: Hydrate from character appearance
+        characterAppearance: _character != null
+            ? CharacterAppearanceConverter.fromCharacter(_character!)
+            : null,
+        companions: _character?.pets,
         age: _effectiveAge,
         therapeuticFocus: therapeuticFocus,
       );
@@ -1100,7 +1106,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
@@ -1160,7 +1166,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                       // Settings Button
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(

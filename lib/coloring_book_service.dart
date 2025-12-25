@@ -70,6 +70,7 @@ class ColoringBookService {
     required String pageTitle,
     required String scene,
     CharacterAppearance? characterAppearance,
+    List<dynamic>? companions,
     String? originalIllustrationUrl,
     int age = 7,
     String? therapeuticFocus,
@@ -80,6 +81,8 @@ class ColoringBookService {
       characterName: characterAppearance?.characterName ?? 'the character',
       age: age,
       therapeuticFocus: therapeuticFocus,
+      characterAppearance: characterAppearance,
+      companions: companions,
     );
 
     return ColoringPage(
@@ -134,6 +137,8 @@ Style: Clean line art, coloring book page, black outlines on white background
     required String characterName,
     required int age,
     String? therapeuticFocus,
+    CharacterAppearance? characterAppearance,
+    List<dynamic>? companions,
   }) async {
     final response = await http.post(
       Uri.parse('${Environment.backendUrl}/generate-coloring-pages'),
@@ -146,6 +151,8 @@ Style: Clean line art, coloring book page, black outlines on white background
         'num_images': 1,
         'age': age,
         'therapeutic_focus': therapeuticFocus,
+        'character_appearance': characterAppearance?.toJson(),
+        'companions': companions,
       }),
     );
 
@@ -281,6 +288,7 @@ class GeminiColoringBookService extends ColoringBookService {
     required String storyTitle,
     required List<String> scenes,
     CharacterAppearance? characterAppearance,
+    List<dynamic>? companions,
     int age = 7,
     String? therapeuticFocus,
   }) async {
@@ -303,6 +311,8 @@ class GeminiColoringBookService extends ColoringBookService {
               'character_name': characterAppearance?.characterName ?? 'the character',
               'age': age,
               'therapeutic_focus': therapeuticFocus,
+              'character_appearance': characterAppearance?.toJson(),
+              'companions': companions,
             }),
           )
           .timeout(const Duration(seconds: 65));
@@ -345,6 +355,7 @@ class GeminiColoringBookService extends ColoringBookService {
     required String pageTitle,
     required String scene,
     CharacterAppearance? characterAppearance,
+    List<dynamic>? companions,
     String? originalIllustrationUrl,
     int age = 7,
     String? therapeuticFocus,
@@ -354,6 +365,7 @@ class GeminiColoringBookService extends ColoringBookService {
       storyTitle: pageTitle,
       scenes: [scene],
       characterAppearance: characterAppearance,
+      companions: companions,
       age: age,
       therapeuticFocus: therapeuticFocus,
     );
@@ -376,6 +388,7 @@ class MockColoringBookService extends ColoringBookService {
     required String pageTitle,
     required String scene,
     CharacterAppearance? characterAppearance,
+    List<dynamic>? companions,
     String? originalIllustrationUrl,
     int age = 7,
     String? therapeuticFocus,

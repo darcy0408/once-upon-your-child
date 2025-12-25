@@ -78,6 +78,17 @@ class InteractiveStoryService {
 
   static String get _baseUrl => Environment.backendUrl;
 
+  /// Test client for mocking HTTP requests in tests
+  static http.Client? _testClient;
+
+  /// Allow tests to inject a mock HTTP client
+  static void setTestClient(http.Client? client) {
+    _testClient = client;
+  }
+
+  /// Get the HTTP client to use (test client if set, otherwise default)
+  http.Client get _httpClient => _testClient ?? http.Client();
+
   /// Start a new interactive adventure story
   Future<StartStoryResponse> startInteractiveStory({
     required String userId,
@@ -91,7 +102,7 @@ class InteractiveStoryService {
     List<String>? avoid,
   }) async {
     final uri = Uri.parse('$_baseUrl/generate-interactive-story');
-    final response = await http
+    final response = await _httpClient
         .post(
           uri,
           headers: {'Content-Type': 'application/json'},
@@ -128,7 +139,7 @@ class InteractiveStoryService {
     required String choiceId,
   }) async {
     final uri = Uri.parse('$_baseUrl/continue-interactive-story');
-    final response = await http
+    final response = await _httpClient
         .post(
           uri,
           headers: {'Content-Type': 'application/json'},
@@ -154,7 +165,7 @@ class InteractiveStoryService {
   /// Get full story with all segments
   Future<InteractiveStoryData> getStory(String storyId) async {
     final uri = Uri.parse('$_baseUrl/interactive-story/$storyId');
-    final response = await http.get(uri).timeout(const Duration(seconds: 10));
+    final response = await _httpClient.get(uri).timeout(const Duration(seconds: 10));
 
     if (response.statusCode != 200) {
       final error = _parseError(response);
@@ -171,7 +182,7 @@ class InteractiveStoryService {
   /// Resume an in-progress story from current segment
   Future<ContinueStoryResponse> resumeStory(String storyId) async {
     final uri = Uri.parse('$_baseUrl/interactive-story/$storyId/resume');
-    final response = await http.get(uri).timeout(const Duration(seconds: 10));
+    final response = await _httpClient.get(uri).timeout(const Duration(seconds: 10));
 
     if (response.statusCode != 200) {
       final error = _parseError(response);
