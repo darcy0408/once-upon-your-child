@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -23,7 +24,7 @@ void main() {
         );
 
         // Wait for the widget to be built
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
 
         // Scroll to the create button at the bottom of the form
         final createButton = find.text('Create Character');
@@ -35,7 +36,7 @@ void main() {
 
         // Tap the create button without entering data
         await tester.tap(createButton);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
 
         // Required validators should trigger
         expect(find.text('Required'), findsWidgets);
@@ -80,7 +81,7 @@ class _FakeAvatarHttpRequest implements HttpClientRequest {
   final Uri uri;
 
   @override
-  final HttpHeaders headers = HttpHeaders();
+  final HttpHeaders headers = _FakeHttpHeaders();
 
   @override
   bool bufferOutput = false;
@@ -128,10 +129,67 @@ class _FakeAvatarHttpRequest implements HttpClientRequest {
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class _FakeHttpHeaders implements HttpHeaders {
+  @override
+  List<String>? operator [](String name) => null;
+  @override
+  String? value(String name) => null;
+  @override
+  void add(String name, Object value, {bool preserveHeaderCase = false}) {}
+  @override
+  void set(String name, Object value, {bool preserveHeaderCase = false}) {}
+  @override
+  void remove(String name, Object value) {}
+  @override
+  void removeAll(String name) {}
+  @override
+  void forEach(void Function(String name, List<String> values) action) {}
+  @override
+  void noFolding(String name) {}
+  @override
+  bool get persistentConnection => false;
+  @override
+  set persistentConnection(bool value) {}
+  @override
+  int get contentLength => 0;
+  @override
+  set contentLength(int value) {}
+  @override
+  bool get chunkedTransferEncoding => false;
+  @override
+  set chunkedTransferEncoding(bool value) {}
+  @override
+  ContentType? get contentType => null;
+  @override
+  set contentType(ContentType? value) {}
+  @override
+  DateTime? get date => null;
+  @override
+  set date(DateTime? value) {}
+  @override
+  DateTime? get expires => null;
+  @override
+  set expires(DateTime? value) {}
+  @override
+  DateTime? get ifModifiedSince => null;
+  @override
+  set ifModifiedSince(DateTime? value) {}
+  @override
+  String? get host => null;
+  @override
+  set host(String? value) {}
+  @override
+  int? get port => null;
+  @override
+  set port(int? value) {}
+  @override
+  void clear() {}
+}
+
 class _FakeAvatarHttpResponse extends Stream<List<int>> implements HttpClientResponse {
   _FakeAvatarHttpResponse(Uri uri)
-      : _bytes = uri.path.toLowerCase().endsWith('.svg')
-            ? utf8.encode('<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>')
+      : _bytes = (uri.path.toLowerCase().endsWith('.svg') || uri.path.toLowerCase().contains('/svg'))
+            ? utf8.encode('<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="red" /></svg>')
             : base64Decode(
                 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y5QKUkAAAAASUVORK5CYII=',
               );
@@ -157,10 +215,10 @@ class _FakeAvatarHttpResponse extends Stream<List<int>> implements HttpClientRes
   List<RedirectInfo> get redirects => const [];
 
   @override
-  CompressionState get compressionState => CompressionState.notCompressed;
+  HttpClientResponseCompressionState get compressionState => HttpClientResponseCompressionState.notCompressed;
 
   @override
-  HttpHeaders get headers => HttpHeaders();
+  HttpHeaders get headers => _FakeHttpHeaders();
 
   @override
   X509Certificate? get certificate => null;
@@ -173,6 +231,9 @@ class _FakeAvatarHttpResponse extends Stream<List<int>> implements HttpClientRes
 
   @override
   Future<Socket> detachSocket() => throw UnimplementedError();
+
+  @override
+  Future<HttpClientResponse> redirect([String? method, Uri? url, bool? followLoops]) => throw UnimplementedError();
 
   @override
   Future<bool> any(bool Function(List<int> element) test) => Stream<List<int>>.fromIterable([_bytes]).any(test);
