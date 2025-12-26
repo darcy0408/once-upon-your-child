@@ -343,7 +343,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                     (v) => setState(() => data.learningToReadMode = v),
                   ),
                   _buildSwitchTile(
-                    '🎮 Interactive Mode',
+                    '🎮 Pick-A-Path Adventure',
                     'Make choices as you go',
                     data.interactiveMode,
                     (v) => setState(() => data.interactiveMode = v),

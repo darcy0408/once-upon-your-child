@@ -974,7 +974,7 @@ class _StoryScreenState extends State<StoryScreen> {
               Card(
                 child: SwitchListTile(
                   title: const Text(
-                    'Interactive Story Mode',
+                    'Pick-A-Path Adventure',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: const Text(
@@ -1134,7 +1134,7 @@ class _StoryScreenState extends State<StoryScreen> {
                       elevation: 6,
                     ),
                     label: Text(_interactiveMode
-                        ? 'Start Interactive Story'
+                        ? 'Start Pick-A-Path Adventure'
                         : 'Make Magic'),
                   ),
                 ),
