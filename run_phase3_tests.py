@@ -3,10 +3,15 @@
 Automated Phase 3 Testing Suite for Story Weaver App
 Tests custom elements feature and core functionality
 """
+import sys
 import requests
 import json
 import time
 from datetime import datetime
+
+# Fix Windows console encoding for emoji support
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 # Configuration
 BACKEND_URL = "http://localhost:5000"
@@ -140,7 +145,7 @@ def test_custom_elements_multiple():
         response = requests.post(
             f"{BACKEND_URL}/generate-story",
             json=payload,
-            timeout=60
+            timeout=120  # Increased timeout for Gemini API
         )
         duration = int((time.time() - start) * 1000)
         
@@ -209,7 +214,7 @@ def test_empty_custom_elements():
         response = requests.post(
             f"{BACKEND_URL}/generate-story",
             json=payload,
-            timeout=60
+            timeout=120  # Increased timeout for Gemini API
         )
         duration = int((time.time() - start) * 1000)
         
@@ -254,7 +259,7 @@ def test_special_characters():
         response = requests.post(
             f"{BACKEND_URL}/generate-story",
             json=payload,
-            timeout=60
+            timeout=120  # Increased timeout for Gemini API
         )
         duration = int((time.time() - start) * 1000)
         
