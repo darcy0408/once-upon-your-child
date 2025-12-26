@@ -221,8 +221,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   @override
   void dispose() {
-    _pageController.dispose();
     _feedbackController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -1238,8 +1238,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                         Expanded(
                                           child: PageView.builder(
                                             controller: _pageController,
-                                            onPageChanged: _handlePageChanged,
                                             itemCount: _storyPages.length,
+                                            onPageChanged: _handlePageChanged,
                                             itemBuilder: (context, index) {
                                               return SingleChildScrollView(
                                                 padding: const EdgeInsets.all(32),
