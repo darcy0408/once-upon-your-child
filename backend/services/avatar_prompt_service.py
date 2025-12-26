@@ -156,6 +156,8 @@ OUTPUT: A beautiful, magical {style} portrait that makes {character_name} feel s
             appearance_parts.append(f"- Hair: {features['hair_style']}, {features['hair_color']} color")
         elif features.get('hair_style'):
             appearance_parts.append(f"- Hair: {features['hair_style']}")
+        if features.get('hair_details'):
+            appearance_parts.append(f"- Hair details: {features['hair_details']}")
 
         if features.get('skin_tone'):
             appearance_parts.append(f"- Skin tone: {features['skin_tone']}")
@@ -250,7 +252,7 @@ OUTPUT: A beautiful, magical {style} portrait that makes {character_name} feel s
         Args:
             character_name: Character name
             age: Character age
-            features: Feature dict with hair_style, skin_tone, outfit
+            features: Feature dict with hair_style, hair_details, skin_tone, outfit
 
         Returns:
             16-character hex seed for consistency
@@ -259,6 +261,7 @@ OUTPUT: A beautiful, magical {style} portrait that makes {character_name} feel s
             character_name.lower().strip(),
             str(age),
             features.get('hair_style', '').lower(),
+            features.get('hair_details', '').lower(),
             features.get('skin_tone', '').lower(),
             features.get('outfit', '').lower()
         ]

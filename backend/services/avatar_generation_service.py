@@ -60,7 +60,7 @@ class AvatarGenerationService:
             character_name: Character's name
             age: Character age (3-17)
             style: Art style (pixar|watercolor|cartoon|clay)
-            features: Dict with hair_style, hair_color, skin_tone, outfit, expression
+            features: Dict with hair_style, hair_details, hair_color, skin_tone, outfit, expression
             emotion_data: Dict with core, secondary, eye_type, mouth_type from feelings wheel
             seed: Optional seed for regeneration (for "re-roll" functionality)
 

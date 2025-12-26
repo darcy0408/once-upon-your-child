@@ -27,6 +27,7 @@ class AvatarCreatorOverlay extends StatefulWidget {
 
 class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
   final _avatarService = AvatarGenerationService();
+  final TextEditingController _hairDetailsController = TextEditingController();
 
   // Selected features
   String _selectedStyle = 'pixar';
@@ -92,6 +93,12 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
     'Wizard Robes',
     'Casual Outfit',
   ];
+
+  @override
+  void dispose() {
+    _hairDetailsController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -179,6 +186,8 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
           _buildDropdown('Hair Style', _selectedHairStyle, _hairStyles, (val) {
             setState(() => _selectedHairStyle = val!);
           }),
+          const SizedBox(height: 12),
+          _buildHairDetailsField(),
           const SizedBox(height: 20),
           _buildDropdown('Hair Color', _selectedHairColor, _hairColors, (val) {
             setState(() => _selectedHairColor = val!);
@@ -260,6 +269,62 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
         ),
       ],
     );
+  }
+
+  Widget _buildHairDetailsField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Hair details (optional)',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'If none of the styles fit, describe the hair here.',
+          style: TextStyle(fontSize: 12, color: Colors.black54),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _hairDetailsController,
+          maxLines: 2,
+          textInputAction: TextInputAction.newline,
+          decoration: InputDecoration(
+            hintText: 'Example: short twists with a side part',
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Colors.grey.shade500),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Map<String, String> _buildFeatures() {
+    final features = <String, String>{
+      'hair_style': _selectedHairStyle,
+      'hair_color': _selectedHairColor,
+      'skin_tone': _selectedSkinTone,
+      'outfit': _selectedOutfit,
+      'expression': 'Happy',
+    };
+    final hairDetails = _hairDetailsController.text.trim();
+    if (hairDetails.isNotEmpty) {
+      features['hair_details'] = hairDetails;
+    }
+    return features;
   }
 
   Widget _buildGeneratingState() {
@@ -410,13 +475,7 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
   /// Start avatar generation in background and close dialog
   Future<void> _generateAvatarAsync() async {
     debugPrint('🚀 Starting ASYNC avatar generation...');
-    final features = {
-      'hair_style': _selectedHairStyle,
-      'hair_color': _selectedHairColor,
-      'skin_tone': _selectedSkinTone,
-      'outfit': _selectedOutfit,
-      'expression': 'Happy',
-    };
+    final features = _buildFeatures();
 
     // Mark as generating in global state
     AvatarGenerationState().startGeneration();
@@ -458,13 +517,7 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
         characterName: widget.characterName,
         age: widget.age,
         style: _selectedStyle,
-        features: {
-          'hair_style': _selectedHairStyle,
-          'hair_color': _selectedHairColor,
-          'skin_tone': _selectedSkinTone,
-          'outfit': _selectedOutfit,
-          'expression': 'Happy',
-        },
+        features: _buildFeatures(),
       );
 
       debugPrint('✅ Avatar generated successfully!');
@@ -503,12 +556,7 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
         characterName: widget.characterName,
         age: widget.age,
         style: _selectedStyle,
-        features: {
-          'hair_style': _selectedHairStyle,
-          'hair_color': _selectedHairColor,
-          'skin_tone': _selectedSkinTone,
-          'outfit': _selectedOutfit,
-        },
+        features: _buildFeatures(),
       );
 
       debugPrint('✅ Avatar re-rolled successfully!');
