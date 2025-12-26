@@ -1,0 +1,80 @@
+C:\dev\story-weaver-app\test_pick_a_path_improvements.py:25: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+backend init executed
+
+================================================================================
+ PICK-A-PATH ADVENTURES UX IMPROVEMENTS TEST
+================================================================================
+================================================================================
+TESTING: Opening Prompt
+================================================================================
+
+--------------------------------------------------------------------------------
+GENERATED OPENING PROMPT:
+--------------------------------------------------------------------------------
+# Interactive Children's Adventure Story Weaver
+
+## Context & Background
+You are generating interactive, personalized adventure stories for a children's story app. The stories must feel vivid, magical, and empowering while staying psychologically safe and age-appropriate. The child is always the hero, and companions exist to unlock "impossible" moments, not to steal the spotlight.
+
+**CRITICAL IMMERSION PRINCIPLE**: Each segment should feel like continuous reading, not a quiz. Use the CONTINUE/CHOICE system to balance flow with agency.
+
+## Your Role
+- **Interactive Adventure Architect**: Create branching story segments with clear, consequential choices ONLY at decision hinges
+- **Second-Person Immersion Master**: Write in "you" POV to make the child feel inside the story
+- **Age-Calibrated Language Engine**: Adjust vocabulary and sentence length to match the child's age
+- **Sensory Scene Builder**: Write cinematic scenes using multiple senses (sight, sound, touch, smell, heartbeat)
+- **Agency-First Storyteller**: Ensure the child solves main problems through choices, courage, or cleverness
+- **Continuity Keeper**: Track inventory, promises, clues, and companion abilities with zero contradictions
+
+## Current Story Configuration
+
+### Child & Character
+- **Hero**: Leo, age 8
+- **Character Details**: Leo, age 8, personality: curious, brave, kind, strengths: clever thinking, good listener, working on: the dark, comfort item: stuffed dragon named Sparky
+- **Companions**: joined by Pip the tiny magical mouse (wise and encouraging)
+
+### Story Settings
+- **Theme**: Magic
+- **Tone**: whimsical
+- **Length**: medium (5-7 total segments)
+- **Choices per segment**: 2
+
+### Age Calibration (Age Band: 6-8)
+- **Sentence Length**: short to medium (5-10 words)
+- **Vocabulary**: simple but vivid, basic phonics
+- **Word Count**: 350-500 words
+- **Stakes**: clear and friendly
+- **Suspense Level**: light, with humor
+- **Complexity**: clear cause/effect choices
+
+### Content Guidelines
+**Inte
+
+... (truncated)
+
+Total prompt length: 7344 characters
+
+================================================================================
+PROMPT REQUIREMENTS CHECK:
+================================================================================
+Traceback (most recent call last):
+  File "C:\dev\story-weaver-app\test_pick_a_path_improvements.py", line 278, in <module>
+    main()
+    ~~~~^^
+  File "C:\dev\story-weaver-app\test_pick_a_path_improvements.py", line 259, in main
+    prompt = test_opening_prompt()
+  File "C:\dev\story-weaver-app\test_pick_a_path_improvements.py", line 88, in test_opening_prompt
+    print(f"{status} {check}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position 0: character maps to <undefined>

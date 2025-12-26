@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 
 # Configuration
-BACKEND_URL = "http://127.0.0.1:5000"
+BACKEND_URL = "http://localhost:5000"
 TEST_RESULTS = {
     "date": datetime.now().isoformat(),
     "tester": "Automated Test Script",
