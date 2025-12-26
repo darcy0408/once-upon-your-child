@@ -1,0 +1,60 @@
+{
+  "date": "2025-12-26T11:21:59.113168",
+  "tester": "Automated Test Script",
+  "tests": [
+    {
+      "name": "Backend Health",
+      "status": "PASS",
+      "details": "Status: ok, Database: ok",
+      "duration_ms": 2256
+    },
+    {
+      "name": "Custom Elements - Simple",
+      "status": "FAIL",
+      "details": "Status code: 500",
+      "duration_ms": 7356
+    },
+    {
+      "name": "Custom Elements - Multiple",
+      "status": "PARTIAL",
+      "details": "Dragon: False, Key/Magic: True",
+      "duration_ms": 16120
+    },
+    {
+      "name": "Empty Custom Elements",
+      "status": "FAIL",
+      "details": "Exception: HTTPConnectionPool(host='localhost', port=5000): Read timed out. (read timeout=60)",
+      "duration_ms": 0
+    },
+    {
+      "name": "Special Characters",
+      "status": "FAIL",
+      "details": "Exception: HTTPConnectionPool(host='localhost', port=5000): Read timed out. (read timeout=60)",
+      "duration_ms": 0
+    },
+    {
+      "name": "Story Length - QUICK",
+      "status": "FAIL",
+      "details": "Exception: HTTPConnectionPool(host='localhost', port=5000): Read timed out. (read timeout=60)",
+      "duration_ms": 0
+    },
+    {
+      "name": "Story Length - STANDARD",
+      "status": "FAIL",
+      "details": "Exception: HTTPConnectionPool(host='localhost', port=5000): Read timed out. (read timeout=60)",
+      "duration_ms": 0
+    },
+    {
+      "name": "Story Length - EPIC",
+      "status": "FAIL",
+      "details": "Exception: HTTPConnectionPool(host='localhost', port=5000): Read timed out. (read timeout=60)",
+      "duration_ms": 0
+    }
+  ],
+  "summary": {
+    "total_tests": 8,
+    "passed": 2,
+    "failed": 6,
+    "success_rate": "25.0%"
+  }
+}
