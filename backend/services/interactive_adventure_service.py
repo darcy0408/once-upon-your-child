@@ -257,8 +257,9 @@ class InteractiveAdventureService:
         if story.is_completed:
             raise ValueError(f"Story {story_id} is already completed")
 
-        # Handle special "continue" choice ID (for segments with output_type="continue")
-        if choice_id == "continue":
+        # Handle special "continue" choice ID (for segments with output_type="CONTINUE")
+        normalized_choice_id = (choice_id or "").strip().lower()
+        if normalized_choice_id == "continue":
             logger.info("Processing CONTINUE segment (no choice required)")
             selected_choice_text = "Continue the adventure"
             parent_choice_id = None
