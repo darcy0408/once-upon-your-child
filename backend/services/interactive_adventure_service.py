@@ -423,12 +423,24 @@ class InteractiveAdventureService:
         parent_choice_id: Optional[str]
     ) -> StorySegment:
         """Create StorySegment database record"""
+        content = segment_data.get('content', '')
+
+        # Calculate word count if not provided
+        word_count = segment_data.get('word_count')
+        if not word_count and content:
+            word_count = len(content.split())
+
+        # Get output_type (defaults to CHOICE for backward compatibility)
+        output_type = segment_data.get('output_type', 'CHOICE')
+
         return StorySegment(
             id=str(uuid.uuid4()),
             story_id=story_id,
             segment_number=segment_number,
             title=segment_data.get('title'),
-            content=segment_data.get('content'),
+            output_type=output_type,
+            word_count=word_count,
+            content=content,
             image_description=segment_data.get('image_description'),
             parent_choice_id=parent_choice_id
         )

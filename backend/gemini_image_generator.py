@@ -25,8 +25,8 @@ class GeminiImageGenerator:
 
             genai.configure(api_key=self.api_key)
             self.genai = genai
-            # Use Gemini 2.0 Flash Image Generation - Experimental model for image generation
-            self.image_model = genai.GenerativeModel("gemini-2.0-flash-exp-image-generation")
+            # Use Gemini 2.0 Flash - Experimental model
+            self.image_model = genai.GenerativeModel("gemini-2.0-flash-exp")
 
     def _ensure_model(self):
         if not self.image_model or not self.genai:

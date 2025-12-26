@@ -82,8 +82,12 @@ class StorySegment(db.Model):
     segment_number = db.Column(db.Integer, nullable=False)  # Sequential number (1, 2, 3...)
     title = db.Column(db.String(200), nullable=True)  # Optional segment title
 
+    # Output type: CONTINUE (no choices, reader clicks continue) or CHOICE (decision point)
+    output_type = db.Column(db.String(20), nullable=False, default='CHOICE')
+    word_count = db.Column(db.Integer, nullable=True)  # Actual word count for pacing tracking
+
     # Content
-    content = db.Column(db.Text, nullable=False)  # Story prose (150-280 words)
+    content = db.Column(db.Text, nullable=False)  # Story prose (now 350-650 words for immersion)
     image_description = db.Column(db.Text, nullable=True)  # Description for illustration generation
     image_url = db.Column(db.String(500), nullable=True)  # Base64 data URI or URL
 
@@ -105,6 +109,8 @@ class StorySegment(db.Model):
             'id': self.id,
             'segment_number': self.segment_number,
             'title': self.title,
+            'output_type': self.output_type,
+            'word_count': self.word_count,
             'content': self.content,
             'image_description': self.image_description,
             'image_url': self.image_url,
