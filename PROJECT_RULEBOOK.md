@@ -1,140 +1,489 @@
-# PROJECT_RULEBOOK.md - Story Weaver App Agent Guidelines
+# Project Rulebook - Story Weaver App
 
-## Overview
-This rulebook contains all essential information for AI agents working on the Story Weaver therapeutic storytelling application. Read and internalize this entire document before starting any task. Follow all guidelines strictly to maintain project quality, safety, and synchronization.
+**READ THIS FIRST when starting any task in this project!**
 
-## Project Context
-**App Name:** Story Weaver  
-**Purpose:** Therapeutic AI storytelling for children (ages 3-17+) with emotional learning features  
-**Tech Stack:** Frontend: Flutter/Dart (web, mobile, desktop), Backend: Python/Flask + PostgreSQL, AI: Google Gemini  
-**Deployment:** Netlify (frontend), Railway (backend)  
-**Key Features:** Character creation, feelings wheel, emotion recognition, coping strategies, subscription management  
+This document contains critical rules and cost-saving practices that ALL agents and developers must follow.
 
-## Core Responsibilities
-1. **Git Synchronization:** Follow the Master Git Automation workflow exactly
-2. **Team Coordination:** Update TEAM_COORDINATION.md with all progress, blockers, and completions
-3. **Quality Standards:** Adhere to code style guidelines and therapeutic safety protocols
-4. **Testing:** Run appropriate tests and ensure they pass before marking tasks complete
+---
 
-## Master Git Automation & Persistence Manager
+## 🚨 CRITICAL COST-SAVING RULE #1: ALWAYS USE MOCK MODE FOR TESTING
 
-### Context & Background
-You are the centralized Version Control Authority for this project. The environment consists of a user operating AI agents that generate code locally, requiring a streamlined, fail-safe Git workflow. You must maintain perfect, direct synchronization with the remote main branch to prevent data loss. The user forbids the use of Pull Requests and requires all successful commits to be clearly timestamped.
+### Before Running ANY Tests:
 
-### Core Role & Capabilities
-- Full-Cycle Git Automation: Manages the entire Git flow from session start to completion push.
-- Data Loss Prevention Specialist: Ensures local work is secured immediately and prioritized during conflict resolution.
-- Timestamp Logger: Automatically integrates the current YYYY-MM-DD HH:MM:SS stamp into all relevant commit messages and final reports.
-- Workflow Enforcer: Strictly adheres to the "No Pull Request, Direct-to-Main" policy.
+**ALWAYS check and enable mock mode first:**
 
-### Technical Configuration
-- Target Branch: main (Strictly enforced).
-- Git Strategy: --strategy-option=ours for automated conflict resolution (favors local changes).
-- Timestamp Utility: Utilize system time functions (e.g., date +%F\ %T).
+```bash
+# Windows Command Prompt:
+set MOCK_TESTING_MODE=true
 
-### Operational Guidelines
-1. [START OF TASK] Initialization: Before generating or modifying any code, execute: git status -> git stash (if needed) -> git pull origin main -> git stash pop (if stashed).
-2. [TASK COMPLETE] Synchronization: Execute: git add . -> git commit -m "[AGENT SYNC | YYYY-MM-DD HH:MM:SS] <Task Summary>" -> git pull origin main --strategy-option=ours --no-edit -> git push origin main.
-3. [ERROR/TIMEOUT] Maintenance: If synchronization fails, retry the Synchronization sequence exactly one time.
+# Windows PowerShell:
+$env:MOCK_TESTING_MODE = "true"
 
-### Output Specifications
-- Completion Status: All successful synchronization actions must end with: "✅ Repository Synced. Timestamp: YYYY-MM-DD HH:MM:SS."
-- Log Detail: Output the full command log and the final commit hash pushed to the remote.
-- Format: Use Code Blocks for all shell commands and outputs.
+# Then verify it's enabled:
+echo %MOCK_TESTING_MODE%  # Should show: true
+```
 
-### Advanced Features
-- Smart Stashing: Only apply git stash if git status reveals unstaged or uncommitted changes during Initialization.
-- Commit Message Generation: If unsure of <Task Summary>, default to "Automated Code Update" but never skip the timestamp.
+### Why This Matters:
+- Mock mode = $0.00 cost
+- Real API = ~$0.0034 per story
+- Running 100 tests in mock = $0.00
+- Running 100 tests in real API = $0.34
 
-### Error Handling
-- Conflict Resolution: If a merge conflict persists, halt and report: "⚠️ Manual Merge Required. Local files preserved."
-- Rejected Push: Automatically retry Synchronization once.
-- Authentication Failure: Stop and prompt for credentials.
-- Detached HEAD: Switch to main branch.
+**NEVER run tests without checking mock mode first!**
 
-### Quality Controls
-- Status Check: Final state must show clean working tree.
-- History Check: Local HEAD matches or is descendant of remote HEAD.
+---
 
-### Safety Protocols
-- Force Push Ban: Never use git push --force.
-- Data Security: Do not commit .env, API keys, or credential files.
-- Branch Policy: All operations target main branch.
+## 🔧 Current Setup (As of 2025-12-26)
 
-## Team Coordination Protocol
+### API Configuration:
+- **API Key**: `story_weaver_backend` (Tier 1 with billing enabled)
+- **Current Model**: `gemini-2.0-flash-exp` ⚠️ **SHOULD BE CHANGED**
+- **Recommended Model**: `gemini-2.5-flash` (stable, better quotas)
+- **Location**: `backend/.env` and `backend/config/__init__.py` line 23
 
-### TEAM_COORDINATION.md Updates
-- **Required:** Update TEAM_COORDINATION.md after every major action, completion, or blocker.
-- **Format:** Use dated entries with agent name, e.g., "- 2025-11-18 · [Agent Name] → Team: [Update]"
-- **Content:** Include task status, blockers, next steps, file changes.
-- **Frequency:** Daily updates at minimum, immediately for blockers.
+### Known Issues:
+1. **Quota Issue**: Using experimental model with free-tier limits even on Tier 1
+2. **Solution**: Switch to `gemini-2.5-flash` in `backend/config/__init__.py` line 23
 
-### Communication Guidelines
-- Tag other agents when dependencies exist: @[Agent Name]
-- Use clear, actionable language.
-- Document decisions and rationale.
-- Escalate blockers within 4 hours.
+---
 
-## Build/Lint/Test Commands
+## 📋 AGENT TASK CHECKLIST
 
-### Flutter (Frontend)
-- **Build:** flutter pub get, flutter build web --release
-- **Run:** flutter run -d chrome
-- **Test:** flutter test (all), flutter test test/story_complexity_service_test.dart (single)
-- **Lint:** flutter analyze
+When starting ANY task, follow these steps:
 
-### Python Backend
-- **Install:** cd backend && pip install -r requirements.txt
-- **Run:** cd backend && python app.py
-- **Test:** cd backend && python -m pytest tests/
+### Step 1: Read Current Mode
+```bash
+# Check if mock mode is enabled
+echo %MOCK_TESTING_MODE%
 
-## Code Style Guidelines
+# Or check via API (if backend running)
+curl http://localhost:5000/usage/mock-mode
+```
 
-### Dart/Flutter
-- **Imports:** Group by type (dart:*, package:*, relative), blank line between groups
-- **Naming:** camelCase for variables/functions, PascalCase for classes, UPPER_SNAKE for constants
-- **Types:** Use explicit types, prefer final for immutables, nullable with ?
-- **Async:** Use async/await, handle errors with try/catch
-- **Formatting:** Follow flutter_lints (analysis_options.yaml)
+### Step 2: Enable Mock Mode for Testing
+```bash
+# ALWAYS set this before testing
+set MOCK_TESTING_MODE=true
 
-### Python Backend
-- **Imports:** Standard library first, then third-party, then local (blank lines between)
-- **Naming:** snake_case for variables/functions, PascalCase for classes
-- **Types:** Use type hints where possible
-- **Error Handling:** Use try/except with specific exceptions, log with logging module
+# Add to .env for persistence (optional)
+echo MOCK_TESTING_MODE=true >> backend\.env
+```
 
-## Therapeutic Safety Protocols
+### Step 3: Verify Backend is Running
+```bash
+# Check backend health
+curl http://localhost:5000/health
 
-### Child Safety is Non-Negotiable
-- **COPPA Compliance:** Parental consent required, no personal data collection from children <13
-- **Content Filtering:** All stories must be age-appropriate
-- **Emotional Safety:** Stories should be therapeutic, not triggering
+# If not running, start it:
+# python backend/app.py
+```
 
-### Therapeutic Features to Protect
-1. Character Evolution System - Tracks emotional growth across 5 stages
-2. Emotion Recognition - Interactive games for identifying emotions
-3. Coping Strategies - 8 types of coping skills (breathing, grounding, etc.)
-4. Feelings Wheel - 3-level hierarchy for emotion identification
+### Step 4: Run Your Tests (Now FREE!)
+```bash
+# Run phase 3 tests
+python run_phase3_tests.py
 
-### When Reviewing Code/Features
-- Is this age-appropriate for the target user?
-- Does this support emotional learning?
-- Could this trigger anxiety or distress?
-- Is the vocabulary suitable for the child's age?
+# You should see:
+# MOCK TESTING MODE: ENABLED ✅ (FREE)
+# Cost per test: $0.00
+```
 
-## File Structure Key Directories
-- `lib/` - Flutter frontend code
-- `backend/` - Python Flask backend
-- `test/` - Flutter tests
-- `backend/tests/` - Python tests
-- `TEAM_COORDINATION.md` - Live project status
-- `AGENTS.md` - This rulebook reference
+### Step 5: Check Usage After Testing
+```bash
+# View usage summary
+curl http://localhost:5000/usage/summary?days=1
 
-## Final Instructions
-- **Read this file first** before any task.
-- **Follow Git workflow** for all changes.
-- **Update coordination** after every action.
-- **Maintain quality** and safety standards.
-- **Communicate clearly** with other agents.
+# Should show mock calls with $0.00 cost
+```
 
-**Last Updated:** 2025-11-18
+---
+
+## 🎯 WHEN TO USE MOCK vs REAL API
+
+### ✅ ALWAYS Use Mock Mode For:
+- **Development**: Writing new code, debugging, refactoring
+- **Unit Tests**: Testing individual functions/components
+- **Integration Tests**: Testing how components work together
+- **Regression Tests**: Verifying old features still work
+- **CI/CD**: Automated test runs
+- **Learning**: Exploring how the system works
+- **Debugging**: Investigating issues
+- **Performance Tests**: Load testing, stress testing
+
+### ❌ ONLY Use Real API For:
+- **Final Validation**: 1-2 tests before production deploy
+- **Quality Check**: Verify AI responses meet standards
+- **User Acceptance**: Show real results to stakeholders
+- **Production Bugs**: Reproduce issues that only occur with real API
+
+### Rule of Thumb:
+**Default to Mock Mode. Only disable for specific, justified reasons.**
+
+---
+
+## 🔄 HOW TO SWITCH MODES
+
+### Enable Mock Mode (FREE):
+```bash
+set MOCK_TESTING_MODE=true
+python run_phase3_tests.py
+```
+
+### Disable Mock Mode (COSTS MONEY):
+```bash
+set MOCK_TESTING_MODE=false
+python run_phase3_tests.py
+```
+
+### Persistent Configuration:
+Add to `backend/.env`:
+```bash
+# For development (recommended)
+MOCK_TESTING_MODE=true
+
+# For production
+# MOCK_TESTING_MODE=false
+```
+
+---
+
+## 📊 AVAILABLE ENDPOINTS
+
+### Story Generation:
+- **Mock**: `POST /generate-story-mock` (instant, free)
+- **Real**: `POST /generate-story` (12s, ~$0.0034)
+
+### Avatar Generation:
+- **Mock**: `POST /avatar/generate-avatar-mock` (instant, free)
+- **Real**: `POST /avatar/generate-avatar` (8s, ~$0.0002)
+
+### Illustrations:
+- **Mock**: `POST /generate-illustrations-mock` (instant, free)
+- **Real**: `POST /generate-illustrations` (10s, ~$0.0002)
+
+### Coloring Pages:
+- **Mock**: `POST /generate-coloring-pages-mock` (instant, free)
+- **Real**: `POST /generate-coloring-pages` (10s, ~$0.0002)
+
+### Usage Tracking:
+- `GET /usage/summary?days=30` - View usage stats
+- `GET /usage/daily?days=7` - Daily breakdown
+- `GET /usage/mock-mode` - Check current mode
+
+---
+
+## 🧪 TESTING WORKFLOWS
+
+### Development Workflow (Default):
+```bash
+# 1. Enable mock mode
+set MOCK_TESTING_MODE=true
+
+# 2. Make your code changes
+# ... edit files ...
+
+# 3. Run tests (unlimited, free!)
+python run_phase3_tests.py
+flutter test
+pytest backend/tests/
+
+# 4. Verify with manual testing
+flutter run -d chrome
+
+# 5. Check usage (should be $0.00)
+curl http://localhost:5000/usage/summary
+
+# Total Cost: $0.00
+```
+
+### Pre-Deploy Workflow:
+```bash
+# 1. Run full test suite in mock mode
+set MOCK_TESTING_MODE=true
+python run_phase3_tests.py
+
+# 2. If all pass, run 2-3 real API tests for validation
+set MOCK_TESTING_MODE=false
+python -c "import requests; print(requests.post('http://localhost:5000/generate-story', json={'character': 'Test', 'age': 8, 'theme': 'Adventure'}).json())"
+
+# 3. Check usage
+curl http://localhost:5000/usage/summary
+
+# Total Cost: ~$0.01 (1 cent)
+```
+
+---
+
+## 💰 COST MONITORING
+
+### Check Your Usage:
+```bash
+# Last 7 days
+curl http://localhost:5000/usage/summary?days=7
+
+# Last 30 days
+curl http://localhost:5000/usage/summary?days=30
+
+# Daily breakdown
+curl http://localhost:5000/usage/daily?days=7
+```
+
+### Usage File Location:
+- **Path**: `backend/usage_data.json`
+- **Format**: JSON with all API calls
+- **Retention**: Keep 90 days by default
+
+### Cost Estimation:
+The tracking service automatically estimates costs based on:
+- Gemini 2.5 Flash pricing
+- Token counts (actual or estimated)
+- Input: $0.30 per 1M tokens
+- Output: $2.50 per 1M tokens
+
+---
+
+## 🚨 EMERGENCY PROCEDURES
+
+### If You Accidentally Run Real API Tests:
+
+1. **Stop immediately**:
+   ```bash
+   # Press Ctrl+C to stop tests
+   ```
+
+2. **Check damage**:
+   ```bash
+   curl http://localhost:5000/usage/summary?days=1
+   ```
+
+3. **Re-enable mock mode**:
+   ```bash
+   set MOCK_TESTING_MODE=true
+   ```
+
+4. **Document what happened**:
+   - How many calls were made?
+   - What was the cost?
+   - Why did it happen?
+
+### If You Hit Quota Limits:
+
+1. **Switch to mock mode immediately**:
+   ```bash
+   set MOCK_TESTING_MODE=true
+   ```
+
+2. **Fix the model issue** (if using experimental):
+   - Edit `backend/config/__init__.py` line 23
+   - Change to `gemini-2.5-flash`
+   - Restart backend
+
+3. **Wait for quota reset**:
+   - Per minute: Wait 60 seconds
+   - Per day: Wait until midnight UTC
+
+---
+
+## 📝 AGENT RESPONSIBILITIES
+
+### Before Starting Any Task:
+
+1. ✅ Read this rulebook
+2. ✅ Check current mock mode status
+3. ✅ Enable mock mode if doing testing
+4. ✅ Verify backend is running
+5. ✅ Check usage before and after work
+
+### When Writing Code:
+
+1. ✅ Add new features with mock endpoints in mind
+2. ✅ Test with mock mode first
+3. ✅ Only test with real API if absolutely necessary
+4. ✅ Document any real API usage in commit messages
+
+### When Committing:
+
+Include in commit message if you used real API:
+```
+feat: Add new story feature
+
+Tested with mock mode: Yes
+Real API tests run: 3 (cost: ~$0.01)
+Reason for real API: Verify AI response quality
+```
+
+### When Reporting Back to User:
+
+Always mention:
+- Whether you used mock or real API
+- How many tests were run
+- Estimated cost (if any)
+
+Example:
+```
+I've completed the task! Here's what I did:
+- Ran 50 tests in MOCK MODE (cost: $0.00)
+- Ran 2 final tests in REAL API mode (cost: ~$0.007)
+- Total estimated cost: $0.007
+```
+
+---
+
+## 🔧 BACKEND RESTART PROCEDURE
+
+### When Backend Needs Restart:
+
+**After changing code, .env, or config:**
+
+```bash
+# 1. Stop current backend
+# Press Ctrl+C in backend terminal
+
+# 2. Verify it stopped
+# Check terminal for "Shutting down..." message
+
+# 3. Restart backend
+python backend/app.py
+
+# 4. Verify it started
+curl http://localhost:5000/health
+
+# 5. Check mock mode status
+curl http://localhost:5000/usage/mock-mode
+```
+
+### After Restart, Verify:
+- Backend health endpoint responds
+- Mock mode configuration loaded correctly
+- All routes registered (avatar, story, usage, etc.)
+
+---
+
+## 📚 KEY FILES TO KNOW
+
+### Configuration:
+- `backend/.env` - Environment variables (MOCK_TESTING_MODE, GEMINI_API_KEY)
+- `backend/config/__init__.py` - Main config (line 23 has model name)
+
+### Testing:
+- `run_phase3_tests.py` - Auto-switching test script
+- `test_mock_endpoints.py` - Test all mock endpoints (local only)
+
+### Documentation:
+- `COMPLETE_TESTING_SETUP_GUIDE.md` - Full setup instructions
+- `MOCK_TESTING_GUIDE.md` - Mock testing details
+- `IMPLEMENTATION_SUMMARY.md` - Recent changes summary
+- `PROJECT_RULEBOOK.md` - THIS FILE
+
+### Endpoints:
+- `backend/routes/story_routes.py` - Story & illustration endpoints
+- `backend/routes/avatar_routes.py` - Avatar endpoints
+- `backend/routes/utility_routes.py` - Usage tracking endpoints
+
+### Services:
+- `backend/services/usage_tracking_service.py` - Usage tracking logic
+- `backend/services/story_service.py` - Story generation
+- `backend/services/avatar_generation_service.py` - Avatar generation
+
+---
+
+## ⚙️ RECOMMENDED CONFIGURATION
+
+### For Development (Current State):
+```bash
+# backend/.env
+MOCK_TESTING_MODE=true
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_API_KEY=REDACTED-ROTATED-KEY
+```
+
+### For Production:
+```bash
+# backend/.env
+MOCK_TESTING_MODE=false
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_API_KEY=REDACTED-ROTATED-KEY
+```
+
+---
+
+## 🎓 QUICK REFERENCE COMMANDS
+
+### Essential Commands:
+
+```bash
+# Check mock mode
+curl http://localhost:5000/usage/mock-mode
+
+# Enable mock mode
+set MOCK_TESTING_MODE=true
+
+# Disable mock mode
+set MOCK_TESTING_MODE=false
+
+# Run tests
+python run_phase3_tests.py
+
+# Check usage
+curl http://localhost:5000/usage/summary
+
+# Test mock endpoints
+python test_mock_endpoints.py
+
+# Restart backend
+python backend/app.py
+
+# Check backend health
+curl http://localhost:5000/health
+```
+
+---
+
+## ✅ PRE-TASK CHECKLIST (Copy This!)
+
+```
+Before starting task:
+[ ] Read PROJECT_RULEBOOK.md
+[ ] Check mock mode: curl http://localhost:5000/usage/mock-mode
+[ ] Enable mock mode: set MOCK_TESTING_MODE=true
+[ ] Verify backend running: curl http://localhost:5000/health
+[ ] Check current usage: curl http://localhost:5000/usage/summary
+
+After completing task:
+[ ] Run tests in mock mode
+[ ] Check usage: curl http://localhost:5000/usage/summary
+[ ] Report cost to user
+[ ] Commit changes with cost info
+```
+
+---
+
+## 🎯 SUMMARY FOR AGENTS
+
+**Three Golden Rules:**
+
+1. **ALWAYS use mock mode by default** (`set MOCK_TESTING_MODE=true`)
+2. **ONLY use real API when absolutely necessary** (2-3 final validation tests)
+3. **ALWAYS check and report costs** (`curl http://localhost:5000/usage/summary`)
+
+**Remember:**
+- Mock mode = FREE, instant, unlimited
+- Real API = Costs money, slower, has quotas
+- When in doubt, use mock mode!
+
+---
+
+**Last Updated**: 2025-12-26
+**Rulebook Version**: 1.0
+**Applies To**: All agents, developers, and CI/CD systems
+
+---
+
+## 📞 Need Help?
+
+- Check `COMPLETE_TESTING_SETUP_GUIDE.md` for full setup
+- Check `IMPLEMENTATION_SUMMARY.md` for recent changes
+- Check backend logs in terminal for errors
+- Check `backend/usage_data.json` for detailed usage history
+
+**When in doubt: Use mock mode!** 🎯
