@@ -32,6 +32,7 @@ class MagicReviewStep extends StatefulWidget {
 class _MagicReviewStepState extends State<MagicReviewStep> {
   bool _isGenerating = false;
   bool _isSaving = false;
+  String _loadingStatus = 'Making magic...';
 
   void _launchStoryCreation() async {
     debugPrint('🎯 MagicReviewStep: _launchStoryCreation called');
@@ -111,7 +112,11 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
           learningToReadMode: widget.wizardData.learningToReadMode,
           companionPets: requestData['companion_pets'],
           companionCharacters: requestData['companion_characters'],
+
           storyLength: requestData['storyLength'] ?? 'standard',
+          onProgress: (status) {
+            if (mounted) setState(() => _loadingStatus = status);
+          },
         );
         debugPrint('✨ Story generation complete: ${result.storyText.substring(0, 100)}...');
 
@@ -645,8 +650,21 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             // Big "Make Magic" button
             Center(
               child: _isGenerating
-                  ? const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation(AppColors.primary),
+                  ? Column(
+                      children: [
+                        const CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation(AppColors.primary),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _loadingStatus,
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontStyle: FontStyle.italic,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     )
                   : MakeMagicButton(
                       onTap: _launchStoryCreation,

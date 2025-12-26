@@ -229,6 +229,7 @@ class ApiServiceManager {
     List<Map<String, dynamic>>? companionPets,
     List<dynamic>? companionCharacters,
     String storyLength = 'standard',
+    void Function(String)? onProgress,
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
     final userId = await UserIdentityService.getOrCreateUserId();
@@ -263,6 +264,7 @@ class ApiServiceManager {
         companionPets: companionPets,
         companionCharacters: companionCharacters,
         storyLength: storyLength,
+        onProgress: onProgress,
       );
     }
 
@@ -412,7 +414,9 @@ class ApiServiceManager {
     required Duration requestTimeout,
     List<Map<String, dynamic>>? companionPets,
     List<dynamic>? companionCharacters,
+
     required String storyLength,
+    void Function(String)? onProgress,
   }) async {
     var attempts = 0;
     var delay = initialDelay;
@@ -439,6 +443,7 @@ class ApiServiceManager {
           companionPets: companionPets,
           companionCharacters: companionCharacters,
           storyLength: storyLength,
+          onProgress: onProgress,
         );
       } catch (error, stackTrace) {
         attempts++;
@@ -472,7 +477,9 @@ class ApiServiceManager {
     required Duration requestTimeout,
     List<Map<String, dynamic>>? companionPets,
     List<dynamic>? companionCharacters,
+
     required String storyLength,
+    void Function(String)? onProgress,
   }) async {
     final httpClient = client ?? _testClient ?? http.Client();
     final generateUri = Uri.parse('$_localBackendUrl/generate-story');
@@ -542,6 +549,17 @@ class ApiServiceManager {
       final stopwatch = Stopwatch()..start();
 
       while (stopwatch.elapsed < requestTimeout) {
+        
+        // Progress feedback
+        if (onProgress != null) {
+          final elapsedSec = stopwatch.elapsed.inSeconds;
+          if (elapsedSec < 3) onProgress('Gathering stardust...');
+          else if (elapsedSec < 8) onProgress('Summoning characters...');
+          else if (elapsedSec < 15) onProgress('Weaving magic words...');
+          else if (elapsedSec < 25) onProgress('Adding sparkle...');
+          else onProgress('Almost ready...');
+        }
+
         await Future.delayed(pollInterval);
 
         final statusResponse = await httpClient.get(statusUri);

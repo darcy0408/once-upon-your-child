@@ -216,15 +216,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 
   void _showAvatarCreator() {
     // Validate that character name is not empty
+    // If name is empty, set a placeholder so child can see magic immediately
     if (widget.wizardData.characterName.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter your hero\'s name first!'),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
+      setState(() {
+        _nameController.text = 'Hero';
+        widget.wizardData.characterName = 'Hero';
+      });
     }
 
     debugPrint('🎨 Opening avatar creator for ${widget.wizardData.characterName}');

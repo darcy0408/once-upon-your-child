@@ -477,6 +477,8 @@ class StorySegmentData {
   final String id;
   final int segmentNumber;
   final String? title;
+  final String outputType;  // 'CONTINUE' or 'CHOICE'
+  final int? wordCount;
   final String content;
   final String? imageDescription;
   final String? imageUrl;
@@ -487,6 +489,8 @@ class StorySegmentData {
     required this.id,
     required this.segmentNumber,
     this.title,
+    this.outputType = 'CHOICE',  // Default to CHOICE for backward compatibility
+    this.wordCount,
     required this.content,
     this.imageDescription,
     this.imageUrl,
@@ -494,11 +498,19 @@ class StorySegmentData {
     this.createdAt,
   });
 
+  /// Check if this segment requires a choice (vs just Continue button)
+  bool get requiresChoice => outputType == 'CHOICE' && choices.isNotEmpty;
+
+  /// Check if this segment is a continuation (no choices, just Continue)
+  bool get isContinuation => outputType == 'CONTINUE' || choices.isEmpty;
+
   factory StorySegmentData.fromJson(Map<String, dynamic> json) {
     return StorySegmentData(
       id: json['id'] ?? '',
       segmentNumber: json['segment_number'] ?? 1,
       title: json['title'],
+      outputType: json['output_type'] ?? 'CHOICE',
+      wordCount: json['word_count'],
       content: json['content'] ?? '',
       imageDescription: json['image_description'],
       imageUrl: json['image_url'],
@@ -516,6 +528,8 @@ class StorySegmentData {
         'id': id,
         'segment_number': segmentNumber,
         if (title != null) 'title': title,
+        'output_type': outputType,
+        if (wordCount != null) 'word_count': wordCount,
         'content': content,
         if (imageDescription != null) 'image_description': imageDescription,
         if (imageUrl != null) 'image_url': imageUrl,

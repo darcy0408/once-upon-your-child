@@ -69,19 +69,30 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
 
     _tts.setProgressHandler((text, start, end, word) {
       if (!mounted) return;
-      final normalizedWord = _normalize(word);
-      if (normalizedWord.isEmpty) return;
+      if (word.trim().isEmpty) return;
+
+      // Create regex for word boundary matching
+      final wordRegex = RegExp(r'\b' + RegExp.escape(word) + r'\b', caseSensitive: false);
+      final wordNormalized = _normalize(word);
 
       for (var nextIndex = _currentWordIndex + 1;
           nextIndex < _wordTokenIndices.length;
           nextIndex++) {
         final token = _tokens[_wordTokenIndices[nextIndex]];
-        final tokenNormalized = _normalize(token.text);
-        if (tokenNormalized.isEmpty) continue;
         
-        if (tokenNormalized == normalizedWord) {
+        // 1. Try regex match (handles punctuation, "It's" vs "It")
+        if (wordRegex.hasMatch(token.text)) {
           setState(() {
             _currentWordIndex = nextIndex;
+          });
+          break;
+        }
+
+        // 2. Fallback to normalized match
+        final tokenNormalized = _normalize(token.text);
+        if (tokenNormalized.isNotEmpty && tokenNormalized == wordNormalized) {
+          setState(() {
+             _currentWordIndex = nextIndex;
           });
           break;
         }

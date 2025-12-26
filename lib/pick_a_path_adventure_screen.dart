@@ -245,6 +245,53 @@ class _PickAPathAdventureScreenState
     }
   }
 
+  Future<void> _handleContinue() async {
+    if (_isContinuing || _isCompleted || _storyId == null) return;
+
+    HapticFeedback.selectionClick();
+    setState(() {
+      _isContinuing = true;
+      _errorMessage = null;
+      _retryAction = null;
+    });
+
+    try {
+      // For CONTINUE segments, we create a pseudo-choice to advance the story
+      // The backend will recognize this and generate the next segment
+      final response = await _storyService.continueInteractiveStory(
+        storyId: _storyId!,
+        choiceId: 'continue', // Special ID for continuation
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _currentSegment = response.segment;
+        _inventory = response.inventory;
+        _state = response.state;
+        _isCompleted = response.isCompleted;
+        _isContinuing = false;
+      });
+
+      _scrollToBottom();
+
+      if (_isCompleted) {
+        unawaited(
+          InteractiveStoryAnalytics.trackStorySaved(
+            characterId: widget.character.id,
+            theme: widget.theme,
+            choiceCount: _currentSegment?.segmentNumber ?? 0,
+            segmentCount: _currentSegment?.segmentNumber ?? 0,
+            wordCount: _currentSegment?.wordCount ?? _currentSegment?.content.split(' ').length ?? 0,
+          ),
+        );
+      }
+    } on InteractiveStoryException catch (e) {
+      _handleError(e.message, _handleContinue);
+    } catch (e) {
+      _handleError('Unable to continue story: $e', _handleContinue);
+    }
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -375,11 +422,13 @@ class _PickAPathAdventureScreenState
             const SizedBox(height: 16),
           ],
 
-          // Choices or completion
+          // Choices, Continue, or completion
           if (_isCompleted)
             _buildCompletionSection()
-          else if (_currentSegment!.choices.isNotEmpty)
-            _buildChoicesSection(),
+          else if (_currentSegment!.requiresChoice)
+            _buildChoicesSection()
+          else if (_currentSegment!.isContinuation)
+            _buildContinueSection(),
 
           const SizedBox(height: 32),
         ],
@@ -578,6 +627,19 @@ class _PickAPathAdventureScreenState
             ),
           );
         }),
+      ],
+    );
+  }
+
+  Widget _buildContinueSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppButton.primary(
+          label: 'Continue',
+          onPressed: _isContinuing ? null : _handleContinue,
+          icon: Icons.arrow_forward,
+        ),
       ],
     );
   }
