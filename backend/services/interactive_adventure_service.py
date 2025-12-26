@@ -257,13 +257,21 @@ class InteractiveAdventureService:
         if story.is_completed:
             raise ValueError(f"Story {story_id} is already completed")
 
-        # Load choice and mark as selected
-        choice = StoryChoice.query.filter_by(id=choice_id).first()
-        if not choice:
-            raise ValueError(f"Choice {choice_id} not found")
+        # Handle special "continue" choice ID (for segments with output_type="continue")
+        if choice_id == "continue":
+            logger.info("Processing CONTINUE segment (no choice required)")
+            selected_choice_text = "Continue the adventure"
+            parent_choice_id = None
+        else:
+            # Load choice and mark as selected
+            choice = StoryChoice.query.filter_by(id=choice_id).first()
+            if not choice:
+                raise ValueError(f"Choice {choice_id} not found")
 
-        choice.is_selected = True
-        choice.selected_at = datetime.utcnow()
+            choice.is_selected = True
+            choice.selected_at = datetime.utcnow()
+            selected_choice_text = choice.text
+            parent_choice_id = choice_id
 
         # Build story context
         story_context = self._build_story_context(story)
@@ -280,7 +288,7 @@ class InteractiveAdventureService:
         # Build continuation prompt
         prompt = InteractiveAdventurePromptBuilder.build_continuation_prompt(
             story_context=story_context,
-            selected_choice=choice.text,
+            selected_choice=selected_choice_text,
             current_segment_number=story.current_segment_number,
             inventory=current_inventory,
             story_state=current_state,
@@ -297,7 +305,7 @@ class InteractiveAdventureService:
             story_id=story.id,
             segment_data=segment_data,
             segment_number=next_segment_number,
-            parent_choice_id=choice_id
+            parent_choice_id=parent_choice_id
         )
         db.session.add(new_segment)
         db.session.flush()
