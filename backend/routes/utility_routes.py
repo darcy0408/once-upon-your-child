@@ -237,4 +237,91 @@ def create_utility_blueprint(logger, log_error):
             )
             return jsonify({'error': 'Failed to record story creation'}), 500
 
+    @utility_bp.route("/usage/summary", methods=["GET"])
+    def get_usage_summary():
+        """
+        Get API usage summary and cost estimates.
+
+        Query Parameters:
+            days: Number of days to include (default: 30)
+            include_mock: Include mock calls (default: true)
+
+        Returns:
+            JSON with usage statistics and cost breakdown
+        """
+        try:
+            from backend.services.usage_tracking_service import get_usage_tracker
+            from datetime import datetime, timedelta
+
+            # Get query parameters
+            days = int(request.args.get('days', 30))
+            include_mock = request.args.get('include_mock', 'true').lower() in ['true', '1', 'yes']
+
+            tracker = get_usage_tracker()
+
+            # Get summary for date range
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=days)
+
+            summary = tracker.get_usage_summary(
+                start_date=start_date,
+                end_date=end_date,
+                include_mock=include_mock
+            )
+
+            return jsonify(summary), 200
+
+        except Exception as e:
+            logger.exception(f"Failed to get usage summary: {e}")
+            return jsonify({'error': 'Failed to get usage summary', 'detail': str(e)}), 500
+
+    @utility_bp.route("/usage/daily", methods=["GET"])
+    def get_daily_usage():
+        """
+        Get daily usage breakdown.
+
+        Query Parameters:
+            days: Number of days to include (default: 7)
+
+        Returns:
+            JSON with daily usage statistics
+        """
+        try:
+            from backend.services.usage_tracking_service import get_usage_tracker
+
+            days = int(request.args.get('days', 7))
+
+            tracker = get_usage_tracker()
+            daily = tracker.get_daily_breakdown(days=days)
+
+            return jsonify(daily), 200
+
+        except Exception as e:
+            logger.exception(f"Failed to get daily usage: {e}")
+            return jsonify({'error': 'Failed to get daily usage', 'detail': str(e)}), 500
+
+    @utility_bp.route("/usage/mock-mode", methods=["GET"])
+    def get_mock_mode_status():
+        """
+        Check if mock testing mode is enabled.
+
+        Returns:
+            JSON with mock mode status and configuration
+        """
+        try:
+            from flask import current_app
+
+            mock_mode = current_app.config.get('MOCK_TESTING_MODE', False)
+
+            return jsonify({
+                'mock_testing_mode': mock_mode,
+                'environment': os.environ.get('FLASK_ENV', 'unknown'),
+                'message': 'Mock mode is ENABLED - using free mock endpoints' if mock_mode
+                          else 'Mock mode is DISABLED - using real API (costs apply)'
+            }), 200
+
+        except Exception as e:
+            logger.exception(f"Failed to get mock mode status: {e}")
+            return jsonify({'error': str(e)}), 500
+
     return utility_bp

@@ -743,4 +743,189 @@ def create_story_blueprint(
             logger.exception("Coloring page generation failed")
             return jsonify({"error": "Failed to generate coloring pages", "hint": str(e)}), 500
 
+    @story_bp.route("/generate-illustrations-mock", methods=["POST"])
+    def generate_illustrations_mock_endpoint():
+        """
+        Mock illustrations endpoint for testing and development.
+        Returns placeholder images instantly without calling any AI model.
+        """
+        import uuid
+        import base64
+        from datetime import datetime
+        from PIL import Image, ImageDraw, ImageFont
+        import io
+
+        try:
+            data = request.get_json(silent=True) or {}
+            scene_description = data.get("scene_description", "A magical scene")
+            character_name = data.get("character_name", "Hero")
+            num_images = min(int(data.get("num_images", 1)), 4)
+
+            logger.info(f"[MOCK] Generating {num_images} illustration(s) for: {scene_description[:50]}...")
+
+            illustrations = []
+            for i in range(num_images):
+                # Create simple placeholder image
+                img = Image.new('RGB', (1024, 768), color='#FFE4B5')  # Moccasin color
+                draw = ImageDraw.Draw(img)
+
+                # Try to load font
+                try:
+                    font_title = ImageFont.truetype("arial.ttf", 60)
+                    font_desc = ImageFont.truetype("arial.ttf", 30)
+                except:
+                    font_title = ImageFont.load_default()
+                    font_desc = font_title
+
+                # Draw title
+                title = f"Illustration {i+1}"
+                bbox = draw.textbbox((0, 0), title, font=font_title)
+                x = (1024 - (bbox[2] - bbox[0])) // 2
+                draw.text((x, 100), title, fill='#8B4513', font=font_title)
+
+                # Draw scene description (truncated)
+                desc = scene_description[:60] + "..." if len(scene_description) > 60 else scene_description
+                bbox_desc = draw.textbbox((0, 0), desc, font=font_desc)
+                x_desc = (1024 - (bbox_desc[2] - bbox_desc[0])) // 2
+                draw.text((x_desc, 200), desc, fill='#654321', font=font_desc)
+
+                # Draw character name
+                char_text = f"Starring: {character_name}"
+                bbox_char = draw.textbbox((0, 0), char_text, font=font_desc)
+                x_char = (1024 - (bbox_char[2] - bbox_char[0])) // 2
+                draw.text((x_char, 300), char_text, fill='#654321', font=font_desc)
+
+                # Draw MOCK watermark
+                bbox_mock = draw.textbbox((0, 0), "MOCK ILLUSTRATION", font=font_desc)
+                x_mock = (1024 - (bbox_mock[2] - bbox_mock[0])) // 2
+                draw.text((x_mock, 700), "MOCK ILLUSTRATION", fill='#A0522D', font=font_desc)
+
+                # Convert to base64
+                buffer = io.BytesIO()
+                img.save(buffer, format='PNG')
+                img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+                illustrations.append({
+                    'id': f"mock-illust-{uuid.uuid4()}",
+                    'image_data': img_base64,
+                    'format': 'png',
+                    'prompt': scene_description,
+                    'generated_at': datetime.now().isoformat(),
+                    'is_mock': True,
+                    'cost': 0.0
+                })
+
+            return jsonify({
+                'illustrations': illustrations,
+                'count': len(illustrations)
+            }), 200
+
+        except Exception as e:
+            logger.exception(f"Error in mock illustration generation: {e}")
+            return jsonify({"error": str(e)}), 500
+
+    @story_bp.route("/generate-coloring-pages-mock", methods=["POST"])
+    def generate_coloring_pages_mock_endpoint():
+        """
+        Mock coloring pages endpoint for testing and development.
+        Returns placeholder black & white images instantly without calling any AI model.
+        """
+        import uuid
+        import base64
+        from datetime import datetime
+        from PIL import Image, ImageDraw, ImageFont
+        import io
+
+        try:
+            data = request.get_json(silent=True) or {}
+            scene_description = data.get("scene_description", "")
+            scenes = data.get("scenes", [])
+
+            if not scenes and scene_description:
+                scenes = [{"description": scene_description, "title": "Coloring Page"}]
+
+            if not scenes:
+                return jsonify({"error": "Scene description or scenes list is required"}), 400
+
+            character_name = data.get("character_name", "Hero")
+            num_images_per_scene = min(int(data.get("num_images", 1)), 3)
+
+            logger.info(f"[MOCK] Generating {num_images_per_scene} coloring page(s) per scene, {len(scenes)} scene(s)")
+
+            all_coloring_pages = []
+            for scene_item in scenes:
+                # Handle both string and dict
+                if isinstance(scene_item, str):
+                    current_desc = scene_item
+                    scene_title = "Coloring Page"
+                else:
+                    current_desc = scene_item.get("description", "")
+                    scene_title = scene_item.get("title", "Coloring Page")
+
+                if not current_desc:
+                    continue
+
+                for i in range(num_images_per_scene):
+                    # Create black & white coloring page style
+                    img = Image.new('RGB', (1024, 1024), color='white')
+                    draw = ImageDraw.Draw(img)
+
+                    # Try to load font
+                    try:
+                        font_title = ImageFont.truetype("arial.ttf", 50)
+                        font_small = ImageFont.truetype("arial.ttf", 30)
+                    except:
+                        font_title = ImageFont.load_default()
+                        font_small = font_title
+
+                    # Draw simple shapes (outlines only - coloring page style)
+                    # Circle
+                    draw.ellipse([200, 200, 400, 400], outline='black', width=5)
+                    # Star shape (simplified)
+                    draw.polygon([(512, 100), (550, 200), (650, 200), (570, 270),
+                                  (600, 370), (512, 310), (424, 370), (454, 270),
+                                  (374, 200), (474, 200)], outline='black', width=4)
+                    # Rectangle with character name
+                    draw.rectangle([100, 500, 924, 650], outline='black', width=5)
+
+                    # Draw title
+                    title = f"{scene_title} {i+1}"
+                    bbox = draw.textbbox((0, 0), title, font=font_title)
+                    x = (1024 - (bbox[2] - bbox[0])) // 2
+                    draw.text((x, 700), title, fill='black', font=font_title)
+
+                    # Draw character name
+                    char_text = f"{character_name}"
+                    bbox_char = draw.textbbox((0, 0), char_text, font=font_small)
+                    x_char = (1024 - (bbox_char[2] - bbox_char[0])) // 2
+                    draw.text((x_char, 560), char_text, fill='black', font=font_small)
+
+                    # Draw MOCK label
+                    draw.text((850, 20), "MOCK", fill='black', font=font_small)
+
+                    # Convert to base64
+                    buffer = io.BytesIO()
+                    img.save(buffer, format='PNG')
+                    img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+                    all_coloring_pages.append({
+                        'id': f"mock-color-{uuid.uuid4()}",
+                        'image_data': img_base64,
+                        'format': 'png',
+                        'prompt': current_desc,
+                        'scene_title': scene_title,
+                        'generated_at': datetime.now().isoformat(),
+                        'is_mock': True,
+                        'cost': 0.0
+                    })
+
+            return jsonify({
+                'coloring_pages': all_coloring_pages,
+                'count': len(all_coloring_pages)
+            }), 200
+
+        except Exception as e:
+            logger.exception(f"Error in mock coloring page generation: {e}")
+            return jsonify({"error": str(e)}), 500
+
     return story_bp

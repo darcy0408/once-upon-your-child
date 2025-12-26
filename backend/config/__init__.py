@@ -27,6 +27,9 @@ class Config:
     """Base configuration."""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key'
 
+    # Mock Testing Mode - Use mock endpoints instead of real API calls
+    MOCK_TESTING_MODE = os.environ.get('MOCK_TESTING_MODE', 'false').lower() in ['true', '1', 'yes']
+
     # Fix Railway's postgres:// to postgresql:// for SQLAlchemy 2.0+
     database_url = os.environ.get('DATABASE_URL')
 

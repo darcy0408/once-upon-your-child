@@ -15,9 +15,23 @@ if sys.platform == 'win32':
 
 # Configuration
 BACKEND_URL = "http://localhost:5000"
+
+# Check if mock mode is enabled
+MOCK_MODE = os.environ.get('MOCK_TESTING_MODE', 'false').lower() in ['true', '1', 'yes']
+
+# Auto-select endpoint suffix based on mock mode
+ENDPOINT_SUFFIX = '-mock' if MOCK_MODE else ''
+
+print(f"\n{'='*60}")
+print(f"MOCK TESTING MODE: {'ENABLED ✅ (FREE)' if MOCK_MODE else 'DISABLED ❌ (USES API)'}")
+print(f"Endpoint suffix: '{ENDPOINT_SUFFIX}'")
+print(f"Cost per test: ${'0.00' if MOCK_MODE else '~0.0034'}")
+print(f"{'='*60}\n")
+
 TEST_RESULTS = {
     "date": datetime.now().isoformat(),
     "tester": "Automated Test Script",
+    "mock_mode": MOCK_MODE,
     "tests": [],
     "summary": {}
 }
@@ -82,9 +96,9 @@ def test_custom_elements_simple():
     try:
         start = time.time()
         response = requests.post(
-            f"{BACKEND_URL}/generate-story-mock",  # Use mock endpoint
+            f"{BACKEND_URL}/generate-story{ENDPOINT_SUFFIX}",  # Auto-switch based on mode
             json=payload,
-            timeout=10
+            timeout=10 if MOCK_MODE else 120  # Mock is fast, real API is slow
         )
         duration = int((time.time() - start) * 1000)
         
@@ -143,9 +157,9 @@ def test_custom_elements_multiple():
     try:
         start = time.time()
         response = requests.post(
-            f"{BACKEND_URL}/generate-story",
+            f"{BACKEND_URL}/generate-story{ENDPOINT_SUFFIX}",  # Auto-switch based on mode
             json=payload,
-            timeout=120  # Increased timeout for Gemini API
+            timeout=10 if MOCK_MODE else 120  # Mock is fast, real API is slow
         )
         duration = int((time.time() - start) * 1000)
         
@@ -212,9 +226,9 @@ def test_empty_custom_elements():
     try:
         start = time.time()
         response = requests.post(
-            f"{BACKEND_URL}/generate-story",
+            f"{BACKEND_URL}/generate-story{ENDPOINT_SUFFIX}",  # Auto-switch based on mode
             json=payload,
-            timeout=120  # Increased timeout for Gemini API
+            timeout=10 if MOCK_MODE else 120  # Mock is fast, real API is slow
         )
         duration = int((time.time() - start) * 1000)
         
@@ -257,9 +271,9 @@ def test_special_characters():
     try:
         start = time.time()
         response = requests.post(
-            f"{BACKEND_URL}/generate-story",
+            f"{BACKEND_URL}/generate-story{ENDPOINT_SUFFIX}",  # Auto-switch based on mode
             json=payload,
-            timeout=120  # Increased timeout for Gemini API
+            timeout=10 if MOCK_MODE else 120  # Mock is fast, real API is slow
         )
         duration = int((time.time() - start) * 1000)
         
