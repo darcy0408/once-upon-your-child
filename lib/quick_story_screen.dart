@@ -7,6 +7,7 @@ import 'models.dart';
 import 'services/api_service_manager.dart';
 import 'subscription_service.dart';
 import 'theme/app_theme.dart';
+import 'widgets/storybook_page.dart';
 
 class QuickStoryScreen extends StatefulWidget {
   const QuickStoryScreen({super.key});
@@ -528,13 +529,16 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
 
         // Story Content
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Text(
-              _generatedStory!,
-              style: const TextStyle(
-                fontSize: 16,
-                height: 1.6,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: StoryBookPage(
+              showDecorations: true,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(32),
+                child: Text(
+                  _generatedStory!,
+                  style: AppTextStyles.storyBody,
+                ),
               ),
             ),
           ),

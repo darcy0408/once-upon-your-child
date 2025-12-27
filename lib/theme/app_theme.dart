@@ -102,6 +102,52 @@ class AppGradients {
   );
 }
 
+/// Text styles specifically for storybook content
+/// Uses Merriweather serif font for enhanced readability and magical aesthetic
+class AppTextStyles {
+  // Story title style - bold, large serif for chapter/story titles
+  static TextStyle storyTitle = GoogleFonts.merriweather(
+    fontSize: 28,
+    fontWeight: FontWeight.bold,
+    color: const Color(0xFF2C3E50),
+    height: 1.3,
+  );
+
+  // Story body text - comfortable reading size with generous line spacing
+  static TextStyle storyBody = GoogleFonts.merriweather(
+    fontSize: 20,
+    fontWeight: FontWeight.normal,
+    color: const Color(0xFF2C3E50),
+    height: 1.8, // Generous line spacing for readability
+    letterSpacing: 0.3,
+  );
+
+  // Large story body - for better readability or user preference
+  static TextStyle storyBodyLarge = GoogleFonts.merriweather(
+    fontSize: 22,
+    fontWeight: FontWeight.normal,
+    color: const Color(0xFF2C3E50),
+    height: 1.8,
+    letterSpacing: 0.3,
+  );
+
+  // Drop cap style - decorative first letter (optional)
+  static TextStyle dropCap = GoogleFonts.merriweather(
+    fontSize: 56,
+    fontWeight: FontWeight.bold,
+    color: AppColors.primary,
+    height: 0.9,
+  );
+
+  // Story metadata - author, date, etc.
+  static TextStyle storyMeta = GoogleFonts.merriweather(
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    color: const Color(0xFF6B7280),
+    fontStyle: FontStyle.italic,
+  );
+}
+
 class AppTheme {
   static ThemeData light({Color? primaryColor, Color? accentColor}) {
     final effectivePrimary = primaryColor ?? AppColors.primary;

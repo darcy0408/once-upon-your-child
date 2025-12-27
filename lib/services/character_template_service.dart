@@ -85,7 +85,7 @@ class CharacterTemplateService {
           'problem_solving': 80,
           'play_preference': 55,
         },
-        likes: ['science', 'riddles', 'space'],
+        likes: ['science', 'quizzes', 'brain teasers'],
         strengths: ['Smart', 'Patient', 'Curious'],
         fears: ['Being wrong in public'],
       ),

@@ -187,10 +187,10 @@ class CharacterArchetypes {
 
   static const thinker = ArchetypeData(
     icon: '🧩',
-    name: 'The Ancient Riddle-Solver',
-    description: 'Deciphers secret maps and ancient puzzles',
+    name: 'The Quiz Whiz',
+    description: 'Solves tricky puzzles and brain teasers',
     traits: ['Smart', 'Modest', 'Curious'],
-    specialAbility: 'Can decipher secret maps and unlock ancient mysteries',
+    specialAbility: 'Can solve any quiz, puzzle, or brain teaser with clever thinking',
     attributes: {
       'energy': 40,
       'sociability': 30,

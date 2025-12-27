@@ -200,10 +200,10 @@ class WizardDataMapper {
           details['strengths'] = ['Bravery', 'Curiosity'];
           details['interests'] = ['Exploring', 'Maps', 'Nature'];
           details['specialAbility'] = 'Can command wind and weather to soar through storms';
-        } else if (archetypeId.contains('Riddle-Solver') || archetypeId.contains('Thinker')) {
+        } else if (archetypeId.contains('Quiz-Whiz') || archetypeId.contains('Thinker')) {
            details['strengths'] = ['Problem solving', 'Focus'];
-           details['interests'] = ['Puzzles', 'Reading', 'Science'];
-           details['specialAbility'] = 'Can decipher secret maps and unlock ancient mysteries';
+           details['interests'] = ['Quizzes', 'Brain teasers', 'Science'];
+           details['specialAbility'] = 'Can solve any quiz, puzzle, or brain teaser with clever thinking';
         } else if (archetypeId.contains('Master Creator') || archetypeId.contains('Artist')) {
            details['strengths'] = ['Creativity', 'Vision'];
            details['interests'] = ['Painting', 'Colors', 'Music'];
