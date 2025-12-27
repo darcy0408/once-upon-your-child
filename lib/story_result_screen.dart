@@ -59,6 +59,7 @@ class StoryResultScreen extends StatefulWidget {
   final bool isLearningToReadMode;
   final bool usedUserApiKey;
   final bool asyncIllustrations;
+  final OfflineStoryService? offlineService;
 
   const StoryResultScreen({
     super.key,
@@ -81,6 +82,7 @@ class StoryResultScreen extends StatefulWidget {
     this.isLearningToReadMode = false,
     this.usedUserApiKey = false,
     this.asyncIllustrations = false,
+    this.offlineService,
   })  : assert(!trackStoryCreation || achievementsService != null),
         assert(!trackStoryCreation || storyCreatedAt != null);
 
@@ -172,7 +174,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   @override
   void initState() {
     super.initState();
-    _offlineService = OfflineStoryService(IsarService.instance);
+    _offlineService = widget.offlineService ?? OfflineStoryService(IsarService.instance);
     _storyPages = _paginateStory(widget.storyText);
     _pageController = PageController();
 

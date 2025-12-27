@@ -86,6 +86,10 @@ class StorySegment(db.Model):
     output_type = db.Column(db.String(20), nullable=False, default='CHOICE')
     word_count = db.Column(db.Integer, nullable=True)  # Actual word count for pacing tracking
 
+    # Output type: CONTINUE (no choices, reader clicks continue) or CHOICE (decision point)
+    output_type = db.Column(db.String(20), nullable=False, default='CHOICE')
+    word_count = db.Column(db.Integer, nullable=True)  # Actual word count for pacing tracking
+
     # Content
     content = db.Column(db.Text, nullable=False)  # Story prose (now 350-650 words for immersion)
     image_description = db.Column(db.Text, nullable=True)  # Description for illustration generation

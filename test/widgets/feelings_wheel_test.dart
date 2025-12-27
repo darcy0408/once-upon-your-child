@@ -5,6 +5,11 @@ import 'package:story_weaver_app/feelings_wheel_screen.dart';
 
 void main() {
   testWidgets('Feelings wheel flows core → secondary → tertiary selection', (tester) async {
+    tester.view.physicalSize = const Size(800, 2000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     SelectedFeeling? captured;
 
     await tester.pumpWidget(
@@ -12,7 +17,10 @@ void main() {
         home: Scaffold(
           body: SingleChildScrollView(
             child: FeelingsWheelScreen(
-              onFeelingSelected: (feeling) => captured = feeling,
+              onFeelingSelected: (feeling) {
+                print('DEBUG: onFeelingSelected called with ${feeling.tertiary}');
+                captured = feeling;
+              },
             ),
           ),
         ),
@@ -21,9 +29,12 @@ void main() {
     await tester.pumpAndSettle();
 
     // Switch to the list-based picker so the chips are available in tests.
-    await tester.tap(find.text('Use list instead'));
+    final listToggle = find.text('Use list instead');
+    await tester.ensureVisible(listToggle);
+    await tester.tap(listToggle);
     await tester.pumpAndSettle();
 
+    print('DEBUG: Tapping Happy');
     // Tap a core emotion
     final happy = find.text('Happy');
     expect(happy, findsWidgets);
@@ -31,6 +42,7 @@ void main() {
     await tester.tap(happy.first);
     await tester.pumpAndSettle();
 
+    print('DEBUG: Tapping Joyful');
     // Secondary level should appear
     final joyful = find.text('Joyful');
     expect(joyful, findsWidgets);
@@ -40,13 +52,21 @@ void main() {
     await tester.tap(joyful.first);
     await tester.pumpAndSettle();
 
+    print('DEBUG: Tapping Excited');
     // Tertiary options should appear
-    final tertiary = find.text('Excited');
-    expect(tertiary, findsWidgets);
+    final tertiaryStage = find.ancestor(
+      of: find.text('3. Exact feelings'),
+      matching: find.byType(Container),
+    );
+    final tertiary = find.descendant(
+      of: tertiaryStage.first,
+      matching: find.widgetWithText(ChoiceChip, 'Excited'),
+    );
+    expect(tertiary, findsOneWidget);
 
     // Select tertiary emotion, callback should capture selection
-    await tester.ensureVisible(tertiary.first);
-    await tester.tap(tertiary.first);
+    await tester.ensureVisible(tertiary);
+    await tester.tap(tertiary);
     await tester.pumpAndSettle();
 
     expect(captured, isNotNull);

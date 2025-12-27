@@ -3,6 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/story_result_screen.dart';
 import 'package:story_weaver_app/models.dart';
+import 'package:story_weaver_app/services/offline_story_service.dart';
+import 'package:story_weaver_app/models/local/story_local.dart';
+
+class FakeOfflineStoryService extends Fake implements OfflineStoryService {
+  @override
+  Future<StoryLocal?> getStory(String storyId) async => null;
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +50,7 @@ void main() {
           storyId: story.id,
           trackStoryCreation: false, // Disable achievement tracking in test
           trackAnalytics: false, // Disable analytics tracking in test
+          offlineService: FakeOfflineStoryService(),
         ),
       ),
     );

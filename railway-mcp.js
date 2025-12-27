@@ -44,7 +44,34 @@ async function handle() {
 
   if (method === "call" && params?.name === "railway.services") {
     const data = await gql(
-      `query { me { projects { id name environments { id name services { id name } } } } }`
+      `query {
+         me {
+           projects {
+             edges {
+               node {
+                 id
+                 name
+                 services {
+                   edges {
+                     node {
+                       id
+                       name
+                     }
+                   }
+                 }
+                 environments {
+                   edges {
+                     node {
+                       id
+                       name
+                     }
+                   }
+                 }
+               }
+             }
+           }
+         }
+       }`
     );
     return { id, result: data };
   }

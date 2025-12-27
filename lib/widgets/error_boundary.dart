@@ -40,13 +40,17 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
   }
 
   void _handleFlutterError(FlutterErrorDetails details) {
-    _previousHandler?.call(details);
+    // _previousHandler?.call(details); // Consumed by ErrorBoundary
 
     if (!mounted || _error != null) return;
 
-    setState(() {
-      _error = details.exception;
-      _stackTrace = details.stack;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          _error = details.exception;
+          _stackTrace = details.stack;
+        });
+      }
     });
 
     widget.onError?.call(
@@ -83,49 +87,51 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
       );
       if (fallback != null) return fallback;
 
-      return Center(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                const SizedBox(height: 16),
-                Text(
-                  'Oops! Something went wrong.',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _error.toString(),
-                  style: const TextStyle(color: Colors.grey),
-                  textAlign: TextAlign.center,
-                ),
-                if (_stackTrace != null) ...[
+      return Scaffold(
+        body: Center(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
                   const SizedBox(height: 16),
-                  ExpansionTile(
-                    title: const Text('Details (for debugging)'),
-                    children: [
-                      Text(
-                        (_stackTrace ?? StackTrace.empty).toString(),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
+                  Text(
+                    'Oops! Something went wrong.',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _error.toString(),
+                    style: const TextStyle(color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  if (_stackTrace != null) ...[
+                    const SizedBox(height: 16),
+                    ExpansionTile(
+                      title: const Text('Details (for debugging)'),
+                      children: [
+                        Text(
+                          (_stackTrace ?? StackTrace.empty).toString(),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: _resetError,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Try Again'),
                   ),
                 ],
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: _resetError,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Try Again'),
-                ),
-              ],
+              ),
             ),
           ),
         ),
