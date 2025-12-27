@@ -22,7 +22,9 @@ class AvatarGenerationService {
     Map<String, dynamic>? emotionData,
     String? seed, // For regeneration
   }) async {
-    final url = Uri.parse('$baseUrl/avatar/generate-avatar');
+    // TEMPORARY: Using mock endpoint until real image generation is configured
+    // TODO: Switch to /avatar/generate-avatar once Imagen or OpenRouter is set up
+    final url = Uri.parse('$baseUrl/avatar/generate-avatar-mock');
 
     final payload = {
       'character_name': characterName,

@@ -159,7 +159,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$userMessage\n\n${e.toString().length > 100 ? e.toString().substring(0, 100) + '...' : e.toString()}'),
+            content: Text('$userMessage\n\n${e.toString().length > 100 ? '${e.toString().substring(0, 100)}...' : e.toString()}'),
             backgroundColor: AppColors.error,
             duration: const Duration(seconds: 8),
             action: SnackBarAction(
@@ -251,11 +251,13 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             const SizedBox(height: AppSpacing.sm),
 
             // Subtitle
-            Text(
+            const Text(
               'Review your story setup',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textDark.withAlpha(179),
-                  ),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF4A4A4A),
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -280,8 +282,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Colors.white,
-                    AppColors.primary.withOpacity(0.05),
+                    AppColors.cream.withOpacity(0.7),
+                    AppColors.primary.withOpacity(0.15),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -361,8 +363,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Colors.white,
-                    AppColors.gold.withOpacity(0.05),
+                    AppColors.cream.withOpacity(0.7),
+                    AppColors.gold.withOpacity(0.2),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -402,10 +404,10 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                     ],
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  Text(
+                  const Text(
                     'Choose how long your adventure should be',
                     style: TextStyle(
-                      color: AppColors.textDark.withAlpha(179),
+                      color: Color(0xFF4A4A4A),
                       fontSize: 14,
                     ),
                   ),
@@ -458,8 +460,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Colors.white,
-                    AppColors.primary.withOpacity(0.03),
+                    AppColors.cream.withOpacity(0.7),
+                    AppColors.primary.withOpacity(0.1),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -501,10 +503,10 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                     ],
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  Text(
+                  const Text(
                     'Tell me what you want in your story! (Optional)',
                     style: TextStyle(
-                      color: AppColors.textDark.withAlpha(179),
+                      color: Color(0xFF4A4A4A),
                       fontSize: 14,
                     ),
                   ),
@@ -514,8 +516,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                     onChanged: (value) => setState(() => data.customElements = value),
                     decoration: InputDecoration(
                       hintText: 'Example: I want to meet a talking tree and ride a dragon!',
-                      hintStyle: TextStyle(
-                        color: AppColors.textDark.withAlpha(128),
+                      hintStyle: const TextStyle(
+                        color: Color(0xFF666666),
                         fontSize: 14,
                         fontStyle: FontStyle.italic,
                       ),
@@ -533,11 +535,11 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                       ),
                       contentPadding: const EdgeInsets.all(16),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: AppColors.cream.withOpacity(0.3), // Magical cream tint instead of white
                     ),
                     style: const TextStyle(
                       fontSize: 15,
-                      color: AppColors.textDark,
+                      color: Color(0xFF1A1A1A),
                     ),
                   ),
                   if (data.customElements.isNotEmpty)
@@ -684,7 +686,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       subtitle: Text(subtitle, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
       value: value,
       onChanged: onChanged,
-      activeColor: AppColors.primary,
+      activeThumbColor: AppColors.primary,
       contentPadding: EdgeInsets.zero,
       dense: true,
     );
@@ -742,7 +744,6 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(AppRadius.lg), // Improved Radius
         border: Border.all(
           color: isError ? AppColors.error : color.withOpacity(0.3),
@@ -753,8 +754,8 @@ class _SummaryCard extends StatelessWidget {
           end: Alignment.centerRight,
           colors: [
              // Subtle tint based on the category color
-             color.withOpacity(0.05),
-             Colors.white,
+             color.withOpacity(0.15),
+             AppColors.cream.withOpacity(0.6),
           ],
         ),
         boxShadow: [
@@ -833,10 +834,10 @@ class _LengthOption extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.gold : Colors.white,
+          color: isSelected ? AppColors.gold : AppColors.cream.withOpacity(0.3),
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: isSelected ? AppColors.gold : AppColors.textDark.withOpacity(0.2),
+            color: isSelected ? AppColors.gold : AppColors.primary.withOpacity(0.3),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
@@ -871,7 +872,7 @@ class _LengthOption extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
-                color: isSelected ? AppColors.textDark : AppColors.textDark.withOpacity(0.7),
+                color: isSelected ? AppColors.textDark : const Color(0xFF1A1A1A),
               ),
               textAlign: TextAlign.center,
             ),
@@ -879,7 +880,7 @@ class _LengthOption extends StatelessWidget {
               subtitle,
               style: TextStyle(
                 fontSize: 12,
-                color: isSelected ? AppColors.textDark.withOpacity(0.7) : AppColors.textDark.withOpacity(0.5),
+                color: isSelected ? AppColors.textDark : const Color(0xFF4A4A4A),
               ),
               textAlign: TextAlign.center,
             ),

@@ -14,14 +14,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'story_reader_screen.dart';
 import 'services/isar_service.dart';
 import 'services/offline_story_service.dart';
-import 'models/local/story_local.dart';
 import 'story_illustration_service.dart';
 import 'illustration_settings_dialog.dart';
 import 'illustrated_story_viewer.dart';
 import 'coloring_book_service.dart';
 import 'coloring_book_library_screen.dart';
 import 'models.dart';
-import 'character_appearance_converter.dart';
 import 'therapeutic_focus_options.dart';
 import 'services/progression_service.dart';
 import 'services/achievement_service.dart';
@@ -35,8 +33,7 @@ import 'widgets/app_button.dart';
 import 'widgets/app_card.dart';
 import 'widgets/error_boundary.dart';
 import 'widgets/user_friendly_error_dialog.dart';
-import 'premium_upgrade_screen.dart';
-import 'widgets/feature_tour_overlay.dart';
+import 'widgets/storybook_progress_indicator.dart';
 import 'services/feature_tour_service.dart';
 
 class StoryResultScreen extends StatefulWidget {
@@ -59,7 +56,10 @@ class StoryResultScreen extends StatefulWidget {
   final bool isLearningToReadMode;
   final bool usedUserApiKey;
   final bool asyncIllustrations;
-  final OfflineStoryService? offlineService;
+  final List<String>? choicesMade;
+  // NEW: Page-based story structure
+  final List<String>? pages;
+  final List<String>? adventureSteps;
 
   const StoryResultScreen({
     super.key,
@@ -82,7 +82,9 @@ class StoryResultScreen extends StatefulWidget {
     this.isLearningToReadMode = false,
     this.usedUserApiKey = false,
     this.asyncIllustrations = false,
-    this.offlineService,
+    this.choicesMade,
+    this.pages,
+    this.adventureSteps,
   })  : assert(!trackStoryCreation || achievementsService != null),
         assert(!trackStoryCreation || storyCreatedAt != null);
 
@@ -102,13 +104,13 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   final TextEditingController _feedbackController = TextEditingController();
   bool _isFavorite = false;
   bool _isLoading = true;
-  Character? _character;
   List<StoryIllustration>? _cachedIllustrations;
   List<ColoringPage>? _cachedColoringPages;
   int? _characterAge;
   String? _activeTherapeuticFocus;
   late final PageController _pageController;
   late List<String> _storyPages;
+  late List<String> _adventureSteps;  // NEW: Adventure step labels
   int _currentPageIndex = 0;
   double _textScale = 1.0;
   bool _highContrastMode = false;
@@ -174,8 +176,23 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   @override
   void initState() {
     super.initState();
-    _offlineService = widget.offlineService ?? OfflineStoryService(IsarService.instance);
-    _storyPages = _paginateStory(widget.storyText);
+    _offlineService = OfflineStoryService(IsarService.instance);
+
+    // NEW: Use backend-generated pages if available, otherwise paginate
+    if (widget.pages != null && widget.pages!.isNotEmpty) {
+      _storyPages = widget.pages!;
+      _adventureSteps = widget.adventureSteps ?? List.generate(
+        _storyPages.length,
+        (i) => 'Step ${i + 1}',
+      );
+    } else {
+      _storyPages = _paginateStory(widget.storyText);
+      _adventureSteps = List.generate(
+        _storyPages.length,
+        (i) => 'Page ${i + 1}',
+      );
+    }
+
     _pageController = PageController();
 
     _loadCharacterDetails();
@@ -223,8 +240,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   @override
   void dispose() {
-    _feedbackController.dispose();
     _pageController.dispose();
+    _feedbackController.dispose();
     super.dispose();
   }
 
@@ -303,7 +320,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         final character = Character.fromJson(data);
         if (!mounted) return;
         setState(() {
-          _character = character;
           _characterAge = character.age > 0 ? character.age : null;
         });
       } else {
@@ -498,7 +514,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   }
 
   Future<void> _loadQualityData() async {
-    if (_isLoadingQuality || !mounted) return;
+    if (_isLoadingQuality) return;
 
     setState(() => _isLoadingQuality = true);
 
@@ -510,11 +526,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
           'story_text': widget.storyText,
           'age': widget.characterAge ?? 7,
         }),
-      ).timeout(const Duration(seconds: 10));
+      );
 
-      if (!mounted) return;
-
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 && mounted) {
         final data = jsonDecode(response.body);
         setState(() {
           _qualityData = data;
@@ -524,7 +538,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         setState(() => _isLoadingQuality = false);
       }
     } catch (e) {
-      if (!mounted) return;
       setState(() => _isLoadingQuality = false);
     }
   }
@@ -667,10 +680,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
             widget.storyId ?? DateTime.now().millisecondsSinceEpoch.toString(),
         storyTitle: widget.title,
         scenes: scenes,
-        characterAppearance: _character != null
-            ? CharacterAppearanceConverter.fromCharacter(_character!)
-            : null,
-        companions: _character?.pets,
+        characterAppearance: null, // TODO: Hydrate from character appearance
         age: _effectiveAge,
         therapeuticFocus: therapeuticFocus,
       );
@@ -796,6 +806,15 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         ..writeln('Hero: ${widget.characterName ?? 'Unknown'}')
         ..writeln('Theme: ${widget.theme ?? 'Adventure'}')
         ..writeln('Created: ${widget.storyCreatedAt ?? DateTime.now()}');
+
+      if (widget.choicesMade != null && widget.choicesMade!.isNotEmpty) {
+        buffer
+          ..writeln()
+          ..writeln('--- Adventure Log ---');
+        for (int i = 0; i < widget.choicesMade!.length; i++) {
+          buffer.writeln('${i + 1}. ${widget.choicesMade![i]}');
+        }
+      }
     }
     return buffer.toString();
   }
@@ -996,9 +1015,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         });
       }
     } else {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      setState(() => _isLoading = false);
     }
   }
 
@@ -1006,9 +1023,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     if (widget.storyId == null) return;
 
     await _offlineService.toggleFavorite(widget.storyId!);
-
-    if (!mounted) return;
-
     setState(() => _isFavorite = !_isFavorite);
     _trackResultAction(
       _isFavorite ? 'favorite_added' : 'favorite_removed',
@@ -1089,6 +1103,126 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     );
   }
 
+  void _showAdventureLog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.history_edu, color: AppColors.primary, size: 28),
+                const SizedBox(width: 12),
+                const Text(
+                  'Adventure Log',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Quicksand',
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (widget.choicesMade == null || widget.choicesMade!.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Text(
+                  'No choices recorded for this adventure.',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              )
+            else
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: widget.choicesMade!.length,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: AppColors.gold.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.gold),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${index + 1}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Choice ${index + 1}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  widget.choicesMade![index],
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: AppColors.textDark,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Close Log'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ErrorBoundary(
@@ -1108,7 +1242,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
+                          color: Colors.white.withOpacity(0.2),
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
@@ -1148,6 +1282,21 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                           ),
                         ),
                       const SizedBox(width: 8),
+                      // Adventure Log Button (only if choices exist)
+                      if (widget.choicesMade != null && widget.choicesMade!.isNotEmpty) ...[
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.history_edu, color: Colors.white),
+                            tooltip: 'Adventure Log',
+                            onPressed: _showAdventureLog,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       // Favorite Button
                       Container(
                         decoration: BoxDecoration(
@@ -1161,6 +1310,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                             _isFavorite ? Icons.favorite : Icons.favorite_border,
                             color: _isFavorite ? AppColors.gold : Colors.white,
                           ),
+                            tooltip: _isFavorite ? 'Remove from favorites' : 'Add to favorites',
                           onPressed: _toggleFavorite,
                         ),
                       ),
@@ -1168,11 +1318,12 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                       // Settings Button
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
+                          color: Colors.white.withOpacity(0.2),
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
                           icon: const Icon(Icons.settings, color: Colors.white),
+                          tooltip: 'Reading Settings',
                           onPressed: _showReadingOptions,
                         ),
                       ),
@@ -1240,8 +1391,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                         Expanded(
                                           child: PageView.builder(
                                             controller: _pageController,
-                                            itemCount: _storyPages.length,
                                             onPageChanged: _handlePageChanged,
+                                            itemCount: _storyPages.length,
                                             itemBuilder: (context, index) {
                                               return SingleChildScrollView(
                                                 padding: const EdgeInsets.all(32),
@@ -1272,28 +1423,34 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                           ),
                                           child: Row(
                                             children: [
-                                              Text(
-                                                'Page ${_currentPageIndex + 1} of ${_storyPages.length}',
-                                                style: TextStyle(
-                                                  color: _highContrastMode ? Colors.white70 : Colors.grey[600],
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                                              // NEW: Storybook progress indicator instead of "Chapter X of Y"
+                                              StorybookProgressIndicator(
+                                                currentPage: _currentPageIndex + 1,
+                                                totalPages: _storyPages.length,
+                                                stageLabel: _adventureSteps.length > _currentPageIndex
+                                                    ? _adventureSteps[_currentPageIndex].replaceAll(RegExp(r'^(Step \d+:|🌟|🚪|🎨|😮|🤔|💪|✨|🏠|🎭|🤪|🎉|💭)\s*'), '')
+                                                    : null,
                                               ),
                                               const Spacer(),
                                               // Simple Feedback
                                               Row(
                                                 children: List.generate(5, (index) {
-                                                  return InkWell(
-                                                    onTap: () {
-                                                      setState(() => _storyRating = index + 1.0);
-                                                      _submitFeedback();
-                                                    },
-                                                    child: Padding(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                                                      child: Icon(
-                                                        index < _storyRating ? Icons.star_rounded : Icons.star_outline_rounded,
-                                                        color: AppColors.gold,
-                                                        size: 28,
+                                                  return Semantics(
+                                                    label: 'Rate ${index + 1} stars',
+                                                    button: true,
+                                                    child: InkWell(
+                                                      onTap: () {
+                                                        setState(() => _storyRating = index + 1.0);
+                                                        _submitFeedback();
+                                                      },
+                                                      customBorder: const CircleBorder(),
+                                                      child: Padding(
+                                                        padding: const EdgeInsets.all(12.0),
+                                                        child: Icon(
+                                                          index < _storyRating ? Icons.star_rounded : Icons.star_outline_rounded,
+                                                          color: AppColors.gold,
+                                                          size: 28,
+                                                        ),
                                                       ),
                                                     ),
                                                   );

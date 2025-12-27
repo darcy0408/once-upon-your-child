@@ -8,9 +8,11 @@ import 'storage_service.dart';
 import 'services/interactive_story_analytics.dart';
 import 'services/interactive_story_service.dart';
 import 'subscription_service.dart';
+import 'theme/app_theme.dart';
 import 'package:story_weaver_app/widgets/app_button.dart';
 import 'widgets/app_card.dart';
 import 'widgets/error_message.dart';
+import 'widgets/storybook_progress_indicator.dart';
 
 /// Pick-A-Path Adventures: Interactive stories with inventory, state tracking, and age-calibrated content
 class PickAPathAdventureScreen extends StatefulWidget {
@@ -94,14 +96,7 @@ class _PickAPathAdventureScreenState
     }
   }
 
-  String get _progressText {
-    if (_currentSegment == null) return '';
-    final current = _currentSegment!.segmentNumber;
-    if (_isCompleted) {
-      return 'Adventure complete!';
-    }
-    return 'Segment $current of $_targetSegmentCount';
-  }
+  // Removed _progressText - now using StorybookProgressIndicator widget
 
   Future<void> _startNewStory() async {
     setState(() {
@@ -364,34 +359,41 @@ class _PickAPathAdventureScreenState
             Padding(
               padding: const EdgeInsets.only(right: 16.0),
               child: Center(
-                child: Text(
-                  _progressText,
-                  style: const TextStyle(fontSize: 14),
+                child: StorybookProgressIndicator(
+                  currentPage: _currentSegment!.segmentNumber,
+                  totalPages: _targetSegmentCount,
+                  stageLabel: _currentSegment!.stageLabel,
+                  isCompleted: _isCompleted,
                 ),
               ),
             ),
         ],
       ),
-      body: _isLoading
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Weaving your adventure...'),
-                ],
-              ),
-            )
-          : _errorMessage != null
-              ? Center(
-                  child: ErrorMessage(
-                    title: 'Error',
-                    message: _errorMessage!,
-                    onRetry: _retryAction,
-                  ),
-                )
-              : _buildStoryContent(),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AppGradients.magicalBackground,
+        ),
+        child: _isLoading
+            ? const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Weaving your adventure...'),
+                  ],
+                ),
+              )
+            : _errorMessage != null
+                ? Center(
+                    child: ErrorMessage(
+                      title: 'Error',
+                      message: _errorMessage!,
+                      onRetry: _retryAction,
+                    ),
+                  )
+                : _buildStoryContent(),
+      ),
     );
   }
 
@@ -603,23 +605,10 @@ class _PickAPathAdventureScreenState
   }
 
   Widget _buildChoicesSection() {
-    // If it's a continuation segment (no choices), show a "Continue" button
-    if (_currentSegment!.isContinuation) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: AppButton.primary(
-          label: 'Continue Adventure',
-          icon: Icons.arrow_forward_rounded,
-          onPressed: _isContinuing
-              ? null
-              : () => _handleChoiceSelected(
-                    StoryChoiceData(
-                      id: 'continue',
-                      choiceNumber: 0,
-                      text: 'Continue',
-                    ),
-                  ),
-        ),
+    // Safety check: ensure we have choices to display
+    if (_currentSegment!.choices.isEmpty) {
+      return const Center(
+        child: Text('No choices available'),
       );
     }
 
@@ -641,9 +630,8 @@ class _PickAPathAdventureScreenState
             padding: const EdgeInsets.only(bottom: 12.0),
             child: AppButton.primary(
               label: choice.text,
-              onPressed: _isContinuing
-                  ? null
-                  : () => _handleChoiceSelected(choice),
+              // FIXED: Only disable during actual API call, not when displaying new segment
+              onPressed: _isContinuing ? null : () => _handleChoiceSelected(choice),
             ),
           );
         }),

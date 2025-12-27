@@ -1134,7 +1134,7 @@ class _StoryScreenState extends State<StoryScreen> {
                       elevation: 6,
                     ),
                     label: Text(_interactiveMode
-                        ? 'Start Pick-A-Path Adventure'
+                        ? 'Start Interactive Story'
                         : 'Make Magic'),
                   ),
                 ),

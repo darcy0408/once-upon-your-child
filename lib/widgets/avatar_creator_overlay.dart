@@ -13,13 +13,13 @@ class AvatarCreatorOverlay extends StatefulWidget {
   final bool allowAsync; // Whether to allow background generation
 
   const AvatarCreatorOverlay({
-    Key? key,
+    super.key,
     required this.characterName,
     required this.age,
     required this.onCancel,
     required this.onAvatarCreated,
     this.allowAsync = true, // Default to allowing async
-  }) : super(key: key);
+  });
 
   @override
   State<AvatarCreatorOverlay> createState() => _AvatarCreatorOverlayState();

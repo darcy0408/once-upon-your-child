@@ -670,6 +670,32 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
           labelStyle: const TextStyle(fontWeight: FontWeight.w700),
         ),
       );
+      
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: chips,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: const [
+              Icon(Icons.check_circle, color: Colors.green, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Feeling selected!',
+                style: TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Quicksand',
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
     }
 
     return Wrap(

@@ -89,7 +89,7 @@ class ApiServiceManager {
         'Request to ${uri.path} timed out. Please try again.',
         timeout,
       );
-    } on SocketException catch (error) {
+    } on SocketException {
       debugPrint('❌ Network error while calling $uri');
       throw Exception(
         'Cannot connect to server. Please check your internet connection and try again.\n\nServer: $_localBackendUrl',
@@ -130,7 +130,7 @@ class ApiServiceManager {
         'Request to ${uri.path} timed out. Please try again.',
         timeout,
       );
-    } on SocketException catch (error) {
+    } on SocketException {
       debugPrint('❌ Network error while calling $uri');
       throw Exception(
         'Cannot connect to server. Please check your internet connection and try again.\n\nServer: $_localBackendUrl',
@@ -553,8 +553,9 @@ class ApiServiceManager {
         // Progress feedback
         if (onProgress != null) {
           final elapsedSec = stopwatch.elapsed.inSeconds;
-          if (elapsedSec < 3) onProgress('Gathering stardust...');
-          else if (elapsedSec < 8) onProgress('Summoning characters...');
+          if (elapsedSec < 3) {
+            onProgress('Gathering stardust...');
+          } else if (elapsedSec < 8) onProgress('Summoning characters...');
           else if (elapsedSec < 15) onProgress('Weaving magic words...');
           else if (elapsedSec < 25) onProgress('Adding sparkle...');
           else onProgress('Almost ready...');

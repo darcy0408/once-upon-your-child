@@ -114,10 +114,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
           for (var p in character.pets!) {
             try {
                // Ensure p is a map and convert contents to strings safely
-               if (p is Map) {
-                 safePets.add(Map<String, String>.from(p));
-               }
-            } catch (e) {
+               safePets.add(Map<String, String>.from(p));
+                         } catch (e) {
               debugPrint('Warning: Skipping invalid pet data: $p ($e)');
             }
           }
@@ -128,12 +126,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         if (character.friends != null) {
            widget.wizardData.additionalCharacters = [];
            for (var f in character.friends!) {
-             if (f is String) {
-               widget.wizardData.additionalCharacters.add(f);
-             } else {
-               widget.wizardData.additionalCharacters.add(f.toString());
-             }
-           }
+             widget.wizardData.additionalCharacters.add(f);
+                      }
         }
 
         if (character.personalitySliders != null) {
@@ -141,8 +135,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
       }
 
       // Set emoji based on role
-      if (character.role.contains('Adventurer')) _characterEmoji = '🗺️';
-      else if (character.role.contains('Thinker')) _characterEmoji = '💭';
+      if (character.role.contains('Adventurer')) {
+        _characterEmoji = '🗺️';
+      } else if (character.role.contains('Thinker')) _characterEmoji = '💭';
       else if (character.role.contains('Artist')) _characterEmoji = '🎨';
         else if (character.role.contains('Helper')) _characterEmoji = '🤝';
         else if (character.role.contains('Athlete')) _characterEmoji = '⚡';
@@ -623,7 +618,7 @@ class _PetsSection extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: species,
+                  initialValue: species,
                   items: ['Dog', 'Cat', 'Bird', 'Hamster', 'Fish', 'Bunny', 'Reptile', 'Other']
                       .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                       .toList(),
@@ -634,7 +629,7 @@ class _PetsSection extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: gender,
+                  initialValue: gender,
                   items: ['Boy', 'Girl']
                       .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                       .toList(),

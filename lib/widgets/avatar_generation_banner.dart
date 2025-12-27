@@ -3,7 +3,7 @@ import '../services/avatar_generation_state.dart';
 
 /// Banner that shows avatar generation progress
 class AvatarGenerationBanner extends StatelessWidget {
-  const AvatarGenerationBanner({Key? key}) : super(key: key);
+  const AvatarGenerationBanner({super.key});
 
   @override
   Widget build(BuildContext context) {

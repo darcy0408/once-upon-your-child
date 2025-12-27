@@ -109,7 +109,7 @@ class Character {
     if (json['pets'] is List) {
       try {
         petsList = (json['pets'] as List)
-            .where((item) => item is Map)
+            .whereType<Map>()
             .map((item) {
               try {
                 return Map<String, dynamic>.from(item as Map);
@@ -270,6 +270,12 @@ class SavedStory {
   final bool isInteractive;
   final bool isFavorite;
   final String? wisdomGem;
+  // NEW: Page-based story structure
+  final List<String>? pages;
+  final List<String>? adventureSteps;
+  final int? totalWords;
+  final int? totalPages;
+  final String? storyDuration;
 
   SavedStory({
     String? id,
@@ -281,6 +287,11 @@ class SavedStory {
     this.isInteractive = false,
     this.isFavorite = false,
     this.wisdomGem,
+    this.pages,
+    this.adventureSteps,
+    this.totalWords,
+    this.totalPages,
+    this.storyDuration,
   }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString();
 
   factory SavedStory.fromJson(Map<String, dynamic> json) {
@@ -297,6 +308,12 @@ class SavedStory {
       isInteractive: json['is_interactive'] ?? false,
       isFavorite: json['is_favorite'] ?? false,
       wisdomGem: json['wisdom_gem'],
+      // NEW: Page-based structure
+      pages: (json['pages'] as List<dynamic>?)?.map((p) => p.toString()).toList(),
+      adventureSteps: (json['adventure_steps'] as List<dynamic>?)?.map((s) => s.toString()).toList(),
+      totalWords: json['total_words'],
+      totalPages: json['total_pages'],
+      storyDuration: json['story_duration'],
     );
   }
 
@@ -310,6 +327,12 @@ class SavedStory {
         'is_interactive': isInteractive,
         'is_favorite': isFavorite,
         'wisdom_gem': wisdomGem,
+        // NEW: Page-based structure
+        if (pages != null) 'pages': pages,
+        if (adventureSteps != null) 'adventure_steps': adventureSteps,
+        if (totalWords != null) 'total_words': totalWords,
+        if (totalPages != null) 'total_pages': totalPages,
+        if (storyDuration != null) 'story_duration': storyDuration,
       };
 
   SavedStory copyWith({
@@ -322,6 +345,11 @@ class SavedStory {
     bool? isInteractive,
     bool? isFavorite,
     String? wisdomGem,
+    List<String>? pages,
+    List<String>? adventureSteps,
+    int? totalWords,
+    int? totalPages,
+    String? storyDuration,
   }) {
     return SavedStory(
       id: id ?? this.id,
@@ -333,6 +361,11 @@ class SavedStory {
       isInteractive: isInteractive ?? this.isInteractive,
       isFavorite: isFavorite ?? this.isFavorite,
       wisdomGem: wisdomGem ?? this.wisdomGem,
+      pages: pages ?? this.pages,
+      adventureSteps: adventureSteps ?? this.adventureSteps,
+      totalWords: totalWords ?? this.totalWords,
+      totalPages: totalPages ?? this.totalPages,
+      storyDuration: storyDuration ?? this.storyDuration,
     );
   }
 }
@@ -477,6 +510,7 @@ class StorySegmentData {
   final String id;
   final int segmentNumber;
   final String? title;
+  final String? stageLabel;  // Kid-friendly stage label (e.g., "Play Time!")
   final String outputType;  // 'CONTINUE' or 'CHOICE'
   final int? wordCount;
   final String content;
@@ -489,6 +523,7 @@ class StorySegmentData {
     required this.id,
     required this.segmentNumber,
     this.title,
+    this.stageLabel,
     this.outputType = 'CHOICE',  // Default to CHOICE for backward compatibility
     this.wordCount,
     required this.content,
@@ -509,6 +544,7 @@ class StorySegmentData {
       id: json['id'] ?? '',
       segmentNumber: json['segment_number'] ?? 1,
       title: json['title'],
+      stageLabel: json['stage_label'],
       outputType: json['output_type'] ?? 'CHOICE',
       wordCount: json['word_count'],
       content: json['content'] ?? '',
@@ -528,6 +564,7 @@ class StorySegmentData {
         'id': id,
         'segment_number': segmentNumber,
         if (title != null) 'title': title,
+        if (stageLabel != null) 'stage_label': stageLabel,
         'output_type': outputType,
         if (wordCount != null) 'word_count': wordCount,
         'content': content,

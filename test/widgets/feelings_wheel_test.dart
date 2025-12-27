@@ -17,10 +17,8 @@ void main() {
         home: Scaffold(
           body: SingleChildScrollView(
             child: FeelingsWheelScreen(
-              onFeelingSelected: (feeling) {
-                print('DEBUG: onFeelingSelected called with ${feeling.tertiary}');
-                captured = feeling;
-              },
+              currentFeeling: captured,
+              onFeelingSelected: (feeling) => captured = feeling,
             ),
           ),
         ),
@@ -34,7 +32,6 @@ void main() {
     await tester.tap(listToggle);
     await tester.pumpAndSettle();
 
-    print('DEBUG: Tapping Happy');
     // Tap a core emotion
     final happy = find.text('Happy');
     expect(happy, findsWidgets);
@@ -42,7 +39,6 @@ void main() {
     await tester.tap(happy.first);
     await tester.pumpAndSettle();
 
-    print('DEBUG: Tapping Joyful');
     // Secondary level should appear
     final joyful = find.text('Joyful');
     expect(joyful, findsWidgets);
@@ -52,7 +48,6 @@ void main() {
     await tester.tap(joyful.first);
     await tester.pumpAndSettle();
 
-    print('DEBUG: Tapping Excited');
     // Tertiary options should appear
     final tertiaryStage = find.ancestor(
       of: find.text('3. Exact feelings'),
@@ -64,13 +59,30 @@ void main() {
     );
     expect(tertiary, findsOneWidget);
 
-    // Select tertiary emotion, callback should capture selection
+    // Select tertiary emotion from the exact-feelings section
     await tester.ensureVisible(tertiary);
     await tester.tap(tertiary);
+    
+    // Update widget with new captured feeling to show summary
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: FeelingsWheelScreen(
+              currentFeeling: captured,
+              onFeelingSelected: (feeling) => captured = feeling,
+            ),
+          ),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(captured, isNotNull);
     expect(captured!.tertiary, 'Excited');
     expect(captured!.core, 'Happy');
+    
+    // Verify "Feeling selected!" text appears
+    expect(find.text('Feeling selected!'), findsOneWidget);
   });
 }
