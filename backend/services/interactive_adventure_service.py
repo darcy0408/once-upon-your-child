@@ -23,6 +23,7 @@ from backend.models import (
 )
 from backend.services.interactive_adventure_prompt_builder import InteractiveAdventurePromptBuilder
 from backend.gemini_image_generator import GeminiImageGenerator
+from backend.replicate_image_generator import ReplicateImageGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +48,9 @@ class InteractiveAdventureService:
             generation_config={"response_mime_type": "application/json"}
         )
 
-        # Initialize image generator
-        self.image_generator = GeminiImageGenerator(api_key=self.api_key)
+        # Initialize image generator (using Replicate for actual image generation)
+        # GeminiImageGenerator doesn't work (Gemini can't generate images)
+        self.image_generator = ReplicateImageGenerator()
 
     def create_story(
         self,
@@ -221,11 +223,11 @@ class InteractiveAdventureService:
         db.session.commit()
 
         # Generate illustration for first segment
-        # DISABLED: Image generation adds 5-15 seconds of delay per segment
-        # TODO: Re-enable with async background processing
-        # if segment_data.get('image_description'):
-        #     self._generate_segment_illustration(segment, character_dict, companions, character_age)
-        #     db.session.commit()
+        # In MOCK_TESTING_MODE, this returns instantly (no API call, no cost)
+        # Set MOCK_TESTING_MODE=false in .env to enable real image generation
+        if segment_data.get('image_description'):
+            self._generate_segment_illustration(segment, character_dict, companions, character_age)
+            db.session.commit()
 
         logger.info(f"Created interactive story {story.id} with first segment")
 
@@ -348,13 +350,13 @@ class InteractiveAdventureService:
         db.session.commit()
 
         # Generate illustration for new segment
-        # DISABLED: Image generation adds 5-15 seconds of delay per segment
-        # TODO: Re-enable with async background processing
-        # if segment_data.get('image_description'):
-        #     character_dict = self._get_character_dict(story)
-        #     companions = self._get_companions(story)
-        #     self._generate_segment_illustration(new_segment, character_dict, companions, story.age)
-        #     db.session.commit()
+        # In MOCK_TESTING_MODE, this returns instantly (no API call, no cost)
+        # Set MOCK_TESTING_MODE=false in .env to enable real image generation
+        if segment_data.get('image_description'):
+            character_dict = self._get_character_dict(story)
+            companions = self._get_companions(story)
+            self._generate_segment_illustration(new_segment, character_dict, companions, story.age)
+            db.session.commit()
 
         logger.info(f"Story {story_id} continued to segment {next_segment_number}")
 
@@ -450,6 +452,7 @@ class InteractiveAdventureService:
             story_id=story_id,
             segment_number=segment_number,
             title=segment_data.get('title'),
+            stage_label=segment_data.get('stage_label'),
             output_type=output_type,
             word_count=word_count,
             content=content,
