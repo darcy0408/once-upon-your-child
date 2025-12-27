@@ -1,0 +1,50 @@
+        # Build optimized prompt (reduced 50% from ~7000 chars to ~3500 chars)
+        prompt = f"""Generate interactive adventure for {child_name} (age {age}).
+
+**Story**: {theme} | {tone} | {segment_range[0]}-{segment_range[1]} segments | {choice_count} choices
+**Companion**: {companion_context}
+{cls._build_content_guidelines(interests, must_include, avoid, fears_or_sensitivities)}
+
+**Writing** ({age_config['word_count'][0]}-{age_config['word_count'][1]} words): {age_config['sentence_length']}, {age_config['vocabulary']}, {age_config['stakes']}
+
+**Rules**:
+- **POV**: Second-person ("you"). Use "{child_name}" max 2x. Include 2+ senses.
+- **Companion** (if present): 3+ appearances, 1 help, 1 bond. Never replaces child's choice.
+- **Inventory**: Show new items clearly. Ref within 1 segment. Max 5 items.
+- **Choices**: {choice_count} concrete options. NO "ask what to do"/"wait"/passive. Each changes outcome.
+- **Safety**: No violence/harm/abuse/abandonment. Safe, whimsical only.
+
+**Opening Segment 1/{segment_range[1]}**:
+1. Sensory hook (first 60 words)
+2. Introduce challenge
+3. Show companion ability (if present)
+4. Establish location & goal
+5. End with {choice_count} distinct choices
+
+**JSON Output**:
+```json
+{{
+  "title": "Adventure Title",
+  "output_type": "CHOICE",
+  "segment_number": 1,
+  "content": "Story in second-person POV ({age_config['word_count'][0]}-{age_config['word_count'][1]} words)",
+  "word_count": 450,
+  "image_description": "Scene description",
+  "companion_beats": [{{"type": "dialogue|action|bond", "text": "..."}}],
+  "inventory": [],
+  "inventory_references": [],
+  "story_state": {{
+    "location": "Where",
+    "goal": "What trying to achieve",
+    "key_clues": [],
+    "companion_status": "How companion is",
+    "time_pressure": null
+  }},
+  "choices": [
+{choices_json}
+  ],
+  "is_ending": false
+}}
+```
+
+Generate opening segment as JSON."""

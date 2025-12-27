@@ -1,0 +1,51 @@
+        prompt = f"""Continue adventure segment {next_segment_number}/{segment_range[1]}.
+
+**Title**: {story_context.get('title', 'Untitled')} | **Theme**: {story_context.get('theme', 'Adventure')} | **Age**: {age}
+
+**Story So Far**:
+{story_so_far}
+
+**Hero chose**: "{selected_choice}"
+
+**Inventory**: {json.dumps(inventory) if inventory else "[]"}
+**State**: {json.dumps(story_state)}
+
+{continuation_guidance}
+{output_type_guidance}
+
+**Writing** ({age_config['word_count'][0]}-{age_config['word_count'][1]} words): {age_config['sentence_length']}. Second-person POV. Use name max 2x. Include 2+ senses.
+**Companion** (if present): 3+ beats, 1 help, 1 bond.
+**Inventory** (if items): Reference items. Show new ones clearly.
+**Choices**: {choice_count} concrete options. NO passive choices. Each must change outcome. If output_type=CONTINUE, choices=[].
+
+**JSON Output**:
+```json
+{{
+  "output_type": "CHOICE or CONTINUE",
+  "segment_number": {next_segment_number},
+  "content": "Story ({age_config['word_count'][0]}-{age_config['word_count'][1]} words)",
+  "word_count": 450,
+  "image_description": "Scene",
+  "companion_beats": [{{"type": "dialogue|action|bond", "text": "..."}}],
+  "inventory": [],
+  "inventory_references": [],
+  "story_state": {{
+    "location": "Where",
+    "goal": "Goal",
+    "key_clues": [],
+    "companion_status": "Status",
+    "time_pressure": null
+  }},
+  "choices": [
+{choices_json}
+  ],
+  "is_ending": false
+}}
+```
+
+**REMINDER**:
+- If output_type='CONTINUE': choices array should be EMPTY []
+- If output_type='CHOICE': choices array must have exactly {choice_count} meaningful options
+- If is_ending=true: choices array should be EMPTY [] and output_type='CONTINUE'
+
+Generate the next segment as valid JSON."""
