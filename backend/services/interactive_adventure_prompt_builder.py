@@ -16,12 +16,12 @@ class InteractiveAdventurePromptBuilder:
     # Age calibration settings
     AGE_BANDS = {
         '3-5': {
-            'sentence_length': 'very short (3-6 words)',
-            'vocabulary': 'concrete words only, CVC words preferred',
-            'word_count': (250, 350),  # Increased for better immersion
+            'sentence_length': 'simple but varied (4-10 words), storybook-style with personality',
+            'vocabulary': 'easy words with playful phrasing (think Corduroy, Where the Wild Things Are, not See Spot Run)',
+            'word_count': (180, 280),  # Increased to allow natural storybook pacing
             'stakes': 'gentle, with frequent reassurance',
-            'suspense': 'minimal',
-            'complexity': 'simple cause-and-effect'
+            'suspense': 'minimal but magical',
+            'complexity': 'simple cause-and-effect with whimsy and wonder'
         },
         '6-8': {
             'sentence_length': 'short to medium (5-10 words)',
@@ -147,16 +147,27 @@ class InteractiveAdventurePromptBuilder:
 **Rules**:
 - **POV**: Second-person ("you"). Use "{child_name}" max 2x. Include 2+ senses.
 - **Companion** (if present): 3+ appearances, 1 help, 1 bond. Never replaces child's choice.
+  - **ANIMAL COMPANIONS**: Do NOT make animals talk unless there's a magical reason (e.g., enchanted, found magic item). Animals communicate through actions, sounds, and body language.
+- **Characters**: NEVER invent names for family/friends not provided. Use generic terms: "grandma", "mom", "dad", "friend", "neighbor".
 - **Inventory**: Show new items clearly. Ref within 1 segment. Max 5 items.
-- **Choices**: {choice_count} concrete options. NO "ask what to do"/"wait"/passive. Each changes outcome.
+- **Choices**: {choice_count} concrete options. NO "ask what to do"/"wait"/passive. Each changes outcome. Start with vivid verbs ("Knock", "Whisper", "Tap", "Sing").
 - **Safety**: No violence/harm/abuse/abandonment. Safe, whimsical only.
 
+**FUN RECIPE** (ages 3-8 REQUIRED):
+1. **Silly Detail**: funny sound, goofy rule, silly misunderstanding
+2. **Magical Twist**: object talks/sings/dances/glows/changes
+3. **2+ Dialogue Lines**: character speaks, object talks, companion chats
+4. **Tiny Challenge**: pattern, count, color choice, rhyme, simple action
+5. **Mini Cliffhanger**: sound appears, thing moves, light glows, mystery hint
+
+**LOGIC RULE**: Choices must match obstacles (tiny keyhole needs tiny key, not big bone). Make mismatches magical ("bone shrinks with a pop!").
+
 **Opening Segment 1/{segment_range[1]}**:
-1. Sensory hook (first 60 words)
-2. Introduce challenge
-3. Show companion ability (if present)
-4. Establish location & goal
-5. End with {choice_count} distinct choices
+1. Begin with sensory details (what child sees/hears/smells) - natural storybook opening
+2. Introduce gentle challenge or mystery
+3. Show companion personality (if present)
+4. Establish magical location & sense of wonder
+5. End with {choice_count} distinct, exciting choices
 
 **JSON Output**:
 ```json
@@ -164,6 +175,7 @@ class InteractiveAdventurePromptBuilder:
   "title": "Adventure Title",
   "output_type": "CHOICE",
   "segment_number": 1,
+  "stage_label": "Wake Up!",
   "content": "Story in second-person POV ({age_config['word_count'][0]}-{age_config['word_count'][1]} words)",
   "word_count": 450,
   "image_description": "Scene description",
@@ -183,6 +195,8 @@ class InteractiveAdventurePromptBuilder:
   "is_ending": false
 }}
 ```
+
+**QUALITY CHECK** (before output): Count "You see..." >2 times? Rewrite. Has 2+ dialogue lines? Has silly + magical beat? Choices vivid verbs? Cliffhanger in last sentence? If no, revise once.
 
 Generate opening segment as JSON."""
 
@@ -234,16 +248,16 @@ Generate opening segment as JSON."""
         continuation_guidance = ""
         output_type_guidance = ""
 
-        # Choice Cadence Rule logic
+        # Pick-A-Path Rule: ALWAYS show choices except for the absolute final ending
         if should_conclude:
-            output_type_guidance = f"\n**OUTPUT TYPE DECISION**: This is the FINAL segment. Set output_type='CONTINUE' (no choices), is_ending=true, and deliver the satisfying conclusion."
+            output_type_guidance = f"\n**OUTPUT TYPE**: This is the FINAL segment. Set output_type='CONTINUE' (no choices), is_ending=true, and deliver the satisfying conclusion."
             continuation_guidance = f"\n**FINAL SEGMENT**: This is the concluding segment {next_segment_number}. Deliver the 'Impossible Moment' climax and warm resolution."
         elif is_approaching_end:
-            output_type_guidance = f"\n**OUTPUT TYPE DECISION**: As you approach the climax, use output_type='CHOICE' for major decision points."
-            continuation_guidance = f"\n**APPROACHING CLIMAX**: This is segment {next_segment_number} of {segment_range[1]}. Begin escalating toward the 'Impossible Moment'."
+            output_type_guidance = f"\n**OUTPUT TYPE**: REQUIRED: output_type='CHOICE'. This is a Pick-A-Path adventure - every segment MUST present {choice_count} meaningful choices until the final ending."
+            continuation_guidance = f"\n**APPROACHING CLIMAX**: This is segment {next_segment_number} of {segment_range[1]}. Begin escalating toward the 'Impossible Moment' while providing crucial choices."
         else:
-            output_type_guidance = f"\n**OUTPUT TYPE DECISION**: Use output_type='CHOICE'. Provide exactly {choice_count} distinct, meaningful choices to drive the story forward. Ensure the user has agency."
-            # Removed guidance to prefer CONTINUE for early segments to ensure CYOA feel
+            output_type_guidance = f"\n**OUTPUT TYPE**: REQUIRED: output_type='CHOICE'. This is a Pick-A-Path adventure - every segment MUST present exactly {choice_count} distinct, meaningful choices. No CONTINUE segments except for the final ending."
+            continuation_guidance = ""
 
         # Pre-calculate choice templates based on count
         choice_templates = [
@@ -278,14 +292,26 @@ Generate opening segment as JSON."""
 
 **Writing** ({age_config['word_count'][0]}-{age_config['word_count'][1]} words): {age_config['sentence_length']}. Second-person POV. Use name max 2x. Include 2+ senses.
 **Companion** (if present): 3+ beats, 1 help, 1 bond.
+  - **ANIMAL COMPANIONS**: Do NOT make animals talk unless there's a magical reason. Animals communicate through actions, sounds, body language.
+**Characters**: NEVER invent names for family/friends not provided. Use generic terms: "grandma", "mom", "friend".
 **Inventory** (if items): Reference items. Show new ones clearly.
-**Choices**: {choice_count} concrete options. NO passive choices. Each must change outcome. If output_type=CONTINUE, choices=[].
+**Choices**: REQUIRED - Must provide exactly {choice_count} concrete options (unless final ending). NO passive choices. Each must change outcome. Start with vivid verbs.
+
+**FUN RECIPE** (ages 3-8 REQUIRED):
+1. **Silly Detail**: funny sound, goofy rule, silly misunderstanding
+2. **Magical Twist**: object talks/sings/dances/glows/changes
+3. **2+ Dialogue Lines**: character speaks, object talks, companion chats
+4. **Tiny Challenge**: pattern, count, color choice, rhyme, simple action
+5. **Mini Cliffhanger**: sound appears, thing moves, light glows, mystery hint
+
+**LOGIC RULE**: Choices match obstacles. Make mismatches magical.
 
 **JSON Output**:
 ```json
 {{
-  "output_type": "CHOICE or CONTINUE",
+  "output_type": "{('CONTINUE' if should_conclude else 'CHOICE')}",
   "segment_number": {next_segment_number},
+  "stage_label": "Kid-friendly 2-4 word label (e.g., Play Time!, Find the Star!, Big Choice!)",
   "content": "Story ({age_config['word_count'][0]}-{age_config['word_count'][1]} words)",
   "word_count": 450,
   "image_description": "Scene",
@@ -302,14 +328,17 @@ Generate opening segment as JSON."""
   "choices": [
 {choices_json}
   ],
-  "is_ending": false
+  "is_ending": {str(should_conclude).lower()}
 }}
 ```
 
-**REMINDER**:
-- If output_type='CONTINUE': choices array should be EMPTY []
-- If output_type='CHOICE': choices array must have exactly {choice_count} meaningful options
-- If is_ending=true: choices array should be EMPTY [] and output_type='CONTINUE'
+**CRITICAL RULE FOR PICK-A-PATH**:
+- This is a Pick-A-Path adventure where EVERY segment must give choices
+- output_type MUST be 'CHOICE' with exactly {choice_count} options (unless this is the final ending segment)
+- ONLY the absolute final ending segment (is_ending=true) can have output_type='CONTINUE' with no choices
+- Never use CONTINUE for narrative segments - always provide meaningful choices
+
+**QUALITY CHECK** (before output): "You see..." count, 2+ dialogue, fun beats, vivid verbs, cliffhanger? Revise once if needed.
 
 Generate the next segment as valid JSON."""
 
@@ -363,12 +392,12 @@ Generate the next segment as valid JSON."""
         companion_descriptions = []
         for comp in companions[:2]:  # Max 2 companions for complexity
             if 'species' in comp:  # Pet companion
-                desc = f"{comp.get('name', 'companion')} the {comp.get('species', 'pet')}"
+                desc = f"{comp.get('name', 'companion')} the {comp.get('species', 'pet')} [ANIMAL - no speech]"
                 if comp.get('personality'):
                     desc += f" ({comp['personality']})"
                 companion_descriptions.append(desc)
             else:  # Character companion
-                desc = f"{comp.get('name', 'friend')}"
+                desc = f"{comp.get('name', 'friend')} [can speak]"
                 if comp.get('signaturePower'):
                     desc += f" with ability to {comp['signaturePower']}"
                 companion_descriptions.append(desc)

@@ -20,25 +20,55 @@ PERSONALIZATION RULES (critical for immersion):
 - The child should feel "this story is really about ME"
 """
 
+# Age-appropriate humor elements for ages 5-8
+AGE_5_HUMOR_GUIDE = """
+AGE 5-8 HUMOR REQUIREMENTS (Include at least ONE per page):
+- Sound effects: "Boing!", "Whoosh!", "Ding!", "Splish-splash!", "Zzzip!"
+- Silly but friendly names: "Mr. Wiggles", "Princess Sparklepants", "Captain Giggles"
+- Tiny misunderstandings that get resolved quickly and happily
+- Animal helpers doing goofy things (bird lands on head, cat sneezes sparkles, dog  spins in circles)
+- "Oops!" moments with quick reassurance ("Oops! But that's okay!")
+- Rhyming silly words: "higgledy-piggledy", "topsy-turvy", "wibbly-wobbly"
+- Playful reactions: giggles, tickles, wiggles, bounces
+
+HUMOR RULES:
+- Keep it light and friendly, never mean or scary
+- Make sure kids are "in on the joke" - no adult sarcasm
+- Physical comedy is great (gentle stumbles, silly faces, funny hops)
+- Exaggeration for fun ("the BIGGEST smile ever!", "a million sparkles!")
+"""
+
 # ----------------------
 # Story components
 # ----------------------
 # ----------------------
 # Helper Functions (Defined early to avoid NameErrors)
 # ----------------------
-def _get_age_guidelines(age: int) -> dict:
+def _get_age_guidelines(age: int, story_duration: str | None = None) -> dict:
+    """Get age-appropriate guidelines, optionally with duration-specific word counts"""
+    # Import here to avoid circular dependency
+    try:
+        from .story_duration_service import DurationConfig, StoryDuration
+        if story_duration:
+            config = DurationConfig.get_config(story_duration, age)
+            length_guideline = f"{config['min_words']}-{config['max_words']} words, {config['min_pages']}-{config['max_pages']} pages"
+        else:
+            length_guideline = None
+    except ImportError:
+        length_guideline = None
+
     if age <= 5:
         return {
-            "length_guideline": "100-150 words",
+            "length_guideline": length_guideline or "100-150 words",
             "vocabulary_level": "very simple vocabulary (CVC + sight words)",
             "sentence_structure": "3-6 word sentences with repetition",
             "vocabulary_examples": "cat, dog, hop, sun, play, happy",
             "concepts": "tangible, concrete ideas only",
-            "special_instructions": "Use rhyme, rhythm, and repeatable frames.",
+            "special_instructions": "Use rhyme, rhythm, and repeatable frames. Include light humor (sound effects, silly moments).",
         }
     if age <= 8:
         return {
-            "length_guideline": "150-250 words",
+            "length_guideline": length_guideline or "150-250 words",
             "vocabulary_level": "simple (sight words + basic phonics)",
             "sentence_structure": "short, clear, mostly present-tense sentences",
             "vocabulary_examples": "magic, brave, puzzle, curious",
@@ -47,7 +77,7 @@ def _get_age_guidelines(age: int) -> dict:
         }
     if age <= 12:
         return {
-            "length_guideline": "250-400 words",
+            "length_guideline": length_guideline or "250-400 words",
             "vocabulary_level": "grade-level vocabulary",
             "sentence_structure": "mix of short and complex sentences",
             "vocabulary_examples": "determined, shimmering, mysterious, courageous",
@@ -56,7 +86,7 @@ def _get_age_guidelines(age: int) -> dict:
         }
     if age <= 15:
         return {
-            "length_guideline": "400-600 words",
+            "length_guideline": length_guideline or "400-600 words",
             "vocabulary_level": "advanced / expressive vocabulary",
             "sentence_structure": "sophisticated and varied sentences",
             "vocabulary_examples": "contemplated, resilience, luminous, intricate",
@@ -64,7 +94,7 @@ def _get_age_guidelines(age: int) -> dict:
             "special_instructions": "Use nuanced emotions and real-world parallels.",
         }
     return {
-        "length_guideline": "600-800 words",
+        "length_guideline": length_guideline or "600-800 words",
         "vocabulary_level": "mature / literary vocabulary",
         "sentence_structure": "complex, literary prose",
         "vocabulary_examples": "introspective, paradoxical, cathartic, transcendent",
@@ -73,8 +103,47 @@ def _get_age_guidelines(age: int) -> dict:
     }
 
 
-def _build_age_instruction_block(age: int) -> str:
-    guidelines = _get_age_guidelines(age)
+def _get_age_5_plot_arc_prompt(num_pages: int) -> str:
+    """Get plot arc structure for age 5 stories with specific page requirements"""
+    if num_pages <= 8:
+        # 5-minute story arc (5-8 pages)
+        return """
+PAGE-BY-PAGE PLOT ARC FOR AGE 5 (5-8 pages):
+Page 1 - Cozy Hook: Meet character in their normal, safe world with something magical appearing
+Page 2 - Enter Wonder: Step through the magic door/portal into a colorful, fun place
+Page 3 - Fun Discovery: Find something delightful and interesting (candy forest, talking animals, etc.)
+Page 4 - Uh-Oh Moment: A small, gentle problem appears (not scary, just needs solving)
+Page 5 - Silly Idea: Character tries a funny solution that doesn't quite work (include humor here!)
+Page 6 - Kind & Smart Solution: Character uses kindness/cleverness to solve it properly
+Page 7 - Sparkly Payoff: Everything works! Magical celebratory moment
+Page 8 - Home & Smile: Return home feeling happy and proud
+
+CRITICAL: Each page should end at a natural story beat, not mid-sentence!
+"""
+    else:
+        # 10-minute story arc (8-12 pages)
+        return """
+PAGE-BY-PAGE PLOT ARC FOR AGE 5 (8-12 pages):
+Page 1 - Cozy Start: Character in normal world, happy and curious
+Page 2 - Magic Appears: Something wonderful and mysterious shows up
+Page 3 - First Discovery: Character explores and finds something amazing
+Page 4 - New Friends: Meet helpful companions with fun personalities
+Page 5 - Little Problem: A gentle obstacle or puzzle appears
+Page 6 - Silly Attempt: Try a goofy solution (humor moment - include sound effects!)
+Page 7 - Better Idea: Think of a smarter, kinder way
+Page 8 - Brave & Kind Action: Use the good idea with courage and heart
+Page 9 - Sparkly Moment: Everything becomes magical and wonderful!
+Page 10 - Happy Celebration: Everyone cheers and celebrates together
+Page 11 - Journey Home: Head back to the normal world, changed for the better
+Page 12 - Warm Glow: Quiet, cozy ending with a smile and happy thought
+
+CRITICAL: Each page should be 70-140 words and end at a sentence boundary!
+"""
+
+
+def _build_age_instruction_block(age: int, story_duration: str | None = None) -> str:
+    """Build age-appropriate instruction block with optional duration-specific requirements"""
+    guidelines = _get_age_guidelines(age, story_duration)
     return (
         f"AGE-APPROPRIATE GUIDELINES FOR {age}-YEAR-OLD:\n"
         f"- LENGTH: {guidelines['length_guideline']} (strict requirement)\n"
@@ -182,16 +251,39 @@ class AdvancedStoryEngine:
         therapeutic_prompt: str = "",
         feelings_prompt: str | None = None,
         character_details: dict | None = None, # Passed for prompt building
-        story_length: str = "standard",  # NEW: 'quick', 'standard', or 'epic'
+        story_length: str = "standard",  # Legacy: 'quick', 'standard', or 'epic'
+        story_duration: str | None = None,  # NEW: '5_minutes' or '10_minutes'
         age: int = 5,  # NEW: Age for calibration
     ):
-        # Map story length to word count targets
-        word_count_targets = {
-            'quick': '300-400 words',
-            'standard': '600-800 words',
-            'epic': '1000-1200 words',
-        }
-        target_word_count = word_count_targets.get(story_length, '600-800 words')
+        # Import duration service
+        try:
+            from .story_duration_service import DurationConfig, StoryDuration
+
+            # Map legacy story_length to duration if duration not provided
+            if not story_duration:
+                legacy_mapping = {
+                    'quick': StoryDuration.FIVE_MINUTES,
+                    'standard': StoryDuration.TEN_MINUTES,
+                    'epic': StoryDuration.TEN_MINUTES,
+                }
+                story_duration = legacy_mapping.get(story_length, StoryDuration.FIVE_MINUTES)
+
+            # Get duration configuration
+            config = DurationConfig.get_config(story_duration, age)
+            target_word_count = f"{config['min_words']}-{config['max_words']} words"
+            target_pages = f"{config['min_pages']}-{config['max_pages']} pages"
+            use_duration_system = True
+        except ImportError:
+            # Fallback to old system if import fails
+            word_count_targets = {
+                'quick': '300-400 words',
+                'standard': '600-800 words',
+                'epic': '1000-1200 words',
+            }
+            target_word_count = word_count_targets.get(story_length, '600-800 words')
+            target_pages = "5-8 pages"
+            use_duration_system = False
+            story_duration = None
 
         # Handle companions (new structured format takes precedence)
         companion_lines = []
@@ -361,6 +453,18 @@ class AdvancedStoryEngine:
 
         wisdom = self.wisdom_gems.get_wisdom(theme)
 
+        # Add age 5 humor guide if applicable
+        humor_section = ""
+        if age <= 8:
+            humor_section = AGE_5_HUMOR_GUIDE
+
+        # Add age 5 plot arc if using duration system
+        plot_arc_section = ""
+        if use_duration_system and age <= 5:
+            # Get expected page count for plot arc
+            expected_pages = config.get('min_pages', 5)
+            plot_arc_section = _get_age_5_plot_arc_prompt(expected_pages)
+
         parts = [
             "You are a MASTER ADVENTURE ARCHITECT for children's stories - an expert in crafting immersive, sensory-rich narratives that captivate young imaginations.",
             "Your specialty: Turning ordinary moments into EXTRAORDINARY ADVENTURES with wonder, excitement, and heart.",
@@ -382,8 +486,11 @@ class AdvancedStoryEngine:
             "- IMPORTANT: The companions listed above MUST speak and act in the story.",
             "- CRITICAL: Character Companions are REAL PEOPLE (children/humans), NOT stuffed animals, toys, or imaginary friends.",
             "- Mode: Immersive Adventure",
-            f"- Target length: {target_word_count} for deep engagement.",
-            _build_age_instruction_block(age),  # Integrated Age Calibration
+            f"- Target length: {target_word_count}, {target_pages} for deep engagement.",
+            _build_age_instruction_block(age, story_duration),  # Integrated Age Calibration with duration
+            "",
+            humor_section,  # Age-appropriate humor guide
+            plot_arc_section,  # Age 5 plot arc structure
             "",
             "STORY:",
             "STORY START",

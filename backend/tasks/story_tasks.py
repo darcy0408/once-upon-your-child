@@ -113,7 +113,9 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         include_illustrations = kwargs.get("include_illustrations", False)
         rhyme_time_mode = kwargs.get("rhyme_time_mode", False)
         learning_to_read_mode = kwargs.get("learning_to_read_mode", False)
-        story_length = kwargs.get("story_length", "standard")  # 'quick', 'standard', or 'epic'
+        story_length = kwargs.get("story_length", "standard")  # 'quick', 'standard', or 'epic' (legacy)
+        story_duration = kwargs.get("story_duration")  # NEW: '5_minutes' or '10_minutes'
+        age = kwargs.get("age", 5)  # User's age
         companion = kwargs.get("companion")  # Legacy support
         character_name = kwargs.get("character") or "a brave adventurer"
         char_details = kwargs.get("character_details") or {}
@@ -187,7 +189,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 logger.info(f"Full prompt for rhyme time mode: {prompt}")
             else:
                 # Standard enhanced prompt
-                logger.info(f"Using standard enhanced prompt (length: {story_length})")
+                logger.info(f"Using standard enhanced prompt (length: {story_length}, duration: {story_duration})")
                 prompt = engine.generate_enhanced_prompt(
                     character=character_name,
                     theme=theme,
@@ -203,8 +205,9 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     therapeutic_prompt=kwargs.get("therapeutic_prompt", ""),
                     feelings_prompt=kwargs.get("feelings_prompt"),
                     character_details=char_details,
-                    story_length=story_length,  # NEW: Story length option
-                    age=kwargs.get("age", 5),   # NEW: Pass age for calibration
+                    story_length=story_length,  # Legacy: Story length option
+                    story_duration=story_duration,  # NEW: Duration-based generation
+                    age=age,   # NEW: Pass age for calibration
                 )
 
             logger.info(f"Companion Pets: {companion_pets}")
@@ -213,6 +216,76 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
 
             story_text = _generate_story_text(prompt, theme, character_name, companion)
             title, wisdom_gem, story_body = _safe_extract_title_and_gem(story_text, theme)
+
+            # NEW: Page-based story structure for duration-based generation
+            pages = []
+            adventure_steps = []
+            total_words = 0
+            validation_issues = []
+
+            if story_duration and not rhyme_time_mode and not learning_to_read_mode:
+                # Use page-based system for regular duration stories
+                try:
+                    from backend.services.story_duration_service import (
+                        PageSplitter,
+                        StoryValidator,
+                        AdventureStepGenerator,
+                        DurationConfig
+                    )
+
+                    # Get configuration
+                    config = DurationConfig.get_config(story_duration, age)
+
+                    # Split story into pages
+                    pages = PageSplitter.split_into_pages(
+                        story_body,
+                        target_words_per_page=config['words_per_page'],
+                        min_pages=config['min_pages'],
+                        max_pages=config['max_pages']
+                    )
+
+                    # Generate adventure step labels
+                    adventure_steps = AdventureStepGenerator.generate_steps(
+                        story_duration,
+                        age,
+                        len(pages)
+                    )
+
+                    # Validate story
+                    is_valid, issues = StoryValidator.validate_story(
+                        story_body,
+                        pages,
+                        story_duration,
+                        age
+                    )
+
+                    total_words = PageSplitter.count_words(story_body)
+
+                    if not is_valid:
+                        validation_issues = issues
+                        logger.warning(f"Story validation issues: {', '.join(issues)}")
+
+                    logger.info(
+                        f"Generated {len(pages)} pages, {total_words} words "
+                        f"(target: {config['min_words']}-{config['max_words']} words, "
+                        f"{config['min_pages']}-{config['max_pages']} pages)"
+                    )
+
+                except ImportError as e:
+                    logger.error(f"Failed to import story_duration_service: {e}")
+                    # Fallback to single-page mode
+                    pages = [story_body]
+                    adventure_steps = ["The Story"]
+                except Exception as e:
+                    logger.exception(f"Error during page splitting: {e}")
+                    # Fallback to single-page mode
+                    pages = [story_body]
+                    adventure_steps = ["The Story"]
+            else:
+                # Legacy mode: no page splitting
+                pages = [story_body]
+                adventure_steps = ["The Story"]
+                total_words = len(story_body.split())
 
             # Generate illustration if requested
             illustrations = []
@@ -269,6 +342,13 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     "illustrations": illustrations,  # Include generated images
                     "rhyme_time_mode": rhyme_time_mode,
                     "learning_to_read_mode": learning_to_read_mode,
+                    # NEW: Page-based structure
+                    "pages": pages,  # List of page texts
+                    "adventure_steps": adventure_steps,  # List of step labels
+                    "total_words": total_words,
+                    "total_pages": len(pages),
+                    "validation_issues": validation_issues,  # Empty if valid
+                    "story_duration": story_duration,  # For reference
                 },
             }
 

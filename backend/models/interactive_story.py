@@ -81,10 +81,7 @@ class StorySegment(db.Model):
     # Segment metadata
     segment_number = db.Column(db.Integer, nullable=False)  # Sequential number (1, 2, 3...)
     title = db.Column(db.String(200), nullable=True)  # Optional segment title
-
-    # Output type: CONTINUE (no choices, reader clicks continue) or CHOICE (decision point)
-    output_type = db.Column(db.String(20), nullable=False, default='CHOICE')
-    word_count = db.Column(db.Integer, nullable=True)  # Actual word count for pacing tracking
+    stage_label = db.Column(db.String(100), nullable=True)  # Kid-friendly stage label (e.g., "Play Time!")
 
     # Output type: CONTINUE (no choices, reader clicks continue) or CHOICE (decision point)
     output_type = db.Column(db.String(20), nullable=False, default='CHOICE')
@@ -113,6 +110,7 @@ class StorySegment(db.Model):
             'id': self.id,
             'segment_number': self.segment_number,
             'title': self.title,
+            'stage_label': self.stage_label,
             'output_type': self.output_type,
             'word_count': self.word_count,
             'content': self.content,
