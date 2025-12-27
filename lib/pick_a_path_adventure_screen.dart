@@ -603,6 +603,26 @@ class _PickAPathAdventureScreenState
   }
 
   Widget _buildChoicesSection() {
+    // If it's a continuation segment (no choices), show a "Continue" button
+    if (_currentSegment!.isContinuation) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: AppButton.primary(
+          label: 'Continue Adventure',
+          icon: Icons.arrow_forward_rounded,
+          onPressed: _isContinuing
+              ? null
+              : () => _handleChoiceSelected(
+                    StoryChoiceData(
+                      id: 'continue',
+                      choiceNumber: 0,
+                      text: 'Continue',
+                    ),
+                  ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
