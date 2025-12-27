@@ -135,136 +135,46 @@ class InteractiveAdventurePromptBuilder:
         
         choices_json = ",\n".join(choice_templates)
 
-        # Build the comprehensive prompt
-        prompt = f"""# Interactive Children's Adventure Story Weaver
+        # Build optimized prompt (reduced 50% from ~7000 chars to ~3500 chars)
+        prompt = f"""Generate interactive adventure for {child_name} (age {age}).
 
-## Context & Background
-You are generating interactive, personalized adventure stories for a children's story app. The stories must feel vivid, magical, and empowering while staying psychologically safe and age-appropriate. The child is always the hero, and companions exist to unlock "impossible" moments, not to steal the spotlight.
-
-**CRITICAL IMMERSION PRINCIPLE**: Each segment should feel like continuous reading, not a quiz. Use the CONTINUE/CHOICE system to balance flow with agency.
-
-## Your Role
-- **Interactive Adventure Architect**: Create branching story segments with clear, consequential choices ONLY at decision hinges
-- **Second-Person Immersion Master**: Write in "you" POV to make the child feel inside the story
-- **Age-Calibrated Language Engine**: Adjust vocabulary and sentence length to match the child's age
-- **Sensory Scene Builder**: Write cinematic scenes using multiple senses (sight, sound, touch, smell, heartbeat)
-- **Agency-First Storyteller**: Ensure the child solves main problems through choices, courage, or cleverness
-- **Continuity Keeper**: Track inventory, promises, clues, and companion abilities with zero contradictions
-
-## Current Story Configuration
-
-### Child & Character
-- **Hero**: {child_name}, age {age}
-- **Character Details**: {character_context}
-- **Companions**: {companion_context}
-
-### Story Settings
-- **Theme**: {theme}
-- **Tone**: {tone}
-- **Length**: {length} ({segment_range[0]}-{segment_range[1]} total segments)
-- **Choices per segment**: {choice_count}
-
-### Age Calibration (Age Band: {age_band})
-- **Sentence Length**: {age_config['sentence_length']}
-- **Vocabulary**: {age_config['vocabulary']}
-- **Word Count**: {age_config['word_count'][0]}-{age_config['word_count'][1]} words
-- **Stakes**: {age_config['stakes']}
-- **Suspense Level**: {age_config['suspense']}
-- **Complexity**: {age_config['complexity']}
-
-### Content Guidelines
+**Story**: {theme} | {tone} | {segment_range[0]}-{segment_range[1]} segments | {choice_count} choices
+**Companion**: {companion_context}
 {cls._build_content_guidelines(interests, must_include, avoid, fears_or_sensitivities)}
 
-## Safety Protocols
-- No realistic violence, self-harm, abuse, sexual content, hate, or permanent loss
-- Avoid abandonment themes; separations must be temporary, safe, and reassuring
-- No medical, legal, or "real-world unsafe instruction" content
-- Keep stakes "epic-feeling but safe," using whimsy, puzzles, and wonder instead of harm
+**Writing** ({age_config['word_count'][0]}-{age_config['word_count'][1]} words): {age_config['sentence_length']}, {age_config['vocabulary']}, {age_config['stakes']}
 
-## CRITICAL: Point-of-View Requirements (MUST-PASS)
+**Rules**:
+- **POV**: Second-person ("you"). Use "{child_name}" max 2x. Include 2+ senses.
+- **Companion** (if present): 3+ appearances, 1 help, 1 bond. Never replaces child's choice.
+- **Inventory**: Show new items clearly. Ref within 1 segment. Max 5 items.
+- **Choices**: {choice_count} concrete options. NO "ask what to do"/"wait"/passive. Each changes outcome.
+- **Safety**: No violence/harm/abuse/abandonment. Safe, whimsical only.
 
-**PRIMARY POV**: Second-person ("you") for EVERY action, observation, and feeling
-- ✅ CORRECT: "You step into the garden. Your heart skips. You smell roses."
-- ❌ WRONG: "{child_name} steps into the garden. {child_name}'s heart skips."
+**Opening Segment 1/{segment_range[1]}**:
+1. Sensory hook (first 60 words)
+2. Introduce challenge
+3. Show companion ability (if present)
+4. Establish location & goal
+5. End with {choice_count} distinct choices
 
-**NAME USAGE**: Use the child's name sparingly (1-2 times per segment maximum) as a "spotlight moment"
-- Example: "{child_name}, you feel the warmth of the brick under your fingers."
-
-**SENSORY ANCHORING**: Ground every scene in the child's physical experience
-- Use: "Your sneakers squeak... Your hands grip... Your breath catches..."
-- Include at least 2 different senses per segment (sight, sound, touch, smell, heartbeat)
-
-## CRITICAL: Companion Contract (MUST-PASS if companion present)
-
-If a companion is part of this story, EVERY segment must include:
-1. **Narrative Presence** (3+ mentions): Companion appears in action, dialogue, or reaction at least 3 times
-2. **Helpful Contribution**: Companion provides ONE concrete assist (idea, tool, distraction, comfort)
-3. **Bond Moment**: ONE short relationship beat (joke, high-five, encouragement, shared look)
-4. **Agency Balance**: Companion offers perspective but NEVER replaces the child's choice
-
-Example companion beats:
-- Dialogue: "Pip whispers, 'I've got a plan if you need it.'"
-- Action: "Pip does a quick spin, checking for danger."
-- Bond: "Pip looks up at you and grins. 'You're brilliant!'"
-- Help: "Pip points to a hidden path you almost missed."
-
-## CRITICAL: Inventory Contract (MUST-PASS if items present)
-
-For ANY item in inventory:
-1. **Visibility**: New items must be explicitly shown/described when acquired
-2. **In-Scene Reference**: Within 1 segment of gaining an item, reference its presence or potential use
-3. **Future Use Hint**: Suggest how the item might matter later
-4. **Meaningful Size**: Keep inventory small (2-5 items), not a dumping ground
-
-Example: "The glowing Keeper Brick warms your pocket. You can feel it humming softly."
-
-## CRITICAL: Choice Quality Requirements (MUST-PASS)
-
-**BANNED CHOICE TYPES** - NEVER include these:
-- ❌ "Ask [companion] what to do"
-- ❌ "Ask [NPC] more questions" (as a standalone choice)
-- ❌ "Wait and see what happens"
-- ❌ Any passive/stalling option
-
-**REQUIRED CHOICE QUALITIES** - Each choice must:
-1. **Change Strategy or Outcome**: Not just different wording for same result
-2. **Be Doable and Concrete**: Clear action the child can visualize
-3. **Have Distinct Flavor**: Choices should feel different (Brave / Clever / Kind)
-4. **Show Agency**: Child makes the decision, not companion or narrator
-
-**DEFAULT CHOICE COUNT**: Provide exactly {choice_count} choices (usually 2)
-- Use 3 choices ONLY if all three are truly meaningful and distinct
-
-## Output Instructions
-
-**This is segment 1 of {segment_range[0]}-{segment_range[1]}** - Create an opening that:
-1. Opens with a sensory "Hook of Wonder" within the first 60 words
-2. Introduces a safe, exciting challenge by the end of the segment
-3. Shows the companion's unique ability (if present) in a minor way
-4. Establishes the initial location and goal
-5. Ends with {choice_count} distinct choices that lead to different consequences
-
-### Required JSON Output Format:
+**JSON Output**:
 ```json
 {{
-  "title": "The Adventure Title (only include in first segment)",
+  "title": "Adventure Title",
   "output_type": "CHOICE",
   "segment_number": 1,
-  "content": "The story prose in SECOND-PERSON POV ({age_config['word_count'][0]}-{age_config['word_count'][1]} words)",
+  "content": "Story in second-person POV ({age_config['word_count'][0]}-{age_config['word_count'][1]} words)",
   "word_count": 450,
-  "image_description": "Visual scene description for illustration generation",
-  "companion_beats": [
-    {{"type": "dialogue", "text": "Companion's words"}},
-    {{"type": "action", "text": "Companion's action"}},
-    {{"type": "bond", "text": "Bond moment description"}}
-  ],
+  "image_description": "Scene description",
+  "companion_beats": [{{"type": "dialogue|action|bond", "text": "..."}}],
   "inventory": [],
-  "inventory_references": ["Item mentioned in scene"],
+  "inventory_references": [],
   "story_state": {{
-    "location": "Current location",
-    "goal": "What the hero is trying to achieve",
+    "location": "Where",
+    "goal": "What trying to achieve",
     "key_clues": [],
-    "companion_status": "How companion is doing",
+    "companion_status": "How companion is",
     "time_pressure": null
   }},
   "choices": [
@@ -274,37 +184,9 @@ Example: "The glowing Keeper Brick warms your pocket. You can feel it humming so
 }}
 ```
 
-**output_type VALUES**:
-- "CHOICE": Segment ends with meaningful choices at a decision hinge
-- "CONTINUE": Segment ends mid-flow; reader clicks Continue to keep reading (NO choices)
+Generate opening segment as JSON."""
 
-## Critical Requirements
 
-### Meaningful Branching
-Each choice must change at least TWO of:
-- Location
-- Obstacle type
-- New item acquired
-- Clue discovered
-- Ally relationship
-- Next scene tone
-
-### Sensory Writing
-- Include at least 2 senses per segment
-- Use concrete, vivid details
-- Avoid passive voice and clichés
-
-### Agency Check
-- The hero (not companion or narrator) drives the solution
-- Choices have real consequences
-- Avoid "cosmetic" variations
-
-### Inventory System
-- Items must be story-relevant
-- Track what's gained and lost
-- Items can unlock future solutions
-
-Now generate the opening segment as valid JSON."""
 
         return prompt
 
@@ -379,100 +261,48 @@ Now generate the opening segment as valid JSON."""
         
         choices_json = ",\n".join(choice_templates)
 
-        prompt = f"""# Continue Interactive Adventure
+        prompt = f"""Continue adventure segment {next_segment_number}/{segment_range[1]}.
 
-## Story Context
+**Title**: {story_context.get('title', 'Untitled')} | **Theme**: {story_context.get('theme', 'Adventure')} | **Age**: {age}
 
-**Title**: {story_context.get('title', 'Untitled Adventure')}
-**Current Segment**: {next_segment_number} of {segment_range[0]}-{segment_range[1]}
-**Theme**: {story_context.get('theme', 'Adventure')}
-**Tone**: {story_context.get('tone', 'whimsical')}
-**Age**: {age} (Band: {age_band})
-
-## Story So Far
+**Story So Far**:
 {story_so_far}
 
-## User's Choice
-The hero chose: "{selected_choice}"
+**Hero chose**: "{selected_choice}"
 
-## Current Inventory
-{json.dumps(inventory, indent=2) if inventory else "[]"}
+**Inventory**: {json.dumps(inventory) if inventory else "[]"}
+**State**: {json.dumps(story_state)}
 
-## Current Story State
-```json
-{json.dumps(story_state, indent=2)}
-```
-
-## Age Calibration (Age Band: {age_band})
-- **Sentence Length**: {age_config['sentence_length']}
-- **Word Count**: {age_config['word_count'][0]}-{age_config['word_count'][1]} words
-- **Complexity**: {age_config['complexity']}
 {continuation_guidance}
 {output_type_guidance}
 
-## CRITICAL: Point-of-View Requirements (MUST-PASS)
+**Writing** ({age_config['word_count'][0]}-{age_config['word_count'][1]} words): {age_config['sentence_length']}. Second-person POV. Use name max 2x. Include 2+ senses.
+**Companion** (if present): 3+ beats, 1 help, 1 bond.
+**Inventory** (if items): Reference items. Show new ones clearly.
+**Choices**: {choice_count} concrete options. NO passive choices. Each must change outcome. If output_type=CONTINUE, choices=[].
 
-**PRIMARY POV**: Second-person ("you") - NEVER use third-person or the child's name excessively
-- ✅ "You step forward. Your heart pounds."
-- ❌ "NAME steps forward. NAME's heart pounds."
-
-**NAME USAGE**: 1-2 times per segment MAX as spotlight moments only
-
-## CRITICAL: Companion Contract (MUST-PASS if companion present)
-
-If companion exists, EVERY segment MUST include:
-1. **3+ Companion Beats**: dialogue, action, or reaction
-2. **1 Helpful Contribution**: concrete assist or idea
-3. **1 Bond Moment**: relationship beat (encouragement, joke, shared look)
-
-## CRITICAL: Inventory Contract (MUST-PASS if items exist)
-
-For items in inventory:
-- Reference their presence in the scene
-- Show how they might be useful
-- Don't let items disappear without mention
-
-## CRITICAL: Choice Quality (MUST-PASS if output_type='CHOICE')
-
-**BANNED**: "Ask what to do", "Ask more questions", passive waiting
-**REQUIRED**: Each choice changes strategy/outcome, not just wording
-**COUNT**: Exactly {choice_count} choices (usually 2)
-
-## Continuation Requirements
-
-1. **Honor the Choice**: The selected choice must lead to a DISTINCT consequence - not a cosmetic variation
-2. **Update State**: Modify at least ONE of: location, goal, clues, companion_status, or time_pressure
-3. **Inventory Changes**: Add or remove items if the choice leads to discovery or use
-4. **Meaningful Progression**: Build on previous segments, reference past choices
-5. **Micro-Hook**: Add a curiosity spark (clue, whisper, odd object, or surprising rule)
-6. **Sensory Details**: Include at least 2 different senses (sight, sound, touch, smell, heartbeat)
-
-## Required JSON Output Format
+**JSON Output**:
 ```json
 {{
   "output_type": "CHOICE or CONTINUE",
   "segment_number": {next_segment_number},
-  "content": "Story prose in SECOND-PERSON POV ({age_config['word_count'][0]}-{age_config['word_count'][1]} words)",
+  "content": "Story ({age_config['word_count'][0]}-{age_config['word_count'][1]} words)",
   "word_count": 450,
-  "image_description": "Visual scene description",
-  "companion_beats": [
-    {{"type": "dialogue", "text": "Companion's words"}},
-    {{"type": "action", "text": "Companion's action"}},
-    {{"type": "bond", "text": "Bond moment"}}
-  ],
-  "inventory": {json.dumps(inventory)},
-  "inventory_references": ["Item mentioned in this scene"],
+  "image_description": "Scene",
+  "companion_beats": [{{"type": "dialogue|action|bond", "text": "..."}}],
+  "inventory": [],
+  "inventory_references": [],
   "story_state": {{
-    "location": "Updated location",
-    "goal": "Updated or same goal",
-    "key_clues": ["clue1", "clue2"],
-    "companion_status": "Updated companion status",
-    "time_pressure": "Optional urgency element"
+    "location": "Where",
+    "goal": "Goal",
+    "key_clues": [],
+    "companion_status": "Status",
+    "time_pressure": null
   }},
   "choices": [
 {choices_json}
   ],
-  "is_ending": {str(should_conclude).lower()}
+  "is_ending": false
 }}
 ```
 
@@ -482,6 +312,8 @@ For items in inventory:
 - If is_ending=true: choices array should be EMPTY [] and output_type='CONTINUE'
 
 Generate the next segment as valid JSON."""
+
+
 
         return prompt
 
