@@ -221,9 +221,11 @@ class InteractiveAdventureService:
         db.session.commit()
 
         # Generate illustration for first segment
-        if segment_data.get('image_description'):
-            self._generate_segment_illustration(segment, character_dict, companions, character_age)
-            db.session.commit()
+        # DISABLED: Image generation adds 5-15 seconds of delay per segment
+        # TODO: Re-enable with async background processing
+        # if segment_data.get('image_description'):
+        #     self._generate_segment_illustration(segment, character_dict, companions, character_age)
+        #     db.session.commit()
 
         logger.info(f"Created interactive story {story.id} with first segment")
 
@@ -257,9 +259,8 @@ class InteractiveAdventureService:
         if story.is_completed:
             raise ValueError(f"Story {story_id} is already completed")
 
-        # Handle special "continue" choice ID (for segments with output_type="CONTINUE")
-        normalized_choice_id = (choice_id or "").strip().lower()
-        if normalized_choice_id == "continue":
+        # Handle special "continue" choice ID (for segments with output_type="continue")
+        if choice_id == "continue":
             logger.info("Processing CONTINUE segment (no choice required)")
             selected_choice_text = "Continue the adventure"
             parent_choice_id = None
@@ -306,7 +307,7 @@ class InteractiveAdventureService:
             story_id=story.id,
             segment_data=segment_data,
             segment_number=next_segment_number,
-            parent_choice_id=parent_choice_id
+            parent_choice_id=choice_id
         )
         db.session.add(new_segment)
         db.session.flush()
@@ -347,11 +348,13 @@ class InteractiveAdventureService:
         db.session.commit()
 
         # Generate illustration for new segment
-        if segment_data.get('image_description'):
-            character_dict = self._get_character_dict(story)
-            companions = self._get_companions(story)
-            self._generate_segment_illustration(new_segment, character_dict, companions, story.age)
-            db.session.commit()
+        # DISABLED: Image generation adds 5-15 seconds of delay per segment
+        # TODO: Re-enable with async background processing
+        # if segment_data.get('image_description'):
+        #     character_dict = self._get_character_dict(story)
+        #     companions = self._get_companions(story)
+        #     self._generate_segment_illustration(new_segment, character_dict, companions, story.age)
+        #     db.session.commit()
 
         logger.info(f"Story {story_id} continued to segment {next_segment_number}")
 
