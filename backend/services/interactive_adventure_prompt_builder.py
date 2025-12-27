@@ -353,17 +353,15 @@ Now generate the opening segment as valid JSON."""
         output_type_guidance = ""
 
         # Choice Cadence Rule logic
-        if next_segment_number <= 2:
-            # First 2 segments typically CONTINUE to build immersion
-            output_type_guidance = f"\n**OUTPUT TYPE DECISION**: For segment {next_segment_number}, prefer output_type='CONTINUE' to build immersive flow before introducing choices. Only use output_type='CHOICE' if you reach a clear decision hinge that REQUIRES branching."
-        elif is_approaching_end and not should_conclude:
-            output_type_guidance = f"\n**OUTPUT TYPE DECISION**: As you approach the climax, use output_type='CHOICE' for major decision points, but use 'CONTINUE' to maintain tension and immersion between choices."
-            continuation_guidance = f"\n**APPROACHING CLIMAX**: This is segment {next_segment_number} of {segment_range[1]}. Begin escalating toward the 'Impossible Moment' - a physics-defying, wonder-filled feat that requires the hero's courage, the companion's unique power, and a creative use of inventory or setting."
-        elif should_conclude:
+        if should_conclude:
             output_type_guidance = f"\n**OUTPUT TYPE DECISION**: This is the FINAL segment. Set output_type='CONTINUE' (no choices), is_ending=true, and deliver the satisfying conclusion."
             continuation_guidance = f"\n**FINAL SEGMENT**: This is the concluding segment {next_segment_number}. Deliver the 'Impossible Moment' climax and warm resolution."
+        elif is_approaching_end:
+            output_type_guidance = f"\n**OUTPUT TYPE DECISION**: As you approach the climax, use output_type='CHOICE' for major decision points."
+            continuation_guidance = f"\n**APPROACHING CLIMAX**: This is segment {next_segment_number} of {segment_range[1]}. Begin escalating toward the 'Impossible Moment'."
         else:
-            output_type_guidance = f"\n**OUTPUT TYPE DECISION**: Use output_type='CHOICE' ONLY if this segment reaches a true decision hinge (risk, strategy, moral choice, path selection). Otherwise use 'CONTINUE' to maintain reading flow."
+            output_type_guidance = f"\n**OUTPUT TYPE DECISION**: Use output_type='CHOICE'. Provide exactly {choice_count} distinct, meaningful choices to drive the story forward. Ensure the user has agency."
+            # Removed guidance to prefer CONTINUE for early segments to ensure CYOA feel
 
         # Pre-calculate choice templates based on count
         choice_templates = [
