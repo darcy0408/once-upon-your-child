@@ -1,12 +1,14 @@
-# Age-5 Story Improvements & Storybook UI - Implementation Complete
+# Age 3-8 Story Improvements & Storybook UI - Implementation Complete
 
 ## Summary
 
 Successfully implemented **Option C: Full implementation** including:
-1. ✅ Age-5 story quality improvements (Fun Recipe, playful language, logic consistency)
+1. ✅ Age 3-8 story quality improvements (Fun Recipe, playful language, logic consistency)
 2. ✅ Storybook progress indicator UI (replaces "Segment X of Y")
 3. ✅ Backend schema changes for `stageLabel` metadata
 4. ✅ Fixed disabled choices bug from Segment 2
+
+**Ages Affected**: 3, 4, 5, 6, 7, 8 (all use Fun Recipe + playful storybook language)
 
 ---
 
@@ -16,7 +18,7 @@ Successfully implemented **Option C: Full implementation** including:
 
 **File**: `backend/services/interactive_adventure_prompt_builder.py`
 
-#### Age 3-5 Calibration Fixed (Lines 18-25)
+#### Age 3-5 Calibration Fixed (Lines 18-26)
 **Before**: Baby-talk style ("very short 3-6 words", "CVC words preferred")
 **After**: Storybook-simple style
 
@@ -24,9 +26,25 @@ Successfully implemented **Option C: Full implementation** including:
 '3-5': {
     'sentence_length': 'simple but varied (4-10 words), storybook-style with personality',
     'vocabulary': 'easy words with playful phrasing (think Corduroy, Where the Wild Things Are, not See Spot Run)',
-    'word_count': (120, 220),  # Shorter segments for age 5
+    'vocabulary_avoid': 'NO: parchment, depicts, constellations... YES: paper, shows, stars...',
+    'word_count': (180, 280),  # Natural storybook pacing
     'suspense': 'minimal but magical',
     'complexity': 'simple cause-and-effect with whimsy and wonder'
+}
+```
+
+#### Age 6-8 Calibration Updated (Lines 27-35)
+**Before**: Basic phonics style ("short to medium", "simple but vivid, basic phonics")
+**After**: Storybook-playful style (like Magic Tree House, Junie B. Jones)
+
+```python
+'6-8': {
+    'sentence_length': 'simple but varied (5-12 words), storybook-style with personality',
+    'vocabulary': 'easy to moderate words with playful phrasing (think Magic Tree House, Junie B. Jones)',
+    'vocabulary_avoid': 'NO: parchment, depicts, constellations, velvet... YES: paper, shows, stars, soft...',
+    'word_count': (220, 350),  # Longer than 3-5, but still kid-friendly
+    'suspense': 'light, with humor and wonder',
+    'complexity': 'clear cause/effect choices with mild strategy'
 }
 ```
 
@@ -243,7 +261,7 @@ flutter run
 
 ## Story Quality Comparison
 
-### OLD (Flat, Repetitive for Age 5)
+### OLD (Flat, Repetitive - All Ages)
 ```
 You see a door. It has a tiny keyhole. Spot barks. You see a bone.
 
@@ -261,7 +279,7 @@ Choices:
 
 ---
 
-### NEW (Magical, Playful for Age 5)
+### NEW: Age 3-5 (Magical, Playful, ~180-280 words)
 ```
 The door hums a low song—*mmmmm*—like it's thinking. You press your ear
 close. Spot sniffs the bottom edge and sneezes. "Bless you!" the door
@@ -284,7 +302,55 @@ Choices:
 - ✅ Mini cliffhanger: "did the door just talk?"
 - ✅ Logic: choices match the tiny keyhole constraint
 - ✅ Vivid verbs: "Whisper", "Search", "Ask" (not "Try to...")
-- ✅ Varied sentences: mix of 4-12 words, personality in phrasing
+- ✅ Varied sentences: mix of 4-10 words, personality in phrasing
+
+---
+
+### NEW: Age 6-8 (Playful, More Detail, ~220-350 words)
+```
+The door stands before you, humming a low, curious tune. It sounds like
+it's trying to remember something important. You press your ear against
+the warm wood and listen carefully. The humming stops.
+
+"Who's there?" the door whispers, sounding a bit nervous.
+
+Spot trots over and sniffs the door's edges, his nose twitching. He sneezes
+suddenly—ACHOO!—and the door giggles. "That tickles!" it says, its voice
+bright and friendly now.
+
+You notice something special: a tiny keyhole, no bigger than your pinky
+finger. It glows soft purple, pulsing like a heartbeat. The light makes
+shadows dance across the wall. Spot sits down and tilts his head, looking
+at you as if to say, "What do we do now?"
+
+You could try talking to the door—it seems friendly. Or maybe you should
+search around for a matching purple key. Spot's still sniffing, too. He
+might find something you missed.
+
+Choices:
+- Whisper "please, we just want to help" ...and see if the door trusts you
+- Search the nearby shelf for a tiny purple key ...that fits the glowing keyhole
+- Let Spot sniff around the floor ...he might find a hidden clue or key
+```
+
+**Age 6-8 Differences**:
+- ✅ Slightly longer sentences (5-12 words vs 4-10)
+- ✅ More descriptive details ("warm wood", "pulsing like a heartbeat", "shadows dance")
+- ✅ Still playful vocabulary (not academic: "constellations" → "stars")
+- ✅ Same Fun Recipe (silly, magical, dialogue, challenge, cliffhanger)
+- ✅ More strategic choices (thinking about trust, searching systematically)
+
+---
+
+### Age Band Quick Reference
+
+| Age | Sentence Length | Word Count/Segment | Example Books | Key Difference |
+|-----|----------------|-------------------|---------------|----------------|
+| **3-5** | 4-10 words | 180-280 | Corduroy, Where the Wild Things Are | Shorter, simpler, more repetition for rhythm |
+| **6-8** | 5-12 words | 220-350 | Magic Tree House, Junie B. Jones | Longer, more detail, mild strategy in choices |
+| **9-12** | 8-15 words | 450-650 | Percy Jackson | Richer vocabulary, layered choices |
+
+**All ages 3-8** get the Fun Recipe (silly + magical + dialogue + challenge + cliffhanger).
 
 ---
 

@@ -18,34 +18,50 @@ class InteractiveAdventurePromptBuilder:
         '3-5': {
             'sentence_length': 'simple but varied (4-10 words), storybook-style with personality',
             'vocabulary': 'easy words with playful phrasing (think Corduroy, Where the Wild Things Are, not See Spot Run)',
+            'vocabulary_avoid': 'NO: parchment, depicts, constellations, nestled, velvet, motes, vibrant, bustling, encouraging, contagious, shimmer, unravel. YES: paper, shows, stars, sitting, soft cloth, dust, bright, busy, happy, sparkle, open',
             'word_count': (180, 280),  # Increased to allow natural storybook pacing
             'stakes': 'gentle, with frequent reassurance',
             'suspense': 'minimal but magical',
             'complexity': 'simple cause-and-effect with whimsy and wonder'
         },
         '6-8': {
-            'sentence_length': 'short to medium (5-10 words)',
-            'vocabulary': 'simple but vivid, basic phonics',
-            'word_count': (350, 500),  # Increased: 2-4 min reading time
+            'sentence_length': 'simple but varied (5-12 words), storybook-style with personality',
+            'vocabulary': 'easy to moderate words with playful phrasing (think Magic Tree House, Junie B. Jones)',
+            'vocabulary_avoid': 'NO: parchment, depicts, constellations, velvet, motes, vibrant, bustling, shimmering. YES: paper, shows, stars, soft, dust, bright, busy, sparkling',
+            'word_count': (220, 350),  # Age-appropriate: longer than 3-5, but still kid-friendly
             'stakes': 'clear and friendly',
-            'suspense': 'light, with humor',
-            'complexity': 'clear cause/effect choices'
+            'suspense': 'light, with humor and wonder',
+            'complexity': 'clear cause/effect choices with mild strategy'
         },
         '9-12': {
-            'sentence_length': 'medium (8-15 words)',
-            'vocabulary': 'grade-level appropriate, richer descriptive words',
-            'word_count': (450, 650),  # Increased for deeper immersion
-            'stakes': 'engaging quest structure',
-            'suspense': 'moderate mystery and puzzles',
-            'complexity': 'layered choices with strategic thinking'
+            'sentence_length': 'varied (6-15 words), dynamic pacing with personality',
+            'vocabulary': 'vivid and engaging (think Percy Jackson, Harry Potter early books) - avoid being too formal or academic',
+            'vocabulary_encourage': 'YES: mysterious, ancient, glowing, whispered, twisted, shimmering, echo, shadow. AVOID sounding like a textbook.',
+            'word_count': (280, 450),  # Engaging length - not too long
+            'stakes': 'engaging quest structure with emotional stakes',
+            'suspense': 'mystery, foreshadowing, clever twists',
+            'complexity': 'layered choices with strategic thinking and consequences',
+            'humor': 'clever wordplay, ironic observations, situational comedy'
         },
         '13-16': {
-            'sentence_length': 'varied (10-20 words)',
-            'vocabulary': 'complex themes (still safe), nuanced language',
-            'word_count': (500, 750),  # Increased for richer narrative
-            'stakes': 'deeper emotional resonance',
-            'suspense': 'strategic challenges',
-            'complexity': 'multi-layered consequences'
+            'sentence_length': 'varied (8-20 words), literary style with voice',
+            'vocabulary': 'sophisticated but accessible (think Hunger Games, Six of Crows) - wit, nuance, emotional depth',
+            'vocabulary_encourage': 'YES: sarcasm, wit, irony, subtext, complex emotions. Can use "constellations", "velvet", "parchment" for atmosphere.',
+            'word_count': (320, 500),  # Rich but not exhausting
+            'stakes': 'deeper emotional resonance, moral complexity',
+            'suspense': 'strategic puzzles, foreshadowing, plot twists, identity questions',
+            'complexity': 'multi-layered consequences, moral gray areas',
+            'humor': 'sarcasm, dry wit, pop culture references (age-appropriate), self-aware narrator'
+        },
+        '17+': {
+            'sentence_length': 'varied (5-25 words), literary style with strong voice',
+            'vocabulary': 'sophisticated and evocative - full literary range while staying engaging',
+            'vocabulary_encourage': 'Full range: lyrical prose, sharp dialogue, rich metaphors. Can be literary without being pretentious.',
+            'word_count': (350, 550),  # Immersive but respects reader time
+            'stakes': 'emotional depth, philosophical questions, complex relationships',
+            'suspense': 'psychological tension, unreliable narration, thematic depth',
+            'complexity': 'morally complex choices, long-term consequences, character development',
+            'humor': 'sophisticated wit, literary references, dark humor (safe), absurdist comedy'
         }
     }
 
@@ -75,8 +91,10 @@ class InteractiveAdventurePromptBuilder:
             return '6-8'
         elif age <= 12:
             return '9-12'
-        else:
+        elif age <= 16:
             return '13-16'
+        else:
+            return '17+'
 
     @classmethod
     def build_opening_prompt(
@@ -143,9 +161,12 @@ class InteractiveAdventurePromptBuilder:
 {cls._build_content_guidelines(interests, must_include, avoid, fears_or_sensitivities)}
 
 **Writing** ({age_config['word_count'][0]}-{age_config['word_count'][1]} words): {age_config['sentence_length']}, {age_config['vocabulary']}, {age_config['stakes']}
+{f"**VOCABULARY FOR AGE {age}**: {age_config.get('vocabulary_avoid', '')}" if age <= 5 else ""}
 
-**Rules**:
-- **POV**: Second-person ("you"). Use "{child_name}" max 2x. Include 2+ senses.
+**CRITICAL RULES**:
+- {f"**AGE {age} VOCABULARY**: Use ONLY simple words a {age}-year-old knows. NO: parchment/depicts/constellations/nestled/velvet/vibrant/bustling/encouraging/shimmer/unravel. YES: paper/shows/stars/sitting/soft cloth/bright/busy/happy/sparkle/open. Keep sentences SHORT (4-10 words)!" if age <= 5 else f"**AGE {age}**: Keep vocabulary and complexity appropriate for this age."}
+- **POV**: ALWAYS use "you" (second-person). The hero's name is "{child_name}". DO NOT use any other names. DO NOT call the hero "Max", "Sam", or any invented name. Use "{child_name}" ONLY if absolutely necessary (max 2x total), otherwise say "you".
+- **WORD COUNT REQUIREMENT**: Your content MUST be between {age_config['word_count'][0]} and {age_config['word_count'][1]} words. Count your words before finishing. If under {age_config['word_count'][0]}, add more sensory details, dialogue, and description.
 - **Companion** (if present): 3+ appearances, 1 help, 1 bond. Never replaces child's choice.
   - **ANIMAL COMPANIONS**: Do NOT make animals talk unless there's a magical reason (e.g., enchanted, found magic item). Animals communicate through actions, sounds, and body language.
 - **Characters**: NEVER invent names for family/friends not provided. Use generic terms: "grandma", "mom", "dad", "friend", "neighbor".
@@ -153,14 +174,37 @@ class InteractiveAdventurePromptBuilder:
 - **Choices**: {choice_count} concrete options. NO "ask what to do"/"wait"/passive. Each changes outcome. Start with vivid verbs ("Knock", "Whisper", "Tap", "Sing").
 - **Safety**: No violence/harm/abuse/abandonment. Safe, whimsical only.
 
-**FUN RECIPE** (ages 3-8 REQUIRED):
-1. **Silly Detail**: funny sound, goofy rule, silly misunderstanding
-2. **Magical Twist**: object talks/sings/dances/glows/changes
-3. **2+ Dialogue Lines**: character speaks, object talks, companion chats
-4. **Tiny Challenge**: pattern, count, color choice, rhyme, simple action
-5. **Mini Cliffhanger**: sound appears, thing moves, light glows, mystery hint
+**ENGAGEMENT RECIPE** (age-calibrated):
 
-**LOGIC RULE**: Choices must match obstacles (tiny keyhole needs tiny key, not big bone). Make mismatches magical ("bone shrinks with a pop!").
+**Ages 3-8**: Fun Recipe (playful, magical)
+1. Silly Detail (funny sound, goofy rule)
+2. Magical Twist (object talks/sings/dances/glows)
+3. 2+ Dialogue Lines
+4. Tiny Challenge (pattern, count, color)
+5. Mini Cliffhanger (sound, movement, glow)
+
+**Ages 9-12**: Adventure Recipe (clever, mysterious)
+1. Clever Detail (ironic observation, unexpected insight, wordplay)
+2. Mysterious Element (ancient runes, hidden door, cryptic message, strange behavior)
+3. 3+ Dialogue Lines with personality/subtext
+4. Puzzle/Strategy Challenge (decode pattern, outwit opponent, piece clues together)
+5. Strong Hook/Cliffhanger (revelation, danger, plot twist, moral dilemma preview)
+
+**Ages 13-16**: Depth Recipe (wit, complexity)
+1. Sharp Detail (sarcastic observation, symbolic element, emotional insight)
+2. Atmospheric/Thematic Element (moral gray area, identity question, power dynamics, foreshadowing)
+3. 3+ Dialogue Lines with subtext, wit, or emotional weight
+4. Complex Challenge (moral dilemma, strategic puzzle, social navigation, identity choice)
+5. Compelling Hook (plot twist, character revelation, philosophical question, stakes raised)
+
+**Ages 17+**: Literary Recipe (sophisticated, immersive)
+1. Evocative Detail (sensory-rich, metaphorical, psychologically revealing)
+2. Thematic Depth (philosophical question, unreliable narration, complex relationships, existential stakes)
+3. 4+ Dialogue Lines with distinct voices, subtext, emotional resonance
+4. Meaningful Challenge (ethical dilemma, character-defining choice, psychological obstacle)
+5. Powerful Hook (thematic revelation, character transformation, plot complication, emotional gut-punch)
+
+**LOGIC RULE** (all ages): Choices must match obstacles. Make mismatches magical (ages 3-8) or explained by story logic (ages 9+).
 
 **Opening Segment 1/{segment_range[1]}**:
 1. Begin with sensory details (what child sees/hears/smells) - natural storybook opening
@@ -196,7 +240,14 @@ class InteractiveAdventurePromptBuilder:
 }}
 ```
 
-**QUALITY CHECK** (before output): Count "You see..." >2 times? Rewrite. Has 2+ dialogue lines? Has silly + magical beat? Choices vivid verbs? Cliffhanger in last sentence? If no, revise once.
+**QUALITY CHECK** (before output):
+1. Word count: Is content between {age_config['word_count'][0]}-{age_config['word_count'][1]} words? If not, add more description/dialogue.
+2. POV: Does content say "you" instead of invented names like "Max"? No name hallucination?
+3. {f"Vocabulary (AGE {age}): No hard words like 'parchment', 'depicts', 'constellations', 'nestled', 'vibrant'? Use simple words only!" if age <= 5 else f"Vocabulary (AGE {age}): {'Playful & accessible?' if age <= 8 else 'Vivid & engaging (not textbook-like)?' if age <= 12 else 'Sophisticated but accessible?' if age <= 16 else 'Literary but not pretentious?'}"}
+4. Engagement Recipe: {f"Fun Recipe present? (silly, magical, 2+ dialogue, challenge, cliffhanger)" if age <= 8 else f"Adventure Recipe present? (clever, mysterious, 3+ dialogue, puzzle, hook)" if age <= 12 else f"Depth Recipe present? (sharp, atmospheric, 3+ dialogue w/ subtext, complex challenge, compelling hook)" if age <= 16 else "Literary Recipe present? (evocative, thematic, 4+ dialogue w/ voices, meaningful challenge, powerful hook)"}
+5. Dialogue: Enough lines? {"2+" if age <= 8 else "3+" if age <= 16 else "4+"}
+6. Choices: Vivid verbs? Logic matches obstacles? Cliffhanger in last sentence?
+If any check fails, revise content before outputting JSON.
 
 Generate opening segment as JSON."""
 
@@ -279,6 +330,9 @@ Generate opening segment as JSON."""
 
 **Title**: {story_context.get('title', 'Untitled')} | **Theme**: {story_context.get('theme', 'Adventure')} | **Age**: {age}
 
+**AGE CALIBRATION (CRITICAL)**: This story is for a {age}-year-old child. Use {age_config['vocabulary']} and {age_config['sentence_length']}. Keep it age-appropriate throughout!
+{f"**VOCABULARY FOR AGE {age}**: {age_config.get('vocabulary_avoid', '')}" if age <= 5 else ""}
+
 **Story So Far**:
 {story_so_far}
 
@@ -290,21 +344,23 @@ Generate opening segment as JSON."""
 {continuation_guidance}
 {output_type_guidance}
 
-**Writing** ({age_config['word_count'][0]}-{age_config['word_count'][1]} words): {age_config['sentence_length']}. Second-person POV. Use name max 2x. Include 2+ senses.
-**Companion** (if present): 3+ beats, 1 help, 1 bond.
+**CRITICAL RULES**:
+- {f"**AGE {age} VOCABULARY**: Use ONLY simple words a {age}-year-old knows. NO: parchment/depicts/constellations/nestled/vibrant/encouraging/shimmer. YES: paper/shows/stars/sitting/bright/happy/sparkle. Keep sentences SHORT (4-10 words)!" if age <= 5 else f"**AGE {age}**: Keep vocabulary and complexity appropriate for this age."}
+- **POV**: ALWAYS use "you" (second-person). DO NOT invent names. DO NOT call the hero "Max", "Sam", or any other name. The hero is addressed as "you".
+- **WORD COUNT REQUIREMENT**: Your content MUST be between {age_config['word_count'][0]} and {age_config['word_count'][1]} words. Count your words. If under {age_config['word_count'][0]}, add more sensory details, dialogue, and description until you reach the minimum.
+- **Companion** (if present): 3+ beats, 1 help, 1 bond.
   - **ANIMAL COMPANIONS**: Do NOT make animals talk unless there's a magical reason. Animals communicate through actions, sounds, body language.
-**Characters**: NEVER invent names for family/friends not provided. Use generic terms: "grandma", "mom", "friend".
-**Inventory** (if items): Reference items. Show new ones clearly.
-**Choices**: REQUIRED - Must provide exactly {choice_count} concrete options (unless final ending). NO passive choices. Each must change outcome. Start with vivid verbs.
+- **Characters**: NEVER invent names for family/friends not provided. Use generic terms: "grandma", "mom", "friend".
+- **Inventory** (if items): Reference items. Show new ones clearly.
+- **Choices**: REQUIRED - Must provide exactly {choice_count} concrete options (unless final ending). NO passive choices. Each must change outcome. Start with vivid verbs.
 
-**FUN RECIPE** (ages 3-8 REQUIRED):
-1. **Silly Detail**: funny sound, goofy rule, silly misunderstanding
-2. **Magical Twist**: object talks/sings/dances/glows/changes
-3. **2+ Dialogue Lines**: character speaks, object talks, companion chats
-4. **Tiny Challenge**: pattern, count, color choice, rhyme, simple action
-5. **Mini Cliffhanger**: sound appears, thing moves, light glows, mystery hint
+**ENGAGEMENT RECIPE** (age-calibrated, REQUIRED):
+- **Ages 3-8**: Fun Recipe - Silly detail + Magical twist + 2+ dialogue + Tiny challenge + Mini cliffhanger
+- **Ages 9-12**: Adventure Recipe - Clever detail + Mysterious element + 3+ dialogue (personality) + Puzzle challenge + Strong hook
+- **Ages 13-16**: Depth Recipe - Sharp detail + Atmospheric/thematic element + 3+ dialogue (subtext/wit) + Complex challenge + Compelling hook
+- **Ages 17+**: Literary Recipe - Evocative detail + Thematic depth + 4+ dialogue (distinct voices) + Meaningful challenge + Powerful hook
 
-**LOGIC RULE**: Choices match obstacles. Make mismatches magical.
+**LOGIC RULE**: Choices match obstacles. Make mismatches magical (3-8) or logically explained (9+).
 
 **JSON Output**:
 ```json
@@ -338,7 +394,15 @@ Generate opening segment as JSON."""
 - ONLY the absolute final ending segment (is_ending=true) can have output_type='CONTINUE' with no choices
 - Never use CONTINUE for narrative segments - always provide meaningful choices
 
-**QUALITY CHECK** (before output): "You see..." count, 2+ dialogue, fun beats, vivid verbs, cliffhanger? Revise once if needed.
+**QUALITY CHECK** (before output):
+1. Word count: Is content between {age_config['word_count'][0]}-{age_config['word_count'][1]} words? If under minimum, add sensory details/dialogue.
+2. POV: Using "you" only? NO invented names like "Max" or "Sam"?
+3. {f"Vocabulary (AGE {age}): No hard words like 'parchment', 'depicts', 'constellations', 'nestled', 'vibrant', 'encouraging', 'shimmer'? Use ONLY simple words a {age}-year-old knows!" if age <= 5 else f"Vocabulary (AGE {age}): {'Playful & accessible?' if age <= 8 else 'Vivid & engaging (not textbook-like)?' if age <= 12 else 'Sophisticated but accessible?' if age <= 16 else 'Literary but not pretentious?'}"}
+4. {f"Sentence length (AGE {age}): Are all sentences SHORT (4-10 words max)? No long complex sentences!" if age <= 5 else "Sentence complexity and pacing appropriate for age?"}
+5. Engagement Recipe: {f"Fun Recipe present? (silly, magical, 2+ dialogue, challenge, cliffhanger)" if age <= 8 else f"Adventure Recipe present? (clever, mysterious, 3+ dialogue, puzzle, hook)" if age <= 12 else f"Depth Recipe present? (sharp, atmospheric, 3+ dialogue w/ subtext, complex challenge, compelling hook)" if age <= 16 else "Literary Recipe present? (evocative, thematic, 4+ dialogue w/ voices, meaningful challenge, powerful hook)"}
+6. Dialogue: Enough lines with {"personality" if age <= 8 else "subtext/wit" if age <= 16 else "distinct voices"}? {"2+" if age <= 8 else "3+" if age <= 16 else "4+"}
+7. Choices: {choice_count} vivid action verb choices? Logic matches obstacles? Cliffhanger in last sentence?
+If any check fails, revise content before outputting JSON.
 
 Generate the next segment as valid JSON."""
 
