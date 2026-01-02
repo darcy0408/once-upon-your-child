@@ -52,6 +52,7 @@ dependencies:
   page_flip_builder: ^0.1.4  # Premium page-turn animations
   flutter_svg: ^2.0.10  # SVG rendering for avatars
   google_fonts: ^6.2.1  # Quicksand font for magical UI
+  crypto: ^3.0.3  # SHA256 hashing for avatar cache keys
 
   # Note: Backend handles AI generation for free users, but BYOK users call Gemini directly
   # flutter_secure_storage: ^9.0.0  # Removed for development - causing build issues
@@ -88,6 +89,8 @@ flutter:
   assets:
     - assets/images/
     - assets/images/feelings_faces/
+    - assets/config/avatar_config.json
+    - assets/config/allowlists.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
