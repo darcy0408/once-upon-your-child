@@ -128,6 +128,8 @@ class StoryIllustrationService {
     int numberOfImages = 3,
     int age = 7,
     String? therapeuticFocus,
+    Map<String, dynamic>? characterAppearance,  // NEW: Character appearance details
+    List<Map<String, String>>? companions,       // NEW: Companions/pets
   }) async {
     // Split story into segments for illustration
     final segments = _identifyKeyScenes(storyText, numberOfImages);
@@ -151,6 +153,8 @@ class StoryIllustrationService {
           style: _styleToString(style),
           age: age,
           therapeuticFocus: therapeuticFocus,
+          characterAppearance: characterAppearance,  // NEW: Pass character appearance
+          companions: companions,                     // NEW: Pass companions
         );
 
         illustrations.add(StoryIllustration(
@@ -183,6 +187,8 @@ class StoryIllustrationService {
     required String style,
     required int age,
     String? therapeuticFocus,
+    Map<String, dynamic>? characterAppearance,  // NEW: Character appearance
+    List<Map<String, String>>? companions,       // NEW: Companions/pets
   }) async {
     final response = await http.post(
       Uri.parse('${Environment.backendUrl}/generate-illustrations'),
@@ -196,6 +202,8 @@ class StoryIllustrationService {
         'num_images': 1,
         'age': age,
         'therapeutic_focus': therapeuticFocus,
+        if (characterAppearance != null) 'character_appearance': characterAppearance,  // NEW
+        if (companions != null) 'companions': companions,                               // NEW
       }),
     );
 
@@ -400,6 +408,8 @@ class GeminiIllustrationService extends StoryIllustrationService {
     int numberOfImages = 3,
     int age = 7,
     String? therapeuticFocus,
+    Map<String, dynamic>? characterAppearance,  // NEW: Character appearance
+    List<Map<String, String>>? companions,       // NEW: Companions/pets
   }) async {
     try {
       // Step 1: Extract scenes from the story using backend
@@ -440,6 +450,8 @@ class GeminiIllustrationService extends StoryIllustrationService {
               'style': style.promptModifier,
               'age': age,
               'therapeutic_focus': therapeuticFocus,
+              if (characterAppearance != null) 'character_appearance': characterAppearance,  // NEW
+              if (companions != null) 'companions': companions,                               // NEW
             }),
           )
           .timeout(const Duration(seconds: 65));
@@ -490,6 +502,8 @@ class MockIllustrationService extends StoryIllustrationService {
     int numberOfImages = 3,
     int age = 7,
     String? therapeuticFocus,
+    Map<String, dynamic>? characterAppearance,  // NEW: Character appearance
+    List<Map<String, String>>? companions,       // NEW: Companions/pets
   }) async {
     // Generate mock illustrations with placeholder images
     final mockIllustrations = <StoryIllustration>[];

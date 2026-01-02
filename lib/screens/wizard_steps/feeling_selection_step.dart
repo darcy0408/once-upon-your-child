@@ -1,8 +1,13 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pill_button.dart';
+import '../../widgets/expanding_feelings_wheel.dart';
 import '../wizard_story_screen.dart';
 import '../../data/scenario_data.dart';
+import '../../feelings_wheel_data.dart';
+
+const double _settingCardWidth = 220;
 
 /// Step 2: The Feeling Selection
 ///
@@ -27,22 +32,11 @@ class FeelingSelectionStep extends StatefulWidget {
 
 class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   String? _selectedScenario;
-  final Set<String> _selectedEmotions = {};
+  SelectedFeeling? _selectedFeeling;
   bool _showParentalInput = false;
   final TextEditingController _parentalNoteController = TextEditingController();
 
   final List<ScenarioCard> _scenarios = ScenarioData.all;
-
-  final List<EmotionChip> _emotions = [
-    EmotionChip(emoji: '✨', label: 'Shining Bright'),
-    EmotionChip(emoji: '🦁', label: 'Brave Heart'),
-    EmotionChip(emoji: '🤝', label: 'Friendly'),
-    EmotionChip(emoji: '🌊', label: 'Peaceful'),
-    EmotionChip(emoji: '🎨', label: 'Creative'),
-    EmotionChip(emoji: '😊', label: 'Joyful'),
-    EmotionChip(emoji: '😢', label: 'Blue'),
-    EmotionChip(emoji: '😠', label: 'Stormy'),
-  ];
 
   void _selectScenario(String scenarioId) {
     setState(() {
@@ -51,19 +45,19 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
     });
   }
 
-  void _toggleEmotion(String emotion) {
+  void _selectFeeling(SelectedFeeling feeling) {
     setState(() {
-      if (_selectedEmotions.contains(emotion)) {
-        _selectedEmotions.remove(emotion);
-      } else {
-        _selectedEmotions.add(emotion);
-      }
-      widget.wizardData.selectedEmotionChips = _selectedEmotions.toList();
+      _selectedFeeling = feeling;
+      widget.wizardData.selectedEmotionChips = [feeling.tertiary];
     });
   }
 
+  int _maxFeelingDepthForAge(int age) {
+    return 2;
+  }
+
   bool get _canContinue =>
-      _selectedScenario != null || _selectedEmotions.isNotEmpty;
+      _selectedScenario != null || _selectedFeeling != null;
 
   @override
   void dispose() {
@@ -73,6 +67,8 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
   @override
   Widget build(BuildContext context) {
+    final age = widget.wizardData.characterAge <= 0 ? 5 : widget.wizardData.characterAge;
+    final maxDepth = _maxFeelingDepthForAge(age);
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -182,7 +178,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Emotion chips
+            // Feelings Wheel
             Text(
               'Or how are you feeling?',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -191,21 +187,61 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                   ),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Tap a slice, then tap the center to choose.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textDark.withOpacity(0.7),
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Tap smaller slices to be more specific.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textDark.withOpacity(0.6),
+                  ),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: AppSpacing.md),
 
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              alignment: WrapAlignment.center,
-              children: _emotions.map((emotion) {
-                final isSelected = _selectedEmotions.contains(emotion.label);
-                return _EmotionChipWidget(
-                  emotion: emotion,
-                  isSelected: isSelected,
-                  onTap: () => _toggleEmotion(emotion.label),
+            // Interactive Expanding Feelings Wheel
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final maxSize = math.min(
+                  constraints.maxWidth,
+                  (_settingCardWidth * 2) + AppSpacing.md,
                 );
-              }).toList(),
+                return Center(
+                  child: SizedBox.square(
+                    dimension: maxSize,
+                    child: ExpandingFeelingsWheel(
+                      onFeelingSelected: _selectFeeling,
+                      backgroundColor: AppColors.cream,
+                      maxDepth: maxDepth,
+                    ),
+                  ),
+                );
+              },
             ),
+            const SizedBox(height: AppSpacing.md),
+            if (_selectedFeeling != null)
+              Text(
+                'Chosen feeling: ${_selectedFeeling!.tertiary}',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+            if (_selectedFeeling != null)
+              Text(
+                'Tap again to change.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textDark.withOpacity(0.6),
+                    ),
+                textAlign: TextAlign.center,
+              ),
             const SizedBox(height: AppSpacing.xxl),
 
             // Continue button
@@ -251,7 +287,7 @@ class _ScenarioCardWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.xl),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          width: 220, // Slightly wider to accommodate text
+          width: _settingCardWidth, // Slightly wider to accommodate text
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.sm,
             vertical: AppSpacing.md,
@@ -259,33 +295,34 @@ class _ScenarioCardWidget extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: isSelected
                 ? const LinearGradient(
-                    colors: [AppColors.goldLight, AppColors.surface],
+                    colors: [AppColors.goldLight, AppColors.gold],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )
                 : const LinearGradient(
-                    colors: [Colors.white, Color(0xFFF8F9FA)],
+                    colors: [AppColors.gradientStart, AppColors.gradientMid],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
             borderRadius: BorderRadius.circular(AppRadius.xl),
             border: Border.all(
-              color: isSelected ? AppColors.gold : Colors.grey.shade200,
-              width: isSelected ? 3 : 1,
+              color: isSelected ? AppColors.gold : AppColors.primary.withValues(alpha: 0.3),
+              width: isSelected ? 3 : 2,
             ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: AppColors.gold.withOpacity(0.4),
-                      blurRadius: 15,
-                      spreadRadius: 2,
-                      offset: const Offset(0, 4),
+                      color: AppColors.gold.withValues(alpha: 0.6),
+                      blurRadius: 20,
+                      spreadRadius: 3,
+                      offset: const Offset(0, 6),
                     ),
                   ]
                 : [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 8,
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                      blurRadius: 12,
+                      spreadRadius: 1,
                       offset: const Offset(0, 4),
                     ),
                   ],
@@ -294,15 +331,28 @@ class _ScenarioCardWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min, // Wrap content
             children: [
-              Container(
-                padding: const EdgeInsets.all(8), // Reduced padding
-                decoration: BoxDecoration(
-                  color: isSelected ? Colors.white.withOpacity(0.5) : AppColors.secondaryLight.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
+              // Scenario illustration image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
                   scenario.illustration,
-                  style: const TextStyle(fontSize: 40), // Reduced font size
+                  width: 200,
+                  height: 140,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    width: 200,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      color: isSelected ? Colors.white.withOpacity(0.5) : AppColors.secondaryLight.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        scenario.emoji,
+                        style: const TextStyle(fontSize: 48),
+                      ),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -335,93 +385,6 @@ class _ScenarioCardWidget extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class EmotionChip {
-  final String emoji;
-  final String label;
-
-  EmotionChip({required this.emoji, required this.label});
-}
-
-class _EmotionChipWidget extends StatelessWidget {
-  final EmotionChip emotion;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _EmotionChipWidget({
-    required this.emotion,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: '${emotion.label} emotion chip',
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.sm,
-          ),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.gold : Colors.white,
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-            border: Border.all(
-              color: isSelected ? AppColors.primary : Colors.grey.shade200,
-              width: isSelected ? 2 : 1,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: AppColors.gold.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : [
-                     BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                emotion.emoji,
-                style: const TextStyle(fontSize: 20),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Text(
-                emotion.label,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppColors.textDark,
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              if (isSelected) ...[
-                const SizedBox(width: AppSpacing.xs),
-                const Icon(
-                  Icons.star_rounded, // Star instead of check
-                  size: 18,
-                  color: AppColors.primary,
-                ),
-              ],
             ],
           ),
         ),
