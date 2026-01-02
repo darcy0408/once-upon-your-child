@@ -107,6 +107,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   List<StoryIllustration>? _cachedIllustrations;
   List<ColoringPage>? _cachedColoringPages;
   int? _characterAge;
+  Character? _character;  // Store full character data for illustrations
   String? _activeTherapeuticFocus;
   late final PageController _pageController;
   late List<String> _storyPages;
@@ -303,6 +304,54 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   // Cache logic moved to main_story.dart (auto-save)
 
+  /// Build character appearance map for backend illustration API
+  Map<String, dynamic>? _buildCharacterAppearance() {
+    if (_character == null) return null;
+
+    final appearance = <String, dynamic>{};
+
+    // Add basic appearance attributes
+    if (_character!.hair != null) appearance['hair'] = _character!.hair;
+    if (_character!.skinTone != null) appearance['skin'] = _character!.skinTone;
+    if (_character!.outfit != null) appearance['outfit'] = _character!.outfit;
+    if (_character!.gender != null) appearance['gender'] = _character!.gender;
+    if (_character!.eyes != null) appearance['eyes'] = _character!.eyes;
+    if (_character!.hairstyle != null) appearance['hairstyle'] = _character!.hairstyle;
+
+    // Add avatar details if available
+    if (_character!.avatar != null) {
+      final avatarMap = <String, dynamic>{};
+      final avatar = _character!.avatar!;
+      avatarMap['hairStyle'] = avatar.hairStyle;
+      avatarMap['hairColor'] = avatar.hairColor;
+      avatarMap['skinColor'] = avatar.skinColor;
+      if (avatar.topType != null) avatarMap['topType'] = avatar.topType;
+      if (avatar.facialHairType != null) avatarMap['facialHairType'] = avatar.facialHairType;
+      if (avatar.accessoriesType != null) avatarMap['accessoriesType'] = avatar.accessoriesType;
+      if (avatarMap.isNotEmpty) appearance['avatar'] = avatarMap;
+    }
+
+    return appearance.isEmpty ? null : appearance;
+  }
+
+  /// Build companions list for backend illustration API
+  List<Map<String, String>>? _buildCompanionsList() {
+    if (_character == null || _character!.pets == null) return null;
+
+    final companions = <Map<String, String>>[];
+
+    // Add pets as companions
+    for (final pet in _character!.pets!) {
+      final name = pet['name']?.toString();
+      final type = pet['type']?.toString() ?? pet['species']?.toString();
+      if (name != null && type != null) {
+        companions.add({'name': name, 'type': type});
+      }
+    }
+
+    return companions.isEmpty ? null : companions;
+  }
+
   /// Load character info so we can adapt prompts for age and focus
   Future<void> _loadCharacterDetails() async {
     if (widget.characterId == null) return;
@@ -320,6 +369,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         final character = Character.fromJson(data);
         if (!mounted) return;
         setState(() {
+          _character = character;  // Store full character for illustrations
           _characterAge = character.age > 0 ? character.age : null;
         });
       } else {
@@ -431,6 +481,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         numberOfImages: numberOfImages,
         age: _effectiveAge,
         therapeuticFocus: therapeuticFocus,
+        characterAppearance: _buildCharacterAppearance(),  // NEW: Character appearance
+        companions: _buildCompanionsList(),                 // NEW: Companions/pets
       );
 
       // Cache illustrations

@@ -208,10 +208,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             // Interactive Expanding Feelings Wheel
             LayoutBuilder(
               builder: (context, constraints) {
-                final maxSize = math.min(
-                  constraints.maxWidth,
-                  (_settingCardWidth * 2) + AppSpacing.md,
-                );
+                final maxSize = constraints.maxWidth;
                 return Center(
                   child: SizedBox.square(
                     dimension: maxSize,

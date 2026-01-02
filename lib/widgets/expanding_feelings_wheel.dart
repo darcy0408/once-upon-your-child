@@ -364,76 +364,71 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
     final imagePath = _imageForSelection();
     final buttonSize = size * 0.22;
 
-    final glowScale = hasSelection ? (0.98 + (_glowAnimation.value * 0.06)) : 1.0;
     final glowOpacity = hasSelection ? (0.25 + (_glowAnimation.value * 0.25)) : 0.0;
 
     return Center(
       child: GestureDetector(
         onTap: hasSelection ? _pickSelection : null,
-        child: AnimatedScale(
-          scale: glowScale,
-          duration: const Duration(milliseconds: 120),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: buttonSize,
-            height: buttonSize,
-            decoration: BoxDecoration(
-              color: hasSelection ? Colors.white : Colors.white.withOpacity(0.85),
-              shape: BoxShape.circle,
-              boxShadow: [
-                if (hasSelection)
-                  BoxShadow(
-                    color: Colors.white.withOpacity(glowOpacity),
-                    blurRadius: 18,
-                    spreadRadius: 4,
-                  ),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: buttonSize,
+          height: buttonSize,
+          decoration: BoxDecoration(
+            color: hasSelection ? Colors.white : Colors.white.withOpacity(0.85),
+            shape: BoxShape.circle,
+            boxShadow: [
+              if (hasSelection)
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
+                  color: Colors.white.withOpacity(glowOpacity),
+                  blurRadius: 18,
+                  spreadRadius: 4,
                 ),
-              ],
-              border: Border.all(
-                color: hasSelection ? Colors.white : Colors.white.withOpacity(0.6),
-                width: 2,
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
               ),
+            ],
+            border: Border.all(
+              color: hasSelection ? Colors.white : Colors.white.withOpacity(0.6),
+              width: 2,
             ),
-            child: Center(
-              child: hasSelection
-                  ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (imagePath != null)
-                          Image.asset(
-                            imagePath,
-                            width: buttonSize * 0.55,
-                            height: buttonSize * 0.55,
-                            fit: BoxFit.contain,
-                            filterQuality: FilterQuality.high,
-                            errorBuilder: (context, error, stack) => const SizedBox.shrink(),
-                          ),
-                        const SizedBox(height: 4),
-                        Text(
-                          label!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black87,
-                          ),
+          ),
+          child: Center(
+            child: hasSelection
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (imagePath != null)
+                        Image.asset(
+                          imagePath,
+                          width: buttonSize * 0.55,
+                          height: buttonSize * 0.55,
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.high,
+                          errorBuilder: (context, error, stack) => const SizedBox.shrink(),
                         ),
-                      ],
-                    )
-                  : const Text(
-                      'Tap a\nfeeling',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
+                      const SizedBox(height: 4),
+                      Text(
+                        label!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                        ),
                       ),
+                    ],
+                  )
+                : const Text(
+                    'Tap a\nfeeling',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
                     ),
-            ),
+                  ),
           ),
         ),
       ),
@@ -445,8 +440,7 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
     final sectorAngle = (2 * math.pi) / _wheelOrder.length;
     const startAngle = 3 * math.pi / 2;
     final isExpanded = _selectedCore != null && widget.maxDepth >= 1;
-    final faceOrbit = radius * (isExpanded ? 0.375 : 0.55);
-    final faceSize = size * (isExpanded ? 0.16 : 0.20);
+    final faceOrbit = radius * (isExpanded ? 0.70 : 0.72);
 
     const assetById = {
       'angry': 'assets/images/feelings_faces/core/angry.png',
@@ -462,8 +456,12 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
       final coreId = _wheelOrder[i];
       final assetPath = assetById[coreId];
       if (assetPath == null) return const SizedBox.shrink();
+      if (isExpanded) {
+        return const SizedBox.shrink();
+      }
 
       final angle = startAngle + i * sectorAngle + (sectorAngle / 2);
+      final faceSize = _faceSizeForArc(size, faceOrbit, sectorAngle, 0.18);
       final center = Offset(
         radius + faceOrbit * math.cos(angle),
         radius + faceOrbit * math.sin(angle),
@@ -507,8 +505,7 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
 
     final secondaryAngle = sectorAngle / secondaryList.length;
     final coreStart = startAngle + coreIndex * sectorAngle;
-    final faceOrbit = radius * 0.60;
-    final faceSize = size * 0.11;
+    final faceOrbit = radius * 0.84;
 
     final overlays = <Widget>[];
     for (int i = 0; i < secondaryList.length; i++) {
@@ -517,6 +514,7 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
       if (assetPath == null) continue;
 
       final angle = coreStart + i * secondaryAngle + (secondaryAngle / 2);
+      final faceSize = _faceSizeForArc(size, faceOrbit, secondaryAngle, 0.12);
       final center = Offset(
         radius + faceOrbit * math.cos(angle),
         radius + faceOrbit * math.sin(angle),
@@ -576,8 +574,7 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
     final coreStart = startAngle + coreIndex * sectorAngle;
     final secondaryStart = coreStart + secondaryIndex * secondaryAngle;
     final tertiaryAngle = secondaryAngle / tertiaryList.length;
-    final faceOrbit = radius * 0.84;
-    final faceSize = size * 0.09;
+    final faceOrbit = radius * 0.94;
 
     final overlays = <Widget>[];
     for (int i = 0; i < tertiaryList.length; i++) {
@@ -586,6 +583,7 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
       if (assetPath == null) continue;
 
       final angle = secondaryStart + i * tertiaryAngle + (tertiaryAngle / 2);
+      final faceSize = _faceSizeForArc(size, faceOrbit, tertiaryAngle, 0.10);
       final center = Offset(
         radius + faceOrbit * math.cos(angle),
         radius + faceOrbit * math.sin(angle),
@@ -610,6 +608,13 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
     }
 
     return overlays;
+  }
+
+  double _faceSizeForArc(double size, double orbit, double angle, double baseScale) {
+    final arc = orbit * angle;
+    final base = size * baseScale;
+    final maxByArc = arc * 0.6;
+    return math.max(16, math.min(base, maxByArc));
   }
 
   String? _imageForSelection() {
@@ -748,7 +753,7 @@ class _WheelPainter extends CustomPainter {
       _drawSector(canvas, center, radius * 0.25, coreOuter,
           actualSectorStart, actualSectorAngle, sectorPaint);
 
-      final labelRadius = radius * (selectedCore != null ? 0.33 : 0.50);
+      final labelRadius = radius * (selectedCore != null ? 0.38 : 0.50);
       final labelAngle = actualSectorStart + actualSectorAngle / 2;
       _drawRotatedText(
         canvas,
@@ -756,7 +761,7 @@ class _WheelPainter extends CustomPainter {
         center.dx + labelRadius * math.cos(labelAngle),
         center.dy + labelRadius * math.sin(labelAngle),
         labelAngle,
-        isSelected ? 15 : 13,
+        isSelected ? 18 : 16,
         Colors.white,
         fontWeight: FontWeight.bold,
         shadow: true,
@@ -819,7 +824,7 @@ class _WheelPainter extends CustomPainter {
       _drawSector(canvas, center, radius * 0.50, outerRadius,
           actualSecondaryStart, actualSecondaryAngle, sectorPaint);
 
-      final labelRadius = radius * (maxDepth >= 2 ? 0.58 : 0.70);
+      final labelRadius = radius * (maxDepth >= 2 ? 0.56 : 0.66);
       final labelAngle = actualSecondaryStart + actualSecondaryAngle / 2;
       _drawRotatedText(
         canvas,
@@ -827,7 +832,7 @@ class _WheelPainter extends CustomPainter {
         center.dx + labelRadius * math.cos(labelAngle),
         center.dy + labelRadius * math.sin(labelAngle),
         labelAngle,
-        isSelected ? 12 : 11,
+        isSelected ? 14 : 12,
         Colors.white,
         fontWeight: FontWeight.bold,
         shadow: true,
@@ -882,7 +887,7 @@ class _WheelPainter extends CustomPainter {
       _drawSector(canvas, center, radius * 0.75, radius * 0.92,
           actualStart, actualAngle, sectorPaint);
 
-      final labelRadius = radius * 0.74;
+      final labelRadius = radius * 0.72;
       final labelAngle = actualStart + actualAngle / 2;
       _drawRotatedText(
         canvas,
@@ -890,7 +895,7 @@ class _WheelPainter extends CustomPainter {
         center.dx + labelRadius * math.cos(labelAngle),
         center.dy + labelRadius * math.sin(labelAngle),
         labelAngle,
-        isSelected ? 9 : 8,
+        isSelected ? 11 : 9,
         Colors.white,
         fontWeight: FontWeight.bold,
         shadow: true,
@@ -957,7 +962,7 @@ class _WheelPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     );
     textPainter.layout();
-    double rotation = angle + math.pi / 2;
+    double rotation = angle;
     final normalized = (rotation + 2 * math.pi) % (2 * math.pi);
     if (normalized > math.pi / 2 && normalized < (3 * math.pi / 2)) {
       rotation += math.pi;

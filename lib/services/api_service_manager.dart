@@ -632,8 +632,13 @@ class ApiServiceManager {
     Map<String, dynamic>? characterEvolution,
   }) {
     final ageInstructions = StoryComplexityService.buildAgeInstructions(age);
-    // Build FEELINGS-CENTERED opening (PRIORITY #1)
-    String feelingsSection = '';
+
+    final bool useSecondPerson = age <= 5;
+    final String perspectiveInstruction = useSecondPerson
+        ? 'SECOND PERSON ("You"). Address the child directly as "You". Do NOT use the name "$characterName" to refer to the protagonist.'
+        : 'THIRD PERSON ("$characterName").';
+
+    // Extract emotion data first (needed for examples below)
     final emotionName = currentFeeling['emotion_name'] as String?;
     final emotionEmoji = currentFeeling['emotion_emoji'] as String?;
     final emotionDescription = currentFeeling['emotion_description'] as String?;
@@ -642,6 +647,16 @@ class ApiServiceManager {
     final physicalSigns = currentFeeling['physical_signs'] as String?;
     final copingStrategies =
         currentFeeling['coping_strategies'] as List<dynamic>?;
+
+    final String startExample1 = useSecondPerson
+        ? '"You woke up feeling $emotionName today..."'
+        : '"$characterName woke up feeling $emotionName today..."';
+    final String startExample2 = useSecondPerson
+        ? '"You were feeling $emotionName because..."'
+        : '"$characterName was feeling $emotionName because..."';
+
+    // Build FEELINGS-CENTERED opening (PRIORITY #1)
+    String feelingsSection = '';
 
     String intensityText = '';
     if (intensity != null) {
@@ -667,7 +682,7 @@ ${whatHappened != null ? "Context: $whatHappened\n" : ""}
 Physical signs: $physicalSigns
 
 CRITICAL THERAPEUTIC REQUIREMENTS:
-1. START the story by acknowledging this feeling: "$characterName woke up feeling $emotionName today..." or "$characterName was feeling $emotionName because..."
+1. START the story by acknowledging this feeling: $startExample1 or $startExample2
 2. The story MUST help $characterName understand and work through this EXACT feeling
 3. Show $characterName experiencing the physical sensations: $physicalSigns
 4. Have $characterName use these coping strategies naturally in the story:
@@ -825,6 +840,7 @@ You are an experienced children's author running the Engaging Storycraft v9.0 en
 REQUEST SUMMARY
 - Child/Character: $characterName (age $age)
 - Theme: $theme
+- Perspective: $perspectiveInstruction
 - Mode: Linear story, feelings-centered
 - Length target: $lengthGuideline (Short default)
 - Companion: ${companion ?? 'None'}
@@ -870,6 +886,12 @@ Maintain plain text (no markdown fences).''';
     Map<String, dynamic>? characterEvolution,
   }) {
     final ageInstructions = StoryComplexityService.buildAgeInstructions(age);
+
+    final bool useSecondPerson = age <= 5;
+    final String perspectiveInstruction = useSecondPerson
+        ? 'SECOND PERSON ("You"). Address the child directly as "You". Do NOT use the name "$characterName" to refer to the protagonist.'
+        : 'THIRD PERSON ("$characterName").';
+
     // Build character integration
     String characterIntegration = '';
     if (characterDetails != null) {
@@ -979,6 +1001,7 @@ You are an experienced children's author running the Engaging Storycraft v9.0 en
 REQUEST SUMMARY
 - Child/Character: $characterName (age $age)
 - Theme: $theme
+- Perspective: $perspectiveInstruction
 - Mode: Linear story
 - Length target: $lengthGuideline (Short default)
 - Companion: ${companion ?? 'None'}
@@ -1248,12 +1271,18 @@ Create the rhyming learning-to-read story about $characterName now:
         ? 'Include $companion as a friend/companion who can help with choices.'
         : '';
 
+    final bool useSecondPerson = age <= 5;
+    final String perspectiveInstruction = useSecondPerson
+        ? 'SECOND PERSON ("You"). Address the child directly.'
+        : 'THIRD PERSON ("$characterName").';
+
     final prompt = '''
 You are an experienced children's author running the Engaging Storycraft v9.0 engine for an interactive story.
 
 Child profile:
 - Name: $characterName
 - Age: $age
+- Perspective: $perspectiveInstruction
 - Theme: $theme
 - Companion: ${companion != null && companion.isNotEmpty ? companion : 'None'}
 - Mode: Interactive

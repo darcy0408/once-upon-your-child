@@ -534,7 +534,7 @@ class FeelingsWheelData {
     CoreEmotion(
       id: 'happy',
       name: 'Happy',
-      color: Color(0xFFFFB347),
+      color: Color(0xFFF39C12),
       emoji: '😊',
       eyeType: 'Happy',
       mouthType: 'Smile',
@@ -616,7 +616,7 @@ class FeelingsWheelData {
     CoreEmotion(
       id: 'surprised',
       name: 'Surprised',
-      color: Color(0xFFFF69B4),
+      color: Color(0xFFE91E63),
       emoji: '😮',
       eyeType: 'Surprised',
       mouthType: 'Default',
@@ -658,7 +658,7 @@ class FeelingsWheelData {
     CoreEmotion(
       id: 'bad',
       name: 'Bad',
-      color: Color(0xFF9B59B6),
+      color: Color(0xFF4A235A),
       emoji: '😞',
       eyeType: 'Dizzy',
       mouthType: 'Concerned',
@@ -700,7 +700,7 @@ class FeelingsWheelData {
     CoreEmotion(
       id: 'fearful',
       name: 'Fearful',
-      color: Color(0xFF5B4A8F),
+      color: Color(0xFF7B1FA2),
       emoji: '😨',
       eyeType: 'Surprised',
       mouthType: 'Concerned',
@@ -758,7 +758,7 @@ class FeelingsWheelData {
     CoreEmotion(
       id: 'sad',
       name: 'Sad',
-      color: Color(0xFF4A5568),
+      color: Color(0xFF303F9F),
       emoji: '😢',
       eyeType: 'Dizzy',
       mouthType: 'Concerned',
@@ -824,7 +824,7 @@ class FeelingsWheelData {
     CoreEmotion(
       id: 'disgusted',
       name: 'Disgusted',
-      color: Color(0xFF8B7355),
+      color: Color(0xFF6D4C41),
       emoji: '🤢',
       eyeType: 'EyeRoll',
       mouthType: 'Concerned',
@@ -850,7 +850,7 @@ class FeelingsWheelData {
     CoreEmotion(
       id: 'angry',
       name: 'Angry',
-      color: Color(0xFFDC143C),
+      color: Color(0xFFC62828),
       emoji: '😠',
       eyeType: 'EyeRoll',
       mouthType: 'Serious',

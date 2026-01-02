@@ -112,7 +112,7 @@ class Character {
             .whereType<Map>()
             .map((item) {
               try {
-                return Map<String, dynamic>.from(item as Map);
+                return Map<String, dynamic>.from(item);
               } catch (_) {
                 return null;
               }

@@ -22,23 +22,44 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
   final TextEditingController _themeController = TextEditingController();
 
   String _selectedAge = '6';
-  String _selectedTheme = 'Adventure';
+  String _selectedTheme = 'Adventure'; // Matches first theme in list
   bool _isGenerating = false;
   String? _generatedStory;
   SavedStory? _lastSavedStory;
   bool _magicPulse = false;
 
-  final List<String> _quickThemes = [
-    'Adventure',
-    'Friendship',
-    'Magic',
-    'Animals',
-    'Space',
-    'Pirates',
-    'Princess',
-    'Superhero',
-    'Underwater',
-    'Forest',
+  // Theme data with images
+  final List<Map<String, String>> _quickThemes = [
+    {
+      'name': 'Adventure',
+      'image': 'images/themes/adventure.png',
+      'description': 'Mysterious doors and exciting journeys',
+    },
+    {
+      'name': 'Magic',
+      'image': 'images/themes/magic.png',
+      'description': 'Sparkling crystals and enchanted caves',
+    },
+    {
+      'name': 'Friendship',
+      'image': 'images/themes/friendship.png',
+      'description': 'Rainbow adventures with best friends',
+    },
+    {
+      'name': 'Forest',
+      'image': 'images/themes/forest.png',
+      'description': 'Magical mushrooms and woodland wonders',
+    },
+    {
+      'name': 'Animals',
+      'image': 'images/themes/animals.png',
+      'description': 'Adorable creatures and sweet companions',
+    },
+    {
+      'name': 'Princess',
+      'image': 'images/themes/princess.png',
+      'description': 'Dreamy castles in the clouds',
+    },
   ];
 
   final List<String> _ages = ['4', '5', '6', '7', '8', '9', '10', '11', '12'];
@@ -48,7 +69,7 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
     super.initState();
     // Pre-fill with a fun default
     _characterNameController.text = 'Alex';
-    _themeController.text = _selectedTheme;
+    _themeController.text = _selectedTheme; // Will be 'Adventure'
   }
 
   @override
@@ -200,6 +221,128 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
     );
   }
 
+  Widget _buildThemeCard(Map<String, String> theme, bool isSelected) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedTheme = theme['name']!;
+          _themeController.text = theme['name']!;
+        });
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : Colors.grey.shade300,
+            width: isSelected ? 3 : 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isSelected
+                  ? AppColors.primary.withValues(alpha: 0.3)
+                  : Colors.black.withValues(alpha: 0.05),
+              blurRadius: isSelected ? 12 : 6,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Background image
+              Image.asset(
+                theme['image']!,
+                fit: BoxFit.cover,
+              ),
+              // Gradient overlay for text readability
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.8),
+                        Colors.black.withValues(alpha: 0.4),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        theme['name']!,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black,
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        theme['description']!,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 11,
+                          shadows: const [
+                            Shadow(
+                              color: Colors.black,
+                              blurRadius: 3,
+                            ),
+                          ],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Selection indicator
+              if (isSelected)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -334,32 +477,28 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
 
           // Theme Selection
           const Text(
-            'Story Theme',
+            'Where should we go today?',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _quickThemes.map((theme) {
-              final isSelected = theme == _selectedTheme;
-              return FilterChip(
-                label: Text(theme),
-                selected: isSelected,
-                onSelected: (selected) {
-                  setState(() {
-                    _selectedTheme = theme;
-                    _themeController.text = theme;
-                  });
-                },
-                backgroundColor: Colors.grey.shade100,
-                selectedColor: AppColors.primary.withValues(alpha: 0.2),
-                checkmarkColor: AppColors.primary,
-              );
-            }).toList(),
+          const SizedBox(height: 12),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 1.0,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: _quickThemes.length,
+            itemBuilder: (context, index) {
+              final theme = _quickThemes[index];
+              final isSelected = theme['name'] == _selectedTheme;
+              return _buildThemeCard(theme, isSelected);
+            },
           ),
 
           const SizedBox(height: 32),
