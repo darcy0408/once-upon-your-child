@@ -88,3 +88,34 @@ instance/*.db
 # Development test scripts
 test_*.py
 check_*.py
+
+# Accidentally moved personal project folders
+Twins Great Adventures/
+Twins Great Adventures - Copy/
+
+# Screenshots and images
+Screenshot*.png
+*.jpg
+HowDoYouFeelToday.jpg
+
+# Documentation files (session-specific)
+handoff*.md
+AVATAR_INTEGRATION_GUIDE.md
+AVATAR_SYSTEM_README.md
+AVATAR_SYSTEM_SUMMARY.md
+TECHNICAL_REPORT.md
+DICEBEAR_ATTRIBUTION.md
+avatar_system_dependencies.yaml
+
+# Temporary folders and files
+feelings wheel images/
+images/
+tools/
+ng
+check_java.ps1
+lib/ui/
+lib/data/isar/
+assets/config/
+assets/images/scenarios/
+assets/images/themes/
+*.code-workspace
