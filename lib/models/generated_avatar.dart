@@ -20,12 +20,18 @@ class GeneratedAvatar {
 
   /// Create from API response
   factory GeneratedAvatar.fromJson(Map<String, dynamic> json) {
+    // Convert attributes to Map<String, String>, handling any non-string values
+    final rawAttributes = json['attributes'] as Map<String, dynamic>? ?? {};
+    final attributes = rawAttributes.map(
+      (key, value) => MapEntry(key, value.toString()),
+    );
+
     return GeneratedAvatar(
       id: json['id'] as String,
       imageBase64: json['image_base64'] as String,
       seed: json['seed'] as String,
       style: json['style'] as String,
-      attributes: Map<String, String>.from(json['attributes'] ?? {}),
+      attributes: attributes,
       emotionData: json['emotion_data'] as Map<String, dynamic>?,
       generatedAt: DateTime.parse(json['generated_at'] as String),
     );

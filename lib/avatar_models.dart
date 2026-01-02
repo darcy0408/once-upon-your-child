@@ -12,6 +12,9 @@ class CharacterAvatar {
   final String mouthType;
   final String clothingStyle;
   final String clothingColor;
+  final String? topType;
+  final String? facialHairType;
+  final String? accessoriesType;
 
   const CharacterAvatar({
     required this.skinColor,
@@ -21,6 +24,9 @@ class CharacterAvatar {
     required this.mouthType,
     required this.clothingStyle,
     required this.clothingColor,
+    this.topType,
+    this.facialHairType,
+    this.accessoriesType,
   });
 
   /// Create from JSON (compatible with React web app format)
@@ -33,19 +39,28 @@ class CharacterAvatar {
       mouthType: json['mouthType'] ?? json['mouth_type'] ?? 'Smile',
       clothingStyle: json['clotheType'] ?? json['clothing_style'] ?? 'Hoodie',
       clothingColor: json['clotheColor'] ?? json['clothing_color'] ?? 'Blue03',
+      topType: json['topType'],
+      facialHairType: json['facialHairType'],
+      accessoriesType: json['accessoriesType'],
     );
   }
 
   /// Convert to JSON (compatible with React web app format)
-  Map<String, dynamic> toJson() => {
-        'skinColor': skinColor,
-        'topType': hairStyle,
-        'hairColor': hairColor,
-        'eyeType': eyeType,
-        'mouthType': mouthType,
-        'clotheType': clothingStyle,
-        'clotheColor': clothingColor,
-      };
+  Map<String, dynamic> toJson() {
+    final json = {
+      'skinColor': skinColor,
+      'topType': hairStyle,
+      'hairColor': hairColor,
+      'eyeType': eyeType,
+      'mouthType': mouthType,
+      'clotheType': clothingStyle,
+      'clotheColor': clothingColor,
+    };
+    if (topType != null) json['topType'] = topType!;
+    if (facialHairType != null) json['facialHairType'] = facialHairType!;
+    if (accessoriesType != null) json['accessoriesType'] = accessoriesType!;
+    return json;
+  }
 
   /// Translate this avatar into an Avataaars URL for rich SVG rendering.
   String toAvataaarsUrl({bool circleBackground = true, String? customSeed}) {
@@ -77,6 +92,9 @@ class CharacterAvatar {
     String? mouthType,
     String? clothingStyle,
     String? clothingColor,
+    String? topType,
+    String? facialHairType,
+    String? accessoriesType,
   }) {
     return CharacterAvatar(
       skinColor: skinColor ?? this.skinColor,
@@ -86,6 +104,9 @@ class CharacterAvatar {
       mouthType: mouthType ?? this.mouthType,
       clothingStyle: clothingStyle ?? this.clothingStyle,
       clothingColor: clothingColor ?? this.clothingColor,
+      topType: topType ?? this.topType,
+      facialHairType: facialHairType ?? this.facialHairType,
+      accessoriesType: accessoriesType ?? this.accessoriesType,
     );
   }
 
@@ -479,15 +500,62 @@ const Set<String> _validHairColors = {
 };
 
 const Set<String> _validTopTypes = {
+  // Short hair styles
   'ShortHairShortFlat',
   'ShortHairShortCurly',
   'ShortHairShortWaved',
+  'ShortHairShaggyMullet',
+  'ShortHairDreads01',
+  'ShortHairDreads02',
+  'ShortHairFrizzle',
+  'ShortHairTheCaesar',
+  'ShortHairTheCaesarSidePart',
+
+  // Long hair styles
   'LongHairStraight',
+  'LongHairStraight2',
+  'LongHairStraightStrand',
   'LongHairCurly',
+  'LongHairCurvy',
   'LongHairBigHair',
   'LongHairBun',
   'LongHairBraids',
   'LongHairPonytail',
+  'LongHairMiaWallace',
+  'LongHairFro',
+  'LongHairFroBand',
+  'LongHairNotTooLong',
+  'LongHairDreads',
+
+  // Head coverings
   'Hijab',
   'Hat',
+  'Turban',
+  'WinterHat1',
+  'WinterHat2',
+  'WinterHat3',
+  'WinterHat4',
+
+  // No hair / bald
+  'NoHair',
+  'Eyepatch',
+};
+
+const Set<String> _validFacialHairTypes = {
+  'Blank',
+  'BeardMedium',
+  'BeardLight',
+  'BeardMagestic',
+  'MoustacheFancy',
+  'MoustacheMagnum',
+};
+
+const Set<String> _validAccessoriesTypes = {
+  'Blank',
+  'Kurt',
+  'Prescription01',
+  'Prescription02',
+  'Round',
+  'Sunglasses',
+  'Wayfarers',
 };

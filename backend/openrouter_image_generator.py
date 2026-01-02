@@ -263,6 +263,124 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
 
         return images
 
+    def generate_character_avatar(
+        self,
+        prompt: str,
+        character_name: str = "the hero",
+        age: int = 8,
+        style: str = "pixar",
+        num_images: int = 1,
+        **_: dict
+    ) -> list:
+        """
+        Generate character avatar portrait using Stable Diffusion via OpenRouter
+
+        Args:
+            prompt: Full avatar generation prompt (from AvatarPromptService)
+            character_name: Name of the character
+            age: Character age
+            style: Art style (pixar, watercolor, cartoon, clay)
+            num_images: Number of images to generate
+
+        Returns:
+            List of dicts with image_data (base64) and metadata
+        """
+        images = []
+        for i in range(num_images):
+            try:
+                logger.info(f"OpenRouter avatar: Generating {style} avatar for {character_name}, age {age}")
+                logger.info(f"OpenRouter avatar: Using prompt (first 150 chars): {prompt[:150]}...")
+
+                response = requests.post(
+                    f"{self.base_url}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "HTTP-Referer": "https://story-weaver-app-production.up.railway.app",
+                        "X-Title": "Story Weaver App - Avatar Generation",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": "black-forest-labs/flux-1-schnell",  # Fast & cheap
+                        "modalities": ["image", "text"],
+                        "max_tokens": 1000,
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": prompt
+                            }
+                        ],
+                    },
+                    timeout=90,  # Avatar generation can take longer
+                )
+
+                if response.status_code == 200:
+                    data = response.json()
+                    logger.info(f"OpenRouter avatar: Response received, keys: {data.keys()}")
+
+                    image_url = None
+
+                    # 1. Check message content
+                    try:
+                        content = data['choices'][0]['message']['content']
+                        if content and content.strip().startswith("data:image/"):
+                            image_url = content.strip()
+                            logger.info("Found avatar image data in message content")
+                    except (KeyError, IndexError):
+                        pass
+
+                    # 2. Check message images array
+                    if not image_url:
+                        try:
+                            raw_images = data['choices'][0]['message'].get('images', [])
+                            if raw_images and len(raw_images) > 0:
+                                img_data = raw_images[0]
+                                if isinstance(img_data, str):
+                                    image_url = img_data
+                                    logger.info("Found avatar image data in message.images[0] string")
+                                elif isinstance(img_data, dict):
+                                    if 'url' in img_data:
+                                        image_url = img_data['url']
+                                        logger.info("Found avatar image data in message.images[0]['url']")
+                                    elif 'image_url' in img_data and isinstance(img_data['image_url'], dict) and 'url' in img_data['image_url']:
+                                        image_url = img_data['image_url']['url']
+                                        logger.info("Found avatar image data in message.images[0]['image_url']['url']")
+                        except (KeyError, IndexError):
+                            pass
+
+                    if image_url:
+                        # Extract base64 data from data URI if needed
+                        if image_url.startswith("data:image/"):
+                            # Format: data:image/png;base64,iVBORw0KGgo...
+                            image_data_base64 = image_url.split(',', 1)[1] if ',' in image_url else image_url
+                        else:
+                            # If it's a URL, we'd need to fetch it
+                            # For now, assume it's base64
+                            image_data_base64 = image_url
+
+                        logger.info(f"OpenRouter avatar: Successfully generated avatar. Data length: {len(image_data_base64)}")
+                        images.append({
+                            'id': f"{uuid.uuid4()}_{i}",
+                            'prompt': prompt,
+                            'image_data': image_data_base64,  # Return as base64 string
+                            'format': 'png',
+                            'generated_at': datetime.now().isoformat(),
+                            'provider': 'openrouter-flux'
+                        })
+                    else:
+                        raw_content = str(data)[:1000]
+                        logger.warning(f"OpenRouter avatar response did not contain image. Raw response: {raw_content}")
+                else:
+                    logger.error(f"OpenRouter avatar API error: {response.status_code} - {response.text}")
+
+                # Rate limiting
+                if i < num_images - 1:
+                    time.sleep(1)
+
+            except Exception as e:
+                logger.exception(f"Error generating avatar image {i + 1}: {e}")
+
+        return images
+
 
 # Example usage & testing
 if __name__ == "__main__":

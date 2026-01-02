@@ -14,17 +14,19 @@ logger = logging.getLogger(__name__)
 class AvatarGenerationService:
     """Service for generating AI-powered child avatars with safety controls."""
 
-    def __init__(self, image_generator=None):
+    def __init__(self, image_generator=None, fallback_generator=None):
         """
         Initialize avatar generation service.
 
         Args:
-            image_generator: GeminiImageGenerator instance (injected for testing)
+            image_generator: Primary image generator (Gemini)
+            fallback_generator: Fallback generator (OpenRouter)
         """
         self.prompt_service = AvatarPromptService()
         self.image_generator = image_generator
+        self.fallback_generator = fallback_generator
 
-        # If no generator provided, try to import and create one
+        # If no primary generator provided, try to import and create Gemini
         if self.image_generator is None:
             try:
                 # Try backend-prefixed import first (for Flask app context)
@@ -43,6 +45,24 @@ class AvatarGenerationService:
             except Exception as e:
                 logger.error(f"Failed to initialize GeminiImageGenerator: {e}")
                 self.image_generator = None
+
+        # If no fallback generator provided, try to import and create OpenRouter
+        if self.fallback_generator is None:
+            try:
+                from backend.openrouter_image_generator import OpenRouterImageGenerator
+                self.fallback_generator = OpenRouterImageGenerator()
+                logger.info("AvatarGenerationService initialized with OpenRouter fallback")
+            except ImportError:
+                try:
+                    from openrouter_image_generator import OpenRouterImageGenerator
+                    self.fallback_generator = OpenRouterImageGenerator()
+                    logger.info("AvatarGenerationService initialized with OpenRouter fallback (direct import)")
+                except Exception as e:
+                    logger.warning(f"Failed to initialize OpenRouter fallback: {e}")
+                    self.fallback_generator = None
+            except Exception as e:
+                logger.warning(f"Failed to initialize OpenRouter fallback: {e}")
+                self.fallback_generator = None
 
     def generate_avatar(
         self,
@@ -93,8 +113,8 @@ class AvatarGenerationService:
         if style.lower() not in ['pixar', 'watercolor', 'cartoon', 'clay']:
             raise ValueError(f"Invalid style: {style}. Must be pixar|watercolor|cartoon|clay")
 
-        if self.image_generator is None:
-            raise Exception("Image generator not available")
+        if self.image_generator is None and self.fallback_generator is None:
+            raise Exception("No image generator available (neither Gemini nor OpenRouter)")
 
         features = features or {}
 
@@ -212,7 +232,7 @@ class AvatarGenerationService:
         style: str
     ) -> bytes:
         """
-        Generate image using Gemini image generator.
+        Generate image using Gemini image generator, with OpenRouter fallback.
 
         Args:
             prompt: Complete avatar generation prompt
@@ -224,46 +244,88 @@ class AvatarGenerationService:
             Image bytes (PNG format)
 
         Raises:
-            Exception: If generation fails
+            Exception: If both Gemini and OpenRouter fail
         """
-        try:
-            # Use the existing generate_character_avatar method if it exists
-            if hasattr(self.image_generator, 'generate_character_avatar'):
-                results = self.image_generator.generate_character_avatar(
+        gemini_error = None
+
+        # Try Gemini first (if available)
+        if self.image_generator is not None:
+            try:
+                logger.info("Attempting avatar generation with Gemini...")
+                # Use the existing generate_character_avatar method if it exists
+                if hasattr(self.image_generator, 'generate_character_avatar'):
+                    results = self.image_generator.generate_character_avatar(
+                        prompt=prompt,
+                        character_name=character_name,
+                        age=age,
+                        style=style,
+                        num_images=1
+                    )
+                else:
+                    # Fall back to generic story illustration method
+                    results = self.image_generator.generate_story_illustration(
+                        scene_description=prompt,
+                        character_name=character_name,
+                        style=f"{style} children's character portrait",
+                        num_images=1,
+                        age=age
+                    )
+
+                if results and len(results) > 0:
+                    # Extract image data from result
+                    result = results[0]
+                    image_base64 = result.get('image_data')
+
+                    if image_base64:
+                        # Decode base64 to bytes
+                        image_bytes = base64.b64decode(image_base64)
+                        logger.info("✅ Avatar generated successfully with Gemini!")
+                        return image_bytes
+
+                raise Exception("No image data in Gemini result")
+
+            except Exception as e:
+                gemini_error = e
+                logger.warning(f"Gemini avatar generation failed: {e}")
+
+        # Try OpenRouter fallback (if available)
+        if self.fallback_generator is not None:
+            try:
+                logger.info("Attempting avatar generation with OpenRouter fallback...")
+                results = self.fallback_generator.generate_character_avatar(
                     prompt=prompt,
                     character_name=character_name,
                     age=age,
                     style=style,
                     num_images=1
                 )
-            else:
-                # Fall back to generic story illustration method
-                results = self.image_generator.generate_story_illustration(
-                    scene_description=prompt,
-                    character_name=character_name,
-                    style=f"{style} children's character portrait",
-                    num_images=1,
-                    age=age
-                )
 
-            if not results or len(results) == 0:
-                raise Exception("No images generated")
+                if results and len(results) > 0:
+                    # Extract image data from result
+                    result = results[0]
+                    image_base64 = result.get('image_data')
 
-            # Extract image data from result
-            result = results[0]
-            image_base64 = result.get('image_data')
+                    if image_base64:
+                        # Decode base64 to bytes
+                        image_bytes = base64.b64decode(image_base64)
+                        logger.info("✅ Avatar generated successfully with OpenRouter fallback!")
+                        return image_bytes
 
-            if not image_base64:
-                raise Exception("No image data in result")
+                raise Exception("No image data in OpenRouter result")
 
-            # Decode base64 to bytes
-            image_bytes = base64.b64decode(image_base64)
+            except Exception as e:
+                logger.error(f"OpenRouter fallback also failed: {e}")
+                # Both generators failed - raise combined error
+                if gemini_error:
+                    raise Exception(f"Avatar generation failed: Gemini: {str(gemini_error)}, OpenRouter: {str(e)}")
+                else:
+                    raise Exception(f"Avatar generation failed (OpenRouter only): {str(e)}")
 
-            return image_bytes
-
-        except Exception as e:
-            logger.error(f"Gemini image generation error: {e}")
-            raise Exception(f"Image generation failed: {str(e)}")
+        # If we get here, no generators available or all failed
+        if gemini_error:
+            raise Exception(f"Avatar generation failed: {str(gemini_error)}")
+        else:
+            raise Exception("No image generator available")
 
     def _verify_non_photorealistic(self, image_data: bytes) -> bool:
         """

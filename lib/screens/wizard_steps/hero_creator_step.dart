@@ -7,7 +7,6 @@ import '../../widgets/character_preview.dart';
 import '../../widgets/pill_button.dart';
 import '../wizard_story_screen.dart';
 import '../../services/api_service_manager.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../models/generated_avatar.dart';
 import '../../widgets/avatar_creator_overlay.dart';
 import '../../services/avatar_generation_state.dart';
