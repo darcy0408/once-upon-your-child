@@ -57,17 +57,73 @@ def create_admin_blueprint(logger):
     def add_missing_columns():
         """Add missing columns to database (migration fix)"""
         try:
-            sql_statements = [
-                """
-                DO $$
-                BEGIN
-                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                                   WHERE table_name='user' AND column_name='stories_created_count') THEN
-                        ALTER TABLE "user" ADD COLUMN stories_created_count INTEGER DEFAULT 0 NOT NULL;
-                    END IF;
-                END $$;
-                """,
-            ]
+            engine_name = db.engine.name
+            if engine_name == "postgresql":
+                sql_statements = [
+                    """
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                       WHERE table_name='user' AND column_name='stories_created_count') THEN
+                            ALTER TABLE "user" ADD COLUMN stories_created_count INTEGER DEFAULT 0 NOT NULL;
+                        END IF;
+                    END $$;
+                    """,
+                    """
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                       WHERE table_name='user' AND column_name='gemini_api_key_encrypted') THEN
+                            ALTER TABLE "user" ADD COLUMN gemini_api_key_encrypted TEXT;
+                        END IF;
+                    END $$;
+                    """,
+                    """
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                       WHERE table_name='user' AND column_name='has_byok') THEN
+                            ALTER TABLE "user" ADD COLUMN has_byok BOOLEAN DEFAULT FALSE NOT NULL;
+                        END IF;
+                    END $$;
+                    """,
+                    """
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                       WHERE table_name='user' AND column_name='stories_generated_this_month') THEN
+                            ALTER TABLE "user" ADD COLUMN stories_generated_this_month INTEGER DEFAULT 0 NOT NULL;
+                        END IF;
+                    END $$;
+                    """,
+                    """
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                       WHERE table_name='user' AND column_name='illustrations_generated_this_month') THEN
+                            ALTER TABLE "user" ADD COLUMN illustrations_generated_this_month INTEGER DEFAULT 0 NOT NULL;
+                        END IF;
+                    END $$;
+                    """,
+                    """
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                                       WHERE table_name='user' AND column_name='usage_reset_date') THEN
+                            ALTER TABLE "user" ADD COLUMN usage_reset_date TIMESTAMP;
+                        END IF;
+                    END $$;
+                    """,
+                ]
+            else:
+                sql_statements = [
+                    "ALTER TABLE user ADD COLUMN stories_created_count INTEGER DEFAULT 0 NOT NULL",
+                    "ALTER TABLE user ADD COLUMN gemini_api_key_encrypted TEXT",
+                    "ALTER TABLE user ADD COLUMN has_byok BOOLEAN DEFAULT 0 NOT NULL",
+                    "ALTER TABLE user ADD COLUMN stories_generated_this_month INTEGER DEFAULT 0 NOT NULL",
+                    "ALTER TABLE user ADD COLUMN illustrations_generated_this_month INTEGER DEFAULT 0 NOT NULL",
+                    "ALTER TABLE user ADD COLUMN usage_reset_date TIMESTAMP",
+                ]
 
             applied_migrations = []
             with db.engine.connect() as conn:
@@ -75,8 +131,8 @@ def create_admin_blueprint(logger):
                     try:
                         conn.execute(text(sql))
                         conn.commit()
-                        applied_migrations.append("stories_created_count column")
-                        logger.info("✓ Applied migration: stories_created_count")
+                        applied_migrations.append(sql.split("ADD COLUMN")[1].strip().split(" ")[0])
+                        logger.info("Applied migration: %s", sql)
                     except Exception as e:
                         logger.warning(f"Migration warning: {str(e)}")
 

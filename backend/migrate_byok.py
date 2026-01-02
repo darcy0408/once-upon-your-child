@@ -8,111 +8,77 @@ import os
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend.app import create_app
-from backend.database import db
+from flask import Flask
 from sqlalchemy import text
+
+from backend.config import config_by_name
+from backend.database import db
+
+
+def create_migration_app():
+    """Create a minimal Flask app for running schema migrations."""
+    app = Flask(__name__)
+    app.config.from_object(config_by_name['dev'])
+    db.init_app(app)
+    return app
+
 
 def run_migration():
     """Add BYOK fields to User table if they don't exist."""
-    app = create_app('dev')
-    
+    app = create_migration_app()
+
     with app.app_context():
         print("Running BYOK database migration...")
-        
+
         try:
-            # Check if we're using PostgreSQL or SQLite
             engine_name = db.engine.name
             print(f"Database engine: {engine_name}")
-            
-            if engine_name == 'postgresql':
-                # PostgreSQL migration
-                migrations = [
-                    # Add gemini_api_key_encrypted column
-                    """
-                    DO $$
-                    BEGIN
-                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                                       WHERE table_name='user' AND column_name='gemini_api_key_encrypted') THEN
-                            ALTER TABLE "user" ADD COLUMN gemini_api_key_encrypted TEXT;
-                        END IF;
-                    END $$;
-                    """,
-                    # Add has_byok column
-                    """
-                    DO $$
-                    BEGIN
-                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                                       WHERE table_name='user' AND column_name='has_byok') THEN
-                            ALTER TABLE "user" ADD COLUMN has_byok BOOLEAN DEFAULT FALSE NOT NULL;
-                        END IF;
-                    END $$;
-                    """,
-                    # Add stories_generated_this_month column
-                    """
-                    DO $$
-                    BEGIN
-                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                                       WHERE table_name='user' AND column_name='stories_generated_this_month') THEN
-                            ALTER TABLE "user" ADD COLUMN stories_generated_this_month INTEGER DEFAULT 0 NOT NULL;
-                        END IF;
-                    END $$;
-                    """,
-                    # Add illustrations_generated_this_month column
-                    """
-                    DO $$
-                    BEGIN
-                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                                       WHERE table_name='user' AND column_name='illustrations_generated_this_month') THEN
-                            ALTER TABLE "user" ADD COLUMN illustrations_generated_this_month INTEGER DEFAULT 0 NOT NULL;
-                        END IF;
-                    END $$;
-                    """,
-                    # Add usage_reset_date column
-                    """
-                    DO $$
-                    BEGIN
-                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
-                                       WHERE table_name='user' AND column_name='usage_reset_date') THEN
-                            ALTER TABLE "user" ADD COLUMN usage_reset_date TIMESTAMP;
-                        END IF;
-                    END $$;
-                    """,
-                ]
-            else:
-                # SQLite migration
-                migrations = [
-                    'ALTER TABLE user ADD COLUMN gemini_api_key_encrypted TEXT',
-                    'ALTER TABLE user ADD COLUMN has_byok BOOLEAN DEFAULT 0 NOT NULL',
-                    'ALTER TABLE user ADD COLUMN stories_generated_this_month INTEGER DEFAULT 0 NOT NULL',
-                    'ALTER TABLE user ADD COLUMN illustrations_generated_this_month INTEGER DEFAULT 0 NOT NULL',
-                    'ALTER TABLE user ADD COLUMN usage_reset_date TIMESTAMP',
-                ]
-            
+
+            columns_sql = {
+                'gemini_api_key_encrypted': 'ALTER TABLE "user" ADD COLUMN gemini_api_key_encrypted TEXT',
+                'has_byok': 'ALTER TABLE "user" ADD COLUMN has_byok BOOLEAN DEFAULT FALSE NOT NULL',
+                'stories_generated_this_month': 'ALTER TABLE "user" ADD COLUMN stories_generated_this_month INTEGER DEFAULT 0 NOT NULL',
+                'illustrations_generated_this_month': 'ALTER TABLE "user" ADD COLUMN illustrations_generated_this_month INTEGER DEFAULT 0 NOT NULL',
+                'usage_reset_date': 'ALTER TABLE "user" ADD COLUMN usage_reset_date TIMESTAMP',
+            }
+
             with db.engine.connect() as conn:
-                for migration in migrations:
+                if engine_name == 'postgresql':
+                    existing = conn.execute(
+                        text("SELECT column_name FROM information_schema.columns WHERE table_name='user'")
+                    )
+                    existing_columns = {row[0] for row in existing}
+                else:
+                    existing = conn.execute(text('PRAGMA table_info("user")'))
+                    existing_columns = {row[1] for row in existing}
+
+                for column_name, migration in columns_sql.items():
+                    if column_name in existing_columns:
+                        print(f"[SKIP] Column already exists: {column_name}")
+                        continue
                     try:
                         conn.execute(text(migration))
                         conn.commit()
-                        print(f"✓ Applied migration")
+                        print(f"[OK] Added column: {column_name}")
                     except Exception as e:
-                        # Column might already exist, that's ok
-                        if "already exists" in str(e).lower() or "duplicate column" in str(e).lower():
-                            print(f"⊘ Migration already applied (column exists)")
-                        else:
-                            print(f"✗ Migration failed: {e}")
-            
-            print("\n✓ Migration completed successfully!")
-            print("\nNew User fields added:")
+                        print(f"[ERROR] Failed to add {column_name}: {e}")
+
+            print("")
+            print("[OK] Migration completed successfully!")
+            print("")
+            print("New User fields added:")
             print("  - gemini_api_key_encrypted (TEXT)")
             print("  - has_byok (BOOLEAN)")
             print("  - stories_generated_this_month (INTEGER)")
             print("  - illustrations_generated_this_month (INTEGER)")
             print("  - usage_reset_date (TIMESTAMP)")
-            
+
         except Exception as e:
-            print(f"\n✗ Migration failed: {e}")
+            print("")
+            print(f"[ERROR] Migration failed: {e}")
             import traceback
             traceback.print_exc()
+
 
 if __name__ == '__main__':
     run_migration()
