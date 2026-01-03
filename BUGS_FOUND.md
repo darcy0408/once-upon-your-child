@@ -9,6 +9,22 @@
 
 > Critical bugs prevent core functionality or cause data loss. These MUST be fixed before deployment.
 
+### Bug #C0: Gradle Build Failure (Java 25 Incompatibility)
+
+**Severity:** Critical
+**Test:** Build Android App
+**Status:** 🟢 FIXED
+
+**Steps to Reproduce:**
+1. Run `flutter run` or build on Windows.
+2. System uses Java 25 (Class version 69).
+
+**Actual Behavior:**
+`BUG! exception in phase 'semantic analysis' in source unit '_BuildScript_' Unsupported class file major version 69`
+
+**Fix Applied:**
+Updated `android/gradle.properties` to ensure `org.gradle.java.home` uses forward slashes for the JDK 21 path to properly force a supported Java version.
+
 ### Bug #C1: Age 5 Story Uses Wrong Perspective
 
 **Severity:** Critical

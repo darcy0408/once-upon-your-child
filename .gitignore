@@ -109,7 +109,7 @@ avatar_system_dependencies.yaml
 
 # Temporary folders and files
 feelings wheel images/
-images/
+/images/
 tools/
 ng
 check_java.ps1
