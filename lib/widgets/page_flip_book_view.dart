@@ -73,10 +73,14 @@ class _PageFlipBookViewState extends State<PageFlipBookView> {
     }
   }
 
-  void _handlePageFlip() {
+  void _handlePageFlip(bool isForward) {
     if (mounted) {
       setState(() {
-        _currentPage = (_currentPage + 1) % widget.pages.length;
+        if (isForward) {
+          _currentPage = (_currentPage + 1) % widget.pages.length;
+        } else {
+          _currentPage = (_currentPage - 1 + widget.pages.length) % widget.pages.length;
+        }
       });
       widget.onPageChanged?.call(_currentPage);
     }

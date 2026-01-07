@@ -601,20 +601,22 @@ class _WheelPainter extends CustomPainter {
         minAngle = 0.3; // Core labels only if very wide
       } else if (level == 'secondary') {
         fontSize = 9.0;
-        minAngle = 0.08;
+        minAngle = 0.15; // Secondary labels only for wider segments
       } else if (level == 'tertiary') {
-        fontSize = 7.5;
-        minAngle = 0.02; // Show most tertiary labels
+        fontSize = 8.0;
+        minAngle = 0.12; // Tertiary labels only for reasonably wide segments
       }
 
       if (sweepAngle > minAngle) {
-        _drawText(
+        // Rotate text to follow the arc orientation
+        _drawRotatedText(
           canvas,
           label,
           center.dx + labelRadius * math.cos(labelAngle),
           center.dy + labelRadius * math.sin(labelAngle),
           fontSize,
           Colors.white,
+          labelAngle, // Rotation angle
           fontWeight: FontWeight.bold,
           shadow: true,
         );
@@ -641,11 +643,11 @@ class _WheelPainter extends CustomPainter {
       ..color = isSelected ? color : color.withOpacity(0.85);
     _drawSector(canvas, center, innerRadius, outerRadius, startAngle, sweepAngle, segmentPaint);
 
-    if (label.isNotEmpty && sweepAngle > 0.1) {
+    if (label.isNotEmpty && sweepAngle > 0.15) {
       final labelRadius = (innerRadius + outerRadius) / 2;
       final labelAngle = startAngle + sweepAngle / 2;
-      _drawText(canvas, label, center.dx + labelRadius * math.cos(labelAngle),
-          center.dy + labelRadius * math.sin(labelAngle), 10.0, Colors.white,
+      _drawRotatedText(canvas, label, center.dx + labelRadius * math.cos(labelAngle),
+          center.dy + labelRadius * math.sin(labelAngle), 10.0, Colors.white, labelAngle,
           fontWeight: FontWeight.bold, shadow: true);
     }
 
@@ -838,6 +840,57 @@ class _WheelPainter extends CustomPainter {
       canvas,
       Offset(x - textPainter.width / 2, y - textPainter.height / 2),
     );
+  }
+
+  void _drawRotatedText(Canvas canvas, String text, double x, double y, double fontSize,
+      Color color, double rotationAngle, {FontWeight? fontWeight, bool shadow = false}) {
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: fontWeight ?? FontWeight.normal,
+          color: color,
+          shadows: shadow
+              ? [
+                  const Shadow(
+                    offset: Offset(0, 1),
+                    blurRadius: 3,
+                    color: Colors.black54,
+                  ),
+                ]
+              : null,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+
+    // Save canvas state
+    canvas.save();
+
+    // Move to text position
+    canvas.translate(x, y);
+
+    // Rotate the canvas
+    // Adjust angle so text reads correctly (perpendicular to radius, reading outward)
+    double textRotation = rotationAngle + math.pi / 2;
+
+    // If text would be upside down, flip it
+    if (textRotation > math.pi / 2 && textRotation < 3 * math.pi / 2) {
+      textRotation += math.pi;
+    }
+
+    canvas.rotate(textRotation);
+
+    // Draw text centered at origin
+    textPainter.paint(
+      canvas,
+      Offset(-textPainter.width / 2, -textPainter.height / 2),
+    );
+
+    // Restore canvas state
+    canvas.restore();
   }
 
   void _drawFace(

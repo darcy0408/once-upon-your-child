@@ -25,6 +25,8 @@ class StoryBasedIllustrationService extends StoryIllustrationService {
     int numberOfImages = 3,
     int age = 7,
     String? therapeuticFocus,
+    Map<String, dynamic>? characterAppearance,
+    List<Map<String, String>>? companions,
   }) async {
     try {
       // Call backend to extract story scenes
@@ -38,6 +40,8 @@ class StoryBasedIllustrationService extends StoryIllustrationService {
               'num_scenes': numberOfImages,
               'age': age,
               'therapeutic_focus': therapeuticFocus,
+              if (characterAppearance != null) 'character_appearance': characterAppearance,
+              if (companions != null) 'companions': companions,
             }),
           )
           .timeout(const Duration(seconds: 45));

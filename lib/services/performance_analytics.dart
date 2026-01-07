@@ -14,7 +14,7 @@ class PerformanceAnalytics {
       final info = await PackageInfo.fromPlatform();
       await _analytics.logEvent(
         name: 'app_start',
-        parameters: <String, dynamic>{
+        parameters: <String, Object>{
           'platform': Platform.operatingSystem,
           'version': info.version,
           'build_number': info.buildNumber,
@@ -35,7 +35,7 @@ class PerformanceAnalytics {
     try {
       await _analytics.logEvent(
         name: 'error_occurred',
-        parameters: <String, dynamic>{
+        parameters: <String, Object>{
           'error_type': errorType,
           'error_message': errorMessage.length > 100
               ? errorMessage.substring(0, 100)

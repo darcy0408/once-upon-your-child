@@ -39,7 +39,7 @@ class FirebaseAnalyticsService {
     try {
       await analytics.logEvent(
         name: eventName,
-        parameters: parameters,
+        parameters: parameters.cast<String, Object>(),
       );
     } catch (e) {
       if (kDebugMode) {

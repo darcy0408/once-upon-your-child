@@ -132,7 +132,10 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             elif character_id:
                 raise ValueError(f"Character {character_id} not found")
 
-            self.update_state(state="PROCESSING", meta={"status": "Generating story..."})
+            try:
+                self.update_state(state="PROCESSING", meta={"status": "Generating story..."})
+            except Exception as e:
+                logger.warning(f"Failed to update task state (Redis likely unavailable): {e}")
 
             # Fetch companion character details from database or use provided dicts
             companion_character_details = []
@@ -356,8 +359,11 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             db.session.rollback()
             error_msg = str(exc)
             logger.error("generate_story_task failed: %s", error_msg, exc_info=True)
-            self.update_state(
-                state="FAILURE",
-                meta={"error": error_msg, "traceback": traceback.format_exc()},
-            )
+            try:
+                self.update_state(
+                    state="FAILURE",
+                    meta={"error": error_msg, "traceback": traceback.format_exc()},
+                )
+            except Exception as e:
+                logger.warning(f"Failed to update task state (Redis likely unavailable): {e}")
             raise

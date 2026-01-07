@@ -91,7 +91,7 @@ void main() {
 
       // Verify wizard opened (moon phase indicator or step indicator)
       expect(
-        find.textContaining('Step').or(find.textContaining('Hero')).or(find.textContaining('Character')),
+        find.byWidgetPredicate((w) => (w is Text && (w.data?.contains('Step') == true || w.data?.contains('Hero') == true || w.data?.contains('Character') == true))),
         findsAtLeastNWidgets(1),
       );
 
@@ -107,15 +107,18 @@ void main() {
       // This depends on your UI implementation
 
       // Navigate to next step
-      final nextButton = find.textContaining('Next').or(find.byIcon(Icons.arrow_forward)).first;
+      var nextButton = find.textContaining('Next');
+      if (nextButton.evaluate().isEmpty) {
+        nextButton = find.byIcon(Icons.arrow_forward);
+      }
       if (nextButton.evaluate().isNotEmpty) {
-        await tester.tap(nextButton);
+        await tester.tap(nextButton.first);
         await tester.pumpAndSettle();
       }
 
       // F3: Select Feelings (Step 2)
       // Look for emotion chips or scenario selection
-      final emotionChip = find.textContaining('Happy').or(find.textContaining('Excited')).first;
+      final emotionChip = find.byWidgetPredicate((w) => (w is Text && (w.data?.contains('Happy') == true || w.data?.contains('Excited') == true))).first;
       if (emotionChip.evaluate().isNotEmpty) {
         await tester.tap(emotionChip);
         await tester.pumpAndSettle();
@@ -148,7 +151,7 @@ void main() {
       }
 
       // Click "Make Magic" button
-      final makeMagicButton = find.textContaining('Make Magic').or(find.textContaining('Create')).first;
+      final makeMagicButton = find.byWidgetPredicate((w) => (w is Text && (w.data?.contains('Make Magic') == true || w.data?.contains('Create') == true))).first;
       if (makeMagicButton.evaluate().isNotEmpty) {
         await tester.tap(makeMagicButton);
         await tester.pumpAndSettle(const Duration(seconds: 5));
@@ -156,7 +159,7 @@ void main() {
 
       // Verify navigation to Pick-A-Path screen
       expect(
-        find.textContaining('Pick-A-Path').or(find.textContaining('Adventure')),
+        find.byWidgetPredicate((w) => (w is Text && (w.data?.contains('Pick-A-Path') == true || w.data?.contains('Adventure') == true))),
         findsAtLeastNWidgets(1),
       );
     });
@@ -178,19 +181,19 @@ void main() {
       // G2: Verify first segment is displayed
       // Look for story content
       expect(
-        find.textContaining('Enchanted').or(find.textContaining('Forest')).or(find.textContaining('adventure')),
+        find.byWidgetPredicate((w) => (w is Text && (w.data?.contains('Enchanted') == true || w.data?.contains('Forest') == true || w.data?.contains('adventure') == true))),
         findsAtLeastNWidgets(1),
       );
 
       // Verify progress indicator
       expect(
-        find.textContaining('Segment 1').or(find.textContaining('1 of')),
+        find.byWidgetPredicate((w) => (w is Text && (w.data?.contains('Segment 1') == true || w.data?.contains('1 of') == true))),
         findsAtLeastNWidgets(1),
       );
 
       // Verify choice buttons exist
       expect(
-        find.textContaining('Choice').or(find.byType(ElevatedButton)),
+        find.byWidgetPredicate((w) => (w is Text && w.data?.contains('Choice') == true) || w is ElevatedButton),
         findsAtLeastNWidgets(1),
       );
     });
@@ -203,7 +206,7 @@ void main() {
       await tester.pumpAndSettle(const Duration(seconds: 3));
 
       // G5: Find and tap first choice button
-      final choiceButton = find.textContaining('Choice 1').or(find.byType(ElevatedButton).first).first;
+      final choiceButton = find.byWidgetPredicate((w) => (w is Text && w.data?.contains('Choice 1') == true) || w is ElevatedButton).first;
       if (choiceButton.evaluate().isNotEmpty) {
         await tester.tap(choiceButton);
         await tester.pumpAndSettle(const Duration(seconds: 3));
@@ -212,7 +215,7 @@ void main() {
       // G6: Verify next segment is displayed
       // The content should change
       expect(
-        find.textContaining('Segment 2').or(find.textContaining('2 of')),
+        find.byWidgetPredicate((w) => (w is Text && (w.data?.contains('Segment 2') == true || w.data?.contains('2 of') == true))),
         findsAtLeastNWidgets(1),
       );
     });
@@ -232,7 +235,7 @@ void main() {
 
       // G4: Check for Adventure Status section
       expect(
-        find.textContaining('Adventure Status').or(find.textContaining('Status')).or(find.textContaining('Location')),
+        find.byWidgetPredicate((w) => (w is Text && (w.data?.contains('Adventure Status') == true || w.data?.contains('Status') == true || w.data?.contains('Location') == true))),
         findsAtLeastNWidgets(1),
       );
     });
@@ -250,7 +253,7 @@ void main() {
       // G9: Check for completion indicators
       // G10: Check for completion screen elements
       expect(
-        find.textContaining('complete').or(find.textContaining('Complete')).or(find.textContaining('Save')),
+        find.byWidgetPredicate((w) => (w is Text && (w.data?.contains('complete') == true || w.data?.contains('Complete') == true || w.data?.contains('Save') == true))),
         findsAtLeastNWidgets(1),
       );
     });
@@ -280,17 +283,19 @@ void main() {
 
       // I1: Check for error message
       expect(
-        find.textContaining('error').or(find.textContaining('Error')).or(find.textContaining('try again')),
+        find.byWidgetPredicate((w) => (w is Text && (w.data?.contains('error') == true || w.data?.contains('Error') == true || w.data?.contains('try again') == true))),
         findsAtLeastNWidgets(1),
       );
 
       // I2: Check for retry button
       expect(
-        find.textContaining('Retry').or(find.textContaining('Try Again')),
+        find.byWidgetPredicate((w) => (w is Text && (w.data?.contains('Retry') == true || w.data?.contains('Try Again') == true))),
         findsAtLeastNWidgets(1),
       );
     });
   });
 }
+
+
 
 
