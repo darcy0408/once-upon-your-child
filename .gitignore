@@ -114,7 +114,6 @@ tools/
 ng
 check_java.ps1
 lib/ui/
-lib/data/isar/
 assets/config/
 assets/images/scenarios/
 assets/images/themes/
