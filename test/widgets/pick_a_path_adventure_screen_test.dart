@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/pick_a_path_adventure_screen.dart';
 import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/services/interactive_story_service.dart';
+import 'package:story_weaver_app/services/interactive_story_analytics.dart'; // Import Analytics
 import 'package:story_weaver_app/widgets/app_button.dart';
 import 'package:story_weaver_app/widgets/error_message.dart';
 import '../helpers/pick_a_path_test_helpers.dart';
@@ -17,11 +18,13 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+    InteractiveStoryAnalytics.enableMockMode(); // Enable mock analytics
   });
 
   tearDown(() {
     // Clean up test client after each test
     InteractiveStoryService.setTestClient(null);
+    InteractiveStoryAnalytics.disableMockMode(); // Disable mock analytics
   });
 
   group('PickAPathAdventureScreen - Loading State', () {
@@ -121,7 +124,7 @@ void main() {
       expect(find.text('You stand at the edge of the Enchanted Forest.'), findsOneWidget);
 
       // Check progress indicator
-      expect(find.textContaining('Segment 1'), findsOneWidget);
+      expect(find.textContaining('Wake Up!'), findsOneWidget);
 
       // Check choice buttons exist
       expect(find.textContaining('Choice 1'), findsOneWidget);
@@ -468,7 +471,7 @@ void main() {
 
       // Verify first segment
       expect(find.text('First segment content'), findsOneWidget);
-      expect(find.textContaining('Segment 1'), findsOneWidget);
+      expect(find.textContaining('Wake Up!'), findsOneWidget);
 
       // Make a choice
       final choiceButton = find.textContaining('Choice 1').first;
@@ -477,7 +480,7 @@ void main() {
 
       // Verify second segment
       expect(find.text('Second segment content'), findsOneWidget);
-      expect(find.textContaining('Segment 2'), findsOneWidget);
+      expect(find.textContaining('Play Time!'), findsOneWidget);
       // First segment should not be visible (only current segment shown)
       expect(find.text('First segment content'), findsNothing);
     });

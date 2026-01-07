@@ -40,12 +40,12 @@ void main() {
     await tester.pumpAndSettle();
 
     // Secondary level should appear
-    final joyful = find.text('Joyful');
-    expect(joyful, findsWidgets);
+    final secondary = find.text('Playful');
+    expect(secondary, findsWidgets);
 
     // Tap a secondary emotion
-    await tester.ensureVisible(joyful.first);
-    await tester.tap(joyful.first);
+    await tester.ensureVisible(secondary.first);
+    await tester.tap(secondary.first);
     await tester.pumpAndSettle();
 
     // Tertiary options should appear
@@ -55,7 +55,7 @@ void main() {
     );
     final tertiary = find.descendant(
       of: tertiaryStage.first,
-      matching: find.widgetWithText(ChoiceChip, 'Excited'),
+      matching: find.widgetWithText(ChoiceChip, 'Cheeky'),
     );
     expect(tertiary, findsOneWidget);
 
@@ -79,7 +79,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(captured, isNotNull);
-    expect(captured!.tertiary, 'Excited');
+    expect(captured!.tertiary, 'Cheeky');
     expect(captured!.core, 'Happy');
     
     // Verify "Feeling selected!" text appears

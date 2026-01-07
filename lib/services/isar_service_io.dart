@@ -2,6 +2,7 @@
 import 'package:isar/isar.dart';
 export 'package:isar/isar.dart'; // Export Isar type
 import 'package:path_provider/path_provider.dart';
+import 'package:meta/meta.dart';
 
 import '../models/local/character_local_io.dart';
 import '../avatar_models.dart';
@@ -10,6 +11,12 @@ import '../models.dart'; // Domain models
 
 class IsarService {
   static Isar? _isar;
+
+  /// Allows injecting a mock Isar instance for testing.
+  @visibleForTesting
+  static void setTestInstance(Isar? isar) {
+    _isar = isar;
+  }
 
   static Future<Isar> getInstance() async {
     if (_isar != null) return _isar!;
