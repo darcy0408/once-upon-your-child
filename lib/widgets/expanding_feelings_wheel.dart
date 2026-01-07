@@ -562,6 +562,25 @@ class _WheelPainter extends CustomPainter {
         }
       }
     }
+
+    // Draw ring separator lines for visual differentiation
+    _drawRingSeparators(canvas, center, radius);
+  }
+
+  void _drawRingSeparators(Canvas canvas, Offset center, double radius) {
+    const coreOuter = 0.38;
+    const secondaryOuter = 0.68;
+
+    final separatorPaint = Paint()
+      ..color = Colors.white.withOpacity(0.3)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    // Draw circle between core and secondary rings
+    canvas.drawCircle(center, radius * coreOuter, separatorPaint);
+
+    // Draw circle between secondary and tertiary rings
+    canvas.drawCircle(center, radius * secondaryOuter, separatorPaint);
   }
 
   void _drawRingSegment(Canvas canvas, Offset center, double radius, double startAngle,
@@ -593,18 +612,18 @@ class _WheelPainter extends CustomPainter {
       final labelRadius = (innerRadius + outerRadius) / 2;
       final labelAngle = startAngle + sweepAngle / 2;
 
-      double fontSize = 8.0;
-      double minAngle = 0.05;
+      double fontSize = 7.0;
+      double minAngle = 0.03;
 
       if (level == 'core') {
-        fontSize = 11.0;
-        minAngle = 0.3; // Core labels only if very wide
+        fontSize = 10.0;
+        minAngle = 0.15; // Core labels for wider segments
       } else if (level == 'secondary') {
-        fontSize = 9.0;
-        minAngle = 0.15; // Secondary labels only for wider segments
-      } else if (level == 'tertiary') {
         fontSize = 8.0;
-        minAngle = 0.12; // Tertiary labels only for reasonably wide segments
+        minAngle = 0.05; // Secondary labels show more often
+      } else if (level == 'tertiary') {
+        fontSize = 7.0;
+        minAngle = 0.03; // Tertiary labels show for most segments
       }
 
       if (sweepAngle > minAngle) {
@@ -643,11 +662,11 @@ class _WheelPainter extends CustomPainter {
       ..color = isSelected ? color : color.withOpacity(0.85);
     _drawSector(canvas, center, innerRadius, outerRadius, startAngle, sweepAngle, segmentPaint);
 
-    if (label.isNotEmpty && sweepAngle > 0.15) {
+    if (label.isNotEmpty && sweepAngle > 0.05) {
       final labelRadius = (innerRadius + outerRadius) / 2;
       final labelAngle = startAngle + sweepAngle / 2;
       _drawRotatedText(canvas, label, center.dx + labelRadius * math.cos(labelAngle),
-          center.dy + labelRadius * math.sin(labelAngle), 10.0, Colors.white, labelAngle,
+          center.dy + labelRadius * math.sin(labelAngle), 9.0, Colors.white, labelAngle,
           fontWeight: FontWeight.bold, shadow: true);
     }
 
@@ -657,16 +676,18 @@ class _WheelPainter extends CustomPainter {
   void _drawFaceAtTip(Canvas canvas, Offset center, double radius, double startAngle,
       double sweepAngle, double tipRatio, String emotionName) {
 
-    final tipRadius = radius * tipRatio;
+    // Position faces slightly inside the wheel boundary (at 92% instead of edge)
+    final facePositionRatio = (tipRatio - 0.03).clamp(0.70, 0.92);
+    final tipRadius = radius * facePositionRatio;
     final faceAngle = startAngle + sweepAngle / 2;
     final faceCenter = Offset(
       center.dx + tipRadius * math.cos(faceAngle),
       center.dy + tipRadius * math.sin(faceAngle),
     );
 
-    // Face size based on segment width - make bigger and more visible
+    // Face size based on segment width - larger and more visible
     final arcWidth = tipRadius * sweepAngle;
-    final faceRadius = (arcWidth * 0.8).clamp(radius * 0.018, radius * 0.055);
+    final faceRadius = (arcWidth * 0.9).clamp(radius * 0.025, radius * 0.065);
 
     final faceImage = _imageForName(emotionName);
     if (faceImage != null) {

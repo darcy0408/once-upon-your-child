@@ -542,6 +542,8 @@ class _StoryScreenState extends State<StoryScreen> {
             backendIllustrations: storyResult.illustrations,
             subscription: _currentSubscription,
             asyncIllustrations: storyResult.asyncIllustrations,
+            pages: storyResult.pages,
+            adventureSteps: storyResult.adventureSteps,
           ),
         ),
       );

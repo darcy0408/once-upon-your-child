@@ -376,6 +376,24 @@ class ApiServiceManager {
             'Gemini returned an empty response for story content.');
       }
 
+      // Try to parse as JSON if it looks like JSON
+      final trimmed = storyText.trim();
+      if (trimmed.startsWith('{') || trimmed.contains('"pages":')) {
+        try {
+          // Clean potential markdown fences
+          var cleanText = trimmed;
+          if (cleanText.startsWith('```')) {
+            cleanText = cleanText.replaceAll(RegExp(r'^```(?:json)?\s*', multiLine: true), '');
+            cleanText = cleanText.replaceAll(RegExp(r'\s*```$', multiLine: true), '');
+          }
+          final data = jsonDecode(cleanText);
+          return StoryGenerationResult.fromBackend({'story': data, 'used_user_key': true});
+        } catch (e) {
+          debugPrint('Failed to parse Gemini JSON: $e');
+          // Fallback to legacy parsing if JSON fails
+        }
+      }
+
       return StoryGenerationResult(
         storyText: storyText,
         title: null,
@@ -586,6 +604,9 @@ class ApiServiceManager {
 
         if (status == 'complete') {
           final result = statusData['result'];
+          if (result is Map<String, dynamic>) {
+            return StoryGenerationResult.fromBackend(result);
+          }
           return StoryGenerationResult(
             storyText: result as String,
           );
@@ -996,44 +1017,49 @@ Maintain plain text (no markdown fences).''';
     }
 
     return '''
-You are an experienced children's author running the Engaging Storycraft v9.0 engine for an adventure story.
+You are a MASTER STORYTELLER for children. Create a magical, adventurous, and vivid story.
 
-REQUEST SUMMARY
-- Child/Character: $characterName (age $age)
+Child profile:
+- Name: $characterName
+- Age: $age
 - Theme: $theme
 - Perspective: $perspectiveInstruction
-- Mode: Linear story
-- Length target: $lengthGuideline (Short default)
 - Companion: ${companion ?? 'None'}
 $multiCharacterText$characterIntegration$evolutionContext
 
-STORY
-STORY START
-Write vivid, age-tuned prose (no code fences) with a strong hook, clear kid-repeatable problem, rising action with at least two "and then..." steps, playful delight (surprise + humor + gentle wonder), and a satisfying resolution that echoes an opening image/line.
-STORY END
+OUTPUT FORMAT:
+You MUST return a STRICT JSON object. No prose outside the JSON. No markdown formatting.
 
-WISDOM GEM: A 5-10 word heart lesson in kid language.
+JSON SCHEMA:
+{
+  "title": "A Catchy Adventure Title",
+  "pages": [
+    "Page 1 text...",
+    "Page 2 text...",
+    "..."
+  ],
+  "post_story": {
+    "wisdom_gem": "A short, meaningful heart lesson",
+    "adventure_report": {
+      "plot_beats": ["string"],
+      "character_snapshot": "string",
+      "emotion_notes": ["string"],
+      "rereadability_hooks": ["string"]
+    }
+  }
+}
 
-ADVENTURE REPORT
-- PLOT BEATS: 3-6 bullets summarizing arc
-- CHARACTER SNAPSHOT: who they are + how they changed
-- EMOTION NOTES: how feelings showed and shifted
-- RE-READABILITY HOOKS: patterns, echoes, questions, Easter eggs
-
-9-POINT STORYCRAFT CHECK (ensure output reflects):
-1) Main character kids can mirror (want/quirk/feeling).
-2) One-sentence kid-repeatable problem appears early.
-3) At least two rising steps before resolution.
-4) Embodied emotion (body cues).
-5) Age-appropriate rhythm and repetition.
-6) Small heart lesson, not preachy.
-7) Playful delight: surprise + giggle + gentle wonder.
-8) Ending echoes an opening image/line with inner shift.
-9) Re-read hooks present.
+STORY REQUIREMENTS:
+- TARGET LENGTH: $lengthGuideline total.
+- PAGES: Split into 10-12 pages for a "medium" duration read (~10 mins).
+- TONE: For an 8-year-old, make it magical, adventurous, funny, and vivid.
+- NO META: Do NOT include "PAGE X", "REQUEST SUMMARY", or any internal labels inside the page text.
+- READABILITY: Use double newlines (\\n\\n) for paragraph breaks inside pages.
+- SENSORY: Include rich sensory details.
 
 $ageInstructions
 SAFETY: Keep content gentle, avoid violence/scares; keep tone warm and supportive.
-Maintain plain text (no markdown fences).''';
+''';
   }
 
   static String _buildLearningToReadPrompt({

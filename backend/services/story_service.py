@@ -278,349 +278,100 @@ class AdvancedStoryEngine:
         story_duration: str | None = None,  # NEW: '5_minutes' or '10_minutes'
         age: int = 5,  # NEW: Age for calibration
     ):
-        # Import duration service
-        try:
-            from .story_duration_service import DurationConfig, StoryDuration
+        # Length calibration for 10-minute read
+        if age == 8 and (story_duration == '10_minutes' or story_length in ['standard', 'epic']):
+            target_word_count = "1350-1650 words"
+            target_pages = "10-12 pages"
+        else:
+            # Fallback/Default targets
+            target_word_count = "600-900 words"
+            target_pages = "6-8 pages"
 
-            # Map legacy story_length to duration if duration not provided
-            if not story_duration:
-                legacy_mapping = {
-                    'quick': StoryDuration.FIVE_MINUTES,
-                    'standard': StoryDuration.TEN_MINUTES,
-                    'epic': StoryDuration.TEN_MINUTES,
-                }
-                story_duration = legacy_mapping.get(story_length, StoryDuration.FIVE_MINUTES)
-
-            # Get duration configuration
-            config = DurationConfig.get_config(story_duration, age)
-            target_word_count = f"{config['min_words']}-{config['max_words']} words"
-            target_pages = f"{config['min_pages']}-{config['max_pages']} pages"
-            use_duration_system = True
-        except ImportError:
-            # Fallback to old system if import fails
-            word_count_targets = {
-                'quick': '300-400 words',
-                'standard': '600-800 words',
-                'epic': '1000-1200 words',
-            }
-            target_word_count = word_count_targets.get(story_length, '600-800 words')
-            target_pages = "5-8 pages"
-            use_duration_system = False
-            story_duration = None
-
-        # Handle companions (new structured format takes precedence)
+        # Handle companions
         companion_lines = []
-
         if companion_pets:
-            # NEW: Handle multiple pet companions with species info
             for pet in companion_pets:
                 pet_name = pet.get('name', 'Unknown')
                 pet_species = pet.get('species', 'pet')
-                pet_gender = pet.get('gender', '')  # Boy or Girl
-                pet_color = pet.get('color', '').strip()
-                pet_personality = pet.get('personality', '')
-                
-                companion_info = self.companion_dynamics.get_companion_info(pet_name, pet)
-                contribution = companion_info['contribution'] if companion_info else f"faithful {pet_species.lower()}"
-                
-                # Incorporate color and gender
-                species_desc = f"{pet_color} {pet_species.lower()}" if pet_color else pet_species.lower()
-                
-                # Format: "Spot (Boy, a black dog, sniffs out clues)"
-                gender_str = f"{pet_gender}, " if pet_gender else ""
-                description = f"{pet_name} ({gender_str}their {species_desc}, {contribution})"
-                if pet_personality:
-                    description += f" - {pet_personality}"
-                companion_lines.append(f"- Pet Companion: {description}")
+                companion_lines.append(f"- Pet Companion: {pet_name} (a {pet_species.lower()})")
 
         if companion_characters:
-            # NEW: Handle multiple character companions with full details
             for char_data in companion_characters:
                 if isinstance(char_data, dict):
-                    # It's a full companion object
                     char_name = char_data.get('name', 'Friend')
-                    char_age = char_data.get('age')
-                    role = char_data.get('role')
-                    gender = char_data.get('gender')
-                    # Enhanced fields
                     signature_power = char_data.get('signaturePower')
-                    constraint = char_data.get('powerConstraint')
                     sensory_tell = char_data.get('sensoryTell')
-                    description = char_data.get('description')
-
-                    # Build detailed description
-                    details = []
-                    if char_age:
-                        details.append(f"{char_age} years old")
-                    if gender:
-                        details.append(gender.lower())
-                    if role:
-                        details.append(role)
-                    
-                    detail_str = ", ".join(details) if details else ""
-                    
                     line = f"- Character Companion: {char_name}"
-                    if detail_str:
-                        line += f" ({detail_str})"
-                    
-                    # Add enhanced magical details if present (Cinematic Story Features)
-                    if signature_power or description:
-                        # Append distinctive emoji or marker
-                        line += " ⭐️ MAGICAL COMPANION"
-                        if description:
-                             line += f"\n  - Description: {description}"
-                        if signature_power:
-                            line += f"\n  - SIGNATURE POWER: {signature_power}"
-                        if constraint:
-                            line += f"\n  - CONSTRAINT: {constraint}"
-                        if sensory_tell:
-                            line += f"\n  - SENSORY TELL: {sensory_tell} (Include this sensory detail when they use their power!)"
-                    
+                    if signature_power:
+                        line += f" (Magical Power: {signature_power}, Tell: {sensory_tell})"
                     companion_lines.append(line)
-                else:
-                    # Just a name string (fallback)
-                    if "(" in char_data and ")" in char_data:
-                        # Description is already embedded in the string (e.g. from frontend)
-                        companion_lines.append(f"- Character Companion: {char_data}")
-                    else:
-                        companion_info = self.companion_dynamics.get_companion_info(char_data, None)
-                        contribution = companion_info['contribution'] if companion_info else "trusted friend"
-                        companion_lines.append(f"- Character Companion: {char_data} ({contribution})")
 
-        # Legacy support: if old format is used and new format is empty
         if not companion_lines and companion:
-            companion_info = self.companion_dynamics.get_companion_info(companion, custom_pet)
-            companion_line = (
-                f"- Companion: {companion} ({companion_info['contribution']})"
-                if companion_info
-                else f"- Companion: {companion}"
-            )
-            companion_lines.append(companion_line)
+            companion_lines.append(f"- Companion: {companion}")
 
-        # FRIENDSHIP RECIPE INJECTION
-        friendship_instruction = ""
-        if theme and any(k in theme.lower() for k in ["friend", "social", "shy", "meet"]):
-            friendship_instruction = (
-                "\nSOCIAL SKILLS INSTRUCTION:\n"
-                "In this story, explicitly teach the character this 4-step recipe for making friends:\n"
-                "1. SMILE: Show a warm, friendly face.\n"
-                "2. EYE CONTACT: Look at them kindly.\n"
-                "3. COMPLIMENT: Say something nice about them.\n"
-                "4. SAY NAME: Introduce yourself.\n"
-                "Model these steps naturally in the story action."
-            )
+        companion_section = "\n".join(companion_lines) if companion_lines else "- Companions: None"
 
-        # Format companions for prompt
-        if not companion_lines:
-            companion_section = "- Companions: None"
-        else:
-            companion_section = "\n".join(companion_lines)
-
-        # SPARK TOOL INJECTION
-        spark_tool_section = ""
-        if spark_tool:
-            spark_tool_section = (
-                f"\n✨ SPARK TOOL: {spark_tool}\n"
-                "RULE: The hero has this item. It MUST be used EXACTLY ONCE to solve a problem (Midpoint or Climax)."
-            )
-
-        # MOOD PHYSICS INJECTION
-        mood_physics_section = ""
-        if mood_physics and isinstance(mood_physics, dict):
-            mood_name = mood_physics.get('mood', 'Magic')
-            world_rule = mood_physics.get('worldRule', 'The world is full of wonder.')
-            sensory_change = mood_physics.get('sensoryChange', '')
-            mood_physics_section = (
-                f"\n🌍 MOOD PHYSICS ({mood_name}):\n"
-                f"- WORLD RULE: {world_rule}\n"
-                f"- SENSORY SHIFT: {sensory_change}\n"
-                "IMPORTANT: Determine the setting's atmosphere based on these rules."
-            )
-
-        # SCENARIO DETAILS INJECTION
-        scenario_section = ""
-        if conflict_hook or sensory_palette:
-             scenario_section = "\n📍 SCENARIO DETAILS:"
-             if conflict_hook:
-                 scenario_section += f"\n- INCITING CONFLICT: {conflict_hook}"
-             if sensory_palette:
-                 scenario_section += f"\n- SENSORY PALETTE: {sensory_palette}"
-
-        # CUSTOM ELEMENTS INJECTION (Free-Form Requests)
-        custom_elements_section = ""
-        if custom_elements and custom_elements.strip():
-            custom_elements_section = (
-                f"\n💭 CUSTOM STORY ELEMENTS (MUST INCLUDE):\n"
-                f"The storyteller specifically requested: \"{custom_elements.strip()}\"\n"
-                f"CRITICAL: These custom elements MUST appear in the story as plot-relevant features, not background details.\n"
-                f"Elevate them to be important, magical, or pivotal to the adventure."
-            )
-
-        # SPECIAL ABILITY EXTRACTION
-        hero_special_ability = ""
-        if character_details and character_details.get("specialAbility"):
-             hero_special_ability = character_details.get("specialAbility")
-
-        # THREE-KEY LOCK CLIMAX (Cinematic Feature)
-        climax_instruction = ""
-        # Only inject if we have the necessary components to avoid confusion
-        if hero_special_ability and companion_lines: 
-             climax_instruction = (
-                "\n🔐 THE 'THREE-KEY LOCK' CLIMAX RULE:\n"
-                "The final problem MUST be solved by combining:\n"
-                f"1. The Hero's Signature Move: {hero_special_ability}\n"
-                "2. The Companion's Unique Power/Help (The companion enables the hero, doesn't solve it for them)\n"
-                "3. The Setting/Spark Tool (Use the Spark Tool or a feature of the setting)\n"
-                "ALL THREE elements must click together to unlock the victory!"
-             )
-
-        wisdom = self.wisdom_gems.get_wisdom(theme)
-
-        # Add age 5 humor guide if applicable
-        humor_section = ""
-        if age <= 8:
-            humor_section = AGE_5_HUMOR_GUIDE
-
-        # Add age 5 plot arc if using duration system
-        plot_arc_section = ""
-        if use_duration_system and age <= 5:
-            # Get expected page count for plot arc
-            expected_pages = config.get('min_pages', 5)
-            plot_arc_section = _get_age_5_plot_arc_prompt(expected_pages)
+        # Magic Density Checklist for Age 8
+        magic_density = ""
+        if age == 8:
+            magic_density = """
+            MAGIC DENSITY CHECKLIST (Age 8):
+            - At least 3 distinct magical set pieces (e.g., floating islands, talking trees).
+            - At least 3 transformations or magical acts, each with a vivid sensory tell.
+            - At least 2 moments of kid-safe suspense (thrilling but safe).
+            - At least 6 lines of dialogue total.
+            """
 
         parts = [
-            "You are a MASTER ADVENTURE ARCHITECT for children's stories - an expert in crafting immersive, sensory-rich narratives that captivate young imaginations.",
-            "Your specialty: Turning ordinary moments into EXTRAORDINARY ADVENTURES with wonder, excitement, and heart.",
+            "You are a MASTER STORYTELLER for children. Create a magical, adventurous, and vivid story.",
             "",
-            "OUTPUT ORDER (use these exact labels):",
-            "REQUEST SUMMARY",
-            "STORY",
-            "WISDOM GEM",
-            "ADVENTURE REPORT",
+            "OUTPUT FORMAT: STRICT JSON ONLY",
+            "You MUST return a valid JSON object. No prose before or after the JSON. No markdown fences.",
             "",
-            "REQUEST SUMMARY:",
+            "JSON SCHEMA:",
+            """{
+  "title": "Story Title",
+  "pages": [
+    "Full text for page 1...",
+    "Full text for page 2...",
+    "..."
+  ],
+  "post_story": {
+    "wisdom_gem": "A short, meaningful lesson",
+    "adventure_report": {
+      "plot_beats": ["Beat 1", "Beat 2", "..."],
+      "character_snapshot": "Concise summary of character growth",
+      "emotion_notes": ["Note 1", "Note 2"],
+      "rereadability_hooks": ["Hook 1", "Hook 2"]
+    }
+  }
+}""",
+            "",
+            "STORY CONTEXT:",
             self._format_character_line(character, additional_characters),
             f"- Theme: {theme}",
-            companion_section,  # NEW: Can be multiple lines for multiple companions
-            spark_tool_section, # NEW: Spark Tool
-            mood_physics_section, # NEW: Mood Physics
-            scenario_section, # NEW: Scenario details
-            custom_elements_section, # NEW: Custom story requests
-            "- IMPORTANT: The companions listed above MUST speak and act in the story.",
-            "- CRITICAL: Character Companions are REAL PEOPLE (children/humans), NOT stuffed animals, toys, or imaginary friends.",
-            "- Mode: Immersive Adventure",
-            f"- Target length: {target_word_count}, {target_pages} for deep engagement.",
-            _build_age_instruction_block(age, story_duration),  # Integrated Age Calibration with duration
+            companion_section,
+            f"- Age: {age}",
             "",
-            humor_section,  # Age-appropriate humor guide
-            plot_arc_section,  # Age 5 plot arc structure
-            "",
-            "STORY:",
-            "STORY START",
-            "",
-            "🎬 ADVENTURE ARCHITECTURE REQUIREMENTS:",
-            "",
-            "1. HOOK OF WONDER (First 2-3 sentences):",
-            "   - Open with a SENSORY-RICH anomaly that sparks curiosity",
-            "   - Use at least 2 senses (sight + sound/smell/touch)",
-            "   - Make it feel MAGICAL but believable to the child",
-            "",
-            "2. SENSORY IMMERSION (Throughout):",
-            "   - Every scene MUST include at least 3 different senses",
-            "   - Include: What they SEE (colors, movement), HEAR (sounds, voices), SMELL, TOUCH (textures), or TASTE",
-            "   - Example: 'The golden leaves crunched under her feet, smelling like cinnamon and adventure'",
-            "",
-            "3. THE IMPOSSIBLE ELEMENT:",
-            "   - Include ONE physics-defying moment (riding a rainbow, tasting starlight, flying on a dandelion)",
-            "   - Make it THRILLING but SAFE - no real danger, just wonder",
-            "   - This is the CLIMAX moment where the character feels unstoppable",
-            "",
-            "4. ACTIVE PROTAGONIST:",
-            "   - The child character MUST solve the main problem themselves",
-            "   - NO passive watching - they are the HERO",
-            "   - Use action verbs: leaped, raced, discovered, created, soared",
-            "",
-            "5. CINEMATIC PACING:",
-            "   - Rising action with 3-4 'and then...' moments that build excitement",
-            "   - A breathtaking climax with high stakes (but safe outcomes)",
-            climax_instruction, # NEW: Three-Key Lock
-            "   - A 'Warm Glow' ending that celebrates the child's cleverness/bravery",
-            "",
-            "6. DIALOGUE & PERSONALITY:",
-            "   - Each companion has a DISTINCT voice and role",
-            "   - Use vivid dialogue tags (whispered, gasped, cheered, not just 'said')",
-            "   - Include at least one humorous exchange",
-            "",
-            "7. EMOTIONAL RESONANCE:",
-            "   - Show feelings through BODY: tummy flutters, heart racing, cheeks glowing",
-            "   - Connect the adventure to the theme (fear, friendship, etc.)",
-            "   - End with a moment of pride and connection",
-            "",
-            "STORY END",
-            "",
-            f"WISDOM GEM: A 5-10 word heart lesson in kid language (e.g., \"{wisdom}\").",
-            "",
-            "ADVENTURE REPORT (adult-facing, concise bullets):",
-            "- PLOT BEATS: 3-6 bullets summarizing arc",
-            "- CHARACTER SNAPSHOT: who they are + how they changed",
-            "- EMOTION NOTES: how feelings showed up and shifted",
-            "- RE-READABILITY HOOKS: patterns, echoes, questions, Easter eggs",
-            "",
-            "✅ QUALITY CHECKLIST (ensure every story has these):",
-            "1) SENSORY CHECK: At least 3 different senses used (sight, sound, smell, touch, taste)",
-            "2) IMPOSSIBLE MOMENT: One physics-defying magical element at the climax",
-            "3) HERO AGENCY: The child solves the problem themselves through action",
-            "4) VIVID HOOK: First paragraph grabs attention with wonder",
-            "5) EMBODIED EMOTION: Feelings shown through body (heart racing, tummy flutters)",
-            "6) CINEMATIC CLIMAX: A breathtaking 'impossible feat' moment",
-            "7) DISTINCT VOICES: Each companion has unique personality and dialogue",
-            "8) WARM GLOW ENDING: Celebrates the child's bravery/cleverness/growth",
-            "9) RE-READ MAGIC: Includes surprise, humor, and wonder worth experiencing again",
-            "",
-            friendship_instruction.strip(),
+            "STORY REQUIREMENTS:",
+            f"- TARGET LENGTH: {target_word_count} total.",
+            f"- PAGINATION: Split into {target_pages}.",
+            "- TONE: Magical, adventurous, funny, and vivid.",
+            "- POV: ALWAYS use second-person ('You').",
+            "- NO META: Do NOT include 'PAGE X', 'REQUEST SUMMARY', or any internal markers in the page text.",
+            "- READABILITY: Use double newlines (\\n\\n) for paragraph breaks inside pages.",
+            magic_density,
             SAFETY_GUARDRAILS.strip(),
-            
-            # CRITICAL: If a Magical Companion is present, enforce their power usage
-            "\n⚡ MAGICAL COMPANION REQUIREMENT:" 
-            if any("MAGICAL COMPANION" in line for line in companion_lines) else "",
-            
-            "If a Magical Companion is listed above (Tiny Dragon, Wise Owl, etc.), they MUST use their SIGNATURE POWER exactly once near the climax." 
-            if any("MAGICAL COMPANION" in line for line in companion_lines) else "",
-            
-            "Describe the SENSORY TELL (sound/smell/feeling) vividly when the magic happens." 
-            if any("MAGICAL COMPANION" in line for line in companion_lines) else "",
         ]
 
-        if therapeutic_prompt:
-            parts.extend(
-                [
-                    "",
-                    "THERAPEUTIC ELEMENTS:",
-                    therapeutic_prompt,
-                ]
-            )
         if feelings_prompt:
-            parts.extend(
-                [
-                    "",
-                    "FEELINGS-FOCUSED GUIDANCE:",
-                    feelings_prompt,
-                ]
-            )
+            parts.append(f"\nFEELINGS-FOCUSED GUIDANCE:\n{feelings_prompt}")
 
-        parts.extend([
-            "",
-            "⚠️ STRICT STYLE RULES:",
-            "- NO passive voice - use active, dynamic verbs",
-            "- NO cliché phrases ('once upon a time', 'happily ever after', 'the end')",
-            "- NO repetitive sentence structures - vary your rhythm",
-            "- NO preachy moralizing - weave lessons naturally through action",
-            "- YES to poetic language, unexpected metaphors, and fresh descriptions",
-            "",
-            "Maintain warm, enthusiastic voice. Do not output code blocks or markdown fences."
-        ])
+        if custom_elements:
+            parts.append(f"\nCUSTOM ELEMENTS:\n{custom_elements}")
 
         return "\n".join(parts)
+
 
     def generate_interactive_story(
         self,
@@ -933,58 +684,87 @@ story_engine = AdvancedStoryEngine()
 # ----------------------
 # Helpers
 # ----------------------
-_TITLE_RE = re.compile(r"\[TITLE:\s*(.*?)\s*\]", re.DOTALL)
-_GEM_RE = re.compile(r"\[WISDOM GEM:\s*(.*?)\s*\]", re.DOTALL)
-
 def _safe_extract_title_and_gem(text: str, theme: str):
-    title_match = _TITLE_RE.search(text or "")
+    """
+    Parses the new JSON story format.
+    Returns: title, wisdom_gem, story_body, pages_list, post_story_dict
+    """
+    # Try to clean markdown code blocks if present
+    clean_text = text.strip()
+    if clean_text.startswith("```"):
+        clean_text = re.sub(r"^```(?:json)?", "", clean_text, flags=re.IGNORECASE)
+        clean_text = re.sub(r"```$", "", clean_text).strip()
 
-    gem_match = _GEM_RE.search(text or "")
+    try:
+        data = json.loads(clean_text)
+        
+        # Happy path: valid JSON
+        title = data.get("title", f"A {theme} Adventure")
+        pages = data.get("pages", [])
+        post_story = data.get("post_story", {})
+        wisdom_gem = post_story.get("wisdom_gem") or "You are magic!"
+        
+        # Fallback if wisdom_gem is top-level
+        if not wisdom_gem and "wisdom_gem" in data:
+            wisdom_gem = data["wisdom_gem"]
 
-    # Extract title safely
-    if title_match:
-        try:
-            title_text = title_match.group(1).strip()
-            title = title_text if title_text else "A Brave Little Adventure"
-        except (IndexError, AttributeError):
-            title = "A Brave Little Adventure"
-    else:
-        title = "A Brave Little Adventure"
+        # If pages is a single string, wrap it
+        if isinstance(pages, str):
+            pages = [pages]
+            
+        # Create full text for legacy storage
+        story_body = "\n\n".join(pages)
+        
+        return title, wisdom_gem, story_body, pages, post_story
 
-    # Extract wisdom gem safely
-    if gem_match:
-        try:
-            gem_text = gem_match.group(1).strip()
-            wisdom_gem = gem_text if gem_text else WisdomGems.get_wisdom(theme)
-        except (IndexError, AttributeError):
-            wisdom_gem = WisdomGems.get_wisdom(theme)
-    else:
-        wisdom_gem = WisdomGems.get_wisdom(theme)
+    except Exception as e:
+        # Fallback to regex extraction for legacy/malformed output
+        # (This keeps the old logic as a backup)
+        _TITLE_RE = re.compile(r"\[TITLE:\s*(.*?)\s*\]", re.DOTALL)
+        _GEM_RE = re.compile(r"\[WISDOM GEM:\s*(.*?)\s*\]", re.DOTALL)
+        
+        title_match = _TITLE_RE.search(text or "")
+        gem_match = _GEM_RE.search(text or "")
 
-    # Remove title and wisdom gem markers
-    story_body = _TITLE_RE.sub("", text or "").strip()
-    story_body = _GEM_RE.sub("", story_body).strip()
+        if title_match:
+            try:
+                title_text = title_match.group(1).strip()
+                title = title_text if title_text else f"A {theme} Adventure"
+            except (IndexError, AttributeError):
+                title = f"A {theme} Adventure"
+        else:
+            title = f"A {theme} Adventure"
 
-    # Clean up template artifacts from the story
-    # Remove REQUEST SUMMARY section
-    if "REQUEST SUMMARY" in story_body:
-        parts = story_body.split("STORY:")
-        if len(parts) > 1:
-            story_body = parts[1].strip()
+        if gem_match:
+            try:
+                gem_text = gem_match.group(1).strip()
+                wisdom_gem = gem_text if gem_text else "You are magic!"
+            except (IndexError, AttributeError):
+                wisdom_gem = "You are magic!"
+        else:
+            wisdom_gem = "You are magic!"
 
-    # Remove STORY START/END markers
-    story_body = story_body.replace("STORY START", "").strip()
-    story_body = story_body.replace("STORY END", "").strip()
+        # Remove title and wisdom gem markers
+        story_body = _TITLE_RE.sub("", text or "").strip()
+        story_body = _GEM_RE.sub("", story_body).strip()
 
-    # Remove ADVENTURE REPORT section (everything after it)
-    if "ADVENTURE REPORT:" in story_body:
-        story_body = story_body.split("ADVENTURE REPORT:")[0].strip()
+        # Clean up template artifacts from the story
+        if "REQUEST SUMMARY" in story_body:
+            parts = story_body.split("STORY:")
+            if len(parts) > 1:
+                story_body = parts[1].strip()
 
-    # Remove WISDOM GEM line if it appears as plain text (not in brackets)
-    if "\nWISDOM GEM:" in story_body:
-        story_body = story_body.split("\nWISDOM GEM:")[0].strip()
+        story_body = story_body.replace("STORY START", "").strip()
+        story_body = story_body.replace("STORY END", "").strip()
 
-    return title, wisdom_gem, story_body
+        if "ADVENTURE REPORT:" in story_body:
+            story_body = story_body.split("ADVENTURE REPORT:")[0].strip()
+
+        if "\nWISDOM GEM:" in story_body:
+            story_body = story_body.split("\nWISDOM GEM:")[0].strip()
+
+        # Return empty list for pages since we couldn't parse them
+        return title, wisdom_gem, story_body, [story_body], {}
 
 
 def _describe_slider_value(value, left_label, right_label):

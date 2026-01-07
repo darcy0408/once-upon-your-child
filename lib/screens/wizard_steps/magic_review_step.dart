@@ -128,9 +128,11 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 title: result.title ?? 'My Magical Story',
                 storyText: result.storyText,
                 wisdomGem: result.wisdomGem ?? 'You are magic!',
-                characterName: requestData['characterName'],
+                characterName: requestData['characterName'] ?? widget.wizardData.characterName,
                 theme: requestData['theme'],
                 characterAge: requestData['age'],
+                pages: result.pages,
+                adventureSteps: result.adventureSteps,
                 // Track this as a new story
                 trackStoryCreation: true,
                 trackAnalytics: true,

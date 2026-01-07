@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../services/avatar_service.dart';
-import '../ui/widgets/magical_avatar.dart';
 
 /// Avatar Picker Screen - Visual customization interface for avataaars
 ///

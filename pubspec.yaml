@@ -57,6 +57,7 @@ dependencies:
   # Note: Backend handles AI generation for free users, but BYOK users call Gemini directly
   # flutter_secure_storage: ^9.0.0  # Removed for development - causing build issues
 
+  meta: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -92,6 +93,8 @@ flutter:
     - assets/feelings_faces/
     - assets/config/avatar_config.json
     - assets/config/allowlists.json
+    - assets/avatars/midjourney/
+    - assets/avatars/midjourney/metadata.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
