@@ -4,6 +4,18 @@ import 'package:flutter/foundation.dart';
 class InteractiveStoryAnalytics {
   InteractiveStoryAnalytics._();
 
+  static bool _mockMode = false;
+
+  /// Enable mock mode for testing (bypasses Firebase)
+  static void enableMockMode() {
+    _mockMode = true;
+  }
+
+  /// Disable mock mode
+  static void disableMockMode() {
+    _mockMode = false;
+  }
+
   static FirebaseAnalytics get _analytics => FirebaseAnalytics.instance;
 
   static Future<void> trackStoryStarted({
@@ -13,6 +25,10 @@ class InteractiveStoryAnalytics {
     required String theme,
     required bool hasCompanion,
   }) async {
+    if (_mockMode) {
+      debugPrint('Mock Analytics: trackStoryStarted(characterId: $characterId, theme: $theme)');
+      return;
+    }
     try {
       await _analytics.logEvent(
         name: 'interactive_story_started',
@@ -39,6 +55,10 @@ class InteractiveStoryAnalytics {
     required int choiceTextLength,
     String? emotionalSkill,
   }) async {
+    if (_mockMode) {
+      debugPrint('Mock Analytics: trackChoiceSelected(choiceId: $choiceId)');
+      return;
+    }
     try {
       await _analytics.logEvent(
         name: 'interactive_choice_made',
@@ -65,6 +85,10 @@ class InteractiveStoryAnalytics {
     required int segmentCount,
     required int wordCount,
   }) async {
+    if (_mockMode) {
+      debugPrint('Mock Analytics: trackStorySaved(theme: $theme)');
+      return;
+    }
     try {
       await _analytics.logEvent(
         name: 'interactive_story_saved',

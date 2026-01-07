@@ -3,6 +3,7 @@ import re
 import json
 import time
 from google.api_core import exceptions as google_exceptions
+from .avatar_to_prompt_helper import AvatarToPromptHelper
 
 SAFETY_GUARDRAILS = """
 SAFETY RULES (non-negotiable):
@@ -220,18 +221,40 @@ class AdvancedStoryEngine:
             age = character.get("age", "Unknown")
             traits = character.get("personality_traits", [])
             special_ability = character.get("special_ability")
-            
+            avatar_params = character.get("avatar_params")
+
             char_str = f"- Child/Character: {name} (Age: {age})"
+
+            # Add avatar appearance description if available
+            if avatar_params:
+                try:
+                    # Parse avatar params if it's a JSON string
+                    if isinstance(avatar_params, str):
+                        avatar_params = json.loads(avatar_params)
+
+                    # Convert to natural language description
+                    avatar_desc = AvatarToPromptHelper.avatar_to_description(
+                        avatar_params,
+                        age=age if isinstance(age, int) else 8
+                    )
+                    # Extract just the appearance details (skip age since we already have it)
+                    appearance_parts = avatar_desc.split(', ', 1)
+                    if len(appearance_parts) > 1:
+                        char_str += f"\n  APPEARANCE: {appearance_parts[1]}"
+                except Exception as e:
+                    # If avatar parsing fails, continue without it
+                    pass
+
             if traits:
                 char_str += f", Traits: {', '.join(traits)}"
             if special_ability:
                  char_str += f", SPECIAL ABILITY: {special_ability}"
         else:
             char_str = f"- Child/Character: {character}"
-        
+
         if additional_characters:
             char_str += f"\n- Additional Characters/Friends: {', '.join(additional_characters)}"
-            
+
         return char_str
 
     def generate_enhanced_prompt(

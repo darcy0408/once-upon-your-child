@@ -1,5 +1,6 @@
 // Real implementation of IsarService for mobile platforms
 import 'package:isar/isar.dart';
+export 'package:isar/isar.dart'; // Export Isar type
 import 'package:path_provider/path_provider.dart';
 
 import '../models/local/character_local_io.dart';

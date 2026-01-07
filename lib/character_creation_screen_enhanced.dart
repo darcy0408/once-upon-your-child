@@ -20,6 +20,8 @@ import 'services/character_analytics.dart';
 import 'services/character_template_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/loading_overlay.dart';
+import 'screens/avatar_picker_screen.dart';
+import 'services/avatar_service.dart';
 
 class CharacterCreationScreenEnhanced extends StatefulWidget {
   const CharacterCreationScreenEnhanced({super.key});
@@ -64,6 +66,9 @@ class _CharacterCreationScreenEnhancedState
   CharacterAvatar _avatar = CharacterAvatar.defaultAvatar;
   String? _selectedOutfitPreset;
   bool _avatarCustomized = false;
+
+  // New avataaars system (DiceBear)
+  String? _avatarParams; // JSON string of avataaars customization
 
   final Map<String, double> _personalitySliderValues =
       CharacterTraitsData.defaultSliderValues();
@@ -330,6 +335,61 @@ class _CharacterCreationScreenEnhancedState
     }
   }
 
+  Future<void> _openAvataarsPicker() async {
+    print('[Character Creation] Opening Avataaars Picker...');
+    try {
+      // Initialize avatar service (pass null for web compatibility - caching will be disabled)
+      print('[Character Creation] Initializing avatar service...');
+      final avatarService = AvatarService(isar: null);
+      await avatarService.initialize();
+      print('[Character Creation] Avatar service initialized successfully');
+
+      final age = int.tryParse(_ageController.text.trim()) ?? 8;
+      print('[Character Creation] Character age: $age');
+
+      // Parse existing params if any
+      Map<String, String>? initialSelection;
+      if (_avatarParams != null) {
+        try {
+          initialSelection = Map<String, String>.from(json.decode(_avatarParams!));
+          print('[Character Creation] Loaded initial selections: $initialSelection');
+        } catch (e) {
+          print('[Character Creation] Error parsing existing params: $e');
+        }
+      }
+
+      print('[Character Creation] Navigating to Avatar Picker Screen...');
+      final result = await Navigator.push<String>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AvatarPickerScreen(
+            characterAge: age,
+            avatarService: avatarService,
+            initialSelection: initialSelection,
+          ),
+        ),
+      );
+
+      print('[Character Creation] Returned from Avatar Picker with result: $result');
+      if (result != null) {
+        setState(() {
+          _avatarParams = result;
+        });
+        print('[Character Creation] Avatar params saved: $_avatarParams');
+      }
+    } catch (e) {
+      print('[Character Creation] Error in avatar picker: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to open avatar picker: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildAvatarSection() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -360,14 +420,29 @@ class _CharacterCreationScreenEnhancedState
             size: 140,
           ),
           const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _openAvatarBuilder,
-            icon: const Icon(Icons.brush),
-            label: const Text('Edit Avatar'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple,
-              foregroundColor: Colors.white,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton.icon(
+                onPressed: _openAvatarBuilder,
+                icon: const Icon(Icons.brush),
+                label: const Text('AI Avatar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton.icon(
+                onPressed: _openAvataarsPicker,
+                icon: const Icon(Icons.person),
+                label: Text(_avatarParams != null ? 'Edit Avataaars' : 'Customize Avataaars'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -565,6 +640,9 @@ class _CharacterCreationScreenEnhancedState
 
         // Avatar configuration
         'avatar': _avatar.toJson(),
+
+        // Avataaars customization (DiceBear)
+        if (_avatarParams != null) 'avatar_params': _avatarParams,
 
         // Only include likes/dislikes if specified
         if (_selectedQuickLikes.isNotEmpty)

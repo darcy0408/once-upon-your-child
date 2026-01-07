@@ -22,28 +22,33 @@ const CharacterLocalSchema = CollectionSchema(
       name: r'age',
       type: IsarType.long,
     ),
-    r'avatarUrl': PropertySchema(
+    r'avatarParams': PropertySchema(
       id: 1,
+      name: r'avatarParams',
+      type: IsarType.string,
+    ),
+    r'avatarUrl': PropertySchema(
+      id: 2,
       name: r'avatarUrl',
       type: IsarType.string,
     ),
     r'characterId': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'characterId',
       type: IsarType.string,
     ),
     r'createdAt': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'isSyncedToServer': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'isSyncedToServer',
       type: IsarType.bool,
     ),
     r'name': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'name',
       type: IsarType.string,
     )
@@ -96,6 +101,12 @@ int _characterLocalEstimateSize(
 ) {
   var bytesCount = offsets.last;
   {
+    final value = object.avatarParams;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.avatarUrl;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -113,11 +124,12 @@ void _characterLocalSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeLong(offsets[0], object.age);
-  writer.writeString(offsets[1], object.avatarUrl);
-  writer.writeString(offsets[2], object.characterId);
-  writer.writeDateTime(offsets[3], object.createdAt);
-  writer.writeBool(offsets[4], object.isSyncedToServer);
-  writer.writeString(offsets[5], object.name);
+  writer.writeString(offsets[1], object.avatarParams);
+  writer.writeString(offsets[2], object.avatarUrl);
+  writer.writeString(offsets[3], object.characterId);
+  writer.writeDateTime(offsets[4], object.createdAt);
+  writer.writeBool(offsets[5], object.isSyncedToServer);
+  writer.writeString(offsets[6], object.name);
 }
 
 CharacterLocal _characterLocalDeserialize(
@@ -128,12 +140,13 @@ CharacterLocal _characterLocalDeserialize(
 ) {
   final object = CharacterLocal();
   object.age = reader.readLong(offsets[0]);
-  object.avatarUrl = reader.readStringOrNull(offsets[1]);
-  object.characterId = reader.readString(offsets[2]);
-  object.createdAt = reader.readDateTime(offsets[3]);
+  object.avatarParams = reader.readStringOrNull(offsets[1]);
+  object.avatarUrl = reader.readStringOrNull(offsets[2]);
+  object.characterId = reader.readString(offsets[3]);
+  object.createdAt = reader.readDateTime(offsets[4]);
   object.id = id;
-  object.isSyncedToServer = reader.readBool(offsets[4]);
-  object.name = reader.readString(offsets[5]);
+  object.isSyncedToServer = reader.readBool(offsets[5]);
+  object.name = reader.readString(offsets[6]);
   return object;
 }
 
@@ -149,12 +162,14 @@ P _characterLocalDeserializeProp<P>(
     case 1:
       return (reader.readStringOrNull(offset)) as P;
     case 2:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 3:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 4:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 5:
+      return (reader.readBool(offset)) as P;
+    case 6:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -455,6 +470,160 @@ extension CharacterLocalQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<CharacterLocal, CharacterLocal, QAfterFilterCondition>
+      avatarParamsIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'avatarParams',
+      ));
+    });
+  }
+
+  QueryBuilder<CharacterLocal, CharacterLocal, QAfterFilterCondition>
+      avatarParamsIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'avatarParams',
+      ));
+    });
+  }
+
+  QueryBuilder<CharacterLocal, CharacterLocal, QAfterFilterCondition>
+      avatarParamsEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'avatarParams',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CharacterLocal, CharacterLocal, QAfterFilterCondition>
+      avatarParamsGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'avatarParams',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CharacterLocal, CharacterLocal, QAfterFilterCondition>
+      avatarParamsLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'avatarParams',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CharacterLocal, CharacterLocal, QAfterFilterCondition>
+      avatarParamsBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'avatarParams',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CharacterLocal, CharacterLocal, QAfterFilterCondition>
+      avatarParamsStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'avatarParams',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CharacterLocal, CharacterLocal, QAfterFilterCondition>
+      avatarParamsEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'avatarParams',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CharacterLocal, CharacterLocal, QAfterFilterCondition>
+      avatarParamsContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'avatarParams',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CharacterLocal, CharacterLocal, QAfterFilterCondition>
+      avatarParamsMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'avatarParams',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CharacterLocal, CharacterLocal, QAfterFilterCondition>
+      avatarParamsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'avatarParams',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CharacterLocal, CharacterLocal, QAfterFilterCondition>
+      avatarParamsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'avatarParams',
+        value: '',
       ));
     });
   }
@@ -1027,6 +1196,20 @@ extension CharacterLocalQuerySortBy
     });
   }
 
+  QueryBuilder<CharacterLocal, CharacterLocal, QAfterSortBy>
+      sortByAvatarParams() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'avatarParams', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CharacterLocal, CharacterLocal, QAfterSortBy>
+      sortByAvatarParamsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'avatarParams', Sort.desc);
+    });
+  }
+
   QueryBuilder<CharacterLocal, CharacterLocal, QAfterSortBy> sortByAvatarUrl() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'avatarUrl', Sort.asc);
@@ -1105,6 +1288,20 @@ extension CharacterLocalQuerySortThenBy
   QueryBuilder<CharacterLocal, CharacterLocal, QAfterSortBy> thenByAgeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'age', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CharacterLocal, CharacterLocal, QAfterSortBy>
+      thenByAvatarParams() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'avatarParams', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CharacterLocal, CharacterLocal, QAfterSortBy>
+      thenByAvatarParamsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'avatarParams', Sort.desc);
     });
   }
 
@@ -1195,6 +1392,13 @@ extension CharacterLocalQueryWhereDistinct
     });
   }
 
+  QueryBuilder<CharacterLocal, CharacterLocal, QDistinct>
+      distinctByAvatarParams({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'avatarParams', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<CharacterLocal, CharacterLocal, QDistinct> distinctByAvatarUrl(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1242,6 +1446,13 @@ extension CharacterLocalQueryProperty
   QueryBuilder<CharacterLocal, int, QQueryOperations> ageProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'age');
+    });
+  }
+
+  QueryBuilder<CharacterLocal, String?, QQueryOperations>
+      avatarParamsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'avatarParams');
     });
   }
 

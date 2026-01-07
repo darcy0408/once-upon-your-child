@@ -28,7 +28,7 @@ class InteractiveAdventurePromptBuilder:
             'sentence_length': 'simple but varied (5-12 words), storybook-style with personality',
             'vocabulary': 'easy to moderate words with playful phrasing (think Magic Tree House, Junie B. Jones)',
             'vocabulary_avoid': 'NO: parchment, depicts, constellations, velvet, motes, vibrant, bustling, shimmering. YES: paper, shows, stars, soft, dust, bright, busy, sparkling',
-            'word_count': (220, 350),  # Age-appropriate: longer than 3-5, but still kid-friendly
+            'word_count': (350, 650),  # Age-appropriate: longer to allow for detail
             'stakes': 'clear and friendly',
             'suspense': 'light, with humor and wonder',
             'complexity': 'clear cause/effect choices with mild strategy'
@@ -163,15 +163,18 @@ class InteractiveAdventurePromptBuilder:
 **Writing** ({age_config['word_count'][0]}-{age_config['word_count'][1]} words): {age_config['sentence_length']}, {age_config['vocabulary']}, {age_config['stakes']}
 {f"**VOCABULARY FOR AGE {age}**: {age_config.get('vocabulary_avoid', '')}" if age <= 5 else ""}
 
+**OUTPUT TYPE**: REQUIRED: output_type='CHOICE'. This is a Pick-A-Path adventure - every segment MUST present exactly {choice_count} distinct, meaningful choices. No CONTINUE segments except for the final ending.
+
 **CRITICAL RULES**:
 - {f"**AGE {age} VOCABULARY**: Use ONLY simple words a {age}-year-old knows. NO: parchment/depicts/constellations/nestled/velvet/vibrant/bustling/encouraging/shimmer/unravel. YES: paper/shows/stars/sitting/soft cloth/bright/busy/happy/sparkle/open. Keep sentences SHORT (4-10 words)!" if age <= 5 else f"**AGE {age}**: Keep vocabulary and complexity appropriate for this age."}
 - **POV**: ALWAYS use "you" (second-person). The hero's name is "{child_name}". DO NOT use any other names. DO NOT call the hero "Max", "Sam", or any invented name. Use "{child_name}" ONLY if absolutely necessary (max 2x total), otherwise say "you".
-- **WORD COUNT REQUIREMENT**: Your content MUST be between {age_config['word_count'][0]} and {age_config['word_count'][1]} words. Count your words before finishing. If under {age_config['word_count'][0]}, add more sensory details, dialogue, and description.
-- **Companion** (if present): 3+ appearances, 1 help, 1 bond. Never replaces child's choice.
+- **WORD COUNT REQUIREMENT**: Your content MUST be between {age_config['word_count'][0]} and {age_config['word_count'][1]} words. THIS IS CRITICAL. Count your words before finishing. If under {age_config['word_count'][0]}, add more sensory details, dialogue, and description.
+- **Companion Contract** (if present): REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Never replaces child's choice.
   - **ANIMAL COMPANIONS**: Do NOT make animals talk unless there's a magical reason (e.g., enchanted, found magic item). Animals communicate through actions, sounds, and body language.
 - **Characters**: NEVER invent names for family/friends not provided. Use generic terms: "grandma", "mom", "dad", "friend", "neighbor".
-- **Inventory**: Show new items clearly. Ref within 1 segment. Max 5 items.
-- **Choices**: {choice_count} concrete options. NO "ask what to do"/"wait"/passive. Each changes outcome. Start with vivid verbs ("Knock", "Whisper", "Tap", "Sing").
+- **Inventory Contract**: Visibility: Show new items clearly. Ref within 1 segment. Max 5 items.
+- **Choices**: {choice_count} concrete options.
+- **Banned Choices**: No "ask what to do", "wait", "look around" or passive options. Each changes outcome. Start with vivid verbs ("Knock", "Whisper", "Tap", "Sing").
 - **Safety**: No violence/harm/abuse/abandonment. Safe, whimsical only.
 
 **ENGAGEMENT RECIPE** (age-calibrated):
@@ -347,12 +350,13 @@ Generate opening segment as JSON."""
 **CRITICAL RULES**:
 - {f"**AGE {age} VOCABULARY**: Use ONLY simple words a {age}-year-old knows. NO: parchment/depicts/constellations/nestled/vibrant/encouraging/shimmer. YES: paper/shows/stars/sitting/bright/happy/sparkle. Keep sentences SHORT (4-10 words)!" if age <= 5 else f"**AGE {age}**: Keep vocabulary and complexity appropriate for this age."}
 - **POV**: ALWAYS use "you" (second-person). DO NOT invent names. DO NOT call the hero "Max", "Sam", or any other name. The hero is addressed as "you".
-- **WORD COUNT REQUIREMENT**: Your content MUST be between {age_config['word_count'][0]} and {age_config['word_count'][1]} words. Count your words. If under {age_config['word_count'][0]}, add more sensory details, dialogue, and description until you reach the minimum.
-- **Companion** (if present): 3+ beats, 1 help, 1 bond.
+- **WORD COUNT REQUIREMENT**: Your content MUST be between {age_config['word_count'][0]} and {age_config['word_count'][1]} words. THIS IS CRITICAL. Count your words. If under {age_config['word_count'][0]}, add more sensory details, dialogue, and description until you reach the minimum.
+- **Companion Contract** (if present): REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond.
   - **ANIMAL COMPANIONS**: Do NOT make animals talk unless there's a magical reason. Animals communicate through actions, sounds, body language.
 - **Characters**: NEVER invent names for family/friends not provided. Use generic terms: "grandma", "mom", "friend".
-- **Inventory** (if items): Reference items. Show new ones clearly.
-- **Choices**: REQUIRED - Must provide exactly {choice_count} concrete options (unless final ending). NO passive choices. Each must change outcome. Start with vivid verbs.
+- **Inventory Contract** (if items): Reference items. Visibility: Show new ones clearly.
+- **Choices**: REQUIRED - Must provide exactly {choice_count} concrete options (unless final ending).
+- **Banned Choices**: NO passive choices ("ask what to do", "wait"). Each must change outcome. Start with vivid verbs.
 
 **ENGAGEMENT RECIPE** (age-calibrated, REQUIRED):
 - **Ages 3-8**: Fun Recipe - Silly detail + Magical twist + 2+ dialogue + Tiny challenge + Mini cliffhanger

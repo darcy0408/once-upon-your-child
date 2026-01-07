@@ -46,6 +46,8 @@ class SecondaryFeeling extends Feeling {
 
 class CoreEmotion extends Feeling {
   final List<SecondaryFeeling> secondary;
+  final Color? secondaryColor;
+  final Color? tertiaryColor;
 
   const CoreEmotion({
     required super.id,
@@ -55,6 +57,8 @@ class CoreEmotion extends Feeling {
     required super.mouthType,
     required super.color,
     required this.secondary,
+    this.secondaryColor,
+    this.tertiaryColor,
   });
 }
 
@@ -534,7 +538,9 @@ class FeelingsWheelData {
     CoreEmotion(
       id: 'happy',
       name: 'Happy',
-      color: Color(0xFFF39C12),
+      color: Color(0xFFFFA726),           // Base: Medium amber
+      secondaryColor: Color(0xFFFFB74D),  // Lighter amber (85% sat)
+      tertiaryColor: Color(0xFFFFCC80),   // Lightest amber (70% sat)
       emoji: '😊',
       eyeType: 'Happy',
       mouthType: 'Smile',
@@ -616,7 +622,9 @@ class FeelingsWheelData {
     CoreEmotion(
       id: 'surprised',
       name: 'Surprised',
-      color: Color(0xFFE91E63),
+      color: Color(0xFFEC407A),           // Base: Hot pink
+      secondaryColor: Color(0xFFF06292),  // Lighter pink
+      tertiaryColor: Color(0xFFF48FB1),   // Lightest pink
       emoji: '😮',
       eyeType: 'Surprised',
       mouthType: 'Default',
@@ -658,7 +666,9 @@ class FeelingsWheelData {
     CoreEmotion(
       id: 'bad',
       name: 'Bad',
-      color: Color(0xFF4A235A),
+      color: Color(0xFF7E57C2),           // Base: Medium purple
+      secondaryColor: Color(0xFF9575CD),  // Lighter purple
+      tertiaryColor: Color(0xFFB39DDB),   // Lightest purple
       emoji: '😞',
       eyeType: 'Dizzy',
       mouthType: 'Concerned',
@@ -700,7 +710,9 @@ class FeelingsWheelData {
     CoreEmotion(
       id: 'fearful',
       name: 'Fearful',
-      color: Color(0xFF7B1FA2),
+      color: Color(0xFF5E35B1),           // Base: Deep purple
+      secondaryColor: Color(0xFF7E57C2),  // Medium purple
+      tertiaryColor: Color(0xFF9575CD),   // Light purple
       emoji: '😨',
       eyeType: 'Surprised',
       mouthType: 'Concerned',
@@ -758,7 +770,9 @@ class FeelingsWheelData {
     CoreEmotion(
       id: 'sad',
       name: 'Sad',
-      color: Color(0xFF303F9F),
+      color: Color(0xFF5C6BC0),           // Base: Indigo
+      secondaryColor: Color(0xFF7986CB),  // Lighter indigo
+      tertiaryColor: Color(0xFF9FA8DA),   // Lightest indigo
       emoji: '😢',
       eyeType: 'Dizzy',
       mouthType: 'Concerned',
@@ -824,7 +838,9 @@ class FeelingsWheelData {
     CoreEmotion(
       id: 'disgusted',
       name: 'Disgusted',
-      color: Color(0xFF6D4C41),
+      color: Color(0xFF8D6E63),           // Base: Brown
+      secondaryColor: Color(0xFFA1887F),  // Lighter brown
+      tertiaryColor: Color(0xFFBCAAA4),   // Lightest brown
       emoji: '🤢',
       eyeType: 'EyeRoll',
       mouthType: 'Concerned',
@@ -850,7 +866,9 @@ class FeelingsWheelData {
     CoreEmotion(
       id: 'angry',
       name: 'Angry',
-      color: Color(0xFFC62828),
+      color: Color(0xFFEF5350),           // Base: Red
+      secondaryColor: Color(0xFFE57373),  // Lighter red
+      tertiaryColor: Color(0xFFEF9A9A),   // Lightest red
       emoji: '😠',
       eyeType: 'EyeRoll',
       mouthType: 'Serious',

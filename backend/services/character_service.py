@@ -96,6 +96,9 @@ def create_character(data: dict):
     new_character.pets = data.get("pets", [])
     new_character.comfort_item = data.get("comfort_item")
 
+    # Avataaars customization (DiceBear)
+    new_character.avatar_params = data.get("avatar_params")
+
     print(f"[DEBUG create_character] Setting pets to: {new_character.pets}")
 
     character_repository.add_character(new_character)

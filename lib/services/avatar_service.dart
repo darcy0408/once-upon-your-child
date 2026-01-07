@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
-import 'package:isar/isar.dart';
+import '../services/isar_service.dart';
 
 import '../data/isar/avatar_cache_entry.dart';
 
@@ -19,7 +19,7 @@ import '../data/isar/avatar_cache_entry.dart';
 /// - Proper comma-separated array formatting for DiceBear URLs
 /// - Schema version tracking for cache invalidation
 class AvatarService {
-  final Isar isar;
+  final Isar? isar;
   final Random _random = Random();
 
   // Configuration loaded from assets
@@ -35,7 +35,7 @@ class AvatarService {
 
   bool _initialized = false;
 
-  AvatarService({required this.isar});
+  AvatarService({this.isar});
 
   /// Initialize service by loading configuration and allowlists from assets
   Future<void> initialize() async {

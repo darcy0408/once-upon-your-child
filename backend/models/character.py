@@ -34,6 +34,10 @@ class Character(db.Model):
     #   'version': int
     # }
 
+    # Avataaars Customization Parameters (DiceBear)
+    avatar_params = db.Column(db.JSON, nullable=True, default=None)
+    # Structure: {'top': 'curly', 'hairColor': 'brown', 'clothing': 'hoodie', ...}
+
     # SQLite JSON (persists as TEXT)
     personality_traits = db.Column(db.JSON, default=list)
     personality_sliders = db.Column(db.JSON, default=dict)
@@ -76,5 +80,6 @@ class Character(db.Model):
             "pets": self.pets or [],
             "comfort_item": self.comfort_item,
             "avatar_data": self.avatar_data,
+            "avatar_params": self.avatar_params,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

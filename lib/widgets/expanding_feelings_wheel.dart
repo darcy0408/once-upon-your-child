@@ -1,5 +1,7 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../feelings_wheel_data.dart';
 
 /// Interactive expanding feelings wheel - like Simon Says!
@@ -27,6 +29,38 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
   SecondaryFeeling? _selectedSecondary;
   String? _selectedTertiary;
 
+  final Map<String, ui.Image> _faceImages = {};
+  final Set<String> _availableFaces = {
+    // Core emotions
+    'angry', 'happy', 'surprised', 'bad', 'fearful', 'sad', 'disgusted',
+    // Happy family
+    'accepted', 'respected', 'valued', 'powerful', 'courageous', 'creative',
+    'peaceful', 'loving', 'thankful', 'trusting', 'sensitive', 'intimate',
+    'optimistic', 'hopeful', 'inspired',
+    // Surprised family
+    'excited', 'energetic', 'eager', 'amazed', 'awe', 'astonished',
+    'confused', 'perplexed', 'disillusioned', 'startled', 'dismayed', 'shocked',
+    // Bad family
+    'bored', 'apathetic', 'indifferent', 'tired', 'unfocused', 'sleepy',
+    'stressed', 'out_of_control', 'overwhelmed', 'busy', 'rushed', 'pressured',
+    // Fearful family
+    'anxious', 'worried', 'insecure', 'inadequate', 'inferior', 'weak',
+    'worthless', 'insignificant', 'rejected', 'excluded', 'persecuted',
+    'threatened', 'nervous', 'exposed', 'let_down', 'betrayed', 'resentful',
+    // Sad family
+    'depressed', 'empty', 'guilty', 'remorseful', 'ashamed', 'despair',
+    'powerless', 'grief', 'vulnerable', 'fragile', 'victimized',
+    'disappointed', 'appalled', 'revolted', 'awful', 'nauseated', 'detestable', 'snawed',
+    // Angry family
+    'mad', 'furious', 'jealous', 'aggressive', 'provoked', 'hostile', 'auctiole',
+    'humiliated', 'disrespected', 'ridiculed', 'bitter', 'indignant', 'violated',
+    'frustrated', 'infuriated', 'annoyed', 'distant', 'withdrawn', 'numb',
+    'critical', 'skeptical', 'dismissive', 'disapproving', 'judgmental', 'embarrassed',
+    // Original faces
+    'playful', 'aroused', 'cheeky', 'content', 'free', 'joyful',
+    'interested', 'curious', 'inquisitive', 'confident', 'proud', 'successful',
+  };
+
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
 
@@ -52,6 +86,23 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
     _glowAnimation = Tween<double>(begin: 0.7, end: 1.0).animate(
       CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
+    _loadFaceImages();
+  }
+
+  Future<void> _loadFaceImages() async {
+    for (final key in _availableFaces) {
+      try {
+        final data = await rootBundle.load('assets/feelings_faces/$key.png');
+        final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+        final frame = await codec.getNextFrame();
+        _faceImages[key] = frame.image;
+      } catch (_) {
+        // Skip missing assets; fallback to drawn faces.
+      }
+    }
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -69,7 +120,7 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
 
     if (radius > maxRadius * 0.95) return;
 
-    const startAngle = 3 * math.pi / 2;
+    const startAngle = -math.pi / 2;
     final rawAngle = math.atan2(dy, dx);
     final angle = (rawAngle - startAngle + 2 * math.pi) % (2 * math.pi);
     final ringRatio = radius / maxRadius;
@@ -79,18 +130,23 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
       return;
     }
 
-    if (widget.maxDepth == 0 || ringRatio < 0.50) {
+    if (_selectedCore == null || widget.maxDepth == 0) {
+      _tapCore(angle);
+      return;
+    }
+
+    if (ringRatio < 0.50) {
       _tapCore(angle);
       return;
     }
 
     if (widget.maxDepth >= 1 && ringRatio < 0.75) {
-      _tapSecondaryAtAngle(angle);
+      _tapSecondary(angle);
       return;
     }
 
     if (widget.maxDepth >= 2 && ringRatio < 0.92) {
-      _tapTertiaryAtAngle(angle);
+      _tapTertiary(angle);
     }
   }
 
@@ -118,20 +174,11 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
 
   void _tapSecondary(double angle) {
     if (_selectedCore == null) return;
-    _tapSecondaryForCore(_selectedCore!, angle);
-  }
 
-  void _tapSecondaryAtAngle(double angle) {
-    final core = _coreForAngle(angle);
-    if (core == null) return;
-    _tapSecondaryForCore(core, angle);
-  }
-
-  void _tapSecondaryForCore(CoreEmotion core, double angle) {
-    final secondaryList = core.secondary;
+    final secondaryList = _selectedCore!.secondary;
     if (secondaryList.isEmpty) return;
 
-    final coreSectorIndex = _wheelOrder.indexOf(core.id);
+    final coreSectorIndex = _wheelOrder.indexOf(_selectedCore!.id);
     if (coreSectorIndex == -1) return;
 
     final sectorAngle = (2 * math.pi) / _wheelOrder.length;
@@ -151,7 +198,6 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
     final secondary = secondaryList[secondaryIndex];
 
     setState(() {
-      _selectedCore = core;
       if (_selectedSecondary?.id == secondary.id) {
         _selectedSecondary = null;
         _selectedTertiary = null;
@@ -170,58 +216,38 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
 
   void _tapTertiary(double angle) {
     if (_selectedCore == null || _selectedSecondary == null) return;
-    _tapTertiaryForCore(_selectedCore!, angle);
-  }
 
-  void _tapTertiaryAtAngle(double angle) {
-    final core = _coreForAngle(angle);
-    if (core == null) return;
-    _tapTertiaryForCore(core, angle);
-  }
-
-  void _tapTertiaryForCore(CoreEmotion core, double angle) {
-    final secondaryList = core.secondary;
+    final secondaryList = _selectedCore!.secondary;
     if (secondaryList.isEmpty) return;
 
-    final coreSectorIndex = _wheelOrder.indexOf(core.id);
+    final coreSectorIndex = _wheelOrder.indexOf(_selectedCore!.id);
     if (coreSectorIndex == -1) return;
+
+    final secondaryIndex = secondaryList.indexWhere((s) => s.id == _selectedSecondary!.id);
+    if (secondaryIndex == -1) return;
 
     final sectorAngle = (2 * math.pi) / _wheelOrder.length;
     final coreSectorStart = coreSectorIndex * sectorAngle;
     final secondaryAngle = sectorAngle / secondaryList.length;
+    final secondaryStart = coreSectorStart + secondaryIndex * secondaryAngle;
 
-    double localAngle = (angle - coreSectorStart + 2 * math.pi) % (2 * math.pi);
-    if (localAngle > sectorAngle) {
+    final tertiaryList = _selectedSecondary!.tertiary;
+    if (tertiaryList.isEmpty) return;
+
+    double localAngle = (angle - secondaryStart + 2 * math.pi) % (2 * math.pi);
+    if (localAngle > secondaryAngle) {
       localAngle = localAngle - 2 * math.pi;
     }
 
-    if (localAngle < 0 || localAngle >= sectorAngle) {
-      return;
-    }
-
-    final secondaryIndex = (localAngle / secondaryAngle).floor().clamp(0, secondaryList.length - 1);
-    final secondary = secondaryList[secondaryIndex];
-    final secondaryStart = coreSectorStart + secondaryIndex * secondaryAngle;
-
-    final tertiaryList = secondary.tertiary;
-    if (tertiaryList.isEmpty) return;
-
-    double secondaryLocalAngle = (angle - secondaryStart + 2 * math.pi) % (2 * math.pi);
-    if (secondaryLocalAngle > secondaryAngle) {
-      secondaryLocalAngle = secondaryLocalAngle - 2 * math.pi;
-    }
-
-    if (secondaryLocalAngle < 0 || secondaryLocalAngle >= secondaryAngle) {
+    if (localAngle < 0 || localAngle >= secondaryAngle) {
       return;
     }
 
     final tertiaryAngle = secondaryAngle / tertiaryList.length;
-    final tertiaryIndex =
-        (secondaryLocalAngle / tertiaryAngle).floor().clamp(0, tertiaryList.length - 1);
+    final tertiaryIndex = (localAngle / tertiaryAngle).floor().clamp(0, tertiaryList.length - 1);
     final tertiary = tertiaryList[tertiaryIndex];
+
     setState(() {
-      _selectedCore = core;
-      _selectedSecondary = secondary;
       if (_selectedTertiary == tertiary) {
         _selectedTertiary = null;
       } else {
@@ -238,16 +264,6 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
     final sectorAngle = (2 * math.pi) / _wheelOrder.length;
     return (angle / sectorAngle).floor() % _wheelOrder.length;
   }
-
-  CoreEmotion? _coreForAngle(double angle) {
-    final sectorIndex = _getSectorIndex(angle);
-    final coreId = _wheelOrder[sectorIndex];
-    for (final core in FeelingsWheelData.coreEmotions) {
-      if (core.id == coreId) return core;
-    }
-    return null;
-  }
-
 
   void _pickSelection() {
     if (widget.maxDepth >= 2 && _selectedTertiary != null) {
@@ -333,12 +349,9 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
                       glowIntensity: _glowAnimation.value,
                       backgroundColor: widget.backgroundColor,
                       maxDepth: widget.maxDepth,
+                      faceImages: _faceImages,
                     ),
                   ),
-                  ..._buildCoreFaceOverlays(size),
-                  ..._buildSecondaryFaceOverlays(size),
-                  ..._buildTertiaryFaceOverlays(size),
-                  _buildCenterConfirm(size),
                   GestureDetector(
                     onTapDown: (details) => _handleTap(details, size),
                     child: Container(
@@ -355,318 +368,44 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
       ),
     );
   }
+}
 
-  Widget _buildCenterConfirm(double size) {
-    final label = _selectedTertiary ??
-        _selectedSecondary?.name ??
-        _selectedCore?.name;
-    final hasSelection = label != null && label.isNotEmpty;
-    final imagePath = _imageForSelection();
-    final buttonSize = size * 0.22;
+/// Layout constants for the feelings wheel
+class _WheelLayout {
+  _WheelLayout._(); // Prevent instantiation
 
-    final glowOpacity = hasSelection ? (0.25 + (_glowAnimation.value * 0.25)) : 0.0;
+  // Ring radii (% of total radius)
+  static const double centerRadius = 0.22;
+  static const double coreInner = 0.25;
+  static const double coreOuter_collapsed = 0.94;
+  static const double coreOuter_expanded = 0.54;
 
-    return Center(
-      child: GestureDetector(
-        onTap: hasSelection ? _pickSelection : null,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: buttonSize,
-          height: buttonSize,
-          decoration: BoxDecoration(
-            color: hasSelection ? Colors.white : Colors.white.withOpacity(0.85),
-            shape: BoxShape.circle,
-            boxShadow: [
-              if (hasSelection)
-                BoxShadow(
-                  color: Colors.white.withOpacity(glowOpacity),
-                  blurRadius: 18,
-                  spreadRadius: 4,
-                ),
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
-            border: Border.all(
-              color: hasSelection ? Colors.white : Colors.white.withOpacity(0.6),
-              width: 2,
-            ),
-          ),
-          child: Center(
-            child: hasSelection
-                ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (imagePath != null)
-                        Image.asset(
-                          imagePath,
-                          width: buttonSize * 0.55,
-                          height: buttonSize * 0.55,
-                          fit: BoxFit.contain,
-                          filterQuality: FilterQuality.high,
-                          errorBuilder: (context, error, stack) => const SizedBox.shrink(),
-                        ),
-                      const SizedBox(height: 4),
-                      Text(
-                        label!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ],
-                  )
-                : const Text(
-                    'Tap a\nfeeling',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
+  static const double secondaryInner = 0.54;
+  static const double secondaryOuter_collapsed = 0.94;
+  static const double secondaryOuter_expanded = 0.80;
 
-  List<Widget> _buildCoreFaceOverlays(double size) {
-    final radius = size / 2;
-    final sectorAngle = (2 * math.pi) / _wheelOrder.length;
-    const startAngle = 3 * math.pi / 2;
-    final isExpanded = _selectedCore != null && widget.maxDepth >= 1;
-    final faceOrbit = radius * (isExpanded ? 0.70 : 0.72);
+  static const double tertiaryInner = 0.80;
+  static const double tertiaryOuter = 0.94;
 
-    const assetById = {
-      'angry': 'assets/images/feelings_faces/core/angry.png',
-      'happy': 'assets/images/feelings_faces/core/happy.png',
-      'surprised': 'assets/images/feelings_faces/core/surprised.png',
-      'bad': 'assets/images/feelings_faces/core/bad.png',
-      'fearful': 'assets/images/feelings_faces/core/fearful.png',
-      'sad': 'assets/images/feelings_faces/core/sad.png',
-      'disgusted': 'assets/images/feelings_faces/core/disgusted.png',
-    };
+  // Face positions (radial distance from center)
+  static const double coreFaceRadial = 0.88;
+  static const double secondaryFaceRadial = 0.87;
+  static const double tertiaryFaceRadial = 0.87;
 
-    return List.generate(_wheelOrder.length, (i) {
-      final coreId = _wheelOrder[i];
-      final assetPath = assetById[coreId];
-      if (assetPath == null) return const SizedBox.shrink();
-      if (isExpanded) {
-        return const SizedBox.shrink();
-      }
+  // Face sizes
+  static const double coreFaceSize = 0.045;
+  static const double secondaryFaceSize = 0.032;
+  static const double tertiaryFaceSize = 0.025;
 
-      final angle = startAngle + i * sectorAngle + (sectorAngle / 2);
-      final faceSize = _faceSizeForArc(size, faceOrbit, sectorAngle, 0.18);
-      final center = Offset(
-        radius + faceOrbit * math.cos(angle),
-        radius + faceOrbit * math.sin(angle),
-      );
+  // Text label positions
+  static const double coreLabelRadial = 0.68;
+  static const double secondaryLabelRadial = 0.67;
+  static const double tertiaryLabelRadial = 0.67;
 
-      return Positioned(
-        left: center.dx - faceSize / 2,
-        top: center.dy - faceSize / 2,
-        width: faceSize,
-        height: faceSize,
-        child: IgnorePointer(
-          child: Image.asset(
-            assetPath,
-            fit: BoxFit.contain,
-            filterQuality: FilterQuality.high,
-            errorBuilder: (context, error, stack) => const SizedBox.shrink(),
-          ),
-        ),
-      );
-    });
-  }
-
-  List<Widget> _buildSecondaryFaceOverlays(double size) {
-    if (_selectedCore == null || widget.maxDepth < 1) return const [];
-
-    const assetById = {
-      'playful': 'assets/images/feelings_faces/secondary/playful.png',
-      'content': 'assets/images/feelings_faces/secondary/content.png',
-      'interested': 'assets/images/feelings_faces/secondary/interested.png',
-      'proud': 'assets/images/feelings_faces/secondary/proud.png',
-    };
-
-    final radius = size / 2;
-    final sectorAngle = (2 * math.pi) / _wheelOrder.length;
-    const startAngle = 3 * math.pi / 2;
-    final coreIndex = _wheelOrder.indexOf(_selectedCore!.id);
-    if (coreIndex == -1) return const [];
-
-    final secondaryList = _selectedCore!.secondary;
-    if (secondaryList.isEmpty) return const [];
-
-    final secondaryAngle = sectorAngle / secondaryList.length;
-    final coreStart = startAngle + coreIndex * sectorAngle;
-    final faceOrbit = radius * 0.84;
-
-    final overlays = <Widget>[];
-    for (int i = 0; i < secondaryList.length; i++) {
-      final secondary = secondaryList[i];
-      final assetPath = assetById[secondary.id];
-      if (assetPath == null) continue;
-
-      final angle = coreStart + i * secondaryAngle + (secondaryAngle / 2);
-      final faceSize = _faceSizeForArc(size, faceOrbit, secondaryAngle, 0.12);
-      final center = Offset(
-        radius + faceOrbit * math.cos(angle),
-        radius + faceOrbit * math.sin(angle),
-      );
-
-      overlays.add(
-        Positioned(
-          left: center.dx - faceSize / 2,
-          top: center.dy - faceSize / 2,
-          width: faceSize,
-          height: faceSize,
-          child: IgnorePointer(
-            child: Image.asset(
-              assetPath,
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.high,
-              errorBuilder: (context, error, stack) => const SizedBox.shrink(),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return overlays;
-  }
-
-  List<Widget> _buildTertiaryFaceOverlays(double size) {
-    if (_selectedCore == null || _selectedSecondary == null || widget.maxDepth < 2) {
-      return const [];
-    }
-
-    const assetByName = {
-      'aroused': 'assets/images/feelings_faces/tertiary/aroused.png',
-      'cheeky': 'assets/images/feelings_faces/tertiary/cheeky.png',
-      'confident': 'assets/images/feelings_faces/tertiary/confident.png',
-      'curious': 'assets/images/feelings_faces/tertiary/curious.png',
-      'free': 'assets/images/feelings_faces/tertiary/free.png',
-      'inquisitive': 'assets/images/feelings_faces/tertiary/inquisitive.png',
-      'joyful': 'assets/images/feelings_faces/tertiary/joyful.png',
-      'successful': 'assets/images/feelings_faces/tertiary/successful.png',
-    };
-
-    final tertiaryList = _selectedSecondary!.tertiary;
-    if (tertiaryList.isEmpty) return const [];
-
-    final radius = size / 2;
-    final sectorAngle = (2 * math.pi) / _wheelOrder.length;
-    const startAngle = 3 * math.pi / 2;
-    final coreIndex = _wheelOrder.indexOf(_selectedCore!.id);
-    if (coreIndex == -1) return const [];
-
-    final secondaryList = _selectedCore!.secondary;
-    final secondaryIndex = secondaryList.indexWhere((s) => s.id == _selectedSecondary!.id);
-    if (secondaryIndex == -1) return const [];
-
-    final secondaryAngle = sectorAngle / secondaryList.length;
-    final coreStart = startAngle + coreIndex * sectorAngle;
-    final secondaryStart = coreStart + secondaryIndex * secondaryAngle;
-    final tertiaryAngle = secondaryAngle / tertiaryList.length;
-    final faceOrbit = radius * 0.94;
-
-    final overlays = <Widget>[];
-    for (int i = 0; i < tertiaryList.length; i++) {
-      final name = tertiaryList[i];
-      final assetPath = assetByName[name.toLowerCase()];
-      if (assetPath == null) continue;
-
-      final angle = secondaryStart + i * tertiaryAngle + (tertiaryAngle / 2);
-      final faceSize = _faceSizeForArc(size, faceOrbit, tertiaryAngle, 0.10);
-      final center = Offset(
-        radius + faceOrbit * math.cos(angle),
-        radius + faceOrbit * math.sin(angle),
-      );
-
-      overlays.add(
-        Positioned(
-          left: center.dx - faceSize / 2,
-          top: center.dy - faceSize / 2,
-          width: faceSize,
-          height: faceSize,
-          child: IgnorePointer(
-            child: Image.asset(
-              assetPath,
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.high,
-              errorBuilder: (context, error, stack) => const SizedBox.shrink(),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return overlays;
-  }
-
-  double _faceSizeForArc(double size, double orbit, double angle, double baseScale) {
-    final arc = orbit * angle;
-    final base = size * baseScale;
-    final maxByArc = arc * 0.6;
-    return math.max(16, math.min(base, maxByArc));
-  }
-
-  String? _imageForSelection() {
-    if (_selectedTertiary != null) {
-      final key = _selectedTertiary!.toLowerCase();
-      return _tertiaryAsset(key);
-    }
-    if (_selectedSecondary != null) {
-      return _secondaryAsset(_selectedSecondary!.id);
-    }
-    if (_selectedCore != null) {
-      return _coreAsset(_selectedCore!.id);
-    }
-    return null;
-  }
-
-  String? _coreAsset(String id) {
-    const assets = {
-      'angry': 'assets/images/feelings_faces/core/angry.png',
-      'happy': 'assets/images/feelings_faces/core/happy.png',
-      'surprised': 'assets/images/feelings_faces/core/surprised.png',
-      'bad': 'assets/images/feelings_faces/core/bad.png',
-      'fearful': 'assets/images/feelings_faces/core/fearful.png',
-      'sad': 'assets/images/feelings_faces/core/sad.png',
-      'disgusted': 'assets/images/feelings_faces/core/disgusted.png',
-    };
-    return assets[id];
-  }
-
-  String? _secondaryAsset(String id) {
-    const assets = {
-      'playful': 'assets/images/feelings_faces/secondary/playful.png',
-      'content': 'assets/images/feelings_faces/secondary/content.png',
-      'interested': 'assets/images/feelings_faces/secondary/interested.png',
-      'proud': 'assets/images/feelings_faces/secondary/proud.png',
-    };
-    return assets[id];
-  }
-
-  String? _tertiaryAsset(String id) {
-    const assets = {
-      'aroused': 'assets/images/feelings_faces/tertiary/aroused.png',
-      'cheeky': 'assets/images/feelings_faces/tertiary/cheeky.png',
-      'confident': 'assets/images/feelings_faces/tertiary/confident.png',
-      'curious': 'assets/images/feelings_faces/tertiary/curious.png',
-      'free': 'assets/images/feelings_faces/tertiary/free.png',
-      'inquisitive': 'assets/images/feelings_faces/tertiary/inquisitive.png',
-      'joyful': 'assets/images/feelings_faces/tertiary/joyful.png',
-      'successful': 'assets/images/feelings_faces/tertiary/successful.png',
-    };
-    return assets[id];
-  }
+  // Gaps between slices
+  static const double coreGap = 0.04;
+  static const double secondaryGap = 0.02;
+  static const double tertiaryGap = 0.01;
 }
 
 /// Custom painter for the wheel
@@ -679,6 +418,8 @@ class _WheelPainter extends CustomPainter {
   final double glowIntensity;
   final Color backgroundColor;
   final int maxDepth;
+  final Map<String, ui.Image> faceImages;
+
   _WheelPainter({
     required this.wheelOrder,
     required this.coreEmotions,
@@ -688,6 +429,7 @@ class _WheelPainter extends CustomPainter {
     required this.glowIntensity,
     required this.backgroundColor,
     required this.maxDepth,
+    required this.faceImages,
   });
 
   @override
@@ -695,212 +437,351 @@ class _WheelPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 
-    _drawCoreRing(canvas, center, radius);
+    // Draw all emotions at once in long, skinny segments
+    _drawAllEmotions(canvas, center, radius);
 
-    if (selectedCore != null && maxDepth >= 1) {
-      _drawSecondaryRing(canvas, center, radius);
-    }
-
-    if (selectedCore != null && selectedSecondary != null && maxDepth >= 2) {
-      _drawTertiaryRing(canvas, center, radius);
-    }
-
-    // No center button; tap segments to choose.
+    // Draw center hub with selected emotion (if any)
+    _drawCenterHub(canvas, center, radius);
   }
 
-  void _drawCoreRing(Canvas canvas, Offset center, double radius) {
-    final sectorAngle = (2 * math.pi) / wheelOrder.length;
-    const startAngle = 3 * math.pi / 2;
-    const gapAngle = 0.04;
-    final coreOuter = (selectedCore != null && maxDepth >= 1) ? radius * 0.50 : radius * 0.92;
+  void _drawAllEmotions(Canvas canvas, Offset center, double radius) {
+    const startAngle = -math.pi / 2; // Start at 12 o'clock
+    const gapAngle = 0.01; // Small white gap between segments
 
-    for (int i = 0; i < wheelOrder.length; i++) {
-      final coreId = wheelOrder[i];
+    // Ring boundaries - matching the reference wheel
+    const centerRadius = 0.15; // Center hub
+    const coreInner = 0.17;
+    const coreOuter = 0.38;
+    const secondaryOuter = 0.68;
+    const tertiaryOuter = 0.95;
+
+    // Track which core emotions we've already drawn labels for
+    final Set<String> drawnCoreLabels = {};
+
+    // Iterate through each core emotion
+    for (int coreIndex = 0; coreIndex < wheelOrder.length; coreIndex++) {
+      final coreId = wheelOrder[coreIndex];
       final core = coreEmotions.firstWhere((c) => c.id == coreId);
-      final isSelected = selectedCore?.id == core.id;
-      final baseColor = core.color ?? Colors.grey;
+      final coreColor = core.color ?? Colors.grey;
+      final secondaryColor = core.secondaryColor ?? coreColor;
+      final tertiaryColor = core.tertiaryColor ?? coreColor;
 
-      final actualSectorStart = startAngle + i * sectorAngle + gapAngle / 2;
-      final actualSectorAngle = sectorAngle - gapAngle;
+      final secondaryList = core.secondary;
+      final totalSecondaries = secondaryList.length;
 
-      if (isSelected) {
-        final outerGlowPaint = Paint()
-          ..color = baseColor.withOpacity(0.3 * glowIntensity)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 30)
-          ..style = PaintingStyle.fill;
-        _drawSector(canvas, center, radius * 0.23, coreOuter + radius * 0.02,
-            actualSectorStart, actualSectorAngle, outerGlowPaint);
+      // If no secondaries, draw just the core segment
+      if (totalSecondaries == 0) {
+        final coreSectorAngle = (2 * math.pi) / wheelOrder.length;
+        final coreStart = startAngle + coreIndex * coreSectorAngle + gapAngle / 2;
+        final coreAngle = coreSectorAngle - gapAngle;
 
-        final midGlowPaint = Paint()
-          ..color = baseColor.withOpacity(0.5 * glowIntensity)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20)
-          ..style = PaintingStyle.fill;
-        _drawSector(canvas, center, radius * 0.24, coreOuter + radius * 0.01,
-            actualSectorStart, actualSectorAngle, midGlowPaint);
-
-        final innerGlowPaint = Paint()
-          ..color = baseColor.withOpacity(0.7 * glowIntensity)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10)
-          ..style = PaintingStyle.fill;
-        _drawSector(canvas, center, radius * 0.25, coreOuter,
-            actualSectorStart, actualSectorAngle, innerGlowPaint);
+        final isSelected = selectedCore?.id == core.id;
+        _drawSingleSegment(canvas, center, radius, coreStart, coreAngle, coreInner,
+            tertiaryOuter, coreColor, isSelected, core.name, 'all', core.name);
+        continue;
       }
 
-      final sectorPaint = Paint()
-        ..color = isSelected ? baseColor : baseColor.withOpacity(0.4)
-        ..style = PaintingStyle.fill;
+      // Calculate total tertiary count for this core emotion
+      int totalTertiaries = 0;
+      for (final secondary in secondaryList) {
+        totalTertiaries += secondary.tertiary.isEmpty ? 1 : secondary.tertiary.length;
+      }
 
-      _drawSector(canvas, center, radius * 0.25, coreOuter,
-          actualSectorStart, actualSectorAngle, sectorPaint);
+      // Core emotion sector angle
+      final coreSectorAngle = (2 * math.pi) / wheelOrder.length;
 
-      final labelRadius = radius * (selectedCore != null ? 0.38 : 0.50);
-      final labelAngle = actualSectorStart + actualSectorAngle / 2;
-      _drawRotatedText(
-        canvas,
-        core.name,
-        center.dx + labelRadius * math.cos(labelAngle),
-        center.dy + labelRadius * math.sin(labelAngle),
-        labelAngle,
-        isSelected ? 18 : 16,
-        Colors.white,
-        fontWeight: FontWeight.bold,
-        shadow: true,
-      );
+      // Each tertiary gets equal angular space within the core's sector
+      final tertiaryAngle = totalTertiaries > 0
+          ? coreSectorAngle / totalTertiaries
+          : coreSectorAngle;
+
+      int tertiaryCounter = 0;
+      final Set<String> drawnSecondaryLabels = {};
+
+      // Iterate through secondaries
+      for (int secIndex = 0; secIndex < secondaryList.length; secIndex++) {
+        final secondary = secondaryList[secIndex];
+        final tertiaryList = secondary.tertiary;
+        final tertiaryCount = tertiaryList.isEmpty ? 1 : tertiaryList.length;
+
+        // Draw tertiary segments
+        for (int terIndex = 0; terIndex < tertiaryCount; terIndex++) {
+          final segmentStart = startAngle +
+              coreIndex * coreSectorAngle +
+              tertiaryCounter * tertiaryAngle +
+              gapAngle / 2;
+          final segmentAngle = tertiaryAngle - gapAngle;
+
+          String tertiaryName = '';
+          bool isTertiarySelected = false;
+
+          if (tertiaryList.isNotEmpty) {
+            tertiaryName = tertiaryList[terIndex];
+            isTertiarySelected = selectedCore?.id == core.id &&
+                selectedSecondary?.id == secondary.id &&
+                selectedTertiary == tertiaryName;
+          } else {
+            isTertiarySelected = selectedCore?.id == core.id &&
+                selectedSecondary?.id == secondary.id;
+          }
+
+          final isCoreSelected = selectedCore?.id == core.id;
+          final isSecondarySelected = selectedCore?.id == core.id &&
+              selectedSecondary?.id == secondary.id;
+
+          // Draw core ring segment (NO LABEL unless it's the first segment for this core)
+          final showCoreLabel = !drawnCoreLabels.contains(core.id);
+          _drawRingSegment(canvas, center, radius, segmentStart, segmentAngle,
+              coreInner, coreOuter, coreColor, isCoreSelected,
+              showCoreLabel ? core.name : '', 'core');
+          if (showCoreLabel) drawnCoreLabels.add(core.id);
+
+          // Draw secondary ring segment (NO LABEL unless it's the first segment for this secondary)
+          final showSecondaryLabel = !drawnSecondaryLabels.contains(secondary.id);
+          _drawRingSegment(canvas, center, radius, segmentStart, segmentAngle,
+              coreOuter, secondaryOuter, secondaryColor, isSecondarySelected,
+              showSecondaryLabel ? secondary.name : '', 'secondary');
+          if (showSecondaryLabel) drawnSecondaryLabels.add(secondary.id);
+
+          // Draw tertiary ring segment (ALWAYS show label for each unique tertiary)
+          final displayName = tertiaryList.isNotEmpty ? tertiaryName : secondary.name;
+          _drawRingSegment(canvas, center, radius, segmentStart, segmentAngle,
+              secondaryOuter, tertiaryOuter, tertiaryColor, isTertiarySelected,
+              displayName, 'tertiary');
+
+          // Draw face at the outer tip
+          if (tertiaryList.isNotEmpty && tertiaryName.isNotEmpty) {
+            _drawFaceAtTip(canvas, center, radius, segmentStart, segmentAngle,
+                tertiaryOuter, tertiaryName);
+          } else {
+            _drawFaceAtTip(canvas, center, radius, segmentStart, segmentAngle,
+                tertiaryOuter, secondary.name);
+          }
+
+          tertiaryCounter++;
+        }
+      }
     }
   }
 
-  void _drawSecondaryRing(Canvas canvas, Offset center, double radius) {
-    if (selectedCore == null) return;
+  void _drawRingSegment(Canvas canvas, Offset center, double radius, double startAngle,
+      double sweepAngle, double innerRatio, double outerRatio, Color color,
+      bool isSelected, String label, String level) {
 
-    final coreSectorIndex = wheelOrder.indexOf(selectedCore!.id);
-    if (coreSectorIndex == -1) return;
+    final innerRadius = radius * innerRatio;
+    final outerRadius = radius * outerRatio;
 
-    final sectorAngle = (2 * math.pi) / wheelOrder.length;
-    const startAngle = 3 * math.pi / 2;
-    final coreSectorStart = startAngle + coreSectorIndex * sectorAngle;
-    final secondaryList = selectedCore!.secondary;
+    // Draw glow if selected
+    if (isSelected) {
+      final glowPaint = Paint()
+        ..color = color.withOpacity(0.4 * glowIntensity)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15)
+        ..style = PaintingStyle.fill;
+      _drawSector(canvas, center, innerRadius * 0.98, outerRadius * 1.02,
+          startAngle, sweepAngle, glowPaint);
+    }
 
-    if (secondaryList.isEmpty) return;
+    // Draw main segment
+    final segmentPaint = Paint()
+      ..color = isSelected ? color : color.withOpacity(0.85)
+      ..style = PaintingStyle.fill;
 
-    final secondaryAngle = sectorAngle / secondaryList.length;
-    const gapAngle = 0.02;
-    final outerRadius = maxDepth >= 2 ? radius * 0.75 : radius * 0.92;
+    _drawSector(canvas, center, innerRadius, outerRadius, startAngle, sweepAngle, segmentPaint);
 
-    for (int i = 0; i < secondaryList.length; i++) {
-      final secondary = secondaryList[i];
-      final isSelected = selectedSecondary?.id == secondary.id;
-      final baseColor = selectedCore!.color ?? Colors.grey;
+    // Draw label ONLY if provided and segment is wide enough
+    if (label.isNotEmpty) {
+      final labelRadius = (innerRadius + outerRadius) / 2;
+      final labelAngle = startAngle + sweepAngle / 2;
 
-      final actualSecondaryStart = coreSectorStart + i * secondaryAngle + gapAngle / 2;
-      final actualSecondaryAngle = secondaryAngle - gapAngle;
+      double fontSize = 8.0;
+      double minAngle = 0.05;
 
-      if (isSelected) {
-        final outerGlowPaint = Paint()
-          ..color = baseColor.withOpacity(0.4 * glowIntensity)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 25)
-          ..style = PaintingStyle.fill;
-        _drawSector(canvas, center, radius * 0.48, outerRadius + radius * 0.02,
-            actualSecondaryStart, actualSecondaryAngle, outerGlowPaint);
-
-        final midGlowPaint = Paint()
-          ..color = baseColor.withOpacity(0.6 * glowIntensity)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15)
-          ..style = PaintingStyle.fill;
-        _drawSector(canvas, center, radius * 0.49, outerRadius + radius * 0.01,
-            actualSecondaryStart, actualSecondaryAngle, midGlowPaint);
-
-        final innerGlowPaint = Paint()
-          ..color = baseColor.withOpacity(0.8 * glowIntensity)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8)
-          ..style = PaintingStyle.fill;
-        _drawSector(canvas, center, radius * 0.50, outerRadius,
-            actualSecondaryStart, actualSecondaryAngle, innerGlowPaint);
+      if (level == 'core') {
+        fontSize = 11.0;
+        minAngle = 0.3; // Core labels only if very wide
+      } else if (level == 'secondary') {
+        fontSize = 9.0;
+        minAngle = 0.08;
+      } else if (level == 'tertiary') {
+        fontSize = 7.5;
+        minAngle = 0.02; // Show most tertiary labels
       }
 
-      final sectorPaint = Paint()
-        ..color = isSelected ? baseColor : baseColor.withOpacity(0.35)
-        ..style = PaintingStyle.fill;
-
-      _drawSector(canvas, center, radius * 0.50, outerRadius,
-          actualSecondaryStart, actualSecondaryAngle, sectorPaint);
-
-      final labelRadius = radius * (maxDepth >= 2 ? 0.56 : 0.66);
-      final labelAngle = actualSecondaryStart + actualSecondaryAngle / 2;
-      _drawRotatedText(
-        canvas,
-        secondary.name,
-        center.dx + labelRadius * math.cos(labelAngle),
-        center.dy + labelRadius * math.sin(labelAngle),
-        labelAngle,
-        isSelected ? 14 : 12,
-        Colors.white,
-        fontWeight: FontWeight.bold,
-        shadow: true,
-      );
+      if (sweepAngle > minAngle) {
+        _drawText(
+          canvas,
+          label,
+          center.dx + labelRadius * math.cos(labelAngle),
+          center.dy + labelRadius * math.sin(labelAngle),
+          fontSize,
+          Colors.white,
+          fontWeight: FontWeight.bold,
+          shadow: true,
+        );
+      }
     }
   }
 
-  void _drawTertiaryRing(Canvas canvas, Offset center, double radius) {
-    if (selectedCore == null || selectedSecondary == null) return;
+  void _drawSingleSegment(Canvas canvas, Offset center, double radius, double startAngle,
+      double sweepAngle, double innerRatio, double outerRatio, Color color,
+      bool isSelected, String label, String level, String faceKey) {
 
-    final coreSectorIndex = wheelOrder.indexOf(selectedCore!.id);
-    if (coreSectorIndex == -1) return;
+    final innerRadius = radius * innerRatio;
+    final outerRadius = radius * outerRatio;
 
-    final secondaryList = selectedCore!.secondary;
-    if (secondaryList.isEmpty) return;
+    if (isSelected) {
+      final glowPaint = Paint()
+        ..color = color.withOpacity(0.4 * glowIntensity)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15);
+      _drawSector(canvas, center, innerRadius * 0.98, outerRadius * 1.02,
+          startAngle, sweepAngle, glowPaint);
+    }
 
-    final secondaryIndex = secondaryList.indexWhere((s) => s.id == selectedSecondary!.id);
-    if (secondaryIndex == -1) return;
+    final segmentPaint = Paint()
+      ..color = isSelected ? color : color.withOpacity(0.85);
+    _drawSector(canvas, center, innerRadius, outerRadius, startAngle, sweepAngle, segmentPaint);
 
-    final tertiaryList = selectedSecondary!.tertiary;
-    if (tertiaryList.isEmpty) return;
+    if (label.isNotEmpty && sweepAngle > 0.1) {
+      final labelRadius = (innerRadius + outerRadius) / 2;
+      final labelAngle = startAngle + sweepAngle / 2;
+      _drawText(canvas, label, center.dx + labelRadius * math.cos(labelAngle),
+          center.dy + labelRadius * math.sin(labelAngle), 10.0, Colors.white,
+          fontWeight: FontWeight.bold, shadow: true);
+    }
 
-    final sectorAngle = (2 * math.pi) / wheelOrder.length;
-    const startAngle = 3 * math.pi / 2;
-    final coreSectorStart = startAngle + coreSectorIndex * sectorAngle;
-    final secondaryAngle = sectorAngle / secondaryList.length;
-    final secondaryStart = coreSectorStart + secondaryIndex * secondaryAngle;
-    final tertiaryAngle = secondaryAngle / tertiaryList.length;
-    const gapAngle = 0.01;
+    _drawFaceAtTip(canvas, center, radius, startAngle, sweepAngle, outerRatio, faceKey);
+  }
 
-    for (int i = 0; i < tertiaryList.length; i++) {
-      final tertiary = tertiaryList[i];
-      final isSelected = selectedTertiary == tertiary;
-      final baseColor = selectedCore!.color ?? Colors.grey;
+  void _drawFaceAtTip(Canvas canvas, Offset center, double radius, double startAngle,
+      double sweepAngle, double tipRatio, String emotionName) {
 
-      final actualStart = secondaryStart + i * tertiaryAngle + gapAngle / 2;
-      final actualAngle = tertiaryAngle - gapAngle;
+    final tipRadius = radius * tipRatio;
+    final faceAngle = startAngle + sweepAngle / 2;
+    final faceCenter = Offset(
+      center.dx + tipRadius * math.cos(faceAngle),
+      center.dy + tipRadius * math.sin(faceAngle),
+    );
 
-      if (isSelected) {
-        final glowPaint = Paint()
-          ..color = baseColor.withOpacity(0.55 * glowIntensity)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18)
-          ..style = PaintingStyle.fill;
-        _drawSector(canvas, center, radius * 0.74, radius * 0.92,
-            actualStart, actualAngle, glowPaint);
-      }
+    // Face size based on segment width - make bigger and more visible
+    final arcWidth = tipRadius * sweepAngle;
+    final faceRadius = (arcWidth * 0.8).clamp(radius * 0.018, radius * 0.055);
 
-      final sectorPaint = Paint()
-        ..color = isSelected ? baseColor : baseColor.withOpacity(0.35)
+    final faceImage = _imageForName(emotionName);
+    if (faceImage != null) {
+      _drawImageFace(canvas, faceImage, faceCenter, faceRadius);
+    }
+  }
+
+  void _drawCenterHub(Canvas canvas, Offset center, double radius) {
+    final hubRadius = radius * 0.15;
+
+    if (selectedCore == null) {
+      // Empty state - subtle background
+      final hintPaint = Paint()
+        ..color = backgroundColor.withOpacity(0.3)
         ..style = PaintingStyle.fill;
+      canvas.drawCircle(center, hubRadius, hintPaint);
 
-      _drawSector(canvas, center, radius * 0.75, radius * 0.92,
-          actualStart, actualAngle, sectorPaint);
-
-      final labelRadius = radius * 0.72;
-      final labelAngle = actualStart + actualAngle / 2;
-      _drawRotatedText(
+      _drawText(
         canvas,
-        tertiary,
-        center.dx + labelRadius * math.cos(labelAngle),
-        center.dy + labelRadius * math.sin(labelAngle),
-        labelAngle,
-        isSelected ? 11 : 9,
-        Colors.white,
-        fontWeight: FontWeight.bold,
-        shadow: true,
+        'Tap a\nFeeling',
+        center.dx,
+        center.dy,
+        11,
+        Colors.black45,
+        fontWeight: FontWeight.w500,
+      );
+      return;
+    }
+
+    // Determine selected emotion and appropriate color
+    String name = selectedCore!.name;
+    Color baseColor = selectedCore!.color ?? const Color(0xFFFFD93D);
+    String eyeType = selectedCore!.eyeType;
+    String mouthType = selectedCore!.mouthType;
+
+    if (selectedTertiary != null) {
+      name = selectedTertiary!;
+      baseColor = selectedCore!.tertiaryColor ?? baseColor;
+      // Keep eye/mouth from secondary
+      if (selectedSecondary != null) {
+        eyeType = selectedSecondary!.eyeType;
+        mouthType = selectedSecondary!.mouthType;
+      }
+    } else if (selectedSecondary != null) {
+      name = selectedSecondary!.name;
+      baseColor = selectedCore!.secondaryColor ?? baseColor;
+      eyeType = selectedSecondary!.eyeType;
+      mouthType = selectedSecondary!.mouthType;
+    }
+
+    // Pulsing glow effect
+    final outerGlow = Paint()
+      ..color = baseColor.withOpacity(0.3 * glowIntensity)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
+    canvas.drawCircle(center, hubRadius * 1.3, outerGlow);
+
+    final innerGlow = Paint()
+      ..color = baseColor.withOpacity(0.5 * glowIntensity)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+    canvas.drawCircle(center, hubRadius * 1.1, innerGlow);
+
+    // Colored background circle (not white!)
+    final bgPaint = Paint()
+      ..color = baseColor.withOpacity(0.9)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, hubRadius, bgPaint);
+
+    // LARGE face icon
+    final faceRadius = radius * 0.08;
+    final faceImage = _imageForName(name);
+
+    if (faceImage != null) {
+      _drawImageFace(canvas, faceImage, center, faceRadius);
+    } else {
+      // Fallback to procedural drawing
+      final featureColor = _contrastColor(baseColor);
+      _drawFace(
+        canvas,
+        center,
+        faceRadius * 0.85,
+        Colors.white.withOpacity(0.9),
+        featureColor,
+        eyeType,
+        mouthType,
       );
     }
+
+    // Text label below face
+    final textY = center.dy + hubRadius * 1.2;
+    _drawText(
+      canvas,
+      name,
+      center.dx,
+      textY,
+      12,
+      Colors.white,
+      fontWeight: FontWeight.bold,
+      shadow: true,
+    );
+  }
+
+  ui.Image? _imageForName(String name) {
+    final key = _sanitizeKey(name);
+    return faceImages[key];
+  }
+
+  String _sanitizeKey(String name) {
+    final lower = name.toLowerCase();
+    final replaced = lower.replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+    return replaced.replaceAll(RegExp(r'_+'), '_').replaceAll(RegExp(r'^_|_$'), '');
+  }
+
+  void _drawImageFace(Canvas canvas, ui.Image image, Offset center, double radius) {
+    final size = radius * 2;
+    final src = Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
+    final dst = Rect.fromCenter(center: center, width: size, height: size);
+    canvas.drawImageRect(image, src, dst, Paint());
   }
 
   void _drawSector(Canvas canvas, Offset center, double innerRadius,
@@ -930,17 +811,8 @@ class _WheelPainter extends CustomPainter {
     canvas.drawPath(path, paint);
   }
 
-  void _drawRotatedText(
-    Canvas canvas,
-    String text,
-    double x,
-    double y,
-    double angle,
-    double fontSize,
-    Color color, {
-    FontWeight? fontWeight,
-    bool shadow = false,
-  }) {
+  void _drawText(Canvas canvas, String text, double x, double y, double fontSize,
+      Color color, {FontWeight? fontWeight, bool shadow = false}) {
     final textPainter = TextPainter(
       text: TextSpan(
         text: text,
@@ -962,19 +834,10 @@ class _WheelPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     );
     textPainter.layout();
-    double rotation = angle;
-    final normalized = (rotation + 2 * math.pi) % (2 * math.pi);
-    if (normalized > math.pi / 2 && normalized < (3 * math.pi / 2)) {
-      rotation += math.pi;
-    }
-    canvas.save();
-    canvas.translate(x, y);
-    canvas.rotate(rotation);
     textPainter.paint(
       canvas,
-      Offset(-textPainter.width / 2, -textPainter.height / 2),
+      Offset(x - textPainter.width / 2, y - textPainter.height / 2),
     );
-    canvas.restore();
   }
 
   void _drawFace(
@@ -986,6 +849,11 @@ class _WheelPainter extends CustomPainter {
     String eyeType,
     String mouthType,
   ) {
+    final facePaint = Paint()
+      ..color = faceColor
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, radius, facePaint);
+
     final eyeOffsetX = radius * 0.35;
     final eyeOffsetY = radius * -0.15;
     final eyeRadius = radius * 0.12;
@@ -1002,8 +870,8 @@ class _WheelPainter extends CustomPainter {
       canvas.drawCircle(center.translate(-eyeOffsetX, eyeOffsetY), eyeRadius * 1.4, eyePaint);
       canvas.drawCircle(center.translate(eyeOffsetX, eyeOffsetY), eyeRadius * 1.4, eyePaint);
     } else if (eyeType == 'Dizzy') {
-      _drawArc(canvas, center.translate(-eyeOffsetX, eyeOffsetY), eyeRadius * 1.4, math.pi, strokePaint);
-      _drawArc(canvas, center.translate(eyeOffsetX, eyeOffsetY), eyeRadius * 1.4, math.pi, strokePaint);
+      _drawX(canvas, center.translate(-eyeOffsetX, eyeOffsetY), eyeRadius * 1.2, strokePaint);
+      _drawX(canvas, center.translate(eyeOffsetX, eyeOffsetY), eyeRadius * 1.2, strokePaint);
     } else if (eyeType == 'EyeRoll') {
       _drawArc(canvas, center.translate(-eyeOffsetX, eyeOffsetY), eyeRadius * 1.5, math.pi, strokePaint);
       _drawArc(canvas, center.translate(eyeOffsetX, eyeOffsetY), eyeRadius * 1.5, math.pi, strokePaint);
@@ -1061,6 +929,7 @@ class _WheelPainter extends CustomPainter {
         oldDelegate.selectedSecondary != selectedSecondary ||
         oldDelegate.selectedTertiary != selectedTertiary ||
         oldDelegate.glowIntensity != glowIntensity ||
-        oldDelegate.maxDepth != maxDepth;
+        oldDelegate.maxDepth != maxDepth ||
+        oldDelegate.faceImages.length != faceImages.length;
   }
 }

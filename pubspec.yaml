@@ -89,6 +89,7 @@ flutter:
   assets:
     - assets/images/
     - assets/images/feelings_faces/
+    - assets/feelings_faces/
     - assets/config/avatar_config.json
     - assets/config/allowlists.json
 
