@@ -35,7 +35,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.2.1              # API calls to backend
   flutter_tts: ^4.2.3       # Text-to-speech for stories
-  shared_preferences: ^2.2.2 # Local storage
+  shared_preferences: ^2.5.4 # Local storage
   share_plus: ^11.0.0       # Share stories
   flutter_riverpod: ^2.6.1
   isar: ^3.1.0
@@ -44,8 +44,8 @@ dependencies:
   path_provider: ^2.1.1     # File paths
   riverpod_annotation: ^2.6.1
   google_generative_ai: ^0.4.6  # Direct Gemini API access for BYOK users
-  firebase_core: ^2.24.2
-  firebase_analytics: ^10.8.0
+  firebase_core: ^3.8.1
+  firebase_analytics: ^11.3.4
   # sentry_flutter: ^7.14.0  # Removed for development - causing Kotlin version conflicts
   package_info_plus: ^8.0.2
   url_launcher: ^6.3.0

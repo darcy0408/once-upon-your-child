@@ -24,7 +24,7 @@ jobs:
           cache: true
 
       - name: Cache Flutter dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: |
             ~/.pub-cache
@@ -65,7 +65,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Cache pip dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
@@ -104,7 +104,7 @@ jobs:
           cache: true
 
       - name: Cache Flutter dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: |
             ~/.pub-cache
@@ -117,7 +117,7 @@ jobs:
         run: flutter pub get
 
       - name: Cache Flutter build
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: build
           key: ${{ runner.os }}-flutter-build-${{ hashFiles('**/*.dart', '**/pubspec.yaml', '**/pubspec.lock') }}
@@ -128,7 +128,7 @@ jobs:
         run: flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v6
         with:
           name: flutter-web-build
           path: build/web/
@@ -144,7 +144,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v7
         with:
           name: flutter-web-build
           path: build/web/
@@ -174,7 +174,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v7
         with:
           name: flutter-web-build
           path: build/web/
