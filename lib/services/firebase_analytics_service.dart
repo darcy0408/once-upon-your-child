@@ -37,9 +37,20 @@ class FirebaseAnalyticsService {
 
   static Future<void> logEvent(String eventName, Map<String, dynamic> parameters) async {
     try {
+      // Convert to Map<String, Object> for Firebase Analytics compatibility
+      final Map<String, Object> cleanParams = {};
+      parameters.forEach((key, value) {
+        if (value != null) {
+          if (value is String || value is num || value is bool) {
+            cleanParams[key] = value;
+          } else {
+            cleanParams[key] = value.toString();
+          }
+        }
+      });
       await analytics.logEvent(
         name: eventName,
-        parameters: parameters.cast<String, Object>(),
+        parameters: cleanParams,
       );
     } catch (e) {
       if (kDebugMode) {

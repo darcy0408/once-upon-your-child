@@ -57,8 +57,8 @@ class CharacterAnalytics {
     Map<String, Object?> parameters,
   ) async {
     try {
-      // Convert to Map<String, dynamic> and ensure all values are primitive types
-      final Map<String, dynamic> cleanParams = {};
+      // Convert to Map<String, Object> and ensure all values are primitive types
+      final Map<String, Object> cleanParams = {};
       parameters.forEach((key, value) {
         if (value != null) {
           // Only include primitive types that Firebase Analytics accepts
@@ -69,7 +69,7 @@ class CharacterAnalytics {
           }
         }
       });
-      await _analytics.logEvent(name: name, parameters: cleanParams.cast<String, Object>());
+      await _analytics.logEvent(name: name, parameters: cleanParams);
     } catch (e) {
       debugPrint('Analytics logEvent failed ($name): ${e.toString()}');
     }
