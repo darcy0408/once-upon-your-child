@@ -477,9 +477,6 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
     debugPrint('🚀 Starting ASYNC avatar generation...');
     final features = _buildFeatures();
 
-    // Save callback reference before closing dialog
-    final onAvatarCreated = widget.onAvatarCreated;
-
     // Mark as generating in global state
     AvatarGenerationState().startGeneration();
 
@@ -487,16 +484,16 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
     widget.onCancel();
 
     // Start generation in background (don't await)
+    // Note: Don't call onAvatarCreated for async generation - the parent widget
+    // listens to AvatarGenerationState and will handle the UI update
     _avatarService.generateAvatar(
       characterName: widget.characterName,
       age: widget.age,
       style: _selectedStyle,
       features: features,
     ).then((avatar) {
-      // Success - update state and notify
+      // Success - update global state (parent widget will listen and update UI)
       AvatarGenerationState().completeGeneration(avatar);
-      // Use saved callback reference (safe after widget disposal)
-      onAvatarCreated(avatar);
     }).catchError((error) {
       // Failure - update state with error
       AvatarGenerationState().failGeneration(error.toString());
