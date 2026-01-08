@@ -145,13 +145,8 @@ def create_story_blueprint(
 
             response_payload = {
                 "status": sync_result.get("status", "complete"),
-                "title": story_payload.get("title"),
-                "story": story_payload.get("story_text"),
-                "story_text": story_payload.get("story_text"),
+                "story": story_payload,
                 "task_id": "sync_task", # No task ID needed
-                "theme": story_payload.get("theme"),
-                "wisdom_gem": story_payload.get("wisdom_gem"),
-                "illustrations": story_payload.get("illustrations", []),  # Include illustrations
                 "async_illustrations": payload.get("async_illustrations", False),
             }
             return jsonify(response_payload), 200

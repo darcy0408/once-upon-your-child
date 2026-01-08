@@ -538,7 +538,7 @@ class ApiServiceManager {
         final payload =
             jsonDecode(generateResponse.body) as Map<String, dynamic>;
         final story = payload['story'] ?? payload['story_text'];
-        if (story is String && story.isNotEmpty) {
+        if ((story is String && story.isNotEmpty) || (story is Map && story.isNotEmpty)) {
           return StoryGenerationResult.fromBackend(payload);
         }
         throw HttpException(

@@ -60,6 +60,7 @@ class StoryResultScreen extends StatefulWidget {
   // NEW: Page-based story structure
   final List<String>? pages;
   final List<String>? adventureSteps;
+  final OfflineStoryService? offlineService;
 
   const StoryResultScreen({
     super.key,
@@ -85,6 +86,7 @@ class StoryResultScreen extends StatefulWidget {
     this.choicesMade,
     this.pages,
     this.adventureSteps,
+    this.offlineService,
   })  : assert(!trackStoryCreation || achievementsService != null),
         assert(!trackStoryCreation || storyCreatedAt != null);
 
@@ -177,7 +179,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   @override
   void initState() {
     super.initState();
-    _offlineService = OfflineStoryService(IsarService.instance);
+    _offlineService = widget.offlineService ?? OfflineStoryService(IsarService.instance);
 
     // NEW: Use backend-generated pages if available, otherwise paginate
     if (widget.pages != null && widget.pages!.isNotEmpty) {

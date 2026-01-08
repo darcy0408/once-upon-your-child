@@ -278,14 +278,92 @@ class AdvancedStoryEngine:
         story_duration: str | None = None,  # NEW: '5_minutes' or '10_minutes'
         age: int = 5,  # NEW: Age for calibration
     ):
-        # Length calibration for 10-minute read
-        if age == 8 and (story_duration == '10_minutes' or story_length in ['standard', 'epic']):
-            target_word_count = "1350-1650 words"
-            target_pages = "10-12 pages"
-        else:
-            # Fallback/Default targets
+        # Age-Specific Configuration "Recipes"
+        # Defaults
+        target_word_count = "600-900 words"
+        target_pages = "6-8 pages"
+        density_checklist = ""
+        tone_instruction = "Magical, adventurous, funny, and vivid."
+
+        # Age 3-5 (Preschool)
+        if age <= 5:
+            target_word_count = "300-500 words"
+            target_pages = "5-8 pages"
+            tone_instruction = "Gentle, repetitive, rhythmic, and very concrete. Use simple sentences."
+            density_checklist = """
+            DENSITY CHECKLIST (Age 3-5):
+            - At least 3 clear sound effects (e.g., 'Whoosh!', 'Plop!').
+            - Repetitive phrase used at least 3 times.
+            - Simple cause-and-effect structure.
+            - Focus on sensory details (soft, loud, bright).
+            """
+        
+        # Age 6-7 (Early Reader)
+        elif age <= 7:
             target_word_count = "600-900 words"
-            target_pages = "6-8 pages"
+            target_pages = "6-9 pages"
+            tone_instruction = "Action-oriented, simple sentences, friendship themes."
+            density_checklist = """
+            DENSITY CHECKLIST (Age 6-7):
+            - At least 1 physical challenge (climbing, jumping).
+            - At least 1 friend/helper moment.
+            - At least 3 lines of dialogue.
+            - Clear problem and happy solution.
+            """
+
+        # Age 8 (Golden Standard)
+        elif age == 8:
+            if story_duration == '10_minutes' or story_length in ['standard', 'epic']:
+                target_word_count = "1350-1650 words"
+                target_pages = "10-12 pages"
+            else:
+                target_word_count = "800-1000 words"
+                target_pages = "8-10 pages"
+            
+            tone_instruction = "Magical, adventurous, funny, and vivid."
+            density_checklist = """
+            MAGIC DENSITY CHECKLIST (Age 8):
+            - At least 3 distinct magical set pieces (e.g., floating islands, talking trees).
+            - At least 3 transformations or magical acts, each with a vivid sensory tell.
+            - At least 2 moments of kid-safe suspense (thrilling but safe).
+            - At least 6 lines of dialogue total.
+            """
+
+        # Age 9-12 (Pre-Teen)
+        elif age <= 12:
+            if story_duration == '10_minutes' or story_length == 'epic':
+                target_word_count = "1800-2500 words"
+                target_pages = "12-15 pages"
+            else:
+                target_word_count = "1200-1600 words"
+                target_pages = "10-12 pages"
+
+            tone_instruction = " engaging, character-driven, slightly more complex vocabulary."
+            density_checklist = """
+            DENSITY CHECKLIST (Age 9-12):
+            - At least 1 moral dilemma or difficult choice.
+            - At least 1 complex puzzle or strategy.
+            - Rich world-building details (history, rules of magic).
+            - Focus on character growth and internal monologue.
+            """
+
+        # Age 13+ (Teen)
+        else:
+            if story_duration == '10_minutes' or story_length == 'epic':
+                target_word_count = "2500+ words"
+                target_pages = "15-20 pages"
+            else:
+                target_word_count = "1800-2200 words"
+                target_pages = "12-15 pages"
+
+            tone_instruction = "Emotional nuance, metaphor, relationships, identity."
+            density_checklist = """
+            DENSITY CHECKLIST (Age 13+):
+            - Deep character introspection.
+            - Subtle dialogue subtext.
+            - Thematic resonance and metaphorical elements.
+            - Complex relationships and identity exploration.
+            """
 
         # Handle companions
         companion_lines = []
@@ -311,66 +389,54 @@ class AdvancedStoryEngine:
 
         companion_section = "\n".join(companion_lines) if companion_lines else "- Companions: None"
 
-        # Magic Density Checklist for Age 8
-        magic_density = ""
-        if age == 8:
-            magic_density = """
-            MAGIC DENSITY CHECKLIST (Age 8):
-            - At least 3 distinct magical set pieces (e.g., floating islands, talking trees).
-            - At least 3 transformations or magical acts, each with a vivid sensory tell.
-            - At least 2 moments of kid-safe suspense (thrilling but safe).
-            - At least 6 lines of dialogue total.
-            """
-
-        parts = [
-            "You are a MASTER STORYTELLER for children. Create a magical, adventurous, and vivid story.",
-            "",
-            "OUTPUT FORMAT: STRICT JSON ONLY",
-            "You MUST return a valid JSON object. No prose before or after the JSON. No markdown fences.",
-            "",
-            "JSON SCHEMA:",
-            """{
-  "title": "Story Title",
-  "pages": [
-    "Full text for page 1...",
-    "Full text for page 2...",
-    "..."
-  ],
-  "post_story": {
-    "wisdom_gem": "A short, meaningful lesson",
-    "adventure_report": {
-      "plot_beats": ["Beat 1", "Beat 2", "..."],
-      "character_snapshot": "Concise summary of character growth",
-      "emotion_notes": ["Note 1", "Note 2"],
-      "rereadability_hooks": ["Hook 1", "Hook 2"]
-    }
-  }
-}""",
-            "",
-            "STORY CONTEXT:",
-            self._format_character_line(character, additional_characters),
-            f"- Theme: {theme}",
-            companion_section,
-            f"- Age: {age}",
-            "",
-            "STORY REQUIREMENTS:",
-            f"- TARGET LENGTH: {target_word_count} total.",
-            f"- PAGINATION: Split into {target_pages}.",
-            "- TONE: Magical, adventurous, funny, and vivid.",
-            "- POV: ALWAYS use second-person ('You').",
-            "- NO META: Do NOT include 'PAGE X', 'REQUEST SUMMARY', or any internal markers in the page text.",
-            "- READABILITY: Use double newlines (\\n\\n) for paragraph breaks inside pages.",
-            magic_density,
-            SAFETY_GUARDRAILS.strip(),
-        ]
+        prompt = f"""
+        You are a MASTER STORYTELLER for children. Create a story for {character} (age {age}).
+        
+        STORY THEME: {theme}
+        {companion_section}
+        {density_checklist}
+        
+        OUTPUT FORMAT:
+        You MUST return a STRICT JSON object. No prose outside the JSON. No markdown formatting.
+        
+        JSON SCHEMA:
+        {{
+          "title": "Story Title",
+          "pages": [
+            "Page 1 text...",
+            "Page 2 text...",
+            "..."
+          ],
+          "post_story": {{
+            "wisdom_gem": "A short lesson",
+            "adventure_report": {{
+              "plot_beats": ["Beat 1", "Beat 2", "..."],
+              "character_snapshot": "Summary",
+              "emotion_notes": ["Note 1", "Note 2"],
+              "rereadability_hooks": ["Hook 1", "Hook 2"]
+            }}
+          }}
+        }}
+        
+        STORY REQUIREMENTS:
+        - TARGET LENGTH: {target_word_count} total.
+        - PAGINATION: Split into {target_pages}.
+        - TONE: {tone_instruction}
+        - POV: ALWAYS use second-person ('You').
+        - NO META: Do NOT include 'PAGE X', 'REQUEST SUMMARY', or any internal markers in the page text.
+        - READABILITY: Use double newlines (\\n\\n) for paragraph breaks inside pages.
+        - SENSORY: Include rich sensory details.
+        
+        {SAFETY_GUARDRAILS.strip()}
+        """
 
         if feelings_prompt:
-            parts.append(f"\nFEELINGS-FOCUSED GUIDANCE:\n{feelings_prompt}")
+            prompt += f"\n\nFEELINGS-FOCUSED GUIDANCE:\n{feelings_prompt}"
 
         if custom_elements:
-            parts.append(f"\nCUSTOM ELEMENTS:\n{custom_elements}")
+            prompt += f"\n\nCUSTOM ELEMENTS:\n{custom_elements}"
 
-        return "\n".join(parts)
+        return prompt
 
 
     def generate_interactive_story(

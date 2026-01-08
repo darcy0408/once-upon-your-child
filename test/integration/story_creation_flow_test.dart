@@ -23,7 +23,11 @@ void main() {
         expect(body['character'], 'Luna');
         expect(body['subscription_tier'], 'free');
         expect(body['user_id'], startsWith('user_'));
-        return http.Response(jsonEncode({'story': 'Mock backend story'}), 200);
+        return http.Response(
+            jsonEncode({
+              'story': {'story_text': 'Mock backend story'}
+            }),
+            200);
       });
 
       final story = await ApiServiceManager.generateStory(
@@ -47,7 +51,7 @@ void main() {
         expect(extras, isNotNull);
         expect(extras, contains('Maya'));
         expect(body['subscription_tier'], 'free');
-        return http.Response(jsonEncode({'story': 'Group adventure'}), 200);
+        return http.Response(jsonEncode({'story': {'story_text': 'Group adventure'}}), 200);
       });
 
       final story = await ApiServiceManager.generateStory(
@@ -69,7 +73,7 @@ void main() {
         if (attempts < 3) {
           return http.Response('server busy', 500);
         }
-        return http.Response(jsonEncode({'story': 'Retried story!'}), 200);
+        return http.Response(jsonEncode({'story': {'story_text': 'Retried story!'}}), 200);
       });
 
       final story = await ApiServiceManager.generateStory(
@@ -92,7 +96,7 @@ void main() {
         if (attempts < 3) {
           return http.Response('server busy', 500);
         }
-        return http.Response(jsonEncode({'story': 'Timing story'}), 200);
+        return http.Response(jsonEncode({'story': {'story_text': 'Timing story'}}), 200);
       });
 
       final story = await ApiServiceManager.generateStory(
@@ -135,7 +139,7 @@ void main() {
     test('throws TimeoutException when backend stalls', () async {
       final mockClient = MockClient((request) async {
         await Future.delayed(const Duration(milliseconds: 100));
-        return http.Response(jsonEncode({'story': 'Too late'}), 200);
+        return http.Response(jsonEncode({'story': {'story_text': 'Too late'}}), 200);
       });
 
       await expectLater(

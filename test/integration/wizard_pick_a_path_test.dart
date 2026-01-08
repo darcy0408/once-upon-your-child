@@ -93,6 +93,21 @@ class _MockHttpClient implements HttpClient {
   Future<HttpClientRequest> getUrl(Uri url) async => _MockHttpRequest();
 
   @override
+  Future<HttpClientRequest> postUrl(Uri url) async => _MockHttpRequest();
+
+  @override
+  Future<HttpClientRequest> putUrl(Uri url) async => _MockHttpRequest();
+
+  @override
+  Future<HttpClientRequest> deleteUrl(Uri url) async => _MockHttpRequest();
+
+  @override
+  Future<HttpClientRequest> patchUrl(Uri url) async => _MockHttpRequest();
+
+  @override
+  Future<HttpClientRequest> headUrl(Uri url) async => _MockHttpRequest();
+
+  @override
   Future<HttpClientRequest> openUrl(String method, Uri url) async {
     return _MockHttpRequest();
   }
@@ -105,7 +120,11 @@ class _MockHttpClient implements HttpClient {
 
   @override
   dynamic noSuchMethod(Invocation invocation) {
-    if (invocation.memberName == #getUrl || invocation.memberName == #openUrl) {
+    if (invocation.isGetter && invocation.memberName == #done) {
+      return Future.value(null);
+    }
+    final name = invocation.memberName.toString();
+    if (name.contains('Url') || name.contains('open')) {
       return Future.value(_MockHttpRequest());
     }
     return null;
@@ -120,10 +139,50 @@ class _MockHttpRequest implements HttpClientRequest {
   Future<HttpClientResponse> close() async => _MockHttpResponse();
 
   @override
-  noSuchMethod(Invocation invocation) => null;
+  Future<HttpClientResponse> get done => Future.value(_MockHttpResponse());
+
+  @override
+  void add(List<int> data) {}
+
+  @override
+  void write(Object? obj) {}
+
+  @override
+  Future addStream(Stream<List<int>> stream) async {}
+
+  @override
+  bool get followRedirects => true;
+
+  @override
+  set followRedirects(bool _followRedirects) {}
+
+  @override
+  int get maxRedirects => 5;
+
+  @override
+  set maxRedirects(int _maxRedirects) {}
+
+  @override
+  bool get persistentConnection => true;
+
+  @override
+  set persistentConnection(bool _persistentConnection) {}
+
+  @override
+  noSuchMethod(Invocation invocation) {
+    if (invocation.memberName == #done) return Future.value(_MockHttpResponse());
+    if (invocation.memberName == #close) return Future.value(_MockHttpResponse());
+    return null;
+  }
 }
 
 class _MockHttpHeaders implements HttpHeaders {
+  @override
+  void set(String name, Object value, {bool preserveHeaderCase = false}) {}
+
+  @override
+  void add(String name, Object value, {bool preserveHeaderCase = false}) {}
+
   @override
   noSuchMethod(Invocation invocation) => null;
 }
@@ -131,6 +190,21 @@ class _MockHttpHeaders implements HttpHeaders {
 class _MockHttpResponse extends Stream<List<int>> implements HttpClientResponse {
   @override
   int get statusCode => 200;
+
+  @override
+  String get reasonPhrase => 'OK';
+
+  @override
+  int get contentLength => -1;
+
+  @override
+  bool get persistentConnection => false;
+
+  @override
+  bool get isRedirect => false;
+
+  @override
+  List<RedirectInfo> get redirects => [];
 
   @override
   HttpHeaders get headers => _MockHttpHeaders();

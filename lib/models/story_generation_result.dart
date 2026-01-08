@@ -21,14 +21,18 @@ class StoryGenerationResult {
 
   factory StoryGenerationResult.fromBackend(Map<String, dynamic> json) {
     // Backend nested 'story' object
-    final storyData = json['story'] as Map<String, dynamic>? ?? {};
+    final dynamic rawStory = json['story'];
+    final Map<String, dynamic> storyData = (rawStory is Map<String, dynamic>) ? rawStory : {};
     
     final rawIllustrations = (storyData['illustrations'] as List? ?? json['illustrations'] as List?)
             ?.whereType<Map<String, dynamic>>()
             .toList() ??
         const [];
 
-    final storyText = (storyData['story_text'] ?? json['story_text'] ?? json['story'] ?? '') as String;
+    final storyText = (storyData['story_text'] ?? 
+                      json['story_text'] ?? 
+                      (rawStory is String ? rawStory : '') ?? 
+                      '') as String;
     
     final rawPages = (storyData['pages'] as List?)?.whereType<String>().toList() ?? 
                      (json['pages'] as List?)?.whereType<String>().toList() ?? [];

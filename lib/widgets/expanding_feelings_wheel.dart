@@ -437,150 +437,101 @@ class _WheelPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 
-    // Draw all emotions at once in long, skinny segments
-    _drawAllEmotions(canvas, center, radius);
+    // Progressive disclosure: Show only relevant rings based on selection
+    if (selectedCore == null) {
+      // Show only core emotions
+      _drawCoreRing(canvas, center, radius);
+    } else if (selectedSecondary == null) {
+      // Show core + selected core's secondary emotions
+      _drawCoreRing(canvas, center, radius);
+      _drawSecondaryRing(canvas, center, radius);
+    } else {
+      // Show core + secondary + selected secondary's tertiary emotions
+      _drawCoreRing(canvas, center, radius);
+      _drawSecondaryRing(canvas, center, radius);
+      _drawTertiaryRing(canvas, center, radius);
+    }
 
     // Draw center hub with selected emotion (if any)
     _drawCenterHub(canvas, center, radius);
   }
 
-  void _drawAllEmotions(Canvas canvas, Offset center, double radius) {
+  void _drawCoreRing(Canvas canvas, Offset center, double radius) {
     const startAngle = -math.pi / 2; // Start at 12 o'clock
-    const gapAngle = 0.01; // Small white gap between segments
+    const gapAngle = 0.02; // Small white gap between segments
+    const coreInner = 0.35; // Larger core segments
+    const coreOuter = 0.85; // Extend to outer edge
 
-    // Ring boundaries - matching the reference wheel
-    const centerRadius = 0.15; // Center hub
-    const coreInner = 0.17;
-    const coreOuter = 0.38;
-    const secondaryOuter = 0.68;
-    const tertiaryOuter = 0.95;
+    final coreSectorAngle = (2 * math.pi) / wheelOrder.length;
 
-    // Track which core emotions we've already drawn labels for
-    final Set<String> drawnCoreLabels = {};
-
-    // Iterate through each core emotion
-    for (int coreIndex = 0; coreIndex < wheelOrder.length; coreIndex++) {
-      final coreId = wheelOrder[coreIndex];
+    for (int i = 0; i < wheelOrder.length; i++) {
+      final coreId = wheelOrder[i];
       final core = coreEmotions.firstWhere((c) => c.id == coreId);
       final coreColor = core.color ?? Colors.grey;
-      final secondaryColor = core.secondaryColor ?? coreColor;
-      final tertiaryColor = core.tertiaryColor ?? coreColor;
 
-      final secondaryList = core.secondary;
-      final totalSecondaries = secondaryList.length;
+      final sectorStart = startAngle + i * coreSectorAngle + gapAngle / 2;
+      final sectorAngle = coreSectorAngle - gapAngle;
 
-      // If no secondaries, draw just the core segment
-      if (totalSecondaries == 0) {
-        final coreSectorAngle = (2 * math.pi) / wheelOrder.length;
-        final coreStart = startAngle + coreIndex * coreSectorAngle + gapAngle / 2;
-        final coreAngle = coreSectorAngle - gapAngle;
+      final isSelected = selectedCore?.id == core.id;
 
-        final isSelected = selectedCore?.id == core.id;
-        _drawSingleSegment(canvas, center, radius, coreStart, coreAngle, coreInner,
-            tertiaryOuter, coreColor, isSelected, core.name, 'all', core.name);
-        continue;
-      }
-
-      // Calculate total tertiary count for this core emotion
-      int totalTertiaries = 0;
-      for (final secondary in secondaryList) {
-        totalTertiaries += secondary.tertiary.isEmpty ? 1 : secondary.tertiary.length;
-      }
-
-      // Core emotion sector angle
-      final coreSectorAngle = (2 * math.pi) / wheelOrder.length;
-
-      // Each tertiary gets equal angular space within the core's sector
-      final tertiaryAngle = totalTertiaries > 0
-          ? coreSectorAngle / totalTertiaries
-          : coreSectorAngle;
-
-      int tertiaryCounter = 0;
-      final Set<String> drawnSecondaryLabels = {};
-
-      // Iterate through secondaries
-      for (int secIndex = 0; secIndex < secondaryList.length; secIndex++) {
-        final secondary = secondaryList[secIndex];
-        final tertiaryList = secondary.tertiary;
-        final tertiaryCount = tertiaryList.isEmpty ? 1 : tertiaryList.length;
-
-        // Draw tertiary segments
-        for (int terIndex = 0; terIndex < tertiaryCount; terIndex++) {
-          final segmentStart = startAngle +
-              coreIndex * coreSectorAngle +
-              tertiaryCounter * tertiaryAngle +
-              gapAngle / 2;
-          final segmentAngle = tertiaryAngle - gapAngle;
-
-          String tertiaryName = '';
-          bool isTertiarySelected = false;
-
-          if (tertiaryList.isNotEmpty) {
-            tertiaryName = tertiaryList[terIndex];
-            isTertiarySelected = selectedCore?.id == core.id &&
-                selectedSecondary?.id == secondary.id &&
-                selectedTertiary == tertiaryName;
-          } else {
-            isTertiarySelected = selectedCore?.id == core.id &&
-                selectedSecondary?.id == secondary.id;
-          }
-
-          final isCoreSelected = selectedCore?.id == core.id;
-          final isSecondarySelected = selectedCore?.id == core.id &&
-              selectedSecondary?.id == secondary.id;
-
-          // Draw core ring segment (NO LABEL unless it's the first segment for this core)
-          final showCoreLabel = !drawnCoreLabels.contains(core.id);
-          _drawRingSegment(canvas, center, radius, segmentStart, segmentAngle,
-              coreInner, coreOuter, coreColor, isCoreSelected,
-              showCoreLabel ? core.name : '', 'core');
-          if (showCoreLabel) drawnCoreLabels.add(core.id);
-
-          // Draw secondary ring segment (NO LABEL unless it's the first segment for this secondary)
-          final showSecondaryLabel = !drawnSecondaryLabels.contains(secondary.id);
-          _drawRingSegment(canvas, center, radius, segmentStart, segmentAngle,
-              coreOuter, secondaryOuter, secondaryColor, isSecondarySelected,
-              showSecondaryLabel ? secondary.name : '', 'secondary');
-          if (showSecondaryLabel) drawnSecondaryLabels.add(secondary.id);
-
-          // Draw tertiary ring segment (ALWAYS show label for each unique tertiary)
-          final displayName = tertiaryList.isNotEmpty ? tertiaryName : secondary.name;
-          _drawRingSegment(canvas, center, radius, segmentStart, segmentAngle,
-              secondaryOuter, tertiaryOuter, tertiaryColor, isTertiarySelected,
-              displayName, 'tertiary');
-
-          // Draw face at the outer tip
-          if (tertiaryList.isNotEmpty && tertiaryName.isNotEmpty) {
-            _drawFaceAtTip(canvas, center, radius, segmentStart, segmentAngle,
-                tertiaryOuter, tertiaryName);
-          } else {
-            _drawFaceAtTip(canvas, center, radius, segmentStart, segmentAngle,
-                tertiaryOuter, secondary.name);
-          }
-
-          tertiaryCounter++;
-        }
-      }
+      // Draw the core segment
+      _drawCoreSegment(canvas, center, radius, sectorStart, sectorAngle,
+          coreInner, coreOuter, coreColor, isSelected, core.name, core.id);
     }
-
-    // Draw ring separator lines for visual differentiation
-    _drawRingSeparators(canvas, center, radius);
   }
 
-  void _drawRingSeparators(Canvas canvas, Offset center, double radius) {
-    const coreOuter = 0.38;
-    const secondaryOuter = 0.68;
+  void _drawSecondaryRing(Canvas canvas, Offset center, double radius) {
+    if (selectedCore == null) return;
 
-    final separatorPaint = Paint()
-      ..color = Colors.white.withOpacity(0.3)
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
+    const startAngle = -math.pi / 2;
+    const gapAngle = 0.02;
+    const secondaryInner = 0.35;
+    const secondaryOuter = 0.85;
 
-    // Draw circle between core and secondary rings
-    canvas.drawCircle(center, radius * coreOuter, separatorPaint);
+    final secondaryList = selectedCore!.secondary;
+    if (secondaryList.isEmpty) return;
 
-    // Draw circle between secondary and tertiary rings
-    canvas.drawCircle(center, radius * secondaryOuter, separatorPaint);
+    final secondarySectorAngle = (2 * math.pi) / secondaryList.length;
+
+    for (int i = 0; i < secondaryList.length; i++) {
+      final secondary = secondaryList[i];
+      final secondaryColor = selectedCore!.secondaryColor ?? selectedCore!.color ?? Colors.grey;
+
+      final sectorStart = startAngle + i * secondarySectorAngle + gapAngle / 2;
+      final sectorAngle = secondarySectorAngle - gapAngle;
+
+      final isSelected = selectedSecondary?.id == secondary.id;
+
+      _drawSecondarySegment(canvas, center, radius, sectorStart, sectorAngle,
+          secondaryInner, secondaryOuter, secondaryColor, isSelected, secondary.name, secondary.id);
+    }
+  }
+
+  void _drawTertiaryRing(Canvas canvas, Offset center, double radius) {
+    if (selectedCore == null || selectedSecondary == null) return;
+
+    const startAngle = -math.pi / 2;
+    const gapAngle = 0.02;
+    const tertiaryInner = 0.35;
+    const tertiaryOuter = 0.85;
+
+    final tertiaryList = selectedSecondary!.tertiary;
+    if (tertiaryList.isEmpty) return;
+
+    final tertiarySectorAngle = (2 * math.pi) / tertiaryList.length;
+
+    for (int i = 0; i < tertiaryList.length; i++) {
+      final tertiary = tertiaryList[i];
+      final tertiaryColor = selectedCore!.tertiaryColor ?? selectedCore!.color ?? Colors.grey;
+
+      final sectorStart = startAngle + i * tertiarySectorAngle + gapAngle / 2;
+      final sectorAngle = tertiarySectorAngle - gapAngle;
+
+      final isSelected = selectedTertiary == tertiary;
+
+      _drawTertiarySegment(canvas, center, radius, sectorStart, sectorAngle,
+          tertiaryInner, tertiaryOuter, tertiaryColor, isSelected, tertiary);
+    }
   }
 
   void _drawRingSegment(Canvas canvas, Offset center, double radius, double startAngle,
@@ -671,6 +622,139 @@ class _WheelPainter extends CustomPainter {
     }
 
     _drawFaceAtTip(canvas, center, radius, startAngle, sweepAngle, outerRatio, faceKey);
+  }
+
+  void _drawCoreSegment(Canvas canvas, Offset center, double radius, double startAngle,
+      double sweepAngle, double innerRatio, double outerRatio, Color color,
+      bool isSelected, String label, String emotionId) {
+
+    final innerRadius = radius * innerRatio;
+    final outerRadius = radius * outerRatio;
+
+    // Draw glow if selected
+    if (isSelected) {
+      final glowPaint = Paint()
+        ..color = color.withOpacity(0.6 * glowIntensity)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20)
+        ..style = PaintingStyle.fill;
+      _drawSector(canvas, center, innerRadius * 0.95, outerRadius * 1.02,
+          startAngle, sweepAngle, glowPaint);
+    }
+
+    // Draw main segment
+    final segmentPaint = Paint()
+      ..color = color.withOpacity(0.95)
+      ..style = PaintingStyle.fill;
+
+    _drawSector(canvas, center, innerRadius, outerRadius, startAngle, sweepAngle, segmentPaint);
+
+    // Draw label in center of segment
+    final labelRadius = (innerRadius + outerRadius) / 2;
+    final labelAngle = startAngle + sweepAngle / 2;
+    final labelX = center.dx + labelRadius * math.cos(labelAngle);
+    final labelY = center.dy + labelRadius * math.sin(labelAngle);
+
+    _drawText(canvas, label, labelX, labelY, 14.0, Colors.white,
+        fontWeight: FontWeight.bold, shadow: true);
+
+    // Draw face icon in segment
+    _drawFaceInSegment(canvas, center, radius, startAngle, sweepAngle,
+        labelRadius * 0.7 / radius, emotionId, color);
+  }
+
+  void _drawSecondarySegment(Canvas canvas, Offset center, double radius, double startAngle,
+      double sweepAngle, double innerRatio, double outerRatio, Color color,
+      bool isSelected, String label, String emotionId) {
+
+    final innerRadius = radius * innerRatio;
+    final outerRadius = radius * outerRatio;
+
+    if (isSelected) {
+      final glowPaint = Paint()
+        ..color = color.withOpacity(0.6 * glowIntensity)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20)
+        ..style = PaintingStyle.fill;
+      _drawSector(canvas, center, innerRadius * 0.95, outerRadius * 1.02,
+          startAngle, sweepAngle, glowPaint);
+    }
+
+    final segmentPaint = Paint()
+      ..color = color.withOpacity(0.95)
+      ..style = PaintingStyle.fill;
+
+    _drawSector(canvas, center, innerRadius, outerRadius, startAngle, sweepAngle, segmentPaint);
+
+    final labelRadius = (innerRadius + outerRadius) / 2;
+    final labelAngle = startAngle + sweepAngle / 2;
+    final labelX = center.dx + labelRadius * math.cos(labelAngle);
+    final labelY = center.dy + labelRadius * math.sin(labelAngle);
+
+    _drawText(canvas, label, labelX, labelY, 12.0, Colors.white,
+        fontWeight: FontWeight.bold, shadow: true);
+
+    _drawFaceInSegment(canvas, center, radius, startAngle, sweepAngle,
+        labelRadius * 0.7 / radius, emotionId, color);
+  }
+
+  void _drawTertiarySegment(Canvas canvas, Offset center, double radius, double startAngle,
+      double sweepAngle, double innerRatio, double outerRatio, Color color,
+      bool isSelected, String label) {
+
+    final innerRadius = radius * innerRatio;
+    final outerRadius = radius * outerRatio;
+
+    if (isSelected) {
+      final glowPaint = Paint()
+        ..color = color.withOpacity(0.6 * glowIntensity)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20)
+        ..style = PaintingStyle.fill;
+      _drawSector(canvas, center, innerRadius * 0.95, outerRadius * 1.02,
+          startAngle, sweepAngle, glowPaint);
+    }
+
+    final segmentPaint = Paint()
+      ..color = color.withOpacity(0.95)
+      ..style = PaintingStyle.fill;
+
+    _drawSector(canvas, center, innerRadius, outerRadius, startAngle, sweepAngle, segmentPaint);
+
+    final labelRadius = (innerRadius + outerRadius) / 2;
+    final labelAngle = startAngle + sweepAngle / 2;
+    final labelX = center.dx + labelRadius * math.cos(labelAngle);
+    final labelY = center.dy + labelRadius * math.sin(labelAngle);
+
+    _drawText(canvas, label, labelX, labelY, 11.0, Colors.white,
+        fontWeight: FontWeight.bold, shadow: true);
+
+    _drawFaceInSegment(canvas, center, radius, startAngle, sweepAngle,
+        labelRadius * 0.7 / radius, label, color);
+  }
+
+  void _drawFaceInSegment(Canvas canvas, Offset center, double radius, double startAngle,
+      double sweepAngle, double facePositionRatio, String emotionName, Color bgColor) {
+
+    final faceRadius = radius * facePositionRatio;
+    final faceAngle = startAngle + sweepAngle / 2;
+    final faceCenter = Offset(
+      center.dx + faceRadius * math.cos(faceAngle),
+      center.dy + faceRadius * math.sin(faceAngle),
+    );
+
+    // Face size based on segment width
+    final arcWidth = faceRadius * sweepAngle;
+    final faceDiameter = (arcWidth * 0.6).clamp(radius * 0.08, radius * 0.15);
+
+    // Draw circular background matching segment color
+    final bgPaint = Paint()
+      ..color = bgColor
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(faceCenter, faceDiameter, bgPaint);
+
+    // Draw face image
+    final faceImage = _imageForName(emotionName);
+    if (faceImage != null) {
+      _drawImageFace(canvas, faceImage, faceCenter, faceDiameter * 0.85);
+    }
   }
 
   void _drawFaceAtTip(Canvas canvas, Offset center, double radius, double startAngle,

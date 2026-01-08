@@ -239,13 +239,29 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         validation_error = "Meta leakage detected"
                         break
                 
-                # Length Validation for 10-minute stories
+                # Length Validation with dynamic thresholds
                 is_long_enough = True
                 total_words = sum(len(p.split()) for p in pages)
-                if age == 8 and (story_duration == '10_minutes' or story_length in ['standard', 'epic']):
-                    if total_words < 1300: # Slightly lower threshold for safety
-                        is_long_enough = False
-                        validation_error = f"Story too short ({total_words} words)"
+                
+                # Determine minimum words based on age and mode
+                min_words_threshold = 0
+                is_long_mode = (story_duration == '10_minutes' or story_length == 'epic')
+                is_standard_mode = (story_length == 'standard')
+
+                if age <= 5:
+                    min_words_threshold = 250 if is_standard_mode else 100
+                elif age <= 7:
+                    min_words_threshold = 500 if is_standard_mode else 300
+                elif age == 8:
+                    min_words_threshold = 1300 if is_long_mode else 700
+                elif age <= 12:
+                    min_words_threshold = 1700 if is_long_mode else 1100
+                else: # 13+
+                    min_words_threshold = 2400 if is_long_mode else 1700
+
+                if total_words < min_words_threshold:
+                    is_long_enough = False
+                    validation_error = f"Story too short ({total_words} words, needed {min_words_threshold})"
                 
                 if is_clean and is_long_enough:
                     logger.info("Story passed validation.")
@@ -257,7 +273,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         if not is_clean:
                             prompt += "\n\nRETRY INSTRUCTION: Never output internal meta or 'PAGE X' markers. Return ONLY story text in the pages array."
                         if not is_long_enough:
-                            prompt += "\n\nRETRY INSTRUCTION: Add 2 additional scenes and expand descriptions + dialogue. Target at least 1350 words."
+                            prompt += f"\n\nRETRY INSTRUCTION: The story was too short ({total_words} words). Please expand descriptions, dialogue, and scenes to reach at least {min_words_threshold} words."
                     else:
                         logger.error("Max attempts reached. Returning best effort.")
 
