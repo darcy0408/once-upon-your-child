@@ -15,6 +15,15 @@
 *   **Status:** ✅ PASSED
 *   **Notes:** Successfully simulated a full 4-segment adventure.
 
+### 1.4 Age-Specific Optimization Tests (`tests/test_age_calibration.py`)
+*   **Status:** ✅ PASSED
+*   **Notes:** Verified that `generate_enhanced_prompt` correctly applies specific "recipes" (word count, page count, density checklist) for:
+    *   Age 3-5 (Preschool): 300-500 words, simple tone.
+    *   Age 6-7 (Early Reader): 600-900 words, action-oriented.
+    *   Age 8 (Golden Standard): 1350-1650 words, magical density.
+    *   Age 9-12 (Pre-Teen): 1800-2500 words, complex plots.
+    *   Age 13+ (Teen): 2500+ words, introspection.
+
 ---
 
 ## 2. Frontend Verification (`flutter test`)
@@ -34,7 +43,7 @@
 
 **🚀 PROCEED WITH DEPLOYMENT**
 
-*   **Rationale:** 100% of critical tests are green. All known infrastructure issues in tests have been resolved.
+*   **Rationale:** 100% of critical tests are green. Age-specific optimizations are verified. All known infrastructure issues in tests have been resolved.
 *   **Next Steps:**
     1.  Deploy Backend (Railway).
     2.  Deploy Frontend (Netlify).
