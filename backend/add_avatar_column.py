@@ -47,7 +47,19 @@ else:
         conn.commit()
         print("✓ avatar_data column added successfully!")
     except Exception as e:
-        print(f"Error adding column: {e}")
+        print(f"Error adding avatar_data column: {e}")
+        conn.rollback()
+
+if 'avatar_params' in columns:
+    print("✓ avatar_params column already exists!")
+else:
+    print("Adding avatar_params column...")
+    try:
+        cursor.execute("ALTER TABLE character ADD COLUMN avatar_params TEXT")
+        conn.commit()
+        print("✓ avatar_params column added successfully!")
+    except Exception as e:
+        print(f"Error adding avatar_params column: {e}")
         conn.rollback()
 
 # Verify

@@ -437,30 +437,28 @@ class _WheelPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 
-    // Progressive disclosure: Show only relevant rings based on selection
-    if (selectedCore == null) {
-      // Show only core emotions
-      _drawCoreRing(canvas, center, radius);
-    } else if (selectedSecondary == null) {
-      // Show core + selected core's secondary emotions
-      _drawCoreRing(canvas, center, radius);
-      _drawSecondaryRing(canvas, center, radius);
-    } else {
-      // Show core + secondary + selected secondary's tertiary emotions
-      _drawCoreRing(canvas, center, radius);
-      _drawSecondaryRing(canvas, center, radius);
-      _drawTertiaryRing(canvas, center, radius);
+    // Always draw core emotions in outer ring
+    _drawCoreRing(canvas, center, radius);
+
+    // Draw secondary emotions expanding below if core is selected
+    if (selectedCore != null) {
+      _drawSecondaryExpansion(canvas, center, radius);
     }
 
-    // Draw center hub with selected emotion (if any)
+    // Draw tertiary emotions expanding below if secondary is selected
+    if (selectedCore != null && selectedSecondary != null) {
+      _drawTertiaryExpansion(canvas, center, radius);
+    }
+
+    // Draw center hub with selected emotion
     _drawCenterHub(canvas, center, radius);
   }
 
   void _drawCoreRing(Canvas canvas, Offset center, double radius) {
-    const startAngle = -math.pi / 2; // Start at 12 o'clock
-    const gapAngle = 0.02; // Small white gap between segments
-    const coreInner = 0.35; // Larger core segments
-    const coreOuter = 0.85; // Extend to outer edge
+    const startAngle = -math.pi / 2;
+    const gapAngle = 0.02;
+    const coreInner = 0.50; // Core ring inner edge
+    const coreOuter = 0.90; // Core ring outer edge
 
     final coreSectorAngle = (2 * math.pi) / wheelOrder.length;
 
@@ -474,31 +472,37 @@ class _WheelPainter extends CustomPainter {
 
       final isSelected = selectedCore?.id == core.id;
 
-      // Draw the core segment
       _drawCoreSegment(canvas, center, radius, sectorStart, sectorAngle,
           coreInner, coreOuter, coreColor, isSelected, core.name, core.id);
     }
   }
 
-  void _drawSecondaryRing(Canvas canvas, Offset center, double radius) {
+  void _drawSecondaryExpansion(Canvas canvas, Offset center, double radius) {
     if (selectedCore == null) return;
-
-    const startAngle = -math.pi / 2;
-    const gapAngle = 0.02;
-    const secondaryInner = 0.35;
-    const secondaryOuter = 0.85;
 
     final secondaryList = selectedCore!.secondary;
     if (secondaryList.isEmpty) return;
 
-    final secondarySectorAngle = (2 * math.pi) / secondaryList.length;
+    // Find the selected core emotion's angular position
+    final coreIndex = wheelOrder.indexOf(selectedCore!.id);
+    if (coreIndex == -1) return;
+
+    const startAngle = -math.pi / 2;
+    final coreSectorAngle = (2 * math.pi) / wheelOrder.length;
+    final coreStart = startAngle + coreIndex * coreSectorAngle;
+
+    // Secondary emotions expand as small tabs below the core wedge
+    const secondaryInner = 0.05; // Start near center
+    const secondaryOuter = 0.45; // End below core ring
+
+    final secondarySectorAngle = coreSectorAngle / secondaryList.length;
 
     for (int i = 0; i < secondaryList.length; i++) {
       final secondary = secondaryList[i];
       final secondaryColor = selectedCore!.secondaryColor ?? selectedCore!.color ?? Colors.grey;
 
-      final sectorStart = startAngle + i * secondarySectorAngle + gapAngle / 2;
-      final sectorAngle = secondarySectorAngle - gapAngle;
+      final sectorStart = coreStart + i * secondarySectorAngle + 0.01;
+      final sectorAngle = secondarySectorAngle - 0.02;
 
       final isSelected = selectedSecondary?.id == secondary.id;
 
@@ -507,25 +511,37 @@ class _WheelPainter extends CustomPainter {
     }
   }
 
-  void _drawTertiaryRing(Canvas canvas, Offset center, double radius) {
+  void _drawTertiaryExpansion(Canvas canvas, Offset center, double radius) {
     if (selectedCore == null || selectedSecondary == null) return;
-
-    const startAngle = -math.pi / 2;
-    const gapAngle = 0.02;
-    const tertiaryInner = 0.35;
-    const tertiaryOuter = 0.85;
 
     final tertiaryList = selectedSecondary!.tertiary;
     if (tertiaryList.isEmpty) return;
 
-    final tertiarySectorAngle = (2 * math.pi) / tertiaryList.length;
+    // Find angular positions
+    final coreIndex = wheelOrder.indexOf(selectedCore!.id);
+    final secondaryList = selectedCore!.secondary;
+    final secondaryIndex = secondaryList.indexWhere((s) => s.id == selectedSecondary!.id);
+
+    if (coreIndex == -1 || secondaryIndex == -1) return;
+
+    const startAngle = -math.pi / 2;
+    final coreSectorAngle = (2 * math.pi) / wheelOrder.length;
+    final coreStart = startAngle + coreIndex * coreSectorAngle;
+    final secondarySectorAngle = coreSectorAngle / secondaryList.length;
+    final secondaryStart = coreStart + secondaryIndex * secondarySectorAngle;
+
+    // Tertiary emotions expand as tiny tabs at the very bottom
+    const tertiaryInner = 0.05;
+    const tertiaryOuter = 0.25;
+
+    final tertiarySectorAngle = secondarySectorAngle / tertiaryList.length;
 
     for (int i = 0; i < tertiaryList.length; i++) {
       final tertiary = tertiaryList[i];
       final tertiaryColor = selectedCore!.tertiaryColor ?? selectedCore!.color ?? Colors.grey;
 
-      final sectorStart = startAngle + i * tertiarySectorAngle + gapAngle / 2;
-      final sectorAngle = tertiarySectorAngle - gapAngle;
+      final sectorStart = secondaryStart + i * tertiarySectorAngle + 0.005;
+      final sectorAngle = tertiarySectorAngle - 0.01;
 
       final isSelected = selectedTertiary == tertiary;
 
@@ -648,18 +664,21 @@ class _WheelPainter extends CustomPainter {
 
     _drawSector(canvas, center, innerRadius, outerRadius, startAngle, sweepAngle, segmentPaint);
 
-    // Draw label in center of segment
-    final labelRadius = (innerRadius + outerRadius) / 2;
+    // Calculate positions for label and face
+    final labelRadius = outerRadius * 0.80; // Position label in outer part
+    final faceRadius = innerRadius * 1.25; // Position face in inner part
+
     final labelAngle = startAngle + sweepAngle / 2;
     final labelX = center.dx + labelRadius * math.cos(labelAngle);
     final labelY = center.dy + labelRadius * math.sin(labelAngle);
 
+    // Draw label ONCE
     _drawText(canvas, label, labelX, labelY, 14.0, Colors.white,
         fontWeight: FontWeight.bold, shadow: true);
 
-    // Draw face icon in segment
+    // Draw face icon in segment with colored circular background
     _drawFaceInSegment(canvas, center, radius, startAngle, sweepAngle,
-        labelRadius * 0.7 / radius, emotionId, color);
+        faceRadius / radius, emotionId, color);
   }
 
   void _drawSecondarySegment(Canvas canvas, Offset center, double radius, double startAngle,
@@ -679,21 +698,24 @@ class _WheelPainter extends CustomPainter {
     }
 
     final segmentPaint = Paint()
-      ..color = color.withOpacity(0.95)
+      ..color = color.withOpacity(0.90)
       ..style = PaintingStyle.fill;
 
     _drawSector(canvas, center, innerRadius, outerRadius, startAngle, sweepAngle, segmentPaint);
 
-    final labelRadius = (innerRadius + outerRadius) / 2;
+    // Position label at outer edge
+    final labelRadius = outerRadius * 0.85;
     final labelAngle = startAngle + sweepAngle / 2;
     final labelX = center.dx + labelRadius * math.cos(labelAngle);
     final labelY = center.dy + labelRadius * math.sin(labelAngle);
 
-    _drawText(canvas, label, labelX, labelY, 12.0, Colors.white,
+    _drawText(canvas, label, labelX, labelY, 10.0, Colors.white,
         fontWeight: FontWeight.bold, shadow: true);
 
+    // Draw face with circular colored background
+    final faceRadius = (innerRadius + outerRadius) / 2;
     _drawFaceInSegment(canvas, center, radius, startAngle, sweepAngle,
-        labelRadius * 0.7 / radius, emotionId, color);
+        faceRadius / radius, emotionId, color);
   }
 
   void _drawTertiarySegment(Canvas canvas, Offset center, double radius, double startAngle,
@@ -713,21 +735,24 @@ class _WheelPainter extends CustomPainter {
     }
 
     final segmentPaint = Paint()
-      ..color = color.withOpacity(0.95)
+      ..color = color.withOpacity(0.85)
       ..style = PaintingStyle.fill;
 
     _drawSector(canvas, center, innerRadius, outerRadius, startAngle, sweepAngle, segmentPaint);
 
-    final labelRadius = (innerRadius + outerRadius) / 2;
+    // Position label at outer edge
+    final labelRadius = outerRadius * 0.80;
     final labelAngle = startAngle + sweepAngle / 2;
     final labelX = center.dx + labelRadius * math.cos(labelAngle);
     final labelY = center.dy + labelRadius * math.sin(labelAngle);
 
-    _drawText(canvas, label, labelX, labelY, 11.0, Colors.white,
+    _drawText(canvas, label, labelX, labelY, 9.0, Colors.white,
         fontWeight: FontWeight.bold, shadow: true);
 
+    // Draw face with circular colored background
+    final faceRadius = (innerRadius + outerRadius) / 2;
     _drawFaceInSegment(canvas, center, radius, startAngle, sweepAngle,
-        labelRadius * 0.7 / radius, label, color);
+        faceRadius / radius, label, color);
   }
 
   void _drawFaceInSegment(Canvas canvas, Offset center, double radius, double startAngle,
@@ -885,10 +910,17 @@ class _WheelPainter extends CustomPainter {
   }
 
   void _drawImageFace(Canvas canvas, ui.Image image, Offset center, double radius) {
+    // Clip to circle to hide white square backgrounds from PNG files
+    canvas.save();
+    final circlePath = Path()..addOval(Rect.fromCircle(center: center, radius: radius));
+    canvas.clipPath(circlePath);
+
     final size = radius * 2;
     final src = Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
     final dst = Rect.fromCenter(center: center, width: size, height: size);
     canvas.drawImageRect(image, src, dst, Paint());
+
+    canvas.restore();
   }
 
   void _drawSector(Canvas canvas, Offset center, double innerRadius,
