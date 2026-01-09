@@ -52,8 +52,8 @@ SAFETY RULES:
 - No sexual content, no graphic violence, no self-harm, no illegal wrongdoing.
 - Handle sensitive emotions gently. Safe, therapeutic tone.
 - Do NOT invent characters or family members not provided.
-- Personalization: Weave in interests and unique magical motif.
-- Must Include: A gentle magical surprise, a coping moment in action, and a satisfying earned ending.
+- Must Include: A gentle magical surprise, a coping moment in action (breathing/naming feelings), and a satisfying earned ending.
+- SAFETY: Ensure no scary imagery or abandonment themes for children.
 """
 
 def _get_age_band(age: int) -> str:
@@ -73,10 +73,17 @@ class AdvancedStoryEngine:
         companion: str | None = None,
         companion_pets: list[dict] | None = None,
         companion_characters: list[dict] | None = None,
+        spark_tool: str | None = None,
+        mood_physics: dict | None = None,
+        conflict_hook: str | None = None,
+        sensory_palette: str | None = None,
         custom_elements: str = "",
+        additional_characters: list | None = None,
         therapeutic_prompt: str = "",
         feelings_prompt: str | None = None,
+        character_details: dict | None = None,
         story_length: str = "standard", # 'short', 'medium', 'long'
+        story_duration: str | None = None,
         age: int = 5,
     ):
         band = _get_age_band(age)
@@ -87,95 +94,72 @@ class AdvancedStoryEngine:
         # Build companion context
         companion_context = []
         if companion_pets: 
-            for p in companion_pets: companion_context.append(f"{p['name']} the {p['species']}")
+            for p in companion_pets: 
+                species = p.get('species', 'companion')
+                companion_context.append(f"{p['name']} the {species} [ANIMAL]")
         if companion_characters:
-            for c in companion_characters: companion_context.append(f"{c['name']} ({c.get('role', 'friend')})")
+            for c in companion_characters:
+                # If it's a dict from companion_data.dart, it has signaturePower
+                power = c.get('signaturePower', '')
+                power_text = f" (Power: {power})" if power else ""
+                companion_context.append(f"{c['name']}{power_text} [SPEAKING]")
         if not companion_context and companion:
-            companion_context.append(companion)
+            companion_context.append(f"{companion} [COMPANION]")
         
         comp_str = ", ".join(companion_context) if companion_context else "None"
 
+        # Character strengths and ability
+        char_details = character_details or {}
+        special_ability = char_details.get('specialAbility', 'None specified')
+        strengths = ", ".join(char_details.get('strengths', []))
+        
+        # Mood Physics & Sensory
+        mood_rules = ""
+        if mood_physics:
+            mood_rules = f"\nWORLD PHYSICS (Mood: {mood_physics.get('mood', 'Magic')}):\n- RULE: {mood_physics.get('worldRule', '')}\n- SENSORY: {mood_physics.get('sensoryChange', '')}"
+
+        # Age-specific impossible element suggestions
+        impossible_elements = {
+            '3-4': 'Ride on a friendly cloud, talk to a flower, jump over a moonbeam.',
+            '5-7': 'Fly on dandelion seeds, taste rainbow colors, walk through a mirror.',
+            '8-10': 'Surf on lightning bolts, rewrite the rules of gravity, talk to the stars.',
+            '11-13': 'Architect a dreamscape, command the tides, freeze time with a thought.',
+            '13-15': 'Bridge two worlds, heal a rift in space, weave light into a bridge.',
+            '15-18': 'Navigate a paradox, harmonize a chaotic dimension, transcend physical limits.',
+            'adult': 'Manifest an abstract emotion, reconcile lost timelines, find meaning in entropy.'
+        }
+        age_impossible = impossible_elements.get(band, 'Something magical and physics-defying.')
+
         return f"""
-You are a MASTER STORYTELLER creating a {story_length} story for {character} (age {age}).
+**PERSONA**: Expert Child Narrative Architect & Therapeutic Narrative Specialist.
 
-STORY THEME: {theme}
-COMPANIONS: {comp_str}
-READABILITY: {config['notes']}
+You are a MASTER STORYTELLER creating a {story_length} adventure for {character} (age {age}).
 
-OUTPUT FORMAT: Return STRICT JSON.
+**STORY SPECS**:
+- **THEME**: {theme}
+- **CONFLICT**: {conflict_hook or 'A magical mystery needs solving.'}
+- **SENSORY PALETTE**: {sensory_palette or 'Bright colors, soft sounds, sweet smells.'}
+- **HERO**: {character} (Strengths: {strengths or 'Brave and kind'}).
+- **SPECIAL ABILITY**: {special_ability} (MUST be used at the climax).
+- **HERO TOOL**: {f"'{spark_tool}' (MUST be used exactly once to solve a specific problem)" if spark_tool else "None"}
+- **IMPOSSIBLE ELEMENTS**: Examples for this age: {age_impossible}
+- **COMPANIONS**: {comp_str} (MUST appear by name and help/bond with {character}).
+{mood_rules}
+
+**WRITING GUIDELINES**:
+- **Tone**: {config['notes']}
+- **Word Count**: Approximately {word_range[0]}-{word_range[1]} words total.
+- **Safety**: {SAFETY_GUARDRAILS.strip()}
+
+**OUTPUT FORMAT**:
+Strictly return valid JSON with this structure:
 {{
-  "title": "Title",
-  "pages": ["Page 1...", "Page 2...", "..."],
-  "post_story": {{ "wisdom_gem": "Lesson", "adventure_report": {{ "plot_beats": [] }} }}
+  "title": "Story Title",
+  "pages": [
+    {{
+      "text": "Page text (approx 100-150 words)...",
+      "image_prompt": "Visual description for illustration..."
+    }}
+  ]
 }}
-
-REQUIREMENTS:
-- Word Count: {word_range[0]}-{word_range[1]} words.
-- Pagination: Split into 8-12 pages.
-- POV: Second-person ('You') for age <= 7, else Third-person.
-- Must Include: A magical surprise, a coping moment (breathing/naming feelings), and an earned ending.
-- Consistency: {comp_str} MUST appear by name and affect at least 2 beats.
-
-{SAFETY_GUARDRAILS}{f"FEELINGS: {feelings_prompt}" if feelings_prompt else ""}{f"CUSTOM: {custom_elements}" if custom_elements else ""}
 """
-
-def _build_rhyme_time_prompt(character_name, theme, age, character_details, companion_pets=None, companion_characters=None, story_length="standard"):
-    band = _get_age_band(age)
-    config = AGE_CONSTRAINTS[band]
-    length_key = 'medium' if story_length == 'standard' else story_length
-    word_range = config['rhyme'][length_key]
-
-    return f"""
-Create a RHYME TIME story for {character_name} (age {age}).
-Theme: {theme}
-Word Count: {word_range[0]}-{word_range[1]} words.
-Scheme: Consistent AABB or ABCB.
-Requirements: Include a magical surprise and a coping moment. {character_name} is the hero.
-{SAFETY_GUARDRAILS}
-"""
-
-def _build_learning_to_read_prompt(character_name, theme, age, character_details, story_length="standard"):
-    band = _get_age_band(age)
-    config = AGE_CONSTRAINTS[band]
-    if 'ltr' not in config: return "Mode unavailable for this age."
-    
-    length_key = 'medium' if story_length == 'standard' else story_length
-    num_pages = config['ltr'][length_key]
-
-    return f"""
-Create a LEARN TO READ story for {character_name} (age {age}).
-Theme: {theme}
-Format: {num_pages} pages. Each page 1-2 short sentences.
-Vocabulary: CVC words and simple sight words only.
-Requirements: Repeating frames, comforting rhythm, 1 coping moment.
-{SAFETY_GUARDRAILS}
-"""
-
-# Rest of the helper functions from original file...
-def _safe_extract_title_and_gem(text: str, theme: str):
-    clean_text = text.strip()
-    if clean_text.startswith("```"):
-        clean_text = re.sub(r"^```(?:json)?", "", clean_text, flags=re.IGNORECASE)
-        clean_text = re.sub(r"```$", "", clean_text).strip()
-    try:
-        data = json.loads(clean_text)
-        title = data.get("title", f"A {theme} Adventure")
-        pages = data.get("pages", [])
-        post_story = data.get("post_story", {})
-        wisdom_gem = post_story.get("wisdom_gem") or "You are magic!"
-        if isinstance(pages, str): pages = [pages]
-        return title, wisdom_gem, "\n\n".join(pages), pages, post_story
-    except:
-        return f"A {theme} Adventure", "You are magic!", text, [text], {}
-
-def _extract_current_feeling(container):
-    if not isinstance(container, dict): return None
-    feeling = container.get("current_feeling") or container.get("currentFeeling")
-    if not isinstance(feeling, dict): return None
-    return feeling
-
-def _build_feelings_prompt(character_name: str, feeling: dict | None) -> str:
-    if not feeling: return ""
-    return f"Character is feeling {feeling.get('emotion_name')}. Show them using coping skills."
-
-story_engine = AdvancedStoryEngine()
