@@ -346,6 +346,7 @@ def create_app(config_name):
         from backend.routes.character_routes import create_character_blueprint
         from backend.routes.admin_routes import create_admin_blueprint
         from backend.routes.avatar_routes import avatar_bp
+        from backend.routes.avatar_gallery_routes import avatar_gallery_bp
         from backend.routes.health_routes import create_health_blueprint
         from backend.routes.utility_routes import create_utility_blueprint
     except ImportError:
@@ -353,6 +354,7 @@ def create_app(config_name):
         from routes.character_routes import create_character_blueprint
         from routes.admin_routes import create_admin_blueprint
         from routes.avatar_routes import avatar_bp
+        from routes.avatar_gallery_routes import avatar_gallery_bp
         from routes.health_routes import create_health_blueprint
         from routes.utility_routes import create_utility_blueprint
 
@@ -382,6 +384,7 @@ def create_app(config_name):
     app.register_blueprint(health_bp)
     app.register_blueprint(utility_bp)
     app.register_blueprint(avatar_bp, url_prefix='/avatar')
+    app.register_blueprint(avatar_gallery_bp, url_prefix='/avatar/gallery')
 
     print(f"=== All routes registered successfully ===")
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
