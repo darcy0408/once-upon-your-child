@@ -1,5 +1,5 @@
 # Core Flask Dependencies
-Flask==3.1.1
+Flask==3.1.2
 flask-cors==6.0.2
 Flask-SQLAlchemy==3.1.1
 gunicorn==21.2.0
@@ -19,12 +19,12 @@ requests==2.32.3
 Jinja2==3.1.6
 MarkupSafe==3.0.2
 click==8.2.1
-Werkzeug==3.1.4
+Werkzeug==3.1.5
 Pillow
 cryptography==46.0.3
 
 # Error Monitoring
-sentry-sdk[flask]==2.48.0
+sentry-sdk[flask]==2.49.0
 
 # Payment Processing
 stripe==14.1.0
