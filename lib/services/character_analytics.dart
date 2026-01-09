@@ -69,7 +69,10 @@ class CharacterAnalytics {
           }
         }
       });
-      await _analytics.logEvent(name: name, parameters: cleanParams);
+      await _analytics.logEvent(
+        name: name,
+        parameters: cleanParams.cast<String, Object>(),
+      );
     } catch (e) {
       debugPrint('Analytics logEvent failed ($name): ${e.toString()}');
     }

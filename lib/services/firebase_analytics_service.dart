@@ -50,7 +50,7 @@ class FirebaseAnalyticsService {
       });
       await analytics.logEvent(
         name: eventName,
-        parameters: cleanParams,
+        parameters: cleanParams.cast<String, Object>(),
       );
     } catch (e) {
       if (kDebugMode) {

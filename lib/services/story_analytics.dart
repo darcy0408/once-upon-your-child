@@ -87,7 +87,10 @@ class StoryAnalytics {
           }
         }
       });
-      await _analytics.logEvent(name: name, parameters: cleanParams);
+      await _analytics.logEvent(
+        name: name,
+        parameters: cleanParams.cast<String, Object>(),
+      );
     } catch (e) {
       // Do not let analytics failures crash the app (seen in web builds).
       debugPrint('Analytics logEvent failed ($name): ${e.toString()}');
