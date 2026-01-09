@@ -141,7 +141,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 - **SENSORY PALETTE**: {sensory_palette or 'Bright colors, soft sounds, sweet smells.'}
 - **HERO**: {character} (Strengths: {strengths or 'Brave and kind'}).
 - **SPECIAL ABILITY**: {special_ability} (MUST be used at the climax).
-- **HERO TOOL**: {f"'{spark_tool}' (MUST be used exactly once to solve a specific problem)" if spark_tool else "None"}
+- **HERO TOOL**: {("'" + spark_tool + "' (MUST be used exactly once to solve a specific problem)") if spark_tool else "None"}
 - **IMPOSSIBLE ELEMENTS**: Examples for this age: {age_impossible}
 - **COMPANIONS**: {comp_str} (MUST appear by name and help/bond with {character}).
 {mood_rules}
