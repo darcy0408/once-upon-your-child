@@ -16,8 +16,16 @@ COPY . .
 # Clean any cached builds and analyze issues
 RUN flutter clean && flutter pub get
 
-# Build the web app
-RUN flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true --dart-define=FLAVOR=production
+# Accept backend URL as a build argument
+ARG BACKEND_URL
+# If not provided, it will fallback to the default in FlavorConfig, 
+# but for production it really should be provided.
+
+# Build the web app with the custom backend URL
+RUN flutter build web --release \
+    --dart-define=FLUTTER_WEB_USE_SKIA=true \
+    --dart-define=FLAVOR=production \
+    --dart-define=CUSTOM_BACKEND_URL=$BACKEND_URL
 
 # Stage 2: Serve with nginx
 FROM nginx:alpine
