@@ -23,7 +23,8 @@ class AvatarGenerationService {
     String? seed, // For regeneration
   }) async {
     // TEMPORARY: Using mock endpoint until real image generation is configured
-    // TODO: Switch to /avatar/generate-avatar once Imagen or OpenRouter is set up
+    // Real AI generation is blocked by child safety policies on Gemini & OpenRouter
+    // TODO: Implement DiceBear avatar picker as the primary avatar creation method
     final url = Uri.parse('$baseUrl/avatar/generate-avatar-mock');
 
     final payload = {

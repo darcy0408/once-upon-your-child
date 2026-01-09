@@ -125,28 +125,42 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
     final angle = (rawAngle - startAngle + 2 * math.pi) % (2 * math.pi);
     final ringRatio = radius / maxRadius;
 
+    // Center hub: tap to confirm selection
     if (ringRatio < 0.22) {
       _pickSelection();
       return;
     }
 
+    // No selection yet - tap anywhere to select core
     if (_selectedCore == null || widget.maxDepth == 0) {
+      if (ringRatio >= 0.50 && ringRatio <= 0.90) {
+        _tapCore(angle);
+      }
+      return;
+    }
+
+    // Core selected - determine if tapping core, secondary, or tertiary
+    if (ringRatio >= 0.50 && ringRatio <= 0.90) {
+      // Tapping core ring
       _tapCore(angle);
       return;
     }
 
-    if (ringRatio < 0.50) {
-      _tapCore(angle);
-      return;
-    }
-
-    if (widget.maxDepth >= 1 && ringRatio < 0.75) {
-      _tapSecondary(angle);
-      return;
-    }
-
-    if (widget.maxDepth >= 2 && ringRatio < 0.92) {
-      _tapTertiary(angle);
+    if (_selectedSecondary == null) {
+      // Core selected but no secondary - tap secondary expansion area
+      if (widget.maxDepth >= 1 && ringRatio >= 0.10 && ringRatio < 0.48) {
+        _tapSecondary(angle);
+        return;
+      }
+    } else {
+      // Secondary selected - can tap tertiary expansion area
+      if (widget.maxDepth >= 2 && ringRatio >= 0.10 && ringRatio < 0.35) {
+        _tapTertiary(angle);
+        return;
+      } else if (ringRatio >= 0.10 && ringRatio < 0.48) {
+        _tapSecondary(angle);
+        return;
+      }
     }
   }
 
@@ -492,8 +506,8 @@ class _WheelPainter extends CustomPainter {
     final coreStart = startAngle + coreIndex * coreSectorAngle;
 
     // Secondary emotions expand as small tabs below the core wedge
-    const secondaryInner = 0.05; // Start near center
-    const secondaryOuter = 0.45; // End below core ring
+    const secondaryInner = 0.10; // Start near center
+    const secondaryOuter = 0.48; // End below core ring
 
     final secondarySectorAngle = coreSectorAngle / secondaryList.length;
 
@@ -531,8 +545,8 @@ class _WheelPainter extends CustomPainter {
     final secondaryStart = coreStart + secondaryIndex * secondarySectorAngle;
 
     // Tertiary emotions expand as tiny tabs at the very bottom
-    const tertiaryInner = 0.05;
-    const tertiaryOuter = 0.25;
+    const tertiaryInner = 0.10;
+    const tertiaryOuter = 0.35;
 
     final tertiarySectorAngle = secondarySectorAngle / tertiaryList.length;
 
@@ -647,19 +661,28 @@ class _WheelPainter extends CustomPainter {
     final innerRadius = radius * innerRatio;
     final outerRadius = radius * outerRatio;
 
-    // Draw glow if selected
+    // Draw STRONG glow if selected - make it magical!
     if (isSelected) {
-      final glowPaint = Paint()
-        ..color = color.withOpacity(0.6 * glowIntensity)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20)
+      // Outer glow layer
+      final outerGlowPaint = Paint()
+        ..color = color.withOpacity(0.5 * glowIntensity)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 35)
         ..style = PaintingStyle.fill;
-      _drawSector(canvas, center, innerRadius * 0.95, outerRadius * 1.02,
-          startAngle, sweepAngle, glowPaint);
+      _drawSector(canvas, center, innerRadius * 0.90, outerRadius * 1.08,
+          startAngle, sweepAngle, outerGlowPaint);
+
+      // Inner glow layer for extra brightness
+      final innerGlowPaint = Paint()
+        ..color = color.withOpacity(0.7 * glowIntensity)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15)
+        ..style = PaintingStyle.fill;
+      _drawSector(canvas, center, innerRadius * 0.95, outerRadius * 1.03,
+          startAngle, sweepAngle, innerGlowPaint);
     }
 
-    // Draw main segment
+    // Draw main segment - brighter when selected
     final segmentPaint = Paint()
-      ..color = color.withOpacity(0.95)
+      ..color = isSelected ? color : color.withOpacity(0.85)
       ..style = PaintingStyle.fill;
 
     _drawSector(canvas, center, innerRadius, outerRadius, startAngle, sweepAngle, segmentPaint);
@@ -688,17 +711,27 @@ class _WheelPainter extends CustomPainter {
     final innerRadius = radius * innerRatio;
     final outerRadius = radius * outerRatio;
 
+    // Strong glow for selected secondary emotions
     if (isSelected) {
-      final glowPaint = Paint()
-        ..color = color.withOpacity(0.6 * glowIntensity)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20)
+      // Outer glow
+      final outerGlowPaint = Paint()
+        ..color = color.withOpacity(0.5 * glowIntensity)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 30)
         ..style = PaintingStyle.fill;
-      _drawSector(canvas, center, innerRadius * 0.95, outerRadius * 1.02,
-          startAngle, sweepAngle, glowPaint);
+      _drawSector(canvas, center, innerRadius * 0.90, outerRadius * 1.06,
+          startAngle, sweepAngle, outerGlowPaint);
+
+      // Inner glow
+      final innerGlowPaint = Paint()
+        ..color = color.withOpacity(0.7 * glowIntensity)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12)
+        ..style = PaintingStyle.fill;
+      _drawSector(canvas, center, innerRadius * 0.95, outerRadius * 1.03,
+          startAngle, sweepAngle, innerGlowPaint);
     }
 
     final segmentPaint = Paint()
-      ..color = color.withOpacity(0.90)
+      ..color = isSelected ? color : color.withOpacity(0.85)
       ..style = PaintingStyle.fill;
 
     _drawSector(canvas, center, innerRadius, outerRadius, startAngle, sweepAngle, segmentPaint);
@@ -709,13 +742,10 @@ class _WheelPainter extends CustomPainter {
     final labelX = center.dx + labelRadius * math.cos(labelAngle);
     final labelY = center.dy + labelRadius * math.sin(labelAngle);
 
-    _drawText(canvas, label, labelX, labelY, 10.0, Colors.white,
-        fontWeight: FontWeight.bold, shadow: true);
+    _drawText(canvas, label, labelX, labelY, 9.0, Colors.white,
+        fontWeight: FontWeight.w600, shadow: true);
 
-    // Draw face with circular colored background
-    final faceRadius = (innerRadius + outerRadius) / 2;
-    _drawFaceInSegment(canvas, center, radius, startAngle, sweepAngle,
-        faceRadius / radius, emotionId, color);
+    // No face icons for secondary emotions - labels only
   }
 
   void _drawTertiarySegment(Canvas canvas, Offset center, double radius, double startAngle,
@@ -725,17 +755,27 @@ class _WheelPainter extends CustomPainter {
     final innerRadius = radius * innerRatio;
     final outerRadius = radius * outerRatio;
 
+    // Strong glow for selected tertiary emotions
     if (isSelected) {
-      final glowPaint = Paint()
-        ..color = color.withOpacity(0.6 * glowIntensity)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20)
+      // Outer glow
+      final outerGlowPaint = Paint()
+        ..color = color.withOpacity(0.5 * glowIntensity)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 25)
         ..style = PaintingStyle.fill;
-      _drawSector(canvas, center, innerRadius * 0.95, outerRadius * 1.02,
-          startAngle, sweepAngle, glowPaint);
+      _drawSector(canvas, center, innerRadius * 0.90, outerRadius * 1.06,
+          startAngle, sweepAngle, outerGlowPaint);
+
+      // Inner glow
+      final innerGlowPaint = Paint()
+        ..color = color.withOpacity(0.7 * glowIntensity)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10)
+        ..style = PaintingStyle.fill;
+      _drawSector(canvas, center, innerRadius * 0.95, outerRadius * 1.03,
+          startAngle, sweepAngle, innerGlowPaint);
     }
 
     final segmentPaint = Paint()
-      ..color = color.withOpacity(0.85)
+      ..color = isSelected ? color : color.withOpacity(0.80)
       ..style = PaintingStyle.fill;
 
     _drawSector(canvas, center, innerRadius, outerRadius, startAngle, sweepAngle, segmentPaint);
@@ -746,13 +786,10 @@ class _WheelPainter extends CustomPainter {
     final labelX = center.dx + labelRadius * math.cos(labelAngle);
     final labelY = center.dy + labelRadius * math.sin(labelAngle);
 
-    _drawText(canvas, label, labelX, labelY, 9.0, Colors.white,
-        fontWeight: FontWeight.bold, shadow: true);
+    _drawText(canvas, label, labelX, labelY, 8.0, Colors.white,
+        fontWeight: FontWeight.w600, shadow: true);
 
-    // Draw face with circular colored background
-    final faceRadius = (innerRadius + outerRadius) / 2;
-    _drawFaceInSegment(canvas, center, radius, startAngle, sweepAngle,
-        faceRadius / radius, label, color);
+    // No face icons for tertiary emotions - labels only
   }
 
   void _drawFaceInSegment(Canvas canvas, Offset center, double radius, double startAngle,
@@ -765,20 +802,27 @@ class _WheelPainter extends CustomPainter {
       center.dy + faceRadius * math.sin(faceAngle),
     );
 
-    // Face size based on segment width
+    // Face size based on segment width - slightly larger
     final arcWidth = faceRadius * sweepAngle;
-    final faceDiameter = (arcWidth * 0.6).clamp(radius * 0.08, radius * 0.15);
+    final faceDiameter = (arcWidth * 0.7).clamp(radius * 0.09, radius * 0.16); // Increased
+
+    // Draw subtle glow for better integration
+    final glowPaint = Paint()
+      ..color = bgColor.withOpacity(0.3)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(faceCenter, faceDiameter * 1.3, glowPaint);
 
     // Draw circular background matching segment color
     final bgPaint = Paint()
-      ..color = bgColor
+      ..color = bgColor.withOpacity(0.9)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(faceCenter, faceDiameter, bgPaint);
 
-    // Draw face image
+    // Draw face image - larger to be more visible
     final faceImage = _imageForName(emotionName);
     if (faceImage != null) {
-      _drawImageFace(canvas, faceImage, faceCenter, faceDiameter * 0.85);
+      _drawImageFace(canvas, faceImage, faceCenter, faceDiameter * 0.92); // Increased from 0.85
     }
   }
 
@@ -794,9 +838,9 @@ class _WheelPainter extends CustomPainter {
       center.dy + tipRadius * math.sin(faceAngle),
     );
 
-    // Face size based on segment width - larger and more visible
+    // Face size based on segment width - LARGER and more visible
     final arcWidth = tipRadius * sweepAngle;
-    final faceRadius = (arcWidth * 0.9).clamp(radius * 0.025, radius * 0.065);
+    final faceRadius = (arcWidth * 1.1).clamp(radius * 0.035, radius * 0.080); // Increased from 0.025-0.065
 
     final faceImage = _imageForName(emotionName);
     if (faceImage != null) {
@@ -805,7 +849,7 @@ class _WheelPainter extends CustomPainter {
   }
 
   void _drawCenterHub(Canvas canvas, Offset center, double radius) {
-    final hubRadius = radius * 0.15;
+    final hubRadius = radius * 0.18; // Slightly larger hub
 
     if (selectedCore == null) {
       // Empty state - subtle background
@@ -847,35 +891,36 @@ class _WheelPainter extends CustomPainter {
       mouthType = selectedSecondary!.mouthType;
     }
 
-    // Pulsing glow effect
+    // MAGICAL pulsing glow effect - stronger and more visible
     final outerGlow = Paint()
-      ..color = baseColor.withOpacity(0.3 * glowIntensity)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
-    canvas.drawCircle(center, hubRadius * 1.3, outerGlow);
+      ..color = baseColor.withOpacity(0.4 * glowIntensity)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 30);
+    canvas.drawCircle(center, hubRadius * 1.5, outerGlow);
 
     final innerGlow = Paint()
-      ..color = baseColor.withOpacity(0.5 * glowIntensity)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
-    canvas.drawCircle(center, hubRadius * 1.1, innerGlow);
+      ..color = baseColor.withOpacity(0.6 * glowIntensity)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15);
+    canvas.drawCircle(center, hubRadius * 1.2, innerGlow);
 
     // Colored background circle (not white!)
     final bgPaint = Paint()
-      ..color = baseColor.withOpacity(0.9)
+      ..color = baseColor.withOpacity(0.95)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, hubRadius, bgPaint);
 
-    // LARGE face icon
-    final faceRadius = radius * 0.08;
+    // LARGE face icon positioned higher to avoid overlap with text
+    final faceRadius = radius * 0.09;
+    final faceCenter = Offset(center.dx, center.dy - hubRadius * 0.15); // Move face up
     final faceImage = _imageForName(name);
 
     if (faceImage != null) {
-      _drawImageFace(canvas, faceImage, center, faceRadius);
+      _drawImageFace(canvas, faceImage, faceCenter, faceRadius);
     } else {
       // Fallback to procedural drawing
       final featureColor = _contrastColor(baseColor);
       _drawFace(
         canvas,
-        center,
+        faceCenter,
         faceRadius * 0.85,
         Colors.white.withOpacity(0.9),
         featureColor,
@@ -884,14 +929,14 @@ class _WheelPainter extends CustomPainter {
       );
     }
 
-    // Text label below face
-    final textY = center.dy + hubRadius * 1.2;
+    // Text label below face - positioned lower to avoid overlap
+    final textY = center.dy + hubRadius * 1.4; // Moved further down
     _drawText(
       canvas,
       name,
       center.dx,
       textY,
-      12,
+      13, // Slightly larger text
       Colors.white,
       fontWeight: FontWeight.bold,
       shadow: true,
@@ -910,16 +955,19 @@ class _WheelPainter extends CustomPainter {
   }
 
   void _drawImageFace(Canvas canvas, ui.Image image, Offset center, double radius) {
-    // Clip to circle to hide white square backgrounds from PNG files
-    canvas.save();
-    final circlePath = Path()..addOval(Rect.fromCircle(center: center, radius: radius));
-    canvas.clipPath(circlePath);
-
-    final size = radius * 2;
+    // Draw the face image without aggressive clipping
+    // Use a slightly larger clipping area to preserve face details
+    final size = radius * 2.2; // Increased from 2.0 to show more of the face
     final src = Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
     final dst = Rect.fromCenter(center: center, width: size, height: size);
-    canvas.drawImageRect(image, src, dst, Paint());
 
+    // Use a softer clipping approach - only clip extreme edges
+    canvas.save();
+    final clipRadius = radius * 1.15; // Larger clip radius to preserve face details
+    final circlePath = Path()..addOval(Rect.fromCircle(center: center, radius: clipRadius));
+    canvas.clipPath(circlePath);
+
+    canvas.drawImageRect(image, src, dst, Paint());
     canvas.restore();
   }
 

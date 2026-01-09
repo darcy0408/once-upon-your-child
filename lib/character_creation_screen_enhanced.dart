@@ -21,6 +21,7 @@ import 'services/character_template_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/loading_overlay.dart';
 import 'screens/avatar_picker_screen.dart';
+import 'screens/midjourney_avatar_picker_screen.dart';
 import 'services/avatar_service.dart';
 
 class CharacterCreationScreenEnhanced extends StatefulWidget {
@@ -69,6 +70,9 @@ class _CharacterCreationScreenEnhancedState
 
   // New avataaars system (DiceBear)
   String? _avatarParams; // JSON string of avataaars customization
+
+  // Midjourney custom avatars
+  String? _midjourneyAvatarId; // Selected Midjourney avatar ID
 
   final Map<String, double> _personalitySliderValues =
       CharacterTraitsData.defaultSliderValues();
@@ -390,6 +394,38 @@ class _CharacterCreationScreenEnhancedState
     }
   }
 
+  Future<void> _openMidjourneyPicker() async {
+    try {
+      print('[Character Creation] Opening Midjourney avatar picker...');
+      final result = await Navigator.push<String>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MidjourneyAvatarPickerScreen(
+            initialSelectedAvatar: _midjourneyAvatarId,
+          ),
+        ),
+      );
+
+      print('[Character Creation] Returned from Midjourney picker with result: $result');
+      if (result != null) {
+        setState(() {
+          _midjourneyAvatarId = result;
+        });
+        print('[Character Creation] Midjourney avatar saved: $_midjourneyAvatarId');
+      }
+    } catch (e) {
+      print('[Character Creation] Error in Midjourney picker: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to open Midjourney picker: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildAvatarSection() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -420,26 +456,45 @@ class _CharacterCreationScreenEnhancedState
             size: 140,
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               ElevatedButton.icon(
                 onPressed: _openAvatarBuilder,
-                icon: const Icon(Icons.brush),
-                label: const Text('AI Avatar'),
+                icon: const Icon(Icons.brush, size: 18),
+                label: const Text('AI Avatar', style: TextStyle(fontSize: 12)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
                   foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
               ),
-              const SizedBox(width: 12),
               ElevatedButton.icon(
                 onPressed: _openAvataarsPicker,
-                icon: const Icon(Icons.person),
-                label: Text(_avatarParams != null ? 'Edit Avataaars' : 'Customize Avataaars'),
+                icon: const Icon(Icons.person, size: 18),
+                label: Text(
+                  _avatarParams != null ? 'Edit Avataaars' : 'Avataaars',
+                  style: const TextStyle(fontSize: 12),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.teal,
                   foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: _openMidjourneyPicker,
+                icon: const Icon(Icons.collections, size: 18),
+                label: Text(
+                  _midjourneyAvatarId != null ? 'Change Avatar' : 'Gallery',
+                  style: const TextStyle(fontSize: 12),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
               ),
             ],
