@@ -212,3 +212,63 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 - **IMPOSSIBLE ELEMENTS**: Examples for this age: {age_impossible}
 - **COMPANIONS**: {companion_context} (Must affect the story).
 {mood_rules}
+
+**WRITING** ({word_count[0]}-{word_count[1]} words): {age_config['sentence_length']}, {age_config['vocabulary']}, {age_config['stakes']}
+{f"**VOCABULARY FOR AGE {age}**: {age_config.get('vocabulary_avoid', '')}" if age <= 7 else ""}
+
+**OUTPUT TYPE**: REQUIRED: output_type='CHOICE'. This is a Pick-A-Path adventure - every segment MUST present exactly {choice_count} distinct, meaningful choices.
+
+**CRITICAL RULES**:
+- **AGE {age}**: Keep vocabulary and complexity appropriate for this age.
+- **POV**: ALWAYS use "you" (second-person). The hero's name is "{child_name}".
+- **WORD COUNT REQUIREMENT**: Your content MUST be between {word_count[0]} and {word_count[1]} words.
+- **Companion Contract**: REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Companion MUST appear by name.
+- **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.
+- **Safety**: No violence/harm. Therapeutic tone.
+
+**Opening Segment 1/{segment_range[1]}**:
+1. Begin with sensory details - natural storybook opening.
+2. Introduce gentle challenge or mystery.
+3. Establish magical surprise/motif.
+4. End with {choice_count} distinct, exciting choices.
+
+**JSON Output**:
+```json
+{{
+  "title": "Adventure Title",
+  "output_type": "CHOICE",
+  "segment_number": 1,
+  "stage_label": "Wake Up!",
+  "content": "Story content ({word_count[0]}-{word_count[1]} words)",
+  "word_count": {word_count[0] + 50},
+  "image_description": "Scene description",
+  "companion_beats": [{{"type": "dialogue|action|bond", "text": "..."}}],
+  "inventory": [],
+  "inventory_references": [],
+  "story_state": {{
+    "location": "Where",
+    "goal": "Goal",
+    "key_clues": [],
+    "companion_status": "Status"
+  }},
+  "choices": [
+{choices_json}
+  ],
+  "is_ending": false
+}}
+```
+"""
+        return prompt
+
+    @staticmethod
+    def _build_companion_context(companions: Optional[List[Dict]]) -> str:
+        """Build companion context string from companion list."""
+        if not companions:
+            return "solo on this adventure"
+        companion_descriptions = []
+        for comp in companions[:2]:
+            if 'species' in comp:
+                companion_descriptions.append(f"{comp.get('name', 'companion')} the {comp.get('species', 'pet')} [ANIMAL]")
+            else:
+                companion_descriptions.append(f"{comp.get('name', 'friend')} [SPEAKING]")
+        return "joined by " + " and ".join(companion_descriptions)

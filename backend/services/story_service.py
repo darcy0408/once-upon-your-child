@@ -163,3 +163,59 @@ Strictly return valid JSON with this structure:
   ]
 }}
 """
+
+# Helper functions for story_tasks.py
+def _safe_extract_title_and_gem(text: str, theme: str):
+    """Extract title, wisdom gem, and pages from LLM JSON response."""
+    clean_text = text.strip()
+    if clean_text.startswith("```"):
+        clean_text = re.sub(r"^```(?:json)?", "", clean_text, flags=re.IGNORECASE)
+        clean_text = re.sub(r"```$", "", clean_text).strip()
+    try:
+        data = json.loads(clean_text)
+        title = data.get("title", f"A {theme} Adventure")
+        pages = data.get("pages", [])
+        post_story = data.get("post_story", {})
+        wisdom_gem = post_story.get("wisdom_gem") or "You are magic!"
+        if isinstance(pages, str):
+            pages = [pages]
+        return title, wisdom_gem, "\n\n".join(pages), pages, post_story
+    except Exception:
+        return f"A {theme} Adventure", "You are magic!", text, [text], {}
+
+
+def _build_learning_to_read_prompt(character_name, theme, age, character_details, companion=None, extra_characters=None, story_length="standard"):
+    """Build prompt for Learning to Read mode stories."""
+    band = _get_age_band(age)
+    config = AGE_CONSTRAINTS[band]
+    if 'ltr' not in config:
+        return "Mode unavailable for this age."
+
+    length_key = 'medium' if story_length == 'standard' else story_length
+    num_pages = config['ltr'][length_key]
+
+    return f"""
+Create a LEARN TO READ story for {character_name} (age {age}).
+Theme: {theme}
+Format: {num_pages} pages. Each page 1-2 short sentences.
+Vocabulary: CVC words and simple sight words only.
+Requirements: Repeating frames, comforting rhythm, 1 coping moment.
+{SAFETY_GUARDRAILS}
+"""
+
+
+def _build_rhyme_time_prompt(character_name, theme, age, character_details, companion_pets=None, companion_characters=None, extra_characters=None, story_length="standard"):
+    """Build prompt for Rhyme Time mode stories."""
+    band = _get_age_band(age)
+    config = AGE_CONSTRAINTS[band]
+    length_key = 'medium' if story_length == 'standard' else story_length
+    word_range = config['rhyme'][length_key]
+
+    return f"""
+Create a RHYME TIME story for {character_name} (age {age}).
+Theme: {theme}
+Word Count: {word_range[0]}-{word_range[1]} words.
+Scheme: Consistent AABB or ABCB.
+Requirements: Include a magical surprise and a coping moment. {character_name} is the hero.
+{SAFETY_GUARDRAILS}
+"""
