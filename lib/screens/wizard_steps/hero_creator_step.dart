@@ -9,6 +9,7 @@ import '../wizard_story_screen.dart';
 import '../../services/api_service_manager.dart';
 import '../../models/generated_avatar.dart';
 import '../../widgets/avatar_creator_overlay.dart';
+import '../../widgets/avatar_gallery_selector.dart';
 import '../../services/avatar_generation_state.dart';
 
 /// Step 1: The Hero Creator
@@ -209,29 +210,18 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   }
 
   void _showAvatarCreator() {
-    // Validate that character name is not empty
-    // If name is empty, set a placeholder so child can see magic immediately
-    if (widget.wizardData.characterName.trim().isEmpty) {
-      setState(() {
-        _nameController.text = 'Hero';
-        widget.wizardData.characterName = 'Hero';
-      });
-    }
-
-    debugPrint('🎨 Opening avatar creator for ${widget.wizardData.characterName}');
+    debugPrint('🎨 Opening avatar gallery for ${widget.wizardData.characterName}');
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AvatarCreatorOverlay(
-        characterName: widget.wizardData.characterName,
-        age: widget.wizardData.characterAge,
+      builder: (context) => AvatarGallerySelector(
         onCancel: () {
-          debugPrint('❌ Avatar creation cancelled');
+          debugPrint('❌ Avatar selection cancelled');
           Navigator.pop(context);
         },
-        onAvatarCreated: (avatar) {
-          debugPrint('✅ Avatar created and saved to wizard data');
+        onAvatarSelected: (avatar) {
+          debugPrint('✅ Avatar selected from gallery');
           setState(() {
             _generatedAvatar = avatar;
             widget.wizardData.generatedAvatar = avatar; // Save to wizard data
@@ -241,7 +231,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
           // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Avatar created! It will appear in your stories!'),
+              content: Text('Avatar selected! It will appear in your stories!'),
               backgroundColor: Color(0xFF4CAF50),
               duration: Duration(seconds: 2),
             ),
