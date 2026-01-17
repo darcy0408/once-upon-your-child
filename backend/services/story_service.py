@@ -4,6 +4,7 @@ import json
 import time
 from google.api_core import exceptions as google_exceptions
 from .avatar_to_prompt_helper import AvatarToPromptHelper
+from ..utils.validators import validate_age, validate_story_length
 
 # Master constraint table from Story Weaver Coverage v2
 AGE_CONSTRAINTS = {
@@ -86,6 +87,10 @@ class AdvancedStoryEngine:
         story_duration: str | None = None,
         age: int = 5,
     ):
+        # Validation
+        age = validate_age(age)
+        story_length = validate_story_length(story_length)
+
         band = _get_age_band(age)
         config = AGE_CONSTRAINTS[band]
         length_key = 'medium' if story_length == 'standard' else story_length

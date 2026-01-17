@@ -11,6 +11,12 @@ from ..models.user import User
 from ..models import Character
 from ..database import db
 from ..services.interactive_adventure_service import InteractiveAdventureService
+from ..utils.validators import (
+    validate_age,
+    validate_num_images,
+    validate_image_size,
+    sanitize_text,
+)
 
 
 def create_story_blueprint(
@@ -501,12 +507,15 @@ def create_story_blueprint(
         """Generate illustrations for a story scene"""
         try:
             data = request.get_json(silent=True) or {}
-            scene_description = data.get("scene_description", "")
-            character_name = data.get("character_name", "the hero")
-            style = data.get("style", "children's book illustration")
-            num_images = min(int(data.get("num_images", 1)), 4)  # Max 4 images
-            age = int(data.get("age", 7))
-            therapeutic_focus = data.get("therapeutic_focus")
+            scene_description = sanitize_text(data.get("scene_description", ""), max_length=2000, allow_newlines=True)
+            character_name = sanitize_text(data.get("character_name", "the hero"), max_length=100)
+            style = sanitize_text(data.get("style", "children's book illustration"), max_length=200)
+            num_images = validate_num_images(data.get("num_images", 1), max_allowed=4)
+            try:
+                age = validate_age(data.get("age", 7))
+            except ValueError:
+                age = 7  # Default to 7 if invalid
+            therapeutic_focus = sanitize_text(data.get("therapeutic_focus", ""), max_length=500) or None
             user_api_key = data.get("user_api_key")  # BYOK support
 
             # Get character appearance/avatar details
@@ -588,7 +597,14 @@ def create_story_blueprint(
                             img_resp = requests.get(image_url, timeout=10)
                             if img_resp.status_code == 200:
                                 image_bytes = img_resp.content
-                                
+
+                                # Validate image size before processing
+                                try:
+                                    validate_image_size(image_bytes)
+                                except ValueError as size_err:
+                                    logger.warning(f"Image size validation failed: {size_err}")
+                                    continue  # Skip this image
+
                                 # Resize downloaded image to max 1024x1024
                                 try:
                                     with Image.open(io.BytesIO(image_bytes)) as img:
@@ -653,22 +669,25 @@ def create_story_blueprint(
         """Generate coloring book pages for story scene(s)"""
         try:
             data = request.get_json(silent=True) or {}
-            
+
             # Support both singular 'scene_description' and plural 'scenes'
-            scene_description = data.get("scene_description", "")
+            scene_description = sanitize_text(data.get("scene_description", ""), max_length=2000, allow_newlines=True)
             scenes = data.get("scenes", [])
-            
+
             # If scenes list is provided, use it, otherwise fall back to scene_description
             if not scenes and scene_description:
                 scenes = [{"description": scene_description}]
-            
+
             if not scenes:
                 return jsonify({"error": "Scene description or scenes list is required"}), 400
 
-            character_name = data.get("character_name", "the hero")
-            num_images_per_scene = min(int(data.get("num_images", 1)), 3)
-            age = int(data.get("age", 7))
-            therapeutic_focus = data.get("therapeutic_focus")
+            character_name = sanitize_text(data.get("character_name", "the hero"), max_length=100)
+            num_images_per_scene = validate_num_images(data.get("num_images", 1), max_allowed=3)
+            try:
+                age = validate_age(data.get("age", 7))
+            except ValueError:
+                age = 7  # Default to 7 if invalid
+            therapeutic_focus = sanitize_text(data.get("therapeutic_focus", ""), max_length=500) or None
             user_api_key = data.get("user_api_key")
 
             # Get character appearance/avatar details
@@ -705,12 +724,12 @@ def create_story_blueprint(
             for scene_item in scenes:
                 # Handle both string and dict in scenes list
                 if isinstance(scene_item, str):
-                    current_desc = scene_item
+                    current_desc = sanitize_text(scene_item, max_length=2000, allow_newlines=True)
                     scene_title = "Coloring Page"
                 else:
-                    current_desc = scene_item.get("description", "")
-                    scene_title = scene_item.get("title", "Coloring Page")
-                
+                    current_desc = sanitize_text(scene_item.get("description", ""), max_length=2000, allow_newlines=True)
+                    scene_title = sanitize_text(scene_item.get("title", "Coloring Page"), max_length=100)
+
                 if not current_desc:
                     continue
 

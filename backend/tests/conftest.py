@@ -3,6 +3,8 @@ import sys
 
 import pytest
 
+# MUST set FLASK_ENV before any backend imports - this overrides .env file
+os.environ["FLASK_ENV"] = "testing"
 os.environ.setdefault("SKIP_DEFAULT_APP_INIT", "1")
 os.environ.setdefault("FLASK_CONFIG", "testing")
 

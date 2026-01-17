@@ -4,6 +4,7 @@ import json
 
 from ..repositories import character_repository
 from ..models.character import Character
+from ..utils.validators import validate_age, sanitize_text
 
 PERSONALITY_SLIDER_DEFINITIONS = {
     "organization_planning": {"label": "Organization & Planning", "left_label": "Tidy Planner", "right_label": "Messy Freestyle"},
@@ -44,7 +45,7 @@ def _sanitize_personality_sliders(raw_value):
 def _as_list(v):
     """Accept list, JSON string, comma string, or None; return list[str]."""
     if isinstance(v, list):
-        return [str(x) for x in v]
+        return [sanitize_text(str(x)) for x in v] # Sanitize items
     if v in (None, "", []):
         return []
     if isinstance(v, str):
@@ -54,11 +55,31 @@ def _as_list(v):
         if s.startswith("[") and s.endswith("]"):
             try:
                 parsed = json.loads(s)
-                return [str(x) for x in parsed] if isinstance(parsed, list) else [s]
+                return [sanitize_text(str(x)) for x in parsed] if isinstance(parsed, list) else [sanitize_text(s)]
             except Exception:
                 pass
-        return [part.strip() for part in s.split(",") if part.strip()]
-    return [str(v)]
+        return [sanitize_text(part) for part in s.split(",") if part.strip()]
+    return [sanitize_text(str(v))]
+
+
+def _sanitize_pets(pets_data):
+    """Sanitize pets list - each pet is a dict with string fields."""
+    if not pets_data or not isinstance(pets_data, list):
+        return []
+    sanitized_pets = []
+    for pet in pets_data:
+        if not isinstance(pet, dict):
+            continue
+        sanitized_pet = {}
+        for key, value in pet.items():
+            if isinstance(value, str):
+                sanitized_pet[key] = sanitize_text(value, max_length=200)
+            elif isinstance(value, (int, float, bool)):
+                sanitized_pet[key] = value
+            # Skip other types for security
+        if sanitized_pet:
+            sanitized_pets.append(sanitized_pet)
+    return sanitized_pets
 
 def create_character(data: dict):
     print(f"\n[DEBUG create_character] Received data: {data}")
@@ -68,24 +89,25 @@ def create_character(data: dict):
     if missing:
         return {"error": f"Missing required field(s): {', '.join(missing)}"}, 400
     try:
-        age = int(data.get("age"))
-    except (ValueError, TypeError):
-        return {"error": "'age' must be an integer"}, 400
+        # Validate Age
+        age = validate_age(data.get("age"))
+    except ValueError as e:
+        return {"error": str(e)}, 400
 
     new_character = Character()
     new_character.id = str(uuid.uuid4())
-    new_character.name = str(data.get("name")).strip()
+    new_character.name = sanitize_text(data.get("name"))
     new_character.age = age
-    new_character.gender = data.get("gender")
-    new_character.role = data.get("role")
-    new_character.magic_type = data.get("magic_type")
-    new_character.challenge = data.get("challenge")
-    new_character.character_type = data.get("character_type", "Everyday Kid")
-    new_character.superhero_name = data.get("superhero_name")
-    new_character.mission = data.get("mission")
-    new_character.hair = data.get("hair")
-    new_character.eyes = data.get("eyes")
-    new_character.outfit = data.get("outfit")
+    new_character.gender = sanitize_text(data.get("gender"))
+    new_character.role = sanitize_text(data.get("role"))
+    new_character.magic_type = sanitize_text(data.get("magic_type"))
+    new_character.challenge = sanitize_text(data.get("challenge"))
+    new_character.character_type = sanitize_text(data.get("character_type", "Everyday Kid"))
+    new_character.superhero_name = sanitize_text(data.get("superhero_name"))
+    new_character.mission = sanitize_text(data.get("mission"))
+    new_character.hair = sanitize_text(data.get("hair"))
+    new_character.eyes = sanitize_text(data.get("eyes"))
+    new_character.outfit = sanitize_text(data.get("outfit"))
     new_character.personality_traits = _as_list(data.get("traits", []))
     new_character.personality_sliders = _sanitize_personality_sliders(data.get("personality_sliders"))
     new_character.likes = _as_list(data.get("likes", []))
@@ -93,12 +115,13 @@ def create_character(data: dict):
     new_character.fears = _as_list(data.get("fears", []))
     new_character.strengths = _as_list(data.get("strengths", []))
     new_character.goals = _as_list(data.get("goals", []))
-    new_character.pets = data.get("pets", [])
-    new_character.comfort_item = data.get("comfort_item")
-    new_character.user_id = data.get("user_id")
+    new_character.pets = _sanitize_pets(data.get("pets", []))
+    
+    new_character.comfort_item = sanitize_text(data.get("comfort_item"))
+    new_character.user_id = data.get("user_id") # UUID, sanitizing might break if strictly formatted strings but sanitize_text is safe
 
     # Avataaars customization (DiceBear)
-    new_character.avatar_params = data.get("avatar_params")
+    new_character.avatar_params = data.get("avatar_params") # JSON/Dict
 
     print(f"[DEBUG create_character] Setting pets to: {new_character.pets}")
 
@@ -132,20 +155,20 @@ def update_character(char_id: str, data: dict):
     print(f"[DEBUG update_character] Current pets before update: {char.pets}")
 
     if "name" in data:
-        char.name = (data["name"] or "").strip() or char.name
+        char.name = sanitize_text(data["name"]) or char.name
     if "age" in data:
         try:
-            char.age = int(data["age"])
-        except (TypeError, ValueError):
-            return {"error": "'age' must be an integer"}, 400
+            char.age = validate_age(data["age"])
+        except ValueError as e:
+            return {"error": str(e)}, 400
     if "gender" in data:
-        char.gender = data["gender"]
+        char.gender = sanitize_text(data["gender"])
     if "role" in data:
-        char.role = data["role"]
+        char.role = sanitize_text(data["role"])
     if "magic_type" in data:
-        char.magic_type = data["magic_type"]
+        char.magic_type = sanitize_text(data["magic_type"])
     if "challenge" in data:
-        char.challenge = data["challenge"]
+        char.challenge = sanitize_text(data["challenge"])
     if "likes" in data:
         char.likes = _as_list(data["likes"])
     if "dislikes" in data:
@@ -165,28 +188,25 @@ def update_character(char_id: str, data: dict):
     if "friends" in data:
         char.friends = _as_list(data["friends"])
     if "pets" in data:
-        char.pets = data.get("pets", [])  # Pets are already list of dicts, don't use _as_list
+        char.pets = _sanitize_pets(data.get("pets", []))
     if "comfort_item" in data:
-        char.comfort_item = data["comfort_item"]
+        char.comfort_item = sanitize_text(data["comfort_item"])
     if "character_type" in data:
-        char.character_type = data["character_type"]
+        char.character_type = sanitize_text(data["character_type"])
     if "superhero_name" in data:
-        char.superhero_name = data["superhero_name"]
+        char.superhero_name = sanitize_text(data["superhero_name"])
     if "mission" in data:
-        char.mission = data["mission"]
+        char.mission = sanitize_text(data["mission"])
     if "hair" in data:
-        char.hair = data["hair"]
+        char.hair = sanitize_text(data["hair"])
     if "eyes" in data:
-        char.eyes = data["eyes"]
+        char.eyes = sanitize_text(data["eyes"])
     if "outfit" in data:
-        char.outfit = data["outfit"]
+        char.outfit = sanitize_text(data["outfit"])
     if "strengths" in data:
         char.strengths = _as_list(data["strengths"])
     if "goals" in data:
         char.goals = _as_list(data["goals"])
-    if "pets" in data:
-        char.pets = data["pets"] if isinstance(data["pets"], list) else []
-        print(f"[DEBUG update_character] Set pets to: {char.pets}")
 
     print(f"[DEBUG update_character] Final pets before save: {char.pets}")
 

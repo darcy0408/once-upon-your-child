@@ -7,7 +7,11 @@ from dotenv import load_dotenv
 dotenv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
 if os.path.exists(dotenv_path):
     print(f"Loading .env from: {dotenv_path}")
+    # Preserve FLASK_ENV if already set (e.g., by pytest conftest)
+    preserved_flask_env = os.environ.get('FLASK_ENV')
     load_dotenv(dotenv_path=dotenv_path, override=True)
+    if preserved_flask_env:
+        os.environ['FLASK_ENV'] = preserved_flask_env
     # SECURITY: Don't log API keys, even partially masked
     print(f"GEMINI_API_KEY loaded: {bool(os.environ.get('GEMINI_API_KEY'))}")
 else:

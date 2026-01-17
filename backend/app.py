@@ -74,6 +74,8 @@ except ImportError:
 from flask_jwt_extended import JWTManager
 from flask_limiter import Limiter
 from flask_caching import Cache
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
 
 # Global image generator instance
 image_generator = None
@@ -88,6 +90,21 @@ def create_app(config_name):
     if config_name not in config_by_name:
         print(f"WARNING: Config '{config_name}' not found, using 'production'")
         config_name = 'production'
+
+    # Initialize Sentry (Priority 3)
+    sentry_dsn = os.getenv('SENTRY_DSN')
+    if sentry_dsn and config_name != 'testing':
+        print(f"=== Initializing Sentry (Env: {config_name}) ===")
+        try:
+            sentry_sdk.init(
+                dsn=sentry_dsn,
+                integrations=[FlaskIntegration()],
+                # sample 10% in prod, 100% in dev
+                traces_sample_rate=0.1 if config_name == 'production' else 1.0,
+                environment=config_name
+            )
+        except Exception as e:
+            print(f"WARNING: Sentry initialization failed: {e}")
 
     if config_name == 'testing':
         app.config.from_object(config_by_name['testing'])
@@ -134,6 +151,8 @@ def create_app(config_name):
         default_limits=["200 per day", "50 per hour"],
         storage_uri=rate_limit_storage
     )
+    # Store limiter on app to prevent garbage collection when passed to blueprints
+    app.limiter = limiter
 
     # Caching setup
     cache = Cache(app, config={'CACHE_TYPE': 'simple'})
@@ -183,19 +202,19 @@ def create_app(config_name):
 
         return jsonify(response_data), 429
 
-    # Logging setup
+    # Logging setup for story engine (use different name to avoid shadowing global logger)
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
-    logger = logging.getLogger("story_engine")
+    story_logger = logging.getLogger("story_engine")
 
-    log_error = make_log_error(logger)
-    filter_story_content = make_filter_story_content(logger)
+    log_error = make_log_error(story_logger)
+    filter_story_content = make_filter_story_content(story_logger)
 
-    add_request_id = make_add_request_id(logger)
-    log_response = make_log_response(logger, log_error)
-    handle_error = make_handle_error(logger, is_production, log_error)
+    add_request_id = make_add_request_id(story_logger)
+    log_response = make_log_response(story_logger, log_error)
+    handle_error = make_handle_error(story_logger, is_production, log_error)
 
     app.before_request(add_request_id)
     app.after_request(log_response)
@@ -334,12 +353,12 @@ def create_app(config_name):
             )
 
     try:
-        from backend.analytics_routes import analytics_bp
+        from backend.analytics_routes import create_analytics_blueprint
         from backend.routes.achievement_routes import achievement_bp
         from backend.routes.subscription_routes import subscription_routes as subscription_bp
         from backend.routes.user_routes import user_routes
     except ImportError:
-        from analytics_routes import analytics_bp
+        from analytics_routes import create_analytics_blueprint
         from routes.achievement_routes import achievement_bp
         from routes.subscription_routes import subscription_routes as subscription_bp
         from routes.user_routes import user_routes
@@ -349,6 +368,7 @@ def create_app(config_name):
         app.register_blueprint(stripe_routes, url_prefix='/api/stripe')
     if webhook_routes:
         app.register_blueprint(webhook_routes, url_prefix='/api')
+    analytics_bp = create_analytics_blueprint(limiter=limiter)
     app.register_blueprint(analytics_bp)
     app.register_blueprint(achievement_bp, url_prefix='/achievement')
     app.register_blueprint(subscription_bp)
@@ -387,7 +407,7 @@ def create_app(config_name):
         logger=logger,
     )
     character_bp = create_character_blueprint(limiter=limiter, logger=logger)
-    admin_bp = create_admin_blueprint(logger=logger)
+    admin_bp = create_admin_blueprint(logger=logger, limiter=limiter)
     health_bp = create_health_blueprint(logger=logger, api_key=api_key, app_version="1.0.2", gemini_model=GEMINI_MODEL)
     utility_bp = create_utility_blueprint(logger=logger, log_error=log_error)
 
@@ -398,6 +418,22 @@ def create_app(config_name):
     app.register_blueprint(utility_bp)
     app.register_blueprint(avatar_bp, url_prefix='/avatar')
     app.register_blueprint(avatar_gallery_bp, url_prefix='/avatar/gallery')
+
+    @app.errorhandler(500)
+    def internal_server_error(e):
+        logger.error(f"Internal Server Error: {str(e)}")
+        # In production, do not return the exception details
+        if is_production():
+            return jsonify({
+                "error": "Internal Server Error",
+                "message": "An unexpected error occurred. Please contact support."
+            }), 500
+        # In dev/test, typically okay to show more, or sanitize too.
+        # Let's sanitize to be safe as per requirement "Ensure no stack traces... in production"
+        return jsonify({
+            "error": "Internal Server Error", 
+            "message": str(e) # Only show message in dev
+        }), 500
 
     print(f"=== All routes registered successfully ===")
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")

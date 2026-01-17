@@ -6,12 +6,21 @@ from ..database import db
 from ..middleware.auth import require_auth, require_admin
 
 
-def create_admin_blueprint(logger):
+def create_admin_blueprint(logger, limiter=None):
     admin_bp = Blueprint("admin", __name__)
+
+    # Rate limit decorator - only apply if limiter is provided
+    def rate_limit(limit_string):
+        def decorator(f):
+            if limiter:
+                return limiter.limit(limit_string)(f)
+            return f
+        return decorator
 
     @admin_bp.route("/admin/run-db-optimization", methods=["POST"])
     @require_auth
     @require_admin
+    @rate_limit("5 per minute")
     def run_db_optimization():
         """Run database optimization indexes (one-time setup)"""
         try:
@@ -59,6 +68,7 @@ def create_admin_blueprint(logger):
     @admin_bp.route("/admin/add-missing-columns", methods=["POST"])
     @require_auth
     @require_admin
+    @rate_limit("5 per minute")
     def add_missing_columns():
         """Add missing columns to database (migration fix)"""
         try:

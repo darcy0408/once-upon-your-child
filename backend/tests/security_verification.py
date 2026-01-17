@@ -92,6 +92,37 @@ def test_admin_route_access_granted_admin(client, admin_auth_headers):
     # The analytics route returns various keys
     assert 'total_users' in data or 'today' in data or 'users' in data
 
+def test_input_validation_age(app, client):
+    """Priority 2: Verify Age Input Validation."""
+    with app.app_context():
+        # Direct service call to verify logic
+        from backend.services import character_service
+        
+        # Invalid Age
+        payload = {
+            "name": "Old Man",
+            "age": 150,
+            "user_id": "test_user" 
+        }
+        resp, status = character_service.create_character(payload)
+        assert status == 400
+        assert "Age must be" in resp.get("error", "")
+
+def test_input_validation_sanitization(app, client):
+    """Priority 2: Verify Text Sanitization."""
+    with app.app_context():
+        from backend.services import character_service
+        
+        # HTML Name
+        payload = {
+            "name": "<b>Bold</b>",
+            "age": 10,
+            "user_id": "test_user"
+        }
+        resp, status = character_service.create_character(payload)
+        assert status == 201
+        assert resp.get("name") == "Bold"
+
 def test_endor_protection_user_stats(client, regular_user, auth_headers):
     """Test user cannot access another user's stats."""
     other_id = 'other_user_id'
@@ -107,18 +138,160 @@ def test_idor_protection_delete_other_character(client, app, user_character):
         attacker.set_password('password')
         db.session.add(attacker)
         db.session.commit()
-    
+
     from flask_jwt_extended import create_access_token
     token = create_access_token(identity=attacker.id)
     attacker_headers = {'Authorization': f'Bearer {token}'}
-    
+
     try:
         # Corrected URL path
         response = client.delete(f'/characters/{user_character.id}', headers=attacker_headers)
         assert response.status_code == 403
-        
+
     finally:
         u = db.session.get(User, 'attacker')
         if u:
             db.session.delete(u)
             db.session.commit()
+
+
+# --- Validator Edge Case Tests ---
+
+def test_validator_negative_age(app):
+    """Test that negative age is rejected."""
+    with app.app_context():
+        from backend.services import character_service
+
+        payload = {
+            "name": "Test Child",
+            "age": -5,
+            "user_id": "test_user"
+        }
+        resp, status = character_service.create_character(payload)
+        assert status == 400
+        assert "Age must be between" in resp.get("error", "")
+
+
+def test_validator_age_over_limit(app):
+    """Test that age over 120 is rejected."""
+    with app.app_context():
+        from backend.services import character_service
+
+        payload = {
+            "name": "Ancient One",
+            "age": 999,
+            "user_id": "test_user"
+        }
+        resp, status = character_service.create_character(payload)
+        assert status == 400
+        assert "Age must be between" in resp.get("error", "")
+
+
+def test_validator_non_integer_age(app):
+    """Test that non-integer age is rejected."""
+    with app.app_context():
+        from backend.services import character_service
+
+        payload = {
+            "name": "Test Child",
+            "age": "not a number",
+            "user_id": "test_user"
+        }
+        resp, status = character_service.create_character(payload)
+        assert status == 400
+        assert "Age must be" in resp.get("error", "")
+
+
+def test_validator_null_required_field(app):
+    """Test that null name is rejected."""
+    with app.app_context():
+        from backend.services import character_service
+
+        payload = {
+            "name": None,
+            "age": 10,
+            "user_id": "test_user"
+        }
+        resp, status = character_service.create_character(payload)
+        assert status == 400
+        assert "Missing required field" in resp.get("error", "")
+
+
+def test_validator_missing_required_field(app):
+    """Test that missing required fields are caught."""
+    with app.app_context():
+        from backend.services import character_service
+
+        # Missing both name and age
+        payload = {
+            "user_id": "test_user"
+        }
+        resp, status = character_service.create_character(payload)
+        assert status == 400
+        assert "name" in resp.get("error", "").lower()
+
+
+def test_validator_script_injection_sanitized(app):
+    """Test that script tags are sanitized from text input."""
+    with app.app_context():
+        from backend.services import character_service
+
+        payload = {
+            "name": "<script>alert('xss')</script>Evil",
+            "age": 10,
+            "user_id": "test_user"
+        }
+        resp, status = character_service.create_character(payload)
+        assert status == 201
+        # Script tag should be removed, only 'Evil' remains
+        assert "script" not in resp.get("name", "").lower()
+        assert "Evil" in resp.get("name", "")
+
+
+def test_validator_html_tags_stripped(app):
+    """Test that HTML tags are stripped from text input."""
+    with app.app_context():
+        from backend.services import character_service
+
+        payload = {
+            "name": "<div><span>Clean Name</span></div>",
+            "age": 10,
+            "user_id": "test_user"
+        }
+        resp, status = character_service.create_character(payload)
+        assert status == 201
+        assert resp.get("name") == "Clean Name"
+
+
+def test_validator_text_length_enforced(app):
+    """Test that text exceeding max length is truncated."""
+    with app.app_context():
+        from backend.utils.validators import sanitize_text
+
+        long_text = "A" * 200
+        sanitized = sanitize_text(long_text, max_length=100)
+        assert len(sanitized) == 100
+
+
+def test_validator_age_boundary_values(app):
+    """Test boundary values for age (0 and 120 should be valid)."""
+    with app.app_context():
+        from backend.services import character_service
+
+        # Age 0 should be valid
+        payload = {
+            "name": "Baby",
+            "age": 0,
+            "user_id": "test_user"
+        }
+        resp, status = character_service.create_character(payload)
+        assert status == 201
+
+        # Age 120 should be valid
+        payload = {
+            "name": "Elder",
+            "age": 120,
+            "user_id": "test_user"
+        }
+        resp, status = character_service.create_character(payload)
+        assert status == 201
