@@ -204,8 +204,7 @@ def create_analytics_blueprint(limiter=None):
 
             # Use optimized query with joins
             stories_query = Story.query.options(
-                db.joinedload(Story.user),
-                db.joinedload(Story.characters)
+                db.joinedload(Story.user)
             ).order_by(Story.created_at.desc())
 
             stories = stories_query.paginate(

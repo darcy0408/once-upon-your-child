@@ -592,34 +592,52 @@ def create_story_blueprint(
                             pass
                     elif image_url.startswith("http"):
                         # Download image and convert to base64
+                        # Download image with size limit protection
                         try:
                             logger.info(f"Downloading illustration from {image_url[:50]}...")
-                            img_resp = requests.get(image_url, timeout=10)
-                            if img_resp.status_code == 200:
-                                image_bytes = img_resp.content
+                            # Stream the response to check size before loading into memory
+                            img_resp = requests.get(image_url, stream=True, timeout=10)
+                            img_resp.raise_for_status()
 
-                                # Validate image size before processing
-                                try:
-                                    validate_image_size(image_bytes)
-                                except ValueError as size_err:
-                                    logger.warning(f"Image size validation failed: {size_err}")
-                                    continue  # Skip this image
+                            # Enforce 5MB limit via Content-Length header if available
+                            content_length = img_resp.headers.get('Content-Length')
+                            MAX_SIZE = 5 * 1024 * 1024  # 5MB
+                            
+                            if content_length and int(content_length) > MAX_SIZE:
+                                logger.warning(f"Image too large directly from headers: {content_length}")
+                                continue
 
-                                # Resize downloaded image to max 1024x1024
-                                try:
-                                    with Image.open(io.BytesIO(image_bytes)) as img:
-                                        img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
-                                        buffer = io.BytesIO()
-                                        img.save(buffer, format="PNG")
-                                        image_bytes = buffer.getvalue()
-                                except Exception as resize_err:
-                                    logger.warning(f"Failed to resize downloaded image: {resize_err}")
+                            # Stream content to enforce limit physically
+                            image_bytes = bytearray()
+                            for chunk in img_resp.iter_content(chunk_size=8192):
+                                image_bytes.extend(chunk)
+                                if len(image_bytes) > MAX_SIZE:
+                                    logger.warning("Image exceeded 5MB limit during download")
+                                    break
+                            
+                            if len(image_bytes) > MAX_SIZE:
+                                continue
 
-                                b64_data = base64.b64encode(image_bytes).decode("utf-8")
-                                new_img["image_data"] = b64_data
-                                logger.info("Successfully converted image URL to base64 data")
-                            else:
-                                logger.error(f"Failed to download image: {img_resp.status_code}")
+                            # Validate image structure
+                            try:
+                                validate_image_size(image_bytes)
+                            except ValueError as size_err:
+                                logger.warning(f"Image validation failed: {size_err}")
+                                continue
+
+                            # Resize downloaded image to max 1024x1024
+                            try:
+                                with Image.open(io.BytesIO(image_bytes)) as img:
+                                    img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+                                    buffer = io.BytesIO()
+                                    img.save(buffer, format="PNG")
+                                    image_bytes = buffer.getvalue()
+                            except Exception as resize_err:
+                                logger.warning(f"Failed to resize downloaded image: {resize_err}")
+
+                            b64_data = base64.b64encode(image_bytes).decode("utf-8")
+                            new_img["image_data"] = b64_data
+                            logger.info("Successfully converted image URL to base64 data")
                         except Exception as e:
                             logger.error(f"Error processing illustration image data: {str(e)}")
 
