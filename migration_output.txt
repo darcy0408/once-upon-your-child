@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "C:\dev\story-weaver-app\run_migration_force.py", line 23, in <module>
+    app = create_app('development')
+  File "C:\dev\story-weaver-app\backend\app.py", line 129, in create_app
+    logger.warning("Rate limiting using in-memory storage - not suitable for multi-instance deployments")
+    ^^^^^^
+UnboundLocalError: cannot access local variable 'logger' where it is not associated with a value
+backend init executed
+Loading .env from: C:\dev\story-weaver-app\backend\.env
+GEMINI_API_KEY loaded: True
+FORCED GEMINI_MODEL = gemini-2.0-flash-exp
+Using SQLite database (no DATABASE_URL provided)
+Initializing app in development mode for migration...
+=== Creating Flask app with config: development ===
+=== Available configs: ['dev', 'development', 'prod', 'production', 'testing', 'default'] ===
+=== Config loaded, initializing database ===
+=== Database initialized ===
+Migration script failed with error: cannot access local variable 'logger' where it is not associated with a value

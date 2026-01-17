@@ -159,7 +159,7 @@ def main():
     print("\n" + "=" * 50)
     print("🎯 CI/CD TEST RESULTS")
     print("=" * 50)
-    print(".1f"    print(f"Status: {'✅ SUCCESS' if success else '❌ FAILURE'}")
+    print(f"Status: {'✅ SUCCESS' if success else '❌ FAILURE'}")
 
     if success:
         print("\n🎉 All tests passed! Ready for deployment.")

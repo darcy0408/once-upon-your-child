@@ -6,6 +6,11 @@ Fast verification of critical functionality
 import requests
 import time
 import json
+import sys
+
+# Fix Windows console encoding for emoji support
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 def quick_health_check():
     """Quick backend health check"""

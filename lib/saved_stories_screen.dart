@@ -223,7 +223,7 @@ class SavedStoriesScreen extends ConsumerWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.deepPurple.withOpacity(0.05),
+            color: Colors.deepPurple.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -358,17 +358,17 @@ class SavedStoriesScreen extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.accent.withOpacity(0.1),
+        color: AppColors.accent.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.accent.withOpacity(0.2)),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildStat(Icons.library_books, '$total', 'Total Stories'),
-          Container(width: 1, height: 24, color: AppColors.accent.withOpacity(0.2)),
+          Container(width: 1, height: 24, color: AppColors.accent.withValues(alpha: 0.2)),
           _buildStat(Icons.favorite, '$favorites', 'Favorites'),
-          Container(width: 1, height: 24, color: AppColors.accent.withOpacity(0.2)),
+          Container(width: 1, height: 24, color: AppColors.accent.withValues(alpha: 0.2)),
           _buildStat(Icons.visibility, '$showing', 'Showing'),
         ],
       ),

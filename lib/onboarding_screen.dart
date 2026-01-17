@@ -68,6 +68,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _confirmSkipToAdvanced() async {
     await OnboardingAnalytics.trackOnboardingSkipped(step: _currentStep + 1);
+    if (!mounted) return;
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:math' as math;
 
 /// Magical avatar widget with glow effects and optional particles
@@ -88,8 +89,8 @@ class _MagicalAvatarState extends State<MagicalAvatar>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      widget.glowColor.withOpacity(0.4 * _glowAnimation.value),
-                      widget.glowColor.withOpacity(0.1 * _glowAnimation.value),
+                      widget.glowColor.withValues(alpha: 0.4 * _glowAnimation.value),
+                      widget.glowColor.withValues(alpha: 0.1 * _glowAnimation.value),
                       Colors.transparent,
                     ],
                     stops: const [0.0, 0.6, 1.0],
@@ -106,12 +107,12 @@ class _MagicalAvatarState extends State<MagicalAvatar>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: widget.glowColor.withOpacity(0.8),
+                color: widget.glowColor.withValues(alpha: 0.8),
                 width: widget.borderWidth,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: widget.glowColor.withOpacity(0.3),
+                  color: widget.glowColor.withValues(alpha: 0.3),
                   blurRadius: 12,
                   spreadRadius: 2,
                 ),
@@ -142,7 +143,7 @@ class _MagicalAvatarState extends State<MagicalAvatar>
         placeholderBuilder: (context) => _buildDefaultPlaceholder(),
       );
     } catch (e) {
-      print('MagicalAvatar: Failed to render SVG: $e');
+      debugPrint('MagicalAvatar: Failed to render SVG: $e');
       return widget.placeholder ?? _buildDefaultPlaceholder();
     }
   }
@@ -191,7 +192,7 @@ class _ParticlePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = color.withOpacity(0.6)
+      ..color = color.withValues(alpha: 0.6)
       ..style = PaintingStyle.fill;
 
     final center = Offset(size.width / 2, size.height / 2);
@@ -207,14 +208,14 @@ class _ParticlePainter extends CustomPainter {
       canvas.drawCircle(
         Offset(x, y),
         2.0,
-        paint..color = color.withOpacity(0.8 * (1 - progress)),
+        paint..color = color.withValues(alpha: 0.8 * (1 - progress)),
       );
 
       // Sparkle trail
       canvas.drawCircle(
         Offset(x, y),
         4.0,
-        paint..color = color.withOpacity(0.3 * (1 - progress)),
+        paint..color = color.withValues(alpha: 0.3 * (1 - progress)),
       );
     }
   }
@@ -277,7 +278,7 @@ class _MagicalAvatarLoadingState extends State<MagicalAvatarLoading>
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
-            color: widget.glowColor.withOpacity(0.5),
+            color: widget.glowColor.withValues(alpha: 0.5),
             width: widget.borderWidth,
           ),
         ),

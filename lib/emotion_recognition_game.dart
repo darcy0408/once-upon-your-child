@@ -435,8 +435,8 @@ class _EmotionRecognitionGameState extends State<EmotionRecognitionGame>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              widget.difficulty.color.withOpacity(0.1),
-              widget.difficulty.color.withOpacity(0.05),
+              widget.difficulty.color.withValues(alpha: 0.1),
+              widget.difficulty.color.withValues(alpha: 0.05),
             ],
           ),
         ),
@@ -511,7 +511,7 @@ class _EmotionRecognitionGameState extends State<EmotionRecognitionGame>
                     buttonColor = Colors.red.shade100;
                   }
                 } else if (isSelected) {
-                  buttonColor = widget.difficulty.color.withOpacity(0.2);
+                  buttonColor = widget.difficulty.color.withValues(alpha: 0.2);
                 }
 
                 return Padding(
@@ -588,7 +588,7 @@ class _EmotionRecognitionGameState extends State<EmotionRecognitionGame>
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -616,8 +616,8 @@ class _EmotionRecognitionGameState extends State<EmotionRecognitionGame>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            widget.difficulty.color.withOpacity(0.2),
-            widget.difficulty.color.withOpacity(0.1),
+            widget.difficulty.color.withValues(alpha: 0.2),
+            widget.difficulty.color.withValues(alpha: 0.1),
           ],
         ),
       ),

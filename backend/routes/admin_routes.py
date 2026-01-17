@@ -3,12 +3,15 @@ from flask import Blueprint, jsonify
 from sqlalchemy import text
 
 from ..database import db
+from ..middleware.auth import require_auth, require_admin
 
 
 def create_admin_blueprint(logger):
     admin_bp = Blueprint("admin", __name__)
 
     @admin_bp.route("/admin/run-db-optimization", methods=["POST"])
+    @require_auth
+    @require_admin
     def run_db_optimization():
         """Run database optimization indexes (one-time setup)"""
         try:
@@ -51,9 +54,11 @@ def create_admin_blueprint(logger):
 
         except Exception as e:
             logger.exception("Failed to run database optimization")
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"error": "Database optimization failed. Check server logs."}), 500
 
     @admin_bp.route("/admin/add-missing-columns", methods=["POST"])
+    @require_auth
+    @require_admin
     def add_missing_columns():
         """Add missing columns to database (migration fix)"""
         try:
@@ -149,6 +154,6 @@ def create_admin_blueprint(logger):
 
         except Exception as e:
             logger.exception("Failed to run database migrations")
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"error": "Database migration failed. Check server logs."}), 500
 
     return admin_bp

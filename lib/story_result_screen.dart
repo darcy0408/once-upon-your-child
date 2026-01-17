@@ -306,54 +306,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   // Cache logic moved to main_story.dart (auto-save)
 
-  /// Build character appearance map for backend illustration API
-  Map<String, dynamic>? _buildCharacterAppearance() {
-    if (_character == null) return null;
-
-    final appearance = <String, dynamic>{};
-
-    // Add basic appearance attributes
-    if (_character!.hair != null) appearance['hair'] = _character!.hair;
-    if (_character!.skinTone != null) appearance['skin'] = _character!.skinTone;
-    if (_character!.outfit != null) appearance['outfit'] = _character!.outfit;
-    if (_character!.gender != null) appearance['gender'] = _character!.gender;
-    if (_character!.eyes != null) appearance['eyes'] = _character!.eyes;
-    if (_character!.hairstyle != null) appearance['hairstyle'] = _character!.hairstyle;
-
-    // Add avatar details if available
-    if (_character!.avatar != null) {
-      final avatarMap = <String, dynamic>{};
-      final avatar = _character!.avatar!;
-      avatarMap['hairStyle'] = avatar.hairStyle;
-      avatarMap['hairColor'] = avatar.hairColor;
-      avatarMap['skinColor'] = avatar.skinColor;
-      if (avatar.topType != null) avatarMap['topType'] = avatar.topType;
-      if (avatar.facialHairType != null) avatarMap['facialHairType'] = avatar.facialHairType;
-      if (avatar.accessoriesType != null) avatarMap['accessoriesType'] = avatar.accessoriesType;
-      if (avatarMap.isNotEmpty) appearance['avatar'] = avatarMap;
-    }
-
-    return appearance.isEmpty ? null : appearance;
-  }
-
-  /// Build companions list for backend illustration API
-  List<Map<String, String>>? _buildCompanionsList() {
-    if (_character == null || _character!.pets == null) return null;
-
-    final companions = <Map<String, String>>[];
-
-    // Add pets as companions
-    for (final pet in _character!.pets!) {
-      final name = pet['name']?.toString();
-      final type = pet['type']?.toString() ?? pet['species']?.toString();
-      if (name != null && type != null) {
-        companions.add({'name': name, 'type': type});
-      }
-    }
-
-    return companions.isEmpty ? null : companions;
-  }
-
   /// Load character info so we can adapt prompts for age and focus
   Future<void> _loadCharacterDetails() async {
     if (widget.characterId == null) return;
@@ -406,153 +358,15 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     }
   }
 
-  int get _currentIllustrationCount =>
       (_cachedIllustrations?.length ?? 0) + _inlineIllustrations.length;
 
-  bool _canGenerateIllustrations() {
-    if (widget.subscription == null) return false;
-    final tier = widget.subscription!.tier;
 
-    switch (tier) {
-      case SubscriptionTier.free:
-        return widget.usedUserApiKey;
-      case SubscriptionTier.premium:
-        return _currentIllustrationCount < 1;
-      case SubscriptionTier.family:
-        return _currentIllustrationCount < 2;
-    }
-  }
-
-  void _showIllustrationLimitMessage() {
-    String message;
-    if (widget.subscription == null) {
-      message = 'Illustration generation requires a subscription.';
-    } else {
-      switch (widget.subscription!.tier) {
-        case SubscriptionTier.free:
-          message = widget.usedUserApiKey
-              ? 'You have reached the BYOK illustration limit.'
-              : 'Upgrade to Premium for automatic illustrations.';
-          break;
-        case SubscriptionTier.premium:
-          message = 'Family plan allows up to 2 illustrations per story.';
-          break;
-        case SubscriptionTier.family:
-          message = 'Maximum illustrations reached for this story.';
-          break;
-      }
-    }
-    _showSnackBar(message, backgroundColor: Colors.orange);
-  }
 
   /// Generate illustrations for this story
-  Future<void> _generateIllustrations() async {
-    // Show settings dialog
-    final settings = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (_) => IllustrationSettingsDialog(
-        initialTherapeuticFocus: _activeTherapeuticFocus,
-      ),
-    );
-
-    if (settings == null) return;
-
-    final style = settings['style'] as IllustrationStyle;
-    final numberOfImages = settings['numberOfImages'] as int;
-    final therapeuticFocus = settings['therapeuticFocus'] as String?;
-
-    if (mounted) {
-      setState(() {
-        _activeTherapeuticFocus = therapeuticFocus;
-      });
-    }
-
-    var progressShown = false;
-
-    try {
-      if (!mounted) return;
-      IllustrationGenerationDialog.show(context, numberOfImages, 1);
-      progressShown = true;
-
-      final illustrations = await _illustrationService.generateIllustrations(
-        storyText: widget.storyText,
-        storyTitle: widget.title,
-        characterName: widget.characterName ?? 'the character',
-        theme: widget.theme,
-        style: style,
-        numberOfImages: numberOfImages,
-        age: _effectiveAge,
-        therapeuticFocus: therapeuticFocus,
-        characterAppearance: _buildCharacterAppearance(),  // NEW: Character appearance
-        companions: _buildCompanionsList(),                 // NEW: Companions/pets
-      );
-
-      // Cache illustrations
-      if (widget.storyId != null) {
-        await _illustrationService.cacheIllustrations(
-          storyId: widget.storyId!,
-          illustrations: illustrations,
-        );
-      }
-
-      if (!mounted) return;
-      setState(() {
-        _cachedIllustrations = illustrations;
-      });
-
-      _trackResultAction(
-        'illustrations_generated',
-        extra: {
-          'count': illustrations.length,
-          if (therapeuticFocus != null && therapeuticFocus.isNotEmpty)
-            'therapeutic_focus': therapeuticFocus,
-        },
-      );
-
-      // Show illustrated story
-      _viewIllustratedStory(illustrations);
-    } on TimeoutException {
-      if (mounted) {
-        _showSnackBar(
-          'Illustration request timed out. Please try again or choose fewer scenes.',
-          backgroundColor: Colors.orange,
-        );
-      }
-    } catch (e) {
-      await _showFriendlyErrorDialog(e);
-    } finally {
-      if (progressShown && mounted) {
-        IllustrationGenerationDialog.hide(context);
-      }
-      if (mounted) {
-        setState(() {
-          // Reset generating state is no longer needed as field is removed
-        });
-      }
-    }
-  }
 
 
 
   /// View story with illustrations
-  void _viewIllustratedStory(List<StoryIllustration> illustrations) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => IllustratedStoryViewer(
-          title: widget.title,
-          storyText: widget.storyText,
-          illustrations: illustrations,
-          characterName: widget.characterName,
-          subscriptionTier: widget.subscription?.tier.name ?? 'free',
-        ),
-      ),
-    );
-    _trackResultAction(
-      'illustrations_viewed',
-      extra: {'count': illustrations.length},
-    );
-  }
 
   /// Load cached coloring pages if they exist
   Future<void> _loadCachedColoringPages() async {
@@ -656,9 +470,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     }
     return pages.isEmpty ? [text] : pages;
   }
-
-  int get _totalWords =>
-      widget.storyText.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
 
   List<InlineSpan> _buildStorySpans(String pageText) {
     final heroName = widget.characterName;
@@ -1296,7 +1107,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
@@ -1340,7 +1151,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                       if (widget.choicesMade != null && widget.choicesMade!.isNotEmpty) ...[
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             shape: BoxShape.circle,
                           ),
                           child: IconButton(
@@ -1372,7 +1183,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                       // Settings Button
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(

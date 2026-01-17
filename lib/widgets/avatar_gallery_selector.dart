@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/generated_avatar.dart';
-import '../services/api_service_manager.dart';
+import '../config/environment.dart';
 
 /// Avatar Gallery Selector - Shows pre-made avatar options
 class AvatarGallerySelector extends StatefulWidget {
@@ -38,7 +38,7 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
     });
 
     try {
-      final baseUrl = APIServiceManager().baseUrl;
+      final baseUrl = Environment.backendUrl;
       final response = await http.get(
         Uri.parse('$baseUrl/avatar/gallery/list-avatars'),
       ).timeout(const Duration(seconds: 10));
@@ -71,7 +71,7 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
     });
 
     try {
-      final baseUrl = APIServiceManager().baseUrl;
+      final baseUrl = Environment.backendUrl;
       final response = await http.post(
         Uri.parse('$baseUrl/avatar/gallery/select-avatar/$avatarId'),
       ).timeout(const Duration(seconds: 5));
@@ -82,12 +82,14 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
           final avatarData = data['avatar'];
 
           // Convert to GeneratedAvatar format
+          // Note: Using URL as placeholder for imageBase64 since gallery avatars are pre-made
           final avatar = GeneratedAvatar(
             id: avatarData['id'],
-            imageUrl: '$baseUrl${avatarData['image_url']}',
+            imageBase64: '$baseUrl${avatarData['image_url']}', // URL stored as base64 field for compatibility
+            seed: avatarData['id'], // Use ID as seed for consistency
             style: avatarData['style'] ?? 'pixar',
+            attributes: {}, // Empty attributes for gallery avatars
             generatedAt: DateTime.now(),
-            generationTimeMs: 0,
           );
 
           widget.onAvatarSelected(avatar);
@@ -101,6 +103,7 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
       setState(() {
         _selectedAvatarId = null;
       });
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to select avatar: $e'),
@@ -194,7 +197,7 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
   }
 
   Widget _buildGalleryGrid() {
-    final baseUrl = APIServiceManager().baseUrl;
+    final baseUrl = Environment.backendUrl;
 
     return GridView.builder(
       padding: const EdgeInsets.all(20),
@@ -223,7 +226,7 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
               boxShadow: [
                 if (isSelected)
                   BoxShadow(
-                    color: const Color(0xFF6C63FF).withOpacity(0.3),
+                    color: const Color(0xFF6C63FF).withValues(alpha: 0.3),
                     blurRadius: 8,
                     spreadRadius: 2,
                   ),
@@ -261,7 +264,7 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
                   if (isSelected)
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6C63FF).withOpacity(0.2),
+                        color: const Color(0xFF6C63FF).withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Center(

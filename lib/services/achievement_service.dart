@@ -7,6 +7,7 @@ import '../emotions_learning_system.dart';
 import '../models/achievement.dart';
 import 'api_service_manager.dart';
 
+import 'package:flutter/foundation.dart';
 class AchievementState {
   AchievementState({
     Map<AchievementType, AchievementRecord>? records,
@@ -430,9 +431,9 @@ class AchievementService {
       return false;
     } catch (e) {
       if (e.toString().contains('401')) {
-        print('⚠️ Sync skipped: User not logged in (401)');
+        debugPrint('⚠️ Sync skipped: User not logged in (401)');
       } else {
-        print('Failed to sync achievements with backend: $e');
+        debugPrint('Failed to sync achievements with backend: $e');
       }
       return false;
     }
@@ -488,7 +489,7 @@ class AchievementService {
 
       return false;
     } catch (e) {
-      print('Failed to load achievements from backend: $e');
+      debugPrint('Failed to load achievements from backend: $e');
       return false;
     }
   }

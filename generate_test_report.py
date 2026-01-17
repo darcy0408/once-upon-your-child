@@ -6,6 +6,11 @@ Creates comprehensive testing reports from automated test runs
 import json
 from datetime import datetime
 import os
+import sys
+
+# Fix Windows console encoding for emoji support
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 def load_test_results(filename="AUTOMATED_TEST_RESULTS.json"):
     """Load test results from JSON file"""

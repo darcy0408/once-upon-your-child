@@ -256,6 +256,7 @@ class _StoryScreenState extends State<StoryScreen> {
   Future<void> _openAchievementsScreen() async {
     // Lazy load achievements screen
     await achievements_screen.loadLibrary();
+    if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => achievements_screen.AchievementsScreen()),
     );
@@ -558,38 +559,7 @@ class _StoryScreenState extends State<StoryScreen> {
     }
   }
 
-  Future<void> _startInteractiveStory() async {
-    if (!mounted) return;
-    setState(() => _isLoading = true);
-
-    final allowed = await _validateStoryCreationPreconditions();
-    if (!allowed) {
-      if (mounted) setState(() => _isLoading = false);
-      return;
-    }
-
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    // Navigate to Pick-A-Path Adventure (new interactive system)
-    final bool? storySaved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => PickAPathAdventureScreen(
-          userId: _userId ?? 'guest',
-          character: _selectedCharacter!,
-          theme: _selectedTheme,
-          tone: 'whimsical',
-          length: 'medium',
-        ),
-      ),
-    );
-
-    if (storySaved == true) {
-      await _loadSubscriptionInfo();
-    }
-  }
-
-   Future<void> _onCreateButtonPressed() async {
+   Future<void> _onCreateButtonPressed() async{
     if (_isLoading) return;
     
     // Navigate to the new Wizard Story Screen
@@ -730,7 +700,7 @@ class _StoryScreenState extends State<StoryScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -1132,7 +1102,7 @@ class _StoryScreenState extends State<StoryScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                       backgroundColor: Colors.deepPurpleAccent,
-                      shadowColor: Colors.deepPurpleAccent.withOpacity(0.6),
+                      shadowColor: Colors.deepPurpleAccent.withValues(alpha: 0.6),
                       elevation: 6,
                     ),
                     label: Text(_interactiveMode
@@ -1172,20 +1142,20 @@ class _StoryScreenState extends State<StoryScreen> {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      color: Colors.white.withOpacity(0.95), // Semi-transparent white
+      color: Colors.white.withValues(alpha: 0.95), // Semi-transparent white
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-                        color: const Color(0xFF81C784).withOpacity(0.5), // Light green border
+                        color: const Color(0xFF81C784).withValues(alpha: 0.5), // Light green border
             width: 2,
           ),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-                            Colors.white.withOpacity(0.95),
-                            const Color(0xFFF1F8E9).withOpacity(0.95), // Very light green tint
+                            Colors.white.withValues(alpha: 0.95),
+                            const Color(0xFFF1F8E9).withValues(alpha: 0.95), // Very light green tint
             ],
           ),
         ),
@@ -1200,7 +1170,7 @@ class _StoryScreenState extends State<StoryScreen> {
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color:
-                          const Color(0xFF4CAF50).withOpacity(0.2),
+                          const Color(0xFF4CAF50).withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: const Text('🍃', style: TextStyle(fontSize: 18)),
@@ -1394,7 +1364,7 @@ class _StoryScreenState extends State<StoryScreen> {
         border: Border.all(color: Colors.white, width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -1776,7 +1746,7 @@ class _StoryScreenState extends State<StoryScreen> {
     return Card(
       elevation: 5,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      color: Colors.white.withOpacity(0.95),
+      color: Colors.white.withValues(alpha: 0.95),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -1787,7 +1757,7 @@ class _StoryScreenState extends State<StoryScreen> {
                 Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.amber.withOpacity(0.2),
+                    color: Colors.amber.withValues(alpha: 0.2),
                   ),
                   padding: const EdgeInsets.all(12),
                   child: const Icon(Icons.emoji_events, color: Colors.amber),
@@ -1810,7 +1780,7 @@ class _StoryScreenState extends State<StoryScreen> {
                         '${summary.unlockedCount}/${summary.totalCount} unlocked so far',
                         style: TextStyle(
                           color:
-                              Colors.green.shade900.withOpacity(0.75),
+                              Colors.green.shade900.withValues(alpha: 0.75),
                         ),
                       ),
                     ],
@@ -1851,7 +1821,7 @@ class _StoryScreenState extends State<StoryScreen> {
               '$completionPercent% badges unlocked • '
               '$averageProgress% average progress',
               style: TextStyle(
-                color: Colors.green.shade900.withOpacity(0.7),
+                color: Colors.green.shade900.withValues(alpha: 0.7),
                 fontWeight: FontWeight.w600,
               ),
             ),

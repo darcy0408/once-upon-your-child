@@ -84,7 +84,7 @@ class SunsetJungleTheme {
     border: Border.all(color: jungleMint, width: 2),
     boxShadow: [
       BoxShadow(
-        color: jungleDeepGreen.withOpacity(0.1),
+        color: jungleDeepGreen.withValues(alpha: 0.1),
         blurRadius: 12,
         offset: const Offset(0, 4),
       ),
@@ -97,7 +97,7 @@ class SunsetJungleTheme {
     gradient: avatarBackgroundGradient,
     boxShadow: [
       BoxShadow(
-        color: jungleDeepGreen.withOpacity(0.15),
+        color: jungleDeepGreen.withValues(alpha: 0.15),
         blurRadius: 24,
         offset: const Offset(0, 8),
       ),
@@ -119,7 +119,7 @@ class SunsetJungleTheme {
       borderRadius: BorderRadius.circular(12),
     ),
     elevation: 4,
-    shadowColor: sunsetCoral.withOpacity(0.3),
+    shadowColor: sunsetCoral.withValues(alpha: 0.3),
     textStyle: buttonTextStyle,
   );
 
@@ -151,7 +151,7 @@ class SunsetJungleTheme {
         fontWeight: FontWeight.w500,
       ),
       hintStyle: TextStyle(
-        color: jungleOlive.withOpacity(0.6),
+        color: jungleOlive.withValues(alpha: 0.6),
         fontFamily: 'Quicksand',
       ),
       filled: true,

@@ -26,7 +26,7 @@ class StoryCard extends ConsumerWidget {
 
     return Card(
       elevation: 4,
-      shadowColor: gradient.colors.first.withOpacity(0.3),
+      shadowColor: gradient.colors.first.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -40,8 +40,8 @@ class StoryCard extends ConsumerWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    gradient.colors.first.withOpacity(0.1),
-                    gradient.colors.last.withOpacity(0.05),
+                    gradient.colors.first.withValues(alpha: 0.1),
+                    gradient.colors.last.withValues(alpha: 0.05),
                   ],
                 ),
               ),
@@ -209,7 +209,7 @@ class _ThemeBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

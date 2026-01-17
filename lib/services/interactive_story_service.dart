@@ -119,7 +119,7 @@ class InteractiveStoryService {
             if (avoid != null && avoid.isNotEmpty) 'avoid': avoid,
           }),
         )
-        .timeout(const Duration(seconds: 90));
+        .timeout(const Duration(seconds: 30));
 
     if (response.statusCode != 200) {
       final error = _parseError(response);
@@ -148,7 +148,7 @@ class InteractiveStoryService {
             'choice_id': choiceId,
           }),
         )
-        .timeout(const Duration(seconds: 90));
+        .timeout(const Duration(seconds: 30));
 
     if (response.statusCode != 200) {
       final error = _parseError(response);

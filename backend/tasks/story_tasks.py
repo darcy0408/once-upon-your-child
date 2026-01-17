@@ -1,4 +1,5 @@
 import os
+import re
 import traceback
 from typing import Any, Dict
 
@@ -10,7 +11,6 @@ os.environ.setdefault("SKIP_DEFAULT_APP_INIT", "1")
 from backend.celery_config import celery
 from backend.app import create_app
 from backend.database import db
-from backend.models.character import Character
 from backend.models.character import Character
 from backend.models.story import Story
 from backend.models.user import User

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pill_button.dart';
-import '../../widgets/expanding_feelings_wheel.dart';
+import '../../widgets/therapeutic_feelings_wheel.dart';
 import '../wizard_story_screen.dart';
 import '../../data/scenario_data.dart';
 import '../../feelings_wheel_data.dart';
@@ -188,33 +188,32 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Tap a slice, then tap the center to choose.',
+              'Tap a core emotion, then explore deeper feelings.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textDark.withOpacity(0.7),
+                    color: AppColors.textDark.withValues(alpha: 0.7),
                   ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 6),
             Text(
-              'Tap smaller slices to be more specific.',
+              'Selected emotions light up to guide you.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textDark.withOpacity(0.6),
+                    color: AppColors.textDark.withValues(alpha: 0.6),
                   ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.md),
 
-            // Interactive Expanding Feelings Wheel
+            // Interactive Therapeutic Feelings Wheel
             LayoutBuilder(
               builder: (context, constraints) {
                 final maxSize = constraints.maxWidth;
                 return Center(
                   child: SizedBox.square(
                     dimension: maxSize,
-                    child: ExpandingFeelingsWheel(
+                    child: TherapeuticFeelingsWheel(
                       onFeelingSelected: _selectFeeling,
                       backgroundColor: AppColors.cream,
-                      maxDepth: maxDepth,
                     ),
                   ),
                 );
@@ -234,7 +233,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
               Text(
                 'Tap again to change.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textDark.withOpacity(0.6),
+                      color: AppColors.textDark.withValues(alpha: 0.6),
                     ),
                 textAlign: TextAlign.center,
               ),
@@ -339,7 +338,7 @@ class _ScenarioCardWidget extends StatelessWidget {
                     width: 200,
                     height: 140,
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.white.withOpacity(0.5) : AppColors.secondaryLight.withOpacity(0.2),
+                      color: isSelected ? Colors.white.withValues(alpha: 0.5) : AppColors.secondaryLight.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(
@@ -375,7 +374,7 @@ class _ScenarioCardWidget extends StatelessWidget {
               Text(
                 scenario.description,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textDark.withOpacity(0.7),
+                      color: AppColors.textDark.withValues(alpha: 0.7),
                     ),
                 textAlign: TextAlign.center,
                 maxLines: 2,

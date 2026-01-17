@@ -74,7 +74,7 @@ class _EmotionsScreenState extends State<EmotionsScreen> with SingleTickerProvid
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: isSelected ? emotion.color.withOpacity(0.3) : Colors.grey.shade100,
+                          color: isSelected ? emotion.color.withValues(alpha: 0.3) : Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isSelected ? emotion.color : Colors.transparent,
@@ -97,7 +97,7 @@ class _EmotionsScreenState extends State<EmotionsScreen> with SingleTickerProvid
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: selectedEmotion!.color.withOpacity(0.1),
+                      color: selectedEmotion!.color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
@@ -408,7 +408,7 @@ class _EmotionsScreenState extends State<EmotionsScreen> with SingleTickerProvid
                         width: 100,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: emotion.color.withOpacity(0.15),
+                          color: emotion.color.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: emotion.color,
@@ -611,7 +611,7 @@ class _EmotionsScreenState extends State<EmotionsScreen> with SingleTickerProvid
             if (entry.value.isEmpty) return const SizedBox.shrink();
 
             return Card(
-              color: EmotionWheel.categoryColors[entry.key]?.withOpacity(0.1),
+              color: EmotionWheel.categoryColors[entry.key]?.withValues(alpha: 0.1),
               child: ExpansionTile(
                 title: Text(
                   '${EmotionWheel.categoryNames[entry.key]} Emotions',

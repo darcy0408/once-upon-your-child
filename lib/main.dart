@@ -79,12 +79,6 @@ class _StoryWeaverAppState extends ConsumerState<StoryWeaverApp> {
     }
   }
 
-  Future<void> _handleConsentCompleted() async {
-    if (mounted) {
-      setState(() => _hasConsent = true);
-    }
-  }
-
   Widget _buildLoading() {
     final themeMode = ref.watch(themeModeNotifierProvider);
     return _buildThemedApp(

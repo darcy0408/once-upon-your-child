@@ -11,6 +11,7 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Subscription details
+    role = db.Column(db.String(20), default='user', nullable=False)
     subscription_tier = db.Column(db.String(50), default='free', nullable=False)
     subscription_status = db.Column(db.String(50), default='active', nullable=False)
     current_period_end = db.Column(db.DateTime)
@@ -45,6 +46,7 @@ class User(db.Model):
             'id': self.id,
             'username': self.username,
             'email': self.email,
+            'role': self.role,
             'created_at': self.created_at.isoformat(),
             'subscription_tier': self.subscription_tier,
             'subscription_status': self.subscription_status,

@@ -118,11 +118,21 @@ def create_app(config_name):
     })
 
     # Rate limiting setup
+    # Use Redis in production for distributed rate limiting, fallback to memory for dev
+    redis_url = os.getenv('REDIS_URL') or os.getenv('REDIS_PRIVATE_URL')
+    if redis_url and not testing_mode:
+        rate_limit_storage = redis_url
+        logger.info("Rate limiting configured with Redis (distributed)")
+    else:
+        rate_limit_storage = "memory://"
+        if not testing_mode:
+            logger.warning("Rate limiting using in-memory storage - not suitable for multi-instance deployments")
+
     limiter = Limiter(
         app=app,
         key_func=get_user_identifier,
         default_limits=["200 per day", "50 per hour"],
-        storage_uri="memory://"
+        storage_uri=rate_limit_storage
     )
 
     # Caching setup
@@ -196,12 +206,9 @@ def create_app(config_name):
     api_key = None if testing_mode else app.config.get("GEMINI_API_KEY")
     genai = None
     print(f"DEBUG: GEMINI_MODEL set to {GEMINI_MODEL}")
-    api_key = None if testing_mode else app.config.get("GEMINI_API_KEY")
-    genai = None
-    print(f"DEBUG: API key from app.config.get(\"GEMINI_API_KEY\") is present: {bool(api_key)}")
-    if api_key:
-        print(f"DEBUG: Masked API key in app.py: {api_key[:4]}...{api_key[-4:]}")
-    else:
+    # SECURITY: Don't log API keys, even partially masked
+    print(f"DEBUG: GEMINI_API_KEY configured: {bool(api_key)}")
+    if not api_key:
         logger.warning("GEMINI_API_KEY not set in Flask app config. Generation endpoints will use fallbacks.")
         model = None
 
@@ -284,7 +291,7 @@ def create_app(config_name):
                     username='anonymous',
                     email='anonymous@storyweaver.app'
                 )
-                anon.set_password('anonymous_guest_password')
+                anon.set_password(uuid.uuid4().hex)
                 db.session.add(anon)
                 db.session.commit()
                 logger.info("Anonymous user created successfully")
@@ -295,9 +302,15 @@ def create_app(config_name):
             db.session.rollback()
     print(f"=== Database tables created ===")
 
-    # JWT setup
+    # JWT setup - SECURITY: Require proper secret in production
     jwt = JWTManager(app)
-    app.config['JWT_SECRET_KEY'] = app.config.get('JWT_SECRET_KEY', 'dev-secret-key')
+    jwt_secret = app.config.get('JWT_SECRET_KEY') or os.getenv('JWT_SECRET_KEY')
+    if not jwt_secret or jwt_secret == 'dev-secret-key':
+        if os.getenv('FLASK_ENV') in ('prod', 'production'):
+            raise ValueError("SECURITY ERROR: JWT_SECRET_KEY must be set in production!")
+        logger.warning("Using dev JWT secret - NOT SAFE FOR PRODUCTION")
+        jwt_secret = 'dev-secret-key'
+    app.config['JWT_SECRET_KEY'] = jwt_secret
 
     # Database query monitoring
     from sqlalchemy import event
@@ -390,6 +403,7 @@ def create_app(config_name):
     print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
     return app
 
+# Trigger reload
 if __name__ == '__main__':
     app = create_app(os.getenv('FLASK_ENV') or 'production')
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)))

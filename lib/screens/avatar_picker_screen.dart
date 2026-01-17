@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../services/avatar_service.dart';
 
+import 'package:flutter/foundation.dart';
 /// Avatar Picker Screen - Visual customization interface for avataaars
 ///
 /// Allows kids to customize their avatar by selecting:
@@ -176,13 +177,13 @@ class _AvatarPickerScreenState extends State<AvatarPickerScreen> {
     setState(() => _isLoadingPreview = true);
 
     try {
-      print('[Avatar Picker] Fetching preview with selections: $_selections');
+      debugPrint('[Avatar Picker] Fetching preview with selections: $_selections');
       final svg = await widget.avatarService.fetchAvatarSvg(
         age: widget.characterAge,
         seed: 'preview-${DateTime.now().millisecondsSinceEpoch}',
         userOverrides: _selections,
       );
-      print('[Avatar Picker] Received SVG: ${svg?.substring(0, 100)}...');
+      debugPrint('[Avatar Picker] Received SVG: ${svg?.substring(0, 100)}...');
       if (mounted) {
         setState(() {
           _previewSvg = svg;
@@ -190,7 +191,7 @@ class _AvatarPickerScreenState extends State<AvatarPickerScreen> {
         });
       }
     } catch (e) {
-      print('[Avatar Picker] Error fetching preview: $e');
+      debugPrint('[Avatar Picker] Error fetching preview: $e');
       if (mounted) {
         setState(() => _isLoadingPreview = false);
       }

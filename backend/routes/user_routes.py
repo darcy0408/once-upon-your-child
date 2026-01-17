@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta, timezone
-from flask import Blueprint, jsonify, current_app
+from flask import Blueprint, jsonify, current_app, request
 from backend.models.user import User
 from backend.models.character import Character
 from backend.models.story import Story
 from backend.database import db
+from backend.middleware.auth import require_auth, require_owner
 
 user_routes = Blueprint('user_routes', __name__)
 
@@ -50,11 +51,12 @@ def _format_timestamp(value):
     return value.replace(microsecond=0).isoformat() + 'Z'
 
 @user_routes.route('/api/user/<user_id>/usage-stats', methods=['GET'])
+@require_auth
+@require_owner('user_id')
 def get_usage_stats(user_id):
     try:
-        user = db.session.get(User, user_id)
-        if not user:
-            return jsonify({'error': 'User not found'}), 404
+        # User already validated by @require_owner decorator
+        user = request.current_user
 
         period_start, period_end = _get_period_bounds_for_user(user)
 
@@ -86,11 +88,12 @@ def get_usage_stats(user_id):
         return jsonify({'error': 'Internal server error'}), 500
 
 @user_routes.route('/api/user/<user_id>/cancel-subscription', methods=['POST'])
+@require_auth
+@require_owner('user_id')
 def cancel_subscription(user_id):
     try:
-        user = db.session.get(User, user_id)
-        if not user:
-            return jsonify({'error': 'User not found'}), 404
+        # User already validated by @require_owner decorator
+        user = request.current_user
 
         user.cancel_at_period_end = True
         db.session.commit()

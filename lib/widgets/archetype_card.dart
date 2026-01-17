@@ -96,9 +96,9 @@ class ArchetypeCard extends StatelessWidget {
                   Container(
                      padding: const EdgeInsets.all(8),
                      decoration: BoxDecoration(
-                       color: AppColors.primary.withOpacity(0.1),
+                       color: AppColors.primary.withValues(alpha: 0.1),
                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                       border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                       border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                      ),
                      child: Text(
                         specialAbility, 

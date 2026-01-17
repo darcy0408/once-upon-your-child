@@ -125,7 +125,7 @@ class AvatarGenerationService {
         return [];
       }
     } catch (e) {
-      print('Failed to get fallback avatars: $e');
+      debugPrint('Failed to get fallback avatars: $e');
       return [];
     }
   }
@@ -145,7 +145,7 @@ class AvatarGenerationService {
       }
       return false;
     } catch (e) {
-      print('Avatar health check failed: $e');
+      debugPrint('Avatar health check failed: $e');
       return false;
     }
   }

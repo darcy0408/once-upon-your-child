@@ -90,7 +90,7 @@ class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
                   border: Border.all(color: Colors.green.shade300, width: 2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.green.withOpacity(0.2),
+                      color: Colors.green.withValues(alpha: 0.2),
                       blurRadius: 8,
                       spreadRadius: 2,
                     ),
@@ -367,7 +367,7 @@ class _PremiumUpgradeScreenState extends State<PremiumUpgradeScreen> {
               ? [
                   BoxShadow(
                     color:
-                        pricing.tier.color.withOpacity(0.3),
+                        pricing.tier.color.withValues(alpha: 0.3),
                     blurRadius: 12,
                     spreadRadius: 2,
                   ),

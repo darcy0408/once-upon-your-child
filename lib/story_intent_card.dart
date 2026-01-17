@@ -281,14 +281,14 @@ class _StoryIntentCardState extends State<StoryIntentCard> {
             decoration: BoxDecoration(
               color: isSelected ? color : Colors.white,
               border: Border.all(
-                color: isSelected ? color : color.withOpacity(0.5),
+                color: isSelected ? color : color.withValues(alpha: 0.5),
                 width: 1.5,
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: color.withOpacity(0.3),
+                        color: color.withValues(alpha: 0.3),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       )
@@ -300,7 +300,7 @@ class _StoryIntentCardState extends State<StoryIntentCard> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : color.withOpacity(0.8),
+                color: isSelected ? Colors.white : color.withValues(alpha: 0.8),
               ),
             ),
           ),

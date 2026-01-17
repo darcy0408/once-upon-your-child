@@ -149,9 +149,6 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
     }
   }
 
-  // Combined list for general display if needed, though we split them in UI
-  List<Companion> get _companions => [..._savedCharacterCompanions, ..._magicalCompanions];
-
   void _toggleCompanion(Companion companion) {
     setState(() {
       if (_selectedCompanions.contains(companion.id)) {
@@ -173,33 +170,6 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
       }
     });
   }
-  
-  List<Companion> get _allCompanions => _companions; // Alias for internal use if needed
-
-  void _selectAll() {
-    setState(() {
-      final allCompanions = _allCompanions;
-      if (_selectedCompanions.length == allCompanions.length) {
-        // Deselect all
-        _selectedCompanions.clear();
-        widget.wizardData.selectedCompanions.clear();
-        widget.wizardData.companionNames.clear();
-      } else {
-        // Select all
-        _selectedCompanions.clear();
-        widget.wizardData.selectedCompanions.clear();
-        widget.wizardData.companionNames.clear();
-
-        for (var c in allCompanions) {
-          _selectedCompanions.add(c.id);
-          widget.wizardData.selectedCompanions.add(c.id);
-          widget.wizardData.companionNames.add(c.name);
-        }
-      }
-    });
-  }
-
-  bool get _canContinue => true; // Optional step
 
   @override
   Widget build(BuildContext context) {
@@ -235,7 +205,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             Text(
               'Who will join you on this adventure?',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textDark.withOpacity(0.7),
+                    color: AppColors.textDark.withValues(alpha: 0.7),
                   ),
               textAlign: TextAlign.center,
             ),
@@ -316,7 +286,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
                   child: Text(
                     'Go Solo (Be Brave!)',
                     style: TextStyle(
-                      color: AppColors.textDark.withOpacity(0.6),
+                      color: AppColors.textDark.withValues(alpha: 0.6),
                       fontSize: 16,
                     ),
                   ),
@@ -472,7 +442,7 @@ class _CompanionCard extends StatelessWidget {
                           child: Text(
                             companion.description,
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: AppColors.textDark.withOpacity(0.7),
+                                  color: AppColors.textDark.withValues(alpha: 0.7),
                                   fontStyle: FontStyle.italic,
                                 ),
                             maxLines: 1,

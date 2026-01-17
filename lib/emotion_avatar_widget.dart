@@ -34,7 +34,7 @@ class EmotionAvatarWidget extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: _getBackgroundGradient().first.withOpacity(0.3),
+            color: _getBackgroundGradient().first.withValues(alpha: 0.3),
             blurRadius: 12,
             spreadRadius: 2,
           ),

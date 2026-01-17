@@ -590,10 +590,10 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
       padding: const EdgeInsets.all(14),
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: accent.withOpacity(0.14),
+        color: accent.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: accent.withOpacity(isLocked ? 0.4 : 0.9),
+          color: accent.withValues(alpha: isLocked ? 0.4 : 0.9),
           width: 1.5,
         ),
       ),
@@ -645,7 +645,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
       Chip(
         label: Text(_selectedCore!.name),
         avatar: Text(_selectedCore!.emoji),
-        backgroundColor: _selectedCore!.color?.withOpacity(0.25),
+        backgroundColor: _selectedCore!.color?.withValues(alpha: 0.25),
         labelStyle: const TextStyle(fontWeight: FontWeight.w700),
       ),
     ];
@@ -655,7 +655,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
         Chip(
           label: Text(_selectedSecondary!.name),
           avatar: Text(_selectedSecondary!.emoji),
-          backgroundColor: _selectedCore!.color?.withOpacity(0.18),
+          backgroundColor: _selectedCore!.color?.withValues(alpha: 0.18),
           labelStyle: const TextStyle(fontWeight: FontWeight.w700),
         ),
       );
@@ -666,7 +666,7 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
         Chip(
           label: Text(widget.currentFeeling!.tertiary),
           avatar: Text(widget.currentFeeling!.emoji),
-          backgroundColor: _selectedCore!.color?.withOpacity(0.15),
+          backgroundColor: _selectedCore!.color?.withValues(alpha: 0.15),
           labelStyle: const TextStyle(fontWeight: FontWeight.w700),
         ),
       );

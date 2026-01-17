@@ -9,6 +9,10 @@ import time
 from datetime import datetime
 import sys
 
+# Fix Windows console encoding for emoji support
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
+
 # Configuration
 BACKEND_URL = "http://127.0.0.1:5000"
 TEST_TIMEOUT = 60  # seconds

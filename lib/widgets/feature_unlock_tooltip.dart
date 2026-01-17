@@ -37,7 +37,7 @@ class FeatureUnlockTooltip extends StatelessWidget {
         return Tooltip(
           message: _getTooltipMessage(progress),
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.9),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(8),
           ),
           textStyle: const TextStyle(
@@ -98,8 +98,8 @@ class FeatureUnlockCelebrationDialog extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Theme.of(context).primaryColor.withOpacity(0.1),
-              Theme.of(context).primaryColor.withOpacity(0.05),
+              Theme.of(context).primaryColor.withValues(alpha: 0.1),
+              Theme.of(context).primaryColor.withValues(alpha: 0.05),
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -258,7 +258,7 @@ class FeatureLockOverlay extends StatelessWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 2,
                     offset: const Offset(0, 1),
                   ),

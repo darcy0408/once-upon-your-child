@@ -24,6 +24,7 @@ import 'screens/avatar_picker_screen.dart';
 import 'screens/midjourney_avatar_picker_screen.dart';
 import 'services/avatar_service.dart';
 
+import 'package:flutter/foundation.dart';
 class CharacterCreationScreenEnhanced extends StatefulWidget {
   const CharacterCreationScreenEnhanced({super.key});
 
@@ -340,29 +341,30 @@ class _CharacterCreationScreenEnhancedState
   }
 
   Future<void> _openAvataarsPicker() async {
-    print('[Character Creation] Opening Avataaars Picker...');
+    debugPrint('[Character Creation] Opening Avataaars Picker...');
     try {
       // Initialize avatar service (pass null for web compatibility - caching will be disabled)
-      print('[Character Creation] Initializing avatar service...');
+      debugPrint('[Character Creation] Initializing avatar service...');
       final avatarService = AvatarService(isar: null);
       await avatarService.initialize();
-      print('[Character Creation] Avatar service initialized successfully');
+      debugPrint('[Character Creation] Avatar service initialized successfully');
 
       final age = int.tryParse(_ageController.text.trim()) ?? 8;
-      print('[Character Creation] Character age: $age');
+      debugPrint('[Character Creation] Character age: $age');
 
       // Parse existing params if any
       Map<String, String>? initialSelection;
       if (_avatarParams != null) {
         try {
           initialSelection = Map<String, String>.from(json.decode(_avatarParams!));
-          print('[Character Creation] Loaded initial selections: $initialSelection');
+          debugPrint('[Character Creation] Loaded initial selections: $initialSelection');
         } catch (e) {
-          print('[Character Creation] Error parsing existing params: $e');
+          debugPrint('[Character Creation] Error parsing existing params: $e');
         }
       }
 
-      print('[Character Creation] Navigating to Avatar Picker Screen...');
+      debugPrint('[Character Creation] Navigating to Avatar Picker Screen...');
+      if (!mounted) return;
       final result = await Navigator.push<String>(
         context,
         MaterialPageRoute(
@@ -374,15 +376,15 @@ class _CharacterCreationScreenEnhancedState
         ),
       );
 
-      print('[Character Creation] Returned from Avatar Picker with result: $result');
-      if (result != null) {
+      debugPrint('[Character Creation] Returned from Avatar Picker with result: $result');
+      if (mounted && result != null) {
         setState(() {
           _avatarParams = result;
         });
-        print('[Character Creation] Avatar params saved: $_avatarParams');
+        debugPrint('[Character Creation] Avatar params saved: $_avatarParams');
       }
     } catch (e) {
-      print('[Character Creation] Error in avatar picker: $e');
+      debugPrint('[Character Creation] Error in avatar picker: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -396,7 +398,7 @@ class _CharacterCreationScreenEnhancedState
 
   Future<void> _openMidjourneyPicker() async {
     try {
-      print('[Character Creation] Opening Midjourney avatar picker...');
+      debugPrint('[Character Creation] Opening Midjourney avatar picker...');
       final result = await Navigator.push<String>(
         context,
         MaterialPageRoute(
@@ -406,15 +408,15 @@ class _CharacterCreationScreenEnhancedState
         ),
       );
 
-      print('[Character Creation] Returned from Midjourney picker with result: $result');
+      debugPrint('[Character Creation] Returned from Midjourney picker with result: $result');
       if (result != null) {
         setState(() {
           _midjourneyAvatarId = result;
         });
-        print('[Character Creation] Midjourney avatar saved: $_midjourneyAvatarId');
+        debugPrint('[Character Creation] Midjourney avatar saved: $_midjourneyAvatarId');
       }
     } catch (e) {
-      print('[Character Creation] Error in Midjourney picker: $e');
+      debugPrint('[Character Creation] Error in Midjourney picker: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -762,8 +764,8 @@ class _CharacterCreationScreenEnhancedState
     } on SocketException catch (e) {
       _showErrorSnackBar('Connection Error: ${e.message}');
     } catch (e, stackTrace) {
-      print('Character Creation Error: $e');
-      print('Stack Trace: $stackTrace');
+      debugPrint('Character Creation Error: $e');
+      debugPrint('Stack Trace: $stackTrace');
       _showErrorSnackBar('An unexpected error occurred: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);

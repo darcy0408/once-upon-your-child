@@ -5,6 +5,7 @@ from .models.story import Story
 from .models.user import User
 from .models.character import Character
 from .cost_tracking import get_cost_report
+from .middleware.auth import require_auth, require_admin
 import os
 
 analytics_bp = Blueprint('analytics', __name__)
@@ -113,6 +114,8 @@ def get_premium_user_count():
     return User.query.filter(User.subscription_tier.in_(['premium', 'family'])).count()
 
 @analytics_bp.route('/admin/analytics/overview')
+@require_auth
+@require_admin
 def get_overview():
     """Daily/weekly/monthly overview stats"""
     return jsonify({
@@ -134,6 +137,8 @@ def get_overview():
     })
 
 @analytics_bp.route('/admin/analytics/story-stats')
+@require_auth
+@require_admin
 def get_story_stats():
     """Story generation statistics"""
     return jsonify({
@@ -145,6 +150,8 @@ def get_story_stats():
     })
 
 @analytics_bp.route('/admin/analytics/user-activity')
+@require_auth
+@require_admin
 def get_user_activity():
     """User activity and engagement metrics"""
     return jsonify({
@@ -158,6 +165,8 @@ def get_user_activity():
     })
 
 @analytics_bp.route('/admin/analytics/feature-usage')
+@require_auth
+@require_admin
 def get_feature_usage():
     """Feature adoption rates"""
     return jsonify({
@@ -175,6 +184,8 @@ def get_feature_usage():
     })
 
 @analytics_bp.route('/admin/analytics/stories')
+@require_auth
+@require_admin
 def get_stories_paginated():
     """Get paginated list of stories for admin review"""
     try:
@@ -215,6 +226,8 @@ def get_stories_paginated():
         return jsonify({'error': f'Failed to fetch stories: {str(e)}'}), 500
 
 @analytics_bp.route('/admin/analytics/users')
+@require_auth
+@require_admin
 def get_users_paginated():
     """Get paginated list of users for admin review"""
     try:
@@ -266,6 +279,8 @@ def get_users_paginated():
         return jsonify({'error': f'Failed to fetch users: {str(e)}'}), 500
 
 @analytics_bp.route('/admin/cost-report')
+@require_auth
+@require_admin
 def get_cost_report_endpoint():
     """Get API cost report with breakdown by feature and time period"""
     try:

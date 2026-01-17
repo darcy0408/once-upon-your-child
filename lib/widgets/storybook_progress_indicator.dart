@@ -63,10 +63,10 @@ class StorybookProgressIndicator extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
+        color: AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
+          color: AppColors.primary.withValues(alpha: 0.3),
           width: 1.5,
         ),
       ),
@@ -156,7 +156,7 @@ class _PageIcon extends StatelessWidget {
     } else {
       // Future pages: light/empty
       fillColor = Colors.white;
-      borderColor = AppColors.primary.withOpacity(0.3);
+      borderColor = AppColors.primary.withValues(alpha: 0.3);
     }
 
     return Container(
@@ -208,7 +208,7 @@ class _FoldedCornerPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = fillColor.withOpacity(0.6)
+      ..color = fillColor.withValues(alpha: 0.6)
       ..style = PaintingStyle.fill;
 
     final path = Path()

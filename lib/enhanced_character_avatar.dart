@@ -137,7 +137,7 @@ class _AvatarPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     final shadowPaint = Paint()
-      ..color = Colors.black.withOpacity(0.15)
+      ..color = Colors.black.withValues(alpha: 0.15)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
 
     // Shadow
@@ -171,7 +171,7 @@ class _AvatarPainter extends CustomPainter {
 
     // Add hair texture/shine
     final shinePaint = Paint()
-      ..color = hairColor.withOpacity(0.3)
+      ..color = hairColor.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill;
 
     canvas.save();
@@ -229,7 +229,7 @@ class _AvatarPainter extends CustomPainter {
 
     // Highlight
     final highlightPaint = Paint()
-      ..color = Colors.white.withOpacity(0.6)
+      ..color = Colors.white.withValues(alpha: 0.6)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(
       center + Offset(-pupilRadius * 0.3, -pupilRadius * 0.3),
@@ -240,7 +240,7 @@ class _AvatarPainter extends CustomPainter {
 
   void _drawEyebrows(Canvas canvas, Offset center, double radius) {
     final eyebrowPaint = Paint()
-      ..color = hairColor.withOpacity(0.8)
+      ..color = hairColor.withValues(alpha: 0.8)
       ..style = PaintingStyle.stroke
       ..strokeWidth = radius * 0.06
       ..strokeCap = StrokeCap.round;
@@ -287,7 +287,7 @@ class _AvatarPainter extends CustomPainter {
 
   void _drawNose(Canvas canvas, Offset center, double radius) {
     final nosePaint = Paint()
-      ..color = skinColor.withOpacity(0.4)
+      ..color = skinColor.withValues(alpha: 0.4)
       ..style = PaintingStyle.fill;
 
     // Simple nose as small oval
@@ -303,7 +303,7 @@ class _AvatarPainter extends CustomPainter {
 
     // Nostrils (small dots)
     final nostrilPaint = Paint()
-      ..color = skinColor.withOpacity(0.6)
+      ..color = skinColor.withValues(alpha: 0.6)
       ..style = PaintingStyle.fill;
 
     canvas.drawCircle(
@@ -320,7 +320,7 @@ class _AvatarPainter extends CustomPainter {
 
   void _drawMouth(Canvas canvas, Offset center, double radius) {
     final mouthPaint = Paint()
-      ..color = const Color(0xFF8B4513).withOpacity(0.6)
+      ..color = const Color(0xFF8B4513).withValues(alpha: 0.6)
       ..style = PaintingStyle.stroke
       ..strokeWidth = radius * 0.04
       ..strokeCap = StrokeCap.round;
@@ -340,7 +340,7 @@ class _AvatarPainter extends CustomPainter {
     } else if (emotion == CoreEmotion.surprise) {
       // Open mouth (circle)
       final openMouthPaint = Paint()
-        ..color = const Color(0xFF8B4513).withOpacity(0.6)
+        ..color = const Color(0xFF8B4513).withValues(alpha: 0.6)
         ..style = PaintingStyle.fill;
       canvas.drawCircle(mouthCenter, radius * 0.15, openMouthPaint);
     } else if (emotion == CoreEmotion.sadness) {

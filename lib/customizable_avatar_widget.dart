@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import 'avatar_models.dart';
 
+import 'package:flutter/foundation.dart';
 class CustomizableAvatarWidget extends StatelessWidget {
   final CharacterAvatar avatar;
   final double size;
@@ -41,7 +42,7 @@ class CustomizableAvatarWidget extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.12),
+              color: Colors.black.withValues(alpha: 0.12),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -96,7 +97,7 @@ class CustomizableAvatarWidget extends StatelessWidget {
       );
       return response.statusCode == 200;
     } catch (e) {
-      print('? Failed to load avatar SVG: $e');
+      debugPrint('? Failed to load avatar SVG: $e');
       return false;
     }
   }

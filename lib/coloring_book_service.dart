@@ -97,39 +97,6 @@ class ColoringBookService {
   }
 
   /// Generate line art prompt for DALL-E
-  String _generateLineArtPrompt({
-    required String scene,
-    CharacterAppearance? characterAppearance,
-    required int age,
-    String? therapeuticFocus,
-  }) {
-    final characterDesc =
-        characterAppearance?.toColoringBookDescription() ?? 'a child character';
-
-    return '''
-Create a coloring book page (black and white line art only) for a child around age $age.
-
-Scene: $scene
-
-Character: $characterDesc
-
-Requirements:
-- BLACK AND WHITE ONLY - no colors, no shading, no gray tones
-- Clear, bold outlines suitable for coloring
-- Simple shapes and forms
-- Large areas for coloring
-- Child-friendly and engaging
-- No text or words
-- High contrast (black lines on white background)
-- Suitable for printing
-- Similar to classic children's coloring books
-- Include the character prominently in the scene
-${therapeuticFocus != null ? 'Therapeutic focus: $therapeuticFocus' : ''}
-
-Style: Clean line art, coloring book page, black outlines on white background
-'''
-        .trim();
-  }
 
   /// Call backend API to generate coloring page
   Future<String> _callBackendColoringAPI({

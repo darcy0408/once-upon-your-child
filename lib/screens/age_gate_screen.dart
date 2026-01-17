@@ -131,6 +131,7 @@ class _AgeGateScreenState extends State<AgeGateScreen> {
     await widget.consentService.saveDeclaredAge(_selectedAge!);
 
     if (_selectedAge! < 13) {
+      if (!mounted) return;
       final granted = await Navigator.of(context).push<bool>(
         MaterialPageRoute(
           builder: (_) => ParentalConsentScreen(

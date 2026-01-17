@@ -250,7 +250,7 @@ class _CharacterCreationScreenV3State extends State<CharacterCreationScreenV3> {
                 color: CharacterCustomization.secondaryBackground,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, -2),
                   ),
@@ -334,7 +334,7 @@ class _CharacterCreationScreenV3State extends State<CharacterCreationScreenV3> {
         labelText: label,
         hintText: hint,
         labelStyle: const TextStyle(color: CharacterCustomization.softGreen),
-        hintStyle: TextStyle(color: CharacterCustomization.softGreen.withOpacity(0.5)),
+        hintStyle: TextStyle(color: CharacterCustomization.softGreen.withValues(alpha: 0.5)),
         filled: true,
         fillColor: CharacterCustomization.primaryBackground,
         border: OutlineInputBorder(
@@ -457,7 +457,7 @@ class _CharacterCreationScreenV3State extends State<CharacterCreationScreenV3> {
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: CharacterCustomization.accentGreen.withOpacity(0.4),
+                            color: CharacterCustomization.accentGreen.withValues(alpha: 0.4),
                             blurRadius: 8,
                             spreadRadius: 2,
                           ),
@@ -508,7 +508,7 @@ class _CharacterCreationScreenV3State extends State<CharacterCreationScreenV3> {
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: CharacterCustomization.accentGreen.withOpacity(0.4),
+                            color: CharacterCustomization.accentGreen.withValues(alpha: 0.4),
                             blurRadius: 8,
                             spreadRadius: 2,
                           ),
@@ -559,7 +559,7 @@ class _CharacterCreationScreenV3State extends State<CharacterCreationScreenV3> {
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: CharacterCustomization.accentGreen.withOpacity(0.4),
+                            color: CharacterCustomization.accentGreen.withValues(alpha: 0.4),
                             blurRadius: 8,
                             spreadRadius: 2,
                           ),

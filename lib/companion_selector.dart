@@ -213,7 +213,7 @@ class _ChipAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CircleAvatar(
-      backgroundColor: selected ? Colors.blue.withOpacity(.12) : Colors.grey.withOpacity(.12),
+      backgroundColor: selected ? Colors.blue.withValues(alpha: .12) : Colors.grey.withValues(alpha: .12),
       child: _ImageOrIcon(option: option, size: 18),
     );
   }

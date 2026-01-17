@@ -200,8 +200,8 @@ class _ConflictResolutionStoriesState extends State<ConflictResolutionStories>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            story.strategy.color.withOpacity(0.1),
-            story.strategy.color.withOpacity(0.05),
+            story.strategy.color.withValues(alpha: 0.1),
+            story.strategy.color.withValues(alpha: 0.05),
           ],
         ),
       ),
@@ -213,7 +213,7 @@ class _ConflictResolutionStoriesState extends State<ConflictResolutionStories>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: story.strategy.color.withOpacity(0.2),
+                color: story.strategy.color.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: story.strategy.color, width: 2),
               ),
@@ -281,7 +281,7 @@ class _ConflictResolutionStoriesState extends State<ConflictResolutionStories>
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -327,7 +327,7 @@ class _ConflictResolutionStoriesState extends State<ConflictResolutionStories>
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -437,7 +437,7 @@ class _ConflictResolutionStoriesState extends State<ConflictResolutionStories>
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -612,7 +612,7 @@ class _ConflictResolutionStoriesState extends State<ConflictResolutionStories>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

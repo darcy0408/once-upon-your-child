@@ -220,7 +220,7 @@ class _EmotionPickerWidgetState extends State<EmotionPickerWidget> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF4a9d6a).withOpacity(0.4),
+                    color: const Color(0xFF4a9d6a).withValues(alpha: 0.4),
                     blurRadius: 12,
                     spreadRadius: 2,
                   ),
@@ -276,7 +276,7 @@ class _EmotionPickerWidgetState extends State<EmotionPickerWidget> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF4a9d6a).withOpacity(0.3),
+                    color: const Color(0xFF4a9d6a).withValues(alpha: 0.3),
                     blurRadius: 8,
                     spreadRadius: 1,
                   ),

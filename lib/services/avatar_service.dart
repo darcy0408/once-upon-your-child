@@ -11,6 +11,7 @@ import '../services/isar_service.dart';
 
 import '../data/isar/avatar_cache_entry.dart';
 
+import 'package:flutter/foundation.dart';
 /// Service for generating and caching self-hosted DiceBear avatars
 ///
 /// Features:
@@ -268,11 +269,11 @@ class AvatarService {
     } catch (e) {
       // Network error - try to return stale cache as fallback
       if (cached != null) {
-        print('AvatarService: Network error, using stale cache: $e');
+        debugPrint('AvatarService: Network error, using stale cache: $e');
         return cached.svgString;
       }
 
-      print('AvatarService: Failed to fetch avatar: $e');
+      debugPrint('AvatarService: Failed to fetch avatar: $e');
       return null;
     }
   }

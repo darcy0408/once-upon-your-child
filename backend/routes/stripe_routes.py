@@ -5,6 +5,7 @@ import stripe
 from dotenv import load_dotenv
 
 from ..models.user import User
+from ..middleware.auth import require_auth, require_owner
 
 load_dotenv()
 
@@ -59,29 +60,20 @@ def create_checkout_session():
             'checkout_url': checkout_session.url
         })
     except Exception as e:
-        return jsonify(error=str(e)), 403
+        logger.exception("Failed to create checkout session")
+        return jsonify(error="Failed to create checkout session. Please try again."), 403
 
 @stripe_routes.route('/subscription-status/<user_id>', methods=['GET'])
+@require_auth
+@require_owner('user_id')
 def get_subscription_status(user_id):
     """
     Get the current subscription status for a user.
     Returns subscription tier, status, and renewal date.
     """
     try:
-        # Query the database for user's subscription
-        # This connects to the existing User model
-        from ..models.user import User
-
-        user = User.query.filter_by(id=user_id).first()
-
-        if not user:
-            # If user doesn't exist yet (e.g. fresh install), just return free tier status
-            # This prevents 404 errors in the logs for new users
-            return jsonify({
-                'status': 'inactive',
-                'tier': 'free',
-                'message': 'User not found, defaulting to free tier'
-            })
+        # User already validated by @require_auth and @require_owner decorators
+        user = request.current_user
 
         # Get subscription from Stripe if customer_id exists
         if user.stripe_customer_id:
@@ -108,4 +100,4 @@ def get_subscription_status(user_id):
 
     except Exception as e:
         logger.exception("Failed to get subscription status")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Failed to retrieve subscription status'}), 500

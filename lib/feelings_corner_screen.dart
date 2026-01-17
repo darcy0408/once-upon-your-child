@@ -432,7 +432,7 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: feeling.color.withOpacity(0.1),
+        color: feeling.color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: feeling.color, width: 2),
       ),
@@ -553,9 +553,9 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: accent.withOpacity(0.12),
+        color: accent.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accent.withOpacity(0.4), width: 1.5),
+        border: Border.all(color: accent.withValues(alpha: 0.4), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,0 +1,206 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.2, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\dev\story-weaver-app\backend
+configfile: pytest.ini
+plugins: anyio-4.9.0, base-url-2.1.0, cov-4.1.0, flask-1.3.0, playwright-0.7.2
+collected 5 items
+
+backend\tests\security_verification.py EEEEE                             [100%]
+
+=================================== ERRORS ====================================
+__________ ERROR at setup of test_admin_route_access_denied_no_auth ___________
+
+    @pytest.fixture(scope='session')
+    def app():
+        """Instance of Main flask app"""
+>       from backend.app import create_app
+
+backend\tests\conftest.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\app.py:28: in <module>
+    from backend.config import config, config_by_name
+backend\config\__init__.py:44: in <module>
+    class Config:
+backend\config\__init__.py:47: in Config
+    SECRET_KEY = _get_required_secret('SECRET_KEY')
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+key_name = 'SECRET_KEY', allow_dev_fallback = True
+
+    def _get_required_secret(key_name, allow_dev_fallback=True):
+        """
+        Get a required secret from environment variables.
+        In production, raises error if not set. In dev, allows fallback with warning.
+        """
+        value = os.environ.get(key_name)
+        if value:
+            return value
+    
+        env = os.environ.get('FLASK_ENV', 'development')
+        is_production = env in ('prod', 'production')
+    
+        if is_production:
+>           raise ValueError(f"SECURITY ERROR: {key_name} must be set in production environment!")
+E           ValueError: SECURITY ERROR: SECRET_KEY must be set in production environment!
+
+backend\config\__init__.py:35: ValueError
+---------------------------- Captured stdout setup ----------------------------
+Loading .env from: C:\dev\story-weaver-app\backend\.env
+GEMINI_API_KEY loaded: True
+FORCED GEMINI_MODEL = gemini-2.0-flash-exp
+________ ERROR at setup of test_admin_route_access_denied_regular_user ________
+
+    @pytest.fixture(scope='session')
+    def app():
+        """Instance of Main flask app"""
+>       from backend.app import create_app
+
+backend\tests\conftest.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\app.py:28: in <module>
+    from backend.config import config, config_by_name
+backend\config\__init__.py:44: in <module>
+    class Config:
+backend\config\__init__.py:47: in Config
+    SECRET_KEY = _get_required_secret('SECRET_KEY')
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+key_name = 'SECRET_KEY', allow_dev_fallback = True
+
+    def _get_required_secret(key_name, allow_dev_fallback=True):
+        """
+        Get a required secret from environment variables.
+        In production, raises error if not set. In dev, allows fallback with warning.
+        """
+        value = os.environ.get(key_name)
+        if value:
+            return value
+    
+        env = os.environ.get('FLASK_ENV', 'development')
+        is_production = env in ('prod', 'production')
+    
+        if is_production:
+>           raise ValueError(f"SECURITY ERROR: {key_name} must be set in production environment!")
+E           ValueError: SECURITY ERROR: SECRET_KEY must be set in production environment!
+
+backend\config\__init__.py:35: ValueError
+___________ ERROR at setup of test_admin_route_access_granted_admin ___________
+
+    @pytest.fixture(scope='session')
+    def app():
+        """Instance of Main flask app"""
+>       from backend.app import create_app
+
+backend\tests\conftest.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\app.py:28: in <module>
+    from backend.config import config, config_by_name
+backend\config\__init__.py:44: in <module>
+    class Config:
+backend\config\__init__.py:47: in Config
+    SECRET_KEY = _get_required_secret('SECRET_KEY')
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+key_name = 'SECRET_KEY', allow_dev_fallback = True
+
+    def _get_required_secret(key_name, allow_dev_fallback=True):
+        """
+        Get a required secret from environment variables.
+        In production, raises error if not set. In dev, allows fallback with warning.
+        """
+        value = os.environ.get(key_name)
+        if value:
+            return value
+    
+        env = os.environ.get('FLASK_ENV', 'development')
+        is_production = env in ('prod', 'production')
+    
+        if is_production:
+>           raise ValueError(f"SECURITY ERROR: {key_name} must be set in production environment!")
+E           ValueError: SECURITY ERROR: SECRET_KEY must be set in production environment!
+
+backend\config\__init__.py:35: ValueError
+_____________ ERROR at setup of test_endor_protection_user_stats ______________
+
+    @pytest.fixture(scope='session')
+    def app():
+        """Instance of Main flask app"""
+>       from backend.app import create_app
+
+backend\tests\conftest.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\app.py:28: in <module>
+    from backend.config import config, config_by_name
+backend\config\__init__.py:44: in <module>
+    class Config:
+backend\config\__init__.py:47: in Config
+    SECRET_KEY = _get_required_secret('SECRET_KEY')
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+key_name = 'SECRET_KEY', allow_dev_fallback = True
+
+    def _get_required_secret(key_name, allow_dev_fallback=True):
+        """
+        Get a required secret from environment variables.
+        In production, raises error if not set. In dev, allows fallback with warning.
+        """
+        value = os.environ.get(key_name)
+        if value:
+            return value
+    
+        env = os.environ.get('FLASK_ENV', 'development')
+        is_production = env in ('prod', 'production')
+    
+        if is_production:
+>           raise ValueError(f"SECURITY ERROR: {key_name} must be set in production environment!")
+E           ValueError: SECURITY ERROR: SECRET_KEY must be set in production environment!
+
+backend\config\__init__.py:35: ValueError
+________ ERROR at setup of test_idor_protection_delete_other_character ________
+
+    @pytest.fixture(scope='session')
+    def app():
+        """Instance of Main flask app"""
+>       from backend.app import create_app
+
+backend\tests\conftest.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\app.py:28: in <module>
+    from backend.config import config, config_by_name
+backend\config\__init__.py:44: in <module>
+    class Config:
+backend\config\__init__.py:47: in Config
+    SECRET_KEY = _get_required_secret('SECRET_KEY')
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+key_name = 'SECRET_KEY', allow_dev_fallback = True
+
+    def _get_required_secret(key_name, allow_dev_fallback=True):
+        """
+        Get a required secret from environment variables.
+        In production, raises error if not set. In dev, allows fallback with warning.
+        """
+        value = os.environ.get(key_name)
+        if value:
+            return value
+    
+        env = os.environ.get('FLASK_ENV', 'development')
+        is_production = env in ('prod', 'production')
+    
+        if is_production:
+>           raise ValueError(f"SECURITY ERROR: {key_name} must be set in production environment!")
+E           ValueError: SECURITY ERROR: SECRET_KEY must be set in production environment!
+
+backend\config\__init__.py:35: ValueError
+=========================== short test summary info ===========================
+ERROR backend\tests\security_verification.py::test_admin_route_access_denied_no_auth
+ERROR backend\tests\security_verification.py::test_admin_route_access_denied_regular_user
+ERROR backend\tests\security_verification.py::test_admin_route_access_granted_admin
+ERROR backend\tests\security_verification.py::test_endor_protection_user_stats
+ERROR backend\tests\security_verification.py::test_idor_protection_delete_other_character
+============================== 5 errors in 0.44s ==============================

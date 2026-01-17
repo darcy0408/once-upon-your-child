@@ -112,7 +112,7 @@ class _HolePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..blendMode = BlendMode.clear;
     canvas.saveLayer(Offset.zero & size, Paint());
-    canvas.drawRect(Offset.zero & size, Paint()..color = Colors.black.withOpacity(0.7));
+    canvas.drawRect(Offset.zero & size, Paint()..color = Colors.black.withValues(alpha: 0.7));
     final path = Path()
       ..addRRect(RRect.fromRectAndRadius(rect, const Radius.circular(16)));
     canvas.drawPath(path, paint);

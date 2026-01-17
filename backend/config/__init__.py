@@ -8,24 +8,43 @@ dotenv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
 if os.path.exists(dotenv_path):
     print(f"Loading .env from: {dotenv_path}")
     load_dotenv(dotenv_path=dotenv_path, override=True)
-    loaded_key = os.environ.get('GEMINI_API_KEY')
-    print(f"GEMINI_API_KEY loaded: {bool(loaded_key)}")
-    if loaded_key:
-        print(f"Masked GEMINI_API_KEY: {loaded_key[:4]}...{loaded_key[-4:]}")
+    # SECURITY: Don't log API keys, even partially masked
+    print(f"GEMINI_API_KEY loaded: {bool(os.environ.get('GEMINI_API_KEY'))}")
 else:
     print(f"No .env file found at {dotenv_path}, using system environment variables")
-    system_key = os.environ.get('GEMINI_API_KEY')
-    print(f"GEMINI_API_KEY present: {bool(system_key)}")
-    if system_key:
-        print(f"Masked GEMINI_API_KEY: {system_key[:4]}...{system_key[-4:]}")
+    # SECURITY: Don't log API keys, even partially masked
+    print(f"GEMINI_API_KEY present: {bool(os.environ.get('GEMINI_API_KEY'))}")
 
 # FORCE gemini-2.0-flash-exp to fix persistent reversion issue
 os.environ['GEMINI_MODEL'] = 'gemini-2.0-flash-exp'
 print(f"FORCED GEMINI_MODEL = {os.environ.get('GEMINI_MODEL')}")
 
+def _get_required_secret(key_name, allow_dev_fallback=True):
+    """
+    Get a required secret from environment variables.
+    In production, raises error if not set. In dev, allows fallback with warning.
+    """
+    value = os.environ.get(key_name)
+    if value:
+        return value
+
+    env = os.environ.get('FLASK_ENV', 'development')
+    is_production = env in ('prod', 'production')
+
+    if is_production:
+        raise ValueError(f"SECURITY ERROR: {key_name} must be set in production environment!")
+
+    if allow_dev_fallback:
+        print(f"WARNING: {key_name} not set - using dev fallback. NOT SAFE FOR PRODUCTION!")
+        return f'dev-{key_name.lower()}-fallback'
+
+    raise ValueError(f"{key_name} is required but not set")
+
+
 class Config:
     """Base configuration."""
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key'
+    # SECRET_KEY is required in production - no silent fallback
+    SECRET_KEY = _get_required_secret('SECRET_KEY')
 
     # Mock Testing Mode - Use mock endpoints instead of real API calls
     MOCK_TESTING_MODE = os.environ.get('MOCK_TESTING_MODE', 'false').lower() in ['true', '1', 'yes']
@@ -95,7 +114,8 @@ class Config:
             base_origins.append(f"https://{railway_static_url}")
 
         # Add localhost origins only in development
-        if os.environ.get('FLASK_ENV', 'development') in ['dev', 'development']:
+        # SECURITY: Never use "*" wildcard - use regex patterns instead
+        if os.environ.get('FLASK_ENV', 'production') in ['dev', 'development']:
             base_origins.extend([
                 "http://localhost:8080",
                 "http://127.0.0.1:8080",
@@ -109,10 +129,10 @@ class Config:
                 "http://127.0.0.1:3003",
                 "http://localhost:5000",
                 "http://127.0.0.1:5000",
-                "http://127.0.0.1:5000",
                 "http://10.0.2.2:8080",
                 "http://10.0.2.2:5000",
-                "*"  # Allow all origins in dev to support random Flutter web ports
+                # Regex patterns handle random Flutter web ports securely
+                # No wildcard "*" - that would allow any origin including malicious sites
             ])
 
         return base_origins

@@ -6,7 +6,12 @@ Executes all automated tests and generates detailed results
 import json
 import time
 from datetime import datetime
+import sys
 from automated_test_suite import StoryWeaverTester
+
+# Fix Windows console encoding for emoji support
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 def run_comprehensive_tests():
     """Run all automated tests and collect results"""

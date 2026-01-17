@@ -7,6 +7,7 @@ import '../models/local/story_local.dart';
 import 'isar_service.dart';
 import 'offline_story_service.dart';
 
+import 'package:flutter/foundation.dart';
 class StorageMigration {
   static const _migrationFlagKey = 'isar_migration_complete';
   static const _cachedStoriesKey = 'cached_stories';
@@ -19,7 +20,7 @@ class StorageMigration {
 
     if (migrated) return;
 
-    print('Starting migration from SharedPreferences to Isar...');
+    debugPrint('Starting migration from SharedPreferences to Isar...');
 
     final isar = await IsarService.getInstance();
     final offlineService = OfflineStoryService(isar);
@@ -33,7 +34,7 @@ class StorageMigration {
         await offlineService.saveStory(story);
         migratedCount++;
       } catch (e) {
-        print('Failed to migrate cached story: $e');
+        debugPrint('Failed to migrate cached story: $e');
       }
     }
 
@@ -50,7 +51,7 @@ class StorageMigration {
           }
         }
       } catch (e) {
-        print('Failed to migrate saved stories: $e');
+        debugPrint('Failed to migrate saved stories: $e');
       }
     }
 
@@ -66,7 +67,7 @@ class StorageMigration {
           }
         }
       } catch (e) {
-        print('Failed to migrate offline cache: $e');
+        debugPrint('Failed to migrate offline cache: $e');
       }
     }
 
@@ -75,6 +76,6 @@ class StorageMigration {
     await prefs.remove(_savedStoriesV2Key);
     await prefs.remove(_offlineCacheKey);
 
-    print('Migration complete! Migrated $migratedCount stories.');
+    debugPrint('Migration complete! Migrated $migratedCount stories.');
   }
 }

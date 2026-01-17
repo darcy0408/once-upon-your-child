@@ -540,7 +540,7 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
                     borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 6,
-                  shadowColor: AppColors.primary.withOpacity(0.5),
+                  shadowColor: AppColors.primary.withValues(alpha: 0.5),
                 ),
                 label: _isGenerating
                     ? const Row(

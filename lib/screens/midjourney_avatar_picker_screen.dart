@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:flutter/foundation.dart';
 /// Midjourney Avatar Picker Screen
 ///
 /// Displays custom Midjourney-generated avatars in a grid with:
@@ -65,7 +66,7 @@ class _MidjourneyAvatarPickerScreenState extends State<MidjourneyAvatarPickerScr
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading avatar metadata: $e');
+      debugPrint('Error loading avatar metadata: $e');
       setState(() {
         _isLoading = false;
       });

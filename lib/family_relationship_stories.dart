@@ -493,8 +493,8 @@ class _FamilyRelationshipStoriesState extends State<FamilyRelationshipStories>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            story.theme.color.withOpacity(0.1),
-            story.theme.color.withOpacity(0.05),
+            story.theme.color.withValues(alpha: 0.1),
+            story.theme.color.withValues(alpha: 0.05),
           ],
         ),
       ),
@@ -506,7 +506,7 @@ class _FamilyRelationshipStoriesState extends State<FamilyRelationshipStories>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: story.theme.color.withOpacity(0.2),
+                color: story.theme.color.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: story.theme.color, width: 2),
               ),
@@ -717,7 +717,7 @@ class _FamilyRelationshipStoriesState extends State<FamilyRelationshipStories>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

@@ -284,18 +284,18 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.cream.withOpacity(0.7),
-                    AppColors.primary.withOpacity(0.15),
+                    AppColors.cream.withValues(alpha: 0.7),
+                    AppColors.primary.withValues(alpha: 0.15),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(AppRadius.lg),
                 border: Border.all(
-                  color: AppColors.primary.withOpacity(0.2),
+                  color: AppColors.primary.withValues(alpha: 0.2),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     blurRadius: 15,
                     offset: const Offset(0, 8),
                   ),
@@ -309,7 +309,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: const Text('⚙️', style: TextStyle(fontSize: 20)),
@@ -365,18 +365,18 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.cream.withOpacity(0.7),
-                    AppColors.gold.withOpacity(0.2),
+                    AppColors.cream.withValues(alpha: 0.7),
+                    AppColors.gold.withValues(alpha: 0.2),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(AppRadius.lg),
                 border: Border.all(
-                  color: AppColors.gold.withOpacity(0.3),
+                  color: AppColors.gold.withValues(alpha: 0.3),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.gold.withOpacity(0.1),
+                    color: AppColors.gold.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -390,7 +390,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.gold.withOpacity(0.1),
+                          color: AppColors.gold.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: const Text('⏱️', style: TextStyle(fontSize: 20)),
@@ -462,18 +462,18 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.cream.withOpacity(0.7),
-                    AppColors.primary.withOpacity(0.1),
+                    AppColors.cream.withValues(alpha: 0.7),
+                    AppColors.primary.withValues(alpha: 0.1),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(AppRadius.lg),
                 border: Border.all(
-                  color: AppColors.primary.withOpacity(0.2),
+                  color: AppColors.primary.withValues(alpha: 0.2),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.08),
+                    color: AppColors.primary.withValues(alpha: 0.08),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -487,7 +487,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.accent.withOpacity(0.1),
+                          color: AppColors.accent.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: const Text('💭', style: TextStyle(fontSize: 20)),
@@ -525,11 +525,11 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppRadius.md),
-                        borderSide: BorderSide(color: AppColors.primary.withOpacity(0.3)),
+                        borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppRadius.md),
-                        borderSide: BorderSide(color: AppColors.primary.withOpacity(0.3)),
+                        borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -537,7 +537,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                       ),
                       contentPadding: const EdgeInsets.all(16),
                       filled: true,
-                      fillColor: AppColors.cream.withOpacity(0.3), // Magical cream tint instead of white
+                      fillColor: AppColors.cream.withValues(alpha: 0.3), // Magical cream tint instead of white
                     ),
                     style: const TextStyle(
                       fontSize: 15,
@@ -550,9 +550,9 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.accent.withOpacity(0.1),
+                          color: AppColors.accent.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(AppRadius.md),
-                          border: Border.all(color: AppColors.accent.withOpacity(0.3)),
+                          border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
@@ -748,7 +748,7 @@ class _SummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.lg), // Improved Radius
         border: Border.all(
-          color: isError ? AppColors.error : color.withOpacity(0.3),
+          color: isError ? AppColors.error : color.withValues(alpha: 0.3),
           width: 2, // Thicker border
         ),
         gradient: LinearGradient(
@@ -756,13 +756,13 @@ class _SummaryCard extends StatelessWidget {
           end: Alignment.centerRight,
           colors: [
              // Subtle tint based on the category color
-             color.withOpacity(0.15),
-             AppColors.cream.withOpacity(0.6),
+             color.withValues(alpha: 0.15),
+             AppColors.cream.withValues(alpha: 0.6),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -773,7 +773,7 @@ class _SummaryCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: isError ? AppColors.error.withOpacity(0.1) : color.withOpacity(0.1),
+              color: isError ? AppColors.error.withValues(alpha: 0.1) : color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Text(
@@ -836,16 +836,16 @@ class _LengthOption extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.gold : AppColors.cream.withOpacity(0.3),
+          color: isSelected ? AppColors.gold : AppColors.cream.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: isSelected ? AppColors.gold : AppColors.primary.withOpacity(0.3),
+            color: isSelected ? AppColors.gold : AppColors.primary.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppColors.gold.withOpacity(0.3),
+                    color: AppColors.gold.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -861,7 +861,7 @@ class _LengthOption extends StatelessWidget {
                 shadows: isSelected
                     ? [
                         Shadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 4,
                         ),
                       ]

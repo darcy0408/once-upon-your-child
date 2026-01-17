@@ -369,7 +369,7 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
         children: [
           CircleAvatar(
             radius: 28,
-            backgroundColor: AppColors.primary.withOpacity(0.2),
+            backgroundColor: AppColors.primary.withValues(alpha: 0.2),
             child: Text(
               widget.character.name.isNotEmpty
                   ? widget.character.name[0].toUpperCase()
@@ -429,7 +429,7 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
             children: List.generate(_choiceHistory.length, (index) {
               final choice = _choiceHistory[index];
               return Chip(
-                backgroundColor: AppColors.accent.withOpacity(0.2),
+                backgroundColor: AppColors.accent.withValues(alpha: 0.2),
                 labelStyle: theme.textTheme.labelLarge,
                 label: Text('${index + 1}. ${choice.text}'),
               );
@@ -546,7 +546,7 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.04),
+                color: AppColors.primary.withValues(alpha: 0.04),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
                   color: isPending ? AppColors.primary : Colors.grey.shade200,
@@ -575,7 +575,7 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
                   if (skill != null && skill.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Chip(
-                      backgroundColor: AppColors.secondary.withOpacity(0.12),
+                      backgroundColor: AppColors.secondary.withValues(alpha: 0.12),
                       label: Text(
                         _formatSkill(skill),
                         style: theme.textTheme.labelMedium?.copyWith(

@@ -382,7 +382,7 @@ class _ColoringBookLibraryScreenState extends State<ColoringBookLibraryScreen> {
                               color: Colors.white, size: 20),
                           onPressed: () => _printPage(page),
                           style: IconButton.styleFrom(
-                            backgroundColor: Colors.black.withOpacity(0.6),
+                            backgroundColor: Colors.black.withValues(alpha: 0.6),
                           ),
                         ),
                         IconButton(
@@ -390,7 +390,7 @@ class _ColoringBookLibraryScreenState extends State<ColoringBookLibraryScreen> {
                               color: Colors.white, size: 20),
                           onPressed: () => _deletePage(page),
                           style: IconButton.styleFrom(
-                            backgroundColor: Colors.red.withOpacity(0.8),
+                            backgroundColor: Colors.red.withValues(alpha: 0.8),
                           ),
                         ),
                       ],

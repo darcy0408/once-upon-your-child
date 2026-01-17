@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../models/usage_stats.dart';
 import 'user_identity_service.dart';
 
+import 'package:flutter/foundation.dart';
 class UsageStatsService {
   static String get _baseUrl => FlavorConfig.instance.backendUrl;
 
@@ -29,7 +30,7 @@ class UsageStatsService {
         );
       }
     } catch (e) {
-      print('Error fetching usage stats: $e');
+      debugPrint('Error fetching usage stats: $e');
       // Return default stats on error
       return UsageStats(
         storiesThisMonth: 0,
@@ -47,7 +48,7 @@ class UsageStatsService {
       final stats = await getUsageStats();
       return stats.storiesThisMonth < stats.storiesLimit;
     } catch (e) {
-      print('Error checking if can create story: $e');
+      debugPrint('Error checking if can create story: $e');
       // Default to true to not block users
       return true;
     }

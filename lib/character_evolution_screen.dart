@@ -189,7 +189,7 @@ class _CharacterEvolutionScreenState extends State<CharacterEvolutionScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: LinearGradient(
-            colors: [stage.color.withOpacity(0.1), stage.color.withOpacity(0.05)],
+            colors: [stage.color.withValues(alpha: 0.1), stage.color.withValues(alpha: 0.05)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

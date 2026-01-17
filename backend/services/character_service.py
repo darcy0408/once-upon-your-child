@@ -95,6 +95,7 @@ def create_character(data: dict):
     new_character.goals = _as_list(data.get("goals", []))
     new_character.pets = data.get("pets", [])
     new_character.comfort_item = data.get("comfort_item")
+    new_character.user_id = data.get("user_id")
 
     # Avataaars customization (DiceBear)
     new_character.avatar_params = data.get("avatar_params")

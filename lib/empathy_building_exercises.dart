@@ -576,8 +576,8 @@ class _EmpathyBuildingExercisesState extends State<EmpathyBuildingExercises>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            exercise.type.color.withOpacity(0.1),
-            exercise.type.color.withOpacity(0.05),
+            exercise.type.color.withValues(alpha: 0.1),
+            exercise.type.color.withValues(alpha: 0.05),
           ],
         ),
       ),
@@ -603,7 +603,7 @@ class _EmpathyBuildingExercisesState extends State<EmpathyBuildingExercises>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: exercise.type.color.withOpacity(0.2),
+                color: exercise.type.color.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: exercise.type.color, width: 2),
               ),
@@ -637,7 +637,7 @@ class _EmpathyBuildingExercisesState extends State<EmpathyBuildingExercises>
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
@@ -710,7 +710,7 @@ class _EmpathyBuildingExercisesState extends State<EmpathyBuildingExercises>
                           buttonColor = Colors.red.shade100;
                         }
                       } else if (isSelected) {
-                        buttonColor = exercise.type.color.withOpacity(0.2);
+                        buttonColor = exercise.type.color.withValues(alpha: 0.2);
                       }
 
                       return Padding(
@@ -749,7 +749,7 @@ class _EmpathyBuildingExercisesState extends State<EmpathyBuildingExercises>
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),

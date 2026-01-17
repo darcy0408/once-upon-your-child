@@ -37,6 +37,7 @@ class _ByokSetupWizardScreenState extends State<ByokSetupWizardScreen> {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Could not open Google AI Studio. Please open it manually.'),

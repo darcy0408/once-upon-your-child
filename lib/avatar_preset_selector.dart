@@ -155,7 +155,7 @@ class AvatarPresetSelector extends StatelessWidget {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF4a9d6a).withOpacity(0.4),
+                    color: const Color(0xFF4a9d6a).withValues(alpha: 0.4),
                     blurRadius: 10,
                     spreadRadius: 2,
                   ),
