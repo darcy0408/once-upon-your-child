@@ -11,6 +11,122 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-01-17 (Current Active Session - Supervisor)
+
+### Session: Multi-Instance Coordination & Therapeutic Pick-a-Path Planning - IN PROGRESS
+
+**Goal:** Coordinate all 5 Claude instances, finalize security commits, and begin planning the therapeutic pick-a-path feature.
+
+**Status:** 🔄 ACTIVE
+
+**This Session's Accomplishments:**
+1. ✅ Analyzed TEAM_COORDINATION.md to understand all 5 instance work streams
+2. ✅ Reviewed Priority 2 security changes (rate limiting, validation, error sanitization)
+3. ✅ Ran security verification tests - **7/7 passing**
+4. ✅ Fixed limiter decorator to handle `None` gracefully
+5. ✅ Created `backend/utils/__init__.py` for package exports
+6. ✅ Committed Priority 2 security fixes (commit `0258376`)
+
+**Instance 5 - Therapeutic Pick-a-Path Feature (User's Vision):**
+User described a feature for the pick-a-path adventures where:
+- Child/parent selects a **life challenge** (bullying, making friends, peer pressure, etc.)
+- AI generates interactive story teaching **coping strategies**
+- User choices demonstrate different approaches (smile and compliment, stand up to bullies, etc.)
+- Story shows **how things could work out** with positive actions
+
+**Existing Therapeutic Code (Already in Codebase):**
+| File | Purpose | Lines |
+|------|---------|-------|
+| `lib/peer_interaction_stories.dart` | Static peer interaction stories | 756 |
+| `lib/conflict_resolution_stories.dart` | Conflict resolution training | 725 |
+| `lib/therapeutic_focus_options.dart` | Focus options list | 11 |
+| `backend/services/interactive_adventure_prompt_builder.py` | Pick-a-path AI prompts | 250+ |
+
+**Design Decision Needed for Instance 5:**
+- **Option A:** Enhance static stories in `peer_interaction_stories.dart`
+- **Option B:** Integrate life challenges into AI pick-a-path system (**likely user intent**)
+
+**Next Steps:**
+1. ⏳ Review/commit uncommitted Priority 4 work (image limits, DB indexes)
+2. ⏳ Design therapeutic prompt enhancements for `interactive_adventure_prompt_builder.py`
+3. ⏳ Create `LIFE_CHALLENGES` categories with coping skills and outcomes
+4. ⏳ Build frontend UI for challenge selection before story generation
+
+**Current Git Status:**
+- Branch: `main` (ahead of origin by multiple commits)
+- Uncommitted: TEAM_COORDINATION.md, Priority 4 performance files
+- Ready to push: Priority 1 & 2 security commits
+
+**Blockers:** None currently
+
+**Anticipated Issues:**
+- Therapeutic prompts need careful age-calibration (simpler coping strategies for younger kids)
+- Need to balance teaching moment with fun story engagement
+- May need parental guidance UI for sensitive topics
+
+---
+
+## Supervisor Notes | 2026-01-17 (Backend Test Verification & Validator Edge Cases)
+
+### Session: Backend Test Verification & Fixes - COMPLETED
+
+**Goal:** Run and verify backend tests in `backend/tests/`, fix any failures, and add validator edge case tests.
+
+**Status:** ✅ COMPLETED - 19 tests passing
+
+**Work Completed:**
+
+1. **Environment Configuration Fixes:**
+   - Fixed `conftest.py` to set `FLASK_ENV=testing` before backend imports
+   - Fixed `config/__init__.py` to preserve `FLASK_ENV` when loading `.env`
+   - Issue: `.env` file has `FLASK_ENV=production` which was overriding test config
+
+2. **Missing Blueprint Fix:**
+   - Added `analytics_bp = Blueprint('analytics', __name__)` to `backend/analytics_routes.py`
+   - The blueprint was imported but never instantiated
+
+3. **Logger Shadowing Bug:**
+   - Renamed `logger` to `story_logger` inside `create_app()` in `backend/app.py`
+   - Local assignment was shadowing global logger, causing `UnboundLocalError`
+
+4. **Test Mocking Improvements:**
+   - Updated `monitoring_verification.py` with proper mock Limiter and Cache
+   - Created `make_passthrough_decorator()` that preserves function names
+
+5. **Added Validator Edge Case Tests (10 new tests):**
+   - Negative age rejection, age over limit, non-integer age
+   - Null/missing required fields
+   - Script/HTML tag sanitization
+   - Text length enforcement
+   - Boundary value testing (age 1 and 120)
+   - Age=0 falsy behavior documentation
+
+**Files Modified:**
+- `backend/tests/conftest.py` - Set FLASK_ENV=testing before imports
+- `backend/config/__init__.py` - Preserve FLASK_ENV when loading .env
+- `backend/analytics_routes.py` - Added blueprint instantiation
+- `backend/app.py` - Renamed logger to story_logger to fix shadowing
+- `backend/tests/monitoring_verification.py` - Improved mock decorators
+- `backend/tests/security_verification.py` - Added 10 validator edge case tests
+
+**Test Results:**
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `security_verification.py` | 17 | ✅ All passing |
+| `monitoring_verification.py` | 2 | ✅ All passing |
+| **Total** | **19** | ✅ All passing |
+
+**Issues Discovered (Documented, Not Fixed):**
+1. **Age=0 Treated as Missing:** `create_character()` uses falsy check - test documents this
+2. **Deprecation Warnings:** `datetime.utcnow()`, `Query.get()`, `google.generativeai` - non-blocking
+
+**Next Steps:**
+- Consider fixing age=0 falsy check if newborns should be valid
+- Address deprecation warnings when convenient
+- Run full test suite periodically
+
+---
+
 ## Supervisor Notes | 2026-01-17 (Coordination & Integration Review)
 
 ### Session: Security Fixes Integration Review - COMPLETED
@@ -75,18 +191,145 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-01-17 (Backend Security Agent - Instance 2)
+
+### Session: Analytics Rate Limiting & Limiter Bug Fix - COMPLETED
+
+**Goal:** Review and complete backend security work, verify rate limiting on admin routes, and extend protection to analytics routes.
+
+**Status:** ✅ COMPLETE
+
+**Work Completed:**
+
+1. **Verified Admin Routes Rate Limiting:**
+   - Confirmed `limiter=limiter` correctly passed to `create_admin_blueprint()` at `app.py:408`
+   - Both admin endpoints have `@limiter.limit("5 per minute")` protection
+
+2. **Added Rate Limiting to Analytics Routes:**
+   - Refactored `backend/analytics_routes.py` from direct Blueprint to factory pattern
+   - Created `create_analytics_blueprint(limiter=None)` function
+   - Added rate limiting to all 7 analytics endpoints (30/min, cost-report: 10/min)
+   - Updated `app.py` to use factory: `analytics_bp = create_analytics_blueprint(limiter=limiter)`
+
+3. **Fixed Limiter Garbage Collection Bug:**
+   - Discovered weak reference issue causing `ReferenceError: weakly-referenced object no longer exists`
+   - Root cause: limiter local variable in `create_app()` was being garbage collected
+   - Fix: Added `app.limiter = limiter` at `app.py:155` to maintain strong reference
+
+4. **Verified Error Handler:** Production returns generic message, dev shows details.
+
+**Files Modified:**
+- `backend/analytics_routes.py` - Factory pattern with rate limiting
+- `backend/app.py` - Import change, `app.limiter` reference, factory usage
+
+**Test Results:** All 7 security verification tests pass ✅
+
+**Next Steps:**
+1. Consider rate limiting for subscription/achievement routes
+2. Deploy to staging for integration testing
+
+---
+
+## Supervisor Notes | 2026-01-17 (Input Validation Completion)
+
+### Session: Instance 3 Continuation - Input Validation Remaining Tasks - COMPLETED
+
+**Goal:** Complete remaining input validation tasks from Instance 3: add image size validation and integrate validators in more routes.
+
+**Status:** ✅ COMPLETE
+
+**Work Completed:**
+
+1. **New Validators Added** (`backend/utils/validators.py`):
+   - `validate_num_images(num_images, max_allowed)` - Clamps image count to valid range
+   - `validate_image_size(image_bytes, max_bytes)` - Validates image size (default 10MB max)
+   - `validate_image_dimensions(width, height)` - Validates dimensions (64-4096px range)
+   - Added constants: `MAX_IMAGE_SIZE_BYTES`, `MAX_IMAGE_DIMENSION`, `MIN_IMAGE_DIMENSION`
+
+2. **Story Routes Integration** (`backend/routes/story_routes.py`):
+   - `/generate-illustrations` endpoint validates:
+     - `scene_description` → `sanitize_text(..., max_length=2000)`
+     - `character_name` → `sanitize_text(..., max_length=100)`
+     - `style` → `sanitize_text(..., max_length=200)`
+     - `num_images` → `validate_num_images(..., max_allowed=4)`
+     - `age` → `validate_age()` with fallback to 7
+     - `therapeutic_focus` → `sanitize_text(..., max_length=500)`
+     - Image downloads validated with `validate_image_size()` before processing
+   - `/generate-coloring-pages` endpoint: Same sanitization pattern
+   - Scene items in list individually sanitized
+
+3. **Character Service Enhancement** (`backend/services/character_service.py`):
+   - Added `_sanitize_pets()` function for nested pet data structures
+   - Sanitizes string fields within pet dictionaries (max 200 chars each)
+   - Applied to both `create_character()` and `update_character()`
+
+**Files Modified:**
+- `backend/utils/validators.py` - Added 3 new validation functions + constants
+- `backend/routes/story_routes.py` - Integrated validators in illustration endpoints
+- `backend/services/character_service.py` - Added `_sanitize_pets()` function
+
+**Verification:** ✅ All files pass Python syntax check
+
+**Input Validation Coverage:**
+| Endpoint | Validation Applied |
+|----------|-------------------|
+| `/generate-story` | age, story_length (via story_service) |
+| `/generate-illustrations` | scene_description, character_name, style, num_images, age, therapeutic_focus, image_size |
+| `/generate-coloring-pages` | scene_description, character_name, scenes list, num_images, age, therapeutic_focus |
+| Character CRUD | All text fields, age, personality_sliders, lists, pets (nested) |
+
+**Next Steps:**
+- Run full backend test suite to verify no regressions
+- Await further instructions
+
+**Known Issues:** None - all changes are additive validation that defaults gracefully
+
+---
+
 ## Supervisor Notes | 2026-01-16 (Priority 4 Performance)
 
-### Session: Priority 4 Performance (Images, DB, Analytics) - STARTED
+### Session: Priority 4 Performance (Images, DB, Analytics) - 80% COMPLETE
 
 **Goal**: Implement image safety limits, add DB indexes, and fix N+1 queries.
 
-**Status**: 🚀 STARTED
+**Status**: 🔄 80% COMPLETE (uncommitted changes ready for review)
 
-**Plan**:
-1.  **Image Safety**: Modify `backend/routes/story_routes.py` to enforce 5MB limit on downloads.
-2.  **DB Optimization**: Create `backend/migrations/add_indexes.py` for schema performance.
-3.  **Analytics**: Optimize `backend/analytics_routes.py` queries.
+**Work Completed:**
+
+1. **Image Safety (story_routes.py):**
+   - Added streaming download with 5MB limit protection
+   - Checks `Content-Length` header before loading
+   - Streams in 8KB chunks, breaks if exceeds limit
+   - Much safer than loading entire response into memory
+   - File: `backend/routes/story_routes.py` lines 592-640
+
+2. **N+1 Query Fix (analytics_routes.py):**
+   - Removed problematic `.joinedload(Story.characters)` that caused query issues
+   - Kept `.joinedload(Story.user)` for efficient user data fetching
+   - File: `backend/analytics_routes.py` line 206
+
+3. **DB Index Migration Script:**
+   - Created `backend/migrations/add_indexes.py`
+   - Adds indexes: `idx_stories_user_created`, `idx_stories_theme`, `idx_users_role`, `idx_users_subscription`
+   - Safe to run: Uses `CREATE INDEX IF NOT EXISTS`
+
+4. **Performance Verification Tests:**
+   - Created `backend/tests/performance_verification.py`
+   - Tests image download limit enforcement
+   - Tests analytics route stability
+
+**Files Created:**
+- `backend/migrations/add_indexes.py`
+- `backend/tests/performance_verification.py`
+
+**Files Modified:**
+- `backend/routes/story_routes.py` (image streaming + size limits)
+- `backend/analytics_routes.py` (N+1 fix)
+
+**Next Steps:**
+- Review and commit Priority 4 changes
+- Run migration on staging/production
+- Verify performance improvements
 
 ---
 
