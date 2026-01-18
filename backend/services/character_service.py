@@ -85,7 +85,12 @@ def create_character(data: dict):
     print(f"\n[DEBUG create_character] Received data: {data}")
     print(f"[DEBUG create_character] Pets field: {data.get('pets', 'NOT PROVIDED')}")
 
-    missing = [k for k in ("name", "age") if not data.get(k)]
+    # Check required fields - use explicit None check for age (age=0 is valid for newborns)
+    missing = []
+    if not data.get("name"):  # Empty string or None is invalid for name
+        missing.append("name")
+    if "age" not in data or data.get("age") is None:  # age=0 is valid
+        missing.append("age")
     if missing:
         return {"error": f"Missing required field(s): {', '.join(missing)}"}, 400
     try:
