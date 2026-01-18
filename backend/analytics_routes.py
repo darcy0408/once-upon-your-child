@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from .database import db
 from .models.story import Story
 from .models.user import User
@@ -11,12 +11,12 @@ import os
 
 def get_stories_created_count(days=1):
     """Get count of stories created in the last N days"""
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     return Story.query.filter(Story.created_at >= cutoff).count()
 
 def get_active_users_count(days=1):
     """Get count of users who created stories in the last N days"""
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     return db.session.query(User.id).join(Story).filter(Story.created_at >= cutoff).distinct().count()
 
 def get_error_count(days=1):
@@ -33,12 +33,12 @@ def get_avg_story_generation_time(days=7):
 
 def get_new_users_count(days=30):
     """Get count of new users in the last N days"""
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     return User.query.filter(User.created_at >= cutoff).count()
 
 def get_premium_conversion_count(days=30):
     """Get count of users who converted to premium in the last N days"""
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     return User.query.filter(
         User.created_at >= cutoff,
         User.subscription_tier.in_(['premium', 'family'])
@@ -254,7 +254,7 @@ def create_analytics_blueprint(limiter=None):
 
             if active_only:
                 # Users active in last 30 days
-                cutoff = datetime.utcnow() - timedelta(days=30)
+                cutoff = datetime.now(timezone.utc) - timedelta(days=30)
                 users_query = users_query.join(Story).filter(Story.created_at >= cutoff).distinct()
 
             users_query = users_query.order_by(User.created_at.desc())

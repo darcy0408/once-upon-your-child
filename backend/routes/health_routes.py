@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify
 
@@ -51,7 +51,7 @@ def create_health_blueprint(logger, api_key: str, app_version: str, gemini_model
 
     @health_bp.route("/health/detailed", methods=["GET"])
     def detailed_health():
-        health_status = {"status": "healthy", "timestamp": datetime.utcnow().isoformat(), "checks": {}}
+        health_status = {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat(), "checks": {}}
 
         # Database check
         try:

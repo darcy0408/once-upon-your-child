@@ -6,7 +6,7 @@ from flask import Blueprint, request, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from ..database import db
 from ..models.user import User
@@ -93,7 +93,7 @@ def save_api_key():
         # Initialize usage tracking if not already set
         if not user.usage_reset_date:
             # Reset on the 1st of next month
-            today = datetime.utcnow()
+            today = datetime.now(timezone.utc)
             if today.day >= 28:
                 # If near end of month, reset next month
                 next_month = today.replace(day=1) + timedelta(days=32)
@@ -257,7 +257,7 @@ def get_usage():
             illustration_limit = 3
         
         # Check if we need to reset monthly counters
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         if user.usage_reset_date and now >= user.usage_reset_date:
             # Reset counters
             user.stories_generated_this_month = 0

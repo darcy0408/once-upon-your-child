@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 
+from ..database import db
 from ..services import character_service
 from ..middleware.auth import require_auth
 from ..models.character import Character
@@ -27,7 +28,7 @@ def create_character_blueprint(limiter, logger):
         logger.info(f"PATCH/PUT /characters/{char_id} called")
         
         # Ownership check
-        char = Character.query.get(char_id)
+        char = db.session.get(Character, char_id)
         if not char:
             return jsonify({"error": "Character not found"}), 404
         if char.user_id and str(char.user_id) != str(request.current_user.id):
@@ -45,7 +46,7 @@ def create_character_blueprint(limiter, logger):
         logger.info(f"DELETE /characters/{char_id} called")
         
         # Ownership check
-        char = Character.query.get(char_id)
+        char = db.session.get(Character, char_id)
         if not char:
             return jsonify({"error": "Character not found"}), 404
         if char.user_id and str(char.user_id) != str(request.current_user.id):
@@ -94,7 +95,7 @@ def create_character_blueprint(limiter, logger):
         logger.info(f"GET /characters/{char_id} called")
         
         # Ownership check
-        char = Character.query.get(char_id)
+        char = db.session.get(Character, char_id)
         if not char:
             return jsonify({"error": "Character not found"}), 404
         if char.user_id and str(char.user_id) != str(request.current_user.id):

@@ -6,7 +6,7 @@ with inventory, state tracking, and illustrations.
 import json
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
 
 import google.generativeai as genai
@@ -273,7 +273,7 @@ class InteractiveAdventureService:
                 raise ValueError(f"Choice {choice_id} not found")
 
             choice.is_selected = True
-            choice.selected_at = datetime.utcnow()
+            choice.selected_at = datetime.now(timezone.utc)
             selected_choice_text = choice.text
             parent_choice_id = choice_id
 
@@ -318,7 +318,7 @@ class InteractiveAdventureService:
         story.current_segment_id = new_segment.id
         story.current_segment_number = next_segment_number
         story.is_completed = segment_data.get('is_ending', False)
-        story.updated_at = datetime.utcnow()
+        story.updated_at = datetime.now(timezone.utc)
 
         # Update inventory
         new_inventory_names = segment_data.get('inventory', [])
@@ -492,7 +492,7 @@ class InteractiveAdventureService:
         state.key_clues = new_state_data.get('key_clues', state.key_clues)
         state.companion_status = new_state_data.get('companion_status', state.companion_status)
         state.time_pressure = new_state_data.get('time_pressure', state.time_pressure)
-        state.updated_at = datetime.utcnow()
+        state.updated_at = datetime.now(timezone.utc)
 
     def _build_story_context(self, story: InteractiveStory) -> Dict[str, Any]:
         """Build story context for continuation"""

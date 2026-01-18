@@ -10,6 +10,7 @@ Security features:
 """
 from functools import wraps
 from flask import request, jsonify, g, current_app
+from backend.database import db
 from backend.models.user import User
 import jwt
 import os
@@ -58,7 +59,7 @@ def require_auth(f):
             if not user_id:
                 return jsonify({'error': 'Invalid token payload'}), 401
 
-            current_user = User.query.get(user_id)
+            current_user = db.session.get(User, user_id)
             if not current_user:
                 return jsonify({'error': 'User not found'}), 401
 
@@ -194,7 +195,7 @@ def optional_auth(f):
                 user_id = data.get('user_id') or data.get('sub')
 
                 if user_id:
-                    current_user = User.query.get(user_id)
+                    current_user = db.session.get(User, user_id)
                     if current_user:
                         request.current_user = current_user
                         g.current_user_id = current_user.id

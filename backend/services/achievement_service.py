@@ -1,7 +1,7 @@
 from ..database import db
 from ..models.achievement import UserAchievement, AchievementStats
 from ..models.user import User
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -272,7 +272,7 @@ class AchievementService:
                 current_value=current_value,
                 target_value=target_value,
                 is_unlocked=True,
-                unlocked_at=datetime.utcnow(),
+                unlocked_at=datetime.now(timezone.utc),
                 is_new=True
             )
             db.session.add(record)
@@ -281,7 +281,7 @@ class AchievementService:
         elif not record.is_unlocked and current_value >= target_value:
             # Update existing record to unlocked
             record.is_unlocked = True
-            record.unlocked_at = datetime.utcnow()
+            record.unlocked_at = datetime.now(timezone.utc)
             record.is_new = True
             return True
 

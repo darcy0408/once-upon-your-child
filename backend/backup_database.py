@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import subprocess
 
 DATABASE_URL = os.getenv('DATABASE_URL')
@@ -11,7 +11,7 @@ def create_backup():
         return None
 
     os.makedirs(BACKUP_DIR, exist_ok=True)
-    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+    timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
     backup_file = f"{BACKUP_DIR}/backup_{timestamp}.sql"
 
     try:
@@ -42,7 +42,7 @@ def cleanup_old_backups(keep_days=7):
     if not os.path.exists(BACKUP_DIR):
         return
 
-    cutoff = datetime.utcnow() - timedelta(days=keep_days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=keep_days)
     pattern = os.path.join(BACKUP_DIR, "backup_*.sql")
 
     for backup_file in glob.glob(pattern):

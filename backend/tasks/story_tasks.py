@@ -126,7 +126,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         companion_characters = kwargs.get("companion_characters", [])  # List of character names
 
         try:
-            character = Character.query.get(character_id) if character_id else None
+            character = db.session.get(Character, character_id) if character_id else None
             if character:
                 character_name = character.name
             elif character_id:

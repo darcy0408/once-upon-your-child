@@ -2,7 +2,7 @@ import json
 import os
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import g, jsonify, request
 from flask_limiter.util import get_remote_address
@@ -97,7 +97,7 @@ def make_filter_story_content(logger):
 def make_log_error(logger):
     def log_error(error_type, message, details=None):
         log_entry = {
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'type': error_type,
             'message': message,
             'details': details or {}

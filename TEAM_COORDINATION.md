@@ -28,6 +28,8 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 6. ✅ Committed Priority 2 security fixes (commit `0258376`)
 7. ✅ Verified Priority 4 committed by other instance (`ad0dcb7`)
 8. ✅ **Pushed 6 commits to origin/main** (d5d681c → 8dfe0bc)
+9. ✅ **Ran GIT_MAINTENANCE.md** - Full 5-phase maintenance completed
+10. ✅ **Fixed age=0 validation bug** - Newborns now valid characters
 
 **All Security/Performance Work - PUSHED TO REMOTE:**
 | Priority | Description | Commit | Status |
@@ -154,14 +156,26 @@ User described a feature for the pick-a-path adventures where:
 | `monitoring_verification.py` | 2 | ✅ All passing |
 | **Total** | **19** | ✅ All passing |
 
-**Issues Discovered (Documented, Not Fixed):**
-1. **Age=0 Treated as Missing:** `create_character()` uses falsy check - test documents this
-2. **Deprecation Warnings:** `datetime.utcnow()`, `Query.get()`, `google.generativeai` - non-blocking
+**Issues Discovered & Fixed (Follow-up Session):**
+1. ✅ **Age=0 Fix:** Updated `create_character()` to use explicit `None` check instead of falsy check - age=0 now valid
+2. ✅ **datetime.utcnow() Fix:** Replaced all 24 occurrences with `datetime.now(timezone.utc)` across 10 files
+3. ✅ **Query.get() Fix:** Replaced all 8 occurrences with `db.session.get(Model, id)` across 6 files
 
-**Next Steps:**
-- Consider fixing age=0 falsy check if newborns should be valid
-- Address deprecation warnings when convenient
-- Run full test suite periodically
+**Files Modified (Deprecation Fixes):**
+- `backend/analytics_routes.py`, `backend/cost_tracking.py`, `backend/backup_database.py`
+- `backend/migrate_sqlite_to_postgres.py`, `backend/services/achievement_service.py`
+- `backend/services/interactive_adventure_service.py`, `backend/routes/api_key_routes.py`
+- `backend/routes/health_routes.py`, `backend/routes/subscription_routes.py`
+- `backend/utils/app_helpers.py`, `backend/middleware/auth.py`
+- `backend/routes/character_routes.py`, `backend/tasks/story_tasks.py`
+- `backend/routes/webhook_handler.py`, `backend/services/character_service.py`
+
+**Remaining External Library Warnings (Cannot Fix):**
+- `flask_caching` internal deprecation
+- `sqlalchemy` internal `datetime.utcnow()` (in their code, not ours)
+- `google.generativeai` package deprecated (requires migration to `google.genai`)
+
+**Final Test Results:** 19/19 tests passing
 
 ---
 

@@ -2,7 +2,7 @@ import sqlite3
 import psycopg2
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 # SQLite connection
 sqlite_conn = sqlite3.connect('characters.db')
@@ -51,7 +51,7 @@ for char in characters:
         json.dumps(strengths),
         json.dumps(goals),
         char[22],
-        datetime.fromisoformat(char[23]) if char[23] else datetime.utcnow()
+        datetime.fromisoformat(char[23]) if char[23] else datetime.now(timezone.utc)
     ))
 
 pg_conn.commit()

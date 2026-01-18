@@ -1,7 +1,8 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, jsonify, current_app
 
+from backend.database import db
 from backend.models.user import User
 
 subscription_routes = Blueprint('subscription_routes', __name__)
@@ -9,7 +10,7 @@ subscription_routes = Blueprint('subscription_routes', __name__)
 @subscription_routes.route('/api/user/<user_id>/subscription', methods=['GET'])
 def get_subscription(user_id):
     try:
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
@@ -28,7 +29,7 @@ def get_subscription(user_id):
 
 def _format_timestamp(value):
     if not value:
-        value = datetime.utcnow()
+        value = datetime.now(timezone.utc)
     if value.tzinfo:
         value = value.astimezone()
     return value.replace(microsecond=0).isoformat() + 'Z'

@@ -6,7 +6,7 @@ Tracks Gemini API usage costs and provides budget monitoring
 import os
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional
 
 # Handle relative imports for both direct execution and module import
@@ -51,7 +51,7 @@ class CostEvent:
         self.cost = cost
         self.tokens_used = tokens_used
         self.model = model or DEFAULT_MODEL
-        self.timestamp = datetime.utcnow()
+        self.timestamp = datetime.now(timezone.utc)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -133,7 +133,7 @@ def _calculate_token_cost(tokens_used: int, model: str) -> float:
 
 def _check_budget_limits():
     """Check if daily or weekly budget limits have been exceeded"""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     # Calculate daily costs
     day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -189,7 +189,7 @@ def _send_budget_alert(period: str, actual: float, limit: float):
 
 def get_cost_report(days: int = 7) -> Dict[str, Any]:
     """Generate cost report for the specified number of days"""
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 
     # Filter events within time period
     relevant_events = [event for event in _cost_events
@@ -230,19 +230,19 @@ def get_cost_report(days: int = 7) -> Dict[str, Any]:
             'daily': DAILY_BUDGET_LIMIT,
             'weekly': WEEKLY_BUDGET_LIMIT
         },
-        'generated_at': datetime.utcnow().isoformat()
+        'generated_at': datetime.now(timezone.utc).isoformat()
     }
 
 def get_daily_total() -> float:
     """Get total costs for today"""
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     today_events = [event for event in _cost_events
                     if event.timestamp.date() == today]
     return sum(event.cost for event in today_events)
 
 def get_weekly_total() -> float:
     """Get total costs for this week"""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     week_start = now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=now.weekday())
     week_events = [event for event in _cost_events
                    if event.timestamp >= week_start]
@@ -250,6 +250,6 @@ def get_weekly_total() -> float:
 
 def clear_old_events(days_to_keep: int = 30):
     """Clear cost events older than specified days to prevent memory bloat"""
-    cutoff = datetime.utcnow() - timedelta(days=days_to_keep)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days_to_keep)
     global _cost_events
     _cost_events = [event for event in _cost_events if event.timestamp >= cutoff]

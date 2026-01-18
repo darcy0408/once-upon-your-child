@@ -154,7 +154,7 @@ def _apply_subscription_updates(
 def _find_user(user_id: Optional[str]) -> Optional[User]:
     if not user_id:
         return None
-    return User.query.get(user_id)
+    return db.session.get(User, user_id)
 
 
 def _extract_user_id(source: Dict[str, Any]) -> Optional[str]:
