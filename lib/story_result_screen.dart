@@ -358,16 +358,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     }
   }
 
-      (_cachedIllustrations?.length ?? 0) + _inlineIllustrations.length;
-
-
-
-  /// Generate illustrations for this story
-
-
-
-  /// View story with illustrations
-
   /// Load cached coloring pages if they exist
   Future<void> _loadCachedColoringPages() async {
     if (widget.storyId != null) {
