@@ -13,11 +13,11 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ## Supervisor Notes | 2026-01-17 (Current Active Session - Supervisor)
 
-### Session: Multi-Instance Coordination & Therapeutic Pick-a-Path Planning - IN PROGRESS
+### Session: Multi-Instance Coordination & Deprecation Fixes - IN PROGRESS
 
-**Goal:** Coordinate all 5 Claude instances, finalize security commits, and begin planning the therapeutic pick-a-path feature.
+**Goal:** Coordinate all 5 Claude instances, finalize security commits, fix deprecation warnings, and begin planning the therapeutic pick-a-path feature.
 
-**Status:** ✅ SECURITY PHASE COMPLETE - All pushed to remote
+**Status:** ✅ SECURITY PHASE COMPLETE - Now fixing deprecation warnings
 
 **This Session's Accomplishments:**
 1. ✅ Analyzed TEAM_COORDINATION.md to understand all 5 instance work streams
@@ -30,6 +30,18 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 8. ✅ **Pushed 6 commits to origin/main** (d5d681c → 8dfe0bc)
 9. ✅ **Ran GIT_MAINTENANCE.md** - Full 5-phase maintenance completed
 10. ✅ **Fixed age=0 validation bug** - Newborns now valid characters
+11. 🔄 **Fixing datetime.utcnow() deprecation** - 17 files being updated
+
+**Deprecation Fixes In Progress:**
+Replacing `datetime.utcnow()` with `datetime.now(timezone.utc)` across:
+- `backend/analytics_routes.py` (6 occurrences)
+- `backend/cost_tracking.py` (8 occurrences)
+- `backend/middleware/auth.py`
+- `backend/services/achievement_service.py`
+- `backend/services/character_service.py`
+- `backend/tasks/story_tasks.py`
+- `backend/utils/app_helpers.py`
+- And 10 other files
 
 **All Security/Performance Work - PUSHED TO REMOTE:**
 | Priority | Description | Commit | Status |
