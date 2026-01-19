@@ -31,6 +31,7 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 9. ✅ **Ran GIT_MAINTENANCE.md** - Full 5-phase maintenance completed
 10. ✅ **Fixed age=0 validation bug** - Newborns now valid characters
 11. 🔄 **Fixing datetime.utcnow() deprecation** - 17 files being updated
+12. ✅ **Fixed local dev startup error** - Changed `.env` FLASK_ENV=development (was production, blocking SECRET_KEY requirement)
 
 **Deprecation Fixes In Progress:**
 Replacing `datetime.utcnow()` with `datetime.now(timezone.utc)` across:
