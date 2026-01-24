@@ -13,6 +13,7 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import '../config/environment.dart';
 
 import '../character_traits_data.dart';
+import '../models/api_error.dart';
 import '../models/story_generation_result.dart';
 import 'story_complexity_service.dart';
 import 'user_identity_service.dart';
@@ -295,6 +296,23 @@ class ApiServiceManager {
       debugPrint(
         'Request to $uri failed with ${response.statusCode}. Body preview: $preview',
       );
+
+      // Try to parse structured error response from backend
+      if (response.body.isNotEmpty) {
+        try {
+          final errorJson = jsonDecode(response.body);
+          if (errorJson is Map<String, dynamic> &&
+              (errorJson.containsKey('error_code') ||
+                  errorJson.containsKey('error') ||
+                  errorJson.containsKey('message'))) {
+            throw ApiError.fromJson(errorJson);
+          }
+        } catch (e) {
+          if (e is ApiError) rethrow;
+          // Fall through to generic error if JSON parsing fails
+        }
+      }
+
       throw HttpException(
         'Request to ${uri.path} failed with status ${response.statusCode}',
         uri: uri,
@@ -308,12 +326,18 @@ class ApiServiceManager {
     try {
       final decoded = jsonDecode(response.body);
       if (decoded is Map<String, dynamic>) {
+        // Check if success response contains an error field
+        if (decoded.containsKey('error_code') && decoded['error_code'] != null) {
+          throw ApiError.fromJson(decoded);
+        }
         return decoded;
       }
       return {'data': decoded};
     } on FormatException catch (error) {
       debugPrint('Failed to parse JSON from $uri: ${error.message}');
       throw const FormatException('Unexpected response format from server');
+    } on ApiError {
+      rethrow;
     }
   }
 

@@ -15,6 +15,7 @@ from ..utils.validators import (
     validate_age,
     validate_num_images,
     validate_image_size,
+    validate_story_modes,
     sanitize_text,
 )
 
@@ -56,6 +57,12 @@ def create_story_blueprint(
     @story_bp.route("/generate-story", methods=["POST"])
     def generate_story_endpoint():
         payload = request.get_json(silent=True) or {}
+
+        # Validate mode combinations before processing
+        is_valid, mode_error = validate_story_modes(payload)
+        if not is_valid:
+            return jsonify(mode_error), 400
+
         theme = payload.get("theme") or "Adventure"
         user_id = payload.get("user_id") or "anonymous"
         # Sanitize user_id to match database schema (36 chars)
@@ -223,7 +230,13 @@ def create_story_blueprint(
         logger.info("Serving mock story for testing.")
         payload = request.get_json(silent=True) or {}
         character = payload.get("character", {})
-        character_name = character.get("name", "a brave hero")
+        
+        # Handle character being either a dict or a string
+        if isinstance(character, dict):
+            character_name = character.get("name", "a brave hero")
+        else:
+            character_name = str(character) if character else "a brave hero"
+            
         theme = payload.get("theme", "Friendship")
 
         mock_story = {
@@ -298,6 +311,14 @@ def create_story_blueprint(
         """
         logger.info("POST /generate-interactive-story called")
         payload = request.get_json(silent=True) or {}
+
+        # Mark as interactive for validation
+        payload["interactive"] = True
+
+        # Validate mode combinations (interactive + rhymes = invalid)
+        is_valid, mode_error = validate_story_modes(payload)
+        if not is_valid:
+            return jsonify(mode_error), 400
 
         user_id = payload.get("user_id")
         character_id = payload.get("character_id")

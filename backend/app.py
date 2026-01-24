@@ -12,6 +12,7 @@ if __name__ == '__main__' and __package__ is None:
 
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS
+from dotenv import load_dotenv
 
 # Configure logging to file
 logging.basicConfig(
@@ -47,6 +48,7 @@ try:
         make_log_response,
         make_handle_error,
     )
+    from backend.utils.request_logger import init_request_logging
 except ImportError:
     # Fallback if backend package not found (e.g. running from inside backend dir without path fix)
     from config import config, config_by_name
@@ -70,6 +72,7 @@ except ImportError:
         make_log_response,
         make_handle_error,
     )
+    from utils.request_logger import init_request_logging
 
 from flask_jwt_extended import JWTManager
 from flask_limiter import Limiter
@@ -84,7 +87,9 @@ def create_app(config_name):
     print(f"=== Creating Flask app with config: {config_name} ===")
     print(f"=== Available configs: {list(config_by_name.keys())} ===")
     # Image generation fix deployed - 2024-12-01
-    app = Flask(__name__)
+    # Explicitly set static folder to ensure avatars are served correctly
+    static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+    app = Flask(__name__, static_folder=static_folder, static_url_path='/static')
 
     # Normalize config name
     if config_name not in config_by_name:
@@ -220,6 +225,9 @@ def create_app(config_name):
     app.after_request(log_response)
     app.register_error_handler(Exception, handle_error)
 
+    # Initialize request logging (payload size, mode flags, latency)
+    init_request_logging(app, logger)
+
     # Gemini setup
     GEMINI_MODEL = app.config.get("GEMINI_MODEL", "gemini-2.0-flash-exp")
     api_key = None if testing_mode else app.config.get("GEMINI_API_KEY")
@@ -354,14 +362,14 @@ def create_app(config_name):
 
     try:
         from backend.analytics_routes import create_analytics_blueprint
-        from backend.routes.achievement_routes import achievement_bp
-        from backend.routes.subscription_routes import subscription_routes as subscription_bp
-        from backend.routes.user_routes import user_routes
+        from backend.routes.achievement_routes import create_achievement_blueprint
+        from backend.routes.subscription_routes import create_subscription_blueprint
+        from backend.routes.user_routes import create_user_routes_blueprint
     except ImportError:
         from analytics_routes import create_analytics_blueprint
-        from routes.achievement_routes import achievement_bp
-        from routes.subscription_routes import subscription_routes as subscription_bp
-        from routes.user_routes import user_routes
+        from routes.achievement_routes import create_achievement_blueprint
+        from routes.subscription_routes import create_subscription_blueprint
+        from routes.user_routes import create_user_routes_blueprint
 
     print(f"=== Registering routes ===")
     if stripe_routes:
@@ -370,8 +378,11 @@ def create_app(config_name):
         app.register_blueprint(webhook_routes, url_prefix='/api')
     analytics_bp = create_analytics_blueprint(limiter=limiter)
     app.register_blueprint(analytics_bp)
+    achievement_bp = create_achievement_blueprint(limiter=limiter)
     app.register_blueprint(achievement_bp, url_prefix='/achievement')
+    subscription_bp = create_subscription_blueprint(limiter=limiter)
     app.register_blueprint(subscription_bp)
+    user_routes = create_user_routes_blueprint(limiter=limiter)
     app.register_blueprint(user_routes)
 
     try:

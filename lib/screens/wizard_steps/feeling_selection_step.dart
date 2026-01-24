@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pill_button.dart';
-import '../../widgets/therapeutic_feelings_wheel.dart';
+import '../../widgets/mood_magic_picker.dart';
 import '../wizard_story_screen.dart';
 import '../../data/scenario_data.dart';
 import '../../feelings_wheel_data.dart';
@@ -51,8 +51,18 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
     });
   }
 
-  int _maxFeelingDepthForAge(int age) {
-    return 2;
+  void _selectMood(MoodSelection mood) {
+    // Convert MoodSelection to SelectedFeeling for compatibility
+    final feeling = SelectedFeeling(
+      core: mood.moodName,
+      secondary: mood.moodName,
+      tertiary: mood.moodName,
+      emoji: mood.emoji,
+      eyeType: 'Default',
+      mouthType: 'Smile',
+      color: mood.color,
+    );
+    _selectFeeling(feeling);
   }
 
   bool get _canContinue =>
@@ -67,7 +77,6 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   @override
   Widget build(BuildContext context) {
     final age = widget.wizardData.characterAge <= 0 ? 5 : widget.wizardData.characterAge;
-    final maxDepth = _maxFeelingDepthForAge(age);
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -170,6 +179,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                   return _ScenarioCardWidget(
                     scenario: scenario,
                     isSelected: isSelected,
+                    childAge: age,
                     onTap: () => _selectScenario(scenario.id),
                   );
                 },
@@ -177,63 +187,18 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Feelings Wheel
-            Text(
-              'Or how are you feeling?',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.textDark,
-                    fontWeight: FontWeight.w600,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Tap a core emotion, then explore deeper feelings.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textDark.withValues(alpha: 0.7),
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Selected emotions light up to guide you.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textDark.withValues(alpha: 0.6),
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.md),
-
-            // Interactive Therapeutic Feelings Wheel
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final maxSize = constraints.maxWidth;
-                return Center(
-                  child: SizedBox.square(
-                    dimension: maxSize,
-                    child: TherapeuticFeelingsWheel(
-                      onFeelingSelected: _selectFeeling,
-                      backgroundColor: AppColors.cream,
-                    ),
-                  ),
-                );
-              },
+            // Mood Magic Picker (lightweight replacement for feelings wheel)
+            MoodMagicPicker(
+              childAge: age,
+              onMoodSelected: _selectMood,
             ),
             const SizedBox(height: AppSpacing.md),
             if (_selectedFeeling != null)
               Text(
-                'Chosen feeling: ${_selectedFeeling!.tertiary}',
+                'Chosen mood: ${_selectedFeeling!.tertiary}',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: AppColors.primary,
+                      color: _selectedFeeling!.color,
                       fontWeight: FontWeight.bold,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-            if (_selectedFeeling != null)
-              Text(
-                'Tap again to change.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textDark.withValues(alpha: 0.6),
                     ),
                 textAlign: TextAlign.center,
               ),
@@ -263,20 +228,25 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 class _ScenarioCardWidget extends StatelessWidget {
   final ScenarioCard scenario;
   final bool isSelected;
+  final int childAge;
   final VoidCallback onTap;
 
   const _ScenarioCardWidget({
     required this.scenario,
     required this.isSelected,
+    required this.childAge,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final title = scenario.titleForAge(childAge);
+    final description = scenario.descriptionForAge(childAge);
+
     return Semantics(
       button: true,
       selected: isSelected,
-      label: '${scenario.title}, ${scenario.description}',
+      label: '$title, $description',
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -358,7 +328,7 @@ class _ScenarioCardWidget extends StatelessWidget {
                   const SizedBox(width: 4),
                   Flexible(
                     child: Text(
-                      scenario.title,
+                      title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: AppColors.textDark,
@@ -372,7 +342,7 @@ class _ScenarioCardWidget extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                scenario.description,
+                description,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.textDark.withValues(alpha: 0.7),
                     ),

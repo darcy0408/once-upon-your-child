@@ -117,3 +117,36 @@ def validate_image_dimensions(width, height, max_dim=None, min_dim=None):
         raise ValueError(f"Image dimensions {width}x{height} exceed maximum {max_dim}x{max_dim}")
 
     return True
+
+
+def validate_story_modes(payload: dict) -> tuple:
+    """
+    Validate story generation mode combinations.
+
+    Args:
+        payload: The request payload containing mode flags
+
+    Returns:
+        Tuple of (is_valid: bool, error_dict: dict or None)
+        If invalid, error_dict contains error_code, message, and hint.
+    """
+    from .error_codes import ErrorCodes, make_error_response
+
+    # Extract mode flags
+    rhyme_time_mode = payload.get("rhyme_time_mode", False)
+    pick_a_path = payload.get("pick_a_path", False)
+    # Also check for interactive story mode which is essentially Pick-a-Path
+    is_interactive = payload.get("interactive", False)
+
+    # Rule 1: Pick-a-Path + Rhymes = INVALID
+    # Rhyming stories need consistent meter and structure that doesn't work
+    # with branching narratives
+    if (pick_a_path or is_interactive) and rhyme_time_mode:
+        return False, make_error_response(
+            ErrorCodes.MODE_INVALID,
+            "That combination doesn't work together yet.",
+            "Try turning off Rhymes or Pick-a-Path. Rhyming stories need a consistent flow that doesn't work well with branching choices.",
+        )
+
+    # All validations passed
+    return True, None

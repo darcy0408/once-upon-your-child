@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'feelings_wheel_screen.dart';
 import 'feelings_wheel_data.dart';
+import 'widgets/mood_magic_picker.dart';
 
 class CurrentFeeling {
   final SelectedFeeling selectedFeeling;
@@ -39,10 +40,12 @@ class CurrentFeeling {
 
 class PreStoryFeelingsDialog extends StatefulWidget {
   final String characterName;
+  final int childAge;
 
   const PreStoryFeelingsDialog({
     super.key,
     required this.characterName,
+    this.childAge = 8,
   });
 
   @override
@@ -52,11 +55,15 @@ class PreStoryFeelingsDialog extends StatefulWidget {
   static Future<CurrentFeeling?> show({
     required BuildContext context,
     required String characterName,
+    int childAge = 8,
   }) async {
     return await showDialog<CurrentFeeling>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => PreStoryFeelingsDialog(characterName: characterName),
+      builder: (context) => PreStoryFeelingsDialog(
+        characterName: characterName,
+        childAge: childAge,
+      ),
     );
   }
 }
@@ -66,6 +73,23 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
   FeelingSupportInfo? _supportInfo;
   int _intensity = 3;
   final TextEditingController _whatHappenedController = TextEditingController();
+
+  void _onMoodSelected(MoodSelection mood) {
+    final feeling = SelectedFeeling(
+      core: mood.moodName,
+      secondary: mood.moodName,
+      tertiary: mood.moodName,
+      emoji: mood.emoji,
+      eyeType: 'Default',
+      mouthType: 'Smile',
+      color: mood.color,
+    );
+    setState(() {
+      _selectedFeeling = feeling;
+      _supportInfo = FeelingSupportLibrary.findSupport(feeling);
+      _intensity = 3;
+    });
+  }
 
   @override
   void dispose() {
@@ -127,24 +151,10 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
                 ),
                 const SizedBox(height: 24),
 
-                // Emotion Selection
-                const Text(
-                  'Explore the feelings wheel:',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                FeelingsWheelScreen(
-                  currentFeeling: _selectedFeeling,
-                  onFeelingSelected: (feeling) {
-                    setState(() {
-                      _selectedFeeling = feeling;
-                      _supportInfo = FeelingSupportLibrary.findSupport(feeling);
-                      _intensity = 3;
-                    });
-                  },
+                // Mood Selection (lightweight Mood Magic picker)
+                MoodMagicPicker(
+                  childAge: widget.childAge,
+                  onMoodSelected: _onMoodSelected,
                 ),
 
                 // Emotion Details
