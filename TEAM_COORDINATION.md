@@ -11,6 +11,109 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-01-24 (Real Mode & Illustration Display Fix)
+
+### Session: Switching to Real AI Mode - IN PROGRESS
+
+**Goal:** Enable real AI image generation (switch from mock mode) and fix illustration display in the app.
+
+**Status:** 🔄 IN PROGRESS - Backend restart required
+
+**Issues Found & Fixed:**
+
+1. **Illustration Display Not Rendering** (`lib/story_result_screen.dart`):
+   - **Problem:** Backend illustrations were loaded and decoded but never displayed in the UI
+   - **Root Cause:** PageView only rendered text via `SelectableText.rich()` - no image widgets
+   - **Fix:** Added illustration display at top of each story page (lines 1269-1311):
+     - Supports both inline (base64) and cached (URL) illustrations
+     - Shows loading spinner for network images
+     - Graceful error placeholder if image fails to load
+     - Added `_buildImageErrorPlaceholder()` helper method
+
+2. **OpenRouter Flux Model Deprecated** (`backend/app.py`):
+   - **Problem:** `black-forest-labs/flux-1-schnell` model no longer valid on OpenRouter
+   - **Root Cause:** OpenRouter removed/renamed the Flux model
+   - **Fix:** Swapped initialization priority to prefer Gemini (free tier) over OpenRouter:
+     - Gemini now primary image generator (free tier)
+     - OpenRouter as fallback only when Gemini key unavailable
+
+3. **Story Generation 500 Error - `illustrations` undefined** (`backend/tasks/story_tasks.py`):
+   - **Problem:** Story generation crashed with `NameError: name 'illustrations' is not defined`
+   - **Root Cause:** Line 372 referenced `illustrations` variable that was never assigned
+   - **Fix:** Added `illustrations = []` initialization (line 355)
+   - Illustrations are now generated separately via `/generate-illustrations` endpoint
+
+4. **Mock Mode Switch** (`backend/.env`):
+   - Changed `MOCK_TESTING_MODE=true` → `MOCK_TESTING_MODE=false`
+   - Enables real AI image generation (Gemini free tier)
+
+**Files Modified:**
+- `lib/story_result_screen.dart` - Added illustration rendering in PageView
+- `backend/app.py` - Swapped image generator priority (Gemini first)
+- `backend/tasks/story_tasks.py` - Fixed undefined `illustrations` variable
+- `backend/.env` - Switched to real mode
+
+**Next Steps:**
+1. ⏳ Restart Flask backend to apply changes
+2. ⏳ Test story generation with real illustrations
+3. ⏳ Verify Gemini image generation works
+
+**Cost Info (Real Mode):**
+- Gemini: FREE (experimental tier)
+- OpenRouter fallback: ~$0.003/image
+
+---
+
+## Supervisor Notes | 2026-01-24 (Critical Bug Fixes)
+
+### Session: Bug Fixes & Age-Gated Feelings Restoration - COMPLETED
+
+**Goal:** Fix critical bugs discovered during testing: backend crash on story generation, avatar display errors, and oversimplified emotions for older children.
+
+**Status:** ✅ COMMITTED & PUSHED (commit `7fb4848`)
+
+**Issues Fixed:**
+
+1. **Backend `story_record` Undefined Error** (`backend/tasks/story_tasks.py`):
+   - **Problem:** Story generation crashed with `NameError: name 'story_record' is not defined`
+   - **Root Cause:** Code referenced `story_record.id` but variable was never created
+   - **Fix:** Added `import uuid` and replaced with `story_id = str(uuid.uuid4())`
+   - Story generation now completes successfully
+
+2. **Avatar URL Decoded as Base64** (`lib/widgets/character_preview.dart`, `lib/widgets/avatar_creator_overlay.dart`):
+   - **Problem:** Avatar gallery URLs (e.g., `http://127.0.0.1:5000/static/avatars/6.png`) were being passed to `base64Decode()`, causing crash
+   - **Root Cause:** Code assumed all avatar data was base64 encoded, but gallery returns URLs
+   - **Fix:** Added check for `http://` or `https://` prefix:
+     - URLs → `Image.network()`
+     - Base64 data → `Image.memory(base64Decode(...))`
+   - Avatar images now display correctly in character preview circle
+
+3. **Age-Gated Feelings Restored** (`lib/screens/wizard_steps/feeling_selection_step.dart`, `lib/pre_story_feelings_dialog.dart`):
+   - **Problem:** All ages received simplified 6-mood picker, including 8-year-olds who should learn complex emotions
+   - **Root Cause:** MoodMagicPicker was applied universally instead of age-gated
+   - **Fix:** Restored proper age gating:
+     - **Age 5 and under:** MoodMagicPicker (6 simple moods: Happy, Sad, Angry, Scared, Calm, Surprised)
+     - **Age 6 and older:** TherapeuticFeelingsWheel (progressive disclosure: 7 core → 40+ secondary → 100+ tertiary emotions)
+   - Older children can now explore and learn to identify complex emotions
+
+**User Feedback Addressed:**
+- "I want kids to learn to identify more complex emotions" → Restored therapeutic wheel for ages 6+
+- "Character image didn't show up in the circle" → Fixed URL vs base64 handling
+- Design principle: "Make this feel magical for children" → Age-appropriate experiences maintained
+
+**Files Modified:**
+- `backend/tasks/story_tasks.py` - Added uuid import, fixed story_id generation
+- `lib/widgets/character_preview.dart` - URL vs base64 detection for avatars
+- `lib/widgets/avatar_creator_overlay.dart` - Added `_buildAvatarImage()` helper
+- `lib/screens/wizard_steps/feeling_selection_step.dart` - Age-gated feelings selection
+- `lib/pre_story_feelings_dialog.dart` - Age-gated feelings selection
+
+**Commit:** `7fb4848` - fix: Critical bug fixes for story generation and avatar display
+
+**Deployment:** Pushed to `origin/main`. Railway auto-deploys backend changes.
+
+---
+
 ## Supervisor Notes | 2026-01-23 (Session 2 - Quality Verification)
 
 ### Session: Interactive Quality & Final Verification - COMPLETED
