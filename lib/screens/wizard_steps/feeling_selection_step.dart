@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pill_button.dart';
 import '../../widgets/mood_magic_picker.dart';
+import '../../widgets/therapeutic_feelings_wheel.dart';
 import '../wizard_story_screen.dart';
 import '../../data/scenario_data.dart';
 import '../../feelings_wheel_data.dart';
@@ -187,15 +188,51 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Mood Magic Picker (lightweight replacement for feelings wheel)
-            MoodMagicPicker(
-              childAge: age,
-              onMoodSelected: _selectMood,
-            ),
+            // Age-appropriate feelings selection:
+            // - Young kids (5 and under): Simple 6-mood picker
+            // - Older kids (6+): Full therapeutic feelings wheel with progressive disclosure
+            if (age <= 5) ...[
+              // Simple mood picker for young children
+              MoodMagicPicker(
+                childAge: age,
+                onMoodSelected: _selectMood,
+              ),
+            ] else ...[
+              // Full therapeutic feelings wheel for older children
+              Text(
+                'How are you feeling?',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Tap a feeling to explore deeper emotions.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textDark.withValues(alpha: 0.7),
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final maxSize = constraints.maxWidth.clamp(280.0, 400.0);
+                  return Center(
+                    child: SizedBox.square(
+                      dimension: maxSize,
+                      child: TherapeuticFeelingsWheel(
+                        onFeelingSelected: _selectFeeling,
+                        backgroundColor: AppColors.cream,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
             const SizedBox(height: AppSpacing.md),
             if (_selectedFeeling != null)
               Text(
-                'Chosen mood: ${_selectedFeeling!.tertiary}',
+                'Feeling: ${_selectedFeeling!.tertiary}',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: _selectedFeeling!.color,
                       fontWeight: FontWeight.bold,

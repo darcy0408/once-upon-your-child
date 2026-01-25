@@ -373,10 +373,7 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20),
-            child: Image.memory(
-              base64Decode(_generatedAvatar!.imageBase64.split(',').last),
-              fit: BoxFit.cover,
-            ),
+            child: _buildAvatarImage(_generatedAvatar!.imageBase64),
           ),
         ),
         const SizedBox(height: 30),
@@ -391,6 +388,35 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
           ),
       ],
     );
+  }
+
+  /// Helper to display avatar from URL or base64 data
+  Widget _buildAvatarImage(String imageData) {
+    final isUrl = imageData.startsWith('http://') || imageData.startsWith('https://');
+
+    if (isUrl) {
+      return Image.network(
+        imageData,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          debugPrint('Error loading avatar from URL: $error');
+          return const Center(
+            child: Icon(Icons.error_outline, size: 48, color: Colors.red),
+          );
+        },
+      );
+    } else {
+      return Image.memory(
+        base64Decode(imageData.split(',').last),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          debugPrint('Error decoding avatar base64: $error');
+          return const Center(
+            child: Icon(Icons.error_outline, size: 48, color: Colors.red),
+          );
+        },
+      );
+    }
   }
 
   Widget _buildFooter() {

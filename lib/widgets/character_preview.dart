@@ -206,9 +206,10 @@ class _CharacterPreviewState extends State<CharacterPreview>
 
   Widget _buildGeneratedAvatar(double size) {
     try {
-      // Decode base64 image (remove data URI prefix if present)
-      final base64String = widget.generatedAvatar!.imageBase64.split(',').last;
-      final imageBytes = base64Decode(base64String);
+      final imageData = widget.generatedAvatar!.imageBase64;
+
+      // Check if it's a URL (from avatar gallery) or base64 data
+      final isUrl = imageData.startsWith('http://') || imageData.startsWith('https://');
 
       return Container(
         width: size * 0.8,
@@ -224,14 +225,23 @@ class _CharacterPreviewState extends State<CharacterPreview>
           ],
         ),
         child: ClipOval(
-          child: Image.memory(
-            imageBytes,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              debugPrint('Error displaying generated avatar: $error');
-              return _buildPlaceholder(size);
-            },
-          ),
+          child: isUrl
+              ? Image.network(
+                  imageData,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    debugPrint('Error loading avatar from URL: $error');
+                    return _buildPlaceholder(size);
+                  },
+                )
+              : Image.memory(
+                  base64Decode(imageData.split(',').last),
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    debugPrint('Error displaying generated avatar: $error');
+                    return _buildPlaceholder(size);
+                  },
+                ),
         ),
       );
     } catch (e) {

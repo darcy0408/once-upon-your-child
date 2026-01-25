@@ -1,6 +1,7 @@
 import os
 import re
 import traceback
+import uuid
 from typing import Any, Dict
 
 from celery.utils.log import get_task_logger
@@ -356,10 +357,13 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             # ...
             # (database save logic unchanged)
 
+            # Generate a unique ID for the story
+            story_id = str(uuid.uuid4())
+
             return {
                 "status": "complete",
                 "story": {
-                    "id": story_record.id,
+                    "id": story_id,
                     "title": title,
                     "story_text": story_body,
                     "theme": theme,
