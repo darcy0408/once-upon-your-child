@@ -275,6 +275,13 @@ class _StoryScreenState extends State<StoryScreen> {
         final characters =
             list.map((j) => Character.fromJson(j)).toList().cast<Character>();
 
+        // Sync characters to local storage for offline access
+        try {
+          await IsarService.syncCharactersFromApi(list);
+        } catch (e) {
+          debugPrint('Failed to sync characters to local storage: $e');
+        }
+
         setState(() {
           _characters = characters;
           if (_characters.isNotEmpty) {
@@ -289,7 +296,9 @@ class _StoryScreenState extends State<StoryScreen> {
           }
         });
       } else {
-        if (mounted) {
+        // API returned error - try to load from local storage
+        await _loadCharactersFromLocal();
+        if (mounted && _characters.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 content: Text(
@@ -298,11 +307,40 @@ class _StoryScreenState extends State<StoryScreen> {
         }
       }
     } catch (e) {
-      if (mounted) {
+      // Network error - fallback to local storage
+      debugPrint('API error, falling back to local storage: $e');
+      await _loadCharactersFromLocal();
+      if (mounted && _characters.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error fetching characters.')),
+          const SnackBar(content: Text('Offline mode - showing saved characters.')),
         );
       }
+    }
+  }
+
+  /// Load characters from local Isar storage (fallback for offline mode)
+  Future<void> _loadCharactersFromLocal() async {
+    try {
+      final characters = await IsarService.getAllCharacters();
+
+      if (characters.isNotEmpty) {
+        setState(() {
+          _characters = characters;
+          if (_characters.isNotEmpty) {
+            final stillExists =
+                _characters.any((c) => c.id == _selectedCharacter?.id);
+            if (!stillExists) _selectedCharacter = _characters.first;
+          } else {
+            _selectedCharacter = null;
+          }
+          if (_selectedCharacter == null) {
+            _learningToReadMode = false;
+          }
+        });
+        debugPrint('Loaded ${characters.length} characters from local storage');
+      }
+    } catch (e) {
+      debugPrint('Failed to load characters from local storage: $e');
     }
   }
 

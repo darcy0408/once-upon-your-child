@@ -25,6 +25,8 @@ import 'screens/midjourney_avatar_picker_screen.dart';
 import 'services/avatar_service.dart';
 
 import 'package:flutter/foundation.dart';
+import 'services/isar_service.dart';
+import 'models/local/character_local.dart';
 class CharacterCreationScreenEnhanced extends StatefulWidget {
   const CharacterCreationScreenEnhanced({super.key});
 
@@ -717,6 +719,17 @@ class _CharacterCreationScreenEnhancedState
       if (!mounted) return;
 
       if (resp.statusCode == 201) {
+        // Save character locally for offline access
+        try {
+          final responseData = json.decode(resp.body);
+          final localChar = CharacterLocal.fromJson(responseData);
+          await IsarService.saveCharacter(localChar);
+          debugPrint('Character saved locally: ${localChar.name}');
+        } catch (e) {
+          debugPrint('Failed to save character locally: $e');
+          // Continue even if local save fails - the server has it
+        }
+
         try {
           final achievements =
               await _achievementService.recordCharacterCreated();

@@ -7,6 +7,7 @@ import 'config/environment.dart';
 import 'models.dart'; // Assuming your Character model is in here
 import 'character_creation_screen_enhanced.dart';
 import 'widgets/app_button.dart';
+import 'services/isar_service.dart';
 
 class CharacterSelectionScreen extends StatefulWidget {
   const CharacterSelectionScreen({super.key});
@@ -33,14 +34,25 @@ class _CharacterSelectionScreenState extends State<CharacterSelectionScreen> {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return data.map((json) => Character.fromJson(json)).toList();
+        final characters = data.map((json) => Character.fromJson(json)).toList();
+
+        // Sync to local storage for offline access
+        try {
+          await IsarService.syncCharactersFromApi(data);
+        } catch (e) {
+          debugPrint('Failed to sync characters to local storage: $e');
+        }
+
+        return characters;
       } else {
-        throw Exception('Failed to load characters: ${response.statusCode}');
+        // API error - try loading from local storage
+        debugPrint('API error ${response.statusCode}, trying local storage');
+        return await IsarService.getAllCharacters();
       }
     } catch (e) {
-      // In a real app, you'd want to show a proper error message
-      debugPrint('Error fetching characters: $e');
-      return []; // Return empty list on error
+      // Network error - fallback to local storage
+      debugPrint('Network error, loading from local storage: $e');
+      return await IsarService.getAllCharacters();
     }
   }
 
