@@ -350,12 +350,9 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                 adventure_steps = ["The Story"]
                 total_words = sum(len(p.split()) for p in pages)
 
-            # Generate illustration if requested
-            # ...
-            # (no changes needed to illustration logic)
-            
-            # ...
-            # (database save logic unchanged)
+            # Illustrations are now generated separately via /generate-illustrations endpoint
+            # Initialize as empty list - frontend will request illustrations async if needed
+            illustrations = []
 
             # Generate a unique ID for the story
             story_id = str(uuid.uuid4())
