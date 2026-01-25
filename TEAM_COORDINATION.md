@@ -11,6 +11,70 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-01-24 (Character Persistence Fix)
+
+### Session: Character Not Saving Between Sessions - FIXED
+
+**Goal:** Fix issue where characters created by users were not persisting between app sessions.
+
+**Status:** ✅ FIXED (Ready for testing)
+
+**Root Cause Analysis:**
+
+The character creation flow had a critical architectural gap:
+1. Characters were saved to the **backend database** successfully on creation
+2. Characters were **NOT cached to local Isar storage** on the device
+3. When loading characters, the app **only fetched from the API** with no local fallback
+4. If any network/auth issue occurred on app restart, characters appeared to be "lost"
+
+**Technical Details:**
+
+- `CharacterLocal` Isar model existed with all required fields (`characterId`, `name`, `age`, `isSyncedToServer`)
+- `CharacterProvider` with `addCharacter()` method existed but was **never called**
+- `IsarService` had `getAllCharacters()` but no `saveCharacter()` or `syncCharactersFromApi()` methods
+- The creation → local save → API sync chain was broken
+
+**Fix Applied:**
+
+1. **Added helper methods to `IsarService`** (`lib/services/isar_service_io.dart`):
+   - `saveCharacter(CharacterLocal)` - Save a single character locally
+   - `syncCharactersFromApi(List<dynamic>)` - Sync multiple characters from API response
+
+2. **Character Creation Screen** (`lib/character_creation_screen_enhanced.dart`):
+   - After successful 201 response, parse response body and save character locally
+   - Uses `IsarService.saveCharacter()` for persistence
+
+3. **Main Story Screen** (`lib/main_story.dart`):
+   - On successful API load: sync all characters to local Isar storage
+   - On API failure: fallback to `IsarService.getAllCharacters()`
+   - Added `_loadCharactersFromLocal()` helper method
+
+4. **Character Selection Screen** (`lib/character_selection_screen.dart`):
+   - Same pattern: sync to local on success, fallback to local on failure
+
+5. **Web Platform Support** (`lib/services/isar_service_stub.dart`):
+   - Added no-op stub methods for web (Isar is mobile-only)
+
+**Files Modified:**
+- `lib/services/isar_service_io.dart` - Added `saveCharacter()` and `syncCharactersFromApi()`
+- `lib/services/isar_service_stub.dart` - Added stub methods for web
+- `lib/character_creation_screen_enhanced.dart` - Save character locally after creation
+- `lib/main_story.dart` - Sync to local storage + fallback loading
+- `lib/character_selection_screen.dart` - Same sync + fallback pattern
+
+**Testing Notes:**
+- Flutter analyzer passes with no errors
+- Characters should now persist across app restarts
+- Offline mode: previously created characters will still appear
+- First-time users: characters sync to local storage on first successful API load
+
+**Known Limitations:**
+- Local storage only caches basic character fields (`id`, `name`, `age`, `role`)
+- Full character data (likes, dislikes, avatar params) still requires API
+- Consider expanding `CharacterLocal` schema if offline editing is needed
+
+---
+
 ## Supervisor Notes | 2026-01-24 (Real Mode & Illustration Display Fix)
 
 ### Session: Switching to Real AI Mode - IN PROGRESS
@@ -70,7 +134,7 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 **Goal:** Fix critical bugs discovered during testing: backend crash on story generation, avatar display errors, and oversimplified emotions for older children.
 
-**Status:** ✅ COMMITTED & PUSHED (commit `7fb4848`)
+**Status:** ✅ COMMITTED & PUSHED (commit `7fb4848`, `c2f45f4`)
 
 **Issues Fixed:**
 
@@ -108,9 +172,21 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 - `lib/screens/wizard_steps/feeling_selection_step.dart` - Age-gated feelings selection
 - `lib/pre_story_feelings_dialog.dart` - Age-gated feelings selection
 
-**Commit:** `7fb4848` - fix: Critical bug fixes for story generation and avatar display
+**Commits:**
+- `7fb4848` - fix: Critical bug fixes for story generation and avatar display
+- `c2f45f4` - docs: Update team coordination log with bug fix session
 
 **Deployment:** Pushed to `origin/main`. Railway auto-deploys backend changes.
+
+**Known Issues (Not Blockers):**
+1. **401 Auth Errors on Character/Subscription Loading:** Backend now requires authentication for `/get-characters` and `/subscription-status` endpoints. Characters don't load for unauthenticated users. This is expected behavior from security hardening - users need to sign in.
+
+2. **Flutter Analyzer Warnings (79 total):** All are minor warnings (unused variables, naming conventions) - no errors. App compiles and runs fine.
+
+**Testing Notes:**
+- Flutter app launches successfully in Chrome
+- Avatar display fix verified in `character_preview.dart` and `avatar_creator_overlay.dart`
+- Age-gated feelings: tested code paths for ages ≤5 (MoodMagicPicker) and >5 (TherapeuticFeelingsWheel)
 
 ---
 
