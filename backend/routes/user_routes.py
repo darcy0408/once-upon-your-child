@@ -6,14 +6,13 @@ from backend.models.story import Story
 from backend.database import db
 from backend.middleware.auth import require_auth, require_owner
 
-user_routes = Blueprint('user_routes', __name__)
-
 # Subscription limits
 SUBSCRIPTION_LIMITS = {
     'free': {'stories': 10, 'characters': 2},
     'premium': {'stories': 100, 'characters': 5},
     'family': {'stories': 500, 'characters': 10},
 }
+
 
 def _get_period_start_end():
     now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -24,12 +23,14 @@ def _get_period_start_end():
         period_end = period_start.replace(month=now.month + 1)
     return period_start, period_end
 
+
 def _normalize_timestamp(value):
     if not value:
         return None
     if value.tzinfo:
         return value.astimezone(timezone.utc).replace(tzinfo=None)
     return value
+
 
 def _get_period_bounds_for_user(user):
     default_start, default_end = _get_period_start_end()
@@ -45,65 +46,75 @@ def _get_period_bounds_for_user(user):
         period_start = current_month_start.replace(month=current_month_start.month - 1)
     return period_start, period_end
 
+
 def _format_timestamp(value):
     if not value:
         return None
     return value.replace(microsecond=0).isoformat() + 'Z'
 
-@user_routes.route('/api/user/<user_id>/usage-stats', methods=['GET'])
-@require_auth
-@require_owner('user_id')
-def get_usage_stats(user_id):
-    try:
-        # User already validated by @require_owner decorator
-        user = request.current_user
 
-        period_start, period_end = _get_period_bounds_for_user(user)
+def create_user_routes_blueprint(limiter=None):
+    """Factory function to create user routes blueprint with rate limiting."""
+    user_routes = Blueprint('user_routes', __name__)
 
-        # Count stories this month
-        stories_this_month = Story.query.filter(
-            Story.user_id == user_id,
-            Story.created_at >= period_start,
-            Story.created_at < period_end
-        ).count()
+    @user_routes.route('/api/user/<user_id>/usage-stats', methods=['GET'])
+    @require_auth
+    @require_owner('user_id')
+    @limiter.limit("60 per minute")  # Read-heavy endpoint
+    def get_usage_stats(user_id):
+        try:
+            # User already validated by @require_owner decorator
+            user = request.current_user
 
-        # Count characters
-        characters_count = Character.query.filter(Character.user_id == user_id).count()
+            period_start, period_end = _get_period_bounds_for_user(user)
 
-        # Get limits
-        tier = user.subscription_tier or 'free'
-        limits = SUBSCRIPTION_LIMITS.get(tier, SUBSCRIPTION_LIMITS['free'])
+            # Count stories this month
+            stories_this_month = Story.query.filter(
+                Story.user_id == user_id,
+                Story.created_at >= period_start,
+                Story.created_at < period_end
+            ).count()
 
-        response = {
-            'stories_this_month': stories_this_month,
-            'stories_limit': limits['stories'],
-            'characters_count': characters_count,
-            'characters_limit': limits['characters'],
-            'period_start': _format_timestamp(period_start),
-            'period_end': _format_timestamp(period_end),
-        }
-        return jsonify(response)
-    except Exception as e:
-        current_app.logger.exception('Failed to get usage stats for %s', user_id)
-        return jsonify({'error': 'Internal server error'}), 500
+            # Count characters
+            characters_count = Character.query.filter(Character.user_id == user_id).count()
 
-@user_routes.route('/api/user/<user_id>/cancel-subscription', methods=['POST'])
-@require_auth
-@require_owner('user_id')
-def cancel_subscription(user_id):
-    try:
-        # User already validated by @require_owner decorator
-        user = request.current_user
+            # Get limits
+            tier = user.subscription_tier or 'free'
+            limits = SUBSCRIPTION_LIMITS.get(tier, SUBSCRIPTION_LIMITS['free'])
 
-        user.cancel_at_period_end = True
-        db.session.commit()
+            response = {
+                'stories_this_month': stories_this_month,
+                'stories_limit': limits['stories'],
+                'characters_count': characters_count,
+                'characters_limit': limits['characters'],
+                'period_start': _format_timestamp(period_start),
+                'period_end': _format_timestamp(period_end),
+            }
+            return jsonify(response)
+        except Exception as e:
+            current_app.logger.exception('Failed to get usage stats for %s', user_id)
+            return jsonify({'error': 'Internal server error'}), 500
 
-        response = {
-            'success': True,
-            'message': 'Subscription will be canceled at period end',
-            'cancel_at_period_end': True,
-        }
-        return jsonify(response)
-    except Exception as e:
-        current_app.logger.exception('Failed to cancel subscription for %s', user_id)
-        return jsonify({'error': 'Internal server error'}), 500
+    @user_routes.route('/api/user/<user_id>/cancel-subscription', methods=['POST'])
+    @require_auth
+    @require_owner('user_id')
+    @limiter.limit("5 per hour")  # Strict limit on subscription changes
+    def cancel_subscription(user_id):
+        try:
+            # User already validated by @require_owner decorator
+            user = request.current_user
+
+            user.cancel_at_period_end = True
+            db.session.commit()
+
+            response = {
+                'success': True,
+                'message': 'Subscription will be canceled at period end',
+                'cancel_at_period_end': True,
+            }
+            return jsonify(response)
+        except Exception as e:
+            current_app.logger.exception('Failed to cancel subscription for %s', user_id)
+            return jsonify({'error': 'Internal server error'}), 500
+
+    return user_routes

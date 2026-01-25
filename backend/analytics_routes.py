@@ -1,12 +1,23 @@
 from flask import Blueprint, jsonify, request
 from datetime import datetime, timedelta, timezone
-from .database import db
-from .models.story import Story
-from .models.user import User
-from .models.character import Character
-from .cost_tracking import get_cost_report
-from .middleware.auth import require_auth, require_admin
 import os
+
+# Robust imports to handle both package and script execution contexts
+try:
+    from .database import db
+    from .models.story import Story
+    from .models.user import User
+    from .models.character import Character
+    from .cost_tracking import get_cost_report
+    from .middleware.auth import require_auth, require_admin
+except ImportError:
+    # Fallback for when backend is the root (e.g. python backend/app.py)
+    from database import db
+    from models.story import Story
+    from models.user import User
+    from models.character import Character
+    from cost_tracking import get_cost_report
+    from middleware.auth import require_auth, require_admin
 
 
 def get_stories_created_count(days=1):

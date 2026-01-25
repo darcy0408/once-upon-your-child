@@ -490,7 +490,29 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     return spans;
   }
 
-
+  /// Build placeholder widget for failed image loads
+  Widget _buildImageErrorPlaceholder() {
+    return Container(
+      height: 150,
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
+            SizedBox(height: 8),
+            Text(
+              'Image unavailable',
+              style: TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   /// Generate coloring pages from the story
   Future<void> _generateColoringPages() async {
@@ -1249,17 +1271,79 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                             onPageChanged: _handlePageChanged,
                                             itemCount: _storyPages.length,
                                             itemBuilder: (context, index) {
+                                              // Get illustration for this page if available
+                                              // Priority: inline (base64) > cached (URL)
+                                              final inlineIllustration = index < _inlineIllustrations.length
+                                                  ? _inlineIllustrations[index]
+                                                  : null;
+                                              final cachedIllustration = _cachedIllustrations != null &&
+                                                      index < _cachedIllustrations!.length
+                                                  ? _cachedIllustrations![index]
+                                                  : null;
+                                              final hasIllustration = inlineIllustration != null || cachedIllustration != null;
+
                                               return SingleChildScrollView(
                                                 padding: const EdgeInsets.all(32),
-                                                child: SelectableText.rich(
-                                                  TextSpan(
-                                                    style: GoogleFonts.merriweather(
-                                                      fontSize: 20 * _textScale,
-                                                      height: 1.8,
-                                                      color: _highContrastMode ? Colors.white : const Color(0xFF2C3E50),
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                                  children: [
+                                                    // Show illustration at top of page if available
+                                                    if (hasIllustration) ...[
+                                                      ClipRRect(
+                                                        borderRadius: BorderRadius.circular(16),
+                                                        child: inlineIllustration != null
+                                                            ? Image.memory(
+                                                                inlineIllustration.bytes,
+                                                                fit: BoxFit.cover,
+                                                                height: 250,
+                                                                width: double.infinity,
+                                                                errorBuilder: (context, error, stackTrace) {
+                                                                  return _buildImageErrorPlaceholder();
+                                                                },
+                                                              )
+                                                            : Image.network(
+                                                                cachedIllustration!.imageUrl,
+                                                                fit: BoxFit.cover,
+                                                                height: 250,
+                                                                width: double.infinity,
+                                                                loadingBuilder: (context, child, loadingProgress) {
+                                                                  if (loadingProgress == null) return child;
+                                                                  return Container(
+                                                                    height: 250,
+                                                                    decoration: BoxDecoration(
+                                                                      color: Colors.grey[100],
+                                                                      borderRadius: BorderRadius.circular(16),
+                                                                    ),
+                                                                    child: Center(
+                                                                      child: CircularProgressIndicator(
+                                                                        value: loadingProgress.expectedTotalBytes != null
+                                                                            ? loadingProgress.cumulativeBytesLoaded /
+                                                                                loadingProgress.expectedTotalBytes!
+                                                                            : null,
+                                                                        color: AppColors.primary,
+                                                                      ),
+                                                                    ),
+                                                                  );
+                                                                },
+                                                                errorBuilder: (context, error, stackTrace) {
+                                                                  return _buildImageErrorPlaceholder();
+                                                                },
+                                                              ),
+                                                      ),
+                                                      const SizedBox(height: 24),
+                                                    ],
+                                                    // Story text
+                                                    SelectableText.rich(
+                                                      TextSpan(
+                                                        style: GoogleFonts.merriweather(
+                                                          fontSize: 20 * _textScale,
+                                                          height: 1.8,
+                                                          color: _highContrastMode ? Colors.white : const Color(0xFF2C3E50),
+                                                        ),
+                                                        children: _buildStorySpans(_storyPages[index]),
+                                                      ),
                                                     ),
-                                                    children: _buildStorySpans(_storyPages[index]),
-                                                  ),
+                                                  ],
                                                 ),
                                               );
                                             },
