@@ -112,17 +112,15 @@ def _parse_custom_elements(raw: str | None) -> list[str]:
     if not raw:
         return []
 
-    # Preserve quoted phrases
-    quoted_matches = re.findall(r"\"([^\"]+)\"|'([^']+)'", raw)
-    elements = [q1 or q2 for q1, q2 in quoted_matches if (q1 or q2)]
-
-    # Remove quoted content before splitting
-    cleaned = re.sub(r"\"[^\"]+\"|'[^']+'", " ", raw)
-    parts = re.split(r"[,\n;]+", cleaned)
-    for part in parts:
-        part = part.strip()
-        if part:
-            elements.append(part)
+    # Preserve order while honoring quoted phrases
+    elements: list[str] = []
+    for match in re.finditer(r"\"([^\"]+)\"|'([^']+)'|[^,\n;]+", raw):
+        token = match.group(1) or match.group(2) or match.group(0)
+        token = token.strip()
+        if (token.startswith('"') and token.endswith('"')) or (token.startswith("'") and token.endswith("'")):
+            token = token[1:-1].strip()
+        if token:
+            elements.append(token)
 
     # Normalize, dedupe, and cap
     normalized = []
