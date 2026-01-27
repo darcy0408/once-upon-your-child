@@ -223,7 +223,7 @@ def _safe_extract_title_and_gem(text: str, theme: str):
         return f"A {theme} Adventure", "You are magic!", clean_text, [clean_text], {}
 
 
-def _build_learning_to_read_prompt(character_name, theme, age, character_details, companion=None, extra_characters=None, story_length="standard"):
+def _build_learning_to_read_prompt(character_name, theme, age, character_details, companion=None, extra_characters=None, story_length="standard", custom_elements=""):
     """Build prompt for Learning to Read mode stories."""
     band = _get_age_band(age)
     config = AGE_CONSTRAINTS[band]
@@ -239,11 +239,12 @@ Theme: {theme}
 Format: {num_pages} pages. Each page 1-2 short sentences.
 Vocabulary: CVC words and simple sight words only.
 Requirements: Repeating frames, comforting rhythm, 1 coping moment.
+Custom Requests: {custom_elements or 'None'} (Use the exact words from this request at least once each, verbatim, in the story).
 {SAFETY_GUARDRAILS}
 """
 
 
-def _build_rhyme_time_prompt(character_name, theme, age, character_details, companion_pets=None, companion_characters=None, extra_characters=None, story_length="standard"):
+def _build_rhyme_time_prompt(character_name, theme, age, character_details, companion_pets=None, companion_characters=None, extra_characters=None, story_length="standard", custom_elements=""):
     """Build prompt for Rhyme Time mode stories."""
     band = _get_age_band(age)
     config = AGE_CONSTRAINTS[band]
@@ -256,5 +257,6 @@ Theme: {theme}
 Word Count: {word_range[0]}-{word_range[1]} words.
 Scheme: Consistent AABB or ABCB.
 Requirements: Include a magical surprise and a coping moment. {character_name} is the hero.
+Custom Requests: {custom_elements or 'None'} (Use the exact words from this request at least once each, verbatim, in the story).
 {SAFETY_GUARDRAILS}
 """

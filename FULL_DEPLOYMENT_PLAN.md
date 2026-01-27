@@ -1,8 +1,8 @@
 # Story Weaver App - Full Deployment Plan
 
-**Date:** 2026-01-26
-**Status:** Ready for Execution
-**Version:** 3.0
+**Date:** 2026-01-27
+**Status:** DEPLOYED - Both services live on Railway
+**Version:** 4.0
 
 ---
 
@@ -13,36 +13,119 @@ Story Weaver is a therapeutic AI storytelling app for children ages 3-17+. It oc
 - Therapeutic framework (like Zoy/Storybook)
 - **3-Level Feelings Wheel** with 124 custom face expressions (unique to Story Weaver)
 
-This plan covers deploying the app to production with the Feelings Wheel as the core differentiator.
+Both frontend and backend are deployed on Railway.
 
 ---
 
 ## Current Architecture
 
-| Component | Technology | Deployment |
-|-----------|------------|------------|
-| Frontend | Flutter Web | Netlify |
-| Backend | Flask/Python | Railway |
-| Database | PostgreSQL | Railway (auto) |
-| AI | Gemini API | Google Cloud |
-| CDN | Cloudflare | Optional |
+| Component | Technology | Deployment | URL |
+|-----------|------------|------------|-----|
+| Backend | Flask/Python + Gunicorn | Railway | `story-weaver-app-production.up.railway.app` |
+| Frontend | Flutter Web + nginx | Railway | `grand-light-production-68d9.up.railway.app` |
+| Database | PostgreSQL | Railway (auto) | Internal |
+| AI | Gemini API | Google Cloud | gemini-2.0-flash-exp |
+| Payments | Stripe | Stripe.com | Configured |
+
+### How Deployment Works
+
+```
+git push origin main
+        │
+        ├──► Railway builds Backend (Dockerfile)
+        │    └── gunicorn -w 1 -b 0.0.0.0:$PORT wsgi:app
+        │
+        └──► Railway builds Frontend (Dockerfile.frontend)
+             ├── Stage 1: Flutter build web --release
+             └── Stage 2: nginx serves build/web
+```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `Dockerfile` | Backend build (Flask + Gunicorn) |
+| `Dockerfile.frontend` | Frontend build (Flutter → nginx) |
+| `railway.toml` | Railway multi-service config |
+| `nginx.conf` | Frontend SPA routing + caching + security headers |
+| `lib/config/flavor_config.dart` | Frontend → Backend URL mapping |
 
 ---
 
-## Pre-Deployment: Critical Fixes
+## Current Deployment Status (Verified 2026-01-27)
 
-### 1. Feelings Wheel Refactor (BEFORE DEPLOYMENT)
+### Backend Health
+```json
+{
+  "database": "ok",
+  "environment": "production",
+  "has_api_key": true,
+  "model": "gemini-2.0-flash-exp",
+  "status": "ok",
+  "stripe_configured": true,
+  "stripe_family_price": true,
+  "stripe_premium_price": true,
+  "version": "1.0.2"
+}
+```
 
-See `FEELINGS_WHEEL_REFACTOR_PLAN.md` for full details.
+### Frontend
+- Serving Flutter web app via nginx
+- Production flavor: points to `story-weaver-app-production.up.railway.app`
+- SPA routing configured (all paths → index.html)
+- Gzip compression enabled
+- Static asset caching (1 year)
+- Security headers (X-Frame-Options, X-Content-Type-Options, X-XSS-Protection)
+
+---
+
+## Critical: CORS Configuration
+
+The backend uses `RAILWAY_FRONTEND_URL` env var to allow the frontend origin.
+
+**You MUST verify this is set in Railway Dashboard → Backend Service → Variables:**
+
+```
+RAILWAY_FRONTEND_URL=https://grand-light-production-68d9.up.railway.app
+```
+
+Without this, the frontend will get CORS errors on every API call.
+
+### All Required Backend Environment Variables
+
+| Variable | Required | Status | Notes |
+|----------|----------|--------|-------|
+| `FLASK_ENV` | ✅ | ✅ Set | `prod` (in railway.toml) |
+| `FLASK_CONFIG` | ✅ | ✅ Set | `prod` (in railway.toml) |
+| `GEMINI_API_KEY` | ✅ | ✅ Set | Verified via health check |
+| `SECRET_KEY` | ✅ | ✅ Set | Required in production |
+| `JWT_SECRET_KEY` | ✅ | ✅ Set | Required in production |
+| `DATABASE_URL` | ✅ | ✅ Auto | Railway PostgreSQL plugin |
+| `RAILWAY_FRONTEND_URL` | ✅ | ⚠️ VERIFY | `https://grand-light-production-68d9.up.railway.app` |
+| `MOCK_TESTING_MODE` | Recommended | ✅ Set | `false` for real AI |
+| `SENTRY_DSN` | Optional | ❌ Not set | Add for error monitoring |
+| `STRIPE_SECRET_KEY` | ✅ | ✅ Set | Verified via health check |
+| `STRIPE_WEBHOOK_SECRET` | ✅ | ✅ Set | For webhook verification |
+
+**Generate new secrets if needed:**
+```bash
+python -c 'import secrets; print(secrets.token_hex(32))'
+```
+
+---
+
+## Pre-Deployment: Feelings Wheel Refactor
+
+See `FEELINGS_WHEEL_REFACTOR_PLAN.md` for full details. Currently being implemented by another instance.
 
 **Quick Summary:**
 - [ ] Remove inappropriate emotions (Aroused, Intimate, Violated, Auctiole)
 - [ ] Refactor wheel to use progressive REPLACEMENT (not concentric rings)
 - [ ] Verify all 124 face images load correctly
 
-**Why Critical:** The Feelings Wheel is your competitive differentiator. It must work flawlessly.
+**Why Critical:** The Feelings Wheel is your competitive differentiator.
 
-### 2. Recent Bug Fixes (Already Committed)
+### Recent Bug Fixes (Already Committed & Deployed)
 
 | Date | Fix | Status |
 |------|-----|--------|
@@ -56,181 +139,47 @@ See `FEELINGS_WHEEL_REFACTOR_PLAN.md` for full details.
 
 ---
 
-## Phase 1: Pre-Deployment Verification
+## How to Deploy Updates
 
-### 1.1 Code Quality Check
-
-```bash
-# Check git status
-git status
-git log origin/main..HEAD
-
-# Run Flutter analyzer
-flutter analyze
-
-# Run tests
-flutter test
-cd backend && python -m pytest tests/ -v
-```
-
-### 1.2 Local Testing
+### Standard Deploy (Both Services)
 
 ```bash
-# Start backend
-cd backend
-source venv/bin/activate  # or venv\Scripts\activate on Windows
-flask run
+# 1. Commit your changes
+git add <files>
+git commit -m "description of changes"
 
-# Start frontend (new terminal)
-flutter run -d chrome
-```
+# 2. Push triggers auto-deploy of BOTH services
+git push origin main
 
-**Test Checklist:**
-- [ ] Create character with avatar
-- [ ] Select feeling using wheel (Age 6+)
-- [ ] Select mood using MoodMagicPicker (Age ≤5)
-- [ ] Generate story
-- [ ] View illustrations (if MOCK_TESTING_MODE=false)
-- [ ] Character persists after refresh
-
-### 1.3 Build Verification
-
-```bash
-flutter build web --release --dart-define=FLAVOR=production
-```
-
----
-
-## Phase 2: Backend Deployment (Railway)
-
-### 2.1 Railway Project Setup
-
-**Project ID:** `36b27716-089f-4441-9b9d-af942a6df7aa`
-**Dashboard:** https://railway.app/project/36b27716-089f-4441-9b9d-af942a6df7aa
-
-### 2.2 Required Environment Variables
-
-| Variable | Required | Value/Notes |
-|----------|----------|-------------|
-| `FLASK_ENV` | ✅ | `prod` |
-| `FLASK_CONFIG` | ✅ | `prod` |
-| `GEMINI_API_KEY` | ✅ | Get from https://aistudio.google.com/app/apikey |
-| `SECRET_KEY` | ✅ | Generate: `python -c 'import secrets; print(secrets.token_hex(32))'` |
-| `JWT_SECRET_KEY` | ✅ | Generate: `python -c 'import secrets; print(secrets.token_hex(32))'` |
-| `DATABASE_URL` | ✅ | Auto-set by Railway PostgreSQL |
-| `MOCK_TESTING_MODE` | Recommended | `false` for real AI, `true` for testing |
-| `SENTRY_DSN` | Optional | Get from https://sentry.io |
-| `ALLOWED_ORIGINS` | Recommended | Your Netlify URL |
-
-### 2.3 Deploy Command
-
-```bash
-git push origin main  # Auto-deploys via Railway GitHub integration
-```
-
-### 2.4 Verify Deployment
-
-```bash
+# 3. Verify
 curl https://story-weaver-app-production.up.railway.app/health
+curl https://grand-light-production-68d9.up.railway.app/
 ```
 
-Expected:
-```json
-{"status": "healthy", "database": "connected"}
-```
+### Frontend-Only Redeploy
+
+If you only changed Flutter code, Railway will still rebuild both services. To speed things up, you can trigger a manual redeploy of just the frontend in the Railway dashboard.
+
+### Backend-Only Changes
+
+Same process - `git push origin main`. Railway detects which Dockerfiles changed.
 
 ---
 
-## Phase 3: Frontend Deployment (Netlify)
+## Post-Deployment Testing
 
-### 3.1 Netlify Configuration
-
-**Site ID:** `db36a9a4-9712-46ff-adac-6477362e60de`
-
-Already configured in `netlify.toml`:
-```toml
-[build]
-  publish = "build/web"
-  command = "source .netlify/install_flutter.sh && flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true --dart-define=FLAVOR=production"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-```
-
-### 3.2 GitHub Secrets (for CI/CD)
-
-Add to GitHub → Settings → Secrets → Actions:
-
-| Secret | Value |
-|--------|-------|
-| `NETLIFY_AUTH_TOKEN` | Your Netlify personal access token |
-| `NETLIFY_SITE_ID` | `db36a9a4-9712-46ff-adac-6477362e60de` |
-| `RAILWAY_TOKEN` | Your Railway API token |
-| `RAILWAY_PROJECT_ID` | `36b27716-089f-4441-9b9d-af942a6df7aa` |
-
-### 3.3 Deploy Options
-
-**Option A: Netlify Dashboard (First Deploy)**
-1. Go to https://app.netlify.com
-2. Add new site → Import from GitHub
-3. Select `story-weaver-app` repository
-4. Build settings auto-detected from `netlify.toml`
-5. Deploy
-
-**Option B: Netlify CLI**
-```bash
-npm install -g netlify-cli
-flutter build web --release --dart-define=FLAVOR=production
-netlify deploy --prod --dir=build/web
-```
-
-**Option C: Git Push (After Connected)**
-```bash
-git push origin main  # Auto-deploys
-```
-
-### 3.4 Post-Deploy: Update CORS
-
-After getting your Netlify URL, add to Railway:
-```
-ALLOWED_ORIGINS=https://your-site.netlify.app
-```
-
----
-
-## Phase 4: Database Setup
-
-### 4.1 PostgreSQL (Railway)
-
-Railway auto-provisions PostgreSQL when you add the plugin:
-1. Railway Dashboard → Your Project
-2. Click "+ New" → Database → PostgreSQL
-3. `DATABASE_URL` automatically added to environment
-
-### 4.2 Run Migrations
-
-The backend auto-creates tables on startup, but if needed:
-```bash
-railway run python -c "from backend.app import create_app; app = create_app(); app.app_context().push(); from backend.models import db; db.create_all()"
-```
-
----
-
-## Phase 5: Post-Deployment Testing
-
-### 5.1 Critical User Flows
+### Critical User Flows
 
 | Flow | Test Steps | Expected Result |
 |------|------------|-----------------|
 | Young Child (Age 4) | Create character → MoodMagicPicker → Generate | Story uses selected mood |
-| Older Child (Age 10) | Create character → Feelings Wheel → Select Happy → Playful → Generate | Story incorporates playful feeling |
+| Older Child (Age 10) | Create character → Feelings Wheel → Happy → Playful → Generate | Story incorporates playful feeling |
 | Deep Emotion (Age 12) | Wheel → Sad → Lonely → "Left out" → Generate | Story addresses loneliness |
 | Offline Mode | Disconnect network → View characters | Cached characters visible |
 | Character Persistence | Create character → Close app → Reopen | Character still exists |
+| Stripe Subscription | Click subscribe → Complete checkout | Redirects to `grand-light.../subscription-success` |
 
-### 5.2 Feelings Wheel Verification
+### Feelings Wheel Verification
 
 - [ ] Core wheel shows 7 emotions with face images
 - [ ] Tapping emotion shows secondary options
@@ -238,82 +187,83 @@ railway run python -c "from backend.app import create_app; app = create_app(); a
 - [ ] Center hub shows selected emotion + face
 - [ ] Final selection generates story
 
-### 5.3 Health Endpoints
+### Health Checks
 
 ```bash
 # Backend
 curl https://story-weaver-app-production.up.railway.app/health
 
 # Frontend
-curl -I https://your-site.netlify.app/
+curl -I https://grand-light-production-68d9.up.railway.app/
 ```
 
 ---
 
-## Phase 6: Monitoring & Alerts
+## Monitoring & Alerts
 
-### 6.1 Sentry (Error Tracking)
+### Sentry (Error Tracking) - Recommended
 
 1. Create account at https://sentry.io
-2. Create Flask project
-3. Add `SENTRY_DSN` to Railway env vars
+2. Create Flask project → Get DSN
+3. Add `SENTRY_DSN` to Railway backend env vars
 4. Errors auto-reported with stack traces
 
-### 6.2 Railway Alerts
+### Railway Dashboard
 
-1. Railway Dashboard → Project → Settings → Alerts
-2. Set up alerts for:
-   - Deployment failures
-   - High memory usage
-   - Service crashes
+- CPU/Memory metrics visible per service
+- Deploy logs available for debugging
+- Set up alerts: Railway Dashboard → Project → Settings → Alerts
 
-### 6.3 Uptime Monitoring (Optional)
+### Uptime Monitoring (Optional)
 
-Use free tier of:
-- UptimeRobot
-- Pingdom
-- Better Uptime
+Free tier options: UptimeRobot, Better Uptime, Pingdom
 
 Monitor: `https://story-weaver-app-production.up.railway.app/health`
 
 ---
 
-## Phase 7: Post-Launch Tasks
+## Post-Launch Roadmap
 
 ### Immediate (Day 1-3)
-- [ ] Monitor error rates in Sentry
+- [ ] Monitor error rates
 - [ ] Watch Railway metrics for performance
 - [ ] Test with real users (family/friends)
-- [ ] Fix any critical bugs discovered
+- [ ] Verify CORS works end-to-end
 
 ### Short-term (Week 1-2)
 - [ ] Gather user feedback
-- [ ] Optimize slow queries (if any)
 - [ ] Add missing face images for new emotions
 - [ ] Fine-tune feelings wheel animations
+- [ ] Custom domain setup (optional)
 
 ### Long-term (Month 1+)
 - [ ] Mobile app deployment (Android APK, iOS)
 - [ ] Implement Guardian Mode
 - [ ] Add therapeutic pick-a-path adventures
 - [ ] Categorize 55 Midjourney avatars
+- [ ] Emotion Insights Dashboard (Pillar 2)
+- [ ] Post-Story Emotional Check
 
 ---
 
 ## Rollback Plan
 
-### Quick Rollback (< 5 min)
+### Quick Rollback
 ```bash
-# Revert last commit
 git revert HEAD
 git push origin main
-
-# Or redeploy previous version via Railway/Netlify dashboards
+# Railway auto-redeploys both services
 ```
 
-### Stable Commits (Safe to Roll Back To)
+### Via Railway Dashboard
+1. Go to the service → Deployments tab
+2. Click on a previous successful deployment
+3. Click "Redeploy"
+
+### Stable Commits
 | Commit | Description | Date |
 |--------|-------------|------|
+| `8e0371b` | Deployment docs added | 01-27 |
 | `7e63031` | Character persistence fix | 01-24 |
 | `c2f45f4` | Bug fix session complete | 01-24 |
 | `d2ee406` | Mood Magic feature | Earlier |
@@ -322,7 +272,7 @@ git push origin main
 Temporary fix in `feeling_selection_step.dart`:
 ```dart
 // Force all ages to use simple MoodMagicPicker
-if (age <= 5) → if (true)
+if (age <= 5) → change to: if (true)
 ```
 
 ---
@@ -331,21 +281,23 @@ if (age <= 5) → if (true)
 
 | Environment | Frontend | Backend |
 |-------------|----------|---------|
-| Production | `https://[your-site].netlify.app` | `https://story-weaver-app-production.up.railway.app` |
-| Staging | `https://[staging].netlify.app` | `https://story-weaver-staging.up.railway.app` |
-| Development | `http://localhost:3000` | `http://localhost:5000` |
+| **Production** | `https://grand-light-production-68d9.up.railway.app` | `https://story-weaver-app-production.up.railway.app` |
+| Staging | `https://story-weaver-staging.up.railway.app` | `https://story-weaver-staging-api.up.railway.app` |
+| Development | `http://localhost:8080` (flutter run -d chrome) | `http://localhost:5000` (flask run) |
 
 ---
 
 ## Security Checklist
 
-- [x] Rate limiting on all routes
+- [x] Rate limiting on all routes (5-60/min depending on route)
 - [x] Input validation (age 0-120, text sanitization)
 - [x] JWT auth for sensitive endpoints
-- [x] CORS configured for frontend origin
+- [x] CORS configured for frontend origin (via RAILWAY_FRONTEND_URL)
 - [x] No secrets in code (all in env vars)
-- [x] HTTPS enforced (via Railway/Netlify)
-- [ ] Sentry configured (removes PII from logs)
+- [x] HTTPS enforced (Railway auto-TLS)
+- [x] Security headers via nginx (X-Frame-Options, X-Content-Type-Options, X-XSS-Protection)
+- [x] Stripe webhook signature verification
+- [ ] Sentry configured (add SENTRY_DSN)
 
 ---
 
@@ -362,7 +314,7 @@ Story Weaver is the **only** app that combines:
 | Age Calibration (3-17+) | ✅ | ❌ | ❌ | Partial | Partial |
 | Pick-a-Path Stories | ✅ | ❌ | ❌ | ❌ | ❌ |
 
-**The Feelings Wheel is your moat.** No competitor helps children identify their emotions before generating a therapeutic story tailored to that feeling.
+**The Feelings Wheel is your moat.**
 
 ---
 
@@ -371,11 +323,13 @@ Story Weaver is the **only** app that combines:
 | Resource | URL |
 |----------|-----|
 | Railway Dashboard | https://railway.app/project/36b27716-089f-4441-9b9d-af942a6df7aa |
-| Netlify Dashboard | https://app.netlify.com |
+| Backend (Production) | https://story-weaver-app-production.up.railway.app |
+| Frontend (Production) | https://grand-light-production-68d9.up.railway.app |
 | Backend Health | https://story-weaver-app-production.up.railway.app/health |
+| GitHub Repo | https://github.com/darcy0408/story-weaver-app |
 | Gemini API Keys | https://aistudio.google.com/app/apikey |
 | Sentry | https://sentry.io |
-| GitHub Secrets | https://github.com/[user]/story-weaver-app/settings/secrets/actions |
+| Stripe Dashboard | https://dashboard.stripe.com |
 
 ---
 
@@ -383,33 +337,39 @@ Story Weaver is the **only** app that combines:
 
 ```
 PRE-DEPLOYMENT
-[ ] Feelings wheel refactored (see FEELINGS_WHEEL_REFACTOR_PLAN.md)
-[ ] All tests pass
-[ ] Local testing complete
-[ ] Git status clean
+[x] Backend healthy on Railway
+[x] Frontend serving on Railway
+[x] Flutter web build succeeds
+[x] Flutter analyze passes (0 errors, 93 warnings)
+[ ] Feelings wheel refactored (in progress - other instance)
 
-BACKEND (Railway)
-[ ] Environment variables set
-[ ] PostgreSQL added
-[ ] Deploy triggered
-[ ] Health check passes
+RAILWAY BACKEND
+[x] FLASK_ENV = prod
+[x] GEMINI_API_KEY set
+[x] SECRET_KEY set
+[x] JWT_SECRET_KEY set
+[x] DATABASE_URL auto-set
+[x] STRIPE configured
+[ ] RAILWAY_FRONTEND_URL = https://grand-light-production-68d9.up.railway.app
+[ ] SENTRY_DSN set (optional)
 
-FRONTEND (Netlify)
-[ ] GitHub connected
-[ ] Build succeeds
-[ ] Site accessible
-[ ] CORS updated in Railway
+RAILWAY FRONTEND
+[x] Dockerfile.frontend builds successfully
+[x] nginx serving Flutter web app
+[x] SPA routing working
+[x] Production flavor pointing to correct backend
 
 POST-DEPLOYMENT
-[ ] Create character works
-[ ] Feelings wheel works
+[ ] Create character works end-to-end
+[ ] Feelings wheel works (after refactor)
 [ ] Story generation works
 [ ] Illustrations display
-[ ] No errors in Sentry
+[ ] Stripe checkout redirects work
+[ ] No CORS errors in browser console
 ```
 
 ---
 
-**Document Version:** 3.0
-**Last Updated:** 2026-01-26
+**Document Version:** 4.0
+**Last Updated:** 2026-01-27
 **Author:** Claude (Opus 4.5)

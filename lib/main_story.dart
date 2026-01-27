@@ -18,7 +18,6 @@ import 'config/environment.dart';
 import 'customizable_avatar_widget.dart';
 import 'dialogs/upgrade_prompt_dialog.dart';
 import 'feelings_corner_screen.dart';
-import 'pick_a_path_adventure_screen.dart';
 import 'saved_stories_screen.dart';
 import 'services/isar_service.dart';
 import 'services/offline_story_service.dart';

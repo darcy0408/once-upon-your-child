@@ -63,33 +63,22 @@ class PerformanceVerificationTest(unittest.TestCase):
         """Test that analytics routes do not crash (N+1 fix verification)"""
         print("\nTesting Analytics Route Stability...")
         
-        # Login behavior depends on auth implementation.
-        # Utilizing a helper or just mocking verify_jwt_in_request?
-        # Assuming we can bypass auth for this unit test or use the admin user.
+        # Instead of mocking auth which caused import errors, 
+        # we verify the query construction directly as the goal is to prevent N+1 issues.
         
-        # Mocking auth might be easier.
-        with patch('flask_jwt_extended.view_decorators.verify_jwt_in_request'):
-             with patch('flask_jwt_extended.utils.get_jwt', return_value={'sub': self.admin_user.id, 'role': 'admin'}):
-                 with patch('backend.services.auth_service.get_current_user', return_value=self.admin_user):
-                    # We also need to mock @require_admin decorator if it checks DB.
-                    # Actually, let's just try to hit the endpoint. If it fails 401/403, we know auth is working but blocking.
-                    # We want to reach the query code.
-                    
-                    # Instead of full integration, let's verify the query construction directly.
-                    from backend.models.story import Story
-                    from sqlalchemy.orm import joinedload
-                    
-                    try:
-                        # Replicate the query from analytics_routes.py
-                        # stories_query = Story.query.options(db.joinedload(Story.user)).order_by(Story.created_at.desc())
-                        # This should NOT Raise an error.
-                        print("Constructing optimized query...")
-                        q = Story.query.options(db.joinedload(Story.user)).order_by(Story.created_at.desc())
-                        print("Executing query...")
-                        results = q.limit(5).all()
-                        print(f"Query successful. Retrieved {len(results)} stories.")
-                    except Exception as e:
-                        self.fail(f"Analytics query failed: {e}")
+        from backend.models.story import Story
+        from sqlalchemy.orm import joinedload
+        
+        try:
+            # Replicate the query from analytics_routes.py
+            # stories_query = Story.query.options(db.joinedload(Story.user)).order_by(Story.created_at.desc())
+            print("Constructing optimized query...")
+            q = Story.query.options(db.joinedload(Story.user)).order_by(Story.created_at.desc())
+            print("Executing query...")
+            results = q.limit(5).all()
+            print(f"Query successful. Retrieved {len(results)} stories.")
+        except Exception as e:
+            self.fail(f"Analytics query failed: {e}")
 
 if __name__ == '__main__':
     unittest.main()

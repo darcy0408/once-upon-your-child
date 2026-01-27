@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pill_button.dart';
-import '../../widgets/mood_magic_picker.dart';
-import '../../widgets/therapeutic_feelings_wheel.dart';
+import '../../widgets/expanding_feelings_wheel.dart';
 import '../wizard_story_screen.dart';
 import '../../data/scenario_data.dart';
 import '../../feelings_wheel_data.dart';
@@ -52,22 +51,36 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
     });
   }
 
-  void _selectMood(MoodSelection mood) {
-    // Convert MoodSelection to SelectedFeeling for compatibility
-    final feeling = SelectedFeeling(
-      core: mood.moodName,
-      secondary: mood.moodName,
-      tertiary: mood.moodName,
-      emoji: mood.emoji,
-      eyeType: 'Default',
-      mouthType: 'Smile',
-      color: mood.color,
-    );
-    _selectFeeling(feeling);
-  }
-
   bool get _canContinue =>
       _selectedScenario != null || _selectedFeeling != null;
+
+  Widget _buildSlider(String leftLabel, String rightLabel, String key, Map<String, int> sliders) {
+    final value = sliders[key]?.toDouble() ?? 50.0;
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(leftLabel, style: const TextStyle(fontSize: 12)),
+            Text(rightLabel, style: const TextStyle(fontSize: 12)),
+          ],
+        ),
+        Slider(
+          value: value,
+          min: 0,
+          max: 100,
+          divisions: 10,
+          activeColor: AppColors.primary,
+          inactiveColor: AppColors.primary.withAlpha(50),
+          onChanged: (newValue) {
+            setState(() {
+              sliders[key] = newValue.round();
+            });
+          },
+        ),
+      ],
+    );
+  }
 
   @override
   void dispose() {
@@ -135,14 +148,101 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.shield_outlined, color: AppColors.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Guardian Mode',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    
+                    // 1. Life Challenges
                     Text(
-                      'Parent Note (Private)',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: AppColors.primary,
+                      'Life Challenge (Therapeutic Focus)',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        'Making New Friends',
+                        'Starting School',
+                        'Sibling Rivalry',
+                        'Handling Big Feelings',
+                        'Trying New Foods',
+                        'Sharing Toys',
+                        'Being Brave at Night',
+                        'Patience & Waiting',
+                      ].map((challenge) {
+                        final isSelected = widget.wizardData.lifeChallenge == challenge;
+                        return ChoiceChip(
+                          label: Text(challenge),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            setState(() {
+                              widget.wizardData.lifeChallenge = selected ? challenge : null;
+                            });
+                          },
+                          selectedColor: AppColors.gold,
+                          backgroundColor: Colors.white,
+                          labelStyle: TextStyle(
+                            color: isSelected ? AppColors.textDark : AppColors.textDark.withAlpha(200),
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // 2. Personality Sliders
+                    Text(
+                      'Hero Personality',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildSlider(
+                      'Cautious', 'Adventurous', 
+                      'adventurousness', 
+                      widget.wizardData.personalitySliders,
+                    ),
+                    _buildSlider(
+                      'Serious', 'Silly', 
+                      'creativity', // Using creativity as proxy for silly/serious for now
+                      widget.wizardData.personalitySliders,
+                    ),
+                    _buildSlider(
+                      'Shy', 'Social', 
+                      'sociability', 
+                      widget.wizardData.personalitySliders,
+                    ),
+                    _buildSlider(
+                      'Calm', 'Energetic', 
+                      'energy', 
+                      widget.wizardData.personalitySliders,
+                    ),
+
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // 3. Custom Note
+                    Text(
+                      'Additional Notes',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
                     TextField(
                       controller: _parentalNoteController,
                       decoration: InputDecoration(
@@ -188,47 +288,36 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Age-appropriate feelings selection:
-            // - Young kids (5 and under): Simple 6-mood picker
-            // - Older kids (6+): Full therapeutic feelings wheel with progressive disclosure
-            if (age <= 5) ...[
-              // Simple mood picker for young children
-              MoodMagicPicker(
-                childAge: age,
-                onMoodSelected: _selectMood,
-              ),
-            ] else ...[
-              // Full therapeutic feelings wheel for older children
-              Text(
-                'How are you feeling?',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+            // Full therapeutic feelings wheel (Progressive Disclosure)
+            Text(
+              'How are you feeling?',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Tap a feeling to explore deeper emotions.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textDark.withValues(alpha: 0.7),
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final maxSize = constraints.maxWidth.clamp(280.0, 400.0);
+                return Center(
+                  child: SizedBox.square(
+                    dimension: maxSize,
+                    child: ExpandingFeelingsWheel(
+                      onFeelingSelected: _selectFeeling,
+                      backgroundColor: AppColors.cream,
                     ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Tap a feeling to explore deeper emotions.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textDark.withValues(alpha: 0.7),
-                    ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final maxSize = constraints.maxWidth.clamp(280.0, 400.0);
-                  return Center(
-                    child: SizedBox.square(
-                      dimension: maxSize,
-                      child: TherapeuticFeelingsWheel(
-                        onFeelingSelected: _selectFeeling,
-                        backgroundColor: AppColors.cream,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
+                  ),
+                );
+              },
+            ),
             const SizedBox(height: AppSpacing.md),
             if (_selectedFeeling != null)
               Text(

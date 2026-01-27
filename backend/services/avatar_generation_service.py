@@ -4,6 +4,7 @@ Avatar Generation Service - Generates safe, magical child avatars using Gemini 2
 import uuid
 import base64
 import logging
+import re
 from datetime import datetime
 from typing import Dict, Optional, List
 from .avatar_prompt_service import AvatarPromptService
@@ -277,6 +278,10 @@ class AvatarGenerationService:
                     image_base64 = result.get('image_data')
 
                     if image_base64:
+                        image_base64 = image_base64.strip()
+                        if image_base64.startswith("data:image"):
+                            image_base64 = image_base64.split(",", 1)[1] if "," in image_base64 else image_base64
+                        image_base64 = re.sub(r"\s+", "", image_base64)
                         # Decode base64 to bytes
                         image_bytes = base64.b64decode(image_base64)
                         logger.info("✅ Avatar generated successfully with Gemini!")
@@ -306,6 +311,10 @@ class AvatarGenerationService:
                     image_base64 = result.get('image_data')
 
                     if image_base64:
+                        image_base64 = image_base64.strip()
+                        if image_base64.startswith("data:image"):
+                            image_base64 = image_base64.split(",", 1)[1] if "," in image_base64 else image_base64
+                        image_base64 = re.sub(r"\s+", "", image_base64)
                         # Decode base64 to bytes
                         image_bytes = base64.b64decode(image_base64)
                         logger.info("✅ Avatar generated successfully with OpenRouter fallback!")

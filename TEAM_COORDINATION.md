@@ -11,6 +11,67 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-01-27 (Image Generation Reliability Fix)
+
+### Issue: Illustration/Avatar Generation Failures - FIXED
+
+**Status:** ✅ CLOSED
+
+**Root Cause Analysis:**
+1.  **Gemini Quota:** Primary image generation (Gemini 2.0 Flash Exp) frequently hits free-tier quota limits (429 errors), returning 0 images.
+2.  **Invalid OpenRouter ID:** The fallback for avatars was using `black-forest-labs/flux-1-schnell`, which returned a 400 error (invalid model ID).
+3.  **Conversational Leakage:** OpenRouter's multimodal Gemini models were sometimes returning text descriptions *instead* of image data, which was being incorrectly captured as the image URL.
+
+**Work Completed:**
+1.  **Fixed Model IDs:** Updated `backend/openrouter_image_generator.py` to use `google/gemini-2.5-flash-image` for both illustrations and avatars. This model is confirmed to work reliably on OpenRouter.
+2.  **Stricter Prompting:** Added `IMPORTANT: Respond ONLY with the generated image` to OpenRouter requests to prevent the model from returning conversational text.
+3.  **Improved Extraction:** Enhanced `_extract_image_payload` in the OpenRouter generator to strictly verify that captured content is either a URL or valid base64 data, ignoring plain text descriptions.
+4.  **Reliable Fallback:** Verified that when Gemini hits its quota, the app now seamlessly falls back to OpenRouter for both character avatars and story illustrations.
+
+**Verification:**
+- ✅ Verified Illustration generation (OpenRouter)
+- ✅ Verified Avatar generation (OpenRouter)
+- ✅ Verified Coloring Page generation (OpenRouter)
+- ✅ Verified 429 error handling and fallback logic
+
+---
+
+## Supervisor Notes | 2026-01-27 (Character Persistence Fix - Web)
+
+### Issue: Characters Lost on Every App Restart (Chrome/Web) - FIXED
+
+**Status:** ✅ CLOSED
+
+**Resolution:**
+Implemented a web-compatible persistence layer for Chrome/Web using `SharedPreferences`.
+
+**Work Completed:**
+1.  **Isar Stub Implementation:** Refactored `lib/services/isar_service_stub.dart` to use `SharedPreferences` for local character storage. It now mimics the Isar API (collections, where, put, delete, writeTxn) so frontend providers work without modification.
+2.  **Character Model Synchronization:** Updated `lib/models/local/character_local_stub.dart` to include `avatarParams`, ensuring consistency with the mobile implementation.
+3.  **Provider Decoupling:** Fixed `lib/providers/character_provider.dart` to use conditional exports (`isar_service.dart` and `character_local.dart`) instead of hard-coded IO-specific files. This allows the same provider to work on all platforms.
+4.  **Story Persistence:** Also implemented `SharedPreferences` persistence for `OfflineStoryService` in `lib/services/offline_story_service_stub.dart`, enabling offline story saving on web.
+
+**Files Modified:**
+- `lib/services/isar_service_stub.dart` - Full web persistence implementation
+- `lib/models/local/character_local_stub.dart` - Added avatarParams
+- `lib/providers/character_provider.dart` - Fixed hardcoded imports
+- `lib/services/offline_story_service_stub.dart` - Added story persistence for web
+- `lib/main_story.dart` - Removed unused import
+
+**Verification:**
+- ✅ `flutter analyze` passes (no new errors introduced)
+- ✅ Logic verified against existing providers
+
+---
+
+## Supervisor Notes | 2026-01-27 (Known Issue: Characters Not Persisting on Web)
+
+### Issue: Characters Lost on Every App Restart (Chrome/Web)
+
+**Status:** ✅ CLOSED — Fixed via SharedPreferences web stub
+
+---
+
 ## Supervisor Notes | 2026-01-26 (Feelings Wheel Refactor Implementation)
 
 ### Session: Feelings Wheel Refactor - COMPLETED
@@ -487,6 +548,38 @@ The character creation flow had a critical architectural gap:
 2. Coloring pages sometimes return entries without `image_data`.
 3. Avatar generation still failing (fallback presets work).
 4. Full wizard UI integration tests still pending.
+
+---
+
+## Supervisor Notes | 2026-01-27 (Illustration Prompt Alignment)
+
+### Session: Enforce Character + Scene Fidelity - COMPLETED
+
+**Goal:** Ensure illustrations reflect the selected character and the exact story scene.
+
+**Changes Applied:**
+1. **Gemini image prompt tightened** (`backend/gemini_image_generator.py`)
+   - Explicitly requires literal depiction of the scene.
+   - Requires matching the selected character’s appearance.
+2. **OpenRouter image + coloring prompts tightened** (`backend/openrouter_image_generator.py`)
+   - Added “scene must be depicted literally” and “main character must match selected character.”
+
+**Notes:**
+- This is a prompt-level enforcement; downstream payloads must continue sending accurate `scene_description` and `character_appearance`.
+
+---
+
+## Supervisor Notes | 2026-01-27 (Coloring Page Base64 Fix)
+
+### Session: Normalize Coloring Page Image Data - COMPLETED
+
+**Goal:** Ensure `/generate-coloring-pages` returns base64 `image_data` for each page.
+
+**Fix Applied:**
+- `backend/routes/story_routes.py`: convert `image_url` to `image_data` (base64), with size limits and resize to 1024x1024.
+
+**Verification:**
+- `python test_coloring_generation.py` → **PASS**
 
 ---
 

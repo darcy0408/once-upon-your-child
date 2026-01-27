@@ -158,17 +158,18 @@ class GeminiImageGenerator:
                 companions_text = f"\nCompanions/Friends: {', '.join(companion_descriptions)} - IMPORTANT: Include these characters in the scene!"
 
         prompt = f"""
-Create {num_images} vibrant, engaging {style} that depicts this scene from a therapeutic story.
+Create {num_images} vibrant, engaging {style} that depicts this exact scene from the story.
 
-Scene: {scene_description}
+SCENE (must be depicted literally): {scene_description}
 {character_description}
 Target audience: {age_descriptor} (person is {age} years old)
 Detail level: {detail_level}{therapeutic_context}{companions_text}
 
-CRITICAL CHARACTER REQUIREMENTS:
-- The main character MUST match the description exactly: {character_description}
-- Keep character appearance consistent with the description provided
-- If companions are listed, they MUST appear in the illustration{companions_text if companions_text else ""}
+CRITICAL REQUIREMENTS:
+- The illustration MUST match the SCENE description above (same setting, action, and mood).
+- The main character MUST match the selected character exactly: {character_description}
+- Keep character appearance consistent with the provided description (hair/skin/outfit/etc).
+- If companions are listed, they MUST appear in the illustration and be clearly visible as companions{companions_text if companions_text else ""}
 
 Visual requirements:
 - Full color, vibrant and appealing
@@ -183,7 +184,7 @@ Visual requirements:
 - Respectful, safe, and appropriate for the intended age group
 - MATCH THE CHARACTER APPEARANCE EXACTLY as described above
 
-        Style: {style}, optimized for {age_descriptor}
+Style: {style}, optimized for {age_descriptor}
 """
 
         try:

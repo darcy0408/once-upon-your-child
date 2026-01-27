@@ -100,6 +100,8 @@ class InteractiveStoryService {
     List<String>? interests,
     List<String>? mustInclude,
     List<String>? avoid,
+    String? lifeChallenge,
+    Map<String, int>? personalitySliders,
   }) async {
     final uri = Uri.parse('$_baseUrl/generate-interactive-story');
     final response = await _httpClient
@@ -117,6 +119,8 @@ class InteractiveStoryService {
             if (mustInclude != null && mustInclude.isNotEmpty)
               'must_include': mustInclude,
             if (avoid != null && avoid.isNotEmpty) 'avoid': avoid,
+            if (lifeChallenge != null) 'life_challenge': lifeChallenge,
+            if (personalitySliders != null) 'personality_sliders': personalitySliders,
           }),
         )
         .timeout(const Duration(seconds: 30));

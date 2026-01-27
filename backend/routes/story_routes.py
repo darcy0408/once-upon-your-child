@@ -1,5 +1,6 @@
 import base64
 import io
+import re
 import requests
 from flask import Blueprint, jsonify, request
 from PIL import Image
@@ -18,6 +19,16 @@ from ..utils.validators import (
     validate_story_modes,
     sanitize_text,
 )
+
+def _looks_like_base64_image(value: str) -> bool:
+    if not isinstance(value, str):
+        return False
+    stripped = value.strip()
+    if stripped.startswith("data:image") or stripped.startswith("http"):
+        return False
+    if len(stripped) < 200:
+        return False
+    return re.fullmatch(r"[A-Za-z0-9+/=\s]+", stripped) is not None
 
 
 def create_story_blueprint(
@@ -329,6 +340,8 @@ def create_story_blueprint(
         interests = payload.get("interests")
         must_include = payload.get("must_include")
         avoid = payload.get("avoid")
+        life_challenge = payload.get("life_challenge")
+        personality_sliders = payload.get("personality_sliders")
 
         # Validate required fields
         if not user_id:
@@ -348,7 +361,9 @@ def create_story_blueprint(
                 age=age,
                 interests=interests,
                 must_include=must_include,
-                avoid=avoid
+                avoid=avoid,
+                life_challenge=life_challenge,
+                personality_sliders=personality_sliders
             )
 
             # Filter content
@@ -603,15 +618,25 @@ def create_story_blueprint(
                     new_img = img.copy()
                     image_url = img.get("image_url", "")
 
+                    if "image_data" in img and isinstance(img.get("image_data"), str):
+                        image_data = img.get("image_data", "").strip()
+                        if image_data.startswith("data:image"):
+                            try:
+                                new_img["image_data"] = image_data.split(",", 1)[1]
+                            except IndexError:
+                                new_img["image_data"] = image_data
+                        else:
+                            new_img["image_data"] = image_data
+
                     # If it's a data URI, extract the raw base64 for 'image_data'
-                    if image_url.startswith("data:image"):
+                    if not new_img.get("image_data") and image_url.startswith("data:image"):
                         try:
                             # Split 'data:image/png;base64,.....'
                             base64_part = image_url.split(",", 1)[1]
                             new_img["image_data"] = base64_part
                         except IndexError:
                             pass
-                    elif image_url.startswith("http"):
+                    elif not new_img.get("image_data") and image_url.startswith("http"):
                         # Download image and convert to base64
                         # Download image with size limit protection
                         try:
@@ -661,6 +686,8 @@ def create_story_blueprint(
                             logger.info("Successfully converted image URL to base64 data")
                         except Exception as e:
                             logger.error(f"Error processing illustration image data: {str(e)}")
+                    elif not new_img.get("image_data") and _looks_like_base64_image(image_url):
+                        new_img["image_data"] = re.sub(r"\s+", "", image_url)
 
                     # Ensure image_id is present (frontend expects it)
                     if "id" in img:
@@ -669,6 +696,10 @@ def create_story_blueprint(
                     # Ensure scene_description is present (frontend expects it)
                     if "prompt" in img:
                         new_img["scene_description"] = img["prompt"]
+
+                    if not new_img.get("image_data"):
+                        logger.warning("Illustration missing image_data after normalization; skipping entry")
+                        continue
 
                     transformed_illustrations.append(new_img)
             except Exception as e:
@@ -781,11 +812,77 @@ def create_story_blueprint(
                     character_appearance=character_appearance,
                     companions=companions,
                 )
-                
-                # Add metadata to each page
+
+                # Add metadata + normalize image_data
                 for p in pages:
-                    p["scene_title"] = scene_title
-                    all_coloring_pages.append(p)
+                    page = p.copy() if isinstance(p, dict) else {"image_url": p}
+                    page["scene_title"] = scene_title
+
+                    image_url = page.get("image_url", "")
+                    if "image_data" in page and isinstance(page.get("image_data"), str):
+                        image_data = page.get("image_data", "").strip()
+                        if image_data.startswith("data:image"):
+                            try:
+                                page["image_data"] = image_data.split(",", 1)[1]
+                            except IndexError:
+                                page["image_data"] = image_data
+                        else:
+                            page["image_data"] = image_data
+                    if not page.get("image_data") and isinstance(image_url, str):
+                        if image_url.startswith("data:image"):
+                            try:
+                                page["image_data"] = image_url.split(",", 1)[1]
+                            except IndexError:
+                                pass
+                        elif image_url.startswith("http"):
+                            try:
+                                logger.info(f"Downloading coloring page from {image_url[:50]}...")
+                                img_resp = requests.get(image_url, stream=True, timeout=10)
+                                img_resp.raise_for_status()
+
+                                content_length = img_resp.headers.get('Content-Length')
+                                MAX_SIZE = 5 * 1024 * 1024  # 5MB
+                                if content_length and int(content_length) > MAX_SIZE:
+                                    logger.warning(f"Coloring page too large from headers: {content_length}")
+                                    continue
+
+                                image_bytes = bytearray()
+                                for chunk in img_resp.iter_content(chunk_size=8192):
+                                    image_bytes.extend(chunk)
+                                    if len(image_bytes) > MAX_SIZE:
+                                        logger.warning("Coloring page exceeded 5MB limit during download")
+                                        break
+                                if len(image_bytes) > MAX_SIZE:
+                                    continue
+
+                                try:
+                                    validate_image_size(image_bytes)
+                                except ValueError as size_err:
+                                    logger.warning(f"Coloring page validation failed: {size_err}")
+                                    continue
+
+                                # Resize to max 1024x1024 for consistency
+                                try:
+                                    with Image.open(io.BytesIO(image_bytes)) as img:
+                                        img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+                                        buffer = io.BytesIO()
+                                        img.save(buffer, format="PNG")
+                                        image_bytes = buffer.getvalue()
+                                except Exception as resize_err:
+                                    logger.warning(f"Failed to resize coloring page: {resize_err}")
+
+                                page["image_data"] = base64.b64encode(image_bytes).decode("utf-8")
+                                logger.info("Successfully converted coloring page URL to base64 data")
+                            except Exception as e:
+                                logger.error(f"Error processing coloring page image data: {str(e)}")
+                        elif _looks_like_base64_image(image_url):
+                            page["image_data"] = re.sub(r"\s+", "", image_url)
+
+                    if not page.get("image_data"):
+                        logger.warning("Coloring page missing image_data after normalization; skipping entry")
+                        continue
+
+                    all_coloring_pages.append(page)
 
             return jsonify({
                 "coloring_pages": all_coloring_pages, 

@@ -63,7 +63,9 @@ class InteractiveAdventureService:
         interests: Optional[List[str]] = None,
         must_include: Optional[List[str]] = None,
         avoid: Optional[List[str]] = None,
-        fears_or_sensitivities: Optional[List[str]] = None
+        fears_or_sensitivities: Optional[List[str]] = None,
+        life_challenge: Optional[str] = None,
+        personality_sliders: Optional[Dict[str, int]] = None
     ) -> Dict[str, Any]:
         """
         Create a new interactive adventure story with opening segment.
@@ -79,6 +81,8 @@ class InteractiveAdventureService:
             must_include: Elements that must appear
             avoid: Elements to avoid
             fears_or_sensitivities: Things to handle carefully
+            life_challenge: Optional therapeutic challenge (e.g. "Making Friends")
+            personality_sliders: Optional personality traits (0-100)
 
         Returns:
             Dict with story_id, segment data, inventory, and state
@@ -106,6 +110,10 @@ class InteractiveAdventureService:
                     'comfort_item': character.comfort_item,
                     'likes': character.likes
                 }
+                
+                # Merge personality sliders if not provided explicitly
+                if not personality_sliders and character.personality_sliders:
+                    personality_sliders = character.personality_sliders
 
                 # Get companions from character
                 if character.pets:
@@ -140,7 +148,9 @@ class InteractiveAdventureService:
             interests=interests,
             must_include=must_include,
             avoid=avoid,
-            fears_or_sensitivities=fears_or_sensitivities
+            fears_or_sensitivities=fears_or_sensitivities,
+            life_challenge=life_challenge,
+            personality_sliders=personality_sliders
         )
 
         # Generate first segment

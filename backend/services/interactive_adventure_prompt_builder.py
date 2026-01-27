@@ -156,7 +156,9 @@ class InteractiveAdventurePromptBuilder:
         spark_tool: Optional[str] = None,
         mood_physics: Optional[Dict] = None,
         conflict_hook: Optional[str] = None,
-        sensory_palette: Optional[str] = None
+        sensory_palette: Optional[str] = None,
+        life_challenge: Optional[str] = None,
+        personality_sliders: Optional[Dict[str, int]] = None
     ) -> str:
         """
         Build the opening segment prompt for a new interactive adventure.
@@ -178,6 +180,24 @@ class InteractiveAdventurePromptBuilder:
         mood_rules = ""
         if mood_physics:
             mood_rules = f"\nWORLD PHYSICS (Mood: {mood_physics.get('mood', 'Magic')}):\n- RULE: {mood_physics.get('worldRule', '')}\n- SENSORY: {mood_physics.get('sensoryChange', '')}"
+
+        # Personality Profile (from sliders)
+        personality_profile = ""
+        if personality_sliders:
+            traits = []
+            for trait, value in personality_sliders.items():
+                if value > 70:
+                    traits.append(f"Very {trait}")
+                elif value < 30:
+                    traits.append(f"Not {trait}")
+                else:
+                    traits.append(trait)
+            personality_profile = f"- **PERSONALITY PROFILE**: {', '.join(traits)}"
+
+        # Life Challenge (Therapeutic Integration)
+        challenge_instruction = ""
+        if life_challenge:
+            challenge_instruction = f"- **LIFE CHALLENGE**: The story must subtly reflect the challenge of '{life_challenge}'. The hero should learn to cope with this through the adventure, but keep it metaphorical and magical, not clinical."
 
         # Age-specific impossible element suggestions
         impossible_elements = {
@@ -207,7 +227,9 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 - **THEME**: {theme} | **TONE**: {tone}
 - **CONFLICT**: {conflict_hook or 'A magical mystery needs solving.'}
 - **SENSORY PALETTE**: {sensory_palette or 'Bright colors, soft sounds, sweet smells.'}
+{challenge_instruction}
 - **HERO**: {child_name} (Special Ability: {special_ability}).
+{personality_profile}
 - **HERO TOOL**: {f"'{spark_tool}' (MUST be used later in the adventure)" if spark_tool else "None"}
 - **IMPOSSIBLE ELEMENTS**: Examples for this age: {age_impossible}
 - **COMPANIONS**: {companion_context} (Must affect the story).

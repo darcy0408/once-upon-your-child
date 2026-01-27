@@ -278,32 +278,29 @@ def create_app(config_name):
         logger.info(f"Stripe Premium Price ID: {os.getenv('STRIPE_PRICE_ID_PREMIUM', 'NOT SET')}")
         logger.info(f"Stripe Family Price ID: {os.getenv('STRIPE_PRICE_ID_FAMILY', 'NOT SET')}")
 
-    # Initialize image generator (prefer Gemini free tier, fallback to OpenRouter)
+    # Initialize image generator (prefer OpenRouter if available, fallback to Gemini)
     global image_generator
     try:
-        # Prefer Gemini (free tier) over OpenRouter (Flux model deprecated)
-        if api_key and not testing_mode:
+        openrouter_key = os.getenv("OPENROUTER_API_KEY") if not testing_mode else None
+        if openrouter_key:
+            try:
+                from backend.openrouter_image_generator import OpenRouterImageGenerator
+            except ImportError:
+                from openrouter_image_generator import OpenRouterImageGenerator
+
+            image_generator = OpenRouterImageGenerator(api_key=openrouter_key)
+            logger.info("Image generator initialized with OpenRouter")
+        elif api_key and not testing_mode:
             try:
                 from backend.gemini_image_generator import GeminiImageGenerator
             except ImportError:
                 from gemini_image_generator import GeminiImageGenerator
 
             image_generator = GeminiImageGenerator()
-            logger.info("Image generator initialized with Gemini (free tier)")
+            logger.info("Image generator initialized with Gemini (fallback)")
         else:
-            # Fallback to OpenRouter if no Gemini key
-            openrouter_key = os.getenv("OPENROUTER_API_KEY") if not testing_mode else None
-            if openrouter_key:
-                try:
-                    from backend.openrouter_image_generator import OpenRouterImageGenerator
-                except ImportError:
-                    from openrouter_image_generator import OpenRouterImageGenerator
-
-                image_generator = OpenRouterImageGenerator(api_key=openrouter_key)
-                logger.info("Image generator initialized with OpenRouter (fallback)")
-            else:
-                image_generator = None
-                logger.warning("No image generator initialized (no GEMINI_API_KEY or OPENROUTER_API_KEY)")
+            image_generator = None
+            logger.warning("No image generator initialized (no OPENROUTER_API_KEY or GEMINI_API_KEY)")
     except Exception as e:
         logger.exception("Failed to initialize image generator: %s", e)
         image_generator = None

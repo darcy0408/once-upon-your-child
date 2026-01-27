@@ -27,6 +27,8 @@ class PickAPathAdventureScreen extends StatefulWidget {
     this.mustInclude,
     this.avoid,
     this.existingStoryId, // For resuming stories
+    this.lifeChallenge,
+    this.personalitySliders,
   });
 
   final String userId;
@@ -38,6 +40,8 @@ class PickAPathAdventureScreen extends StatefulWidget {
   final List<String>? mustInclude;
   final List<String>? avoid;
   final String? existingStoryId;
+  final String? lifeChallenge;
+  final Map<String, int>? personalitySliders;
 
   @override
   State<PickAPathAdventureScreen> createState() =>
@@ -116,6 +120,8 @@ class _PickAPathAdventureScreenState
         interests: widget.interests,
         mustInclude: widget.mustInclude,
         avoid: widget.avoid,
+        lifeChallenge: widget.lifeChallenge,
+        personalitySliders: widget.personalitySliders,
       );
 
       if (!mounted) return;

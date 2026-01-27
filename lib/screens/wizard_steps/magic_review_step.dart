@@ -92,6 +92,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 avoid: widget.wizardData.fears.isNotEmpty
                     ? widget.wizardData.fears
                     : null,
+                lifeChallenge: widget.wizardData.lifeChallenge,
+                personalitySliders: widget.wizardData.personalitySliders,
               ),
             ),
           );
@@ -118,7 +120,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             if (mounted) setState(() => _loadingStatus = status);
           },
         );
-        debugPrint('✨ Story generation complete: ${result.storyText.substring(0, 100)}...');
+        debugPrint('✨ Story generation complete: ${result.storyText.length > 100 ? result.storyText.substring(0, 100) : result.storyText}...');
 
         if (mounted) {
           // Navigate to standard story result

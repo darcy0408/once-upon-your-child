@@ -292,6 +292,9 @@ class WizardData {
   String storyLength = 'standard'; // Options: 'quick', 'standard', 'epic'
   String customElements = ''; // Free-form text: "What do you want in your story?"
   String? selectedSparkTool;
+  
+  // Guardian Mode / Therapeutic Features
+  String? lifeChallenge;
 
   // Helper methods
   bool get isStep1Complete =>
@@ -335,6 +338,7 @@ class WizardData {
       'includeIllustrations': includeIllustrations,
       'storyLength': storyLength,
       'customElements': customElements,
+      'lifeChallenge': lifeChallenge,
     };
   }
 }

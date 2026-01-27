@@ -6,6 +6,7 @@ class CharacterLocal {
   String name = '';
   int age = 0;
   String? avatarUrl;
+  String? avatarParams;
   bool isSyncedToServer = false;
   DateTime createdAt = DateTime.now();
 
@@ -16,6 +17,7 @@ class CharacterLocal {
       ..name = json['name'] ?? ''
       ..age = ageValue is int ? ageValue : int.tryParse(ageValue?.toString() ?? '') ?? 0
       ..avatarUrl = json['avatarUrl'] ?? json['avatar_url']
+      ..avatarParams = json['avatarParams']
       ..createdAt = json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
           : DateTime.now()
@@ -28,6 +30,7 @@ class CharacterLocal {
       'name': name,
       'age': age,
       'avatarUrl': avatarUrl,
+      'avatarParams': avatarParams,
       'createdAt': createdAt.toIso8601String(),
     };
   }

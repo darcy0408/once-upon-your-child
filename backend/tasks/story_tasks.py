@@ -21,6 +21,8 @@ from google.api_core import exceptions as google_exceptions
 from backend.services.story_service import AdvancedStoryEngine, _safe_extract_title_and_gem, _build_learning_to_read_prompt, _build_rhyme_time_prompt
 
 logger = get_task_logger(__name__)
+MAX_CUSTOM_ELEMENTS = 5
+MAX_CUSTOM_ELEMENT_LENGTH = 80
 
 # Lazy app initialization to avoid circular imports
 _flask_app = None
@@ -93,6 +95,66 @@ def _generate_story_text(prompt: str, theme: str, character_name: str, companion
     logger.error("All story generation services failed.")
     raise Exception("Story generation failed. Please check backend logs or API keys.")
 
+def _normalize_text_for_match(text: str) -> str:
+    text = text.lower()
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+def _normalize_phrase(phrase: str) -> str:
+    phrase = phrase.strip().strip(".,;:!?")
+    phrase = re.sub(r"\s+", " ", phrase)
+    return phrase.lower()
+
+def _parse_custom_elements(raw: str | None) -> list[str]:
+    if not raw:
+        return []
+    raw = str(raw).strip()
+    if not raw:
+        return []
+
+    # Preserve quoted phrases
+    quoted_matches = re.findall(r"\"([^\"]+)\"|'([^']+)'", raw)
+    elements = [q1 or q2 for q1, q2 in quoted_matches if (q1 or q2)]
+
+    # Remove quoted content before splitting
+    cleaned = re.sub(r"\"[^\"]+\"|'[^']+'", " ", raw)
+    parts = re.split(r"[,\n;]+", cleaned)
+    for part in parts:
+        part = part.strip()
+        if part:
+            elements.append(part)
+
+    # Normalize, dedupe, and cap
+    normalized = []
+    seen = set()
+    for element in elements:
+        element = element.strip()
+        if not element:
+            continue
+        if len(element) > MAX_CUSTOM_ELEMENT_LENGTH:
+            element = element[:MAX_CUSTOM_ELEMENT_LENGTH].rstrip()
+        key = element.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        normalized.append(element)
+        if len(normalized) >= MAX_CUSTOM_ELEMENTS:
+            break
+
+    return normalized
+
+def _find_missing_custom_elements(required: list[str], story_text: str) -> list[str]:
+    if not required:
+        return []
+    normalized_story = _normalize_text_for_match(story_text)
+    missing = []
+    for phrase in required:
+        normalized_phrase = _normalize_phrase(phrase)
+        if not normalized_phrase:
+            continue
+        if normalized_phrase not in normalized_story:
+            missing.append(phrase)
+    return missing
 
 @celery.task(bind=True, name="tasks.generate_story")
 def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
@@ -121,6 +183,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         character_name = kwargs.get("character") or "a brave adventurer"
         char_details = kwargs.get("character_details") or {}
         custom_elements = kwargs.get("custom_elements", "")  # Free-form custom story requests
+        required_custom_elements = _parse_custom_elements(custom_elements)
 
         # NEW: Extract structured companion data
         companion_pets = kwargs.get("companion_pets", [])  # List of pet dicts
@@ -176,6 +239,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     companion=companion,
                     extra_characters=char_details.get("additionalCharacters"),
                     story_length=story_length,
+                    custom_elements=custom_elements,
                 )
             elif rhyme_time_mode:
                 logger.info(f"Using Rhyme Time prompt (length: {story_length})")
@@ -189,6 +253,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     companion_characters=companion_characters,
                     extra_characters=char_details.get("additionalCharacters"),
                     story_length=story_length,
+                    custom_elements=custom_elements,
                 )
                 logger.info(f"Full prompt for rhyme time mode: {prompt}")
             else:
@@ -239,6 +304,11 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         is_clean = False
                         validation_error = "Meta leakage detected"
                         break
+
+                missing_custom_elements = _find_missing_custom_elements(required_custom_elements, story_body)
+                if missing_custom_elements:
+                    is_clean = False
+                    validation_error = f"Missing custom elements: {', '.join(missing_custom_elements)}"
                 
                 # Length Validation with dynamic thresholds
                 is_long_enough = True
@@ -273,6 +343,8 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         # Append feedback to prompt for next attempt
                         if not is_clean:
                             prompt += "\n\nRETRY INSTRUCTION: Never output internal meta or 'PAGE X' markers. Return ONLY story text in the pages array."
+                            if missing_custom_elements:
+                                prompt += "\n\nRETRY INSTRUCTION: The story must include these exact phrases at least once each: " + ", ".join(missing_custom_elements)
                         if not is_long_enough:
                             prompt += f"\n\nRETRY INSTRUCTION: The story was too short ({total_words} words). Please expand descriptions, dialogue, and scenes to reach at least {min_words_threshold} words."
                     else:

@@ -5,6 +5,7 @@ Compatible with your existing OpenRouter API key
 """
 
 import os
+import re
 import requests
 import base64
 import uuid
@@ -20,6 +21,99 @@ class OpenRouterImageGenerator:
         self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
         self.base_url = "https://openrouter.ai/api/v1"
 
+    def _looks_like_base64(self, value: str) -> bool:
+        if not isinstance(value, str):
+            return False
+        stripped = value.strip()
+        if stripped.startswith("data:image/") or stripped.startswith("http"):
+            return False
+        if len(stripped) < 200:
+            return False
+        return re.fullmatch(r"[A-Za-z0-9+/=\s]+", stripped) is not None
+
+    def _extract_image_payload(self, data: dict) -> str | None:
+        try:
+            choice = (data.get("choices") or [])[0] or {}
+            message = choice.get("message") or {}
+        except Exception:
+            return None
+
+        content = message.get("content")
+        # If content is string, only accept if it's a URL or large base64
+        if isinstance(content, str):
+            content = content.strip()
+            if content.startswith("data:image/") or content.startswith("http") or self._looks_like_base64(content):
+                return content
+            else:
+                logger.info(f"OpenRouter: Content is text, not image: {content[:50]}...")
+
+        if isinstance(content, list):
+            for item in content:
+                if not isinstance(item, dict):
+                    continue
+                if "image_url" in item:
+                    image_url = item.get("image_url")
+                    if isinstance(image_url, dict):
+                        url = image_url.get("url")
+                    else:
+                        url = image_url
+                    if url:
+                        return url
+                if "url" in item and item.get("type") in ("image", "image_url"):
+                    return item.get("url")
+                if "data" in item and item.get("type") in ("image", "image_base64"):
+                    return item.get("data")
+                if "image" in item and isinstance(item["image"], dict):
+                    url = item["image"].get("url") or item["image"].get("data")
+                    if url:
+                        return url
+
+        raw_images = message.get("images") or choice.get("images") or data.get("images") or []
+        if isinstance(raw_images, list) and raw_images:
+            img_data = raw_images[0]
+            if isinstance(img_data, str):
+                if img_data.startswith("data:image/") or img_data.startswith("http") or self._looks_like_base64(img_data):
+                    return img_data
+            if isinstance(img_data, dict):
+                if "url" in img_data:
+                    return img_data["url"]
+                if "image_url" in img_data and isinstance(img_data["image_url"], dict):
+                    url = img_data["image_url"].get("url")
+                    if url:
+                        return url
+
+        return None
+
+    def _download_image_bytes(self, url: str, max_size: int = 5 * 1024 * 1024) -> bytes:
+        img_resp = requests.get(url, stream=True, timeout=30)
+        img_resp.raise_for_status()
+        content_length = img_resp.headers.get("Content-Length")
+        if content_length and int(content_length) > max_size:
+            raise ValueError(f"Image too large: {content_length} bytes")
+        image_bytes = bytearray()
+        for chunk in img_resp.iter_content(chunk_size=8192):
+            image_bytes.extend(chunk)
+            if len(image_bytes) > max_size:
+                raise ValueError("Image exceeded size limit during download")
+        return bytes(image_bytes)
+
+    def _normalize_image_to_base64(self, image_value: str) -> str | None:
+        if not image_value or not isinstance(image_value, str):
+            return None
+        image_value = image_value.strip()
+        if image_value.startswith("data:image/"):
+            return image_value.split(",", 1)[1] if "," in image_value else image_value
+        if image_value.startswith("http"):
+            try:
+                image_bytes = self._download_image_bytes(image_value)
+                return base64.b64encode(image_bytes).decode("utf-8")
+            except Exception as e:
+                logger.warning(f"Failed to download avatar image URL: {e}")
+                return None
+        if self._looks_like_base64(image_value):
+            return re.sub(r"\s+", "", image_value)
+        return None
+
     def generate_story_illustration(
         self,
         scene_description: str,
@@ -28,6 +122,7 @@ class OpenRouterImageGenerator:
         num_images: int = 1,
         age: int | None = None,
         therapeutic_focus: str | None = None,
+        companions: list | None = None,
         **_: dict
     ) -> list:
         """
@@ -44,12 +139,24 @@ class OpenRouterImageGenerator:
         """
         audience = f"ages {age}" if age else "children"
         therapy = f"\nTherapeutic focus: {therapeutic_focus}" if therapeutic_focus else ""
+        companion_line = ""
+        if companions:
+            companion_names = []
+            for companion in companions:
+                if isinstance(companion, dict):
+                    companion_names.append(companion.get('name', 'companion'))
+                else:
+                    companion_names.append(str(companion))
+            if companion_names:
+                companion_line = f"\nCompanions (must appear in scene): {', '.join(companion_names)}"
+
         prompt = f"""
 {style}, high quality digital art:
 
-{scene_description}
+SCENE (must be depicted literally): {scene_description}
 
-Main character: {character_name}
+Main character (must match selected character): {character_name}
+{companion_line}
 
 Style: colorful, vibrant, child-friendly, professional illustration, {audience}, engaging, imaginative, no text, clean composition{therapy}
 """.strip()
@@ -67,14 +174,12 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "black-forest-labs/flux-1-schnell",  # Flux Schnell (Fast & Cheap)
-                        #"model": "google/gemini-2.5-flash-image-preview", # Alternative Free
-                        "modalities": ["image", "text"], # Explicitly request image modality
+                        "model": "google/gemini-2.5-flash-image",  # Valid working model on OpenRouter
                         "max_tokens": 1000,
                         "messages": [
                             {
                                 "role": "user",
-                                "content": prompt
+                                "content": prompt + "\n\nIMPORTANT: Respond ONLY with the generated image. Do not provide any text description or conversation."
                             }
                         ],
                     },
@@ -90,40 +195,7 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
                          if 'message' in data['choices'][0]:
                              logger.info(f"OpenRouter story_illustration: Message keys: {data['choices'][0]['message'].keys()}")
 
-                    # Try to find image data in multiple locations
-                    image_url = None
-                    
-                    # 1. Check message content (standard for some models)
-                    try:
-                        content = data['choices'][0]['message']['content']
-                        if content and content.strip().startswith("data:image/"):
-                            image_url = content.strip()
-                            logger.info("Found image data in message content")
-                    except (KeyError, IndexError):
-                        pass
-
-                    # 2. Check message images array (standard for others)
-                    if not image_url:
-                        try:
-                            raw_images = data['choices'][0]['message'].get('images', [])
-                            if raw_images and len(raw_images) > 0:
-                                # It might be a URL or base64
-                                img_data = raw_images[0]
-                                # Case A: Direct URL/String
-                                if isinstance(img_data, str):
-                                    image_url = img_data
-                                    logger.info("Found image data in message.images[0] string")
-                                # Case B: Dict with 'url' key
-                                elif isinstance(img_data, dict):
-                                    if 'url' in img_data:
-                                        image_url = img_data['url']
-                                        logger.info("Found image data in message.images[0]['url']")
-                                    # Case C: Nested image_url dict (OpenRouter/Flux standard)
-                                    elif 'image_url' in img_data and isinstance(img_data['image_url'], dict) and 'url' in img_data['image_url']:
-                                        image_url = img_data['image_url']['url']
-                                        logger.info("Found image data in message.images[0]['image_url']['url']")
-                        except (KeyError, IndexError):
-                            pass
+                    image_url = self._extract_image_payload(data)
 
                     if image_url:
                         logger.info(f"OpenRouter story_illustration: Successfully extracted image data. Length: {len(image_url)}")
@@ -158,6 +230,7 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
         num_images: int = 1,
         age: int | None = None,
         therapeutic_focus: str | None = None,
+        companions: list | None = None,
         **_: dict
     ) -> list:
         """
@@ -173,12 +246,24 @@ Style: colorful, vibrant, child-friendly, professional illustration, {audience},
         """
         audience = f"ages {age}" if age else "children"
         therapy = f"\nTherapeutic focus: {therapeutic_focus}" if therapeutic_focus else ""
+        companion_line = ""
+        if companions:
+            companion_names = []
+            for companion in companions:
+                if isinstance(companion, dict):
+                    companion_names.append(companion.get('name', 'companion'))
+                else:
+                    companion_names.append(str(companion))
+            if companion_names:
+                companion_line = f"\nCompanions (must appear in scene): {', '.join(companion_names)}"
+
         prompt = f"""
 black and white line art coloring book page, children's coloring book style:
 
-{scene_description}
+SCENE (must be depicted literally): {scene_description}
 
-Main character: {character_name}
+Main character (must match selected character): {character_name}
+{companion_line}
 
 Style: simple black outlines only, no colors, no shading, no gray, thick bold lines, large areas to color, high contrast, white background, suitable for printing, similar to Disney coloring books, {audience}, no text{therapy}
 """.strip()
@@ -197,12 +282,11 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                     },
                     json={
                         "model": "google/gemini-2.5-flash-image",
-                        "modalities": ["image", "text"],
                         "max_tokens": 1000,
                         "messages": [
                             {
                                 "role": "user",
-                                "content": prompt
+                                "content": prompt + "\n\nIMPORTANT: Respond ONLY with the generated image. Do not provide any text description or conversation."
                             }
                         ],
                     },
@@ -216,29 +300,7 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                     
                     image_url = None
                     
-                    # 1. Check message content
-                    try:
-                        content = data['choices'][0]['message']['content']
-                        if content and content.strip().startswith("data:image/"):
-                            image_url = content.strip()
-                    except (KeyError, IndexError):
-                        pass
-
-                    # 2. Check message images
-                    if not image_url:
-                        try:
-                            raw_images = data['choices'][0]['message'].get('images', [])
-                            if raw_images and len(raw_images) > 0:
-                                img_data = raw_images[0]
-                                if isinstance(img_data, str):
-                                    image_url = img_data
-                                elif isinstance(img_data, dict):
-                                    if 'url' in img_data:
-                                        image_url = img_data['url']
-                                    elif 'image_url' in img_data and isinstance(img_data['image_url'], dict) and 'url' in img_data['image_url']:
-                                        image_url = img_data['image_url']['url']
-                        except (KeyError, IndexError):
-                            pass
+                    image_url = self._extract_image_payload(data)
 
                     if image_url:
                         logger.info(f"OpenRouter coloring_page: Successfully extracted image data. Length: {len(image_url)}")
@@ -300,13 +362,12 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": "black-forest-labs/flux-1-schnell",  # Fast & cheap
-                        "modalities": ["image", "text"],
+                        "model": "google/gemini-2.5-flash-image",  # Use working model
                         "max_tokens": 1000,
                         "messages": [
                             {
                                 "role": "user",
-                                "content": prompt
+                                "content": prompt + "\n\nIMPORTANT: Respond ONLY with the generated image. Do not provide any text description or conversation."
                             }
                         ],
                     },
@@ -317,55 +378,22 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
                     data = response.json()
                     logger.info(f"OpenRouter avatar: Response received, keys: {data.keys()}")
 
-                    image_url = None
-
-                    # 1. Check message content
-                    try:
-                        content = data['choices'][0]['message']['content']
-                        if content and content.strip().startswith("data:image/"):
-                            image_url = content.strip()
-                            logger.info("Found avatar image data in message content")
-                    except (KeyError, IndexError):
-                        pass
-
-                    # 2. Check message images array
-                    if not image_url:
-                        try:
-                            raw_images = data['choices'][0]['message'].get('images', [])
-                            if raw_images and len(raw_images) > 0:
-                                img_data = raw_images[0]
-                                if isinstance(img_data, str):
-                                    image_url = img_data
-                                    logger.info("Found avatar image data in message.images[0] string")
-                                elif isinstance(img_data, dict):
-                                    if 'url' in img_data:
-                                        image_url = img_data['url']
-                                        logger.info("Found avatar image data in message.images[0]['url']")
-                                    elif 'image_url' in img_data and isinstance(img_data['image_url'], dict) and 'url' in img_data['image_url']:
-                                        image_url = img_data['image_url']['url']
-                                        logger.info("Found avatar image data in message.images[0]['image_url']['url']")
-                        except (KeyError, IndexError):
-                            pass
+                    image_url = self._extract_image_payload(data)
 
                     if image_url:
-                        # Extract base64 data from data URI if needed
-                        if image_url.startswith("data:image/"):
-                            # Format: data:image/png;base64,iVBORw0KGgo...
-                            image_data_base64 = image_url.split(',', 1)[1] if ',' in image_url else image_url
+                        image_data_base64 = self._normalize_image_to_base64(image_url)
+                        if image_data_base64:
+                            logger.info(f"OpenRouter avatar: Successfully generated avatar. Data length: {len(image_data_base64)}")
+                            images.append({
+                                'id': f"{uuid.uuid4()}_{i}",
+                                'prompt': prompt,
+                                'image_data': image_data_base64,  # Return as base64 string
+                                'format': 'png',
+                                'generated_at': datetime.now().isoformat(),
+                                'provider': 'openrouter-flux'
+                            })
                         else:
-                            # If it's a URL, we'd need to fetch it
-                            # For now, assume it's base64
-                            image_data_base64 = image_url
-
-                        logger.info(f"OpenRouter avatar: Successfully generated avatar. Data length: {len(image_data_base64)}")
-                        images.append({
-                            'id': f"{uuid.uuid4()}_{i}",
-                            'prompt': prompt,
-                            'image_data': image_data_base64,  # Return as base64 string
-                            'format': 'png',
-                            'generated_at': datetime.now().isoformat(),
-                            'provider': 'openrouter-flux'
-                        })
+                            logger.warning("OpenRouter avatar image payload could not be normalized to base64")
                     else:
                         raw_content = str(data)[:1000]
                         logger.warning(f"OpenRouter avatar response did not contain image. Raw response: {raw_content}")
