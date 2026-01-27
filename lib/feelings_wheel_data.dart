@@ -133,6 +133,7 @@ class FeelingsEmojiLookup {
     'Caring': '🥰',
     'Affectionate': '😘',
     'Warm': '☺️',
+    'Silly': '🤪',
     'Curious': '🤔',
     'Confused': '😕',
     'Shocked': '😱',
@@ -152,6 +153,7 @@ class FeelingsEmojiLookup {
     'Annoyed': '😒',
     'Jealous': '😒',
     'Irritated': '😑',
+    'Wronged': '😤',
   };
 
   static String? emojiFor(String name) => tertiary[name];
@@ -551,7 +553,7 @@ class FeelingsWheelData {
           emoji: '😄',
           eyeType: 'Happy',
           mouthType: 'Twinkle',
-          tertiary: ['Aroused', 'Cheeky'],
+          tertiary: ['Silly', 'Cheeky'],
         ),
         SecondaryFeeling(
           id: 'content',
@@ -607,7 +609,7 @@ class FeelingsWheelData {
           emoji: '😊',
           eyeType: 'Happy',
           mouthType: 'Smile',
-          tertiary: ['Sensitive', 'Intimate'],
+          tertiary: ['Sensitive', 'Connected'],
         ),
         SecondaryFeeling(
           id: 'optimistic',
@@ -895,7 +897,7 @@ class FeelingsWheelData {
           emoji: '😒',
           eyeType: 'EyeRoll',
           mouthType: 'Concerned',
-          tertiary: ['Indignant', 'Violated'],
+          tertiary: ['Indignant', 'Wronged'],
         ),
         SecondaryFeeling(
           id: 'mad',
