@@ -11,6 +11,87 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-01-26 (Deployment Planning & Feelings Wheel Refactor)
+
+### Session: Comprehensive Deployment Planning - COMPLETED
+
+**Goal:** Create a detailed deployment plan for the Story Weaver app and plan the feelings wheel UX refactor to fix performance issues and remove inappropriate emotions.
+
+**Status:** ✅ PLANNING COMPLETE (Ready for Implementation)
+
+**Work Completed:**
+
+1. **Comprehensive Deployment Plan** (`FULL_DEPLOYMENT_PLAN.md`):
+   - 7-phase deployment roadmap (Pre-deployment → Backend → Frontend → Database → CORS → Testing → Post-launch)
+   - Environment variables checklist for Railway backend
+   - Netlify configuration verification
+   - Critical user flow test cases
+   - Rollback procedures with stable commit references
+   - Competitive analysis summary (Story Weaver vs StoryBee, Oscar, Zoy, Storybook)
+
+2. **Feelings Wheel Refactor Plan** (`FEELINGS_WHEEL_REFACTOR_PLAN.md`):
+   - **Part 1: Remove Inappropriate Emotions**
+     - `Aroused` → `Silly` (under Happy → Playful)
+     - `Intimate` → `Connected` (under Happy → Trusting)
+     - `Violated` → `Wronged` (under Angry → Bitter)
+     - `Auctiole` → Remove entirely (typo, not a real word)
+   - **Part 2: UX Refactor (Progressive Replacement)**
+     - Current: Concentric rings (all emotions visible) → performance issues
+     - New: Wheel REPLACES with next level (max ~9 items at once)
+     - Step 1: Show 7 core emotions with faces
+     - Step 2: Tap core → wheel replaced by secondary emotions for that core
+     - Step 3: Tap secondary → tertiary options appear in slice or as chips
+     - Back button to navigate up levels
+   - **Part 3: Face Assets** - 124 existing faces, need 3 new ones (silly, connected, wronged)
+   - **Part 4: Age-Based Filtering** - Optional enhancement for vocabulary limits by age
+
+3. **Competitive Research Summary:**
+   | Competitor | AI Stories | Therapeutic | Feelings System |
+   |------------|-----------|-------------|-----------------|
+   | StoryBee | ✅ | ❌ | ❌ |
+   | Oscar Stories | ✅ | ❌ | ❌ |
+   | Zoy | ❌ (pre-written) | ✅ | ❌ |
+   | Storybook | ❌ (pre-recorded) | ✅ | ❌ |
+   | **Story Weaver** | ✅ | ✅ | ✅ 3-Level Wheel |
+
+   **Key Insight:** Story Weaver is the ONLY app combining AI generation + therapeutic framework + structured emotion identification. The Feelings Wheel is the competitive moat.
+
+**Files Created:**
+- `FULL_DEPLOYMENT_PLAN.md` - Comprehensive deployment roadmap
+- `FEELINGS_WHEEL_REFACTOR_PLAN.md` - Feelings wheel UX redesign spec (for next Claude instance)
+
+**Design Decisions Made:**
+
+1. **Feelings Wheel UX:** Progressive REPLACEMENT instead of progressive EXPANSION
+   - Each level replaces the previous wheel (not concentric rings)
+   - Maximum ~9 items visible at any time (performance-safe)
+   - Back button in center when not at core level
+   - Selected emotion + face always shown in center hub
+
+2. **Age Gating (Existing):**
+   - Age ≤5: MoodMagicPicker (6 simple moods)
+   - Age 6+: TherapeuticFeelingsWheel (3-level progressive)
+
+3. **Inappropriate Emotions:** Remove 4 terms not suitable for children's app
+
+**Next Steps:**
+
+1. **For Feelings Wheel (Assign to Next Instance):**
+   - [ ] Remove inappropriate emotions from `lib/feelings_wheel_data.dart`
+   - [ ] Refactor `expanding_feelings_wheel.dart` to replacement-based navigation
+   - [ ] Test all 7 core emotion paths
+   - [ ] Verify face images load correctly
+
+2. **For Deployment (Manual):**
+   - [ ] Set Railway environment variables (GEMINI_API_KEY, SECRET_KEY, JWT_SECRET_KEY)
+   - [ ] Connect Netlify to GitHub
+   - [ ] Verify backend health endpoint
+   - [ ] Run critical user flow tests
+
+**Blockers:** None - all planning complete, ready for implementation
+
+---
+
 ## Supervisor Notes | 2026-01-24 (Character Persistence Fix)
 
 ### Session: Character Not Saving Between Sessions - FIXED
