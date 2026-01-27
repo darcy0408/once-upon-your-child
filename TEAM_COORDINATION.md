@@ -465,6 +465,31 @@ The character creation flow had a critical architectural gap:
 
 ---
 
+## Supervisor Notes | 2026-01-27 (Interactive Story Test Fix)
+
+### Session: Auth + Continuation Prompt Builder - COMPLETED
+
+**Goal:** Make interactive story test pass after auth hardening and missing prompt builder.
+
+**Fixes Applied:**
+1. **Test auth setup** (`test_interactive_story.py`)
+   - Added `setup-test-account` + `/auth/login` to obtain JWT
+   - Added `Authorization: Bearer <token>` on `/create-character` and `/get-characters`
+2. **Continuation prompt builder** (`backend/services/interactive_adventure_prompt_builder.py`)
+   - Added `build_continuation_prompt(...)` used by `InteractiveAdventureService.continue_story`
+   - Mirrors opening JSON schema (content, choices, inventory, story_state)
+
+**Verification:**
+- `python test_interactive_story.py` → **PASS**
+
+**Remaining Gaps (still outstanding):**
+1. Illustration endpoint returns 200 but sometimes yields 0 images.
+2. Coloring pages sometimes return entries without `image_data`.
+3. Avatar generation still failing (fallback presets work).
+4. Full wizard UI integration tests still pending.
+
+---
+
 ## Supervisor Notes | 2026-01-23 (Mood Magic Feature)
 
 ### Session: Mood Magic Implementation - COMPLETED
