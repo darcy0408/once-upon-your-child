@@ -752,7 +752,10 @@ def create_story_blueprint(
                 return jsonify({"error": "Scene description or scenes list is required"}), 400
 
             character_name = sanitize_text(data.get("character_name", "the hero"), max_length=100)
-            num_images_per_scene = validate_num_images(data.get("num_images", 1), max_allowed=3)
+            
+            # Enforce single image generation for coloring pages
+            num_images_per_scene = 1
+            
             try:
                 age = validate_age(data.get("age", 7))
             except ValueError:
