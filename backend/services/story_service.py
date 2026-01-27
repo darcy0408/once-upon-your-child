@@ -1,3 +1,4 @@
+import logging
 import random
 import re
 import json
@@ -5,6 +6,8 @@ import time
 from google.api_core import exceptions as google_exceptions
 from .avatar_to_prompt_helper import AvatarToPromptHelper
 from ..utils.validators import validate_age, validate_story_length
+
+logger = logging.getLogger(__name__)
 
 # Master constraint table from Story Weaver Coverage v2
 AGE_CONSTRAINTS = {
@@ -149,6 +152,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 - **HERO TOOL**: {("'" + spark_tool + "' (MUST be used exactly once to solve a specific problem)") if spark_tool else "None"}
 - **IMPOSSIBLE ELEMENTS**: Examples for this age: {age_impossible}
 - **COMPANIONS**: {comp_str} (MUST appear by name and help/bond with {character}).
+- **CUSTOM REQUESTS**: {custom_elements or 'None'} (Use the exact words from this request at least once each, verbatim, in the story).
 {mood_rules}
 
 **WRITING GUIDELINES**:
@@ -173,20 +177,50 @@ Strictly return valid JSON with this structure:
 def _safe_extract_title_and_gem(text: str, theme: str):
     """Extract title, wisdom gem, and pages from LLM JSON response."""
     clean_text = text.strip()
-    if clean_text.startswith("```"):
-        clean_text = re.sub(r"^```(?:json)?", "", clean_text, flags=re.IGNORECASE)
-        clean_text = re.sub(r"```$", "", clean_text).strip()
+    # More robust code block stripping - handle various markdown formats
+    # Match ```json or ``` at start (with optional whitespace/newlines)
+    clean_text = re.sub(r"^\s*```(?:json)?\s*\n?", "", clean_text, flags=re.IGNORECASE)
+    # Match ``` at end (with optional whitespace/newlines)
+    clean_text = re.sub(r"\n?\s*```\s*$", "", clean_text, flags=re.IGNORECASE)
+    clean_text = clean_text.strip()
     try:
         data = json.loads(clean_text)
         title = data.get("title", f"A {theme} Adventure")
-        pages = data.get("pages", [])
+        pages_input = data.get("pages", [])
         post_story = data.get("post_story", {})
         wisdom_gem = post_story.get("wisdom_gem") or "You are magic!"
-        if isinstance(pages, str):
-            pages = [pages]
-        return title, wisdom_gem, "\n\n".join(pages), pages, post_story
-    except Exception:
-        return f"A {theme} Adventure", "You are magic!", text, [text], {}
+
+        pages = []
+        if isinstance(pages_input, str):
+            pages = [pages_input]
+        elif isinstance(pages_input, dict):
+            # Handle single page as a dict
+            page_text = pages_input.get("text", "")
+            if page_text:
+                pages = [page_text]
+        elif isinstance(pages_input, list):
+            for p in pages_input:
+                if isinstance(p, dict):
+                    page_text = p.get("text", "")
+                    if page_text:
+                        pages.append(page_text)
+                elif isinstance(p, str) and p.strip():
+                    pages.append(p)
+
+        # If no valid pages extracted, use cleaned text as single page
+        if not pages:
+            pages = [clean_text]
+
+        story_body = "\n\n".join(pages)
+        return title, wisdom_gem, story_body, pages, post_story
+    except json.JSONDecodeError as e:
+        # Log the parsing error for debugging
+        logger.warning(f"Failed to parse story JSON: {e}. First 200 chars: {clean_text[:200]}")
+        # Return clean_text (with code blocks stripped) as fallback, not raw text
+        return f"A {theme} Adventure", "You are magic!", clean_text, [clean_text], {}
+    except Exception as e:
+        logger.warning(f"Unexpected error parsing story: {e}")
+        return f"A {theme} Adventure", "You are magic!", clean_text, [clean_text], {}
 
 
 def _build_learning_to_read_prompt(character_name, theme, age, character_details, companion=None, extra_characters=None, story_length="standard"):

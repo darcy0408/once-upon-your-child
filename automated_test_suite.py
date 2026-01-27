@@ -95,8 +95,17 @@ class StoryWeaverTester:
 
             if response.status_code == 200:
                 data = response.json()
-                story_text = data.get('story', '').lower()
-                title = data.get('title', 'Unknown')
+                
+                # Handle structured story response
+                story_data = data.get('story', {})
+                if isinstance(story_data, dict):
+                    story_text = story_data.get('story_text', '').lower()
+                    title = story_data.get('title', 'Unknown')
+                    raw_story = story_data.get('story_text', '')
+                else:
+                    story_text = str(story_data).lower()
+                    title = data.get('title', 'Unknown')
+                    raw_story = str(story_data)
 
                 # Check for expected keywords if provided
                 if expected_keywords:
@@ -112,7 +121,7 @@ class StoryWeaverTester:
                             "PASS",
                             f"Keywords found: {', '.join(found_keywords)}",
                             duration,
-                            data.get('story', '')[:200]
+                            raw_story[:200]
                         )
                         return True
                     else:
@@ -121,7 +130,7 @@ class StoryWeaverTester:
                             "FAIL",
                             f"No expected keywords found: {expected_keywords}",
                             duration,
-                            data.get('story', '')[:200]
+                            raw_story[:200]
                         )
                         return False
                 else:
@@ -131,7 +140,7 @@ class StoryWeaverTester:
                         "PASS",
                         f"Story generated: {title}",
                         duration,
-                        data.get('story', '')[:200]
+                        raw_story[:200]
                     )
                     return True
             else:
@@ -215,7 +224,7 @@ class StoryWeaverTester:
         print("\n📏 STORY LENGTH OPTIONS TEST")
         print("=" * 60)
 
-        lengths = ["quick", "standard", "epic"]
+        lengths = ["short", "medium", "long"]
         results = []
 
         for length in lengths:
@@ -240,11 +249,19 @@ class StoryWeaverTester:
 
                 if response.status_code == 200:
                     data = response.json()
-                    story_length = len(data.get('story', '').split())
+                    
+                    # Handle structured story response
+                    story_data = data.get('story', {})
+                    if isinstance(story_data, dict):
+                        story_body = story_data.get('story_text', '')
+                    else:
+                        story_body = str(story_data)
+                        
+                    word_count = len(story_body.split())
                     self.log_test(
                         f"Story Length - {length.upper()}",
                         "PASS",
-                        f"Generated {story_length} words in {duration}ms",
+                        f"Generated {word_count} words in {duration}ms",
                         duration
                     )
                     results.append(True)

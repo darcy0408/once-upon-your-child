@@ -11,6 +11,71 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-01-26 (Feelings Wheel Refactor Implementation)
+
+### Session: Feelings Wheel Refactor - COMPLETED
+
+**Goal:** Implement the feelings wheel refactor as described in FEELINGS_WHEEL_REFACTOR_PLAN.md - remove inappropriate emotions and implement progressive replacement UX.
+
+**Status:** ✅ COMPLETED
+
+**Work Completed:**
+
+**Part 1: Remove Inappropriate Emotions**
+
+1. **`lib/feelings_wheel_data.dart`:**
+   - Replaced `'Aroused'` with `'Silly'` in Playful → tertiary (line 554)
+   - Replaced `'Intimate'` with `'Connected'` in Trusting → tertiary (line 610)
+   - Replaced `'Violated'` with `'Wronged'` in Bitter → tertiary (line 898)
+   - Added emoji mappings: `'Silly': '🤪'`, `'Wronged': '😤'` to FeelingsEmojiLookup
+
+2. **`lib/widgets/expanding_feelings_wheel.dart`:**
+   - Removed from `_availableFaces`: `'aroused'`, `'intimate'`, `'violated'`, `'auctiole'`
+   - Added to `_availableFaces`: `'silly'`, `'connected'`, `'wronged'`
+
+**Part 2: Progressive Replacement UX**
+
+Complete refactor of the wheel from concentric rings to single-ring replacement navigation:
+
+1. **Added `WheelLevel` enum** - tracks navigation state: `core`, `secondary`, `tertiary`
+
+2. **New architecture:**
+   - Shows ONE level at a time (not concentric rings)
+   - Tapping core → REPLACES wheel with that core's secondary emotions
+   - Tapping secondary → REPLACES wheel with tertiary options
+   - Tap center hub to go BACK to previous level
+
+3. **New `_SimpleWheelPainter`:**
+   - Draws only current level emotions (max 9 items at once)
+   - Simpler math - single ring instead of complex nested sectors
+   - Better performance - no longer rendering 100+ items
+
+4. **Animations:**
+   - Fade/scale transition between levels (300ms)
+   - Smooth navigation experience
+
+5. **Center hub:**
+   - Shows "Tap a Feeling" on core level
+   - Shows selected emotion + face + back arrow on deeper levels
+   - Glow effect for visual feedback
+
+**Files Modified:**
+- `lib/feelings_wheel_data.dart` - Removed 4 inappropriate emotions, added 2 new emoji mappings
+- `lib/widgets/expanding_feelings_wheel.dart` - Complete rewrite with progressive replacement UX
+
+**Testing:**
+- ✅ Flutter analyze passes (only pre-existing deprecation warning)
+- ✅ No compilation errors
+- ✅ App builds successfully
+
+**Benefits:**
+- Child-appropriate vocabulary only
+- Performance improvement (max 9 items rendered vs 100+)
+- Simpler, more intuitive UX for children
+- Cleaner codebase (removed complex nested ring calculations)
+
+---
+
 ## Supervisor Notes | 2026-01-26 (Deployment Planning & Feelings Wheel Refactor)
 
 ### Session: Comprehensive Deployment Planning - COMPLETED
@@ -366,6 +431,37 @@ The character creation flow had a critical architectural gap:
 3. Verify illustration + coloring page generator outputs include image data on success.
 4. Investigate avatar generation provider errors and ensure UI handles fallback selection.
 5. Add/execute integration tests to cover the full wizard flow.
+
+---
+
+## Supervisor Notes | 2026-01-27 (Custom Elements Reliability Fix)
+
+### Session: Prompt Enforcement + Retest - COMPLETED
+
+**Goal:** Fix missing custom-element keywords in stories and re-run comprehensive tests.
+
+**Fix Applied:**
+- Strengthened prompt instruction to require verbatim inclusion of custom elements:
+  - `backend/services/story_service.py` → **CUSTOM REQUESTS** now says:
+    “Use the exact words from this request at least once each, verbatim, in the story.”
+
+**Retest Results (run_all_tests.py):**
+- ✅ Backend health
+- ✅ Custom elements single/multiple
+- ✅ Story length short/medium/long
+- ✅ Phase 3 suite: all custom element cases passing
+- **Summary:** 5/5 passed, 100% success, Phase 3 Ready ✅
+
+**Artifacts Updated:**
+- `AUTOMATED_TEST_RESULTS.json`
+- `PHASE3_TEST_REPORT.md`
+
+**Remaining Gaps (still outstanding from prior session):**
+1. Interactive story test still needs `/get-characters` schema alignment.
+2. Illustration endpoint returns 200 but sometimes yields 0 images.
+3. Coloring pages sometimes return entries without `image_data`.
+4. Avatar generation still failing (fallback presets work).
+5. Full wizard UI integration tests still pending.
 
 ---
 

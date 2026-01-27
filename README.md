@@ -9,11 +9,11 @@ Story Weaver creates magical, personalized stories that help children ages 3-17+
 ### Core Concept
 
 The app combines:
-- **Emotional intelligence** – A 3-level feelings wheel helps children identify and express complex emotions
+- **Emotional intelligence** – "Mood Magic" picker and optional 3-level feelings wheel help children identify and express emotions
 - **AI-powered storytelling** – Google Gemini generates age-calibrated narratives with therapeutic themes
-- **Rich personalization** – Custom characters with avatars, traits, companions, and goals
-- **Visual engagement** – AI-generated illustrations and printable coloring pages
-- **Flexible modes** – Wizard-guided creation, quick stories, multi-character adventures, and interactive choose-your-own-path tales
+- **Rich personalization** – Custom characters with avatars, traits, companions, and goals that persist across sessions
+- **Visual engagement** – AI-generated illustrations (Gemini Imagen 3) and printable coloring pages
+- **Flexible modes** – Wizard-guided creation, quick stories, multi-character adventures, interactive choose-your-own-path tales, and conflict resolution scenarios
 
 ## 🌟 Complete User Journey
 
@@ -36,7 +36,17 @@ All character data is saved to the backend via `POST /save-character` and stored
 **Avatar Generation**: When a character is created with appearance details, the system can optionally generate a custom AI avatar using Gemini Imagen 3. This happens asynchronously via `lib/services/avatar_generation_service.dart` and `backend/services/avatar_generation_service.py`.
 
 ### 3. **Step 2: Feeling Selection** (`lib/screens/wizard_steps/feeling_selection_step.dart`)
-This is the heart of the therapeutic experience. Children navigate a **3-level feelings wheel**:
+This is the heart of the therapeutic experience. Children can choose between two emotion selection modes:
+
+**Mood Magic Picker** (Default - Lightweight):
+A streamlined emotion selector featuring:
+- Core mood selection (Happy, Sad, Angry, Scared, Worried, Calm)
+- Expression faces that animate based on selection
+- "Choose-a-Fix" workflow suggesting coping strategies
+- Age-gated vocabulary (simpler terms for younger children)
+
+**3-Level Feelings Wheel** (Advanced Option):
+For deeper emotional exploration:
 
 **Level 1 - Core Emotions** (6 categories with distinct colors):
 - Happy (yellow) – Joy, Contentment, Pride
@@ -47,12 +57,9 @@ This is the heart of the therapeutic experience. Children navigate a **3-level f
 - Calm (green) – Peaceful, Safe, Relaxed
 
 **Level 2 - Secondary Feelings**: Each core emotion expands into 3-4 more specific feelings
-- Example: Happy → Joyful, Content, Proud, Playful
-
 **Level 3 - Tertiary Feelings**: The most precise emotional granularity
-- Example: Joyful → Cheerful, Excited, Delighted
 
-After selecting a feeling, children use an **intensity slider** (1-10) to express how strongly they're experiencing this emotion. The app displays animated faces that change based on the selected feeling and intensity.
+After selecting a feeling, children use an **intensity slider** (1-10) to express how strongly they're experiencing this emotion.
 
 **Why This Matters**: The feelings data is sent to the backend where it influences:
 - Story themes and plot arcs
@@ -60,7 +67,7 @@ After selecting a feeling, children use an **intensity slider** (1-10) to expres
 - Therapeutic messaging and coping strategies
 - The "Wisdom Gem" – a gentle lesson tailored to the emotion
 
-Users can also **skip** the feelings wheel to generate non-therapeutic adventure stories.
+Users can also **skip** mood selection to generate non-therapeutic adventure stories.
 
 ### 4. **Step 3: Companion Selection** (`lib/screens/wizard_steps/companion_selector_step.dart`)
 Children choose who joins their hero on the adventure:
@@ -199,28 +206,37 @@ Similar to illustrations, but optimized for black-and-white line art:
 
 ### 10. **Subscription & BYOK System** (`lib/subscription_service.dart`, `backend/models/user.py`)
 
-Story Weaver offers three tiers:
+Story Weaver offers four tiers:
 
 **Free Tier**:
-- 3 stories per month
-- Basic illustrations
-- Standard story length
-- Ads (when monetized)
+- 10 stories per day (100 per month)
+- 2 characters maximum
+- Basic illustrations (5 per month)
+- Standard story length (5-minute stories)
 
-**Premium Tier** ($9.99/month):
-- Unlimited stories
+**Premium Tier** ($9.99/month or $79.99/year):
+- 20 stories per day
+- 5 characters maximum
 - Unlimited illustrations
-- Extended story lengths (10-minute stories)
+- Extended story lengths (5 or 10-minute stories)
 - Interactive choose-your-own-adventure mode
 - Multi-character stories
+- Story export features
 - Ad-free experience
-- Priority generation queue
+
+**Family Tier** ($19.99/month or $159.99/year):
+- Unlimited stories
+- 20 characters maximum
+- All Premium features
+- Priority support
+- Early access to new features
 
 **BYOK (Bring Your Own Key)**:
 - Users can provide their own Google Gemini API key
 - All generation costs are billed directly to their Google Cloud account
 - No monthly limits
 - Stored securely using `flutter_secure_storage`
+- Setup wizard guides users through API key configuration
 - When BYOK is active, the Flutter app calls Gemini directly, bypassing the backend
 
 **Subscription Management**:
@@ -250,8 +266,9 @@ Story Weaver offers three tiers:
 
 **Conflict Resolution Stories** (`lib/conflict_resolution_stories.dart`):
 - Pre-built scenarios for common childhood conflicts
-- Sibling rivalry, sharing, friendship struggles
-- Guided therapeutic narratives
+- Sibling rivalry, sharing, friendship struggles, playground dynamics
+- Guided therapeutic narratives with modeled solutions
+- Age-appropriate conflict resolution strategies
 
 ## 🏗️ Technical Architecture
 
@@ -267,27 +284,34 @@ lib/
 │   │   ├── companion_selector_step.dart
 │   │   └── magic_review_step.dart
 │   ├── character_library_screen.dart
+│   ├── character_selection_screen.dart
+│   ├── byok_setup_wizard.dart      # BYOK API key setup
+│   ├── story_reader_screen.dart    # TTS-enabled reader
 │   └── subscription_success_screen.dart
 ├── services/
 │   ├── api_service_manager.dart    # Backend/direct API routing
 │   ├── story_complexity_service.dart
 │   ├── subscription_service.dart
 │   ├── avatar_generation_service.dart
+│   ├── character_template_service.dart # Quick-start templates
 │   ├── progression_service.dart    # XP, levels, achievements
 │   ├── achievement_service.dart
 │   ├── isar_service.dart           # Local NoSQL database
+│   ├── story_narrator.dart         # TTS narration
 │   └── offline_story_service.dart
 ├── widgets/
 │   ├── storybook_page.dart         # Page-turning animation
 │   ├── expanding_feelings_wheel.dart
+│   ├── mood_magic_picker.dart      # Lightweight mood selector
 │   ├── moon_phase_progress.dart
 │   └── user_friendly_error_dialog.dart
 ├── models/
 │   ├── models.dart                 # Character, Story models
 │   ├── story_generation_result.dart
 │   ├── generated_avatar.dart
-│   └── subscription_models.dart
+│   └── subscription_models.dart    # Free, Premium, Family tiers
 ├── story_result_screen.dart        # Post-generation UI
+├── conflict_resolution_stories.dart # Pre-built conflict scenarios
 ├── feelings_wheel_data.dart        # 3-level emotion hierarchy
 └── config/
     └── environment.dart             # Backend URL configuration
@@ -296,28 +320,31 @@ lib/
 **Key Technologies**:
 - **Flutter 3.22+** with Dart 3.8+
 - **http** package for REST API calls
-- **Isar** database for local story caching
+- **Isar** database for local story/character caching
 - **SharedPreferences** for user settings
-- **flutter_secure_storage** for API keys
+- **flutter_secure_storage** for API keys (BYOK)
 - **google_generative_ai** for direct Gemini calls (BYOK mode)
+- **flutter_tts** for text-to-speech narration
 - **path_provider** for file storage
 - **share_plus** for story sharing
 
 ### Backend (Python/Flask)
 ```
 backend/
-├── app.py                          # Flask app factory, middleware
+├── app.py                          # Flask app factory, Sentry init, middleware
 ├── routes/
 │   ├── story_routes.py             # /generate-story, /interactive-choice
 │   ├── character_routes.py         # /save-character, /get-characters
 │   ├── illustration_routes.py      # /generate-illustration
 │   ├── coloring_routes.py          # /generate-coloring-page
+│   ├── stripe_routes.py            # Payment webhook endpoints
 │   └── admin_routes.py             # Admin panel
 ├── services/
 │   ├── story_service.py            # AdvancedStoryEngine class
 │   ├── story_generation_service.py
 │   ├── story_duration_service.py   # 5-min vs 10-min configs
-│   └── avatar_generation_service.py
+│   ├── avatar_generation_service.py
+│   └── stripe_service.py           # Payment processing
 ├── models/
 │   ├── user.py                     # SQLAlchemy User model
 │   ├── character.py                # Character model
@@ -336,6 +363,7 @@ backend/
 - **Flask-Limiter** for rate limiting
 - **google-generativeai** Python SDK
 - **Celery** for async tasks (illustration generation)
+- **Sentry** for crash reporting and monitoring
 - **Railway** for deployment
 
 ### Database Schema
@@ -368,7 +396,7 @@ backend/
 ## ✨ Core Features
 
 ### 1. Feelings-First Storytelling
-The 3-level feelings wheel is based on established emotion wheels (Plutchik, Geneva Emotion Wheel). Children learn emotional granularity by navigating from broad feelings (sad) to specific ones (lonely → missing someone). This promotes emotional literacy and self-awareness.
+The Mood Magic picker and optional 3-level feelings wheel are based on established emotion research (Plutchik, Geneva Emotion Wheel). Children learn emotional granularity by identifying their current mood, with age-appropriate vocabulary that adapts to the child's developmental stage. This promotes emotional literacy and self-awareness.
 
 ### 2. Age-Aware Prompts
 Every story is calibrated for developmental stage:
@@ -391,12 +419,13 @@ Premium users can create choose-your-own-adventure stories:
 - Multiple endings
 - Choices reflect values (kindness vs. speed, caution vs. bravery)
 
-### 5. Character Evolution
-Characters persist across stories and can:
+### 5. Character Persistence & Evolution
+Characters are saved both to the backend and cached locally (via Isar database), ensuring they persist across app sessions and work offline. Characters can:
 - Level up based on stories completed
 - Earn achievements (First Adventure, Feelings Explorer, etc.)
 - Unlock new traits and customization options
-- Have their avatars regenerated with seasonal themes
+- Sync seamlessly between devices when online
+- Be created from templates for quick starts
 
 ### 6. Multi-Character Stories
 Perfect for families with multiple children:
@@ -538,11 +567,12 @@ See `DEPLOYMENT_INSTRUCTIONS.md` and `DEPLOYMENT_CHECKLIST.md` for complete guid
 
 ## 📊 Usage Limits
 
-| Tier | Stories/Month | Illustrations | Story Length | Interactive Mode |
-|------|---------------|---------------|--------------|------------------|
-| Free | 3 | 5/month | 5-minute | ❌ |
-| Premium | Unlimited | Unlimited | 5 or 10-minute | ✅ |
-| BYOK | Unlimited | Unlimited | 5 or 10-minute | ✅ |
+| Tier | Stories | Characters | Illustrations | Story Length | Interactive Mode |
+|------|---------|------------|---------------|--------------|------------------|
+| Free | 10/day (100/month) | 2 | 5/month | 5-minute | ❌ |
+| Premium | 20/day | 5 | Unlimited | 5 or 10-minute | ✅ |
+| Family | Unlimited | 20 | Unlimited | 5 or 10-minute | ✅ |
+| BYOK | Unlimited | Unlimited | Unlimited | 5 or 10-minute | ✅ |
 
 ## 🧠 Key Workflows
 
@@ -558,35 +588,46 @@ See `DEPLOYMENT_INSTRUCTIONS.md` and `DEPLOYMENT_CHECKLIST.md` for complete guid
 9. Frontend displays in storybook UI → `story_result_screen.dart`
 10. User optionally generates illustrations → Backend `/generate-illustration`
 
-### Feelings Wheel Flow
-1. User taps feeling face → `feeling_selection_step.dart`
+### Mood Selection Flow
+**Mood Magic (Default)**:
+1. User sees animated mood faces → `feeling_selection_step.dart`
+2. Taps a core mood (Happy, Sad, Angry, Scared, Worried, Calm)
+3. Expression refinement options appear
+4. "Choose-a-Fix" suggests coping strategies
+5. Data stored in `WizardData` object
+6. Sent to backend in story generation request
+
+**3-Level Feelings Wheel (Advanced)**:
+1. User switches to advanced mode
 2. Core emotion selected (e.g., "Sad")
-3. Wheel expands to show secondary feelings
-4. User selects secondary (e.g., "Lonely")
-5. Wheel expands again to show tertiary
-6. User selects tertiary (e.g., "Missing Someone")
-7. Intensity slider appears (1-10)
-8. Data stored in `WizardData` object
-9. Sent to backend in story generation request
+3. Wheel expands to show secondary feelings (e.g., "Lonely")
+4. Wheel expands again to show tertiary (e.g., "Missing Someone")
+5. Intensity slider appears (1-10)
+6. Data stored in `WizardData` object
+7. Sent to backend in story generation request
 
 ### Subscription Flow
 1. User hits free tier limit
 2. Paywall dialog appears → `paywall_dialog.dart`
-3. User selects Premium or BYOK
-4. **Premium**: Redirects to Stripe checkout (future)
-5. **BYOK**: Prompts for Gemini API key
-6. Key stored securely → `flutter_secure_storage`
+3. User selects Premium, Family, or BYOK
+4. **Premium/Family**: Redirects to Stripe checkout (integration in progress)
+5. **BYOK**: Opens setup wizard → `byok_setup_wizard.dart`
+6. API key stored securely → `flutter_secure_storage`
 7. Subscription updated → `subscription_service.dart`
 8. Backend notified → `POST /subscription-status`
-9. Usage limits removed
+9. Usage limits adjusted per tier
 
 ## 🧭 Roadmap
 
 **Completed**:
-- ✅ Core story generation with Gemini 2.0
-- ✅ 3-level feelings wheel
+- ✅ Core story generation with Gemini 2.0 Flash
+- ✅ Mood Magic picker (lightweight emotion selector)
+- ✅ 3-level feelings wheel (advanced option)
 - ✅ Age-calibrated prompts (3-17+)
-- ✅ Character creation with avatars
+- ✅ Character creation with avatar gallery (55 pre-made avatars)
+- ✅ AI avatar generation (Gemini Imagen 3)
+- ✅ Character persistence (local Isar cache + backend sync)
+- ✅ Character templates for quick creation
 - ✅ Wizard-guided story creation
 - ✅ Storybook UI with page turning
 - ✅ Illustration generation (Imagen 3)
@@ -595,26 +636,30 @@ See `DEPLOYMENT_INSTRUCTIONS.md` and `DEPLOYMENT_CHECKLIST.md` for complete guid
 - ✅ Achievement system
 - ✅ Multi-character stories
 - ✅ Interactive choose-your-own-path
+- ✅ Conflict resolution stories
+- ✅ Secure BYOK storage (flutter_secure_storage)
+- ✅ BYOK setup wizard
+- ✅ Backend task queue (Celery)
+- ✅ Crash reporting (Sentry)
+- ✅ Text-to-Speech narration (flutter_tts)
+- ✅ Family subscription tier
 
 **In Progress**:
-- 🔄 Secure BYOK storage (flutter_secure_storage)
-- 🔄 Backend task queue (Celery)
-- 🔄 Stripe payment integration
+- 🔄 Stripe payment integration (routes exist, webhook integration pending)
+- 🔄 Integration tests for story generation and paywall flows
 
-**Next Priority** (see `codex_improvements.md`):
-1. Crash reporting (Sentry)
-2. Integration tests (story generation + paywall)
-3. Parent dashboard (emotion trends, reading stats)
-4. PostgreSQL migration for production
-5. Text-to-Speech narration
-6. Story export to PDF with illustrations
-7. Social sharing (share story links)
-8. Story templates library
-9. Seasonal theme packs
-10. Therapist collaboration mode
+**Planned** (see `codex_improvements.md`):
+1. Parent dashboard (emotion trends, reading stats)
+2. Story export to PDF with illustrations
+3. Social sharing (shareable story links)
+4. Story templates library
+5. Seasonal theme packs
+6. Therapist collaboration mode
 
 ## 📚 Additional Documentation
 
+- **COMPREHENSIVE_APP_SUMMARY.md** – Complete app overview for market research
+- **TEAM_COORDINATION.md** – Development history and session logs
 - **GEMINI_CODEX_TASKS.md** – Parallel task board for AI agents
 - **TASK_PLANS.md** – Multi-week milestone planning
 - **SESSION_HANDOFF.md** – Stateful notes between contributors

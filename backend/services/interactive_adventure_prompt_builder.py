@@ -260,6 +260,100 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 """
         return prompt
 
+    @classmethod
+    def build_continuation_prompt(
+        cls,
+        story_context: Dict[str, Any],
+        selected_choice: str,
+        current_segment_number: int,
+        inventory: Optional[List[str]] = None,
+        story_state: Optional[Dict[str, Any]] = None,
+        story_so_far: str = ""
+    ) -> str:
+        """Build the continuation prompt for the next interactive segment."""
+        age = int(story_context.get('age') or 7)
+        length = story_context.get('length', 'medium')
+        theme = story_context.get('theme', 'Adventure')
+        tone = story_context.get('tone', 'whimsical')
+        character = story_context.get('character') or {}
+        companions = story_context.get('companions') or []
+
+        age_band = cls.get_age_band(age)
+        age_config = cls.AGE_BANDS[age_band]
+        word_count = age_config['word_count_ranges'].get(length, age_config['word_count_ranges']['medium'])
+        choice_count = cls.CHOICE_COUNTS.get(length, 2)
+        segment_range = cls.SEGMENT_TARGETS[age_band].get(length, (10, 15))
+
+        child_name = character.get('name', 'Hero')
+        companion_context = cls._build_companion_context(companions) if companions else "solo on this adventure"
+        inventory = inventory or []
+        story_state = story_state or {}
+
+        choice_templates = [
+            '    {"id": "choice_1", "text": "First choice option (Action-oriented)"}',
+            '    {"id": "choice_2", "text": "Second choice option (Action-oriented)"}'
+        ]
+        choices_json = ",\n".join(choice_templates)
+
+        next_segment_number = current_segment_number + 1
+
+        prompt = f"""
+**PERSONA**: Expert Child Narrative Architect & Pick-A-Path Specialist.
+
+You are continuing a Pick-A-Path adventure for {child_name} (age {age}).
+
+**STORY CONTEXT**:
+- **TITLE**: {story_context.get('title', 'Adventure Title')}
+- **THEME**: {theme} | **TONE**: {tone}
+- **HERO**: {child_name}
+- **COMPANIONS**: {companion_context} (Must affect the story).
+- **CURRENT SEGMENT**: {current_segment_number}/{segment_range[1]}
+- **SELECTED CHOICE**: {selected_choice}
+- **INVENTORY**: {", ".join(inventory) if inventory else "None"}
+- **STATE**: location={story_state.get('location', 'Unknown')}, goal={story_state.get('goal', 'Unknown')}
+
+**STORY SO FAR (summary)**:
+{story_so_far or "No summary available."}
+
+**WRITING** ({word_count[0]}-{word_count[1]} words): {age_config['sentence_length']}, {age_config['vocabulary']}, {age_config['stakes']}
+{f"**VOCABULARY FOR AGE {age}**: {age_config.get('vocabulary_avoid', '')}" if age <= 7 else ""}
+
+**CRITICAL RULES**:
+- **AGE {age}**: Keep vocabulary and complexity appropriate for this age.
+- **POV**: ALWAYS use "you" (second-person). The hero's name is "{child_name}".
+- **WORD COUNT REQUIREMENT**: Your content MUST be between {word_count[0]} and {word_count[1]} words.
+- **Companion Contract**: REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Companion MUST appear by name.
+- **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.
+- **Safety**: No violence/harm. Therapeutic tone.
+
+**JSON Output**:
+```json
+{{
+  "title": "{story_context.get('title', 'Adventure Title')}",
+  "output_type": "CHOICE",
+  "segment_number": {next_segment_number},
+  "stage_label": "Next Step",
+  "content": "Story content ({word_count[0]}-{word_count[1]} words)",
+  "word_count": {word_count[0] + 50},
+  "image_description": "Scene description",
+  "companion_beats": [{{"type": "dialogue|action|bond", "text": "..."}}],
+  "inventory": {json.dumps(inventory)},
+  "inventory_references": [],
+  "story_state": {{
+    "location": "{story_state.get('location', 'Unknown')}",
+    "goal": "{story_state.get('goal', 'Unknown')}",
+    "key_clues": {json.dumps(story_state.get('key_clues', []))},
+    "companion_status": "{story_state.get('companion_status', '')}"
+  }},
+  "choices": [
+{choices_json}
+  ],
+  "is_ending": false
+}}
+```
+"""
+        return prompt
+
     @staticmethod
     def _build_companion_context(companions: Optional[List[Dict]]) -> str:
         """Build companion context string from companion list."""
