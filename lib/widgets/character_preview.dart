@@ -256,6 +256,32 @@ class _CharacterPreviewState extends State<CharacterPreview>
       height: size * 0.8,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withAlpha(77), // 30% opacity
+            blurRadius: 20,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: Image.asset(
+          'assets/images/character_placeholder.png',
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildEmojiPlaceholder(size);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmojiPlaceholder(double size) {
+    return Container(
+      width: size * 0.8,
+      height: size * 0.8,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
         gradient: RadialGradient(
           colors: [
             AppColors.surface,

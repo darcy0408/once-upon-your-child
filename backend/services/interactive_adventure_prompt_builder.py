@@ -121,6 +121,51 @@ class InteractiveAdventurePromptBuilder:
         'adult': {'short': (18, 26), 'medium': (26, 34), 'long': (34, 44)}
     }
 
+    # Structured Life Challenges for therapeutic integration
+    # Maps challenge name to (metaphor, coping_strategy, growth_outcome)
+    LIFE_CHALLENGES = {
+        'Making New Friends': {
+            'metaphor': 'A bridge between two floating islands that needs careful building.',
+            'coping_strategy': 'Asking a kind question, noticing a shared interest, offering a small token of help.',
+            'growth_outcome': 'The hero feels the warmth of connection and realizes others feel nervous too.'
+        },
+        'Starting School': {
+            'metaphor': 'Entering a vast library where every book is a new adventure waiting to be read.',
+            'coping_strategy': 'Finding a "safe anchor" (a familiar object/thought), deep belly breaths, observing before jumping in.',
+            'growth_outcome': 'Uncertainty turns into curiosity; the hero finds their rhythm in the new routine.'
+        },
+        'Sibling Rivalry': {
+            'metaphor': 'Two different stars trying to shine in the same patch of night sky.',
+            'coping_strategy': 'Taking turns, finding a way to combine their different "lights", expressing needs with words instead of pushes.',
+            'growth_outcome': 'Realizing that together they make the sky brighter; finding the "team" in the family.'
+        },
+        'Handling Big Feelings': {
+            'metaphor': 'A stormy weather system inside a magical crystal bottle.',
+            'coping_strategy': 'Naming the "storm", watching it pass without being swept away, finding the "calm center".',
+            'growth_outcome': 'The hero learns that feelings are like weather—they change, and you can stay safe through them.'
+        },
+        'Trying New Foods': {
+            'metaphor': 'Exploring a planet with strange but wonderful textures and "flavor-fields".',
+            'coping_strategy': 'The "One-Bite Discovery", describing the sensation objectively, pairing the new with the familiar.',
+            'growth_outcome': 'Bravery in small tastes; discovering that the "unknown" can be delicious.'
+        },
+        'Sharing Toys': {
+            'metaphor': 'A magical fountain that only flows when the water is allowed to move between basins.',
+            'coping_strategy': 'Setting a timer, noticing the joy on the other person\'s face, finding a game that uses two toys together.',
+            'growth_outcome': 'The discovery that "joy shared is joy doubled".'
+        },
+        'Being Brave at Night': {
+            'metaphor': 'The Night-Glow garden where flowers only bloom in the quiet dark.',
+            'coping_strategy': 'Checking the "security perimeter", using a "bravery mantra", visualizing a protective light shield.',
+            'growth_outcome': 'The hero realizes they are the keeper of their own safety; shadows become just shapes.'
+        },
+        'Patience & Waiting': {
+            'metaphor': 'Watching a slow-growing moon-flower that only opens when it\'s perfectly ready.',
+            'coping_strategy': 'The "Waiting Game" (observing details), focusing on the "now" instead of the "next", deep slow breathing.',
+            'growth_outcome': 'Finding magic in the stillness; realizing that the best things are worth the time.'
+        }
+    }
+
     @classmethod
     def get_age_band(cls, age: int) -> str:
         """Determine age band from specific age based on new categories"""
@@ -197,7 +242,16 @@ class InteractiveAdventurePromptBuilder:
         # Life Challenge (Therapeutic Integration)
         challenge_instruction = ""
         if life_challenge:
-            challenge_instruction = f"- **LIFE CHALLENGE**: The story must subtly reflect the challenge of '{life_challenge}'. The hero should learn to cope with this through the adventure, but keep it metaphorical and magical, not clinical."
+            challenge_data = cls.LIFE_CHALLENGES.get(life_challenge)
+            if challenge_data:
+                challenge_instruction = f"""
+- **LIFE CHALLENGE**: {life_challenge}
+- **METAPHOR**: {challenge_data['metaphor']}
+- **COPING STRATEGY TO TEACH**: {challenge_data['coping_strategy']}
+- **GROWTH OUTCOME**: {challenge_data['growth_outcome']}
+- **INSTRUCTION**: Use the metaphor provided to frame the adventure. Ensure the hero uses the coping strategy at a key decision point to achieve the growth outcome. Keep it magical and age-appropriate."""
+            else:
+                challenge_instruction = f"- **LIFE CHALLENGE**: The story must subtly reflect the challenge of '{life_challenge}'. The hero should learn to cope with this through the adventure, but keep it metaphorical and magical, not clinical."
 
         # Age-specific impossible element suggestions
         impossible_elements = {

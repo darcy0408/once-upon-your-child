@@ -41,6 +41,19 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
     setState(() {
       _selectedScenario = scenarioId;
       widget.wizardData.selectedScenario = scenarioId;
+
+      // Auto-map therapeutic scenarios to life challenges
+      final challengeMap = {
+        'brave_friend': 'Making New Friends',
+        'standing_tall': 'Building Confidence',
+        'big_feelings_quest': 'Handling Big Feelings',
+        'change_is_coming': 'Dealing with Change',
+      };
+
+      if (challengeMap.containsKey(scenarioId)) {
+        widget.wizardData.lifeChallenge = challengeMap[scenarioId];
+        debugPrint('🪄 Auto-mapped scenario $scenarioId to challenge: ${widget.wizardData.lifeChallenge}');
+      }
     });
   }
 
@@ -61,8 +74,8 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(leftLabel, style: const TextStyle(fontSize: 12)),
-            Text(rightLabel, style: const TextStyle(fontSize: 12)),
+            Text(leftLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+            Text(rightLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
           ],
         ),
         Slider(
@@ -71,7 +84,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
           max: 100,
           divisions: 10,
           activeColor: AppColors.primary,
-          inactiveColor: AppColors.primary.withAlpha(50),
+          inactiveColor: AppColors.primary.withValues(alpha: 0.2),
           onChanged: (newValue) {
             setState(() {
               sliders[key] = newValue.round();
@@ -106,7 +119,6 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           color: AppColors.textDark,
                           fontWeight: FontWeight.bold,
-                          fontFamily: 'Outfit', // Ensure nice font
                         ),
                     textAlign: TextAlign.center,
                   ),
@@ -114,13 +126,13 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                 // Parental override gear icon
                 IconButton(
                   icon: Icon(
-                    _showParentalInput ? Icons.close : Icons.settings,
-                    color: AppColors.textDark.withAlpha(128), // 50% opacity
+                    _showParentalInput ? Icons.close : Icons.shield_outlined,
+                    color: _showParentalInput ? AppColors.primary : AppColors.textDark.withValues(alpha: 0.5),
                   ),
                   onPressed: () {
                     setState(() => _showParentalInput = !_showParentalInput);
                   },
-                  tooltip: 'Parent settings',
+                  tooltip: 'Guardian Mode',
                 ),
               ],
             ),
@@ -130,7 +142,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             Text(
               'Where shall we go today?',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textDark.withAlpha(179), // 70% opacity
+                    color: AppColors.textDark.withValues(alpha: 0.7),
                   ),
               textAlign: TextAlign.center,
             ),
@@ -138,154 +150,13 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
             // Parental input (if shown)
             if (_showParentalInput) ...[
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: AppColors.cream,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: AppColors.primary, width: 2),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.shield_outlined, color: AppColors.primary),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Guardian Mode',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    
-                    // 1. Life Challenges
-                    Text(
-                      'Life Challenge (Therapeutic Focus)',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        'Making New Friends',
-                        'Starting School',
-                        'Sibling Rivalry',
-                        'Handling Big Feelings',
-                        'Trying New Foods',
-                        'Sharing Toys',
-                        'Being Brave at Night',
-                        'Patience & Waiting',
-                      ].map((challenge) {
-                        final isSelected = widget.wizardData.lifeChallenge == challenge;
-                        return ChoiceChip(
-                          label: Text(challenge),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            setState(() {
-                              widget.wizardData.lifeChallenge = selected ? challenge : null;
-                            });
-                          },
-                          selectedColor: AppColors.gold,
-                          backgroundColor: Colors.white,
-                          labelStyle: TextStyle(
-                            color: isSelected ? AppColors.textDark : AppColors.textDark.withAlpha(200),
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // 2. Personality Sliders
-                    Text(
-                      'Hero Personality',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildSlider(
-                      'Cautious', 'Adventurous', 
-                      'adventurousness', 
-                      widget.wizardData.personalitySliders,
-                    ),
-                    _buildSlider(
-                      'Serious', 'Silly', 
-                      'creativity', // Using creativity as proxy for silly/serious for now
-                      widget.wizardData.personalitySliders,
-                    ),
-                    _buildSlider(
-                      'Shy', 'Social', 
-                      'sociability', 
-                      widget.wizardData.personalitySliders,
-                    ),
-                    _buildSlider(
-                      'Calm', 'Energetic', 
-                      'energy', 
-                      widget.wizardData.personalitySliders,
-                    ),
-
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // 3. Custom Note
-                    Text(
-                      'Additional Notes',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _parentalNoteController,
-                      decoration: InputDecoration(
-                        hintText: 'e.g., Help with nail-biting habit',
-                        filled: true,
-                        fillColor: AppColors.surface,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                      ),
-                      maxLines: 2,
-                      onChanged: (value) {
-                        widget.wizardData.parentalNote = value;
-                      },
-                    ),
-                  ],
-                ),
-              ),
+              _buildGuardianModeContainer(),
               const SizedBox(height: AppSpacing.xl),
             ],
 
-            // Scenario carousel
-            SizedBox(
-              height: 320, // Increased height to prevent overflow
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 10),
-                itemCount: _scenarios.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(width: AppSpacing.md),
-                itemBuilder: (context, index) {
-                  final scenario = _scenarios[index];
-                  final isSelected = _selectedScenario == scenario.id;
+            // Scenario carousels grouped by category
+            ..._buildScenarioSections(age),
 
-                  return _ScenarioCardWidget(
-                    scenario: scenario,
-                    isSelected: isSelected,
-                    childAge: age,
-                    onTap: () => _selectScenario(scenario.id),
-                  );
-                },
-              ),
-            ),
             const SizedBox(height: AppSpacing.xl),
 
             // Full therapeutic feelings wheel (Progressive Disclosure)
@@ -294,6 +165,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
@@ -346,6 +218,228 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
         ),
       ),
     );
+  }
+
+  Widget _buildGuardianModeContainer() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.primary, width: 2.5),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.15),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.shield_outlined, color: AppColors.primary, size: 28),
+              const SizedBox(width: 12),
+              Text(
+                'Guardian Mode',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Personalize the adventure to support your child\'s growth.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textDark.withValues(alpha: 0.6),
+                  fontStyle: FontStyle.italic,
+                ),
+          ),
+          const Divider(height: 32, thickness: 1.5),
+
+          // 1. Life Challenges
+          Row(
+            children: [
+              const Text('❤️', style: TextStyle(fontSize: 18)),
+              const SizedBox(width: 8),
+              Text(
+                'Today\'s Heart Focus',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              'Making New Friends',
+              'Starting School',
+              'Sibling Rivalry',
+              'Handling Big Feelings',
+              'Trying New Foods',
+              'Sharing Toys',
+              'Being Brave at Night',
+              'Patience & Waiting',
+              'Building Confidence',
+              'Dealing with Change',
+            ].map((challenge) {
+              final isSelected = widget.wizardData.lifeChallenge == challenge;
+              return ChoiceChip(
+                label: Text(challenge),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    widget.wizardData.lifeChallenge = selected ? challenge : null;
+                  });
+                },
+                selectedColor: AppColors.gold,
+                backgroundColor: Colors.white,
+                labelStyle: TextStyle(
+                  color: isSelected ? AppColors.textDark : AppColors.textDark.withValues(alpha: 0.8),
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 13,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // 2. Personality Sliders
+          Row(
+            children: [
+              const Text('🧠', style: TextStyle(fontSize: 18)),
+              const SizedBox(width: 8),
+              Text(
+                'Hero Personality',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildSlider(
+            'Cautious',
+            'Adventurous',
+            'adventurousness',
+            widget.wizardData.personalitySliders,
+          ),
+          _buildSlider(
+            'Quiet',
+            'Social',
+            'sociability',
+            widget.wizardData.personalitySliders,
+          ),
+          _buildSlider(
+            'Calm',
+            'Energetic',
+            'energy',
+            widget.wizardData.personalitySliders,
+          ),
+          _buildSlider(
+            'Serious',
+            'Silly',
+            'creativity',
+            widget.wizardData.personalitySliders,
+          ),
+
+          const SizedBox(height: AppSpacing.lg),
+
+          // 3. Custom Note
+          Row(
+            children: [
+              const Text('📝', style: TextStyle(fontSize: 18)),
+              const SizedBox(width: 8),
+              Text(
+                'Parental Note',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _parentalNoteController,
+            decoration: InputDecoration(
+              hintText: 'e.g., Help with sharing during playdates',
+              hintStyle: TextStyle(color: AppColors.textDark.withValues(alpha: 0.4), fontSize: 14),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
+              ),
+              contentPadding: const EdgeInsets.all(12),
+            ),
+            maxLines: 2,
+            onChanged: (value) {
+              widget.wizardData.parentalNote = value;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildScenarioSections(int age) {
+    final Map<String, List<ScenarioCard>> grouped = {};
+    for (var scenario in _scenarios) {
+      grouped.putIfAbsent(scenario.category, () => []).add(scenario);
+    }
+
+    final List<Widget> sections = [];
+    grouped.forEach((category, scenarios) {
+      sections.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                category,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                      letterSpacing: 1.2,
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              SizedBox(
+                height: 320, // Increased height to prevent overflow
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  itemCount: scenarios.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: AppSpacing.md),
+                  itemBuilder: (context, index) {
+                    final scenario = scenarios[index];
+                    final isSelected = _selectedScenario == scenario.id;
+
+                    return _ScenarioCardWidget(
+                      scenario: scenario,
+                      isSelected: isSelected,
+                      childAge: age,
+                      onTap: () => _selectScenario(scenario.id),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+    return sections;
   }
 }
 
