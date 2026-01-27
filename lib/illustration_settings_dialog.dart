@@ -18,7 +18,7 @@ class IllustrationSettingsDialog extends StatefulWidget {
 class _IllustrationSettingsDialogState
     extends State<IllustrationSettingsDialog> {
   IllustrationStyle _selectedStyle = IllustrationStyle.childrenBook;
-  int _numberOfImages = 3;
+  static const int _numberOfImages = 1;
   late String _selectedTherapeuticFocus;
 
   @override
@@ -67,61 +67,6 @@ class _IllustrationSettingsDialogState
                 activeColor: Colors.deepPurple,
               );
             }),
-
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 16),
-
-            // Number of images selector
-            const Text(
-              'Number of illustrations:',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-
-            Row(
-              children: [
-                Expanded(
-                  child: Slider(
-                    value: _numberOfImages.toDouble(),
-                    min: 1,
-                    max: 5,
-                    divisions: 4,
-                    label: _numberOfImages.toString(),
-                    onChanged: (value) {
-                      setState(() {
-                        _numberOfImages = value.toInt();
-                      });
-                    },
-                    activeColor: Colors.deepPurple,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.purple.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    _numberOfImages.toString(),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.deepPurple,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 8),
-            Text(
-              'More illustrations = longer generation time',
-              style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                  fontStyle: FontStyle.italic),
-            ),
 
             const SizedBox(height: 16),
             const Divider(),

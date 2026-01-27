@@ -11,6 +11,41 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-01-27 (Wizard UI Integration & Stability Fix)
+
+### Session: Wizard UI Integration Test & Stability - COMPLETED
+
+**Goal:** Run full Wizard UI Integration Test (Wizard → Avatar Picker → Feelings Wheel → Story Generation) and fix any discovered crashes or integration gaps.
+
+**Status:** ✅ COMPLETED
+
+**Work Completed:**
+1.  **Full Integration Test:** Created `test/widgets/wizard_flow_test.dart` which automates the entire story creation journey:
+    - Character naming and archetype selection.
+    - Scenario selection in the Feeling Selection step.
+    - Transition through Companion selection ("Go Solo" path).
+    - Final Review and Launch verification.
+2.  **MagicReviewStep Stability Fix:**
+    - Discovered and fixed a `RangeError` crash in `lib/screens/wizard_steps/magic_review_step.dart`.
+    - Cause: Attempting to substring story text for debug logging before checking its length.
+    - Fix: Implemented safe substring check for all story generation logging.
+3.  **Mocking & Test Infrastructure:**
+    - Successfully mocked `IsarService` (Local DB), `SharedPreferences`, and `ApiServiceManager` for headless testing.
+    - Verified that API payloads correctly include character details, scenarios, and story settings.
+4.  **Verification:**
+    - ✅ `test/widgets/wizard_flow_test.dart` passes consistently.
+    - ✅ Confirmed navigation to `StoryResultScreen` works after generation.
+
+**Files Modified:**
+- `lib/screens/wizard_steps/magic_review_step.dart` - Fixed logging crash.
+- `test/widgets/wizard_flow_test.dart` - New comprehensive integration test.
+
+**Next Steps:**
+1.  **Manual Verification:** Check face icon rendering in the feelings wheel on a real device/emulator to confirm circular clipping looks correct in high-res.
+2.  **Performance:** Monitor PageView transition smoothness during the wizard flow.
+
+---
+
 ## Supervisor Notes | 2026-01-27 (Image Generation Reliability Fix)
 
 ### Issue: Illustration/Avatar Generation Failures - FIXED

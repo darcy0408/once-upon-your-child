@@ -1481,13 +1481,12 @@ class ColoringSettingsDialog extends StatefulWidget {
 }
 
 class _ColoringSettingsDialogState extends State<ColoringSettingsDialog> {
-  late int _pageCount;
+  static const int _pageCount = 1;
   late String _selectedTherapeuticFocus;
 
   @override
   void initState() {
     super.initState();
-    _pageCount = widget.initialPageCount.clamp(1, 5);
     final initial = widget.initialTherapeuticFocus;
     _selectedTherapeuticFocus = initial != null && initial.isNotEmpty
         ? initial
@@ -1509,57 +1508,6 @@ class _ColoringSettingsDialogState extends State<ColoringSettingsDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Number of pages:',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: Slider(
-                    value: _pageCount.toDouble(),
-                    min: 1,
-                    max: 5,
-                    divisions: 4,
-                    label: _pageCount.toString(),
-                    activeColor: Colors.pink,
-                    onChanged: (value) {
-                      setState(() {
-                        _pageCount = value.toInt();
-                      });
-                    },
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.pink.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    _pageCount.toString(),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.pink,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'More pages take a bit longer to generate.',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 16),
             const Text(
               'Therapeutic focus (optional):',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
