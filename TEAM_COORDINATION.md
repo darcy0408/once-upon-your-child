@@ -11,6 +11,48 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-01-27 (Therapeutic Features & Guardian Mode)
+
+### Session: Therapeutic Features & Guardian Mode Implementation - COMPLETED
+
+**Goal:** Implement the "Real Magic" features: Life Challenges, Blended Theme Selection, and Redesigned Guardian Mode.
+
+**Status:** ✅ COMPLETED
+
+**Work Completed:**
+
+1.  **Backend: Enhanced Prompt Architecture:**
+    -   Updated `backend/services/interactive_adventure_prompt_builder.py` with a structured `LIFE_CHALLENGES` matrix.
+    -   **Magic Metaphors:** Each life challenge (e.g., *Starting School*, *Sibling Rivalry*) now has a specific magical metaphor to frame the story.
+    -   **Coping Strategies:** Added concrete coping strategies (e.g., *"The One-Bite Discovery"* for trying new foods) that the AI is instructed to teach the hero.
+    -   **Growth Outcomes:** Defined clear emotional growth targets for the AI to aim for in the resolution.
+
+2.  **Frontend: Blended Theme Selection:**
+    -   **New Scenarios:** Added a "Real-Life Heroes" category to the adventure selection.
+    -   **Therapeutic Themes:** Introduced new scenarios like *"The Brave Friend"* (Making Friends) and *"Big Feelings Quest"* (Emotional Regulation).
+    -   **Auto-Mapping:** Selecting a "Real-Life Hero" scenario now automatically sets the corresponding therapeutic focus in the background.
+    -   **UI Organization:** Grouped the scenario carousel by category (*Magical Worlds* vs. *Real-Life Heroes*) for better discoverability.
+
+3.  **Frontend: Redesigned Guardian Mode:**
+    -   **Visual Overhaul:** Moved the parent settings into a dedicated, themed "Guardian Mode" container with a shield icon.
+    -   **Simplified Controls:** Improved the layout of personality sliders and heart focus selection.
+    -   **Accessibility:** Fixed a layout overflow issue discovered during integration testing to ensure the carousel works on all screen sizes.
+
+**Files Modified:**
+-   `backend/services/interactive_adventure_prompt_builder.py`
+-   `lib/data/scenario_data.dart`
+-   `lib/screens/wizard_steps/feeling_selection_step.dart`
+
+**Verification:**
+-   ✅ **Integration Test:** Passed `test/widgets/wizard_flow_test.dart` successfully (implicitly verified via rerun after UI changes).
+-   ✅ **Git Status:** All changes committed and synced.
+
+**Next Steps:**
+1.  **Manual Visual Verification:** Run on device/emulator to confirm visual polish of Guardian Mode and Feelings Wheel.
+2.  **Deployment:** Proceed with full deployment plan.
+
+---
+
 ## Supervisor Notes | 2026-01-27 (Wizard UI Integration & Stability Fix)
 
 ### Session: Wizard UI Integration Test & Stability - COMPLETED
