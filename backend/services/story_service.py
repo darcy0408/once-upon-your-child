@@ -27,7 +27,6 @@ AGE_CONSTRAINTS = {
     '8-10': {
         'regular': {'short': (900, 1200), 'medium': (1200, 1800), 'long': (1800, 2400)},
         'rhyme': {'short': (400, 500), 'medium': (500, 650), 'long': (650, 800)},
-        'ltr': {'short': 10, 'medium': 12, 'long': 14},
         'notes': 'Richer detail, humor, clear cause-effect, stronger plot arcs.'
     },
     '11-13': {
@@ -57,7 +56,6 @@ SAFETY RULES:
 - No sexual content, no graphic violence, no self-harm, no illegal wrongdoing.
 - Handle sensitive emotions gently. Safe, therapeutic tone.
 - Do NOT invent characters or family members not provided.
-- Must Include: A gentle magical surprise (or Moment of Wonder for teens), a coping moment in action (breathing/naming feelings for kids; resilience/perspective for teens), and a satisfying earned ending.
 - SAFETY: Ensure no scary imagery or abandonment themes for children.
 """
 
@@ -173,6 +171,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 - **IMPOSSIBLE ELEMENTS**: Examples for this age: {age_impossible}
 - **COMPANIONS**: {comp_str} (MUST appear by name and help/bond with {character}).
 - **CUSTOM REQUESTS**: {custom_elements or 'None'} (Use the exact words from this request at least once each, verbatim, in the story).
+  If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {mood_rules}
 
 **WRITING GUIDELINES**:
@@ -244,7 +243,7 @@ def _safe_extract_title_and_gem(text: str, theme: str):
         return f"A {theme} Adventure", "You are magic!", clean_text, [clean_text], {}
 
 
-def _build_learning_to_read_prompt(character_name, theme, age, character_details, companion=None, extra_characters=None, story_length="standard", custom_elements=""):
+def _build_learning_to_read_prompt(character_name, theme, age, character_details, companion=None, companion_pets=None, companion_characters=None, extra_characters=None, story_length="standard", custom_elements=""):
     """Build prompt for Learning to Read mode stories with graduated vocabulary."""
     band = _get_age_band(age)
     config = AGE_CONSTRAINTS[band]
@@ -265,13 +264,61 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
         vocab_instruction = "Early chapter book level. Fluent sentences with varied vocabulary. Still accessible but engaging for a fluent reader."
         format_instruction = "Each page 2-3 sentences."
 
+    companion_context = []
+    if character_details:
+        pets = character_details.get('pets') or []
+        for p in pets:
+            name = p.get('name')
+            species = p.get('species')
+            if name and species:
+                companion_context.append(f"{name} the {species}")
+            elif name:
+                companion_context.append(name)
+
+    if companion_pets:
+        for p in companion_pets:
+            if isinstance(p, dict):
+                name = p.get('name')
+                species = p.get('species')
+                if name and species:
+                    companion_context.append(f"{name} the {species}")
+                elif name:
+                    companion_context.append(name)
+            elif p:
+                companion_context.append(str(p))
+
+    if companion_characters:
+        for c in companion_characters:
+            if isinstance(c, dict):
+                name = c.get('name')
+                if name:
+                    companion_context.append(name)
+            elif c:
+                companion_context.append(str(c))
+
+    if extra_characters:
+        for c in extra_characters:
+            if isinstance(c, dict):
+                name = c.get('name')
+                if name:
+                    companion_context.append(name)
+            elif c:
+                companion_context.append(str(c))
+
+    if companion:
+        companion_context.append(companion)
+
+    comp_str = ", ".join(companion_context) if companion_context else "None"
+
     return f"""
 Create a LEARN TO READ story for {character_name} (age {age}).
 Theme: {theme}
 Format: {num_pages} pages. {format_instruction}
 Vocabulary: {vocab_instruction}
 Requirements: Repeating frames, comforting rhythm, 1 coping moment.
+Companions: {comp_str} (If not None, they must appear by name and help/bond with {character_name}.)
 Custom Requests: {custom_elements or 'None'} (Use the exact words from this request at least once each, verbatim, in the story).
+If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {SAFETY_GUARDRAILS}
 """
 
@@ -283,12 +330,47 @@ def _build_rhyme_time_prompt(character_name, theme, age, character_details, comp
     length_key = 'medium' if story_length == 'standard' else story_length
     word_range = config['rhyme'][length_key]
 
+    companion_context = []
+    if companion_pets:
+        for p in companion_pets:
+            if isinstance(p, dict):
+                name = p.get('name')
+                species = p.get('species')
+                if name and species:
+                    companion_context.append(f"{name} the {species}")
+                elif name:
+                    companion_context.append(name)
+            elif p:
+                companion_context.append(str(p))
+
+    if companion_characters:
+        for c in companion_characters:
+            if isinstance(c, dict):
+                name = c.get('name')
+                if name:
+                    companion_context.append(name)
+            elif c:
+                companion_context.append(str(c))
+
+    if extra_characters:
+        for c in extra_characters:
+            if isinstance(c, dict):
+                name = c.get('name')
+                if name:
+                    companion_context.append(name)
+            elif c:
+                companion_context.append(str(c))
+
+    comp_str = ", ".join(companion_context) if companion_context else "None"
+
     return f"""
 Create a RHYME TIME story for {character_name} (age {age}).
 Theme: {theme}
 Word Count: {word_range[0]}-{word_range[1]} words.
 Scheme: Consistent AABB or ABCB.
 Requirements: Include a magical surprise and a coping moment. {character_name} is the hero.
+Companions: {comp_str} (If not None, they must appear by name and help/bond with {character_name}.)
 Custom Requests: {custom_elements or 'None'} (Use the exact words from this request at least once each, verbatim, in the story).
+If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {SAFETY_GUARDRAILS}
 """
