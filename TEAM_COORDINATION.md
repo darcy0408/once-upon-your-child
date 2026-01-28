@@ -35,6 +35,29 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 **Next Steps:**
 1. Run the app and confirm the placeholder renders without the white ring across devices.
 
+### Session: Emotion Face Sheets OCR Split - COMPLETED
+
+**Goal:** Split emotion face sheets into individual emotion PNGs with clean black lineart and transparent backgrounds, named by emotion.
+
+**Status:** ✅ COMPLETED (OCR-assisted)
+
+**Work Completed:**
+1. Installed Tesseract OCR locally and used it to read labels on sheets without reliable filename mappings.
+2. Extracted face lineart only (label text removed) and saved as RGBA PNGs with pure black lines + transparent background.
+3. Applied manual label overrides for `PlayfulContent.jpg` and `InterestedProud.jpg` to ensure correct naming.
+4. Dropped the duplicate “content” face with eyes closed (kept the stronger/cleaner variant).
+
+**Output:**
+- `feelings wheel images/EmotionFaceSheets/individualEmotionImages/` (112 PNGs)
+
+**Notes:**
+- Some emotions are not present in the current sheets: `annoyed`, `distant`, `frustrated`, `infuriated`, `numb`, `withdrawn`.
+- OCR sheets also yielded extras not in the canonical list: `abandoned`, `isolated`, `lonely`.
+
+**Next Steps:**
+1. Provide the missing six source sheets if those faces are needed.
+2. Decide whether to keep or remove the extra OCR-only faces.
+
 ---
 
 ## Supervisor Notes | 2026-01-28 (Git Maintenance Run)
