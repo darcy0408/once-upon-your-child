@@ -191,8 +191,8 @@ class _CharacterPreviewState extends State<CharacterPreview>
       return ClipOval(
         child: Image.network(
           widget.characterImageUrl!,
-          width: size * 0.8,
-          height: size * 0.8,
+          width: size * 0.92, // Increased from 0.8 to fill frame
+          height: size * 0.92,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return _buildPlaceholder(size);
@@ -212,8 +212,8 @@ class _CharacterPreviewState extends State<CharacterPreview>
       final isUrl = imageData.startsWith('http://') || imageData.startsWith('https://');
 
       return Container(
-        width: size * 0.8,
-        height: size * 0.8,
+        width: size * 0.92, // Increased from 0.8
+        height: size * 0.92,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           boxShadow: [
@@ -252,8 +252,8 @@ class _CharacterPreviewState extends State<CharacterPreview>
 
   Widget _buildPlaceholder(double size) {
     return Container(
-      width: size * 0.8,
-      height: size * 0.8,
+      width: size * 0.92, // Increased from 0.8
+      height: size * 0.92,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         boxShadow: [
@@ -278,8 +278,8 @@ class _CharacterPreviewState extends State<CharacterPreview>
 
   Widget _buildEmojiPlaceholder(double size) {
     return Container(
-      width: size * 0.8,
-      height: size * 0.8,
+      width: size * 0.92, // Increased from 0.8
+      height: size * 0.92,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: RadialGradient(
