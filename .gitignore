@@ -113,7 +113,5 @@ feelings wheel images/
 tools/
 ng
 check_java.ps1
-assets/images/scenarios/
-assets/images/themes/
 *.code-workspace
 test_db_output.txt

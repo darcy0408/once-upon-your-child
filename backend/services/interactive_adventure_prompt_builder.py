@@ -314,6 +314,15 @@ class InteractiveAdventurePromptBuilder:
         ]
         choices_json = ",\n".join(choice_templates)
 
+        # Dynamic Terminology for Teens
+        tool_label = "HERO TOOL"
+        tool_instruction = "(MUST be used later in the adventure)"
+        if age >= 12:
+            tool_label = "KEY ARTIFACT"
+            tool_instruction = "(MUST be integral to the resolution)"
+
+        tool_line = f"- **{tool_label}**: {f"'{spark_tool}' {tool_instruction}" if spark_tool else 'None'}"
+
         prompt = f"""
 **PERSONA**: Expert Child Narrative Architect & Pick-A-Path Specialist.
 
@@ -326,7 +335,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 {challenge_instruction}
 - **HERO**: {child_name} (Special Ability: {special_ability}).
 {personality_profile}
-- **HERO TOOL**: {f"'{spark_tool}' (MUST be used later in the adventure)" if spark_tool else "None"}
+{tool_line}
 - **IMPOSSIBLE ELEMENTS**: Examples for this age: {age_impossible}
 - **COMPANIONS**: {companion_context} (Must affect the story).
 {mood_rules}

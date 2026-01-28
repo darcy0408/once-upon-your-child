@@ -57,7 +57,7 @@ SAFETY RULES:
 - No sexual content, no graphic violence, no self-harm, no illegal wrongdoing.
 - Handle sensitive emotions gently. Safe, therapeutic tone.
 - Do NOT invent characters or family members not provided.
-- Must Include: A gentle magical surprise, a coping moment in action (breathing/naming feelings), and a satisfying earned ending.
+- Must Include: A gentle magical surprise (or Moment of Wonder for teens), a coping moment in action (breathing/naming feelings for kids; resilience/perspective for teens), and a satisfying earned ending.
 - SAFETY: Ensure no scary imagery or abandonment themes for children.
 """
 
@@ -139,6 +139,25 @@ class AdvancedStoryEngine:
         }
         age_impossible = impossible_elements.get(band, 'Something magical and physics-defying.')
 
+        # Age-appropriate Terminology adjustments
+        tool_label = "HERO TOOL"
+        tool_instruction = "' (MUST be used exactly once to solve a specific problem)"
+        
+        if age >= 12:
+            tool_label = "KEY ARTIFACT"
+            tool_instruction = "' (MUST be integral to the resolution)"
+
+        tool_section = ""
+        if spark_tool:
+            tool_section = f"- **{tool_label}**: '{spark_tool}{tool_instruction}"
+        else:
+            tool_section = f"- **{tool_label}**: None"
+
+        # Therapeutic Tone Adjustment for Teens
+        coping_instruction = "a gentle magical surprise, a coping moment in action (breathing/naming feelings)"
+        if age >= 14:
+            coping_instruction = "a clever plot twist, a moment of resilience or perspective-shifting (internal monologue)"
+
         return f"""
 **PERSONA**: Expert Child Narrative Architect & Therapeutic Narrative Specialist.
 
@@ -150,7 +169,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 - **SENSORY PALETTE**: {sensory_palette or 'Bright colors, soft sounds, sweet smells.'}
 - **HERO**: {character} (Strengths: {strengths or 'Brave and kind'}).
 - **SPECIAL ABILITY**: {special_ability} (MUST be used at the climax).
-- **HERO TOOL**: {("'" + spark_tool + "' (MUST be used exactly once to solve a specific problem)") if spark_tool else "None"}
+{tool_section}
 - **IMPOSSIBLE ELEMENTS**: Examples for this age: {age_impossible}
 - **COMPANIONS**: {comp_str} (MUST appear by name and help/bond with {character}).
 - **CUSTOM REQUESTS**: {custom_elements or 'None'} (Use the exact words from this request at least once each, verbatim, in the story).
@@ -160,6 +179,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 - **Tone**: {config['notes']}
 - **Word Count**: Approximately {word_range[0]}-{word_range[1]} words total.
 - **Safety**: {SAFETY_GUARDRAILS.strip()}
+- **Mandatory Elements**: Must include {coping_instruction}, and a satisfying earned ending.
 
 **OUTPUT FORMAT**:
 Strictly return valid JSON with this structure:
