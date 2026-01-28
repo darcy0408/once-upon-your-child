@@ -31,6 +31,8 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
     *   Simulated story flows for 7 age milestones (5, 7, 9, 11, 13, 15, 17) and Adult.
     *   Verified that word counts, sensory descriptions, and path depths scale correctly.
     *   Confirmed **Illustration Prompts** include age-appropriate detail instructions ("simple/bold" vs "intricate/sophisticated").
+    *   Verified **Coloring Book Dexterity Logic**: Confirmed that Age 4 receives thick lines/simple shapes, while Teens receive intricate Zentangle-style art.
+    *   Verified **Learn-to-Read (LTR) Strictness**: Confirmed Age 4 prompts strictly enforce CVC words and Age 7 correctly scaffolds to blends and digraphs.
 
 3.  **Backend Enhancements (Story Service):**
     *   Improved character context integration (Gender/Pronouns) in story prompts.
@@ -47,8 +49,8 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 -   `pubspec.yaml` - Updated asset paths for theme images.
 
 **Next Steps:**
-1.  Verify coloring book dexterity levels in a future session.
-2.  Monitor user feedback on segment lengths in Pick-a-Path mode.
+1.  Monitor user feedback on segment lengths in Pick-a-Path mode.
+2.  Final live app verification of the edge cases.
 
 ---
 
