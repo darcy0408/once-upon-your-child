@@ -11,6 +11,47 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-01-28 (Developmental Audit & Interactive Fix)
+
+### Session: Multi-Age Developmental Logic Audit - COMPLETED
+
+**Goal:** Execute a deep-tier audit of the "Story Weaver" application to ensure developmental alignment across all age groups (5-17+) and fix any identified logic flaws.
+
+**Status:** ✅ VERIFIED & COMMITTED
+
+**Work Completed:**
+1.  **Fixed Interactive Story Logic:**
+    *   Identified and fixed a **Critical Bug** in `InteractiveAdventurePromptBuilder` where the *total story* word count was being applied to *each individual segment*.
+    *   Introduced `PATH_DEPTHS` table to estimate path length (4-14 segments) based on age and story length.
+    *   Implemented `_calculate_per_segment_word_count` to ensure segments are readable (e.g., ~150 words for children, ~350 words for adults).
+    *   Added **Dynamic Sensory Palettes** that adapt by age (e.g., "Gritty textures" for teens vs "Vivid colors" for toddlers).
+    *   Enhanced **Ending Logic** to trigger naturally as the user approaches the end of the calculated path.
+
+2.  **Logic Audit Verification:**
+    *   Simulated story flows for 7 age milestones (5, 7, 9, 11, 13, 15, 17) and Adult.
+    *   Verified that word counts, sensory descriptions, and path depths scale correctly.
+    *   Confirmed **Illustration Prompts** include age-appropriate detail instructions ("simple/bold" vs "intricate/sophisticated").
+
+3.  **Backend Enhancements (Story Service):**
+    *   Improved character context integration (Gender/Pronouns) in story prompts.
+    *   Strengthened age-specific safety reinforcements for younger children.
+    *   Added age-appropriate tone instructions for "Rhyme Time" mode.
+
+**Files Created:**
+-   `backend/tests/comprehensive_audit_v2.py`
+
+**Files Modified:**
+-   `backend/services/interactive_adventure_prompt_builder.py` - Core logic fix for interactive mode.
+-   `backend/services/story_service.py` - Added gender context and age-specific tone instructions.
+-   `backend/services/story_generation_service.py` - Minor formatting cleanup.
+-   `pubspec.yaml` - Updated asset paths for theme images.
+
+**Next Steps:**
+1.  Verify coloring book dexterity levels in a future session.
+2.  Monitor user feedback on segment lengths in Pick-a-Path mode.
+
+---
+
 ## Supervisor Notes | 2026-01-28 (Custom Story Elements Enforcement)
 
 ### Session: Ensure User Ideas Are Enforced - COMPLETED (Verification Pending)
