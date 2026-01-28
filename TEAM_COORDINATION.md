@@ -13,6 +13,28 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ## Supervisor Notes | 2026-01-27 (Therapeutic Features & Guardian Mode)
 
+## Supervisor Notes | 2026-01-28 (Character Placeholder Image Update)
+
+### Session: Pre-Selection Character Placeholder - COMPLETED
+
+**Goal:** Replace the pre-selection character placeholder image with the provided art, removing the white circular border.
+
+**Status:** ✅ COMPLETED
+
+**Work Completed:**
+1. **Asset Update:** Processed the provided artwork to remove near-white background pixels and saved as a transparent PNG.
+2. **UI Integration:** Updated the character preview placeholder to use the new image, with emoji fallback if the asset fails to load.
+
+**Files Modified:**
+- `assets/images/character_placeholder.png` - New placeholder asset (transparent background)
+- `lib/widgets/character_preview.dart` - Use image asset for placeholder + emoji fallback
+
+**Verification:**
+- ✅ Placeholder renders in the hero creator preview (manual visual confirmation pending)
+
+**Next Steps:**
+1. Run the app and confirm the placeholder renders without the white ring across devices.
+
 ### Session: Therapeutic Features & Guardian Mode Implementation - COMPLETED
 
 **Goal:** Implement the "Real Magic" features: Life Challenges, Blended Theme Selection, and Redesigned Guardian Mode.
