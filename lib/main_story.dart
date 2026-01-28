@@ -933,7 +933,138 @@ class _StoryScreenState extends State<StoryScreen> {
                 const SizedBox(height: 20),
               ],
               _buildSectionCard(
-                  'Choose Main Character', _buildCharacterSelector()),
+                  'Choose Main Character', 
+                  Column(
+                    children: [
+                      // "Create New" Path
+                      InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const WizardStoryScreen(
+                                initialStep: 0, // Start at creation
+                              ),
+                            ),
+                          ).then((_) => _loadCharacters());
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          height: 180,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            image: const DecorationImage(
+                              image: AssetImage('assets/images/create_character_card.jpg'),
+                              fit: BoxFit.cover,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              gradient: LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: [
+                                  Colors.black.withValues(alpha: 0.8),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(16),
+                            alignment: Alignment.bottomLeft,
+                            child: const Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Create a New Hero',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  'Design your perfect adventurer',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // "Select Existing" Path
+                      if (_characters.isNotEmpty)
+                        InkWell(
+                          onTap: () {
+                            // Go to Library to pick, then launch Wizard
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CharacterLibraryScreen(),
+                              ),
+                            ).then((_) => _loadCharacters());
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.deepPurple.shade100),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.deepPurple.shade50,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.people, color: Colors.deepPurple),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Pick an Existing Hero',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.deepPurple,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${_characters.length} characters ready for adventure',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+              ),
               const SizedBox(height: 20),
               if (_selectedCharacter != null)
                 _buildSectionCard('Add Friends/Siblings (Optional)',

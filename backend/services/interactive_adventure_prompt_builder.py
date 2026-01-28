@@ -110,6 +110,18 @@ class InteractiveAdventurePromptBuilder:
         'long': 2
     }
 
+    # Estimated Path Depths (how many segments a user actually reads in one play)
+    # These are used to divide the total word count into per-segment counts.
+    PATH_DEPTHS = {
+        '3-4': {'short': 4, 'medium': 5, 'long': 6},
+        '5-7': {'short': 5, 'medium': 6, 'long': 7},
+        '8-10': {'short': 6, 'medium': 7, 'long': 8},
+        '11-13': {'short': 7, 'medium': 8, 'long': 9},
+        '13-15': {'short': 8, 'medium': 9, 'long': 10},
+        '15-18': {'short': 9, 'medium': 10, 'long': 11},
+        'adult': {'short': 10, 'medium': 12, 'long': 14}
+    }
+
     # Segment targets based on Story Weaver Coverage v2 Table (Nodes)
     SEGMENT_TARGETS = {
         '3-4': {'short': (7, 9), 'medium': (9, 11), 'long': (11, 13)},
@@ -185,6 +197,21 @@ class InteractiveAdventurePromptBuilder:
             return 'adult'
 
     @classmethod
+    def _calculate_per_segment_word_count(cls, age_band: str, length: str) -> tuple:
+        """Calculate per-segment word count based on age band and total word count range."""
+        age_config = cls.AGE_BANDS[age_band]
+        total_range = age_config['word_count_ranges'].get(length, age_config['word_count_ranges']['medium'])
+        
+        # Use estimated path depth
+        depth = cls.PATH_DEPTHS[age_band].get(length, 6)
+        
+        # Calculate and round to nearest 10
+        min_w = max(40, (total_range[0] // depth // 10) * 10)
+        max_w = max(80, (total_range[1] // depth // 10) * 10)
+        
+        return (min_w, max_w)
+
+    @classmethod
     def build_opening_prompt(
         cls,
         child_name: str,
@@ -210,9 +237,12 @@ class InteractiveAdventurePromptBuilder:
         """
         age_band = cls.get_age_band(age)
         age_config = cls.AGE_BANDS[age_band]
-        word_count = age_config['word_count_ranges'].get(length, age_config['word_count_ranges']['medium'])
+        
+        # Calculate PER-SEGMENT word count
+        word_count = cls._calculate_per_segment_word_count(age_band, length)
+        
         choice_count = cls.CHOICE_COUNTS.get(length, 2)
-        segment_range = cls.SEGMENT_TARGETS[age_band].get(length, (10, 15))
+        path_depth = cls.PATH_DEPTHS[age_band].get(length, 10)
 
         # Build companion context
         companion_context = cls._build_companion_context(companions) if companions else "solo on this adventure"
@@ -265,6 +295,18 @@ class InteractiveAdventurePromptBuilder:
         }
         age_impossible = impossible_elements.get(age_band, 'Something magical and physics-defying.')
 
+        # Age-appropriate default sensory palettes
+        default_sensories = {
+            '3-4': 'Bright colors, soft sounds, sweet smells.',
+            '5-7': 'Vivid colors, magical sounds, familiar scents.',
+            '8-10': 'Rich textures, mysterious echoes, crisp aromas.',
+            '11-13': 'Dynamic lighting, layered sounds, complex atmosphere.',
+            '13-15': 'Moody shadows, ambient noise, cinematic details.',
+            '15-18': 'Gritty textures, visceral sounds, evocative atmosphere.',
+            'adult': 'Intricate sensory metaphors, thematic undertones, immersive environment.'
+        }
+        final_sensory = sensory_palette or default_sensories.get(age_band, 'Bright colors, soft sounds.')
+
         # Pre-calculate choice templates
         choice_templates = [
             '    {"id": "choice_1", "text": "First choice option (Action-oriented)"}',
@@ -280,7 +322,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 **STORY SPECS**:
 - **THEME**: {theme} | **TONE**: {tone}
 - **CONFLICT**: {conflict_hook or 'A magical mystery needs solving.'}
-- **SENSORY PALETTE**: {sensory_palette or 'Bright colors, soft sounds, sweet smells.'}
+- **SENSORY PALETTE**: {final_sensory}
 {challenge_instruction}
 - **HERO**: {child_name} (Special Ability: {special_ability}).
 {personality_profile}
@@ -289,7 +331,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 - **COMPANIONS**: {companion_context} (Must affect the story).
 {mood_rules}
 
-**WRITING** ({word_count[0]}-{word_count[1]} words): {age_config['sentence_length']}, {age_config['vocabulary']}, {age_config['stakes']}
+**WRITING** ({word_count[0]}-{word_count[1]} words per segment): {age_config['sentence_length']}, {age_config['vocabulary']}, {age_config['stakes']}
 {f"**VOCABULARY FOR AGE {age}**: {age_config.get('vocabulary_avoid', '')}" if age <= 7 else ""}
 
 **OUTPUT TYPE**: REQUIRED: output_type='CHOICE'. This is a Pick-A-Path adventure - every segment MUST present exactly {choice_count} distinct, meaningful choices.
@@ -297,12 +339,12 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 **CRITICAL RULES**:
 - **AGE {age}**: Keep vocabulary and complexity appropriate for this age.
 - **POV**: ALWAYS use "you" (second-person). The hero's name is "{child_name}".
-- **WORD COUNT REQUIREMENT**: Your content MUST be between {word_count[0]} and {word_count[1]} words.
+- **WORD COUNT REQUIREMENT**: This INDIVIDUAL SEGMENT MUST be between {word_count[0]} and {word_count[1]} words.
 - **Companion Contract**: REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Companion MUST appear by name.
 - **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.
 - **Safety**: No violence/harm. Therapeutic tone.
 
-**Opening Segment 1/{segment_range[1]}**:
+**Opening Segment 1/{path_depth}**:
 1. Begin with sensory details - natural storybook opening.
 2. Introduce gentle challenge or mystery.
 3. Establish magical surprise/motif.
@@ -316,7 +358,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
   "segment_number": 1,
   "stage_label": "Wake Up!",
   "content": "Story content ({word_count[0]}-{word_count[1]} words)",
-  "word_count": {word_count[0] + 50},
+  "word_count": {word_count[0] + 20},
   "image_description": "Scene description",
   "companion_beats": [{{"type": "dialogue|action|bond", "text": "..."}}],
   "inventory": [],
@@ -356,14 +398,29 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 
         age_band = cls.get_age_band(age)
         age_config = cls.AGE_BANDS[age_band]
-        word_count = age_config['word_count_ranges'].get(length, age_config['word_count_ranges']['medium'])
+        
+        # Calculate PER-SEGMENT word count
+        word_count = cls._calculate_per_segment_word_count(age_band, length)
+        
         choice_count = cls.CHOICE_COUNTS.get(length, 2)
-        segment_range = cls.SEGMENT_TARGETS[age_band].get(length, (10, 15))
+        path_depth = cls.PATH_DEPTHS[age_band].get(length, 10)
 
         child_name = character.get('name', 'Hero')
         companion_context = cls._build_companion_context(companions) if companions else "solo on this adventure"
         inventory = inventory or []
         story_state = story_state or {}
+
+        # Age-appropriate default sensory palettes
+        default_sensories = {
+            '3-4': 'Bright colors, soft sounds, sweet smells.',
+            '5-7': 'Vivid colors, magical sounds, familiar scents.',
+            '8-10': 'Rich textures, mysterious echoes, crisp aromas.',
+            '11-13': 'Dynamic lighting, layered sounds, complex atmosphere.',
+            '13-15': 'Moody shadows, ambient noise, cinematic details.',
+            '15-18': 'Gritty textures, visceral sounds, evocative atmosphere.',
+            'adult': 'Intricate sensory metaphors, thematic undertones, immersive environment.'
+        }
+        final_sensory = story_context.get('sensory_palette') or default_sensories.get(age_band, 'Bright colors, soft sounds.')
 
         choice_templates = [
             '    {"id": "choice_1", "text": "First choice option (Action-oriented)"}',
@@ -372,6 +429,12 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
         choices_json = ",\n".join(choice_templates)
 
         next_segment_number = current_segment_number + 1
+        
+        # Decide if this should be an ending
+        is_near_end = next_segment_number >= (path_depth - 1)
+        ending_instruction = ""
+        if is_near_end:
+            ending_instruction = f"\n**ENDING LOGIC**: You are at segment {next_segment_number}/{path_depth}. If appropriate for the plot, you MAY conclude the story in this segment by setting `is_ending: true`. If not, ensure the story concludes by segment {path_depth}."
 
         prompt = f"""
 **PERSONA**: Expert Child Narrative Architect & Pick-A-Path Specialist.
@@ -383,23 +446,24 @@ You are continuing a Pick-A-Path adventure for {child_name} (age {age}).
 - **THEME**: {theme} | **TONE**: {tone}
 - **HERO**: {child_name}
 - **COMPANIONS**: {companion_context} (Must affect the story).
-- **CURRENT SEGMENT**: {current_segment_number}/{segment_range[1]}
+- **CURRENT SEGMENT**: {current_segment_number}/{path_depth}
 - **SELECTED CHOICE**: {selected_choice}
 - **INVENTORY**: {", ".join(inventory) if inventory else "None"}
 - **STATE**: location={story_state.get('location', 'Unknown')}, goal={story_state.get('goal', 'Unknown')}
+- **SENSORY PALETTE**: {final_sensory}
 
 **STORY SO FAR (summary)**:
 {story_so_far or "No summary available."}
 
-**WRITING** ({word_count[0]}-{word_count[1]} words): {age_config['sentence_length']}, {age_config['vocabulary']}, {age_config['stakes']}
+**WRITING** ({word_count[0]}-{word_count[1]} words per segment): {age_config['sentence_length']}, {age_config['vocabulary']}, {age_config['stakes']}
 {f"**VOCABULARY FOR AGE {age}**: {age_config.get('vocabulary_avoid', '')}" if age <= 7 else ""}
 
 **CRITICAL RULES**:
 - **AGE {age}**: Keep vocabulary and complexity appropriate for this age.
 - **POV**: ALWAYS use "you" (second-person). The hero's name is "{child_name}".
-- **WORD COUNT REQUIREMENT**: Your content MUST be between {word_count[0]} and {word_count[1]} words.
+- **WORD COUNT REQUIREMENT**: This INDIVIDUAL SEGMENT MUST be between {word_count[0]} and {word_count[1]} words.
 - **Companion Contract**: REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Companion MUST appear by name.
-- **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.
+- **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.{ending_instruction}
 - **Safety**: No violence/harm. Therapeutic tone.
 
 **JSON Output**:
@@ -410,7 +474,7 @@ You are continuing a Pick-A-Path adventure for {child_name} (age {age}).
   "segment_number": {next_segment_number},
   "stage_label": "Next Step",
   "content": "Story content ({word_count[0]}-{word_count[1]} words)",
-  "word_count": {word_count[0] + 50},
+  "word_count": {word_count[0] + 20},
   "image_description": "Scene description",
   "companion_beats": [{{"type": "dialogue|action|bond", "text": "..."}}],
   "inventory": {json.dumps(inventory)},

@@ -25,11 +25,13 @@ import 'wizard_steps/magic_review_step.dart';
 class WizardStoryScreen extends StatefulWidget {
   final Character? initialCharacter;
   final List<Character> availableCharacters;
+  final int initialStep; // NEW: Allow starting at specific step
 
   const WizardStoryScreen({
     super.key,
     this.initialCharacter,
     this.availableCharacters = const [],
+    this.initialStep = 0,
   });
 
   @override
@@ -37,7 +39,7 @@ class WizardStoryScreen extends StatefulWidget {
 }
 
 class _WizardStoryScreenState extends State<WizardStoryScreen> {
-  final PageController _pageController = PageController();
+  late final PageController _pageController; // Late init
   int _currentStep = 0;
 
   // Wizard data collected across steps
@@ -50,6 +52,9 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
   @override
   void initState() {
     super.initState();
+    _currentStep = widget.initialStep; // Set initial step
+    _pageController = PageController(initialPage: widget.initialStep);
+    
     _wizardData = WizardData();
     if (widget.initialCharacter != null) {
       _initializeFromCharacter(widget.initialCharacter!);

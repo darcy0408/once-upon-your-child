@@ -25,28 +25,27 @@ AGE_CONSTRAINTS = {
     },
     '8-10': {
         'regular': {'short': (900, 1200), 'medium': (1200, 1800), 'long': (1800, 2400)},
-        'rhyme': {'short': (650, 900), 'medium': (900, 1400), 'long': (1400, 1800)},
-        'ltr': {'short': 10, 'medium': 12, 'long': 14},
+        'rhyme': {'short': (200, 300), 'medium': (300, 400), 'long': (400, 500)},
         'notes': 'Richer detail, humor, clear cause-effect, stronger plot arcs.'
     },
     '11-13': {
         'regular': {'short': (1300, 1700), 'medium': (1800, 2600), 'long': (2600, 3400)},
-        'rhyme': {'short': (900, 1300), 'medium': (1400, 2200), 'long': (2200, 2800)},
+        'rhyme': {'short': (200, 300), 'medium': (300, 400), 'long': (400, 500)},
         'notes': 'More nuanced emotions, deeper motivation, still clean and age-appropriate.'
     },
     '13-15': {
         'regular': {'short': (1600, 2200), 'medium': (2400, 3400), 'long': (3400, 4500)},
-        'rhyme': {'short': (1100, 1600), 'medium': (1700, 2600), 'long': (2600, 3400)},
+        'rhyme': {'short': (200, 300), 'medium': (300, 400), 'long': (400, 500)},
         'notes': 'Identity/friendship themes, respectful humor, no babyish tone.'
     },
     '15-18': {
         'regular': {'short': (2000, 2800), 'medium': (3000, 4200), 'long': (4200, 6000)},
-        'rhyme': {'short': (1400, 2200), 'medium': (2300, 3400), 'long': (3400, 4800)},
+        'rhyme': {'short': (200, 300), 'medium': (300, 400), 'long': (400, 500)},
         'notes': 'Complex stakes and introspection; mature but clean.'
     },
     'adult': {
         'regular': {'short': (2000, 3000), 'medium': (3200, 5200), 'long': (5200, 7800)},
-        'rhyme': {'short': (1500, 2400), 'medium': (2500, 3800), 'long': (3800, 5500)},
+        'rhyme': {'short': (200, 300), 'medium': (300, 400), 'long': (400, 500)},
         'notes': 'Nuanced themes (stress, meaning, relationships) with therapeutic tone.'
     }
 }

@@ -233,8 +233,8 @@ Style: {style}, optimized for {age_descriptor}
             line_thickness = "medium-thick lines"
             age_descriptor = "children (ages 6-11)"
         elif age <= 17:
-            intricacy = "intricate patterns with fine details, sophisticated designs for focused coloring"
-            line_thickness = "varied line weights with detail work"
+            intricacy = "highly detailed Zentangle-inspired patterns or intricate manga-style art, sophisticated designs for focused coloring"
+            line_thickness = "varied line weights with fine detail work"
             age_descriptor = "teenagers (ages 12-17)"
         else:
             intricacy = "complex, intricate patterns with fine details, meditative and sophisticated designs"

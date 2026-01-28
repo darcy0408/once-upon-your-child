@@ -142,6 +142,7 @@ class _CharacterLibraryScreenState extends State<CharacterLibraryScreen> {
         builder: (context) => WizardStoryScreen(
           initialCharacter: character,
           availableCharacters: _characters,
+          initialStep: 1, // Skip creation, start at Feeling Selection
         ),
       ),
     ).then((_) => _loadCharacters());
