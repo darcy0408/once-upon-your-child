@@ -13,10 +13,11 @@ class StoryGenerationService:
             raise ValueError("GEMINI_API_KEY not set")
 
         genai.configure(api_key=api_key)
-        # Use configured model from env (defaults to gemini-2.0-flash-exp - FREE experimental model)
-        model_name = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash-exp')
+    # Use configured model from env (defaults to gemini-2.0-flash - FREE experimental model)
+    model_name = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
         logger.info(f"Initializing Gemini with model: {model_name}")
         self.model = genai.GenerativeModel(model_name)
+        self._model_name = model_name
 
     def generate_story(self, prompt: str) -> str:
         """Generate story from prompt with retry logic for rate limiting."""
@@ -53,6 +54,32 @@ class StoryGenerationService:
                     # Re-raise the exception to be handled by the caller's error handler
                     raise e
             except Exception as e:
+                error_text = str(e)
+                if "not found for API version" in error_text or "is not supported for generateContent" in error_text:
+                    fallback_model = "gemini-1.5-flash"
+                    if self._model_name != fallback_model:
+                        logger.warning(
+                            "Model %s unavailable; retrying with fallback %s.",
+                            self._model_name,
+                            fallback_model,
+                        )
+                        self.model = genai.GenerativeModel(fallback_model)
+                        self._model_name = fallback_model
+                        try:
+                            response = self.model.generate_content(prompt)
+                            if response and hasattr(response, 'text') and response.text:
+                                return response.text
+                            elif response and hasattr(response, 'candidates') and response.candidates:
+                                candidate = response.candidates[0]
+                                if hasattr(candidate, 'content') and candidate.content.parts:
+                                    return candidate.content.parts[0].text
+                        except Exception as retry_error:
+                            logger.error(
+                                "Fallback model %s also failed: %s",
+                                fallback_model,
+                                retry_error,
+                                exc_info=True,
+                            )
                 logger.error(f"Story generation failed with an unexpected error: {e}", exc_info=True)
                 # For other exceptions, fail immediately without retrying
                 return "Sorry, there was an unexpected error generating your story. Please try again."

@@ -235,6 +235,8 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     age=age,
                     character_details=char_details,
                     companion=companion,
+                    companion_pets=companion_pets,
+                    companion_characters=companion_characters,
                     extra_characters=char_details.get("additionalCharacters"),
                     story_length=story_length,
                     custom_elements=custom_elements,

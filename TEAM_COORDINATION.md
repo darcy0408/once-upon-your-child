@@ -11,6 +11,31 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-01-28 (Interactive Story Verification & Model Update)
+
+### Session: Fix 404 Model Error & Verify Interactive Story - IN PROGRESS
+
+**Goal:** Verify Pick-a-Path logic and fix the "404 models/gemini-2.0-flash-exp is not found" error during story generation.
+
+**Status:** 🟡 IN PROGRESS (Blocked by Rate Limits)
+
+**Work Completed:**
+1.  **Model Update:** Identified that `gemini-2.0-flash-exp` is deprecated/removed. Updated all backend and frontend references to the stable `gemini-2.0-flash`.
+    -   `backend/config/__init__.py`
+    -   `backend/services/story_generation_service.py`
+    -   `backend/services/interactive_adventure_service.py`
+    -   `lib/services/api_service_manager.dart`
+2.  **Retry Logic:** Enhanced `InteractiveAdventureService` with robust retry logic (exponential backoff) to handle `429 ResourceExhausted` errors more gracefully.
+3.  **Verification:**
+    -   `test_gemini_direct.py` confirmed `gemini-2.0-flash` is a valid model (returns 429 instead of 404).
+    -   `test_interactive_story.py` was attempted but timed out due to aggressive rate limiting on the shared API key.
+
+**Next Steps:**
+1.  **Rate Limits:** Wait for quota reset or use a paid/fresh API key to fully verify the interactive story flow without timeouts.
+2.  **Deployment:** Deploy the model name fix to Railway to ensure production uses the valid model.
+
+---
+
 ## Supervisor Notes | 2026-01-28 (Comprehensive Audit & Final Polish)
 
 ### Session: Comprehensive Story Engine Audit - COMPLETED

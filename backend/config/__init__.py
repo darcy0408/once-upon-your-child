@@ -19,8 +19,8 @@ else:
     # SECURITY: Don't log API keys, even partially masked
     print(f"GEMINI_API_KEY present: {bool(os.environ.get('GEMINI_API_KEY'))}")
 
-# FORCE gemini-2.0-flash-exp to fix persistent reversion issue
-os.environ['GEMINI_MODEL'] = 'gemini-2.0-flash-exp'
+# FORCE gemini-2.0-flash to fix persistent reversion issue
+os.environ['GEMINI_MODEL'] = 'gemini-2.0-flash'
 print(f"FORCED GEMINI_MODEL = {os.environ.get('GEMINI_MODEL')}")
 
 def _get_required_secret(key_name, allow_dev_fallback=True):

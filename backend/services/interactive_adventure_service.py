@@ -41,7 +41,7 @@ class InteractiveAdventureService:
         genai.configure(api_key=self.api_key)
 
         # Use Gemini model with JSON mode support
-        model_name = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash-exp')
+        model_name = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
         logger.info(f"Initializing Interactive Adventure Service with model: {model_name}")
         self.model = genai.GenerativeModel(
             model_name,
@@ -393,7 +393,7 @@ class InteractiveAdventureService:
 
     def _generate_segment_with_retry(self, prompt: str, max_retries: int = 3) -> Dict[str, Any]:
         """Generate segment with retry logic and JSON parsing"""
-        base_delay = 1
+        base_delay = 2
 
         for attempt in range(max_retries):
             try:
@@ -425,16 +425,23 @@ class InteractiveAdventureService:
                     continue
 
             except google_exceptions.ResourceExhausted as e:
+                logger.warning(f"Rate limit exceeded (attempt {attempt + 1}). Retrying...")
                 if attempt < max_retries - 1:
                     import time
                     delay = base_delay * (2 ** attempt)
-                    logger.warning(f"Rate limit exceeded. Retrying in {delay}s...")
+                    logger.warning(f"Retrying in {delay}s...")
                     time.sleep(delay)
+                    continue
                 else:
+                    logger.error("Max retries exceeded for rate limit.")
                     raise e
 
             except Exception as e:
                 logger.error(f"Segment generation failed: {e}", exc_info=True)
+                if attempt < max_retries - 1:
+                    import time
+                    time.sleep(base_delay * (2 ** attempt))
+                    continue
                 raise
 
         raise RuntimeError("Failed to generate segment after multiple retries")
