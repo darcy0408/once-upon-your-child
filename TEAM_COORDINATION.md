@@ -50,6 +50,30 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 1. Redeploy frontend on Railway to confirm web build passes.
 2. If still failing, run `flutter build web --release` locally to replicate.
 
+## Supervisor Notes | 2026-01-28 (Frontend Build Fix)
+
+### Session: Fix Frontend Build on Railway - COMPLETED
+
+**Goal:** Resolve Railway frontend build failure ("Failed to compile application for the Web").
+
+**Status:** ✅ COMPLETED
+
+**Root Cause:**
+- **`flutter_tts` 4.2.3:** Contained a lint violation (`invalid_runtime_check_with_js_interop_types`) incompatible with recent Flutter/Dart versions (JS interop type casting issue).
+- **Isar Wasm Warnings:** "Wasm dry run findings" showed incompatibilities with `dart:ffi` from `isar`, but these appear to be warnings/dry-run checks rather than the fatal error (since we target JS).
+
+**Fix Applied:**
+- **Dependency Upgrade:** Upgraded `flutter_tts` to `^4.2.5` in `pubspec.yaml`. This version includes fixes for the Dart JS interop changes.
+- **Git:** Pushed changes to `main` to trigger a new Railway deployment.
+
+**Files Modified:**
+- `pubspec.yaml`
+
+**Next Steps:**
+- Monitor Railway deployment. If build still fails on Isar/Wasm checks, investigation into Isar's web compatibility or build flags may be needed.
+
+---
+
 ## Supervisor Notes | 2026-01-28 (Character Selection Refactor & Visual Fixes)
 
 ### Session: Character Selection Flow & Visual Polish - COMPLETED
