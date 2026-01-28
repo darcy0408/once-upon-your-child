@@ -1,5 +1,33 @@
 # Story Weaver App - Gemini AI Context
 
+## 🚀 Session Handoff - January 27, 2026
+
+### Summary
+Executed a comprehensive **Multi-Age Developmental Logic Audit** which identified a critical flaw in the Interactive Adventure (Pick-a-Path) prompt logic. The system was incorrectly applying *total story* word count constraints to *individual segments*, leading to massive, novel-length generated segments for older users.
+
+### ✅ Key Achievements
+1.  **Fixed Interactive Story Logic:**
+    *   Updated `InteractiveAdventurePromptBuilder` in `backend/services/interactive_adventure_prompt_builder.py`.
+    *   Introduced `PATH_DEPTHS` table to estimate path length (4-14 segments) based on age.
+    *   Implemented `_calculate_per_segment_word_count` to divide total word count by path depth, ensuring readable segment lengths (e.g., 300-400 words for teens instead of 3000+).
+    *   Added dynamic `sensory_palette` defaults to prevent "babyish" descriptions for older users.
+2.  **Verified Audit Pass:**
+    *   Ran `audit_generator.py` (since deleted) to verify prompt generation across all 7 age bands.
+    *   Confirmed Age 5 prompts remain simple and Age 17 prompts are now appropriately sized and tonally mature.
+3.  **Maintenance:**
+    *   Performed git maintenance and pushed fixes to `main`.
+    *   Updated asset configuration in `pubspec.yaml` (added `assets/images/themes/`).
+
+### 🧪 Testing Status
+- **Audit:** Passed for all age groups (Logic Check).
+- **Manual Verification:** "Deep Dive" prints confirmed prompt text structure is correct.
+
+### 📋 Next Steps
+1.  **User Acceptance:** Verify the live app's interactive story output.
+2.  **Monitor Costs:** Ensure the new shorter segments don't cause context fragmentation or excessive API calls due to increased turn-taking.
+
+---
+
 ## 🚀 Session Handoff - January 7, 2026
 
 ### Summary
