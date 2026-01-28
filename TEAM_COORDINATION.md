@@ -11,6 +11,36 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-01-28 (Custom Story Elements Enforcement)
+
+### Session: Ensure User Ideas Are Enforced - COMPLETED (Verification Pending)
+
+**Goal:** Ensure user-submitted story ideas (e.g., "talking tree") are enforced in generated stories.
+
+**Status:** ✅ IMPLEMENTED | 🟡 LIVE VERIFICATION PENDING (OpenRouter key not available locally)
+
+**Work Completed:**
+1.  **Prompt Coverage:** Added custom request injection to Rhyme Time and Learn-to-Read prompts.
+2.  **Deterministic Enforcement:** Added parsing/normalization of `customElements`, validation for missing phrases, and retry instructions on failure.
+3.  **Tests:** Added unit tests for parsing and matching in `backend/tests/test_custom_elements.py` (4 tests passing).
+
+**Verification:**
+- Local unit tests passed: `python -m pytest backend/tests/test_custom_elements.py -q`
+- Live story generation checks for standard/rhyme/LTR pending OpenRouter environment access.
+
+**Files Modified:**
+- `backend/tasks/story_tasks.py`
+- `backend/services/story_service.py`
+
+**Files Added:**
+- `backend/tests/test_custom_elements.py`
+
+**Next Steps:**
+1.  Run OpenRouter-based story generation in all modes to confirm phrase enforcement.
+2.  Monitor for missing-phrase retries in logs and adjust parsing if needed.
+
+---
+
 ## Supervisor Notes | 2026-01-28 (Story Engine Safety & Depth Audit)
 
 ### Session: Prompt Logic Safety & Calibration Audit - COMPLETED
@@ -34,6 +64,37 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 **Next Steps:**
 - Apply "Teen Depth" polish to `InteractiveAdventurePromptBuilder` for Age 15-18.
 - Final production deployment.
+
+---
+
+## Supervisor Notes | 2026-01-28 (Story Personalization Test Suite)
+
+### Session: Comprehensive Personalization Testing - IN PROGRESS
+
+**Goal:** Build and run a comprehensive suite covering story modes, ages, lengths, companions/pets, and custom elements; flag personalization gaps.
+
+**Work Completed:**
+1. Added a new harness: `backend/tests/story_personalization_suite.py`.
+2. Added prompt-level checks for required custom elements, hero/companion names, and action-scene instruction.
+3. Generated prompt-only report (no live model calls).
+4. Fixed indentation error blocking Gemini generation in `backend/services/story_generation_service.py`.
+
+**Files Modified/Created:**
+- `backend/tests/story_personalization_suite.py` - New test harness
+- `backend/services/story_service.py` - Expanded LTR/Rhyme prompts to include companions and action-scene instruction
+- `backend/tasks/story_tasks.py` - Pass companions into LTR prompt
+- `backend/services/story_generation_service.py` - Fixed indentation error
+
+**Testing Status:**
+- ✅ Prompt-only suite ran and wrote reports to `reports/story_personalization_report_20260128_174927.*`
+- ❌ Live Gemini suite blocked: `403 Your API key was reported as leaked. Please use another API key.`
+
+**Issues/Notes:**
+- Gemini API key flagged as leaked; live personalization tests cannot proceed until a new key is set.
+
+**Next Steps:**
+1. Rotate Gemini key and rerun live suite: `python backend/tests/story_personalization_suite.py --live`.
+2. Review live report for missing custom elements or personalization gaps and fix iteratively.
 
 ---
 

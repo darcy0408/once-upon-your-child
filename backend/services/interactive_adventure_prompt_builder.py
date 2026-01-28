@@ -187,6 +187,12 @@ SAFETY RULES:
 - SAFETY: Ensure no scary imagery or abandonment themes for children.
 """
 
+    TEEN_TONE_INSTRUCTION = """
+- **TONE (Teen)**: Avoid 'babyish' or condescending language. Use sophisticated, nuanced vocabulary. 
+- **THEMES**: Focus on identity, autonomy, moral complexity, and the internal journey. 
+- **ENGAGEMENT**: Choices should reflect social or internal dilemmas, not just physical actions.
+"""
+
     @classmethod
     def get_age_band(cls, age: int) -> str:
         """Determine age band from specific age based on new categories"""
@@ -365,6 +371,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 - **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.
 - **Safety**: No violence/harm. Therapeutic tone.
 {cls.SAFETY_GUARDRAILS}
+{cls.TEEN_TONE_INSTRUCTION if age >= 15 else ""}
 
 **Opening Segment 1/{path_depth}**:
 1. Begin with sensory details - natural storybook opening.
@@ -492,6 +499,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 - **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.{ending_instruction}
 - **Safety**: No violence/harm. Therapeutic tone.
 {cls.SAFETY_GUARDRAILS}
+{cls.TEEN_TONE_INSTRUCTION if age >= 15 else ""}
 
 **JSON Output**:
 ```json
