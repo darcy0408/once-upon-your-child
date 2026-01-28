@@ -113,6 +113,7 @@ class _CharacterPreviewState extends State<CharacterPreview>
             height: previewSize,
             child: Stack(
               alignment: Alignment.center,
+              clipBehavior: Clip.none,
               children: [
                 // Rotating sparkles circle (if enabled)
                 if (widget.showSparkles)
@@ -182,25 +183,35 @@ class _CharacterPreviewState extends State<CharacterPreview>
   }
 
   Widget _buildCharacter(double size) {
+    // Character should be slightly smaller than the dotted circle (which is 'size')
+    final characterSize = size * 0.90;
+
     // Priority: Generated Avatar > Network Image > Emoji Placeholder
     if (widget.generatedAvatar != null) {
       // AI-generated avatar
-      return _buildGeneratedAvatar(size);
+      return _buildGeneratedAvatar(characterSize);
     } else if (widget.characterImageUrl != null) {
       // Network image (future use)
-      return ClipOval(
-        child: Image.network(
-          widget.characterImageUrl!,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return _buildPlaceholder(size);
-          },
+      return Container(
+        width: characterSize,
+        height: characterSize,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+        ),
+        child: ClipOval(
+          child: Image.network(
+            widget.characterImageUrl!,
+            width: characterSize,
+            height: characterSize,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildPlaceholder(characterSize);
+            },
+          ),
         ),
       );
     } else {
-      return _buildPlaceholder(size);
+      return _buildPlaceholder(characterSize);
     }
   }
 
@@ -228,25 +239,29 @@ class _CharacterPreviewState extends State<CharacterPreview>
           child: isUrl
               ? Image.network(
                   imageData,
+                  width: size,
+                  height: size,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     debugPrint('Error loading avatar from URL: $error');
-                    return _buildPlaceholder(size);
+                    return _buildEmojiPlaceholder(size);
                   },
                 )
               : Image.memory(
                   base64Decode(imageData.split(',').last),
+                  width: size,
+                  height: size,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     debugPrint('Error displaying generated avatar: $error');
-                    return _buildPlaceholder(size);
+                    return _buildEmojiPlaceholder(size);
                   },
                 ),
         ),
       );
     } catch (e) {
       debugPrint('Error decoding generated avatar: $e');
-      return _buildPlaceholder(size);
+      return _buildEmojiPlaceholder(size);
     }
   }
 
@@ -267,6 +282,8 @@ class _CharacterPreviewState extends State<CharacterPreview>
       child: ClipOval(
         child: Image.asset(
           'assets/images/character_placeholder.png',
+          width: size,
+          height: size,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return _buildEmojiPlaceholder(size);
@@ -327,9 +344,11 @@ class _DottedCirclePainter extends CustomPainter {
     final paint = Paint()
       ..color = color
       ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
 
-    final radius = size.width / 2;
+    // Reduce radius by half stroke width to stay within bounds
+    final radius = (size.width - strokeWidth) / 2;
     final center = Offset(size.width / 2, size.height / 2);
     final circumference = 2 * math.pi * radius;
     final dashCount = (circumference / (dashLength + dashGap)).floor();
