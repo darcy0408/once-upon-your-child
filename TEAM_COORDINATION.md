@@ -88,6 +88,35 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-01-27 (Image Generation Gaps Follow-up)
+
+### Issue: Image Generation Gaps (Illustrations/Coloring/Avatars) - IN PROGRESS
+
+**Status:** 🟡 PARTIAL VERIFIED (Mock endpoints only)
+
+**Work Completed:**
+1.  **OpenRouter Response Parsing:** Added robust image payload extraction that supports `content` strings, `content` arrays, `images` arrays, and data-URI/base64 formats.
+2.  **Base64 Normalization:** Normalized avatar payloads (strip data-URI prefix + whitespace) before decode to prevent 500s in `/avatar/generate-avatar`.
+3.  **Endpoint Hardening:** `/generate-illustrations` and `/generate-coloring-pages` now normalize `image_data` from data URIs, raw base64, or URLs and skip incomplete entries rather than returning missing `image_data`.
+4.  **Guardrails:** Added URL download + size checks for avatar normalization to prevent malformed payloads from crashing.
+
+**Files Modified:**
+- `backend/openrouter_image_generator.py` - Unified extraction + base64 normalization + URL download safeguards.
+- `backend/routes/story_routes.py` - Normalize/validate `image_data`; skip incomplete entries.
+- `backend/services/avatar_generation_service.py` - Strip data URI + whitespace before base64 decode.
+
+**Verification:**
+- ✅ `/generate-illustrations-mock` returns image_data
+- ✅ `/generate-coloring-pages-mock` returns image_data
+- ✅ `/avatar/generate-avatar-mock` returns image_base64
+- ⚠️ Real endpoints not verified yet (non-mock call timed out at 5s; likely needs longer timeout and live API access)
+
+**Next Steps:**
+1.  Run real endpoint tests with 60–90s timeout against live Gemini/OpenRouter.
+2.  If real endpoints still return 0 images, inspect OpenRouter response shape and add provider-specific parsing.
+
+---
+
 ## Supervisor Notes | 2026-01-27 (Image Generation Reliability Fix)
 
 ### Issue: Illustration/Avatar Generation Failures - FIXED
