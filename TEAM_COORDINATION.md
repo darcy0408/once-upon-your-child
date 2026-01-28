@@ -11,6 +11,45 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-01-28 (Custom Story Elements Enforcement & Frontend Build Fix)
+
+### Session: Custom Story Elements Enforcement - COMPLETED
+
+**Goal:** Ensure user-submitted custom story ideas are included in generated stories across all modes, with deterministic enforcement.
+
+**Status:** ✅ COMPLETED
+
+**Work Completed:**
+1. Added deterministic parsing + enforcement of custom elements in `backend/tasks/story_tasks.py`.
+2. Added retry validation to ensure each required phrase appears at least once in the story text.
+3. Included custom element requirements in Rhyme Time and Learning-to-Read prompts.
+4. Added unit tests for parsing/matching logic.
+
+**Files Modified:**
+- `backend/tasks/story_tasks.py` - Parse/validate custom elements + retry on missing phrases
+- `backend/services/story_service.py` - Include custom elements in LTR/Rhyme prompts
+- `backend/tests/test_custom_elements.py` - New unit tests
+
+**Testing Status:**
+- ✅ `python -m pytest backend/tests/test_custom_elements.py -q` (4 passed)
+
+**Notes:**
+- Live model validation still pending (OpenRouter suggested due to Gemini quota limits).
+
+### Session: Frontend Build Fix (Railway) - IN PROGRESS
+
+**Issue:** Railway web build failed with `Not a constant expression` at `lib/main_story.dart` (CharacterLibraryScreen const constructor usage).
+
+**Fix Applied:**
+- Added missing import and removed `const` from `CharacterLibraryScreen` usage in `lib/main_story.dart`.
+
+**Files Modified:**
+- `lib/main_story.dart`
+
+**Next Steps:**
+1. Redeploy frontend on Railway to confirm web build passes.
+2. If still failing, run `flutter build web --release` locally to replicate.
+
 ## Supervisor Notes | 2026-01-27 (Therapeutic Features & Guardian Mode)
 
 ## Supervisor Notes | 2026-01-28 (Character Placeholder Image Update)

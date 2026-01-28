@@ -32,6 +32,7 @@ import 'offline_stories_screen.dart';
 import 'paywall_dialog.dart';
 import 'pre_story_feelings_dialog.dart';
 import 'premium_upgrade_screen.dart';
+import 'screens/character_library_screen.dart';
 import 'screens/subscription_success_screen.dart';
 import 'services/achievement_service.dart';
 import 'services/api_service_manager.dart';
@@ -1013,7 +1014,7 @@ class _StoryScreenState extends State<StoryScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const CharacterLibraryScreen(),
+                              builder: (context) => CharacterLibraryScreen(),
                               ),
                             ).then((_) => _loadCharacters());
                           },
