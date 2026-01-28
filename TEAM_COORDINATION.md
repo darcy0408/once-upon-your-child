@@ -50,6 +50,57 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 1. Redeploy frontend on Railway to confirm web build passes.
 2. If still failing, run `flutter build web --release` locally to replicate.
 
+## Supervisor Notes | 2026-01-28 (Character Selection Refactor & Visual Fixes)
+
+### Session: Character Selection Flow & Visual Polish - COMPLETED
+
+**Goal:** Refactor the main character selection UI to be more intuitive and fix visual bugs in the character preview.
+
+**Status:** ✅ COMPLETED
+
+**Work Completed:**
+1.  **Main Screen Refactor:**
+    -   Replaced the confusing "Choose Main Character" list with two clear options:
+        -   **"Create a New Hero"**: Large card with new visual asset (`create_character_card.jpg`). Launches Wizard at Step 0.
+        -   **"Pick an Existing Hero"**: Smaller card below. Launches `CharacterLibraryScreen`.
+    -   Updated `CharacterLibraryScreen` to launch Wizard at Step 1 (Feelings) when a character is selected, skipping redundant creation steps.
+    -   Added support for `initialStep` in `WizardStoryScreen`.
+
+2.  **Visual Fixes:**
+    -   **Character Preview:** Fixed the "weird yellow dashed line" issue where the avatar image was too small (80% scale) relative to the frame. Increased scale to 92% to fill the frame properly.
+    -   **Assets:** Added `assets/images/create_character_card.jpg`.
+
+**Files Modified:**
+-   `lib/main_story.dart`
+-   `lib/screens/wizard_story_screen.dart`
+-   `lib/screens/character_library_screen.dart`
+-   `lib/widgets/character_preview.dart`
+
+### Session: Narrative Logic Graduation (High Value for UX) - COMPLETED
+
+**Goal:** Address the "Babyish" content problem for older kids and cap Rhyme Time length.
+
+**Status:** ✅ COMPLETED
+
+**Work Completed:**
+1.  **Graduated "Learn to Read" Vocabulary:**
+    -   **Ages 3-5:** CVC words, simple sight words, 1 short sentence/page.
+    -   **Ages 6-7:** Basic blends (st, fl), digraphs (ch, sh), 1-2 sentences/page.
+    -   **Ages 8+:** Early chapter book level, fluent sentences, 2-3 sentences/page.
+2.  **Rhyme Time Quality:**
+    -   Capped max word count at **600-800 words** for all ages (previously 2000+ for teens) to prevent AI quality degradation ("Epic Poem failure").
+3.  **Verification:**
+    -   Ran `run_audit.py` to verify prompt generation logic matches new constraints.
+
+**Files Modified:**
+-   `backend/services/story_service.py`
+
+**Next Steps:**
+1.  **Live Image Generation Test:** Verify real endpoints (not just mocks) with increased timeouts.
+2.  **Feelings Wheel Assets:** Add missing face icons (annoyed, distant, etc.).
+
+---
+
 ## Supervisor Notes | 2026-01-27 (Therapeutic Features & Guardian Mode)
 
 ## Supervisor Notes | 2026-01-28 (Character Placeholder Image Update)
