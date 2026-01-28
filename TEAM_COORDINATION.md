@@ -41,6 +41,37 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-01-28 (UI Polish & Asset Reliability)
+
+### Session: Asset Recovery and Preview Refinement - COMPLETED
+
+**Goal:** Resolve missing asset errors, restore scenario imagery, and polish the character preview UI.
+
+**Status:** ✅ COMPLETED
+
+**Work Completed:**
+1.  **Asset 404 Resolution:** Resolved widespread 404 errors for scenario, theme, and feeling assets.
+    -   Restored `cloud_castle.png` and `sleeping_dragon.png` from local backups.
+    -   Generated temporary placeholders for missing scenarios to ensure app stability.
+2.  **Configuration Updates:**
+    -   Updated `pubspec.yaml` to explicitly include `assets/images/scenarios/` and `assets/images/themes/`.
+    -   Updated `.gitignore` to stop ignoring these critical asset directories.
+3.  **Character Preview Refinement:**
+    -   **Scale:** Increased character image scale to 100% (removed 0.92 factor) to fill the circular frame completely.
+    -   **Layering:** Reordered `Stack` in `CharacterPreview` so the `_buildDottedCircle` (dashed gold border) is drawn *after* the character, ensuring it acts as a decorative frame on top.
+    -   **Placeholder:** Updated the default character placeholder image to `theNewPlaceholderImage.jpg`.
+
+**Files Modified:**
+- `pubspec.yaml`
+- `.gitignore`
+- `lib/widgets/character_preview.dart`
+- `assets/images/character_placeholder.png` (replaced)
+
+**Next Steps:**
+- Manually replace the remaining 8 placeholder images in `assets/images/scenarios/` with the original artistic assets as they are recovered.
+
+---
+
 ## Supervisor Notes | 2026-01-28 (Story Engine Safety & Depth Audit)
 
 ### Session: Prompt Logic Safety & Calibration Audit - COMPLETED
