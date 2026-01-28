@@ -178,6 +178,15 @@ class InteractiveAdventurePromptBuilder:
         }
     }
 
+    SAFETY_GUARDRAILS = """
+SAFETY RULES:
+- No sexual content, no graphic violence, no self-harm, no illegal wrongdoing.
+- Handle sensitive emotions gently. Safe, therapeutic tone.
+- Do NOT invent characters or family members not provided.
+- Must Include: A Moment of Wonder (age-appropriate), a coping moment in action (resilience/perspective), and a satisfying earned ending.
+- SAFETY: Ensure no scary imagery or abandonment themes for children.
+"""
+
     @classmethod
     def get_age_band(cls, age: int) -> str:
         """Determine age band from specific age based on new categories"""
@@ -250,6 +259,9 @@ class InteractiveAdventurePromptBuilder:
         # Character details
         char_data = character or {}
         special_ability = char_data.get('special_ability', char_data.get('specialAbility', 'None specified'))
+        gender = char_data.get('gender', 'not specified')
+        pronouns = char_data.get('pronouns', '')
+        gender_text = f" (Gender: {gender}{', Pronouns: ' + pronouns if pronouns else ''})"
         
         # Mood Physics
         mood_rules = ""
@@ -326,7 +338,7 @@ class InteractiveAdventurePromptBuilder:
         prompt = f"""
 **PERSONA**: Expert Child Narrative Architect & Pick-A-Path Specialist.
 
-You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_name} (age {age}).
+You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_name}{gender_text} (age {age}).
 
 **STORY SPECS**:
 - **THEME**: {theme} | **TONE**: {tone}
@@ -352,6 +364,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 - **Companion Contract**: REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Companion MUST appear by name.
 - **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.
 - **Safety**: No violence/harm. Therapeutic tone.
+{cls.SAFETY_GUARDRAILS}
 
 **Opening Segment 1/{path_depth}**:
 1. Begin with sensory details - natural storybook opening.
@@ -415,6 +428,10 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
         path_depth = cls.PATH_DEPTHS[age_band].get(length, 10)
 
         child_name = character.get('name', 'Hero')
+        gender = character.get('gender', 'not specified')
+        pronouns = character.get('pronouns', '')
+        gender_text = f" (Gender: {gender}{', Pronouns: ' + pronouns if pronouns else ''})"
+
         companion_context = cls._build_companion_context(companions) if companions else "solo on this adventure"
         inventory = inventory or []
         story_state = story_state or {}
@@ -448,7 +465,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
         prompt = f"""
 **PERSONA**: Expert Child Narrative Architect & Pick-A-Path Specialist.
 
-You are continuing a Pick-A-Path adventure for {child_name} (age {age}).
+You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {age}).
 
 **STORY CONTEXT**:
 - **TITLE**: {story_context.get('title', 'Adventure Title')}
@@ -474,6 +491,7 @@ You are continuing a Pick-A-Path adventure for {child_name} (age {age}).
 - **Companion Contract**: REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Companion MUST appear by name.
 - **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.{ending_instruction}
 - **Safety**: No violence/harm. Therapeutic tone.
+{cls.SAFETY_GUARDRAILS}
 
 **JSON Output**:
 ```json

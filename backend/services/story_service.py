@@ -64,7 +64,7 @@ def _get_age_band(age: int) -> str:
     if age <= 7: return '5-7'
     if age <= 10: return '8-10'
     if age <= 13: return '11-13'
-    if age <= 15: return '13-15'
+    if age < 15: return '13-15'
     if age <= 18: return '15-18'
     return 'adult'
 
@@ -98,6 +98,14 @@ class AdvancedStoryEngine:
         length_key = 'medium' if story_length == 'standard' else story_length
         word_range = config['regular'][length_key]
         
+        # Build character context (Gender/Strengths)
+        char_details = character_details or {}
+        special_ability = char_details.get('specialAbility', 'None specified')
+        strengths = ", ".join(char_details.get('strengths', []))
+        gender = char_details.get('gender', 'not specified')
+        pronouns = char_details.get('pronouns', '')
+        gender_text = f" (Gender: {gender}{', Pronouns: ' + pronouns if pronouns else ''})"
+
         # Build companion context
         companion_context = []
         if companion_pets: 
@@ -115,11 +123,6 @@ class AdvancedStoryEngine:
         
         comp_str = ", ".join(companion_context) if companion_context else "None"
 
-        # Character strengths and ability
-        char_details = character_details or {}
-        special_ability = char_details.get('specialAbility', 'None specified')
-        strengths = ", ".join(char_details.get('strengths', []))
-        
         # Mood Physics & Sensory
         mood_rules = ""
         if mood_physics:
@@ -153,13 +156,17 @@ class AdvancedStoryEngine:
 
         # Therapeutic Tone Adjustment for Teens
         coping_instruction = "a gentle magical surprise, a coping moment in action (breathing/naming feelings)"
+        safety_reinforcement = ""
+        if age <= 7:
+            safety_reinforcement = "\n- SAFETY: This is for a young child. Ensure NO scary imagery, NO monsters, NO abandonment."
+        
         if age >= 14:
-            coping_instruction = "a clever plot twist, a moment of resilience or perspective-shifting (internal monologue)"
+            coping_instruction = "a clever plot twist, a moment of wonder, a moment of resilience or perspective-shifting (internal monologue)"
 
         return f"""
 **PERSONA**: Expert Child Narrative Architect & Therapeutic Narrative Specialist.
 
-You are a MASTER STORYTELLER creating a {story_length} adventure for {character} (age {age}).
+You are a MASTER STORYTELLER creating a {story_length} adventure for {character}{gender_text} (age {age}).
 
 **STORY SPECS**:
 - **THEME**: {theme}
@@ -177,7 +184,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 **WRITING GUIDELINES**:
 - **Tone**: {config['notes']}
 - **Word Count**: Approximately {word_range[0]}-{word_range[1]} words total.
-- **Safety**: {SAFETY_GUARDRAILS.strip()}
+- **Safety**: {SAFETY_GUARDRAILS.strip()}{safety_reinforcement}
 - **Mandatory Elements**: Must include {coping_instruction}, and a satisfying earned ending.
 
 **OUTPUT FORMAT**:
@@ -330,6 +337,13 @@ def _build_rhyme_time_prompt(character_name, theme, age, character_details, comp
     length_key = 'medium' if story_length == 'standard' else story_length
     word_range = config['rhyme'][length_key]
 
+    # Age-appropriate instructions
+    age_instruction = ""
+    if age <= 5:
+        age_instruction = "Use simple, magical vocabulary. Focus on wonder and sensory delight."
+    elif age >= 13:
+        age_instruction = "Avoid 'babyish' or condescending tones. Use sophisticated rhymes that explore identity, resilience, or complex friendships."
+
     companion_context = []
     if companion_pets:
         for p in companion_pets:
@@ -366,6 +380,7 @@ def _build_rhyme_time_prompt(character_name, theme, age, character_details, comp
     return f"""
 Create a RHYME TIME story for {character_name} (age {age}).
 Theme: {theme}
+Tone: {age_instruction or 'Uplifting and fun'}
 Word Count: {word_range[0]}-{word_range[1]} words.
 Scheme: Consistent AABB or ABCB.
 Requirements: Include a magical surprise and a coping moment. {character_name} is the hero.
