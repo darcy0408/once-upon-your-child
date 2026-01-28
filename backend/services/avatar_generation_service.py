@@ -4,6 +4,7 @@ Avatar Generation Service - Generates safe, magical child avatars using Gemini 2
 import uuid
 import base64
 import logging
+import os
 import re
 from datetime import datetime
 from typing import Dict, Optional, List
@@ -27,8 +28,10 @@ class AvatarGenerationService:
         self.image_generator = image_generator
         self.fallback_generator = fallback_generator
 
+        disable_gemini = os.getenv("DISABLE_GEMINI_IMAGE", "").strip().lower() in ("1", "true", "yes")
+
         # If no primary generator provided, try to import and create Gemini
-        if self.image_generator is None:
+        if self.image_generator is None and not disable_gemini:
             try:
                 # Try backend-prefixed import first (for Flask app context)
                 from backend.gemini_image_generator import GeminiImageGenerator
@@ -46,6 +49,8 @@ class AvatarGenerationService:
             except Exception as e:
                 logger.error(f"Failed to initialize GeminiImageGenerator: {e}")
                 self.image_generator = None
+        elif self.image_generator is None and disable_gemini:
+            logger.info("Gemini image generation disabled via DISABLE_GEMINI_IMAGE=1")
 
         # If no fallback generator provided, try to import and create OpenRouter
         if self.fallback_generator is None:

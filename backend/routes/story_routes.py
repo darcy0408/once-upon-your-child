@@ -1,5 +1,6 @@
 import base64
 import io
+import os
 import re
 import requests
 from flask import Blueprint, jsonify, request
@@ -47,6 +48,7 @@ def create_story_blueprint(
     logger,
 ):
     story_bp = Blueprint("story", __name__)
+    disable_gemini_image = os.getenv("DISABLE_GEMINI_IMAGE", "").strip().lower() in ("1", "true", "yes")
 
     @story_bp.route("/get-story-themes", methods=["GET"])
     @cache.cached(timeout=3600)  # Cache for 1 hour
@@ -567,9 +569,11 @@ def create_story_blueprint(
             generator = None
             using_user_key = False
 
-            if user_api_key:
+            if user_api_key and not disable_gemini_image:
                 generator = GeminiImageGenerator(api_key=user_api_key)
                 using_user_key = True
+            elif user_api_key and disable_gemini_image:
+                logger.info("DISABLE_GEMINI_IMAGE active; ignoring user_api_key for illustrations.")
             elif image_generator is not None:
                 generator = image_generator
             else:
@@ -770,7 +774,7 @@ def create_story_blueprint(
             companions = data.get("companions") or data.get("companion_pets") or []
 
             generator = None
-            if user_api_key:
+            if user_api_key and not disable_gemini_image:
                 try:
                     generator = GeminiImageGenerator(api_key=user_api_key)
                 except Exception as e:
@@ -779,6 +783,8 @@ def create_story_blueprint(
                         jsonify({"error": "Invalid or unavailable image API key", "hint": str(e)}),
                         400,
                     )
+            elif user_api_key and disable_gemini_image:
+                logger.info("DISABLE_GEMINI_IMAGE active; ignoring user_api_key for coloring pages.")
             elif image_generator is not None:
                 generator = image_generator
             else:

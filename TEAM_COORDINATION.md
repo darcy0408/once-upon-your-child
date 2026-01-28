@@ -184,6 +184,26 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-01-28 (Temporary Gemini Image Disable)
+
+### Issue: Gemini Image Quota Exhausted - WORKAROUND IN PLACE
+
+**Status:** 🟡 TEMPORARY (REVISIT TOMORROW)
+
+**Work Completed:**
+1.  **Feature Flag:** Added `DISABLE_GEMINI_IMAGE=1` support to skip Gemini image generation and force OpenRouter for images.
+2.  **Routes & Service:** Story illustration/coloring routes ignore `user_api_key` when Gemini is disabled; avatar service skips Gemini initialization when disabled.
+
+**Files Modified:**
+- `backend/routes/story_routes.py`
+- `backend/services/avatar_generation_service.py`
+
+**Reminder for Tomorrow (2026-01-29):**
+1.  Set `DISABLE_GEMINI_IMAGE` back to `0`/unset in `.env` if Gemini quota is restored.
+2.  Re-test `/generate-illustrations`, `/generate-coloring-pages`, `/avatar/generate-avatar` with Gemini enabled.
+
+---
+
 ## Supervisor Notes | 2026-01-27 (Image Generation Reliability Fix)
 
 ### Issue: Illustration/Avatar Generation Failures - FIXED

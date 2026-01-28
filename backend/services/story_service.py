@@ -10,42 +10,44 @@ from ..utils.validators import validate_age, validate_story_length
 logger = logging.getLogger(__name__)
 
 # Master constraint table from Story Weaver Coverage v2
+# Capped Rhyme Time at 600-800 max to maintain AI quality.
 AGE_CONSTRAINTS = {
     '3-4': {
         'regular': {'short': (200, 300), 'medium': (300, 450), 'long': (450, 650)},
-        'rhyme': {'short': (150, 250), 'medium': (200, 350), 'long': (350, 500)},
+        'rhyme': {'short': (150, 250), 'medium': (250, 350), 'long': (350, 450)},
         'ltr': {'short': 6, 'medium': 8, 'long': 10}, # pages
         'notes': 'Very simple words, short sentences, repetition, comforting rhythm.'
     },
     '5-7': {
         'regular': {'short': (450, 650), 'medium': (650, 900), 'long': (900, 1200)},
-        'rhyme': {'short': (350, 500), 'medium': (500, 700), 'long': (700, 950)},
+        'rhyme': {'short': (300, 450), 'medium': (450, 550), 'long': (550, 650)},
         'ltr': {'short': 8, 'medium': 10, 'long': 12},
         'notes': 'Simple vocabulary with occasional new words explained by context.'
     },
     '8-10': {
         'regular': {'short': (900, 1200), 'medium': (1200, 1800), 'long': (1800, 2400)},
-        'rhyme': {'short': (200, 300), 'medium': (300, 400), 'long': (400, 500)},
+        'rhyme': {'short': (400, 500), 'medium': (500, 650), 'long': (650, 800)},
+        'ltr': {'short': 10, 'medium': 12, 'long': 14},
         'notes': 'Richer detail, humor, clear cause-effect, stronger plot arcs.'
     },
     '11-13': {
         'regular': {'short': (1300, 1700), 'medium': (1800, 2600), 'long': (2600, 3400)},
-        'rhyme': {'short': (200, 300), 'medium': (300, 400), 'long': (400, 500)},
+        'rhyme': {'short': (450, 550), 'medium': (550, 700), 'long': (700, 800)},
         'notes': 'More nuanced emotions, deeper motivation, still clean and age-appropriate.'
     },
     '13-15': {
         'regular': {'short': (1600, 2200), 'medium': (2400, 3400), 'long': (3400, 4500)},
-        'rhyme': {'short': (200, 300), 'medium': (300, 400), 'long': (400, 500)},
+        'rhyme': {'short': (500, 600), 'medium': (600, 750), 'long': (750, 850)},
         'notes': 'Identity/friendship themes, respectful humor, no babyish tone.'
     },
     '15-18': {
         'regular': {'short': (2000, 2800), 'medium': (3000, 4200), 'long': (4200, 6000)},
-        'rhyme': {'short': (200, 300), 'medium': (300, 400), 'long': (400, 500)},
+        'rhyme': {'short': (500, 650), 'medium': (650, 800), 'long': (800, 900)},
         'notes': 'Complex stakes and introspection; mature but clean.'
     },
     'adult': {
         'regular': {'short': (2000, 3000), 'medium': (3200, 5200), 'long': (5200, 7800)},
-        'rhyme': {'short': (200, 300), 'medium': (300, 400), 'long': (400, 500)},
+        'rhyme': {'short': (500, 700), 'medium': (700, 850), 'long': (850, 1000)},
         'notes': 'Nuanced themes (stress, meaning, relationships) with therapeutic tone.'
     }
 }
@@ -223,7 +225,7 @@ def _safe_extract_title_and_gem(text: str, theme: str):
 
 
 def _build_learning_to_read_prompt(character_name, theme, age, character_details, companion=None, extra_characters=None, story_length="standard", custom_elements=""):
-    """Build prompt for Learning to Read mode stories."""
+    """Build prompt for Learning to Read mode stories with graduated vocabulary."""
     band = _get_age_band(age)
     config = AGE_CONSTRAINTS[band]
     if 'ltr' not in config:
@@ -232,11 +234,22 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
     length_key = 'medium' if story_length == 'standard' else story_length
     num_pages = config['ltr'][length_key]
 
+    # Graduate vocabulary based on age
+    if age <= 5:
+        vocab_instruction = "CVC words (cat, hop, sun) and simple sight words only. No blends or silent letters."
+        format_instruction = "Each page 1 short sentence."
+    elif age <= 7:
+        vocab_instruction = "Simple sight words plus basic blends (st, fl, br) and digraphs (ch, sh, th). Occasional 2-syllable words."
+        format_instruction = "Each page 1-2 sentences."
+    else:
+        vocab_instruction = "Early chapter book level. Fluent sentences with varied vocabulary. Still accessible but engaging for a fluent reader."
+        format_instruction = "Each page 2-3 sentences."
+
     return f"""
 Create a LEARN TO READ story for {character_name} (age {age}).
 Theme: {theme}
-Format: {num_pages} pages. Each page 1-2 short sentences.
-Vocabulary: CVC words and simple sight words only.
+Format: {num_pages} pages. {format_instruction}
+Vocabulary: {vocab_instruction}
 Requirements: Repeating frames, comforting rhythm, 1 coping moment.
 Custom Requests: {custom_elements or 'None'} (Use the exact words from this request at least once each, verbatim, in the story).
 {SAFETY_GUARDRAILS}
