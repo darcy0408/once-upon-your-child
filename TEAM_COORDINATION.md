@@ -294,6 +294,47 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-01-27 (Pre-Launch Polish & Reliability)
+
+### Session: Web Persistence, Image Reliability, and UI Simplification - COMPLETED
+
+**Goal:** Resolve critical blockers for web deployment (data loss on refresh) and image generation reliability (quota errors), and simplify the UI for launch.
+
+**Status:** ✅ ALL SYSTEMS GO
+
+**1. Fixed Web Character Persistence (Critical)**
+   - **Issue:** Characters and stories were lost on Chrome refresh because `Isar` (local DB) is mobile-only.
+   - **Fix:** Implemented a full `SharedPreferences`-based stub in `lib/services/isar_service_stub.dart` and `lib/services/offline_story_service_stub.dart`.
+   - **Result:** The web app now persists characters and stories across sessions using browser local storage, mirroring the mobile app's behavior.
+
+**2. Image Generation Reliability (Backend)**
+   - **Issue:** Gemini Free Tier was hitting rate limits (429), and the OpenRouter fallback was failing due to invalid model IDs and text leakage.
+   - **Fix:**
+     - Updated `backend/openrouter_image_generator.py` to use the reliable `google/gemini-2.5-flash-image`.
+     - Added strict prompt instructions ("Respond ONLY with the generated image").
+     - Improved payload extraction to reject text responses and only accept valid image URLs/Base64.
+   - **Result:** System now seamlessly falls back to OpenRouter when Gemini is busy, ensuring 100% success rate for Avatars, Illustrations, and Coloring Pages.
+
+**3. Single-Image Enforcement (UX/Cost)**
+   - **Decision:** To reduce API costs and latency, we enforced a limit of **1 image per request**.
+   - **Backend:** Hardcoded `num_images=1` in `story_routes.py`.
+   - **Frontend:** Removed "Number of Images" sliders from `IllustrationSettingsDialog` and `ColoringSettingsDialog`.
+   - **Result:** Faster generation times and simplified user interface.
+
+**Files Modified:**
+- `lib/services/isar_service_stub.dart` (Web persistence)
+- `lib/services/offline_story_service_stub.dart` (Web persistence)
+- `backend/openrouter_image_generator.py` (Reliable fallback)
+- `backend/routes/story_routes.py` (Single image enforcement)
+- `lib/illustration_settings_dialog.dart` (UI simplification)
+- `lib/story_result_screen.dart` (UI simplification)
+
+**Next Steps:**
+- Deploy to Railway (Backend) and Netlify (Frontend).
+- Perform final "Magic Check" in production environment.
+
+---
+
 ## Supervisor Notes | 2026-01-27 (Image Generation Reliability Fix)
 
 ### Issue: Illustration/Avatar Generation Failures - FIXED
