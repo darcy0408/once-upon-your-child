@@ -47,24 +47,28 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 **Goal:** Conduct a comprehensive matrix audit of all story modes across all age groups to ensure safety, length accuracy, and age-appropriateness.
 
-**Status:** ✅ COMPLETED & PATCHED
+**Status:** ✅ COMPLETED & 100% PASSING
 
 **Findings & Fixes:**
-1. **Interactive Story Safety (Critical):** Discovered that `InteractiveAdventurePromptBuilder` was missing the standard `SAFETY_GUARDRAILS`.
+1. **Interactive Story Safety (Critical):** Discovered that `InteractiveAdventurePromptBuilder` was missing the standard `SAFETY_GUARDRAILS`. 
    - **Fix:** Injected `SAFETY_GUARDRAILS` into both opening and continuation prompts for Pick-a-Path adventures.
 2. **Rhyme Time Calibration:** Discovered that Rhyme Time prompts for Age 4 and Age 13+ were too generic.
    - **Fix:** Added "simple vocabulary" instructions for toddlers and "identity/resilience" themes for teens to `story_service.py`.
-3. **Audit Success:** Re-ran the matrix audit; 100% of regular, rhyme, and LTR modes now pass. Interactive mode passes safety checks but requires a final polish for teen-specific depth (15-18).
+3. **Teen Depth Polish (Interactive):** Added teen-specific instructions to `InteractiveAdventurePromptBuilder` for Age 15-18 to ensure sophisticated tone and themes (identity, autonomy, social dilemmas).
+4. **Audit Success:** Re-ran the matrix audit; **100% of all permutations** (Age x Mode x Length) now pass safety, word count, and age-appropriateness checks.
 
 **Files Modified:**
-- `backend/services/interactive_adventure_prompt_builder.py` (Safety injection)
+- `backend/services/interactive_adventure_prompt_builder.py` (Safety & Teen depth)
 - `backend/services/story_service.py` (Rhyme time age calibration)
 - `TEAM_COORDINATION.md` (This log)
 
 **Next Steps:**
-- Apply "Teen Depth" polish to `InteractiveAdventurePromptBuilder` for Age 15-18.
 - Final production deployment.
+- Manual "Magic Check" in the production environment.
 
+---
+
+## Supervisor Notes | 2026-01-27 (Pre-Launch Polish & Reliability)
 ---
 
 ## Supervisor Notes | 2026-01-28 (Story Personalization Test Suite)
@@ -95,6 +99,9 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 **Next Steps:**
 1. Rotate Gemini key and rerun live suite: `python backend/tests/story_personalization_suite.py --live`.
 2. Review live report for missing custom elements or personalization gaps and fix iteratively.
+
+**Update:**
+- Live Gemini suite currently blocked due to leaked API key; awaiting key rotation to continue.
 
 ---
 
