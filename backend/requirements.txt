@@ -11,6 +11,7 @@ psycopg2-binary==2.9.11
 
 # Google AI (Gemini)
 google-genai
+google-generativeai
 google-api-core
 google-auth
 
