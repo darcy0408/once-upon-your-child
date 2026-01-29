@@ -19,8 +19,8 @@ else:
     # SECURITY: Don't log API keys, even partially masked
     print(f"GEMINI_API_KEY present: {bool(os.environ.get('GEMINI_API_KEY'))}")
 
-# FORCE gemini-2.0-flash to fix persistent reversion issue
-os.environ['GEMINI_MODEL'] = 'gemini-2.0-flash'
+# FORCE a stable model for local/dev to avoid deprecated/removed variants
+os.environ['GEMINI_MODEL'] = 'gemini-1.5-flash'
 print(f"FORCED GEMINI_MODEL = {os.environ.get('GEMINI_MODEL')}")
 
 def _get_required_secret(key_name, allow_dev_fallback=True):
@@ -80,7 +80,7 @@ class Config:
 
     # API Configuration
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-    GEMINI_MODEL = os.environ.get('GEMINI_MODEL') or 'gemini-2.0-flash-exp'
+    GEMINI_MODEL = os.environ.get('GEMINI_MODEL') or 'gemini-1.5-flash'
 
     # Celery Configuration (NEW FORMAT - Celery 5.x+)
     # Fallback to in-memory (Dev/Prod without Redis) to avoid connection errors.
@@ -148,8 +148,8 @@ class DevelopmentConfig(Config):
     DEBUG = True
     basedir = os.path.abspath(os.path.dirname(__file__))
     SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(basedir, 'characters.db')}"
-    # Explicitly force latest free experimental model
-    GEMINI_MODEL = 'gemini-2.0-flash-exp'
+    # Explicitly force stable model for development
+    GEMINI_MODEL = 'gemini-1.5-flash'
 
 class ProductionConfig(Config):
     """Production configuration."""

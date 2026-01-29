@@ -54,6 +54,38 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-01-28 (Local Audit Run Blockers & Model Stabilization)
+
+### Session: Multi-Age Developmental Audit - BLOCKED
+
+**Goal:** Run local app + backend to generate fresh stories for the 7 age bands and complete the full developmental audit.
+
+**Status:** 🟡 BLOCKED (API Key) | ✅ FIXES APPLIED
+
+**Findings:**
+1. **Gemini Model 404:** `gemini-2.0-flash-exp` returns 404 for `generateContent` in v1beta.
+2. **API Key Leak:** Gemini API key flagged as leaked (403), blocking all live generation.
+
+**Work Completed:**
+1. **Model Stabilization:** Forced a stable model for dev (`gemini-1.5-flash`) in config to avoid deprecated variants.
+2. **Service Hardening:** Added fallback retry logic in `StoryGenerationService` when a model is unavailable.
+3. **Fallback Coverage:** OpenRouter fallback now triggers when Gemini returns a "Sorry" failure response.
+
+**Files Modified:**
+- `backend/config/__init__.py` (force stable model in dev)
+- `backend/services/story_generation_service.py` (fallback retry for unsupported model)
+- `backend/tasks/story_tasks.py` (fallback to OpenRouter on Gemini failure)
+- `TEAM_COORDINATION.md` (this log)
+
+**Blocked By:**
+- Gemini API key flagged as leaked; requires key rotation to continue live generation.
+
+**Next Steps:**
+1. Rotate Gemini API key and retry the full generation matrix.
+2. If needed, run OpenRouter-only generation to complete audit without Gemini.
+
+---
+
 ## Supervisor Notes | 2026-01-28 (Custom Story Elements Enforcement)
 
 ### Session: Ensure User Ideas Are Enforced - COMPLETED (Verification Pending)
@@ -261,3 +293,26 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ## Supervisor Notes | 2026-01-28 (Developmental Audit Recommendations Implementation)
 ... (previous notes preserved)
+
+---
+
+## Supervisor Notes | 2026-01-28 (SDK Migration)
+
+### Session: Migrate to google-genai SDK - IN PROGRESS
+
+**Goal:** Migrate the backend from the deprecated `google-generativeai` package to the new `google-genai` SDK to ensure long-term support and stability.
+
+**Status:** 🟡 IN PROGRESS
+
+**Work Completed:**
+1.  **Dependency Update:** Updated `backend/requirements.txt` to replace `google-generativeai` with `google-genai`.
+2.  **Verification:** Validated that `google-genai` (v1.56.0) is installed and importable in the environment.
+
+**Files Modified:**
+-   `backend/requirements.txt`
+-   `TEAM_COORDINATION.md` (this log)
+
+**Next Steps:**
+1.  Refactor `backend/services/story_generation_service.py` and `backend/services/interactive_adventure_service.py` to use the new `genai.Client` and `generate_content` patterns.
+2.  Update `backend/app.py` initialization logic.
+3.  Verify all tests pass with the new SDK.
