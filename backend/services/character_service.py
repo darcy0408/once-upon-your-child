@@ -128,6 +128,11 @@ def create_character(data: dict):
     # Avataaars customization (DiceBear)
     new_character.avatar_params = data.get("avatar_params") # JSON/Dict
 
+    # AI-generated avatar data
+    avatar_data = data.get("avatar_data") or data.get("generated_avatar") or data.get("generatedAvatar")
+    if avatar_data:
+        new_character.avatar_data = avatar_data
+
     print(f"[DEBUG create_character] Setting pets to: {new_character.pets}")
 
     character_repository.add_character(new_character)
@@ -212,6 +217,18 @@ def update_character(char_id: str, data: dict):
         char.strengths = _as_list(data["strengths"])
     if "goals" in data:
         char.goals = _as_list(data["goals"])
+
+    # Avatar data persistence
+    if "avatar_data" in data:
+        char.avatar_data = data["avatar_data"]
+    if "generated_avatar" in data:
+        # Frontend sends generatedAvatar, map to avatar_data
+        char.avatar_data = data["generated_avatar"]
+    if "generatedAvatar" in data:
+        # Also handle camelCase version
+        char.avatar_data = data["generatedAvatar"]
+    if "avatar_params" in data:
+        char.avatar_params = data["avatar_params"]
 
     print(f"[DEBUG update_character] Final pets before save: {char.pets}")
 

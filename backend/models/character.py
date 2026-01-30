@@ -80,6 +80,7 @@ class Character(db.Model):
             "pets": self.pets or [],
             "comfort_item": self.comfort_item,
             "avatar_data": self.avatar_data,
+            "generated_avatar": self.avatar_data,  # Frontend expects this key
             "avatar_params": self.avatar_params,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

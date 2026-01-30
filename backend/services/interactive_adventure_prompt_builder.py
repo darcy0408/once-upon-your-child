@@ -339,7 +339,8 @@ SAFETY RULES:
             tool_label = "KEY ARTIFACT"
             tool_instruction = "(MUST be integral to the resolution)"
 
-        tool_line = f"- **{tool_label}**: {f"'{spark_tool}' {tool_instruction}" if spark_tool else 'None'}"
+        tool_value = f"'{spark_tool}' {tool_instruction}" if spark_tool else 'None'
+        tool_line = f"- **{tool_label}**: {tool_value}"
 
         prompt = f"""
 **PERSONA**: Expert Child Narrative Architect & Pick-A-Path Specialist.
