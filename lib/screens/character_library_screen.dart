@@ -92,30 +92,21 @@ class _CharacterLibraryScreenState extends State<CharacterLibraryScreen> {
 
     if (confirmed != true) return;
 
-    final url = Uri.parse('${Environment.backendUrl}/characters/${character.id}');
     try {
-      final response = await http.delete(url);
-      if (response.statusCode == 200) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${character.name} deleted'),
-              backgroundColor: AppColors.success,
-            ),
-          );
-          _loadCharacters(); // Reload the list
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to delete character (${response.statusCode})'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
+      final api = ApiServiceManager();
+      await api.delete('/characters/${character.id}');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${character.name} deleted'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        _loadCharacters(); // Reload the list
       }
     } catch (e) {
+      debugPrint('Error deleting character: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

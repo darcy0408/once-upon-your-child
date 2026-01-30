@@ -249,6 +249,37 @@ class ApiServiceManager {
     }
   }
 
+  Future<Map<String, dynamic>> delete(
+    String path, {
+    Duration timeout = const Duration(seconds: 15),
+    http.Client? client,
+  }) async {
+    final httpClient = client ?? _testClient ?? http.Client();
+    final uri = Uri.parse('$_localBackendUrl$path');
+    final headers = await _getAuthHeaders();
+    try {
+      final response = await httpClient.delete(uri, headers: headers).timeout(timeout);
+      return _decodeJsonResponse(response, uri);
+    } on TimeoutException catch (error) {
+      debugPrint('DELETE $uri timed out after ${timeout.inSeconds}s: $error');
+      throw TimeoutException(
+        'Request to ${uri.path} timed out. Please try again.',
+        timeout,
+      );
+    } on SocketException catch (error) {
+      debugPrint('❌ Network error while calling $uri');
+      debugPrint('   Error details: $error');
+      throw Exception(
+        'Cannot connect to server. Please check your internet connection and try again.',
+      );
+    } on http.ClientException catch (error) {
+      debugPrint('❌ HTTP Client error while calling $uri: $error');
+      throw Exception(
+        'Request failed: ${error.message}\n\nPlease try again.',
+      );
+    }
+  }
+
   /// Allow tests to inject a mock HTTP client.
   static void setTestClient(http.Client? client) {
     _testClient = client;
