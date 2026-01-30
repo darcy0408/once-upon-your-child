@@ -128,14 +128,11 @@ class _CharacterPreviewState extends State<CharacterPreview>
                     child: _buildSparkleCircle(previewSize),
                   ),
 
-                // Character image/placeholder (drawn first so border is on top)
+                // Character image/placeholder
                 ScaleTransition(
                   scale: _scaleAnimation,
                   child: _buildCharacter(previewSize),
                 ),
-
-                // Dotted circle frame
-                _buildDottedCircle(previewSize),
               ],
             ),
           ),
