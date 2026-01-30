@@ -133,16 +133,21 @@ class _ExpandingFeelingsWheelState extends State<ExpandingFeelingsWheel>
   }
 
   Future<void> _loadFaceImages() async {
+    int loaded = 0;
+    int failed = 0;
     for (final key in _availableFaces) {
       try {
         final data = await rootBundle.load('assets/feelings_faces/$key.png');
         final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
         final frame = await codec.getNextFrame();
         _faceImages[key] = frame.image;
-      } catch (_) {
-        // Skip missing assets; fallback to drawn faces.
+        loaded++;
+      } catch (e) {
+        failed++;
+        debugPrint('Failed to load face image: $key - $e');
       }
     }
+    debugPrint('Feelings wheel: Loaded $loaded faces, failed $failed');
     if (mounted) {
       setState(() {});
     }
@@ -451,27 +456,34 @@ class _SimpleWheelPainter extends CustomPainter {
     final midRadius = (innerRadius + outerRadius) / 2;
     final centerAngle = startAngle + sweepAngle / 2;
 
-    // For core emotions, show face + label
-    if (showFace && faceKey != null) {
-      final faceRadius = innerRadius + (outerRadius - innerRadius) * 0.35;
+    // Show face image for all levels (magical feel)
+    final faceImage = faceKey != null ? faceImages[faceKey] : null;
+
+    if (faceImage != null) {
+      // Position face in upper portion of sector
+      final faceRadius = innerRadius + (outerRadius - innerRadius) * 0.38;
       final faceCenter = Offset(
         center.dx + faceRadius * math.cos(centerAngle),
         center.dy + faceRadius * math.sin(centerAngle),
       );
 
-      final faceImage = faceImages[faceKey];
-      if (faceImage != null) {
-        final faceSize = radius * 0.12;
-        _drawImageFace(canvas, faceImage, faceCenter, faceSize);
-      }
+      // Draw subtle glow behind face for magical effect
+      final glowPaint = Paint()
+        ..color = Colors.white.withValues(alpha: 0.4)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+      canvas.drawCircle(faceCenter, radius * 0.11, glowPaint);
+
+      // Draw face - larger size for better visibility
+      final faceSize = radius * 0.18;
+      _drawImageFace(canvas, faceImage, faceCenter, faceSize);
 
       // Label below face
-      final labelRadius = innerRadius + (outerRadius - innerRadius) * 0.75;
+      final labelRadius = innerRadius + (outerRadius - innerRadius) * 0.78;
       final labelX = center.dx + labelRadius * math.cos(centerAngle);
       final labelY = center.dy + labelRadius * math.sin(centerAngle);
-      _drawText(canvas, label, labelX, labelY, 13.0, Colors.white, fontWeight: FontWeight.bold, shadow: true);
+      _drawText(canvas, label, labelX, labelY, 12.0, Colors.white, fontWeight: FontWeight.bold, shadow: true);
     } else {
-      // For secondary/tertiary, just show label centered
+      // Fallback: just show label centered (for emotions without face images)
       final labelX = center.dx + midRadius * math.cos(centerAngle);
       final labelY = center.dy + midRadius * math.sin(centerAngle);
       _drawText(canvas, label, labelX, labelY, 11.0, Colors.white, fontWeight: FontWeight.w600, shadow: true);
