@@ -164,6 +164,43 @@ def create_utility_blueprint(logger, log_error):
         db.session.commit()
         return jsonify({"status": status, "username": username}), 201 if status == "created" else 200
 
+    @utility_bp.route("/auth/anonymous", methods=["POST"])
+    def get_anonymous_token():
+        """Get or create an anonymous user and return a JWT token.
+
+        This allows the frontend to make authenticated requests without
+        requiring user registration. The anonymous user ID is generated
+        client-side and sent to persist data across sessions.
+        """
+        import uuid
+        data = request.get_json(silent=True) or {}
+        client_id = data.get('client_id')
+
+        if not client_id:
+            # Generate a new anonymous ID if client doesn't have one
+            client_id = f"anon_{uuid.uuid4().hex[:16]}"
+
+        # Find or create anonymous user
+        user = User.query.filter_by(id=client_id).first()
+        if not user:
+            user = User(
+                id=client_id,
+                username=f"guest_{client_id[-8:]}",
+                email=f"{client_id}@anonymous.storyweaver.app"
+            )
+            # Set a random password (user won't need it for anonymous access)
+            user.set_password(uuid.uuid4().hex)
+            db.session.add(user)
+            db.session.commit()
+            logger.info(f"Created anonymous user: {client_id}")
+
+        token = create_access_token(identity=user.id)
+        return jsonify({
+            'token': token,
+            'user_id': user.id,
+            'is_anonymous': True
+        }), 200
+
     @utility_bp.route("/auth/login", methods=["POST"])
     def login():
         """Simple login endpoint for testing."""

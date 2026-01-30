@@ -1,7 +1,5 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import '../config/environment.dart';
+import '../services/api_service_manager.dart';
 import '../models.dart';
 import '../theme/app_theme.dart';
 import 'wizard_story_screen.dart';
@@ -39,36 +37,30 @@ class _CharacterLibraryScreenState extends State<CharacterLibraryScreen> {
       _error = null;
     });
 
-    final url = Uri.parse('${Environment.backendUrl}/get-characters');
     try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        final decoded = json.decode(response.body);
-        final List<dynamic> characterList = decoded is List ? decoded : (decoded['characters'] ?? []);
-        final characters = characterList
-            .map((data) => Character.fromJson(data))
-            .toList();
+      final api = ApiServiceManager();
+      final response = await api.get('/get-characters');
 
-        if (mounted) {
-          setState(() {
-            _characters = characters;
-            _isLoading = false;
-          });
-          debugPrint('✅ Loaded ${characters.length} characters');
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _error = 'Failed to load characters (${response.statusCode})';
-            _isLoading = false;
-          });
-        }
+      // Response is wrapped as {'data': [...]} if it's a list
+      final List<dynamic> characterList = response['data'] is List
+          ? response['data']
+          : (response['characters'] ?? []);
+      final characters = characterList
+          .map((data) => Character.fromJson(data as Map<String, dynamic>))
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _characters = characters;
+          _isLoading = false;
+        });
+        debugPrint('✅ Loaded ${characters.length} characters');
       }
     } catch (e) {
       debugPrint('⚠️ Error loading characters: $e');
       if (mounted) {
         setState(() {
-          _error = 'Error: $e';
+          _error = 'Error loading characters: $e';
           _isLoading = false;
         });
       }

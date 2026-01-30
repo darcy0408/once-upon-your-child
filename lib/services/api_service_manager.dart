@@ -23,6 +23,66 @@ import 'user_identity_service.dart';
 class ApiServiceManager {
   static String get _localBackendUrl => Environment.backendUrl;
   static http.Client? _testClient;
+  static String? _authToken;
+  static String? _userId;
+  static const String _tokenKey = 'story_weaver_auth_token';
+  static const String _userIdKey = 'story_weaver_user_id';
+
+  /// Get auth headers including the JWT token
+  Future<Map<String, String>> _getAuthHeaders() async {
+    await _ensureAuthenticated();
+    return {
+      'Content-Type': 'application/json',
+      if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+    };
+  }
+
+  /// Ensure we have a valid auth token (get anonymous token if needed)
+  Future<void> _ensureAuthenticated() async {
+    if (_authToken != null) return;
+
+    // Try to load from storage
+    final prefs = await SharedPreferences.getInstance();
+    _authToken = prefs.getString(_tokenKey);
+    _userId = prefs.getString(_userIdKey);
+
+    if (_authToken != null) {
+      debugPrint('✅ Loaded auth token from storage');
+      return;
+    }
+
+    // Get new anonymous token
+    debugPrint('🔐 Getting anonymous auth token...');
+    try {
+      final uri = Uri.parse('$_localBackendUrl/auth/anonymous');
+      final response = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'client_id': _userId}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        _authToken = data['token'];
+        _userId = data['user_id'];
+
+        // Save to storage
+        await prefs.setString(_tokenKey, _authToken!);
+        await prefs.setString(_userIdKey, _userId!);
+        debugPrint('✅ Got anonymous auth token for user: $_userId');
+      } else {
+        debugPrint('⚠️ Failed to get anonymous token: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error getting anonymous token: $e');
+    }
+  }
+
+  /// Get the current user ID
+  Future<String?> getUserId() async {
+    await _ensureAuthenticated();
+    return _userId;
+  }
 
   Future<Map<String, dynamic>> post(
     String path,
@@ -32,11 +92,12 @@ class ApiServiceManager {
   }) async {
     final httpClient = client ?? _testClient ?? http.Client();
     final uri = Uri.parse('$_localBackendUrl$path');
+    final headers = await _getAuthHeaders();
     try {
       final response = await httpClient
           .post(
             uri,
-            headers: {'Content-Type': 'application/json'},
+            headers: headers,
             body: jsonEncode(payload),
           )
           .timeout(timeout);
@@ -75,11 +136,12 @@ class ApiServiceManager {
   }) async {
     final httpClient = client ?? _testClient ?? http.Client();
     final uri = Uri.parse('$_localBackendUrl$path');
+    final headers = await _getAuthHeaders();
     try {
       final response = await httpClient
           .put(
             uri,
-            headers: {'Content-Type': 'application/json'},
+            headers: headers,
             body: jsonEncode(payload),
           )
           .timeout(timeout);
@@ -116,11 +178,12 @@ class ApiServiceManager {
   }) async {
     final httpClient = client ?? _testClient ?? http.Client();
     final uri = Uri.parse('$_localBackendUrl$path');
+    final headers = await _getAuthHeaders();
     try {
       final response = await httpClient
           .patch(
             uri,
-            headers: {'Content-Type': 'application/json'},
+            headers: headers,
             body: jsonEncode(payload),
           )
           .timeout(timeout);
@@ -156,8 +219,9 @@ class ApiServiceManager {
   }) async {
     final httpClient = client ?? _testClient ?? http.Client();
     final uri = Uri.parse('$_localBackendUrl$path');
+    final headers = await _getAuthHeaders();
     try {
-      final response = await httpClient.get(uri).timeout(timeout);
+      final response = await httpClient.get(uri, headers: headers).timeout(timeout);
       return _decodeJsonResponse(response, uri);
     } on TimeoutException catch (error) {
       debugPrint('GET $uri timed out after ${timeout.inSeconds}s: $error');
