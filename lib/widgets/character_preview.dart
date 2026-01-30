@@ -277,15 +277,18 @@ class _CharacterPreviewState extends State<CharacterPreview>
         ],
       ),
       child: ClipOval(
-        child: Image.asset(
-          'assets/images/character_placeholder.png',
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          alignment: Alignment.topCenter, // Show head/face area, not torso
-          errorBuilder: (context, error, stackTrace) {
-            return _buildEmojiPlaceholder(size);
-          },
+        child: Transform.scale(
+          scale: 0.85, // Zoom out slightly to show more of the character
+          child: Image.asset(
+            'assets/images/character_placeholder.png',
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            alignment: const Alignment(0, -0.65), // Head/face area with some shoulders
+            errorBuilder: (context, error, stackTrace) {
+              return _buildEmojiPlaceholder(size);
+            },
+          ),
         ),
       ),
     );
