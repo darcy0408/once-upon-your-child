@@ -285,6 +285,7 @@ class _CharacterPreviewState extends State<CharacterPreview>
           width: size,
           height: size,
           fit: BoxFit.cover,
+          alignment: Alignment.topCenter, // Show head/face area, not torso
           errorBuilder: (context, error, stackTrace) {
             return _buildEmojiPlaceholder(size);
           },
