@@ -8,6 +8,10 @@ def add_character(character: Character):
 def get_all_characters():
     return Character.query.order_by(Character.created_at.desc()).all()
 
+def get_characters_by_user(user_id: str):
+    """Get all characters belonging to a specific user."""
+    return Character.query.filter_by(user_id=user_id).order_by(Character.created_at.desc()).all()
+
 def get_character_by_id(char_id: str):
     return db.session.get(Character, char_id)
 

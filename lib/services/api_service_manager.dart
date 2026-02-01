@@ -101,6 +101,27 @@ class ApiServiceManager {
             body: jsonEncode(payload),
           )
           .timeout(timeout);
+
+      // Handle 401 Unauthorized - Retry logic
+      if (response.statusCode == 401) {
+        debugPrint('⚠️ 401 Unauthorized from $uri. Refreshing token...');
+        _authToken = null;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_tokenKey);
+        
+        await _ensureAuthenticated();
+        
+        final newHeaders = await _getAuthHeaders();
+        final retryResponse = await httpClient
+            .post(
+              uri,
+              headers: newHeaders,
+              body: jsonEncode(payload),
+            )
+            .timeout(timeout);
+        return _decodeJsonResponse(retryResponse, uri);
+      }
+
       return _decodeJsonResponse(response, uri);
     } on TimeoutException catch (error) {
       debugPrint('POST $uri timed out after ${timeout.inSeconds}s: $error');
@@ -145,6 +166,27 @@ class ApiServiceManager {
             body: jsonEncode(payload),
           )
           .timeout(timeout);
+
+      // Handle 401 Unauthorized - Retry logic
+      if (response.statusCode == 401) {
+        debugPrint('⚠️ 401 Unauthorized from $uri. Refreshing token...');
+        _authToken = null;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_tokenKey);
+        
+        await _ensureAuthenticated();
+        
+        final newHeaders = await _getAuthHeaders();
+        final retryResponse = await httpClient
+            .put(
+              uri,
+              headers: newHeaders,
+              body: jsonEncode(payload),
+            )
+            .timeout(timeout);
+        return _decodeJsonResponse(retryResponse, uri);
+      }
+
       return _decodeJsonResponse(response, uri);
     } on TimeoutException catch (error) {
       debugPrint('PUT $uri timed out after ${timeout.inSeconds}s: $error');
@@ -187,6 +229,27 @@ class ApiServiceManager {
             body: jsonEncode(payload),
           )
           .timeout(timeout);
+
+      // Handle 401 Unauthorized - Retry logic
+      if (response.statusCode == 401) {
+        debugPrint('⚠️ 401 Unauthorized from $uri. Refreshing token...');
+        _authToken = null;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_tokenKey);
+        
+        await _ensureAuthenticated();
+        
+        final newHeaders = await _getAuthHeaders();
+        final retryResponse = await httpClient
+            .patch(
+              uri,
+              headers: newHeaders,
+              body: jsonEncode(payload),
+            )
+            .timeout(timeout);
+        return _decodeJsonResponse(retryResponse, uri);
+      }
+
       return _decodeJsonResponse(response, uri);
     } on TimeoutException catch (error) {
       debugPrint('PATCH $uri timed out after ${timeout.inSeconds}s: $error');
@@ -222,6 +285,21 @@ class ApiServiceManager {
     final headers = await _getAuthHeaders();
     try {
       final response = await httpClient.get(uri, headers: headers).timeout(timeout);
+
+      // Handle 401 Unauthorized - Retry logic
+      if (response.statusCode == 401) {
+        debugPrint('⚠️ 401 Unauthorized from $uri. Refreshing token...');
+        _authToken = null;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_tokenKey);
+        
+        await _ensureAuthenticated();
+        
+        final newHeaders = await _getAuthHeaders();
+        final retryResponse = await httpClient.get(uri, headers: newHeaders).timeout(timeout);
+        return _decodeJsonResponse(retryResponse, uri);
+      }
+
       return _decodeJsonResponse(response, uri);
     } on TimeoutException catch (error) {
       debugPrint('GET $uri timed out after ${timeout.inSeconds}s: $error');
@@ -259,6 +337,21 @@ class ApiServiceManager {
     final headers = await _getAuthHeaders();
     try {
       final response = await httpClient.delete(uri, headers: headers).timeout(timeout);
+
+      // Handle 401 Unauthorized - Retry logic
+      if (response.statusCode == 401) {
+        debugPrint('⚠️ 401 Unauthorized from $uri. Refreshing token...');
+        _authToken = null;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_tokenKey);
+        
+        await _ensureAuthenticated();
+        
+        final newHeaders = await _getAuthHeaders();
+        final retryResponse = await httpClient.delete(uri, headers: newHeaders).timeout(timeout);
+        return _decodeJsonResponse(retryResponse, uri);
+      }
+
       return _decodeJsonResponse(response, uri);
     } on TimeoutException catch (error) {
       debugPrint('DELETE $uri timed out after ${timeout.inSeconds}s: $error');

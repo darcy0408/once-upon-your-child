@@ -122,3 +122,32 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 **Work Completed:**
 1.  **Deterministic Enforcement:** Added validation for missing phrases and retry instructions.
 2.  **Tests:** Added `backend/tests/test_custom_elements.py` (4 tests passing).
+
+---
+
+## Supervisor Notes | 2026-02-01 (Auth Persistence Fixes)
+
+### Session: Fix Character Saving & Token Expiry - COMPLETED
+
+**Goal:** Resolve critical issue where characters appeared to be lost between sessions due to token expiry and inefficient backend filtering.
+
+**Status:** ✅ FIXED
+
+**Work Completed:**
+1.  **Frontend Auth Resilience:**
+    *   Updated `ApiServiceManager.dart` to catch `401 Unauthorized` errors.
+    *   Implemented auto-refresh logic: clears invalid token, fetches fresh one using persisted user ID, and retries request transparently.
+    *   Covered all HTTP methods (`get`, `post`, `put`, `patch`, `delete`).
+2.  **Backend Efficiency:**
+    *   Refactored `CharacterRepository` to include `get_characters_by_user`.
+    *   Updated `CharacterService` and `CharacterRoutes` to filter by user ID at the database level instead of in-memory.
+
+**Files Modified:**
+-   `lib/services/api_service_manager.dart`
+-   `backend/repositories/character_repository.py`
+-   `backend/services/character_service.py`
+-   `backend/routes/character_routes.py`
+
+**Next Steps:**
+1.  Deploy to Production (Railway + Netlify).
+2.  Verify fix with "Next Day" simulation (force token expiry).

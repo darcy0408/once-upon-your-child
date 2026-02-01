@@ -60,32 +60,11 @@ def create_character_blueprint(limiter, logger):
     @require_auth
     def get_characters_endpoint():
         logger.info("GET /get-characters called")
-        # TODO: Filter by user_id in service? Current service gets ALL characters.
-        # Ideally, we should update service to filter by user_id
-        # For now, let's filter the result here or just allow it if intended (but report said IDOR)
-        # Given "get-characters" implies listing user's characters:
         
-        # Use repository directly or add filter to service?
-        # Service has `get_characters` calling `repository.get_all_characters()`
-        # We should update service to accept user_id
+        # Filter by current user ID at the service/database level
+        user_id = request.current_user.id
+        response, status_code = character_service.get_characters(user_id=user_id)
         
-        # Since I didn't update service signature for get_characters, I'll filter logic here if possible, 
-        # but better to update service. However, for immediate security, let's update service later/now.
-        # Actually, let's just secure the endpoint for now and maybe filter in memory (inefficient but safe) or leave it if it's "all public characters".
-        # But assume they want private helper characters.
-        
-        # Updating service to filter by current user is best practice.
-        # I will leave this as is for a moment but add @require_auth.
-        # Actually I should fix it properly.
-        # Let's just add auth for now.
-        
-        response, status_code = character_service.get_characters()
-        
-        # Filter response if it returns a list
-        if status_code == 200 and isinstance(response, list):
-             filtered = [c for c in response if not c.get('user_id') or str(c.get('user_id')) == str(request.current_user.id)]
-             return jsonify(filtered), 200
-
         logger.info(f"Get characters result: {status_code}")
         return jsonify(response), status_code
 

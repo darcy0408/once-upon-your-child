@@ -141,9 +141,16 @@ def create_character(data: dict):
 
     return new_character.to_dict(), 201
 
-def get_characters():
-    """Return a simple LIST to match the Flutter code that expects a list."""
-    chars = character_repository.get_all_characters()
+def get_characters(user_id: str = None):
+    """
+    Return a list of characters.
+    If user_id is provided, returns only characters for that user.
+    """
+    if user_id:
+        chars = character_repository.get_characters_by_user(user_id)
+    else:
+        chars = character_repository.get_all_characters()
+    
     return [c.to_dict() for c in chars], 200
 
 def get_character(char_id: str):
