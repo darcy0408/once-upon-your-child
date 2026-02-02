@@ -200,12 +200,9 @@ class CopingStrategyLibrary extends StatefulWidget {
   State<CopingStrategyLibrary> createState() => _CopingStrategyLibraryState();
 }
 
-class _CopingStrategyLibraryState extends State<CopingStrategyLibrary>
-    with TickerProviderStateMixin {
+class _CopingStrategyLibraryState extends State<CopingStrategyLibrary> {
   late List<CopingStrategy> _strategies;
   late PageController _pageController;
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
 
   String _selectedEmotion = '';
   CopingStrategyType? _selectedType;
@@ -219,7 +216,6 @@ class _CopingStrategyLibraryState extends State<CopingStrategyLibrary>
   void initState() {
     super.initState();
     _initializeStrategies();
-    _setupAnimations();
     _pageController = PageController();
   }
 
@@ -647,21 +643,6 @@ class _CopingStrategyLibraryState extends State<CopingStrategyLibrary>
     ];
   }
 
-  void _setupAnimations() {
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.1,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
-  }
-
   List<CopingStrategy> _getFilteredStrategies() {
     if (_selectedEmotion.isEmpty && _selectedType == null) {
       return _strategies;
@@ -746,7 +727,6 @@ class _CopingStrategyLibraryState extends State<CopingStrategyLibrary>
   @override
   void dispose() {
     _pageController.dispose();
-    _animationController.dispose();
     _practiceTimer?.cancel();
     super.dispose();
   }

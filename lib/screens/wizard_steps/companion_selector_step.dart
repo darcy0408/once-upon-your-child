@@ -81,6 +81,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
         color: AppColors.dragonOrange,
         greeting: 'I\'m ready to help!',
         description: '✨ Breathes rainbow fire that reveals hidden paths',
+        imagePath: 'assets/images/companions/dragon.jpg',
       ),
       Companion(
         id: 'owl',
@@ -89,6 +90,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
         color: AppColors.owlBlue,
         greeting: 'Let\'s be wise together!',
         description: '✨ Can see through time to show what will happen',
+        imagePath: 'assets/images/companions/owl.jpg',
       ),
       Companion(
         id: 'cat',
@@ -97,6 +99,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
         color: AppColors.catPurple,
         greeting: 'Meow! I\'m ready!',
         description: '✨ Walks through walls and brings things from dreams',
+        imagePath: 'assets/images/companions/cat.jpg',
       ),
       Companion(
         id: 'dog',
@@ -105,6 +108,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
         color: AppColors.dogBrown,
         greeting: 'I\'ll be your best friend!',
         description: '✨ Barks constellations into existence to guide the way',
+        imagePath: 'assets/images/companions/dog.jpg',
       ),
       Companion(
         id: 'unicorn',
@@ -113,6 +117,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
         color: AppColors.primaryLight,
         greeting: 'Let\'s make magic!',
         description: '✨ Creates bridges made of starlight and moonbeams',
+        imagePath: 'assets/images/companions/unicorn.jpg',
       ),
       Companion(
         id: 'fox',
@@ -121,6 +126,16 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
         color: AppColors.gold,
         greeting: 'Ready for clever fun!',
         description: '✨ Transforms into any shape to solve impossible puzzles',
+        imagePath: 'assets/images/companions/fox.jpg',
+      ),
+      Companion(
+        id: 'robin',
+        emoji: '🐦',
+        name: 'a rockin\' robin',
+        color: AppColors.dragonOrange,
+        greeting: 'Let\'s rock and roll!',
+        description: '✨ Plays magical music that makes everyone dance with joy',
+        imagePath: 'assets/images/companions/robin.jpg',
       ),
     ];
 
@@ -307,6 +322,7 @@ class Companion {
   final Color color;
   final String greeting;
   final String description;
+  final String? imagePath;
 
   Companion({
     required this.id,
@@ -315,6 +331,7 @@ class Companion {
     required this.color,
     required this.greeting,
     this.description = '',
+    this.imagePath,
   });
 }
 
@@ -343,129 +360,157 @@ class _CompanionCard extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
-          padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: isSelected 
-                ? Colors.white.withValues(alpha: 0.85) 
-                : Colors.white.withValues(alpha: 0.5), // Glassmorphic base
-            gradient: isSelected
-                ? LinearGradient(
-                    colors: [
-                      AppColors.goldLight.withValues(alpha: 0.4),
-                      Colors.white.withValues(alpha: 0.9),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                : LinearGradient(
-                    colors: [
-                      Colors.white.withValues(alpha: 0.6),
-                      Colors.white.withValues(alpha: 0.3),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+            color: isSelected
+                ? Colors.white.withValues(alpha: 0.85)
+                : Colors.white.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(AppRadius.xl),
             border: Border.all(
               color: isSelected ? AppColors.gold : Colors.white.withValues(alpha: 0.6),
-              width: isSelected ? 2 : 1.5,
+              width: isSelected ? 3 : 1.5,
             ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: AppColors.gold.withValues(alpha: 0.25),
-                      blurRadius: 12,
+                      color: AppColors.gold.withValues(alpha: 0.4),
+                      blurRadius: 16,
                       spreadRadius: 2,
                       offset: const Offset(0, 4),
                     )
                   ]
                 : [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.05),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
                   ],
           ),
-          child: Row(
-            children: [
-              // Avatar / Emoji
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: isSelected 
-                      ? Colors.white.withValues(alpha: 0.9) 
-                      : AppColors.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isSelected ? AppColors.gold : Colors.white.withValues(alpha: 0.5),
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    if (isSelected)
-                      BoxShadow(
-                        color: AppColors.gold.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        spreadRadius: 1,
-                      ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    companion.emoji,
-                    style: const TextStyle(fontSize: 32),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-
-              // Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      companion.name,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textDark,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.xl - 2),
+            child: Stack(
+              children: [
+                // Background image or gradient
+                if (companion.imagePath != null)
+                  SizedBox(
+                    height: 140,
+                    width: double.infinity,
+                    child: Image.asset(
+                      companion.imagePath!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: companion.color.withValues(alpha: 0.2),
+                          child: Center(
+                            child: Text(
+                              companion.emoji,
+                              style: const TextStyle(fontSize: 48),
+                            ),
                           ),
+                        );
+                      },
                     ),
-                    const SizedBox(height: 4),
-                    Row(
+                  )
+                else
+                  Container(
+                    height: 140,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          companion.color.withValues(alpha: 0.3),
+                          companion.color.withValues(alpha: 0.1),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        companion.emoji,
+                        style: const TextStyle(fontSize: 48),
+                      ),
+                    ),
+                  ),
+
+                // Gradient overlay for text readability
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.7),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (isMagical)
-                          const Icon(Icons.auto_awesome, size: 14, color: AppColors.purple),
-                        if (isMagical) const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            companion.description,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: AppColors.textDark.withValues(alpha: 0.7),
-                                  fontStyle: FontStyle.italic,
-                                ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        Text(
+                          companion.name,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                shadows: [
+                                  const Shadow(
+                                    blurRadius: 4,
+                                    color: Colors.black54,
+                                  ),
+                                ],
+                              ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            if (isMagical)
+                              const Icon(Icons.auto_awesome, size: 12, color: AppColors.gold),
+                            if (isMagical) const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                companion.description,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-
-              // Selection Checkmark
-              if (isSelected)
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.check, color: Colors.white, size: 16),
                 ),
-            ],
+
+                // Selection indicator overlay
+                if (isSelected)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.gold,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.check, color: Colors.white, size: 18),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

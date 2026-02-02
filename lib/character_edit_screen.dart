@@ -68,7 +68,7 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
     _characterStyle =
         widget.character.characterStyle ?? 'Regular Kid'; // Default character style
 
-    _characterType = widget.character.role ?? 'Everyday Kid';
+    _characterType = widget.character.role;
 
     _superheroNameController = TextEditingController();
     _superpowerController =

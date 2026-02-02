@@ -10,7 +10,8 @@ import '../theme/app_theme.dart';
 /// - Accessible with screen reader support
 /// - Parent hover shows description (for parents, not kids)
 class ArchetypeCard extends StatelessWidget {
-  final String icon;
+  final String? icon; // Optional fallback emoji
+  final String? imagePath; // Path to archetype image
   final String name;
   final String description; // For parent tooltips only
   final String specialAbility; // NEW: Displayed on card
@@ -20,7 +21,8 @@ class ArchetypeCard extends StatelessWidget {
 
   const ArchetypeCard({
     super.key,
-    required this.icon,
+    this.icon,
+    this.imagePath,
     required this.name,
     required this.description,
     required this.specialAbility,
@@ -67,11 +69,26 @@ class ArchetypeCard extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Icon/Emoji
-                  Text(
-                    icon,
-                    style: const TextStyle(fontSize: 64),
-                  ),
+                  // Image or Icon/Emoji fallback
+                  if (imagePath != null)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      child: Image.asset(
+                        imagePath!,
+                        width: 120,
+                        height: 90,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Text(
+                          icon ?? '✨',
+                          style: const TextStyle(fontSize: 64),
+                        ),
+                      ),
+                    )
+                  else
+                    Text(
+                      icon ?? '✨',
+                      style: const TextStyle(fontSize: 64),
+                    ),
                   const SizedBox(height: AppSpacing.xs),
                   // Archetype name
                   Text(
@@ -171,6 +188,7 @@ class _TraitChip extends StatelessWidget {
 class CharacterArchetypes {
   static const adventurer = ArchetypeData(
     icon: '⚡',
+    imagePath: 'assets/images/archetypes/storm_rider.jpg',
     name: 'The Storm Rider',
     description: 'Commands wind and weather, brave explorer',
     traits: ['Brave', 'Curious', 'Determined'],
@@ -187,6 +205,7 @@ class CharacterArchetypes {
 
   static const thinker = ArchetypeData(
     icon: '🧩',
+    imagePath: 'assets/images/archetypes/quiz_whiz.jpg',
     name: 'The Quiz Whiz',
     description: 'Solves tricky puzzles and brain teasers',
     traits: ['Smart', 'Modest', 'Curious'],
@@ -203,6 +222,7 @@ class CharacterArchetypes {
 
   static const artist = ArchetypeData(
     icon: '🎨',
+    imagePath: 'assets/images/archetypes/master_creator.jpg',
     name: 'The Master Creator',
     description: 'Magic paintbrush brings drawings to life',
     traits: ['Creative', 'Expressive', 'Imaginative'],
@@ -219,6 +239,7 @@ class CharacterArchetypes {
 
   static const helper = ArchetypeData(
     icon: '💚',
+    imagePath: 'assets/images/archetypes/heart_healer.jpg',
     name: 'The Heart Healer',
     description: 'Senses emotions and heals broken spirits',
     traits: ['Caring', 'Patient', 'Loyal'],
@@ -235,6 +256,7 @@ class CharacterArchetypes {
 
   static const athlete = ArchetypeData(
     icon: '🏃',
+    imagePath: 'assets/images/archetypes/lightning_runner.jpg',
     name: 'The Lightning Runner',
     description: 'Moves faster than sound, leaves stardust trails',
     traits: ['Energetic', 'Fast', 'Determined'],
@@ -251,6 +273,7 @@ class CharacterArchetypes {
 
   static const shyOne = ArchetypeData(
     icon: '🦉',
+    imagePath: 'assets/images/archetypes/animal_whisperer.jpg',
     name: 'The Animal Whisperer',
     description: 'Talks to animals and hears nature\'s secrets',
     traits: ['Kind', 'Observant', 'Gentle'],
@@ -276,7 +299,8 @@ class CharacterArchetypes {
 }
 
 class ArchetypeData {
-  final String icon;
+  final String? icon; // Optional fallback emoji
+  final String? imagePath; // Path to archetype image
   final String name;
   final String description;
   final List<String> traits;
@@ -284,7 +308,8 @@ class ArchetypeData {
   final String specialAbility; // New: physics-defying power for adventures
 
   const ArchetypeData({
-    required this.icon,
+    this.icon,
+    this.imagePath,
     required this.name,
     required this.description,
     required this.traits,

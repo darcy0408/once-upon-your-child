@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../services/avatar_service.dart';
 
-import 'package:flutter/foundation.dart';
 /// Avatar Picker Screen - Visual customization interface for avataaars
 ///
 /// Allows kids to customize their avatar by selecting:

@@ -8,6 +8,8 @@
 ///
 /// This replaces the heavy 3-tier feelings wheel with a lighter
 /// single-tap mood selection system.
+library;
+
 
 import 'package:flutter/material.dart';
 

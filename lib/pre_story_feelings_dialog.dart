@@ -3,7 +3,6 @@
 
 import 'package:flutter/material.dart';
 
-import 'feelings_wheel_screen.dart';
 import 'feelings_wheel_data.dart';
 import 'widgets/mood_magic_picker.dart';
 import 'widgets/therapeutic_feelings_wheel.dart';

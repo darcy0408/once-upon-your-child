@@ -460,8 +460,8 @@ class _SimpleWheelPainter extends CustomPainter {
     final faceImage = faceKey != null ? faceImages[faceKey] : null;
 
     if (faceImage != null) {
-      // Position face in upper portion of sector
-      final faceRadius = innerRadius + (outerRadius - innerRadius) * 0.38;
+      // Position face centered in sector (image already contains the label)
+      final faceRadius = innerRadius + (outerRadius - innerRadius) * 0.5;
       final faceCenter = Offset(
         center.dx + faceRadius * math.cos(centerAngle),
         center.dy + faceRadius * math.sin(centerAngle),
@@ -471,19 +471,13 @@ class _SimpleWheelPainter extends CustomPainter {
       final glowPaint = Paint()
         ..color = Colors.white.withValues(alpha: 0.4)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-      canvas.drawCircle(faceCenter, radius * 0.11, glowPaint);
+      canvas.drawCircle(faceCenter, radius * 0.13, glowPaint);
 
-      // Draw face - larger size for better visibility
-      final faceSize = radius * 0.18;
+      // Draw face - image already contains the emotion label, so no separate text needed
+      final faceSize = radius * 0.22;
       _drawImageFace(canvas, faceImage, faceCenter, faceSize);
-
-      // Label below face
-      final labelRadius = innerRadius + (outerRadius - innerRadius) * 0.78;
-      final labelX = center.dx + labelRadius * math.cos(centerAngle);
-      final labelY = center.dy + labelRadius * math.sin(centerAngle);
-      _drawText(canvas, label, labelX, labelY, 12.0, Colors.white, fontWeight: FontWeight.bold, shadow: true);
     } else {
-      // Fallback: just show label centered (for emotions without face images)
+      // Fallback: show label only when no face image available
       final labelX = center.dx + midRadius * math.cos(centerAngle);
       final labelY = center.dy + midRadius * math.sin(centerAngle);
       _drawText(canvas, label, labelX, labelY, 11.0, Colors.white, fontWeight: FontWeight.w600, shadow: true);
@@ -546,24 +540,25 @@ class _SimpleWheelPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, hubRadius, bgPaint);
 
-    // Face image
+    // Face image (already contains emotion label)
     final faceImage = faceImages[faceKey];
     if (faceImage != null) {
-      final faceCenter = Offset(center.dx, center.dy - hubRadius * 0.2);
-      _drawImageFace(canvas, faceImage, faceCenter, radius * 0.14);
+      // Center the face in the hub (image already has label)
+      final faceCenter = Offset(center.dx, center.dy - hubRadius * 0.1);
+      _drawImageFace(canvas, faceImage, faceCenter, radius * 0.16);
+    } else {
+      // Fallback: show text label only when no face image available
+      _drawText(
+        canvas,
+        name,
+        center.dx,
+        center.dy,
+        11,
+        Colors.white,
+        fontWeight: FontWeight.bold,
+        shadow: true,
+      );
     }
-
-    // Label below face
-    _drawText(
-      canvas,
-      name,
-      center.dx,
-      center.dy + hubRadius * 0.55,
-      11,
-      Colors.white,
-      fontWeight: FontWeight.bold,
-      shadow: true,
-    );
 
     // Back arrow at bottom of hub
     _drawBackArrow(canvas, Offset(center.dx, center.dy + hubRadius * 0.85), radius * 0.03);

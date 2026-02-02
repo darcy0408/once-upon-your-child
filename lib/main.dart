@@ -174,7 +174,7 @@ class _StoryWeaverAppState extends ConsumerState<StoryWeaverApp> {
     //   );
     // }
 
-    if (onboardingStatus || true) {  // TEMPORARY: Always skip to main app
+    if (onboardingStatus) {  // TEMPORARY: Always skip to main app
       return const StoryCreatorApp();
     }
 

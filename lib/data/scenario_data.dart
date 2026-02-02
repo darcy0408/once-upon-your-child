@@ -173,6 +173,19 @@ class ScenarioData {
       youngDescription: 'A new school or a new house is a exciting mystery waiting for you!',
       youngConflictHook: 'Let\'s find all the fun things hidden in our new adventure!',
     ),
+    ScenarioCard(
+      id: 'safe_space',
+      emoji: '💬',
+      title: 'My Safe Space',
+      illustration: 'images/scenarios/safe_space.png',
+      description: 'A cozy place to share what\'s on your mind and find helpful ways to feel better.',
+      conflictHook: 'Tell me what\'s bothering you, and together we\'ll find a way through it.',
+      sensoryPalette: 'Soft cushions, warm glowing lights, the gentle sound of wind chimes.',
+      category: 'Real-Life Heroes',
+      youngTitle: 'Let\'s Talk',
+      youngDescription: 'A friendly place to share your feelings and get a warm hug!',
+      youngConflictHook: 'What\'s making you feel funny inside? Let\'s figure it out together!',
+    ),
   ];
   
   static ScenarioCard? getById(String id) {

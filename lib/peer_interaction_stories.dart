@@ -183,45 +183,21 @@ class PeerInteractionStories extends StatefulWidget {
   State<PeerInteractionStories> createState() => _PeerInteractionStoriesState();
 }
 
-class _PeerInteractionStoriesState extends State<PeerInteractionStories>
-    with TickerProviderStateMixin {
+class _PeerInteractionStoriesState extends State<PeerInteractionStories> {
   late List<PeerInteractionStory> _stories;
   late PageController _pageController;
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
 
   int _currentStoryIndex = 0;
-  bool _showInteractions = false;
-  int _currentInteractionIndex = 0;
-  String _selectedChoice = '';
-  bool _showFeedback = false;
-  final bool _isCorrect = false;
 
   @override
   void initState() {
     super.initState();
     _initializeStories();
-    _setupAnimations();
     _pageController = PageController();
   }
 
   void _initializeStories() {
     _stories = _generatePeerStories();
-  }
-
-  void _setupAnimations() {
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.1,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
   }
 
   List<PeerInteractionStory> _generatePeerStories() {
@@ -373,12 +349,7 @@ class _PeerInteractionStoriesState extends State<PeerInteractionStories>
   }
 
   void _startStory() {
-    setState(() {
-      _showInteractions = false;
-      _currentInteractionIndex = 0;
-      _selectedChoice = '';
-      _showFeedback = false;
-    });
+    // Reset state if needed
   }
 
   void _nextStory() {
@@ -452,7 +423,6 @@ class _PeerInteractionStoriesState extends State<PeerInteractionStories>
   @override
   void dispose() {
     _pageController.dispose();
-    _animationController.dispose();
     super.dispose();
   }
 

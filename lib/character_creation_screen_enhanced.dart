@@ -24,7 +24,6 @@ import 'screens/avatar_picker_screen.dart';
 import 'screens/midjourney_avatar_picker_screen.dart';
 import 'services/avatar_service.dart';
 
-import 'package:flutter/foundation.dart';
 import 'services/isar_service.dart';
 import 'models/local/character_local.dart';
 class CharacterCreationScreenEnhanced extends StatefulWidget {

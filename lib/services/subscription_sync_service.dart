@@ -24,7 +24,6 @@ class SubscriptionSyncService {
   bool _cacheHydrated = false;
 
   static const String _cacheKey = 'subscription_status';
-  static const Duration _requestTimeout = Duration(seconds: 15);
   static const List<Duration> _retrySchedule = [
     Duration(seconds: 1),
     Duration(seconds: 2),

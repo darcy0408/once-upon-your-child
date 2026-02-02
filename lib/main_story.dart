@@ -10,8 +10,6 @@ import 'package:story_weaver_app/widgets/user_friendly_error_dialog.dart';
 
 import 'achievements_screen.dart' deferred as achievements_screen;
 import 'avatar_models.dart';
-import 'character_creation_screen_enhanced.dart';
-import 'character_edit_screen_enhanced.dart';
 import 'character_evolution.dart';
 import 'coloring_book_library_screen.dart';
 import 'config/environment.dart';
@@ -1316,15 +1314,15 @@ class _StoryScreenState extends State<StoryScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-                        color: const Color(0xFF81C784).withValues(alpha: 0.5), // Light green border
+            color: const Color(0xFF81C784).withValues(alpha: 0.5), // Light green border
             width: 2,
           ),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-                            Colors.white.withValues(alpha: 0.95),
-                            const Color(0xFFF1F8E9).withValues(alpha: 0.95), // Very light green tint
+              Colors.white.withValues(alpha: 0.95),
+              const Color(0xFFF1F8E9).withValues(alpha: 0.95), // Very light green tint
             ],
           ),
         ),
@@ -1365,160 +1363,6 @@ class _StoryScreenState extends State<StoryScreen> {
         ),
       ),
     );
-  }
-
-  Widget _buildCharacterSelector() {
-    return Wrap(
-      spacing: 12.0,
-      runSpacing: 12.0,
-      children: [
-        ..._characters.map((c) => _buildCharacterCard(c)),
-        _buildAddCharacterCard(),
-      ],
-    );
-  }
-
-  Widget _buildCharacterCard(Character character) {
-    final isSelected = _selectedCharacter?.id == character.id;
-
-    return SizedBox(
-      width: 104,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                setState(() {
-                  _selectedCharacter = character;
-                });
-              },
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 140, minWidth: 104),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: isSelected ? Colors.deepPurple : Colors.grey.shade300,
-                    width: isSelected ? 3 : 1,
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  color: isSelected ? Colors.deepPurple.shade50 : Colors.white,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 12),
-                    _buildCharacterAvatar(character, size: 64),
-                    const SizedBox(height: 10),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text(
-                        character.name,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected ? Colors.deepPurple : Colors.black87,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                ),
-              ),
-            ),
-          Positioned(
-            top: -6,
-            right: -6,
-            child: Material(
-              color: Colors.white,
-              shape: const CircleBorder(),
-              elevation: 2,
-              child: PopupMenuButton<String>(
-                tooltip: 'Character options',
-                onSelected: (value) {
-                  if (value == 'edit') {
-                    _editCharacter(character);
-                  } else if (value == 'delete') {
-                    _deleteCharacter(character.id, character.name);
-                  }
-                },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(
-                    value: 'edit',
-                    child: Text('Edit Character'),
-                  ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Text(
-                      'Delete',
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  ),
-                ],
-                child: const Padding(
-                  padding: EdgeInsets.all(6),
-                  child: Icon(Icons.more_vert, size: 18),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAddCharacterCard() {
-    return GestureDetector(
-        onTap: () async {
-          await Navigator.of(context).push(
-            MaterialPageRoute(
-                builder: (context) => const CharacterCreationScreenEnhanced()),
-          );
-          await _loadCharacters();
-          await _loadAchievementSummary();
-        },
-        child: Container(
-          width: 96,
-          constraints: const BoxConstraints(minHeight: 130, minWidth: 96),
-          decoration: BoxDecoration(
-            border: Border.all(
-                color: Colors.deepPurple, width: 2, style: BorderStyle.solid),
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.deepPurple.shade50,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.deepPurple.shade100,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.add, size: 30, color: Colors.deepPurple),
-              ),
-              const SizedBox(height: 8),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 6),
-                child: Text(
-                  'Add\nCharacter',
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.deepPurple),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        ),
-      );
   }
 
   Widget _buildCharacterAvatar(Character character, {double size = 40}) {
@@ -1581,7 +1425,6 @@ class _StoryScreenState extends State<StoryScreen> {
     if (tone.contains('brown')) return 'Brown';
     if (tone.contains('black') || tone.contains('deep')) return 'Black';
 
-    // Avoid randomizing skin tone when data is missing; default to a light neutral base
     return 'Light';
   }
 
@@ -1669,73 +1512,6 @@ class _StoryScreenState extends State<StoryScreen> {
     if (value.contains('anger')) return 'Serious';
     return 'Smile';
   }
-
-  Future<void> _editCharacter(Character character) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => CharacterEditScreenEnhanced(character: character),
-      ),
-    );
-    if (mounted) {
-      await _loadCharacters();
-    }
-  }
-
-  Future<void> _deleteCharacter(
-      String characterId, String characterName) async {
-    // Confirm deletion
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Character'),
-        content: Text(
-            'Are you sure you want to delete $characterName? This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    // Delete from backend
-    try {
-      final response = await http.delete(
-        Uri.parse('${Environment.backendUrl}/characters/$characterId'),
-      );
-
-      if (response.statusCode == 200) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('$characterName deleted successfully')),
-          );
-        }
-        // Reload characters
-        await _loadCharacters();
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to delete character')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error deleting character')),
-        );
-      }
-    }
-  }
-
 
   Widget _buildCompanionSelector() {
     return SizedBox(

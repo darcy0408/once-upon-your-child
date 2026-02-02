@@ -977,18 +977,6 @@ This is a FEELINGS-FIRST story. The emotion is the main character's journey.
       }
     }
 
-    String companionText = '';
-    if (companion != null && companion.isNotEmpty) {
-      companionText =
-          '\n\nCOMPANION: Include $companion as an empathetic friend who helps $characterName understand and cope with their feelings.';
-    }
-
-    String multiCharacterText = '';
-    if (additionalCharacters != null && additionalCharacters.isNotEmpty) {
-      multiCharacterText =
-          '\n\nADDITIONAL CHARACTERS: ${additionalCharacters.join(", ")}. These characters can support $characterName emotionally.';
-    }
-
     // Build character evolution context
     String evolutionContext = '';
     if (characterEvolution != null) {
@@ -996,8 +984,6 @@ This is a FEELINGS-FIRST story. The emotion is the main character's journey.
           characterEvolution['development_stage'] as String?;
       final therapeuticProgress =
           characterEvolution['therapeutic_progress'] as Map<String, dynamic>?;
-      final emotionMastery =
-          characterEvolution['emotion_mastery'] as Map<String, dynamic>?;
       final evolvedTraits =
           characterEvolution['evolved_traits'] as Map<String, dynamic>?;
       if (developmentStage != null) {
@@ -1033,19 +1019,6 @@ This is a FEELINGS-FIRST story. The emotion is the main character's journey.
             '\nBuild upon these existing therapeutic skills in the story.';
       }
 
-      if (emotionMastery != null && emotionMastery.isNotEmpty) {
-        final masteredEmotions = emotionMastery.entries
-            .where((e) => (e.value as int) >= 50)
-            .map((e) => e.key)
-            .toList();
-        if (masteredEmotions.isNotEmpty) {
-          evolutionContext +=
-              '\n\nEMOTION MASTERY: $characterName is skilled with these emotions: ${masteredEmotions.join(", ")}.';
-          evolutionContext +=
-              '\nChallenge them with new emotional experiences or reinforce their mastery.';
-        }
-      }
-
       if (evolvedTraits != null) {
         final confidence = evolvedTraits['confidence'] as int?;
         final empathy = evolvedTraits['empathy'] as int?;
@@ -1077,7 +1050,7 @@ REQUEST SUMMARY
 - Mode: Linear story, feelings-centered
 - Length target: $lengthGuideline (Short default)
 - Companion: ${companion ?? 'None'}
-$multiCharacterText$feelingsSection$characterIntegration$evolutionContext
+$feelingsSection$characterIntegration$evolutionContext
 
 STORY
 STORY START
@@ -1153,17 +1126,10 @@ Maintain plain text (no markdown fences).''';
       if (comfortItem != null && comfortItem.isNotEmpty) {
         characterIntegration +=
             '\n\nCOMFORT ITEM: $comfortItem. This special item can be part of the adventure.';
-      }
-    }
-
-    String companionText = '';
-    if (companion != null && companion.isNotEmpty) {
-      companionText =
-          '\n\nCOMPANION: Include $companion as $characterName\'s friend and adventure partner.';
-    }
-
-    String multiCharacterText = '';
-    if (additionalCharacters != null && additionalCharacters.isNotEmpty) {
+            }
+          }
+          String multiCharacterText = '';
+          if (additionalCharacters != null && additionalCharacters.isNotEmpty) {
       multiCharacterText =
           '\n\nADDITIONAL CHARACTERS: ${additionalCharacters.join(", ")}. These characters join the adventure.';
     }
@@ -1175,8 +1141,6 @@ Maintain plain text (no markdown fences).''';
           characterEvolution['development_stage'] as String?;
       final therapeuticProgress =
           characterEvolution['therapeutic_progress'] as Map<String, dynamic>?;
-      final emotionMastery =
-          characterEvolution['emotion_mastery'] as Map<String, dynamic>?;
       final evolvedTraits =
           characterEvolution['evolved_traits'] as Map<String, dynamic>?;
 
@@ -1315,11 +1279,6 @@ SAFETY: Keep content gentle, avoid violence/scares; keep tone warm and supportiv
       detailSection += '\nFRIENDS IN STORY: ${additionalCharacters.join(", ")}';
     }
 
-    String companionText = '';
-    if (companion != null && companion.isNotEmpty && companion != 'None') {
-      companionText = '\nCOMPANION: Include $companion as a gentle helper.';
-    }
-
     return '''
 You are creating a LEARNING TO READ rhyming story for a $age-year-old named $characterName.
 
@@ -1332,7 +1291,7 @@ STRICT REQUIREMENTS (NO EXCEPTIONS):
 6. TONE: Encouraging, musical, and confidence-building.
 7. FORMAT: Each sentence or phrase on its own line for easy finger-tracking.
 
-THEME: $theme$companionText$detailSection
+THEME: $theme$detailSection
 
 Create the rhyming learning-to-read story about $characterName now:
 ''';
@@ -1504,10 +1463,6 @@ Create the rhyming learning-to-read story about $characterName now:
       model: 'gemini-2.0-flash',
       apiKey: apiKey,
     );
-
-    final companionText = companion != null && companion.isNotEmpty
-        ? 'Include $companion as a friend/companion who can help with choices.'
-        : '';
 
     final bool useSecondPerson = age <= 5;
     final String perspectiveInstruction = useSecondPerson

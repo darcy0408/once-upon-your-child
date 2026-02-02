@@ -6,7 +6,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import 'avatar_models.dart';
 
-import 'package:flutter/foundation.dart';
 class CustomizableAvatarWidget extends StatelessWidget {
   final CharacterAvatar avatar;
   final double size;

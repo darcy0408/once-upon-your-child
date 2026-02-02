@@ -183,45 +183,21 @@ class FamilyRelationshipStories extends StatefulWidget {
   State<FamilyRelationshipStories> createState() => _FamilyRelationshipStoriesState();
 }
 
-class _FamilyRelationshipStoriesState extends State<FamilyRelationshipStories>
-    with TickerProviderStateMixin {
+class _FamilyRelationshipStoriesState extends State<FamilyRelationshipStories> {
   late List<FamilyRelationshipStory> _stories;
   late PageController _pageController;
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
 
   int _currentStoryIndex = 0;
-  bool _showInteractions = false;
-  int _currentInteractionIndex = 0;
-  String _selectedChoice = '';
-  bool _showFeedback = false;
-  final bool _isCorrect = false;
 
   @override
   void initState() {
     super.initState();
     _initializeStories();
-    _setupAnimations();
     _pageController = PageController();
   }
 
   void _initializeStories() {
     _stories = _generateFamilyStories();
-  }
-
-  void _setupAnimations() {
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.1,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
   }
 
   List<FamilyRelationshipStory> _generateFamilyStories() {
@@ -373,12 +349,7 @@ class _FamilyRelationshipStoriesState extends State<FamilyRelationshipStories>
   }
 
   void _startStory() {
-    setState(() {
-      _showInteractions = false;
-      _currentInteractionIndex = 0;
-      _selectedChoice = '';
-      _showFeedback = false;
-    });
+    // Reset state if needed
   }
 
   void _nextStory() {
@@ -452,7 +423,6 @@ class _FamilyRelationshipStoriesState extends State<FamilyRelationshipStories>
   @override
   void dispose() {
     _pageController.dispose();
-    _animationController.dispose();
     super.dispose();
   }
 

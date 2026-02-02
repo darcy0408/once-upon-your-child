@@ -294,7 +294,6 @@ class GeminiColoringBookService extends ColoringBookService {
 
       // Convert to ColoringPage objects
       return coloringPagesData.asMap().entries.map((entry) {
-        final index = entry.key;
         final pageData = entry.value as Map<String, dynamic>;
 
         // Convert base64 to data URL

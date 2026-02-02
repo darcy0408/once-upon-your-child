@@ -31,7 +31,6 @@ class MagicReviewStep extends StatefulWidget {
 
 class _MagicReviewStepState extends State<MagicReviewStep> {
   bool _isGenerating = false;
-  bool _isSaving = false;
   String _loadingStatus = 'Making magic...';
 
   void _launchStoryCreation() async {
@@ -182,7 +181,6 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
   }
 
   Future<void> _saveCharacterIfNeeded() async {
-    setState(() => _isSaving = true);
     
     try {
       final characterDetails = WizardDataMapper.mapToStoryRequest(widget.wizardData)['characterDetails'] as Map<String, dynamic>;
@@ -228,8 +226,6 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
 
     } catch (e) {
       debugPrint('⚠️ Character save/update failed: $e');
-    } finally {
-      setState(() => _isSaving = false);
     }
   }
 
@@ -266,13 +262,16 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Character preview (smaller version)
-            SizedBox(
-              height: 200,
-              child: CharacterPreview(
-                generatedAvatar: data.generatedAvatar,
-                placeholderEmoji: _getCharacterEmoji(),
-                showSparkles: true,
+            // Character preview (smaller version, forced square for circular display)
+            Center(
+              child: SizedBox(
+                width: 200,
+                height: 200,
+                child: CharacterPreview(
+                  generatedAvatar: data.generatedAvatar,
+                  placeholderEmoji: _getCharacterEmoji(),
+                  showSparkles: true,
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.xl),

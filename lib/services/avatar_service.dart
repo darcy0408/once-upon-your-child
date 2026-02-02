@@ -11,7 +11,6 @@ import '../services/isar_service.dart';
 
 import '../data/isar/avatar_cache_entry.dart';
 
-import 'package:flutter/foundation.dart';
 /// Service for generating and caching self-hosted DiceBear avatars
 ///
 /// Features:
@@ -309,6 +308,7 @@ class AvatarService {
   }) async {
     if (!_cachingAvailable) return; // No caching on web
 
+    /*
     final tier = _getAgeTier(age);
 
     // Sort options for consistent JSON
@@ -326,6 +326,7 @@ class AvatarService {
       ageTier: tier,
       characterAge: age,
     );
+    */
 
     // TODO: Re-enable when Isar web support is fixed
     // await isar.writeTxn(() async {

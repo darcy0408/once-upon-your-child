@@ -8,7 +8,6 @@ import '../../widgets/pill_button.dart';
 import '../wizard_story_screen.dart';
 import '../../services/api_service_manager.dart';
 import '../../models/generated_avatar.dart';
-import '../../widgets/avatar_creator_overlay.dart';
 import '../../widgets/avatar_gallery_selector.dart';
 import '../../services/avatar_generation_state.dart';
 
@@ -196,7 +195,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   void _selectArchetype(ArchetypeData archetype) {
     setState(() {
       _selectedArchetypeId = archetype.name;
-      _characterEmoji = archetype.icon;
+      _characterEmoji = archetype.icon ?? '✨';
 
       // Auto-fill wizard data with archetype
       widget.wizardData.selectedArchetypeId = archetype.name;
@@ -447,6 +446,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 
                         return ArchetypeCard(
                           icon: archetype.icon,
+                          imagePath: archetype.imagePath,
                           name: archetype.name,
                           description: archetype.description,
                           specialAbility: archetype.specialAbility,

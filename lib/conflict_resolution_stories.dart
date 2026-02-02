@@ -29,7 +29,6 @@ class _ConflictResolutionStoriesState extends State<ConflictResolutionStories>
 
   int _currentStoryIndex = 0;
   bool _showChoices = false;
-  String _selectedChoice = '';
   bool _showResult = false;
   bool _isCorrect = false;
   ConflictChoice? _chosenChoice;
@@ -69,7 +68,6 @@ class _ConflictResolutionStoriesState extends State<ConflictResolutionStories>
 
   void _selectChoice(ConflictChoice choice) {
     setState(() {
-      _selectedChoice = choice.description;
       _chosenChoice = choice;
       _isCorrect = choice.isPeacefulSolution;
       _showResult = true;
@@ -96,7 +94,6 @@ class _ConflictResolutionStoriesState extends State<ConflictResolutionStories>
         );
         _showChoices = false;
         _showResult = false;
-        _selectedChoice = '';
         _chosenChoice = null;
       });
     } else {
@@ -570,7 +567,6 @@ class _ConflictResolutionStoriesState extends State<ConflictResolutionStories>
                           );
                           _showChoices = false;
                           _showResult = false;
-                          _selectedChoice = '';
                           _chosenChoice = null;
                         });
                       },

@@ -47,7 +47,6 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
 
   // Loaded data
   List<Character> _savedCharacters = [];
-  bool _isLoadingCharacters = true;
 
   @override
   void initState() {
@@ -78,7 +77,6 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
         if (mounted) {
           setState(() {
             _savedCharacters = characters;
-            _isLoadingCharacters = false;
           });
           debugPrint('✅ Loaded ${characters.length} saved characters from backend');
           for (var c in characters) {
@@ -90,7 +88,6 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
         if (mounted) {
           setState(() {
             _savedCharacters = [];
-            _isLoadingCharacters = false;
           });
         }
       }
@@ -99,7 +96,6 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
       if (mounted) {
         setState(() {
           _savedCharacters = [];
-          _isLoadingCharacters = false;
         });
       }
     }

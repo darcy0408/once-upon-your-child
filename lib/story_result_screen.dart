@@ -15,8 +15,6 @@ import 'story_reader_screen.dart';
 import 'services/isar_service.dart';
 import 'services/offline_story_service.dart';
 import 'story_illustration_service.dart';
-import 'illustration_settings_dialog.dart';
-import 'illustrated_story_viewer.dart';
 import 'coloring_book_service.dart';
 import 'coloring_book_library_screen.dart';
 import 'models.dart';
@@ -109,7 +107,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   List<StoryIllustration>? _cachedIllustrations;
   List<ColoringPage>? _cachedColoringPages;
   int? _characterAge;
-  Character? _character;  // Store full character data for illustrations
   String? _activeTherapeuticFocus;
   late final PageController _pageController;
   late List<String> _storyPages;
@@ -323,7 +320,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         final character = Character.fromJson(data);
         if (!mounted) return;
         setState(() {
-          _character = character;  // Store full character for illustrations
           _characterAge = character.age > 0 ? character.age : null;
         });
       } else {

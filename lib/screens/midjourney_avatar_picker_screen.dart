@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:flutter/foundation.dart';
 /// Midjourney Avatar Picker Screen
 ///
 /// Displays custom Midjourney-generated avatars in a grid with:

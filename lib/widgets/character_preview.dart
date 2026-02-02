@@ -90,7 +90,7 @@ class _CharacterPreviewState extends State<CharacterPreview>
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final previewSize = math.min(size.width * 0.7, 300.0);
+    final previewSize = math.min(size.width * 0.8, 380.0);
 
     return Semantics(
       image: true,
@@ -128,14 +128,11 @@ class _CharacterPreviewState extends State<CharacterPreview>
                     child: _buildSparkleCircle(previewSize),
                   ),
 
-                // Character image/placeholder
+                // Character image/placeholder (no dotted circle frame)
                 ScaleTransition(
                   scale: _scaleAnimation,
                   child: _buildCharacter(previewSize),
                 ),
-
-                // Dotted circle frame (on top)
-                _buildDottedCircle(previewSize),
               ],
             ),
           ),
@@ -170,21 +167,9 @@ class _CharacterPreviewState extends State<CharacterPreview>
     );
   }
 
-  Widget _buildDottedCircle(double size) {
-    return CustomPaint(
-      size: Size(size, size),
-      painter: _DottedCirclePainter(
-        color: AppColors.gold,
-        strokeWidth: 3,
-        dashLength: 10,
-        dashGap: 8,
-      ),
-    );
-  }
-
   Widget _buildCharacter(double size) {
-    // Character should be slightly smaller than the dotted circle (which is 'size')
-    final characterSize = size * 0.90;
+    // Character fills the full preview area (no dotted circle border)
+    final characterSize = size;
 
     // Priority: Generated Avatar > Network Image > Emoji Placeholder
     if (widget.generatedAvatar != null) {
@@ -280,15 +265,36 @@ class _CharacterPreviewState extends State<CharacterPreview>
         ],
       ),
       child: ClipOval(
-        child: Image.asset(
-          'assets/images/character_placeholder.png',
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          alignment: const Alignment(0, -0.3), // Show head and upper body
-          errorBuilder: (context, error, stackTrace) {
-            return _buildEmojiPlaceholder(size);
-          },
+        child: Stack(
+          children: [
+            // The placeholder image
+            Image.asset(
+              'assets/images/character_placeholder.png',
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              alignment: const Alignment(0, -0.3), // Show head and upper body
+              errorBuilder: (context, error, stackTrace) {
+                return _buildEmojiPlaceholder(size);
+              },
+            ),
+            // Soft gradient vignette to blend edges
+            Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    Colors.transparent,
+                    Colors.transparent,
+                    widget.backgroundColor.withAlpha(40),
+                  ],
+                  stops: const [0.0, 0.85, 1.0],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -326,53 +332,3 @@ class _CharacterPreviewState extends State<CharacterPreview>
   }
 }
 
-/// Custom painter for dotted circle
-class _DottedCirclePainter extends CustomPainter {
-  final Color color;
-  final double strokeWidth;
-  final double dashLength;
-  final double dashGap;
-
-  _DottedCirclePainter({
-    required this.color,
-    required this.strokeWidth,
-    required this.dashLength,
-    required this.dashGap,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    // Reduce radius by half stroke width to stay within bounds
-    final radius = (size.width - strokeWidth) / 2;
-    final center = Offset(size.width / 2, size.height / 2);
-    final circumference = 2 * math.pi * radius;
-    final dashCount = (circumference / (dashLength + dashGap)).floor();
-
-    for (int i = 0; i < dashCount; i++) {
-      final startAngle = (i * (dashLength + dashGap) / radius);
-      final sweepAngle = dashLength / radius;
-
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sweepAngle,
-        false,
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DottedCirclePainter oldDelegate) {
-    return oldDelegate.color != color ||
-        oldDelegate.strokeWidth != strokeWidth ||
-        oldDelegate.dashLength != dashLength ||
-        oldDelegate.dashGap != dashGap;
-  }
-}

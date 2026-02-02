@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:math' as math;
 
 /// Magical avatar widget with glow effects and optional particles

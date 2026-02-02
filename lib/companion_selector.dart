@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 /// Backend-aligned companion names.
 const kCompanionOptions = <CompanionOption>[
   CompanionOption(label: 'None', keyName: 'None', asset: null),
-  CompanionOption(label: 'Loyal Dog', keyName: 'Loyal Dog', asset: 'assets/images/dog.png'),
-  CompanionOption(label: 'Mysterious Cat', keyName: 'Mysterious Cat', asset: 'assets/images/cat.png'),
-  CompanionOption(label: 'Mischievous Fairy', keyName: 'Mischievous Fairy', asset: 'assets/images/fairy.png'),
-  CompanionOption(label: 'Tiny Dragon', keyName: 'Tiny Dragon', asset: 'assets/images/dragon.png'),
-  CompanionOption(label: 'Wise Owl', keyName: 'Wise Owl', asset: 'assets/images/owl.png'),
-  CompanionOption(label: 'Gallant Horse', keyName: 'Gallant Horse', asset: 'assets/images/horse.png'),
-  CompanionOption(label: 'Robot Sidekick', keyName: 'Robot Sidekick', asset: 'assets/images/robot.png'),
+  CompanionOption(label: 'Star Dog', keyName: 'Star Dog', asset: 'assets/images/companions/dog.jpg'),
+  CompanionOption(label: 'Shadow Cat', keyName: 'Shadow Cat', asset: 'assets/images/companions/cat.jpg'),
+  CompanionOption(label: 'Tiny Dragon', keyName: 'Tiny Dragon', asset: 'assets/images/companions/dragon.jpg'),
+  CompanionOption(label: 'Wise Owl', keyName: 'Wise Owl', asset: 'assets/images/companions/owl.jpg'),
+  CompanionOption(label: 'Magic Unicorn', keyName: 'Magic Unicorn', asset: 'assets/images/companions/unicorn.jpg'),
+  CompanionOption(label: 'Clever Fox', keyName: 'Clever Fox', asset: 'assets/images/companions/fox.jpg'),
+  CompanionOption(label: 'Rockin\' Robin', keyName: 'Rockin\' Robin', asset: 'assets/images/companions/robin.jpg'),
 ];
 
 class CompanionOption {

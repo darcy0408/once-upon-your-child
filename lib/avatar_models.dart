@@ -247,7 +247,6 @@ String _mapHairColorToDiceBear(String value) {
     case 'red':
       return 'c93305';
     case 'gold':
-    case 'blondegolden':
       return 'f1e2b8';
     case 'rainbow':
       return 'f59797'; // Map rainbow to pastel pink as closest fantasy option
