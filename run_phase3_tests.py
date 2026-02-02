@@ -4,6 +4,7 @@ Automated Phase 3 Testing Suite for Story Weaver App
 Tests custom elements feature and core functionality
 """
 import sys
+import os
 import requests
 import json
 import time

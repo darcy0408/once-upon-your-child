@@ -89,6 +89,8 @@ flutter:
   # Assets for Story Weaver - minimize to essential only
   assets:
     - assets/images/
+    - assets/images/archetypes/
+    - assets/images/companions/
     - assets/images/scenarios/
     - assets/images/themes/
     - assets/feelings_faces/
