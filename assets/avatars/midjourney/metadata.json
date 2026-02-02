@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "total": 55,
+  "total": 94,
   "generated": "2026-01-07",
   "source": "midjourney",
   "format": "webp",
@@ -610,13 +610,476 @@
       "hairStyle": null,
       "gender": null,
       "tags": []
+    },
+    "31.webp": {
+      "id": "31",
+      "filename": "31.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "32.webp": {
+      "id": "32",
+      "filename": "32.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "33.webp": {
+      "id": "33",
+      "filename": "33.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "34.webp": {
+      "id": "34",
+      "filename": "34.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "35.webp": {
+      "id": "35",
+      "filename": "35.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "36.webp": {
+      "id": "36",
+      "filename": "36.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "37.webp": {
+      "id": "37",
+      "filename": "37.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "38.webp": {
+      "id": "38",
+      "filename": "38.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "39.webp": {
+      "id": "39",
+      "filename": "39.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "41.webp": {
+      "id": "41",
+      "filename": "41.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "42.webp": {
+      "id": "42",
+      "filename": "42.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "43.webp": {
+      "id": "43",
+      "filename": "43.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "44.webp": {
+      "id": "44",
+      "filename": "44.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "45.webp": {
+      "id": "45",
+      "filename": "45.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "46.webp": {
+      "id": "46",
+      "filename": "46.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "47.webp": {
+      "id": "47",
+      "filename": "47.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "48.webp": {
+      "id": "48",
+      "filename": "48.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "49.webp": {
+      "id": "49",
+      "filename": "49.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "50.webp": {
+      "id": "50",
+      "filename": "50.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "51.webp": {
+      "id": "51",
+      "filename": "51.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "52.webp": {
+      "id": "52",
+      "filename": "52.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "53.webp": {
+      "id": "53",
+      "filename": "53.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "54.webp": {
+      "id": "54",
+      "filename": "54.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "55.webp": {
+      "id": "55",
+      "filename": "55.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "56.webp": {
+      "id": "56",
+      "filename": "56.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "57.webp": {
+      "id": "57",
+      "filename": "57.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "58.webp": {
+      "id": "58",
+      "filename": "58.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "59.webp": {
+      "id": "59",
+      "filename": "59.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "60.webp": {
+      "id": "60",
+      "filename": "60.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "61.webp": {
+      "id": "61",
+      "filename": "61.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "62.webp": {
+      "id": "62",
+      "filename": "62.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "65.webp": {
+      "id": "65",
+      "filename": "65.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "66.webp": {
+      "id": "66",
+      "filename": "66.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "67.webp": {
+      "id": "67",
+      "filename": "67.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "69.webp": {
+      "id": "69",
+      "filename": "69.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "70.webp": {
+      "id": "70",
+      "filename": "70.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "71.webp": {
+      "id": "71",
+      "filename": "71.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "63.webp": {
+      "id": "63",
+      "filename": "63.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
+    },
+    "64.webp": {
+      "id": "64",
+      "filename": "64.webp",
+      "age": null,
+      "ageGroup": null,
+      "skinTone": null,
+      "hairColor": null,
+      "hairStyle": null,
+      "gender": null,
+      "tags": []
     }
   },
   "categories": {
-    "ageGroups": ["4-5", "6-7", "8-10"],
-    "skinTones": ["very-light", "light", "medium-light", "medium", "medium-dark", "dark", "very-dark"],
-    "hairColors": ["blonde", "light-brown", "brown", "dark-brown", "black", "red", "auburn"],
-    "hairStyles": ["short", "medium", "long", "curly", "braids", "locs", "afro", "ponytail", "pigtails"],
-    "genders": ["masculine", "feminine", "androgynous"]
+    "ageGroups": [
+      "4-5",
+      "6-7",
+      "8-10"
+    ],
+    "skinTones": [
+      "very-light",
+      "light",
+      "medium-light",
+      "medium",
+      "medium-dark",
+      "dark",
+      "very-dark"
+    ],
+    "hairColors": [
+      "blonde",
+      "light-brown",
+      "brown",
+      "dark-brown",
+      "black",
+      "red",
+      "auburn"
+    ],
+    "hairStyles": [
+      "short",
+      "medium",
+      "long",
+      "curly",
+      "braids",
+      "locs",
+      "afro",
+      "ponytail",
+      "pigtails"
+    ],
+    "genders": [
+      "masculine",
+      "feminine",
+      "androgynous"
+    ]
   }
 }
