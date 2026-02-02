@@ -43,7 +43,7 @@ def create_utility_blueprint(logger, log_error):
     def debug_gemini():
         """Debug endpoint to test Gemini text generation"""
         api_key = os.getenv("GEMINI_API_KEY")
-        model_name = os.getenv("GEMINI_MODEL", "models/gemini-2.5-flash")
+        model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
         
         status = {
             "api_key_configured": bool(api_key),
@@ -57,39 +57,42 @@ def create_utility_blueprint(logger, log_error):
             if not api_key:
                 status["steps"].append("❌ API Key missing")
                 return jsonify(status), 500
-                
-            import google.generativeai as genai
 
-            genai.configure(api_key=api_key)
-            status["steps"].append("✅ GenAI Configured")
-            
-            # Step 2: Initialize Model
-            model = genai.GenerativeModel(model_name)
-            status["steps"].append(f"✅ Model initialized: {model_name}")
-            
+            from google import genai
+
+            client = genai.Client(api_key=api_key)
+            status["steps"].append("✅ GenAI Client Created")
+
+            # Step 2: Generate Content (model specified per-request in new SDK)
+            status["steps"].append(f"✅ Using model: {model_name}")
+
             # Step 3: Generate Content
             start_time = time.time()
-            response = model.generate_content("Say 'Hello from Gemini!' if you can hear me.")
+            response = client.models.generate_content(
+                model=model_name,
+                contents="Say 'Hello from Gemini!' if you can hear me."
+            )
             duration = time.time() - start_time
-            
+
             status["steps"].append(f"✅ Generation successful ({duration:.2f}s)")
             status["response_text"] = response.text
             status["success"] = True
-            
+
         except Exception as e:
             status["success"] = False
             status["error"] = str(e)
             status["error_type"] = type(e).__name__
             status["steps"].append(f"❌ Error: {str(e)}")
             logger.exception("Debug Gemini failed")
-            
+
             # Try to list available models to help debug
             try:
+                from google import genai as genai_sdk
+                client = genai_sdk.Client(api_key=api_key)
                 available_models = []
-                for m in genai.list_models():
-                    if 'generateContent' in m.supported_generation_methods:
-                        available_models.append(m.name)
-                status["available_models"] = available_models
+                for m in client.models.list():
+                    available_models.append(m.name)
+                status["available_models"] = available_models[:20]  # Limit to first 20
                 status["steps"].append(f"ℹ️ Listed {len(available_models)} available models")
             except Exception as list_err:
                 status["steps"].append(f"❌ Failed to list models: {str(list_err)}")

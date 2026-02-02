@@ -16,9 +16,17 @@ except ImportError:
     # When run directly or in test environment
     db = None
 
-# Cost estimates based on Gemini API pricing (as of 2024-2025)
+# Cost estimates based on Gemini API pricing (as of 2025-2026)
 # These are approximate and should be updated based on actual pricing
 COST_RATES = {
+    'gemini-2.0-flash': {
+        'input_tokens': 0.00000010,    # $0.10 per million tokens
+        'output_tokens': 0.00000040,   # $0.40 per million tokens
+    },
+    'gemini-2.0-flash-lite': {
+        'input_tokens': 0.000000075,   # $0.075 per million tokens
+        'output_tokens': 0.00000030,   # $0.30 per million tokens
+    },
     'gemini-2.0-flash-exp': {
         'input_tokens': 0.0,           # FREE during experimental period
         'output_tokens': 0.0,          # FREE during experimental period
@@ -29,12 +37,12 @@ COST_RATES = {
     },
     'gemini-1.5-pro': {
         'input_tokens': 0.00000125,    # $1.25 per million tokens
-        'output_tokens': 0.000005,      # $5.00 per million tokens
+        'output_tokens': 0.000005,     # $5.00 per million tokens
     }
 }
 
 # Default model if not specified
-DEFAULT_MODEL = 'gemini-2.0-flash-exp'
+DEFAULT_MODEL = 'gemini-2.0-flash'
 
 # Budget limits
 DAILY_BUDGET_LIMIT = 10.0    # $10 per day

@@ -20,7 +20,8 @@ else:
     print(f"GEMINI_API_KEY present: {bool(os.environ.get('GEMINI_API_KEY'))}")
 
 # FORCE a stable model for local/dev to avoid deprecated/removed variants
-os.environ['GEMINI_MODEL'] = 'gemini-1.5-flash'
+# Using gemini-2.0-flash for google-genai SDK compatibility
+os.environ['GEMINI_MODEL'] = 'gemini-2.0-flash'
 print(f"FORCED GEMINI_MODEL = {os.environ.get('GEMINI_MODEL')}")
 
 def _get_required_secret(key_name, allow_dev_fallback=True):
@@ -80,7 +81,7 @@ class Config:
 
     # API Configuration
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-    GEMINI_MODEL = os.environ.get('GEMINI_MODEL') or 'gemini-1.5-flash'
+    GEMINI_MODEL = os.environ.get('GEMINI_MODEL') or 'gemini-2.0-flash'
 
     # Celery Configuration (NEW FORMAT - Celery 5.x+)
     # Fallback to in-memory (Dev/Prod without Redis) to avoid connection errors.
@@ -148,8 +149,8 @@ class DevelopmentConfig(Config):
     DEBUG = True
     basedir = os.path.abspath(os.path.dirname(__file__))
     SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(basedir, 'characters.db')}"
-    # Explicitly force stable model for development
-    GEMINI_MODEL = 'gemini-1.5-flash'
+    # Explicitly force stable model for development (google-genai SDK)
+    GEMINI_MODEL = 'gemini-2.0-flash'
 
 class ProductionConfig(Config):
     """Production configuration."""

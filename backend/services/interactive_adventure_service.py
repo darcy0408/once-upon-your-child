@@ -9,7 +9,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from google.api_core import exceptions as google_exceptions
 
 from backend.database import db
@@ -38,14 +39,14 @@ class InteractiveAdventureService:
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY not set")
 
-        genai.configure(api_key=self.api_key)
+        self._client = genai.Client(api_key=self.api_key)
 
         # Use Gemini model with JSON mode support
-        model_name = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
-        logger.info(f"Initializing Interactive Adventure Service with model: {model_name}")
-        self.model = genai.GenerativeModel(
-            model_name,
-            generation_config={"response_mime_type": "application/json"}
+        self._model_name = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
+        logger.info(f"Initializing Interactive Adventure Service with model: {self._model_name}")
+        # JSON mode config is passed per-request in new SDK
+        self._json_config = types.GenerateContentConfig(
+            response_mime_type='application/json'
         )
 
         # Initialize image generator (using Replicate for actual image generation)
@@ -398,7 +399,11 @@ class InteractiveAdventureService:
         for attempt in range(max_retries):
             try:
                 logger.info(f"Generating segment (attempt {attempt + 1}/{max_retries})")
-                response = self.model.generate_content(prompt)
+                response = self._client.models.generate_content(
+                    model=self._model_name,
+                    contents=prompt,
+                    config=self._json_config
+                )
 
                 if response and hasattr(response, 'text') and response.text:
                     # Parse JSON response

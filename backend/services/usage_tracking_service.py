@@ -19,7 +19,7 @@ class APICall:
     """Record of a single API call"""
     timestamp: str
     endpoint: str  # 'story', 'avatar', 'illustration', 'coloring'
-    model: str  # 'gemini-2.0-flash-exp', etc.
+    model: str  # 'gemini-2.0-flash', etc.
     input_tokens: int
     output_tokens: int
     estimated_cost: float
@@ -111,7 +111,7 @@ class UsageTrackingService:
     def track_call(
         self,
         endpoint: str,
-        model: str = 'gemini-2.0-flash-exp',
+        model: str = 'gemini-2.0-flash',
         input_tokens: Optional[int] = None,
         output_tokens: Optional[int] = None,
         is_mock: bool = False,

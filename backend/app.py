@@ -229,9 +229,9 @@ def create_app(config_name):
     init_request_logging(app, logger)
 
     # Gemini setup
-    GEMINI_MODEL = app.config.get("GEMINI_MODEL", "gemini-2.0-flash-exp")
+    GEMINI_MODEL = app.config.get("GEMINI_MODEL", "gemini-2.0-flash")
     api_key = None if testing_mode else app.config.get("GEMINI_API_KEY")
-    genai = None
+    gemini_client = None
     print(f"DEBUG: GEMINI_MODEL set to {GEMINI_MODEL}")
     # SECURITY: Don't log API keys, even partially masked
     print(f"DEBUG: GEMINI_API_KEY configured: {bool(api_key)}")
@@ -241,25 +241,21 @@ def create_app(config_name):
 
     if api_key:
         try:
-            import google.generativeai as genai  # Local import to avoid slow startup in tests
-            logger.info("google.generativeai imported successfully.")
+            from google import genai as genai_sdk  # Local import to avoid slow startup in tests
+            logger.info("google-genai SDK imported successfully.")
         except Exception as e:
-            logger.exception("Failed to import google.generativeai. Please ensure the library is installed: %s", e)
-            genai = None
+            logger.exception("Failed to import google-genai. Please ensure the library is installed: %s", e)
+            genai_sdk = None
 
-        if genai:
+        if genai_sdk:
             try:
-                genai.configure(api_key=api_key)
-                logger.info("Gemini configured with API key.")
-                try:
-                    model = genai.GenerativeModel(GEMINI_MODEL)
-                    logger.info(f"Gemini model '{GEMINI_MODEL}' initialized successfully.")
-                except Exception as e:
-                    logger.exception(f"Failed to initialize Gemini model '{GEMINI_MODEL}': %s", e)
-                    model = None
+                gemini_client = genai_sdk.Client(api_key=api_key)
+                logger.info("Gemini client created with API key.")
+                # model variable maintained for API compatibility (unused in story_routes)
+                model = gemini_client
+                logger.info(f"Gemini client initialized for model '{GEMINI_MODEL}'.")
             except Exception as e:
-                logger.exception("Failed to configure Gemini with API key: %s", e)
-                genai = None
+                logger.exception("Failed to create Gemini client: %s", e)
                 model = None
         else:
             model = None

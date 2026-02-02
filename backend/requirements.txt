@@ -9,9 +9,8 @@ python-dotenv==1.1.1
 SQLAlchemy==2.0.45
 psycopg2-binary==2.9.11
 
-# Google AI (Gemini)
+# Google AI (Gemini) - using new google-genai SDK
 google-genai
-google-generativeai
 google-api-core
 google-auth
 

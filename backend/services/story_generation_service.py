@@ -1,4 +1,4 @@
-import google.generativeai as genai
+from google import genai
 import os
 import logging
 import time
@@ -12,12 +12,10 @@ class StoryGenerationService:
         if not api_key:
             raise ValueError("GEMINI_API_KEY not set")
 
-        genai.configure(api_key=api_key)
-        # Use configured model from env (defaults to gemini-2.0-flash - FREE experimental model)
-        model_name = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
-        logger.info(f"Initializing Gemini with model: {model_name}")
-        self.model = genai.GenerativeModel(model_name)
-        self._model_name = model_name
+        self._client = genai.Client(api_key=api_key)
+        # Use configured model from env (defaults to gemini-2.0-flash)
+        self._model_name = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
+        logger.info(f"Initializing Gemini with model: {self._model_name}")
 
     def generate_story(self, prompt: str) -> str:
         """Generate story from prompt with retry logic for rate limiting."""
@@ -27,7 +25,10 @@ class StoryGenerationService:
         for attempt in range(max_retries):
             try:
                 logger.info(f"Generating story with prompt: {prompt[:100]}... (Attempt {attempt + 1})")
-                response = self.model.generate_content(prompt)
+                response = self._client.models.generate_content(
+                    model=self._model_name,
+                    contents=prompt
+                )
                 logger.info(f"API response received: {type(response)}")
 
                 if response and hasattr(response, 'text') and response.text:
@@ -56,17 +57,19 @@ class StoryGenerationService:
             except Exception as e:
                 error_text = str(e)
                 if "not found for API version" in error_text or "is not supported for generateContent" in error_text:
-                    fallback_model = "gemini-1.5-flash"
+                    fallback_model = "gemini-2.0-flash-lite"
                     if self._model_name != fallback_model:
                         logger.warning(
                             "Model %s unavailable; retrying with fallback %s.",
                             self._model_name,
                             fallback_model,
                         )
-                        self.model = genai.GenerativeModel(fallback_model)
                         self._model_name = fallback_model
                         try:
-                            response = self.model.generate_content(prompt)
+                            response = self._client.models.generate_content(
+                                model=self._model_name,
+                                contents=prompt
+                            )
                             if response and hasattr(response, 'text') and response.text:
                                 return response.text
                             elif response and hasattr(response, 'candidates') and response.candidates:

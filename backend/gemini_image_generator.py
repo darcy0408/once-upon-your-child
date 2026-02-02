@@ -18,19 +18,15 @@ class GeminiImageGenerator:
     def __init__(self, api_key=None):
         """Initialize with Gemini API key"""
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
-        self.genai = None
-        self.image_model = None
+        self._client = None
+        self._model_name = "gemini-2.0-flash"
         if self.api_key:
-            import google.generativeai as genai
+            from google import genai
+            self._client = genai.Client(api_key=self.api_key)
 
-            genai.configure(api_key=self.api_key)
-            self.genai = genai
-            # Use Gemini 2.0 Flash - Experimental model
-            self.image_model = genai.GenerativeModel("gemini-2.0-flash-exp")
-
-    def _ensure_model(self):
-        if not self.image_model or not self.genai:
-            raise RuntimeError("Gemini image model is not initialized")
+    def _ensure_client(self):
+        if not self._client:
+            raise RuntimeError("Gemini client is not initialized")
 
     def _process_image_response(self, response, prompt) -> list:
         """Helper to process the response from generate_content and extract images from Nano Banana."""
@@ -87,7 +83,7 @@ class GeminiImageGenerator:
         """
         Generate therapeutic story illustrations using Gemini 1.5 Pro.
         """
-        if not self.image_model:
+        if not self._client:
             logger.warning("Gemini image generator unavailable; skipping illustration generation")
             return []
         # Determine detail level based on age
@@ -190,7 +186,10 @@ Style: {style}, optimized for {age_descriptor}
         try:
             logger.info("Calling Gemini image generation with prompt preview: %s", prompt[:200].replace("\n", " "))
             # Generate images with Gemini
-            response = self.image_model.generate_content(prompt)
+            response = self._client.models.generate_content(
+                model=self._model_name,
+                contents=prompt
+            )
             images = self._process_image_response(response, prompt)
             candidate_count = len(getattr(response, "candidates", []) or [])
             logger.info("Gemini image generation returned %s candidates and %s image(s)", candidate_count, len(images))
@@ -220,7 +219,7 @@ Style: {style}, optimized for {age_descriptor}
         """
         Generate therapeutic coloring book pages with black and white line art.
         """
-        if not self.image_model:
+        if not self._client:
             logger.warning("Gemini image generator unavailable; skipping coloring page generation")
             return []
         # Determine intricacy based on age
@@ -331,7 +330,10 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
         try:
             logger.info("Calling Gemini coloring page generation with prompt preview: %s", prompt[:200].replace("\n", " "))
             # Generate images with Gemini
-            response = self.image_model.generate_content(prompt)
+            response = self._client.models.generate_content(
+                model=self._model_name,
+                contents=prompt
+            )
             images = self._process_image_response(response, prompt)
             candidate_count = len(getattr(response, "candidates", []) or [])
             logger.info("Gemini coloring generation returned %s candidates and %s image(s)", candidate_count, len(images))
@@ -364,7 +366,7 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
         Returns:
             List of image dicts with base64-encoded PNG data
         """
-        if not self.image_model:
+        if not self._client:
             logger.warning("Gemini image generator unavailable; skipping avatar generation")
             return []
 
@@ -386,8 +388,11 @@ CRITICAL REMINDER FOR IMAGE MODEL:
             logger.info(f"Generating {style} avatar for {character_name}, age {age}")
             logger.debug(f"Avatar prompt preview: {enhanced_prompt[:250].replace(chr(10), ' ')}...")
 
-            # Generate avatar with Gemini 2.5 Flash Image model
-            response = self.image_model.generate_content(enhanced_prompt)
+            # Generate avatar with Gemini
+            response = self._client.models.generate_content(
+                model=self._model_name,
+                contents=enhanced_prompt
+            )
 
             # Process response and extract images
             images = self._process_image_response(response, enhanced_prompt)
