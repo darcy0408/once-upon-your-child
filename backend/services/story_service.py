@@ -204,11 +204,26 @@ Strictly return valid JSON with this structure:
 def _safe_extract_title_and_gem(text: str, theme: str):
     """Extract title, wisdom gem, and pages from LLM JSON response."""
     clean_text = text.strip()
-    # More robust code block stripping - handle various markdown formats
-    # Match ```json or ``` at start (with optional whitespace/newlines)
+
+    # Strip markdown code blocks (```json ... ```)
     clean_text = re.sub(r"^\s*```(?:json)?\s*\n?", "", clean_text, flags=re.IGNORECASE)
-    # Match ``` at end (with optional whitespace/newlines)
     clean_text = re.sub(r"\n?\s*```\s*$", "", clean_text, flags=re.IGNORECASE)
+
+    # Strip markdown bold markers (**) that some LLMs wrap around JSON
+    clean_text = re.sub(r"^\s*\*\*\s*", "", clean_text)
+    clean_text = re.sub(r"\s*\*\*\s*$", "", clean_text)
+
+    # Strip any preamble text before the JSON (e.g., "Here is the story:")
+    # Look for the first { which starts the JSON
+    json_start = clean_text.find('{')
+    if json_start > 0:
+        clean_text = clean_text[json_start:]
+
+    # Find the last } to trim any trailing text
+    json_end = clean_text.rfind('}')
+    if json_end > 0:
+        clean_text = clean_text[:json_end + 1]
+
     clean_text = clean_text.strip()
     try:
         data = json.loads(clean_text)

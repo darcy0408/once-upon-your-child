@@ -12,7 +12,7 @@ from google.api_core import exceptions as google_exceptions
 logger = logging.getLogger(__name__)
 
 # A good free model available on OpenRouter
-OPENROUTER_FREE_MODEL = "mistralai/mistral-small-latest"
+OPENROUTER_FREE_MODEL = "meta-llama/llama-3.2-3b-instruct:free"
 
 class OpenRouterStoryGenerator:
     def __init__(self, api_key=None):
