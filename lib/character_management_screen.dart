@@ -76,7 +76,7 @@ class _CharacterManagementScreenState extends State<CharacterManagementScreen> {
 
           if (!canCreate) {
             final maxChars = await _subscriptionService.getMaxCharacters();
-            if (!mounted) return;
+            if (!context.mounted) return;
             await PaywallDialog.showCharacterLimitDialog(
               context,
               maxCharacters: maxChars,
@@ -85,7 +85,7 @@ class _CharacterManagementScreenState extends State<CharacterManagementScreen> {
           }
 
           // Go to the creation screen; after returning, refresh list
-          if (!mounted) return;
+          if (!context.mounted) return;
           final created = await Navigator.of(context).push<bool>(
             MaterialPageRoute(
                 builder: (_) => const CharacterCreationScreenEnhanced()),

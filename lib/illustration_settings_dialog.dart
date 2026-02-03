@@ -52,21 +52,25 @@ class _IllustrationSettingsDialogState
             const SizedBox(height: 12),
 
             // Style selector
-            ...IllustrationStyle.values.map((style) {
-              return RadioListTile<IllustrationStyle>(
-                title: Text(style.displayName),
-                value: style,
-                groupValue: _selectedStyle,
-                 onChanged: (value) {
-                   if (mounted) {
-                     setState(() {
-                       _selectedStyle = value!;
-                     });
-                   }
-                 },
-                activeColor: Colors.deepPurple,
-              );
-            }),
+            RadioGroup<IllustrationStyle>(
+              groupValue: _selectedStyle,
+              onChanged: (value) {
+                if (mounted) {
+                  setState(() {
+                    _selectedStyle = value!;
+                  });
+                }
+              },
+              child: Column(
+                children: IllustrationStyle.values.map((style) {
+                  return RadioListTile<IllustrationStyle>(
+                    title: Text(style.displayName),
+                    value: style,
+                    activeColor: Colors.deepPurple,
+                  );
+                }).toList(),
+              ),
+            ),
 
             const SizedBox(height: 16),
             const Divider(),

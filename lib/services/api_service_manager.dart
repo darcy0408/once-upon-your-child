@@ -1420,7 +1420,7 @@ Create the rhyming learning-to-read story about $characterName now:
         age: age,
         companion: companion,
         characterDetails: characterDetails,
-        additionalCharacters: additionalCharacters,
+        additionalCharacters: effectiveAdditionalChars,
         customElements: customElements,
       );
     }
@@ -1435,6 +1435,7 @@ Create the rhyming learning-to-read story about $characterName now:
         companion: companion,
         characterDetails: characterDetails,
         additionalCharacters: effectiveAdditionalChars,
+        characterEvolution: characterEvolution,
         customElements: customElements,
       );
     } else {
@@ -1446,6 +1447,7 @@ Create the rhyming learning-to-read story about $characterName now:
         companion: companion,
         characterDetails: characterDetails,
         additionalCharacters: effectiveAdditionalChars,
+        characterEvolution: characterEvolution,
         customElements: customElements,
       );
     }

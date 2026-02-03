@@ -145,7 +145,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<int>(
-              initialValue: _childAge,
+              value: _childAge,
               decoration: const InputDecoration(
                 labelText: 'Age',
                 border: OutlineInputBorder(),
@@ -158,9 +158,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                   )
                   .toList(),
-              onChanged: (value) {
-                if (value == null) return;
-                setState(() => _childAge = value);
+              onChanged: (newValue) {
+                if (newValue == null) return;
+                setState(() => _childAge = newValue);
               },
             ),
           ],

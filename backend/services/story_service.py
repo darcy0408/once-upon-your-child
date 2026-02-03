@@ -124,6 +124,16 @@ class AdvancedStoryEngine:
                 power = c.get('signaturePower', '')
                 power_text = f" (Power: {power})" if power else ""
                 companion_context.append(f"{c['name']}{power_text} [SPEAKING]")
+        
+        if additional_characters:
+            for ac in additional_characters:
+                if isinstance(ac, dict):
+                    name = ac.get('name')
+                    if name:
+                        companion_context.append(f"{name} [ADDITIONAL]")
+                elif ac:
+                    companion_context.append(f"{ac} [ADDITIONAL]")
+
         if not companion_context and companion:
             companion_context.append(f"{companion} [COMPANION]")
         

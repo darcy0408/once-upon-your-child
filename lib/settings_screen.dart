@@ -535,7 +535,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _onValidateApiKey(BuildContext context) async {
     final success = await ref.read(settingsProvider.notifier).validateApiKey();
-    if (!mounted || !success) return;
+    if (!context.mounted || !success) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('🎉 Premium features unlocked!'),
@@ -569,7 +569,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (confirmed == true) {
       await ref.read(settingsProvider.notifier).clearApiKey();
       _apiKeyController.clear();
-      if (!mounted) return;
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('API key cleared')),
       );

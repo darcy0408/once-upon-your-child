@@ -274,58 +274,38 @@ class _MidjourneyAvatarPickerScreenState extends State<MidjourneyAvatarPickerScr
       builder: (context) => AlertDialog(
         title: Text(title),
         content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                title: const Text('Any'),
-                leading: Radio<String?>(
-                  value: null,
-                  groupValue: currentValue,
-                  onChanged: (value) {
-                    Navigator.pop(context);
-                    setState(() {
-                      switch (filterType) {
-                        case 'ageGroup':
-                          _selectedAgeGroup = null;
-                          break;
-                        case 'skinTone':
-                          _selectedSkinTone = null;
-                          break;
-                        case 'gender':
-                          _selectedGender = null;
-                          break;
-                      }
-                      _applyFilters();
-                    });
-                  },
+          child: RadioGroup<String?>(
+            groupValue: currentValue,
+            onChanged: (value) {
+              Navigator.pop(context);
+              setState(() {
+                switch (filterType) {
+                  case 'ageGroup':
+                    _selectedAgeGroup = value;
+                    break;
+                  case 'skinTone':
+                    _selectedSkinTone = value;
+                    break;
+                  case 'gender':
+                    _selectedGender = value;
+                    break;
+                }
+                _applyFilters();
+              });
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const ListTile(
+                  title: Text('Any'),
+                  leading: Radio<String?>(value: null),
                 ),
-              ),
-              ...options.map((option) => ListTile(
-                title: Text(_formatLabel(option)),
-                leading: Radio<String>(
-                  value: option,
-                  groupValue: currentValue,
-                  onChanged: (value) {
-                    Navigator.pop(context);
-                    setState(() {
-                      switch (filterType) {
-                        case 'ageGroup':
-                          _selectedAgeGroup = value;
-                          break;
-                        case 'skinTone':
-                          _selectedSkinTone = value;
-                          break;
-                        case 'gender':
-                          _selectedGender = value;
-                          break;
-                      }
-                      _applyFilters();
-                    });
-                  },
-                ),
-              )),
-            ],
+                ...options.map((option) => ListTile(
+                  title: Text(_formatLabel(option)),
+                  leading: Radio<String?>(value: option),
+                )),
+              ],
+            ),
           ),
         ),
       ),

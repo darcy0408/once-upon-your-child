@@ -134,7 +134,7 @@ class _CharacterManagementScreenV2State
 
           if (!canCreate) {
             final maxChars = await _subscriptionService.getMaxCharacters();
-            if (!mounted) return;
+            if (!context.mounted) return;
             await PaywallDialog.showCharacterLimitDialog(
               context,
               maxCharacters: maxChars,
@@ -142,7 +142,7 @@ class _CharacterManagementScreenV2State
             return;
           }
 
-          if (!mounted) return;
+          if (!context.mounted) return;
           final created = await Navigator.of(context).push<bool>(
             MaterialPageRoute(
                 builder: (_) => const CharacterCreationScreenEnhanced()),

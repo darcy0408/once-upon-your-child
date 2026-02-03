@@ -798,7 +798,7 @@ class _StoryScreenState extends State<StoryScreen> {
                   break;
                 case 'settings':
                   await settings_screen.loadLibrary();
-                  if (mounted) {
+                  if (context.mounted) {
                     Navigator.of(context).push(MaterialPageRoute(
                         builder: (_) => settings_screen.SettingsScreen()));
                   }

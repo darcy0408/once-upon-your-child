@@ -1,14 +1,14 @@
 // lib/widgets/mood_lantern_selector.dart
-/// Mood Lantern Selector - An enchanted shelf of glowing lanterns
+/// Mood Lantern Selector - An enchanted collection of glowing lanterns
 /// for children to choose their story's emotional ingredient.
 ///
 /// Design philosophy: "Picking a magic ingredient" not "checking an emotion box"
 ///
 /// Features:
-/// - 7 beautiful lantern images on an enchanted wooden shelf
+/// - 7 beautiful lantern images with vivid chakra colors
 /// - Animated glow effects for selected/unselected states
-/// - Environment color tint that responds to selection
-/// - Magical story framing text for each mood
+/// - Short magic description visible under each lantern
+/// - Warm, inviting visual design
 library;
 
 import 'package:flutter/material.dart';
@@ -20,7 +20,7 @@ typedef OnLanternSelected = void Function(SelectedFeeling feeling);
 
 /// Main Mood Lantern Selector widget.
 ///
-/// Displays an enchanted shelf with 7 glowing lanterns.
+/// Displays a collection of glowing lanterns in a responsive grid.
 /// Tap a lantern to select that mood for the story.
 class MoodLanternSelector extends StatefulWidget {
   final OnLanternSelected? onFeelingSelected;
@@ -31,7 +31,7 @@ class MoodLanternSelector extends StatefulWidget {
     super.key,
     this.onFeelingSelected,
     this.initialLanternId,
-    this.backgroundColor = const Color(0xFFF5E6D3),
+    this.backgroundColor = const Color(0xFFFFF8E1), // Warm cream
   });
 
   @override
@@ -97,32 +97,41 @@ class _MoodLanternSelectorState extends State<MoodLanternSelector>
           children: [
             // Title
             Padding(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.only(bottom: 12),
               child: Text(
-                'Choose Your Story\'s Magic',
+                'Choose Your Story\'s Magic ✨',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF4A3728),
+                      color: const Color(0xFF5D4037), // Warm brown
                     ),
                 textAlign: TextAlign.center,
               ),
             ),
 
-            // Environment with color tint
-            _EnvironmentContainer(
-              selectedLantern: _selectedLantern,
-              backgroundColor: widget.backgroundColor,
-              child: _LanternShelf(
-                selectedLanternId: _selectedLanternId,
-                glowIntensity: _glowAnimation.value,
-                idleIntensity: _idleAnimation.value,
-                onLanternTap: _selectLantern,
+            // Subtitle instruction
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                'Tap a lantern to pick the feeling for your adventure',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF795548),
+                      fontStyle: FontStyle.italic,
+                    ),
+                textAlign: TextAlign.center,
               ),
             ),
 
-            // Selected lantern description
+            // Lantern grid - no container box, just the lanterns
+            _LanternGrid(
+              selectedLanternId: _selectedLanternId,
+              glowIntensity: _glowAnimation.value,
+              idleIntensity: _idleAnimation.value,
+              onLanternTap: _selectLantern,
+            ),
+
+            // Selected lantern expanded description
             if (_selectedLantern != null) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               _MoodDescription(lantern: _selectedLantern!),
             ],
           ],
@@ -132,59 +141,14 @@ class _MoodLanternSelectorState extends State<MoodLanternSelector>
   }
 }
 
-/// Environment container with animated color tint.
-class _EnvironmentContainer extends StatelessWidget {
-  final MoodLantern? selectedLantern;
-  final Color backgroundColor;
-  final Widget child;
-
-  const _EnvironmentContainer({
-    required this.selectedLantern,
-    required this.backgroundColor,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final tintColor = selectedLantern?.color ?? backgroundColor;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOut,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: RadialGradient(
-          center: Alignment.center,
-          radius: 1.2,
-          colors: [
-            tintColor.withValues(alpha: 0.2),
-            backgroundColor.withValues(alpha: 0.9),
-            Colors.black.withValues(alpha: 0.15),
-          ],
-          stops: const [0.0, 0.6, 1.0],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: tintColor.withValues(alpha: 0.3),
-            blurRadius: 30,
-            spreadRadius: 5,
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-}
-
-/// The shelf holding the lanterns - responsive layout.
-class _LanternShelf extends StatelessWidget {
+/// Responsive grid of lanterns - adapts to screen width.
+class _LanternGrid extends StatelessWidget {
   final String? selectedLanternId;
   final double glowIntensity;
   final double idleIntensity;
   final ValueChanged<MoodLantern> onLanternTap;
 
-  const _LanternShelf({
+  const _LanternGrid({
     required this.selectedLanternId,
     required this.glowIntensity,
     required this.idleIntensity,
@@ -195,86 +159,34 @@ class _LanternShelf extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Calculate layout based on available width
         final availableWidth = constraints.maxWidth;
 
-        // For narrow screens, use 2 rows
-        if (availableWidth < 500) {
-          return _buildTwoRowLayout();
-        }
+        // Calculate lantern size based on screen width
+        // Aim for 4 lanterns per row on narrow, 7 on wide
+        final int lanternsPerRow = availableWidth < 400 ? 3 : (availableWidth < 600 ? 4 : 7);
+        final double lanternSize = ((availableWidth - (lanternsPerRow * 8)) / lanternsPerRow).clamp(50.0, 75.0);
 
-        // For wider screens, single row with wrapping
-        return _buildSingleRowLayout();
-      },
-    );
-  }
-
-  Widget _buildSingleRowLayout() {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 8,
-      runSpacing: 16,
-      children: kMoodLanterns.map((lantern) {
-        final isSelected = selectedLanternId == lantern.id;
-        return _LanternWidget(
-          lantern: lantern,
-          isSelected: isSelected,
-          glowIntensity: isSelected ? glowIntensity : idleIntensity,
-          onTap: () => onLanternTap(lantern),
+        return Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 4,
+          runSpacing: 12,
+          children: kMoodLanterns.map((lantern) {
+            final isSelected = selectedLanternId == lantern.id;
+            return _LanternWidget(
+              lantern: lantern,
+              isSelected: isSelected,
+              glowIntensity: isSelected ? glowIntensity : idleIntensity,
+              onTap: () => onLanternTap(lantern),
+              size: lanternSize,
+            );
+          }).toList(),
         );
-      }).toList(),
-    );
-  }
-
-  Widget _buildTwoRowLayout() {
-    // Split lanterns into two rows: 4 and 3
-    final firstRow = kMoodLanterns.take(4).toList();
-    final secondRow = kMoodLanterns.skip(4).toList();
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // First row
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: firstRow.map((lantern) {
-            final isSelected = selectedLanternId == lantern.id;
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: _LanternWidget(
-                lantern: lantern,
-                isSelected: isSelected,
-                glowIntensity: isSelected ? glowIntensity : idleIntensity,
-                onTap: () => onLanternTap(lantern),
-                size: 70,
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 12),
-        // Second row
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: secondRow.map((lantern) {
-            final isSelected = selectedLanternId == lantern.id;
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: _LanternWidget(
-                lantern: lantern,
-                isSelected: isSelected,
-                glowIntensity: isSelected ? glowIntensity : idleIntensity,
-                onTap: () => onLanternTap(lantern),
-                size: 70,
-              ),
-            );
-          }).toList(),
-        ),
-      ],
+      },
     );
   }
 }
 
-/// Individual lantern widget with image and glow animation.
+/// Individual lantern widget with image, glow animation, and magic label.
 class _LanternWidget extends StatelessWidget {
   final MoodLantern lantern;
   final bool isSelected;
@@ -287,11 +199,39 @@ class _LanternWidget extends StatelessWidget {
     required this.isSelected,
     required this.glowIntensity,
     required this.onTap,
-    this.size = 80,
+    this.size = 65,
   });
+
+  /// Get a short magic label for the lantern (visible always)
+  String get _shortMagic {
+    switch (lantern.coreEmotion.toLowerCase()) {
+      case 'happy':
+        return 'Joy & Smiles';
+      case 'angry':
+        return 'Stand Up';
+      case 'sad':
+        return 'Comfort';
+      case 'fearful':
+        return 'Courage';
+      case 'silly':
+        return 'Giggles';
+      case 'calm':
+        return 'Peace';
+      case 'excited':
+        return 'Adventure';
+      default:
+        return lantern.coreEmotion;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    // More vivid color for better visibility
+    final vividColor = HSLColor.fromColor(lantern.color)
+        .withSaturation(0.85)
+        .withLightness(0.5)
+        .toColor();
+
     return GestureDetector(
       onTap: onTap,
       child: Semantics(
@@ -299,93 +239,130 @@ class _LanternWidget extends StatelessWidget {
         selected: isSelected,
         label: '${lantern.name} lantern, ${lantern.storyMagic}',
         child: AnimatedScale(
-          scale: isSelected ? 1.12 : 1.0,
-          duration: const Duration(milliseconds: 250),
+          scale: isSelected ? 1.1 : 1.0,
+          duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutBack,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Lantern with glow
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Outer glow effect
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    width: size + 20,
-                    height: size + 20,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: lantern.color.withValues(
-                            alpha: isSelected
-                                ? 0.6 * glowIntensity
-                                : 0.2 * glowIntensity,
-                          ),
-                          blurRadius: isSelected ? 30 : 15,
-                          spreadRadius: isSelected ? 10 : 3,
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Lantern image
-                  AnimatedOpacity(
-                    duration: const Duration(milliseconds: 200),
-                    opacity: isSelected ? 1.0 : 0.75 * glowIntensity,
-                    child: Image.asset(
-                      lantern.imagePath,
-                      width: size,
-                      height: size,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        // Fallback to emoji if image fails
-                        return Container(
-                          width: size,
-                          height: size,
-                          decoration: BoxDecoration(
-                            color: lantern.color.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Center(
-                            child: Text(
-                              lantern.emoji,
-                              style: TextStyle(fontSize: size * 0.4),
+          child: SizedBox(
+            width: size + 16, // Add padding for glow effect
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Lantern with glow
+                SizedBox(
+                  width: size + 16,
+                  height: size + 16,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Outer glow effect - vivid color
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        width: size,
+                        height: size,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: vividColor.withValues(
+                                alpha: isSelected
+                                    ? 0.7 * glowIntensity
+                                    : 0.3 * glowIntensity,
+                              ),
+                              blurRadius: isSelected ? 25 : 12,
+                              spreadRadius: isSelected ? 8 : 2,
                             ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  // Selection indicator ring
-                  if (isSelected)
-                    Container(
-                      width: size + 8,
-                      height: size + 8,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: lantern.color,
-                          width: 3,
+                            if (isSelected)
+                              BoxShadow(
+                                color: vividColor.withValues(alpha: 0.4),
+                                blurRadius: 40,
+                                spreadRadius: 15,
+                              ),
+                          ],
                         ),
                       ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              // Lantern name
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
-                style: TextStyle(
-                  fontSize: isSelected ? 13 : 11,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected
-                      ? lantern.color
-                      : const Color(0xFF5D4037),
+                      // Lantern image - use colorBlendMode for tinting if needed
+                      AnimatedOpacity(
+                        duration: const Duration(milliseconds: 200),
+                        opacity: isSelected ? 1.0 : 0.8,
+                        child: Image.asset(
+                          lantern.imagePath,
+                          width: size - 4,
+                          height: size - 4,
+                          fit: BoxFit.contain,
+                          // Don't use color filter - let PNG transparency work
+                          errorBuilder: (context, error, stackTrace) {
+                            // Fallback to colored circle with emoji
+                            return Container(
+                              width: size - 4,
+                              height: size - 4,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: RadialGradient(
+                                  colors: [
+                                    vividColor.withValues(alpha: 0.9),
+                                    vividColor.withValues(alpha: 0.6),
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: vividColor.withValues(alpha: 0.5),
+                                    blurRadius: 10,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  lantern.emoji,
+                                  style: TextStyle(fontSize: size * 0.35),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      // Selection ring
+                      if (isSelected)
+                        Container(
+                          width: size + 4,
+                          height: size + 4,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: vividColor,
+                              width: 3,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-                child: Text(lantern.name),
-              ),
-            ],
+                const SizedBox(height: 4),
+                // Lantern name - always visible
+                Text(
+                  lantern.name,
+                  style: TextStyle(
+                    fontSize: isSelected ? 12 : 10,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                    color: isSelected ? vividColor : const Color(0xFF5D4037),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                // Short magic description - always visible
+                Text(
+                  _shortMagic,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w400,
+                    color: isSelected
+                        ? vividColor.withValues(alpha: 0.8)
+                        : const Color(0xFF8D6E63),
+                    fontStyle: FontStyle.italic,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -393,7 +370,7 @@ class _LanternWidget extends StatelessWidget {
   }
 }
 
-/// Text description showing the selected lantern's magic.
+/// Expanded description showing the selected lantern's full magic text.
 class _MoodDescription extends StatelessWidget {
   final MoodLantern lantern;
 
@@ -401,6 +378,12 @@ class _MoodDescription extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // More vivid color
+    final vividColor = HSLColor.fromColor(lantern.color)
+        .withSaturation(0.85)
+        .withLightness(0.45)
+        .toColor();
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
       transitionBuilder: (child, animation) {
@@ -417,50 +400,61 @@ class _MoodDescription extends StatelessWidget {
       },
       child: Container(
         key: ValueKey(lantern.id),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        margin: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
-          color: lantern.color.withValues(alpha: 0.12),
+          gradient: LinearGradient(
+            colors: [
+              vividColor.withValues(alpha: 0.15),
+              vividColor.withValues(alpha: 0.08),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: lantern.color.withValues(alpha: 0.4),
+            color: vividColor.withValues(alpha: 0.5),
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: lantern.color.withValues(alpha: 0.15),
-              blurRadius: 12,
+              color: vividColor.withValues(alpha: 0.2),
+              blurRadius: 15,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Column(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  lantern.emoji,
-                  style: const TextStyle(fontSize: 28),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  '${lantern.name} Magic',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: lantern.color,
-                      ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
             Text(
-              lantern.storyMagic,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontStyle: FontStyle.italic,
-                    color: Colors.black87,
+              lantern.emoji,
+              style: const TextStyle(fontSize: 24),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${lantern.name} Magic',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: vividColor,
+                        ),
                   ),
-              textAlign: TextAlign.center,
+                  const SizedBox(height: 2),
+                  Text(
+                    lantern.storyMagic,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontStyle: FontStyle.italic,
+                          color: const Color(0xFF5D4037),
+                        ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
