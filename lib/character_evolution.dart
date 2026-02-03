@@ -13,24 +13,17 @@ class CharacterEvolution {
   final Map<TherapeuticGoal, int> therapeuticProgress; // 0-100 progress per goal
   final Map<String, int> emotionMastery; // emotion_id -> mastery level (0-100)
   final List<CharacterMilestone> milestones;
-  Map<String, dynamic> _evolvedTraits; // Dynamic traits that change with growth
-  DateTime _lastUpdated;
-
-  Map<String, dynamic> get evolvedTraits => _evolvedTraits;
-  set evolvedTraits(Map<String, dynamic> value) => _evolvedTraits = value;
-
-  DateTime get lastUpdated => _lastUpdated;
-  set lastUpdated(DateTime value) => _lastUpdated = value;
+  Map<String, dynamic> evolvedTraits; // Dynamic traits that change with growth
+  DateTime lastUpdated;
 
   CharacterEvolution({
     required this.characterId,
     required this.therapeuticProgress,
     required this.emotionMastery,
     required this.milestones,
-    required Map<String, dynamic> evolvedTraits,
-    required DateTime lastUpdated,
-  })  : _evolvedTraits = evolvedTraits,
-        _lastUpdated = lastUpdated;
+    required this.evolvedTraits,
+    required this.lastUpdated,
+  });
 
   /// Calculate overall character development score
   double get overallDevelopmentScore {

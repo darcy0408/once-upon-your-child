@@ -105,7 +105,11 @@ def test_custom_elements_simple():
         
         if response.status_code == 200:
             data = response.json()
-            story_text = data.get('story', '').lower()
+            story_obj = data.get('story')
+            if isinstance(story_obj, dict):
+                story_text = story_obj.get('story_text', '').lower()
+            else:
+                story_text = str(story_obj).lower()
             
             # Check if talking tree appears in story
             has_tree = 'tree' in story_text or 'talking' in story_text
@@ -166,7 +170,11 @@ def test_custom_elements_multiple():
         
         if response.status_code == 200:
             data = response.json()
-            story_text = data.get('story', '').lower()
+            story_obj = data.get('story')
+            if isinstance(story_obj, dict):
+                story_text = story_obj.get('story_text', '').lower()
+            else:
+                story_text = str(story_obj).lower()
             
             # Check for both elements
             has_dragon = 'dragon' in story_text
@@ -329,7 +337,12 @@ def test_story_length_options():
             
             if response.status_code == 200:
                 data = response.json()
-                story_length = len(data.get('story', '').split())
+                story_obj = data.get('story')
+                if isinstance(story_obj, dict):
+                    text = story_obj.get('story_text', '')
+                else:
+                    text = str(story_obj)
+                story_length = len(text.split())
                 log_test(
                     f"Story Length - {length.upper()}",
                     "PASS",

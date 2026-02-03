@@ -79,7 +79,7 @@ class StoryScreen extends StatefulWidget {
   const StoryScreen({super.key});
 
   @override
-  _StoryScreenState createState() => _StoryScreenState();
+  State<StoryScreen> createState() => _StoryScreenState();
 }
 
 class _StoryScreenState extends State<StoryScreen> {

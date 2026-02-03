@@ -25,6 +25,7 @@ class AvatarService {
   // Configuration loaded from assets
   late final Map<String, dynamic> _config;
   late final Map<String, dynamic> _allowlists;
+  Map<String, dynamic>? _localMetadata;
 
   // Parsed configuration
   late final String _baseUrl;
@@ -56,6 +57,15 @@ class AvatarService {
         await rootBundle.loadString('assets/config/allowlists.json');
     _allowlists = json.decode(allowlistsJson) as Map<String, dynamic>;
 
+    // Load local metadata
+    try {
+      final metadataJson = await rootBundle
+          .loadString('assets/avatars/midjourney/metadata.json');
+      _localMetadata = json.decode(metadataJson) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('AvatarService: Failed to load local metadata: $e');
+    }
+
     // Extract schema version
     final schemaVersionRaw = _allowlists['schemaVersion'] as String;
     _schemaVersion = schemaVersionRaw.replaceFirst('sha256:', '');
@@ -69,6 +79,38 @@ class AvatarService {
     }
 
     _initialized = true;
+  }
+
+  /// Get available options for curated avatars
+  Map<String, List<String>> getCuratedOptions() {
+    if (_localMetadata == null) return {};
+    
+    final categories = _localMetadata!['categories'] as Map<String, dynamic>;
+    return categories.map((key, value) => MapEntry(key, List<String>.from(value)));
+  }
+
+  /// Get curated avatars matching filters
+  List<String> getCuratedAvatars({
+    String? ageGroup,
+    String? skinTone,
+    String? gender,
+    String? hairColor,
+  }) {
+    if (_localMetadata == null) return [];
+
+    final avatars = _localMetadata!['avatars'] as Map<String, dynamic>;
+    final matches = <String>[];
+
+    avatars.forEach((filename, data) {
+      if (ageGroup != null && data['ageGroup'] != ageGroup) return;
+      if (skinTone != null && data['skinTone'] != skinTone) return;
+      if (gender != null && data['gender'] != gender) return;
+      if (hairColor != null && data['hairColor'] != hairColor) return;
+      
+      matches.add('assets/avatars/midjourney/$filename');
+    });
+
+    return matches;
   }
 
   /// Ensure service is initialized before use

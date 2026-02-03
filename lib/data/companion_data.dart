@@ -81,4 +81,14 @@ const List<CompanionData> magicCompanions = [
     sensoryTell: 'Smells like pine needles and old books.',
     tags: ['Puzzle', 'Shape', 'Clever'],
   ),
+  CompanionData(
+    id: 'robin',
+    name: 'a rockin\' robin',
+    emoji: '🐦',
+    description: 'Plays magical music that makes everyone dance with joy',
+    signaturePower: 'Rhythm Magic: Plays a drum beat that forces anyone who hears it to dance uncontrollably or feel happy.',
+    powerConstraint: 'The music stops working if the robin stops drumming.',
+    sensoryTell: 'Sounds like a catchy drum beat and feels like a tapping foot.',
+    tags: ['Music', 'Joy', 'Dance'],
+  ),
 ];

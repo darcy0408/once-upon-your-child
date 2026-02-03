@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
-import 'feelings_wheel_screen.dart';
 import 'feelings_wheel_data.dart';
+import 'widgets/mood_lantern_selector.dart';
 import 'services/feelings_analytics_service.dart';
 
 class FeelingsCornerScreen extends StatefulWidget {
@@ -202,17 +202,8 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
 
             const SizedBox(height: 24),
 
-            // Feelings Wheel Section
-            Text(
-              'How Are You Feeling Right Now?',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            FeelingsWheelScreen(
-              ageYears: widget.characterAge,
-              currentFeeling: _selectedFeeling,
+            // Mood Lantern Selector - Enchanted shelf of glowing lanterns
+            MoodLanternSelector(
               onFeelingSelected: (feeling) {
                 setState(() {
                   _selectedFeeling = feeling;

@@ -95,7 +95,13 @@ class AdvancedStoryEngine:
 
         band = _get_age_band(age)
         config = AGE_CONSTRAINTS[band]
-        length_key = 'medium' if story_length == 'standard' else story_length
+        length_key = 'medium'
+        if story_length == 'short' or story_length == 'quick':
+            length_key = 'short'
+        elif story_length == 'long' or story_length == 'epic':
+            length_key = 'long'
+        else:
+            length_key = 'medium'
         word_range = config['regular'][length_key]
         
         # Build character context (Gender/Strengths)
@@ -272,7 +278,13 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
     if 'ltr' not in config:
         return "Mode unavailable for this age."
 
-    length_key = 'medium' if story_length == 'standard' else story_length
+    length_key = 'medium'
+    if story_length == 'short' or story_length == 'quick':
+        length_key = 'short'
+    elif story_length == 'long' or story_length == 'epic':
+        length_key = 'long'
+    else:
+        length_key = 'medium'
     num_pages = config['ltr'][length_key]
 
     # Graduate vocabulary based on age
@@ -349,7 +361,13 @@ def _build_rhyme_time_prompt(character_name, theme, age, character_details, comp
     """Build prompt for Rhyme Time mode stories."""
     band = _get_age_band(age)
     config = AGE_CONSTRAINTS[band]
-    length_key = 'medium' if story_length == 'standard' else story_length
+    length_key = 'medium'
+    if story_length == 'short' or story_length == 'quick':
+        length_key = 'short'
+    elif story_length == 'long' or story_length == 'epic':
+        length_key = 'long'
+    else:
+        length_key = 'medium'
     word_range = config['rhyme'][length_key]
 
     # Age-appropriate instructions

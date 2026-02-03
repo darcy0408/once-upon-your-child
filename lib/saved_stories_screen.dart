@@ -377,7 +377,7 @@ class SavedStoriesScreen extends ConsumerWidget {
 
   Future<void> _shareStory(StoryLocal story) async {
     final shareText = '${story.title}\n\n${story.storyText}';
-    await Share.share(shareText, subject: story.title);
+    await SharePlus.instance.share(shareText, subject: story.title);
   }
 }
 

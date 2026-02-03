@@ -263,10 +263,11 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
         Navigator.of(context).pop(_storySaved);
-        return false;
       },
       child: ErrorBoundary(
         onRetry: () {

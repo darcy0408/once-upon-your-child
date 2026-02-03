@@ -11,9 +11,9 @@ class GracePeriodService {
   static const String _hasSeenGracePeriodEndKey = 'has_seen_grace_period_end';
 
   // Grace period configuration
-  static const int GRACE_PERIOD_DAYS = 3;
-  static const int FREE_TIER_STORY_LIMIT = 200; // Bumped for testing
-  static const int UNLIMITED_LIMIT = 999; // Effectively unlimited
+  static const int gracePeriodDays = 3;
+  static const int freeTierStoryLimit = 200; // Bumped for testing
+  static const int unlimitedLimit = 999; // Effectively unlimited
 
   /// Get user's account age in days
   static Future<int> getAccountAgeDays() async {
@@ -35,27 +35,27 @@ class GracePeriodService {
   /// Check if user is currently in grace period (first 3 days)
   static Future<bool> isInGracePeriod() async {
     final age = await getAccountAgeDays();
-    return age < GRACE_PERIOD_DAYS;
+    return age < gracePeriodDays;
   }
 
   /// Get days remaining in grace period (0 if grace period ended)
   static Future<int> getDaysRemainingInGracePeriod() async {
     final age = await getAccountAgeDays();
-    final remaining = GRACE_PERIOD_DAYS - age;
+    final remaining = gracePeriodDays - age;
     return remaining > 0 ? remaining : 0;
   }
 
   /// Get story limit based on tier and grace period
   static Future<int> getStoryLimit(String tier) async {
     if (tier == 'premium' || tier == 'family') {
-      return UNLIMITED_LIMIT; // Unlimited for paid tiers
+      return unlimitedLimit; // Unlimited for paid tiers
     }
 
     if (await isInGracePeriod()) {
-      return UNLIMITED_LIMIT; // Unlimited during grace period
+      return unlimitedLimit; // Unlimited during grace period
     }
 
-    return FREE_TIER_STORY_LIMIT; // Free tier limit after grace period
+    return freeTierStoryLimit; // Free tier limit after grace period
   }
 
   /// Get stories used this month
@@ -102,7 +102,7 @@ class GracePeriodService {
 
     // Determine if we should show soft prompt (approaching limit in transition period)
     // Days 4-7: Show soft prompts when approaching 80% of limit
-    final isTransitionPeriod = accountAge >= GRACE_PERIOD_DAYS && accountAge <= 7;
+    final isTransitionPeriod = accountAge >= gracePeriodDays && accountAge <= 7;
     final isApproachingLimit = used >= (limit * 0.8);
     final shouldShowSoftPrompt = tier == 'free' && isTransitionPeriod && isApproachingLimit;
 

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'feelings_wheel_data.dart';
 import 'widgets/mood_magic_picker.dart';
-import 'widgets/therapeutic_feelings_wheel.dart';
+import 'widgets/mood_lantern_selector.dart';
 
 class CurrentFeeling {
   final SelectedFeeling selectedFeeling;
@@ -159,26 +159,15 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
                     onMoodSelected: _onMoodSelected,
                   ),
                 ] else ...[
-                  // Full therapeutic feelings wheel for older children
-                  const Text(
-                    'Explore the feelings wheel:',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 300,
-                    child: TherapeuticFeelingsWheel(
-                      onFeelingSelected: (feeling) {
-                        setState(() {
-                          _selectedFeeling = feeling;
-                          _supportInfo = FeelingSupportLibrary.findSupport(feeling);
-                          _intensity = 3;
-                        });
-                      },
-                    ),
+                  // Mood Lantern Selector for older children
+                  MoodLanternSelector(
+                    onFeelingSelected: (feeling) {
+                      setState(() {
+                        _selectedFeeling = feeling;
+                        _supportInfo = FeelingSupportLibrary.findSupport(feeling);
+                        _intensity = 3;
+                      });
+                    },
                   ),
                 ],
 

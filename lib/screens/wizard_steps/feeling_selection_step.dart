@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pill_button.dart';
-import '../../widgets/expanding_feelings_wheel.dart';
+import '../../widgets/mood_lantern_selector.dart';
 import '../wizard_story_screen.dart';
 import '../../data/scenario_data.dart';
 import '../../feelings_wheel_data.dart';
@@ -159,47 +159,11 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
             const SizedBox(height: AppSpacing.xl),
 
-            // Full therapeutic feelings wheel (Progressive Disclosure)
-            Text(
-              'How are you feeling?',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-              textAlign: TextAlign.center,
+            // Mood Lantern Selector - Enchanted shelf of glowing lanterns
+            MoodLanternSelector(
+              onFeelingSelected: _selectFeeling,
+              backgroundColor: AppColors.cream,
             ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Tap a feeling to explore deeper emotions.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textDark.withValues(alpha: 0.7),
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final maxSize = constraints.maxWidth.clamp(280.0, 400.0);
-                return Center(
-                  child: SizedBox.square(
-                    dimension: maxSize,
-                    child: ExpandingFeelingsWheel(
-                      onFeelingSelected: _selectFeeling,
-                      backgroundColor: AppColors.cream,
-                    ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: AppSpacing.md),
-            if (_selectedFeeling != null)
-              Text(
-                'Feeling: ${_selectedFeeling!.tertiary}',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: _selectedFeeling!.color,
-                      fontWeight: FontWeight.bold,
-                    ),
-                textAlign: TextAlign.center,
-              ),
             const SizedBox(height: AppSpacing.xxl),
 
             // Continue button

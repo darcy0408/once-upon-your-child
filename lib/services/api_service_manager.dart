@@ -418,6 +418,7 @@ class ApiServiceManager {
     List<Map<String, dynamic>>? companionPets,
     List<dynamic>? companionCharacters,
     String storyLength = 'standard',
+    String customElements = '', // NEW: Custom elements
     void Function(String)? onProgress,
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
@@ -453,6 +454,7 @@ class ApiServiceManager {
         companionPets: companionPets,
         companionCharacters: companionCharacters,
         storyLength: storyLength,
+        customElements: customElements, // Pass custom elements
         onProgress: onProgress,
       );
     }
@@ -472,6 +474,7 @@ class ApiServiceManager {
       companionPets: companionPets,
       companionCharacters: companionCharacters,
       storyLength: storyLength,
+      customElements: customElements, // Pass custom elements
     );
   }
 
@@ -550,6 +553,7 @@ class ApiServiceManager {
     List<Map<String, dynamic>>? companionPets,
     List<dynamic>? companionCharacters,
     String storyLength = 'standard',
+    String customElements = '',
   }) async {
     final apiKey = await getUserApiKey();
     if (apiKey == null) {
@@ -577,6 +581,7 @@ class ApiServiceManager {
       companionPets: companionPets,
       companionCharacters: companionCharacters,
       storyLength: storyLength,
+      customElements: customElements,
     );
 
     try {
@@ -646,6 +651,7 @@ class ApiServiceManager {
     List<dynamic>? companionCharacters,
 
     required String storyLength,
+    String customElements = '',
     void Function(String)? onProgress,
   }) async {
     var attempts = 0;
@@ -673,6 +679,7 @@ class ApiServiceManager {
           companionPets: companionPets,
           companionCharacters: companionCharacters,
           storyLength: storyLength,
+          customElements: customElements,
           onProgress: onProgress,
         );
       } catch (error, stackTrace) {
@@ -709,6 +716,7 @@ class ApiServiceManager {
     List<dynamic>? companionCharacters,
 
     required String storyLength,
+    String customElements = '',
     void Function(String)? onProgress,
   }) async {
     final httpClient = client ?? _testClient ?? http.Client();
@@ -731,6 +739,7 @@ class ApiServiceManager {
       'companion_pets': companionPets,
       'companion_characters': companionCharacters,
       'story_length': storyLength,
+      'customElements': customElements, // Pass custom elements
     };
     if (userApiKey != null && userApiKey.isNotEmpty) {
       body['user_api_key'] = userApiKey;
@@ -785,10 +794,15 @@ class ApiServiceManager {
           final elapsedSec = stopwatch.elapsed.inSeconds;
           if (elapsedSec < 3) {
             onProgress('Gathering stardust...');
-          } else if (elapsedSec < 8) onProgress('Summoning characters...');
-          else if (elapsedSec < 15) onProgress('Weaving magic words...');
-          else if (elapsedSec < 25) onProgress('Adding sparkle...');
-          else onProgress('Almost ready...');
+          } else if (elapsedSec < 8) {
+            onProgress('Summoning characters...');
+          } else if (elapsedSec < 15) {
+            onProgress('Weaving magic words...');
+          } else if (elapsedSec < 25) {
+            onProgress('Adding sparkle...');
+          } else {
+            onProgress('Almost ready...');
+          }
         }
 
         await Future.delayed(pollInterval);
@@ -863,6 +877,7 @@ class ApiServiceManager {
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
     Map<String, dynamic>? characterEvolution,
+    String customElements = '',
   }) {
     final ageInstructions = StoryComplexityService.buildAgeInstructions(age);
 
@@ -977,8 +992,26 @@ This is a FEELINGS-FIRST story. The emotion is the main character's journey.
       }
     }
 
+    String companionText = '';
+    if (companion != null && companion.isNotEmpty) {
+      companionText =
+          '\n\nCOMPANION: Include $companion as an empathetic friend who helps $characterName understand and cope with their feelings.';
+    }
+
+    String multiCharacterText = '';
+    if (additionalCharacters != null && additionalCharacters.isNotEmpty) {
+      multiCharacterText =
+          '\n\nADDITIONAL CHARACTERS: ${additionalCharacters.join(", ")}. These characters can support $characterName emotionally.';
+    }
+
     // Build character evolution context
     String evolutionContext = '';
+    String customRequestsText = '';
+    if (customElements.isNotEmpty) {
+      customRequestsText =
+          '\n\nCUSTOM REQUESTS: $customElements (Use the exact words from this request at least once each, verbatim, in the story).';
+    }
+
     if (characterEvolution != null) {
       final developmentStage =
           characterEvolution['development_stage'] as String?;
@@ -1050,7 +1083,7 @@ REQUEST SUMMARY
 - Mode: Linear story, feelings-centered
 - Length target: $lengthGuideline (Short default)
 - Companion: ${companion ?? 'None'}
-$feelingsSection$characterIntegration$evolutionContext
+$companionText$multiCharacterText$feelingsSection$characterIntegration$evolutionContext$customRequestsText
 
 STORY
 STORY START
@@ -1090,6 +1123,7 @@ Maintain plain text (no markdown fences).''';
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
     Map<String, dynamic>? characterEvolution,
+    String customElements = '',
   }) {
     final ageInstructions = StoryComplexityService.buildAgeInstructions(age);
 
@@ -1126,12 +1160,25 @@ Maintain plain text (no markdown fences).''';
       if (comfortItem != null && comfortItem.isNotEmpty) {
         characterIntegration +=
             '\n\nCOMFORT ITEM: $comfortItem. This special item can be part of the adventure.';
-            }
-          }
-          String multiCharacterText = '';
-          if (additionalCharacters != null && additionalCharacters.isNotEmpty) {
+      }
+    }
+
+    String companionText = '';
+    if (companion != null && companion.isNotEmpty) {
+      companionText =
+          '\n\nCOMPANION: Include $companion as $characterName\'s friend and adventure partner.';
+    }
+
+    String multiCharacterText = '';
+    if (additionalCharacters != null && additionalCharacters.isNotEmpty) {
       multiCharacterText =
           '\n\nADDITIONAL CHARACTERS: ${additionalCharacters.join(", ")}. These characters join the adventure.';
+    }
+
+    String customRequestsText = '';
+    if (customElements.isNotEmpty) {
+      customRequestsText =
+          '\n\nCUSTOM REQUESTS: $customElements (Use the exact words from this request at least once each, verbatim, in the story).';
     }
 
     // Build character evolution context for adventure stories
@@ -1201,7 +1248,7 @@ Child profile:
 - Theme: $theme
 - Perspective: $perspectiveInstruction
 - Companion: ${companion ?? 'None'}
-$multiCharacterText$characterIntegration$evolutionContext
+$companionText$multiCharacterText$characterIntegration$evolutionContext$customRequestsText
 
 OUTPUT FORMAT:
 You MUST return a STRICT JSON object. No prose outside the JSON. No markdown formatting.
@@ -1245,6 +1292,7 @@ SAFETY: Keep content gentle, avoid violence/scares; keep tone warm and supportiv
     String? companion,
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
+    String customElements = '',
   }) {
     String detailSection = '';
     List<String>? extractStringList(dynamic raw) {
@@ -1279,6 +1327,16 @@ SAFETY: Keep content gentle, avoid violence/scares; keep tone warm and supportiv
       detailSection += '\nFRIENDS IN STORY: ${additionalCharacters.join(", ")}';
     }
 
+    String companionText = '';
+    if (companion != null && companion.isNotEmpty && companion != 'None') {
+      companionText = '\nCOMPANION: Include $companion as a gentle helper.';
+    }
+
+    String customRequestsText = '';
+    if (customElements.isNotEmpty) {
+      customRequestsText = '\nCUSTOM REQUESTS: $customElements';
+    }
+
     return '''
 You are creating a LEARNING TO READ rhyming story for a $age-year-old named $characterName.
 
@@ -1291,7 +1349,7 @@ STRICT REQUIREMENTS (NO EXCEPTIONS):
 6. TONE: Encouraging, musical, and confidence-building.
 7. FORMAT: Each sentence or phrase on its own line for easy finger-tracking.
 
-THEME: $theme$detailSection
+THEME: $theme$companionText$detailSection$customRequestsText
 
 Create the rhyming learning-to-read story about $characterName now:
 ''';
@@ -1310,6 +1368,7 @@ Create the rhyming learning-to-read story about $characterName now:
     List<Map<String, dynamic>>? companionPets,
     List<dynamic>? companionCharacters,
     String storyLength = 'standard',
+    String customElements = '',
   }) {
     // Map story length to word count targets (matching backend)
     String lengthGuideline;
@@ -1362,6 +1421,7 @@ Create the rhyming learning-to-read story about $characterName now:
         companion: companion,
         characterDetails: characterDetails,
         additionalCharacters: additionalCharacters,
+        customElements: customElements,
       );
     }
 
@@ -1375,6 +1435,7 @@ Create the rhyming learning-to-read story about $characterName now:
         companion: companion,
         characterDetails: characterDetails,
         additionalCharacters: effectiveAdditionalChars,
+        customElements: customElements,
       );
     } else {
       return _buildAdventurePrompt(
@@ -1385,6 +1446,7 @@ Create the rhyming learning-to-read story about $characterName now:
         companion: companion,
         characterDetails: characterDetails,
         additionalCharacters: effectiveAdditionalChars,
+        customElements: customElements,
       );
     }
   }

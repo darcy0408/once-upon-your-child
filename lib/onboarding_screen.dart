@@ -197,7 +197,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         title: const Text('Ready to Create'),
         content: _buildSummaryCard(),
         isActive: _currentStep >= 2,
-        state: _isLastStep ? StepState.editing : StepState.indexed,
+        state: _currentStep >= 2 ? StepState.editing : StepState.indexed,
       ),
     ];
   }

@@ -1,7 +1,7 @@
 
 import re
 
-ALLOWED_STORY_LENGTHS = {'short', 'medium', 'long', 'standard'}
+ALLOWED_STORY_LENGTHS = {'short', 'medium', 'long', 'standard', 'quick', 'epic'}
 
 # Image validation constants
 MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024  # 10MB

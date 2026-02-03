@@ -9,7 +9,8 @@ class ThemeModeNotifier extends _$ThemeModeNotifier {
   @override
   ThemeMode build() {
     _loadTheme();
-    return ThemeMode.system;
+    // Default to light theme for the magical lavender/gold children's experience
+    return ThemeMode.light;
   }
 
   Future<void> _loadTheme() async {
@@ -35,8 +36,11 @@ class ThemeModeNotifier extends _$ThemeModeNotifier {
         return ThemeMode.light;
       case 'dark':
         return ThemeMode.dark;
-      default:
+      case 'system':
         return ThemeMode.system;
+      default:
+        // Default to light for magical children's theme
+        return ThemeMode.light;
     }
   }
 }

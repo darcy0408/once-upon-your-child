@@ -11,6 +11,45 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
 
+## Supervisor Notes | 2026-02-02 (API Key Status & Quota Check)
+
+### Session: API Key Rotation Verification - COMPLETED
+
+**Goal:** Verify that Gemini and OpenRouter API keys are properly configured after rotation.
+
+**Status:** ✅ KEYS VALID | ⚠️ QUOTA LIMITS
+
+**Findings:**
+
+1. **Gemini API Key:**
+   * ✅ New key is valid (39 chars, starts with `AIzaSy...`)
+   * ✅ No longer flagged as "leaked" (was 403 PERMISSION_DENIED)
+   * ⚠️ Free tier quota exhausted (429 RESOURCE_EXHAUSTED)
+   * Quota resets daily, or enable billing for higher limits
+
+2. **OpenRouter API Key:**
+   * ✅ Key configured (73 chars, `sk-or-v1-...`)
+   * ⚠️ `story-weaver-app-image-generation` key was over $5/month limit
+   * **Action Required:** Set key limit to "unlimited" on OpenRouter dashboard to use account credits
+
+**Environment Variables Verified:**
+```
+GEMINI_API_KEY     = [SET - 39 chars]
+OPENROUTER_API_KEY = [SET - 73 chars]
+FLASK_ENV          = [SET]
+```
+
+**Previous Issue (Resolved):**
+- TEST_REPORT_MIGRATION.md showed "API key reported as leaked"
+- This is now fixed with the rotated key
+
+**Next Steps:**
+1. Wait for Gemini free tier quota reset OR enable billing on Google Cloud
+2. Update OpenRouter key limit to "unlimited" on dashboard
+3. Re-run test suite once quotas are available
+
+---
+
 ## Supervisor Notes | 2026-01-28 (Multi-Age Audit & Interactive Fixes)
 
 ### Session: Multi-Age Developmental Logic Audit & SDK Alignment - COMPLETED
@@ -512,5 +551,100 @@ response = client.models.generate_content(
 - Summary page feels like "casting a spell" not "filling a form"
 - Children want to tap the glowing orb
 - Parents notice the premium feel
+
+---
+
+## Supervisor Notes | 2026-02-02 (Mood Lantern Selector)
+
+### Session: Mood Lantern Implementation - COMPLETED
+
+**Goal:** Replace the clinical `ExpandingFeelingsWheel` with an immersive **Mood Lantern Selector** - an enchanted display of 7 glowing lanterns that children tap to choose their story's emotional ingredient.
+
+**Status:** ✅ COMPLETED
+
+**Design Philosophy:** "Picking a magic ingredient" not "checking an emotion box"
+
+**Work Completed:**
+
+1.  **Mood Lantern Data Model:**
+    *   Created `lib/data/mood_lantern_data.dart` with 7 lanterns based on chakra color system
+    *   Each lantern has: id, name, coreEmotion, color, emoji, storyMagic, imagePath
+    *   Full backend compatibility via `toSelectedFeeling()` method
+
+2.  **Mood Lantern Widget:**
+    *   Created `lib/widgets/mood_lantern_selector.dart` with:
+        - Image-based lanterns using custom artwork
+        - Animated glow effects (pulsing for selected/idle states)
+        - Environment color tint that responds to selection
+        - Responsive 2-row layout on narrow screens
+        - Scale animation (1.12x) on selection
+        - Fallback to emoji if images fail to load
+
+3.  **Custom Lantern Artwork:**
+    *   Added 7 magical lantern images to `assets/mood_lanterns/`:
+        - `sunshine.png` (Gold) - Happy - Solar Plexus chakra
+        - `ember.png` (Red-Orange) - Angry - Root chakra
+        - `raindrop.png` (Deep Blue) - Sad - Throat chakra
+        - `moonbeam.png` (Purple) - Fearful - Crown chakra
+        - `giggle.png` (Green) - Silly - Heart chakra
+        - `dewdrop.png` (Cyan) - Calm - Third Eye chakra
+        - `heartglow.png` (Pink) - Excited - Sacral chakra
+
+4.  **Integration:**
+    *   Updated `feeling_selection_step.dart` to use `MoodLanternSelector`
+    *   Updated `pre_story_feelings_dialog.dart` (age >5 uses lanterns, ≤5 keeps MoodMagicPicker)
+    *   Updated `feelings_corner_screen.dart` to use lanterns
+
+**The 7 Mood Lanterns:**
+
+| Lantern | Color | Emotion | Story Magic |
+|---------|-------|---------|-------------|
+| Sunshine | Gold (#FFB300) | Happy | "Stories full of sunshine and smiles" |
+| Ember | Red (#E64A19) | Angry | "Stories where heroes stand up for what's right" |
+| Raindrop | Blue (#1565C0) | Sad | "Stories with gentle comfort and understanding" |
+| Moonbeam | Purple (#7B1FA2) | Fearful | "Stories where courage conquers fear" |
+| Giggle | Green (#2E7D32) | Silly | "Stories bursting with giggles and surprises" |
+| Dewdrop | Cyan (#00ACC1) | Calm | "Stories as peaceful as a quiet forest" |
+| Heartglow | Pink (#E91E63) | Excited | "Stories full of adventure and discovery" |
+
+**Files Created:**
+-   `lib/data/mood_lantern_data.dart`
+-   `lib/widgets/mood_lantern_selector.dart`
+-   `assets/mood_lanterns/sunshine.png`
+-   `assets/mood_lanterns/ember.png`
+-   `assets/mood_lanterns/raindrop.png`
+-   `assets/mood_lanterns/moonbeam.png`
+-   `assets/mood_lanterns/giggle.png`
+-   `assets/mood_lanterns/dewdrop.png`
+-   `assets/mood_lanterns/heartglow.png`
+
+**Files Modified:**
+-   `pubspec.yaml` (added mood_lanterns asset path)
+-   `lib/screens/wizard_steps/feeling_selection_step.dart`
+-   `lib/pre_story_feelings_dialog.dart`
+-   `lib/feelings_corner_screen.dart`
+
+---
+
+## Supervisor Notes | 2026-02-02 (Onboarding Screen Bug Fix)
+
+### Session: Fix Stack Overflow on App Launch - COMPLETED
+
+**Goal:** Fix critical bug causing app to crash on launch with Stack Overflow error.
+
+**Status:** ✅ FIXED
+
+**Root Cause:**
+Infinite recursion in `onboarding_screen.dart`:
+- `_isLastStep` getter called `_buildSteps().length`
+- `_buildSteps()` method referenced `_isLastStep` on line 200
+- This created an infinite loop
+
+**Fixes Applied:**
+1.  **Infinite recursion fix:** Changed line 200 from `_isLastStep` to `_currentStep >= 2`
+2.  **DropdownButtonFormField fix:** Changed `initialValue` to `value` (correct property name)
+
+**Files Modified:**
+-   `lib/onboarding_screen.dart`
 
 ---

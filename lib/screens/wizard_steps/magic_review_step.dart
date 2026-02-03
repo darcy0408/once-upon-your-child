@@ -113,8 +113,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
           learningToReadMode: widget.wizardData.learningToReadMode,
           companionPets: requestData['companion_pets'],
           companionCharacters: requestData['companion_characters'],
-
           storyLength: requestData['storyLength'] ?? 'standard',
+          customElements: requestData['customElements'] ?? '',
           onProgress: (status) {
             if (mounted) setState(() => _loadingStatus = status);
           },

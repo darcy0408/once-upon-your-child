@@ -136,11 +136,17 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
       // Set emoji based on role
       if (character.role.contains('Adventurer')) {
         _characterEmoji = '🗺️';
-      } else if (character.role.contains('Thinker')) _characterEmoji = '💭';
-      else if (character.role.contains('Artist')) _characterEmoji = '🎨';
-        else if (character.role.contains('Helper')) _characterEmoji = '🤝';
-        else if (character.role.contains('Athlete')) _characterEmoji = '⚡';
-        else _characterEmoji = '👧';
+      } else if (character.role.contains('Thinker')) {
+        _characterEmoji = '💭';
+      } else if (character.role.contains('Artist')) {
+        _characterEmoji = '🎨';
+      } else if (character.role.contains('Helper')) {
+        _characterEmoji = '🤝';
+      } else if (character.role.contains('Athlete')) {
+        _characterEmoji = '⚡';
+      } else {
+        _characterEmoji = '👧';
+      }
       });
     } catch (e, stack) {
       debugPrint('❌ Error loading character: $e\n$stack');
