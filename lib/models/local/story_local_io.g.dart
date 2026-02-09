@@ -57,48 +57,58 @@ const StoryLocalSchema = CollectionSchema(
       name: r'isInteractive',
       type: IsarType.bool,
     ),
-    r'isSyncedToServer': PropertySchema(
+    r'isLearningToRead': PropertySchema(
       id: 8,
+      name: r'isLearningToRead',
+      type: IsarType.bool,
+    ),
+    r'isRhyming': PropertySchema(
+      id: 9,
+      name: r'isRhyming',
+      type: IsarType.bool,
+    ),
+    r'isSyncedToServer': PropertySchema(
+      id: 10,
       name: r'isSyncedToServer',
       type: IsarType.bool,
     ),
     r'length': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'length',
       type: IsarType.string,
     ),
     r'stateJson': PropertySchema(
-      id: 10,
+      id: 12,
       name: r'stateJson',
       type: IsarType.string,
     ),
     r'storyId': PropertySchema(
-      id: 11,
+      id: 13,
       name: r'storyId',
       type: IsarType.string,
     ),
     r'storyText': PropertySchema(
-      id: 12,
+      id: 14,
       name: r'storyText',
       type: IsarType.string,
     ),
     r'theme': PropertySchema(
-      id: 13,
+      id: 15,
       name: r'theme',
       type: IsarType.string,
     ),
     r'title': PropertySchema(
-      id: 14,
+      id: 16,
       name: r'title',
       type: IsarType.string,
     ),
     r'tone': PropertySchema(
-      id: 15,
+      id: 17,
       name: r'tone',
       type: IsarType.string,
     ),
     r'wisdomGem': PropertySchema(
-      id: 16,
+      id: 18,
       name: r'wisdomGem',
       type: IsarType.string,
     )
@@ -213,15 +223,17 @@ void _storyLocalSerialize(
   writer.writeBool(offsets[5], object.isCompleted);
   writer.writeBool(offsets[6], object.isFavorite);
   writer.writeBool(offsets[7], object.isInteractive);
-  writer.writeBool(offsets[8], object.isSyncedToServer);
-  writer.writeString(offsets[9], object.length);
-  writer.writeString(offsets[10], object.stateJson);
-  writer.writeString(offsets[11], object.storyId);
-  writer.writeString(offsets[12], object.storyText);
-  writer.writeString(offsets[13], object.theme);
-  writer.writeString(offsets[14], object.title);
-  writer.writeString(offsets[15], object.tone);
-  writer.writeString(offsets[16], object.wisdomGem);
+  writer.writeBool(offsets[8], object.isLearningToRead);
+  writer.writeBool(offsets[9], object.isRhyming);
+  writer.writeBool(offsets[10], object.isSyncedToServer);
+  writer.writeString(offsets[11], object.length);
+  writer.writeString(offsets[12], object.stateJson);
+  writer.writeString(offsets[13], object.storyId);
+  writer.writeString(offsets[14], object.storyText);
+  writer.writeString(offsets[15], object.theme);
+  writer.writeString(offsets[16], object.title);
+  writer.writeString(offsets[17], object.tone);
+  writer.writeString(offsets[18], object.wisdomGem);
 }
 
 StoryLocal _storyLocalDeserialize(
@@ -240,15 +252,17 @@ StoryLocal _storyLocalDeserialize(
   object.isCompleted = reader.readBool(offsets[5]);
   object.isFavorite = reader.readBool(offsets[6]);
   object.isInteractive = reader.readBool(offsets[7]);
-  object.isSyncedToServer = reader.readBool(offsets[8]);
-  object.length = reader.readStringOrNull(offsets[9]);
-  object.stateJson = reader.readStringOrNull(offsets[10]);
-  object.storyId = reader.readString(offsets[11]);
-  object.storyText = reader.readString(offsets[12]);
-  object.theme = reader.readString(offsets[13]);
-  object.title = reader.readString(offsets[14]);
-  object.tone = reader.readStringOrNull(offsets[15]);
-  object.wisdomGem = reader.readStringOrNull(offsets[16]);
+  object.isLearningToRead = reader.readBool(offsets[8]);
+  object.isRhyming = reader.readBool(offsets[9]);
+  object.isSyncedToServer = reader.readBool(offsets[10]);
+  object.length = reader.readStringOrNull(offsets[11]);
+  object.stateJson = reader.readStringOrNull(offsets[12]);
+  object.storyId = reader.readString(offsets[13]);
+  object.storyText = reader.readString(offsets[14]);
+  object.theme = reader.readString(offsets[15]);
+  object.title = reader.readString(offsets[16]);
+  object.tone = reader.readStringOrNull(offsets[17]);
+  object.wisdomGem = reader.readStringOrNull(offsets[18]);
   return object;
 }
 
@@ -278,20 +292,24 @@ P _storyLocalDeserializeProp<P>(
     case 8:
       return (reader.readBool(offset)) as P;
     case 9:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 10:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 11:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 12:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 13:
       return (reader.readString(offset)) as P;
     case 14:
       return (reader.readString(offset)) as P;
     case 15:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 16:
+      return (reader.readString(offset)) as P;
+    case 17:
+      return (reader.readStringOrNull(offset)) as P;
+    case 18:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1197,6 +1215,26 @@ extension StoryLocalQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isInteractive',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition>
+      isLearningToReadEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isLearningToRead',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterFilterCondition> isRhymingEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isRhyming',
         value: value,
       ));
     });
@@ -2446,6 +2484,31 @@ extension StoryLocalQuerySortBy
     });
   }
 
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> sortByIsLearningToRead() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isLearningToRead', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy>
+      sortByIsLearningToReadDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isLearningToRead', Sort.desc);
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> sortByIsRhyming() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isRhyming', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> sortByIsRhymingDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isRhyming', Sort.desc);
+    });
+  }
+
   QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> sortByIsSyncedToServer() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSyncedToServer', Sort.asc);
@@ -2669,6 +2732,31 @@ extension StoryLocalQuerySortThenBy
     });
   }
 
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> thenByIsLearningToRead() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isLearningToRead', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy>
+      thenByIsLearningToReadDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isLearningToRead', Sort.desc);
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> thenByIsRhyming() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isRhyming', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> thenByIsRhymingDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isRhyming', Sort.desc);
+    });
+  }
+
   QueryBuilder<StoryLocal, StoryLocal, QAfterSortBy> thenByIsSyncedToServer() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSyncedToServer', Sort.asc);
@@ -2835,6 +2923,18 @@ extension StoryLocalQueryWhereDistinct
     });
   }
 
+  QueryBuilder<StoryLocal, StoryLocal, QDistinct> distinctByIsLearningToRead() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isLearningToRead');
+    });
+  }
+
+  QueryBuilder<StoryLocal, StoryLocal, QDistinct> distinctByIsRhyming() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isRhyming');
+    });
+  }
+
   QueryBuilder<StoryLocal, StoryLocal, QDistinct> distinctByIsSyncedToServer() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isSyncedToServer');
@@ -2952,6 +3052,18 @@ extension StoryLocalQueryProperty
   QueryBuilder<StoryLocal, bool, QQueryOperations> isInteractiveProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isInteractive');
+    });
+  }
+
+  QueryBuilder<StoryLocal, bool, QQueryOperations> isLearningToReadProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isLearningToRead');
+    });
+  }
+
+  QueryBuilder<StoryLocal, bool, QQueryOperations> isRhymingProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isRhyming');
     });
   }
 
