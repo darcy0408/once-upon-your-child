@@ -53,6 +53,7 @@ dependencies:
   flutter_svg: ^2.0.10  # SVG rendering for avatars
   google_fonts: ^6.2.1  # Quicksand font for magical UI
   crypto: ^3.0.3  # SHA256 hashing for avatar cache keys
+  audioplayers: ^6.1.0  # For background ambience and SFX
 
   # Note: Backend handles AI generation for free users, but BYOK users call Gemini directly
   # flutter_secure_storage: ^9.0.0  # Removed for development - causing build issues
@@ -95,6 +96,8 @@ flutter:
     - assets/images/themes/
     - assets/feelings_faces/
     - assets/mood_lanterns/
+    - assets/sounds/
+    - thePlaceholderImageBeforeCharacterGeneration.jpeg
     - assets/config/avatar_config.json
     - assets/config/allowlists.json
     - assets/avatars/midjourney/

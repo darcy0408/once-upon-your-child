@@ -44,106 +44,149 @@ class ArchetypeCard extends StatelessWidget {
         child: InkWell(
           onTap: onUseTemplate,
           borderRadius: BorderRadius.circular(AppRadius.md),
-          child: Container(
+          child: AnimatedScale(
+            scale: isSelected ? 1.03 : 1.0,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutBack,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
             width: 160, // Fixed width for horizontal scroll
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primaryLight.withAlpha(51) : AppColors.surface,
+              color: isSelected ? AppColors.primaryLight.withAlpha(38) : AppColors.surface,
+              gradient: isSelected
+                  ? LinearGradient(
+                      colors: [
+                        AppColors.gold.withAlpha(80),
+                        AppColors.primaryLight.withAlpha(40),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : null,
               borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(
-                color: isSelected ? AppColors.primary : Colors.grey.shade300,
-                width: isSelected ? 2 : 1,
+                color: isSelected ? AppColors.gold : Colors.grey.shade300,
+                width: isSelected ? 2.5 : 1,
               ),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: AppColors.goldLight.withAlpha(77), // 30% opacity
-                        blurRadius: 8,
-                        spreadRadius: 2,
+                        color: AppColors.gold.withAlpha(140),
+                        blurRadius: 16,
+                        spreadRadius: 3,
+                        offset: const Offset(0, 6),
+                      ),
+                      BoxShadow(
+                        color: AppColors.primary.withAlpha(80),
+                        blurRadius: 12,
+                        spreadRadius: 1,
                       ),
                     ]
                   : null,
             ),
-            child: SingleChildScrollView(
-              physics: const ClampingScrollPhysics(), // Prevent bounce effect on cards
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Image or Icon/Emoji fallback
-                  if (imagePath != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      child: Image.asset(
-                        imagePath!,
-                        width: 120,
-                        height: 90,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Text(
+            child: Stack(
+              children: [
+                if (isSelected)
+                  Positioned.fill(
+                    child: Opacity(
+                      opacity: 0.18,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          gradient: const RadialGradient(
+                            colors: [AppColors.goldLight, Colors.transparent],
+                            radius: 1.1,
+                            center: Alignment(-0.6, -0.6),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(), // Prevent bounce effect on cards
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Image or Icon/Emoji fallback
+                      if (imagePath != null)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                          child: Image.asset(
+                            imagePath!,
+                            width: 120,
+                            height: 90,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Text(
+                              icon ?? '✨',
+                              style: const TextStyle(fontSize: 64),
+                            ),
+                          ),
+                        )
+                      else
+                        Text(
                           icon ?? '✨',
                           style: const TextStyle(fontSize: 64),
                         ),
-                      ),
-                    )
-                  else
-                    Text(
-                      icon ?? '✨',
-                      style: const TextStyle(fontSize: 64),
-                    ),
-                  const SizedBox(height: AppSpacing.xs),
-                  // Archetype name
-                  Text(
-                    name,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textDark,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  // Trait chips
-                  Wrap(
-                    spacing: 4,
-                    runSpacing: 4,
-                    alignment: WrapAlignment.center,
-                    children: traits.map((trait) => _TraitChip(label: trait)).toList(),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  
-                  // Special Ability Display
-                  Container(
-                     padding: const EdgeInsets.all(8),
-                     decoration: BoxDecoration(
-                       color: AppColors.primary.withValues(alpha: 0.1),
-                       borderRadius: BorderRadius.circular(AppRadius.sm),
-                       border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-                     ),
-                     child: Text(
-                        specialAbility, 
-                        style: TextStyle(
-                          fontSize: 11, 
-                          fontStyle: FontStyle.italic,
-                          color: AppColors.textDark,
-                        ),
+                      const SizedBox(height: AppSpacing.xs),
+                      // Archetype name
+                      Text(
+                        name,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textDark,
+                            ),
                         textAlign: TextAlign.center,
-                     ),
-                  ),
-
-                  // "Use Template" button
-                  if (!isSelected) // Hint text instead of button
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Text(
-                        'Tap to Select',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textDark.withAlpha(128),
-                          fontStyle: FontStyle.italic,
-                        ),
                       ),
-                    ),
-                ],
-              ),
+                      const SizedBox(height: AppSpacing.sm),
+                      // Trait chips
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        alignment: WrapAlignment.center,
+                        children: traits.map((trait) => _TraitChip(label: trait)).toList(),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      
+                      // Special Ability Display
+                      Container(
+                         padding: const EdgeInsets.all(8),
+                         decoration: BoxDecoration(
+                           color: AppColors.primary.withValues(alpha: 0.1),
+                           borderRadius: BorderRadius.circular(AppRadius.sm),
+                           border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                         ),
+                         child: Text(
+                            specialAbility, 
+                            style: TextStyle(
+                              fontSize: 11, 
+                              fontStyle: FontStyle.italic,
+                              color: AppColors.textDark,
+                            ),
+                            textAlign: TextAlign.center,
+                         ),
+                      ),
+
+                      // "Use Template" button
+                      if (!isSelected) // Hint text instead of button
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            'Tap to Select',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textDark.withAlpha(128),
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ),
+          ),
           ),
         ),
       ),
