@@ -24,6 +24,8 @@ class StoryLocal {
 
   bool isSyncedToServer = false;
   bool isInteractive = false;
+  bool isRhyming = false;
+  bool isLearningToRead = false;
   String? wisdomGem;
   String? charactersJson;
 
@@ -47,6 +49,8 @@ class StoryLocal {
           ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
           : DateTime.now()
       ..isInteractive = json['isInteractive'] ?? json['is_interactive'] ?? false
+      ..isRhyming = json['isRhyming'] ?? json['is_rhyming'] ?? false
+      ..isLearningToRead = json['isLearningToRead'] ?? json['is_learning_to_read'] ?? false
       ..wisdomGem = json['wisdomGem'] ?? json['wisdom_gem']
       ..charactersJson = _encodeCharactersFromJson(json['characters'])
       ..isSyncedToServer = true;
@@ -61,6 +65,8 @@ class StoryLocal {
       ..isFavorite = savedStory.isFavorite
       ..createdAt = savedStory.createdAt
       ..isInteractive = savedStory.isInteractive
+      ..isRhyming = savedStory.isRhyming
+      ..isLearningToRead = savedStory.isLearningToRead
       ..wisdomGem = savedStory.wisdomGem
       ..charactersJson = _encodeCharacters(savedStory.characters);
   }
@@ -74,6 +80,8 @@ class StoryLocal {
         'imageUrl': imageUrl,
         'createdAt': createdAt.toIso8601String(),
         'isInteractive': isInteractive,
+        'isRhyming': isRhyming,
+        'isLearningToRead': isLearningToRead,
         'wisdomGem': wisdomGem,
         'characters': _decodeCharacters().map((c) => c.toJson()).toList(),
       };

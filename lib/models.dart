@@ -268,6 +268,8 @@ class SavedStory {
   final List<Character> characters;
   final DateTime createdAt;
   final bool isInteractive;
+  final bool isRhyming;
+  final bool isLearningToRead;
   final bool isFavorite;
   final String? wisdomGem;
   // NEW: Page-based story structure
@@ -285,6 +287,8 @@ class SavedStory {
     required this.characters,
     required this.createdAt,
     this.isInteractive = false,
+    this.isRhyming = false,
+    this.isLearningToRead = false,
     this.isFavorite = false,
     this.wisdomGem,
     this.pages,
@@ -306,6 +310,8 @@ class SavedStory {
           [],
       createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
       isInteractive: json['is_interactive'] ?? false,
+      isRhyming: json['is_rhyming'] ?? false,
+      isLearningToRead: json['is_learning_to_read'] ?? false,
       isFavorite: json['is_favorite'] ?? false,
       wisdomGem: json['wisdom_gem'],
       // NEW: Page-based structure
@@ -325,6 +331,8 @@ class SavedStory {
         'characters': characters.map((c) => c.toJson()).toList(),
         'created_at': createdAt.toIso8601String(),
         'is_interactive': isInteractive,
+        'is_rhyming': isRhyming,
+        'is_learning_to_read': isLearningToRead,
         'is_favorite': isFavorite,
         'wisdom_gem': wisdomGem,
         // NEW: Page-based structure
@@ -343,6 +351,8 @@ class SavedStory {
     List<Character>? characters,
     DateTime? createdAt,
     bool? isInteractive,
+    bool? isRhyming,
+    bool? isLearningToRead,
     bool? isFavorite,
     String? wisdomGem,
     List<String>? pages,
@@ -359,6 +369,8 @@ class SavedStory {
       characters: characters ?? this.characters,
       createdAt: createdAt ?? this.createdAt,
       isInteractive: isInteractive ?? this.isInteractive,
+      isRhyming: isRhyming ?? this.isRhyming,
+      isLearningToRead: isLearningToRead ?? this.isLearningToRead,
       isFavorite: isFavorite ?? this.isFavorite,
       wisdomGem: wisdomGem ?? this.wisdomGem,
       pages: pages ?? this.pages,
