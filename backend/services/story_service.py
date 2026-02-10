@@ -138,8 +138,17 @@ class AdvancedStoryEngine:
                 companion_sections.append(f"GUESTS: {', '.join(others)}")
 
         if not companion_sections and companion:
-            companion_sections.append(f"COMPANION: {companion}")
-            all_companion_names.append(companion)
+            if isinstance(companion, dict):
+                comp_name = companion.get('name', 'Companion')
+                comp_type = companion.get('type') or companion.get('species')
+                if comp_type:
+                    companion_sections.append(f"COMPANION: {comp_name} the {comp_type}")
+                else:
+                    companion_sections.append(f"COMPANION: {comp_name}")
+                all_companion_names.append(comp_name)
+            else:
+                companion_sections.append(f"COMPANION: {companion}")
+                all_companion_names.append(str(companion))
         
         comp_str = "\n".join(companion_sections) if companion_sections else "None"
         mandatory_names_str = ", ".join(all_companion_names) if all_companion_names else "None"

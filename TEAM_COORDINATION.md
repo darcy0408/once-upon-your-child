@@ -42,6 +42,22 @@ See MULTI_AGENT_SETUP.md for detailed workflow.
 4. Create a `TEST_RUN.md` with local + CI instructions.
 
 ---
+## Supervisor Notes | 2026-02-10 (API Contract Tests + CI)
+
+### Session: API Contract Suite & CI Wiring - IN PROGRESS
+
+**Goal:** Add API contract tests and wire them into CI.
+
+**Status:** 🔄 IN PROGRESS
+
+**Plan:**
+1. Create an API contract test suite for all endpoints in `API_ENDPOINTS.md`.
+2. Add fixtures for request/response validation and negative cases.
+3. Integrate the contract suite into `.github/workflows/cicd.yml` or a dedicated job.
+
+**Owner:** Codex
+
+---
 ## Supervisor Notes | 2026-02-08 (Test Verification)
 
 ### Session: Gemini-Led Test Verification - PARTIAL

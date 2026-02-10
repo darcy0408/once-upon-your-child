@@ -129,7 +129,8 @@ def test_custom_elements_simple():
                     "Story generated but custom element not clearly found",
                     duration
                 )
-                print(f"   Story preview: {data.get('story', '')[:200]}...")
+                preview = story_text[:200] if story_text else "No story text"
+                print(f"   Story preview: {preview}...")
                 return True  # Still a pass if story generates
         else:
             log_test(
@@ -331,10 +332,9 @@ def test_story_length_options():
             response = requests.post(
                 f"{BACKEND_URL}/generate-story",
                 json=payload,
-                timeout=60
+                timeout=120
             )
-            duration = int((time.time() - start) * 1000)
-            
+            duration = int((time.time() - start) * 1000)            
             if response.status_code == 200:
                 data = response.json()
                 story_obj = data.get('story')

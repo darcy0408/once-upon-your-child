@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'dart:convert';
 import '../../models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/archetype_card.dart';
@@ -444,36 +445,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 
                   // Saved Characters Section (if any exist)
                   if (widget.availableCharacters.isNotEmpty) ...[
-                    Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 280),
-                        child: SegmentedButton<bool>(
-                          segments: const [
-                            ButtonSegment(value: false, label: Text('My Heroes')),
-                            ButtonSegment(value: true, label: Text('New')),
-                          ],
-                          selected: {_isCreatingNew},
-                          onSelectionChanged: (Set<bool> newSelection) {
-                            if (newSelection.first && !_isCreatingNew) {
-                              _switchToNewCharacter();
-                            } else if (!newSelection.first && _isCreatingNew) {
-                              setState(() => _isCreatingNew = false);
-                            }
-                          },
-                          style: const ButtonStyle(
-                            visualDensity: VisualDensity.compact,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Show saved characters if in selection mode
-                  if (!_isCreatingNew && widget.availableCharacters.isNotEmpty) ...[
                     Text(
-                      'Choose your hero for this adventure',
+                      'Choose your hero or create a new one',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: AppColors.textDark.withAlpha(179),
                           ),
@@ -481,65 +454,67 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                     ),
                     const SizedBox(height: 16),
                     SizedBox(
-                      height: 140,
+                      height: 120,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                        itemCount: widget.availableCharacters.length,
+                        itemCount: widget.availableCharacters.length + 1,
                         separatorBuilder: (context, index) => const SizedBox(width: 12),
                         itemBuilder: (context, index) {
-                          final character = widget.availableCharacters[index];
-                          final isSelected = _selectedExistingCharacter?.id == character.id;
-
-                          return GestureDetector(
-                            onTap: () => _loadExistingCharacter(character),
-                            child: Container(
-                              width: 120,
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: isSelected ? AppColors.primary : AppColors.surface,
-                                borderRadius: BorderRadius.circular(AppRadius.md),
-                                border: Border.all(
-                                  color: isSelected ? AppColors.gold : AppColors.primary.withAlpha(128),
-                                  width: isSelected ? 3 : 2,
-                                ),
-                                boxShadow: isSelected ? [
-                                  BoxShadow(
-                                    color: AppColors.gold.withAlpha(128),
-                                    blurRadius: 8,
-                                    spreadRadius: 2,
-                                  ),
-                                ] : null,
-                              ),
+                          if (index == widget.availableCharacters.length) {
+                            final isSelected = _isCreatingNew;
+                            return GestureDetector(
+                              onTap: _switchToNewCharacter,
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(
-                                    _getEmojiForCharacter(character),
-                                    style: const TextStyle(fontSize: 36),
+                                  Container(
+                                    width: 64,
+                                    height: 64,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isSelected ? AppColors.gold : AppColors.primary.withAlpha(100),
+                                        width: isSelected ? 3 : 2,
+                                      ),
+                                      color: AppColors.surface,
+                                    ),
+                                    child: const Icon(Icons.add, color: AppColors.primary, size: 28),
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    character.name,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: isSelected ? AppColors.textLight : AppColors.textDark,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${character.age} yrs',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: isSelected ? AppColors.textLight.withAlpha(204) : AppColors.textDark.withAlpha(179),
-                                    ),
+                                    'Create New',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textDark,
+                                        ),
                                   ),
                                 ],
                               ),
+                            );
+                          }
+
+                          final character = widget.availableCharacters[index];
+                          final isSelected = _selectedExistingCharacter?.id == character.id && !_isCreatingNew;
+
+                          return GestureDetector(
+                            onTap: () => _loadExistingCharacter(character),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _buildAvatarThumb(character, isSelected: isSelected),
+                                const SizedBox(height: 8),
+                                Text(
+                                  character.name,
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textDark,
+                                      ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
                           );
                         },
@@ -698,15 +673,15 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                     const SizedBox(height: 16),
                   ],
 
-                  // Custom Pets Section
-                  if (_canContinue || !_isCreatingNew)
+                  // Custom Pets Section (only when creating a new character)
+                  if (_isCreatingNew && _canContinue)
                      _PetsSection(
                         wizardData: widget.wizardData,
                         onUpdate: () => setState(() {}),
                         onAutoSave: _autoSaveCharacter,
                      ),
 
-                  if (_canContinue || !_isCreatingNew)
+                  if (_isCreatingNew && _canContinue)
                      const SizedBox(height: 16),
 
 // Siblings section removed per user request
@@ -722,7 +697,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                       child: PillButton(
                         emoji: '➡️',
                         label: 'Continue',
-                        onTap: widget.onNext,
+                        onTap: _handleContinue,
                         variant: PillButtonVariant.purple,
                         isSelected: true,
                       ),
