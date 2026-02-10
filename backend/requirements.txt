@@ -38,7 +38,7 @@ Flask-Limiter==4.1.1
 # API Documentation
 apispec==6.9.0
 apispec-webframeworks==1.2.0
-marshmallow==4.1.2
+marshmallow==4.2.1
 
 # Load Testing (optional - requires build tools on Windows)
 # aiohttp==3.9.1
