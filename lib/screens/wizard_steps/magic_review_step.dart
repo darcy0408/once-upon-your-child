@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import '../../services/api_service_manager.dart';
-import '../../services/achievement_service.dart';
-import '../../story_result_screen.dart';
-import '../../pick_a_path_adventure_screen.dart';
-import '../../models.dart';
-import '../../theme/app_theme.dart';
-import '../../widgets/make_magic_button.dart';
-import '../../widgets/character_preview.dart';
-import '../../widgets/magic_orb.dart';
-import '../../widgets/magical_loading_view.dart';
-import '../wizard_story_screen.dart';
-import '../../data/scenario_data.dart';
-import '../../data/companion_data.dart';
+import 'dart:convert';
+import 'package:story_weaver_app/services/api_service_manager.dart';
+import 'package:story_weaver_app/services/achievement_service.dart';
+import 'package:story_weaver_app/story_result_screen.dart';
+import 'package:story_weaver_app/pick_a_path_adventure_screen.dart';
+import 'package:story_weaver_app/models.dart';
+import 'package:story_weaver_app/theme/app_theme.dart';
+import 'package:story_weaver_app/widgets/make_magic_button.dart';
+import 'package:story_weaver_app/widgets/magic_orb.dart';
+import 'package:story_weaver_app/widgets/magical_loading_view.dart';
+import 'package:story_weaver_app/data/scenario_data.dart';
+import 'package:story_weaver_app/data/companion_data.dart';
 import 'wizard_data_mapper.dart';
 
 /// Step 4: Magic Review & Launch (Vision Orb Edition)
@@ -71,19 +70,6 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       }
     }
     return null;
-  }
-
-  String get _companionEmoji {
-    if (widget.wizardData.selectedCompanions.isNotEmpty) {
-       final firstComp = widget.wizardData.selectedCompanions.first;
-       // Try magic companions
-       try {
-         return magicCompanions.firstWhere((c) => c.id == firstComp).emoji;
-       } catch (_) {
-         return '🐾'; // Default
-       }
-    }
-    return '❓';
   }
 
   // Helper to get scenario name
@@ -202,8 +188,11 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
     } catch (e) {
       debugPrint('❌ Error generating story: $e');
       String userMessage = 'Magic needed a recharge';
-      if (e.toString().contains('500')) userMessage = 'Server error. The magic faded.';
-      else if (e.toString().contains('timeout')) userMessage = 'Story took too long.';
+      if (e.toString().contains('500')) {
+        userMessage = 'Server error. The magic faded.';
+      } else if (e.toString().contains('timeout')) {
+        userMessage = 'Story took too long.';
+      }
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -265,97 +254,87 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
   @override
   Widget build(BuildContext context) {
     final data = widget.wizardData;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final orbSize = (screenWidth - 64).clamp(180.0, 250.0);
 
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
         child: Column(
           children: [
-            // 1. Magical Header
-            Text(
-              'Gaze into the Future...',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: AppColors.textDark,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Outfit',
-                  ),
-              textAlign: TextAlign.center,
+            // 1. Crystal progress orbs
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _ProgressCrystal(icon: Icons.check_rounded),
+                SizedBox(width: 10),
+                _ProgressCrystal(icon: Icons.check_rounded),
+                SizedBox(width: 10),
+                _ProgressCrystal(icon: Icons.check_rounded),
+                SizedBox(width: 10),
+                _ProgressCrystal(icon: Icons.auto_awesome),
+              ],
             ),
-            Text(
-              'for ${data.characterName}',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w500,
-                  ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: 18),
 
-            // 2. Vision Orb Section
+            // 2. Vision Orb + circular side avatars
             SizedBox(
-              height: 280,
+              height: 290,
               child: Stack(
                 alignment: Alignment.center,
                 clipBehavior: Clip.none,
                 children: [
-                  // Center Orb
+                  // Orb aura
+                  Container(
+                    width: orbSize + 18,
+                    height: orbSize + 18,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          const Color(0xFFFFEEA8).withValues(alpha: 0.25),
+                          const Color(0xFFE985FF).withValues(alpha: 0.2),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.55, 1.0],
+                      ),
+                    ),
+                  ),
+
+                  // Center crystal orb
                   MagicOrbWidget(
                     imagePath: _scenarioImage,
-                    size: 220,
+                    size: orbSize,
                     glowColor: AppColors.gold,
                     label: _scenarioLabel,
                   ),
 
-                  // Floating Hero (Left)
+                  // Hero avatar
                   Positioned(
-                    left: 0,
-                    bottom: 20,
+                    left: 10,
+                    bottom: 30,
                     child: _FloatingBubble(
                       delay: 0,
-                      child: SizedBox(
-                        width: 80,
-                        height: 80,
-                        child: CharacterPreview(
-                          generatedAvatar: data.generatedAvatar,
-                          placeholderEmoji: '👤',
-                          showSparkles: false, // Orb has sparkles
-                          backgroundColor: Colors.transparent,
-                        ),
+                      child: _AuraCircle(
+                        size: 88,
+                        auraColor: const Color(0xFFFFD9A6),
+                        child: _HeroAvatar(generatedAvatar: data.generatedAvatar),
                       ),
                     ),
                   ),
 
-                  // Floating Companion (Right)
+                  // Companion avatar
                   if (data.selectedCompanions.isNotEmpty)
                     Positioned(
-                      right: 0,
-                      bottom: 20,
+                      right: 10,
+                      bottom: 30,
                       child: _FloatingBubble(
-                        delay: 1.5, // Offset animation
-                        child: Container(
-                          width: 70,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.2),
-                                blurRadius: 8,
-                              ),
-                            ],
-                          ),
-                          child: ClipOval(
-                            child: _companionImage != null
-                                ? Image.asset(_companionImage!, fit: BoxFit.cover)
-                                : Container(
-                                    color: AppColors.surface,
-                                    child: Center(
-                                      child: Text(
-                                        _companionEmoji,
-                                        style: const TextStyle(fontSize: 32),
-                                      ),
-                                    ),
-                                  ),
+                        delay: 1.4,
+                        child: _AuraCircle(
+                          size: 88,
+                          auraColor: const Color(0xFFF3AEFF),
+                          child: _CompanionAvatar(
+                            companionImage: _companionImage,
                           ),
                         ),
                       ),
@@ -365,77 +344,86 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // 3. Magic Settings Ring (Toggle Pills)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _MagicToggle(
-                    icon: Icons.image,
-                    label: 'Pics',
-                    isActive: data.includeIllustrations,
-                    onTap: () => setState(() => data.includeIllustrations = !data.includeIllustrations),
-                  ),
-                  const SizedBox(width: 12),
-                  _MagicToggle(
-                    icon: Icons.music_note,
-                    label: 'Rhyme',
-                    isActive: data.rhymeTimeMode,
-                    onTap: () => setState(() {
-                      data.rhymeTimeMode = !data.rhymeTimeMode;
-                      if(data.rhymeTimeMode) {
-                        data.learningToReadMode = false;
-                        data.interactiveMode = false;
-                      }
-                    }),
-                  ),
-                  const SizedBox(width: 12),
-                  _MagicToggle(
-                    icon: Icons.menu_book,
-                    label: 'Read for Fun',
-                    isActive: data.learningToReadMode,
-                    onTap: () => setState(() {
-                      data.learningToReadMode = !data.learningToReadMode;
-                      if(data.learningToReadMode) {
-                        data.rhymeTimeMode = false;
-                        data.interactiveMode = false;
-                      }
-                    }),
-                  ),
-                  const SizedBox(width: 12),
-                  _MagicToggle(
-                    icon: Icons.alt_route,
-                    label: 'Pick Your Path',
-                    isActive: data.interactiveMode,
-                    onTap: () => setState(() {
-                      data.interactiveMode = !data.interactiveMode;
-                      if(data.interactiveMode) {
-                        data.rhymeTimeMode = false;
-                        data.learningToReadMode = false;
-                      }
-                    }),
-                  ),
-                ],
-              ),
+            // 3. Crystal mode orbs
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 10,
+              runSpacing: 12,
+              children: [
+                _CrystalModeOrb(
+                  icon: Icons.auto_stories_rounded,
+                  label: 'Tales',
+                  isActive: data.includeIllustrations,
+                  onTap: () => setState(() => data.includeIllustrations = !data.includeIllustrations),
+                ),
+                _CrystalModeOrb(
+                  icon: Icons.music_note_rounded,
+                  label: 'Rhyme',
+                  isActive: data.rhymeTimeMode,
+                  onTap: () => setState(() {
+                    data.rhymeTimeMode = !data.rhymeTimeMode;
+                    if (data.rhymeTimeMode) {
+                      data.learningToReadMode = false;
+                      data.interactiveMode = false;
+                    }
+                  }),
+                ),
+                _CrystalModeOrb(
+                  icon: Icons.menu_book_rounded,
+                  label: 'Spellbound Reading',
+                  isActive: data.learningToReadMode,
+                  onTap: () => setState(() {
+                    data.learningToReadMode = !data.learningToReadMode;
+                    if (data.learningToReadMode) {
+                      data.rhymeTimeMode = false;
+                      data.interactiveMode = false;
+                    }
+                  }),
+                ),
+                _CrystalModeOrb(
+                  icon: Icons.alt_route_rounded,
+                  label: 'Pick Your Path',
+                  isActive: data.interactiveMode,
+                  onTap: () => setState(() {
+                    data.interactiveMode = !data.interactiveMode;
+                    if (data.interactiveMode) {
+                      data.rhymeTimeMode = false;
+                      data.learningToReadMode = false;
+                    }
+                  }),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // 4. Length Selector (Clean)
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Row(
-                children: [
-                  _LengthPill(label: 'Quick', val: 'quick', current: data.storyLength, onTap: (v) => setState(() => data.storyLength = v)),
-                  _LengthPill(label: 'Standard', val: 'standard', current: data.storyLength, onTap: (v) => setState(() => data.storyLength = v)),
-                  _LengthPill(label: 'Epic', val: 'epic', current: data.storyLength, onTap: (v) => setState(() => data.storyLength = v)),
-                ],
-              ),
+            // 4. Floating story-length crystals
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 16,
+              runSpacing: 14,
+              children: [
+                _LengthCrystal(
+                  label: 'Quick',
+                  val: 'quick',
+                  current: data.storyLength,
+                  onTap: (v) => setState(() => data.storyLength = v),
+                  crystalColors: const [Color(0xFF8EEDFF), Color(0xFFB5F7FF), Color(0xFFE8FEFF)],
+                ),
+                _LengthCrystal(
+                  label: 'Classic',
+                  val: 'standard',
+                  current: data.storyLength,
+                  onTap: (v) => setState(() => data.storyLength = v),
+                  crystalColors: const [Color(0xFFFFD65C), Color(0xFFFFEBA5), Color(0xFFFFF7D6)],
+                ),
+                _LengthCrystal(
+                  label: 'Epic',
+                  val: 'epic',
+                  current: data.storyLength,
+                  onTap: (v) => setState(() => data.storyLength = v),
+                  crystalColors: const [Color(0xFF9E6CFF), Color(0xFFCBB1FF), Color(0xFFE5DAFF)],
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.xl),
 
@@ -545,13 +533,168 @@ class _FloatingBubbleState extends State<_FloatingBubble> with SingleTickerProvi
   }
 }
 
-class _MagicToggle extends StatelessWidget {
+class _ProgressCrystal extends StatelessWidget {
+  final IconData icon;
+
+  const _ProgressCrystal({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const RadialGradient(
+          colors: [Color(0xFFE8D6FF), Color(0xFF9E75E0), Color(0xFF6A3AA9)],
+          stops: [0.1, 0.65, 1.0],
+        ),
+        border: Border.all(color: const Color(0xFFE6D9FF), width: 1.2),
+        boxShadow: const [
+          BoxShadow(color: Color(0x66A65BFF), blurRadius: 12, spreadRadius: 1),
+          BoxShadow(color: Color(0x55FFD878), blurRadius: 16, spreadRadius: -2),
+        ],
+      ),
+      child: Icon(icon, size: 20, color: Colors.white),
+    );
+  }
+}
+
+class _AuraCircle extends StatelessWidget {
+  final double size;
+  final Color auraColor;
+  final Widget child;
+
+  const _AuraCircle({
+    required this.size,
+    required this.auraColor,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: auraColor.withValues(alpha: 0.55),
+            blurRadius: 26,
+            spreadRadius: 2,
+          ),
+          BoxShadow(
+            color: const Color(0xFFFFE4B8).withValues(alpha: 0.35),
+            blurRadius: 16,
+            spreadRadius: -4,
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class _HeroAvatar extends StatelessWidget {
+  final GeneratedAvatar? generatedAvatar;
+
+  const _HeroAvatar({required this.generatedAvatar});
+
+  @override
+  Widget build(BuildContext context) {
+    if (generatedAvatar == null) {
+      return const _GradientSphereFallback(
+        child: Icon(Icons.face_rounded, color: Colors.white, size: 32),
+      );
+    }
+
+    final imageData = generatedAvatar!.imageBase64;
+    final isUrl = imageData.startsWith('http://') || imageData.startsWith('https://');
+    final isAsset = imageData.startsWith('assets/');
+
+    return ClipOval(
+      child: isAsset
+          ? Image.asset(
+              imageData,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const _GradientSphereFallback(
+                child: Icon(Icons.face_rounded, color: Colors.white, size: 32),
+              ),
+            )
+          : isUrl
+              ? Image.network(
+                  imageData,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const _GradientSphereFallback(
+                    child: Icon(Icons.face_rounded, color: Colors.white, size: 32),
+                  ),
+                )
+              : Image.memory(
+                  base64Decode(imageData.split(',').last),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const _GradientSphereFallback(
+                    child: Icon(Icons.face_rounded, color: Colors.white, size: 32),
+                  ),
+                ),
+    );
+  }
+}
+
+class _CompanionAvatar extends StatelessWidget {
+  final String? companionImage;
+
+  const _CompanionAvatar({
+    required this.companionImage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (companionImage == null) {
+      return const _GradientSphereFallback(
+        child: Icon(Icons.pets_rounded, color: Colors.white, size: 30),
+      );
+    }
+
+    return ClipOval(
+      child: Image.asset(
+        companionImage!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const _GradientSphereFallback(
+          child: Icon(Icons.pets_rounded, color: Colors.white, size: 30),
+        ),
+      ),
+    );
+  }
+}
+
+class _GradientSphereFallback extends StatelessWidget {
+  final Widget child;
+
+  const _GradientSphereFallback({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [Color(0xFFFFF3D6), Color(0xFFEAA6FF), Color(0xFFAA7CEB)],
+          stops: [0.1, 0.6, 1.0],
+        ),
+      ),
+      child: Center(child: child),
+    );
+  }
+}
+
+class _CrystalModeOrb extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isActive;
   final VoidCallback onTap;
 
-  const _MagicToggle({
+  const _CrystalModeOrb({
     required this.icon,
     required this.label,
     required this.isActive,
@@ -560,56 +703,60 @@ class _MagicToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color inactiveText = AppColors.primaryDark;
+    const inactiveText = Color(0xFF2F2748);
+    final activeGlow = const Color(0xFFE28EFF);
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
-        width: 88,
+        width: 84,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                gradient: isActive
-                    ? AppGradients.purpleGlow
-                    : LinearGradient(
-                        colors: [
-                          AppColors.cream,
-                          AppColors.surface.withValues(alpha: 0.6),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: isActive ? AppColors.primary.withValues(alpha: 0.4) : Colors.black12,
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+            AnimatedScale(
+              duration: const Duration(milliseconds: 220),
+              scale: isActive ? 1.1 : 1.0,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const RadialGradient(
+                    colors: [Color(0xFFEFE6FF), Color(0xFFB6A8F8), Color(0xFF7A5CC8)],
+                    stops: [0.08, 0.62, 1.0],
                   ),
-                ],
-                border: Border.all(
-                  color: isActive ? AppColors.gold : AppColors.goldLight.withValues(alpha: 0.6),
-                  width: 2,
+                  border: Border.all(
+                    color: isActive ? const Color(0xFFFFE8A0) : const Color(0xFFC8B3F3),
+                    width: 1.8,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isActive ? activeGlow : const Color(0xFF9D8CEB)).withValues(alpha: 0.55),
+                      blurRadius: isActive ? 24 : 14,
+                      spreadRadius: isActive ? 3 : 0,
+                    ),
+                    BoxShadow(
+                      color: const Color(0xFFFFE9B0).withValues(alpha: isActive ? 0.55 : 0.25),
+                      blurRadius: isActive ? 18 : 10,
+                      spreadRadius: -2,
+                    ),
+                  ],
                 ),
-              ),
-              child: Icon(
-                icon,
-                color: isActive ? Colors.white : inactiveText,
-                size: 26,
+                child: Icon(
+                  icon,
+                  color: isActive ? Colors.white : inactiveText,
+                  size: 29,
+                ),
               ),
             ),
             const SizedBox(height: 6),
             Text(
               label,
               style: TextStyle(
-                fontSize: 10.5,
+                fontSize: 12,
                 height: 1.1,
-                color: isActive ? AppColors.primaryDark : inactiveText,
-                fontWeight: FontWeight.w700,
+                color: const Color(0xFF2D2148),
+                fontWeight: isActive ? FontWeight.w800 : FontWeight.w700,
               ),
               textAlign: TextAlign.center,
               maxLines: 2,
@@ -621,39 +768,67 @@ class _MagicToggle extends StatelessWidget {
   }
 }
 
-class _LengthPill extends StatelessWidget {
+class _LengthCrystal extends StatelessWidget {
   final String label;
   final String val;
   final String current;
   final Function(String) onTap;
+  final List<Color> crystalColors;
 
-  const _LengthPill({
+  const _LengthCrystal({
     required this.label,
     required this.val,
     required this.current,
     required this.onTap,
+    required this.crystalColors,
   });
 
   @override
   Widget build(BuildContext context) {
     final bool isSelected = val == current;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => onTap(val),
+    return GestureDetector(
+      onTap: () => onTap(val),
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 220),
+        scale: isSelected ? 1.1 : 1.0,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 220),
+          width: 92,
+          height: 76,
           alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.gold : Colors.transparent,
-            borderRadius: BorderRadius.circular(24),
+            gradient: RadialGradient(
+              colors: crystalColors,
+              stops: const [0.08, 0.55, 1.0],
+            ),
+            borderRadius: BorderRadius.circular(40),
+            border: Border.all(
+              color: isSelected ? Colors.white : const Color(0xCCFFFFFF),
+              width: isSelected ? 2.2 : 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: crystalColors[0].withValues(alpha: isSelected ? 0.7 : 0.35),
+                blurRadius: isSelected ? 24 : 12,
+                spreadRadius: isSelected ? 4 : 0,
+              ),
+            ],
           ),
           child: Text(
             label,
+            textAlign: TextAlign.center,
             style: TextStyle(
-              color: isSelected ? Colors.white : AppColors.textDark,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
+              color: const Color(0xFF2A2040),
+              fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+              fontSize: 18,
+              shadows: isSelected
+                  ? const [
+                      Shadow(
+                        color: Color(0x66FFFFFF),
+                        blurRadius: 8,
+                      )
+                    ]
+                  : null,
             ),
           ),
         ),
