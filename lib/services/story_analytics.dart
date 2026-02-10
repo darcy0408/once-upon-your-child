@@ -1,5 +1,6 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
+import 'firebase_analytics_service.dart';
 
 class StoryAnalytics {
   StoryAnalytics._();
@@ -75,6 +76,7 @@ class StoryAnalytics {
     Map<String, Object?> parameters,
   ) async {
     try {
+      if (!FirebaseAnalyticsService.isInitialized) return;
       // Convert to Map<String, Object> and ensure all values are primitive types
       final Map<String, Object> cleanParams = {};
       parameters.forEach((key, value) {

@@ -59,6 +59,7 @@ class StorybookProgressIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveLabel = stageLabel ?? _defaultLabel;
+    final bool useCompactMode = totalPages > 6;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -73,32 +74,53 @@ class StorybookProgressIndicator extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Page icons
-          ...List.generate(totalPages, (index) {
-            final pageNumber = index + 1;
-            final isCurrent = pageNumber == currentPage;
-            final isPast = pageNumber < currentPage;
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: _PageIcon(
-                isCurrent: isCurrent,
-                isPast: isPast,
-                isLast: pageNumber == totalPages,
+          if (useCompactMode) ...[
+            // Compact numeric indicator for many pages
+            Icon(
+              Icons.auto_stories,
+              size: 14,
+              color: AppColors.primary.withValues(alpha: 0.7),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '$currentPage/$totalPages',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
               ),
-            );
-          }),
+            ),
+          ] else ...[
+            // Page icons for fewer pages
+            ...List.generate(totalPages, (index) {
+              final pageNumber = index + 1;
+              final isCurrent = pageNumber == currentPage;
+              final isPast = pageNumber < currentPage;
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: _PageIcon(
+                  isCurrent: isCurrent,
+                  isPast: isPast,
+                  isLast: pageNumber == totalPages,
+                ),
+              );
+            }),
+          ],
 
           const SizedBox(width: 8),
 
-          // Stage label
+          // Stage label - Only show if space permits or if it's short
           if (!isCompleted) ...[
-            Text(
-              effectiveLabel,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
+            Flexible(
+              child: Text(
+                effectiveLabel,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
               ),
             ),
           ] else ...[

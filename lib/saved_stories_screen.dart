@@ -272,8 +272,12 @@ class SavedStoriesScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           
-          // Filters & Sort
-          Row(
+          // Filters & Sort - wrap to prevent overflow on narrow screens
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FilterChip(
                 avatar: Icon(
@@ -292,7 +296,6 @@ class SavedStoriesScreen extends ConsumerWidget {
                   ref.read(_showOnlyFavoritesProvider.notifier).state = selected;
                 },
               ),
-              const SizedBox(width: 8),
               FilterChip(
                 avatar: Icon(
                   Icons.touch_app,
@@ -310,11 +313,9 @@ class SavedStoriesScreen extends ConsumerWidget {
                   ref.read(_showOnlyInteractiveProvider.notifier).state = selected;
                 },
               ),
-              const Spacer(),
-              
               // Sort Dropdown
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(16),
@@ -324,19 +325,19 @@ class SavedStoriesScreen extends ConsumerWidget {
                   child: DropdownButton<SortOption>(
                     value: currentSort,
                     isDense: true,
-                    icon: const Icon(Icons.sort, size: 20),
+                    icon: const Icon(Icons.sort, size: 18),
                     items: const [
                       DropdownMenuItem(
                         value: SortOption.newest,
-                        child: Text('Newest', style: TextStyle(fontSize: 13)),
+                        child: Text('Newest', style: TextStyle(fontSize: 12)),
                       ),
                       DropdownMenuItem(
                         value: SortOption.oldest,
-                        child: Text('Oldest', style: TextStyle(fontSize: 13)),
+                        child: Text('Oldest', style: TextStyle(fontSize: 12)),
                       ),
                       DropdownMenuItem(
                         value: SortOption.favoritesFirst,
-                        child: Text('Favorites', style: TextStyle(fontSize: 13)),
+                        child: Text('Favorites', style: TextStyle(fontSize: 12)),
                       ),
                     ],
                     onChanged: (value) {
@@ -365,11 +366,11 @@ class SavedStoriesScreen extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStat(Icons.library_books, '$total', 'Total Stories'),
+          Flexible(child: _buildStat(Icons.library_books, '$total', 'Total')),
           Container(width: 1, height: 24, color: AppColors.accent.withValues(alpha: 0.2)),
-          _buildStat(Icons.favorite, '$favorites', 'Favorites'),
+          Flexible(child: _buildStat(Icons.favorite, '$favorites', 'Favorites')),
           Container(width: 1, height: 24, color: AppColors.accent.withValues(alpha: 0.2)),
-          _buildStat(Icons.visibility, '$showing', 'Showing'),
+          Flexible(child: _buildStat(Icons.visibility, '$showing', 'Showing')),
         ],
       ),
     );
@@ -377,7 +378,9 @@ class SavedStoriesScreen extends ConsumerWidget {
 
   Future<void> _shareStory(StoryLocal story) async {
     final shareText = '${story.title}\n\n${story.storyText}';
-    await SharePlus.instance.share(shareText, subject: story.title);
+    await SharePlus.instance.share(
+      ShareParams(text: shareText, subject: story.title),
+    );
   }
 }
 

@@ -14,6 +14,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'story_reader_screen.dart';
 import 'services/isar_service.dart';
 import 'services/offline_story_service.dart';
+import 'models/local/story_local.dart';
 import 'story_illustration_service.dart';
 import 'coloring_book_service.dart';
 import 'coloring_book_library_screen.dart';
@@ -31,8 +32,11 @@ import 'widgets/app_button.dart';
 import 'widgets/app_card.dart';
 import 'widgets/error_boundary.dart';
 import 'widgets/user_friendly_error_dialog.dart';
-import 'widgets/storybook_progress_indicator.dart';
+import 'widgets/golden_ticket_animation.dart';
+import 'services/audio_ambience_service.dart';
+import 'widgets/magical_typewriter_text.dart';
 import 'services/feature_tour_service.dart';
+import 'widgets/storybook_progress_indicator.dart';
 
 class StoryResultScreen extends StatefulWidget {
   final String title;
@@ -107,6 +111,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   List<StoryIllustration>? _cachedIllustrations;
   List<ColoringPage>? _cachedColoringPages;
   int? _characterAge;
+  Character? _character; // Stored character for saving
   String? _activeTherapeuticFocus;
   late final PageController _pageController;
   late List<String> _storyPages;
@@ -114,6 +119,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   int _currentPageIndex = 0;
   double _textScale = 1.0;
   bool _highContrastMode = false;
+
+  // Magic Typewriter state
+  final Set<int> _revealedPages = {};
 
   bool _isSubmittingFeedback = false;
   double _storyRating = 4.0;
@@ -178,6 +186,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     super.initState();
     _offlineService = widget.offlineService ?? OfflineStoryService(IsarService.instance);
 
+    // Start background ambience
+    AudioAmbienceService().startAmbience(widget.theme ?? 'Adventure');
+
     // NEW: Use backend-generated pages if available, otherwise paginate
     if (widget.pages != null && widget.pages!.isNotEmpty) {
       _storyPages = widget.pages!;
@@ -240,6 +251,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   @override
   void dispose() {
+    AudioAmbienceService().stopAmbience();
     _pageController.dispose();
     _feedbackController.dispose();
     super.dispose();
@@ -320,6 +332,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         final character = Character.fromJson(data);
         if (!mounted) return;
         setState(() {
+          _character = character;
           _characterAge = character.age > 0 ? character.age : null;
         });
       } else {
@@ -703,15 +716,64 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   }
 
   Future<void> _saveStory() async {
-    // Story is already saved via main_story.dart
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Story is already saved in your Library!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+    // If storyId is present, it might already be saved or we can't save a new one easily without checking.
+    // But usually in Wizard flow, storyId is null.
+    if (widget.storyId == null) {
+      try {
+        final newStory = SavedStory(
+          title: widget.title,
+          storyText: widget.storyText,
+          theme: widget.theme ?? 'Adventure',
+          characters: _character != null ? [_character!] : [],
+          createdAt: widget.storyCreatedAt ?? DateTime.now(),
+          isInteractive: widget.isInteractive ?? false,
+          isRhyming: widget.isRhyming ?? false,
+          isLearningToRead: widget.isLearningToReadMode,
+          wisdomGem: widget.wisdomGem,
+          pages: widget.pages,
+          adventureSteps: widget.adventureSteps,
+          // Calculate stats
+          totalWords: widget.storyText.split(RegExp(r'\s+')).length,
+          totalPages: widget.pages?.length ?? _storyPages.length,
+        );
+
+        final storyLocal = StoryLocal.fromSavedStory(newStory);
+        await _offlineService.saveStory(storyLocal);
+        
+        debugPrint('✅ Story saved locally with Rhyme: ${widget.isRhyming}, Learn: ${widget.isLearningToReadMode}');
+      } catch (e) {
+        debugPrint('❌ Failed to save story locally: $e');
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not save story: $e')),
+          );
+        }
+        return;
+      }
     }
+    
+    _showGoldenTicketAnimation();
+  }
+
+  void _showGoldenTicketAnimation() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => GoldenTicketAnimation(
+        title: widget.title,
+        onComplete: () {
+          Navigator.of(context).pop();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Story is safely tucked away in your Library!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        },
+      ),
+    );
   }
 
   void _createAnotherStory() {
@@ -1110,97 +1172,110 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
               children: [
                 // Magical App Bar
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      if (widget.wisdomGem.isNotEmpty)
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final bool isNarrow = constraints.maxWidth < 400;
+                      
+                      return Row(
+                        children: [
+                          Container(
                             decoration: BoxDecoration(
-                              color: AppColors.gold.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(30),
-                              border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+                              color: Colors.white.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.auto_awesome, color: AppColors.gold, size: 20),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    widget.wisdomGem,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.quicksand(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
+                            child: IconButton(
+                              icon: const Icon(Icons.arrow_back, color: Colors.white),
+                              onPressed: () => Navigator.of(context).pop(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (widget.wisdomGem.isNotEmpty)
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.gold.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(30),
+                                  border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
                                 ),
-                              ],
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.auto_awesome, color: AppColors.gold, size: 20),
+                                    if (!isNarrow) ...[
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          widget.wisdomGem,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.quicksand(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                          const SizedBox(width: 8),
+                          // Adventure Log Button (only if choices exist)
+                          if (widget.choicesMade != null && widget.choicesMade!.isNotEmpty) ...[
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: IconButton(
+                                icon: const Icon(Icons.history_edu, color: Colors.white),
+                                tooltip: 'Adventure Log',
+                                constraints: isNarrow ? const BoxConstraints(maxWidth: 40, maxHeight: 40) : null,
+                                padding: isNarrow ? EdgeInsets.zero : const EdgeInsets.all(8),
+                                onPressed: _showAdventureLog,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                          ],
+                          // Favorite Button
+                          Container(
+                            decoration: BoxDecoration(
+                              color: _isFavorite
+                                  ? AppColors.gold.withValues(alpha: 0.2)
+                                  : Colors.white.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                _isFavorite ? Icons.favorite : Icons.favorite_border,
+                                color: _isFavorite ? AppColors.gold : Colors.white,
+                              ),
+                                tooltip: _isFavorite ? 'Remove from favorites' : 'Add to favorites',
+                              constraints: isNarrow ? const BoxConstraints(maxWidth: 40, maxHeight: 40) : null,
+                              padding: isNarrow ? EdgeInsets.zero : const EdgeInsets.all(8),
+                              onPressed: _toggleFavorite,
                             ),
                           ),
-                        ),
-                      const SizedBox(width: 8),
-                      // Adventure Log Button (only if choices exist)
-                      if (widget.choicesMade != null && widget.choicesMade!.isNotEmpty) ...[
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
+                          const SizedBox(width: 4),
+                          // Settings Button
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: IconButton(
+                              icon: const Icon(Icons.settings, color: Colors.white),
+                              tooltip: 'Reading Settings',
+                              constraints: isNarrow ? const BoxConstraints(maxWidth: 40, maxHeight: 40) : null,
+                              padding: isNarrow ? EdgeInsets.zero : const EdgeInsets.all(8),
+                              onPressed: _showReadingOptions,
+                            ),
                           ),
-                          child: IconButton(
-                            icon: const Icon(Icons.history_edu, color: Colors.white),
-                            tooltip: 'Adventure Log',
-                            onPressed: _showAdventureLog,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                      // Favorite Button
-                      Container(
-                        decoration: BoxDecoration(
-                          color: _isFavorite
-                              ? AppColors.gold.withValues(alpha: 0.2)
-                              : Colors.white.withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: IconButton(
-                          icon: Icon(
-                            _isFavorite ? Icons.favorite : Icons.favorite_border,
-                            color: _isFavorite ? AppColors.gold : Colors.white,
-                          ),
-                            tooltip: _isFavorite ? 'Remove from favorites' : 'Add to favorites',
-                          onPressed: _toggleFavorite,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Settings Button
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: IconButton(
-                          icon: const Icon(Icons.settings, color: Colors.white),
-                          tooltip: 'Reading Settings',
-                          onPressed: _showReadingOptions,
-                        ),
-                      ),
-                    ],
+                        ],
+                      );
+                    }
                   ),
                 ),
                 
@@ -1278,68 +1353,102 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                                   : null;
                                               final hasIllustration = inlineIllustration != null || cachedIllustration != null;
 
-                                              return SingleChildScrollView(
-                                                padding: const EdgeInsets.all(32),
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                                  children: [
-                                                    // Show illustration at top of page if available
-                                                    if (hasIllustration) ...[
-                                                      ClipRRect(
-                                                        borderRadius: BorderRadius.circular(16),
-                                                        child: inlineIllustration != null
-                                                            ? Image.memory(
-                                                                inlineIllustration.bytes,
-                                                                fit: BoxFit.cover,
-                                                                height: 250,
-                                                                width: double.infinity,
-                                                                errorBuilder: (context, error, stackTrace) {
-                                                                  return _buildImageErrorPlaceholder();
-                                                                },
-                                                              )
-                                                            : Image.network(
-                                                                cachedIllustration!.imageUrl,
-                                                                fit: BoxFit.cover,
-                                                                height: 250,
-                                                                width: double.infinity,
-                                                                loadingBuilder: (context, child, loadingProgress) {
-                                                                  if (loadingProgress == null) return child;
-                                                                  return Container(
-                                                                    height: 250,
-                                                                    decoration: BoxDecoration(
-                                                                      color: Colors.grey[100],
-                                                                      borderRadius: BorderRadius.circular(16),
-                                                                    ),
-                                                                    child: Center(
-                                                                      child: CircularProgressIndicator(
-                                                                        value: loadingProgress.expectedTotalBytes != null
-                                                                            ? loadingProgress.cumulativeBytesLoaded /
-                                                                                loadingProgress.expectedTotalBytes!
-                                                                            : null,
-                                                                        color: AppColors.primary,
+                                              final bool isRevealed = _revealedPages.contains(index);
+
+                                              return InkWell(
+                                                onTap: () {
+                                                  if (!isRevealed) {
+                                                    setState(() {
+                                                      _revealedPages.add(index);
+                                                    });
+                                                  }
+                                                },
+                                                splashColor: Colors.transparent,
+                                                highlightColor: Colors.transparent,
+                                                child: SingleChildScrollView(
+                                                  padding: const EdgeInsets.all(32),
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                                    children: [
+                                                      // Show illustration at top of page if available
+                                                      if (hasIllustration) ...[
+                                                        ClipRRect(
+                                                          borderRadius: BorderRadius.circular(16),
+                                                          child: inlineIllustration != null
+                                                              ? Image.memory(
+                                                                  inlineIllustration.bytes,
+                                                                  fit: BoxFit.cover,
+                                                                  height: 250,
+                                                                  width: double.infinity,
+                                                                  errorBuilder: (context, error, stackTrace) {
+                                                                    return _buildImageErrorPlaceholder();
+                                                                  },
+                                                                )
+                                                              : Image.network(
+                                                                  cachedIllustration!.imageUrl,
+                                                                  fit: BoxFit.cover,
+                                                                  height: 250,
+                                                                  width: double.infinity,
+                                                                  loadingBuilder: (context, child, loadingProgress) {
+                                                                    if (loadingProgress == null) return child;
+                                                                    return Container(
+                                                                      height: 250,
+                                                                      decoration: BoxDecoration(
+                                                                        color: Colors.grey[100],
+                                                                        borderRadius: BorderRadius.circular(16),
                                                                       ),
-                                                                    ),
-                                                                  );
-                                                                },
-                                                                errorBuilder: (context, error, stackTrace) {
-                                                                  return _buildImageErrorPlaceholder();
-                                                                },
-                                                              ),
-                                                      ),
-                                                      const SizedBox(height: 24),
-                                                    ],
-                                                    // Story text
-                                                    SelectableText.rich(
-                                                      TextSpan(
-                                                        style: GoogleFonts.merriweather(
-                                                          fontSize: 20 * _textScale,
-                                                          height: 1.8,
-                                                          color: _highContrastMode ? Colors.white : const Color(0xFF2C3E50),
+                                                                      child: Center(
+                                                                        child: CircularProgressIndicator(
+                                                                          value: loadingProgress.expectedTotalBytes != null
+                                                                              ? loadingProgress.cumulativeBytesLoaded /
+                                                                                  loadingProgress.expectedTotalBytes!
+                                                                              : null,
+                                                                          color: AppColors.primary,
+                                                                        ),
+                                                                      ),
+                                                                    );
+                                                                  },
+                                                                  errorBuilder: (context, error, stackTrace) {
+                                                                    return _buildImageErrorPlaceholder();
+                                                                  },
+                                                                ),
                                                         ),
-                                                        children: _buildStorySpans(_storyPages[index]),
-                                                      ),
-                                                    ),
-                                                  ],
+                                                        const SizedBox(height: 24),
+                                                      ],
+                                                      // Story text - MAGIC TYPEWRITER EFFECT
+                                                      if (!isRevealed)
+                                                        MagicalTypewriterText(
+                                                          text: _storyPages[index],
+                                                          wordDelay: Duration(
+                                                              milliseconds: (widget.characterAge ?? 7) < 6 ? 120 : 80),
+                                                          onComplete: () {
+                                                            setState(() {
+                                                              _revealedPages.add(index);
+                                                            });
+                                                          },
+                                                          style: GoogleFonts.merriweather(
+                                                            fontSize: 20 * _textScale,
+                                                            height: 1.8,
+                                                            color: _highContrastMode
+                                                                ? Colors.white
+                                                                : const Color(0xFF2C3E50),
+                                                          ),
+                                                        )
+                                                      else
+                                                        SelectableText.rich(
+                                                          TextSpan(
+                                                            style: GoogleFonts.merriweather(
+                                                              fontSize: 20 * _textScale,
+                                                              height: 1.8,
+                                                              color: _highContrastMode
+                                                                  ? Colors.white
+                                                                  : const Color(0xFF2C3E50),
+                                                            ),
+                                                            children: _buildStorySpans(_storyPages[index]),
+                                                          ),
+                                                        ),
+                                                    ],
+                                                  ),
                                                 ),
                                               );
                                             },
@@ -1347,7 +1456,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                         ),
                                         // Footer controls
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                           decoration: BoxDecoration(
                                             color: _highContrastMode ? Colors.grey[900] : Colors.grey[50],
                                             border: Border(
@@ -1356,7 +1465,11 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                               ),
                                             ),
                                           ),
-                                          child: Row(
+                                          child: Wrap(
+                                            alignment: WrapAlignment.spaceBetween,
+                                            crossAxisAlignment: WrapCrossAlignment.center,
+                                            spacing: 8,
+                                            runSpacing: 8,
                                             children: [
                                               // NEW: Storybook progress indicator instead of "Chapter X of Y"
                                               StorybookProgressIndicator(
@@ -1366,9 +1479,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                                     ? _adventureSteps[_currentPageIndex].replaceAll(RegExp(r'^(Step \d+:|🌟|🚪|🎨|😮|🤔|💪|✨|🏠|🎭|🤪|🎉|💭)\s*'), '')
                                                     : null,
                                               ),
-                                              const Spacer(),
                                               // Simple Feedback
                                               Row(
+                                                mainAxisSize: MainAxisSize.min,
                                                 children: List.generate(5, (index) {
                                                   return Semantics(
                                                     label: 'Rate ${index + 1} stars',
@@ -1380,11 +1493,11 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                                       },
                                                       customBorder: const CircleBorder(),
                                                       child: Padding(
-                                                        padding: const EdgeInsets.all(12.0),
+                                                        padding: const EdgeInsets.all(8.0),
                                                         child: Icon(
                                                           index < _storyRating ? Icons.star_rounded : Icons.star_outline_rounded,
                                                           color: AppColors.gold,
-                                                          size: 28,
+                                                          size: 24,
                                                         ),
                                                       ),
                                                     ),
@@ -1411,48 +1524,105 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         ),
         floatingActionButton: _isLoading ? null : Padding(
           padding: const EdgeInsets.only(bottom: 16),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-                FloatingActionButton.extended(
-                heroTag: 'read_fab',
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => StoryReaderScreen(
-                        storyText: widget.storyText,
-                        title: widget.title,
-                      ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final bool isNarrow = MediaQuery.of(context).size.width < 350;
+              
+              if (isNarrow) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        FloatingActionButton.extended(
+                          heroTag: 'read_fab',
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => StoryReaderScreen(
+                                  storyText: widget.storyText,
+                                  title: widget.title,
+                                ),
+                              ),
+                            );
+                          },
+                          backgroundColor: AppColors.primary,
+                          icon: const Icon(Icons.record_voice_over_rounded),
+                          label: const Text('Read'),
+                        ),
+                        const SizedBox(width: 12),
+                        FloatingActionButton.extended(
+                          heroTag: 'color_fab',
+                          onPressed: _generateColoringPages,
+                          backgroundColor: AppColors.secondary,
+                          icon: const Icon(Icons.palette_rounded),
+                          label: const Text('Color'),
+                        ),
+                      ],
                     ),
-                  );
-                },
-                backgroundColor: AppColors.primary,
-                icon: const Icon(Icons.record_voice_over_rounded),
-                label: const Text('Read'),
-              ),
-              const SizedBox(width: 16),
-              FloatingActionButton.extended(
-                heroTag: 'color_fab',
-                onPressed: _generateColoringPages,
-                backgroundColor: AppColors.secondary,
-                icon: const Icon(Icons.palette_rounded),
-                label: const Text('Color'),
-              ),
-              const SizedBox(width: 16),
-              FloatingActionButton(
-                heroTag: 'share_fab',
-                onPressed: () => showModalBottomSheet(
-                  context: context, 
-                  backgroundColor: Colors.transparent,
-                  builder: (context) => _buildShareActions(),
-                ),
-                backgroundColor: Colors.white,
-                foregroundColor: AppColors.primary,
-                child: const Icon(Icons.more_vert_rounded),
-                // label: const Text('More'),
-              ),
-            ],
+                    const SizedBox(height: 12),
+                    FloatingActionButton(
+                      heroTag: 'share_fab',
+                      mini: true,
+                      onPressed: () => showModalBottomSheet(
+                        context: context, 
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => _buildShareActions(),
+                      ),
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColors.primary,
+                      child: const Icon(Icons.more_vert_rounded),
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                    FloatingActionButton.extended(
+                    heroTag: 'read_fab',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => StoryReaderScreen(
+                            storyText: widget.storyText,
+                            title: widget.title,
+                          ),
+                        ),
+                      );
+                    },
+                    backgroundColor: AppColors.primary,
+                    icon: const Icon(Icons.record_voice_over_rounded),
+                    label: const Text('Read'),
+                  ),
+                  const SizedBox(width: 16),
+                  FloatingActionButton.extended(
+                    heroTag: 'color_fab',
+                    onPressed: _generateColoringPages,
+                    backgroundColor: AppColors.secondary,
+                    icon: const Icon(Icons.palette_rounded),
+                    label: const Text('Color'),
+                  ),
+                  const SizedBox(width: 16),
+                  FloatingActionButton(
+                    heroTag: 'share_fab',
+                    onPressed: () => showModalBottomSheet(
+                      context: context, 
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => _buildShareActions(),
+                    ),
+                    backgroundColor: Colors.white,
+                    foregroundColor: AppColors.primary,
+                    child: const Icon(Icons.more_vert_rounded),
+                    // label: const Text('More'),
+                  ),
+                ],
+              );
+            }
           ),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,

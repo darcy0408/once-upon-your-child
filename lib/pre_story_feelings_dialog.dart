@@ -168,6 +168,7 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
                         _intensity = 3;
                       });
                     },
+                    age: widget.childAge,
                   ),
                 ],
 

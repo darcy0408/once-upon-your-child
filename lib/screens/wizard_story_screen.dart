@@ -1,7 +1,4 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import '../config/environment.dart';
 import '../models.dart'; // Import Character model
 import '../models/generated_avatar.dart';
 import '../theme/app_theme.dart';
@@ -12,6 +9,7 @@ import 'wizard_steps/hero_creator_step.dart';
 import 'wizard_steps/feeling_selection_step.dart';
 import 'wizard_steps/companion_selector_step.dart';
 import 'wizard_steps/magic_review_step.dart';
+import '../services/api_service_manager.dart';
 
 /// WizardStoryScreen - Main 4-step wizard for creating magical stories
 ///
@@ -62,33 +60,25 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
   }
 
   Future<void> _loadSavedCharacters() async {
-    final url = Uri.parse('${Environment.backendUrl}/get-characters');
     try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        final decoded = json.decode(response.body);
-        // Backend returns a list directly, not wrapped in {'characters': [...]}
-        final List<dynamic> characterList = decoded is List ? decoded : (decoded['characters'] ?? []);
-        debugPrint('🔍 _loadSavedCharacters: Fetched ${characterList.length} raw items from backend');
-        final characters = characterList
-            .map((data) => Character.fromJson(data))
-            .toList();
+      final api = ApiServiceManager();
+      final response = await api.get('/get-characters');
+      // Backend returns a list directly, not wrapped in {'characters': [...]}
+      final List<dynamic> characterList = response['data'] is List
+          ? response['data'] as List<dynamic>
+          : (response['characters'] as List<dynamic>? ?? const []);
+      debugPrint('🔍 _loadSavedCharacters: Fetched ${characterList.length} raw items from backend');
+      final characters = characterList
+          .map((data) => Character.fromJson(data as Map<String, dynamic>))
+          .toList();
 
-        if (mounted) {
-          setState(() {
-            _savedCharacters = characters;
-          });
-          debugPrint('✅ Loaded ${characters.length} saved characters from backend');
-          for (var c in characters) {
-            debugPrint('   - Character: ${c.name}, Role: ${c.role}, ID: ${c.id}');
-          }
-        }
-      } else {
-        debugPrint('⚠️ Failed to load characters: ${response.statusCode}');
-        if (mounted) {
-          setState(() {
-            _savedCharacters = [];
-          });
+      if (mounted) {
+        setState(() {
+          _savedCharacters = characters;
+        });
+        debugPrint('✅ Loaded ${characters.length} saved characters from backend');
+        for (var c in characters) {
+          debugPrint('   - Character: ${c.name}, Role: ${c.role}, ID: ${c.id}');
         }
       }
     } catch (e) {

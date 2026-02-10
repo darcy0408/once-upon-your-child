@@ -1,7 +1,7 @@
 {
   "baseUrl": "https://blissful-clarity-production-12b3.up.railway.app",
   "apiVersion": "9.x",
-  "style": "avataaars",
+  "style": "adventurer",
   "dockerImageTag": "3",
   "cacheMaxAgeDays": 30,
   "comments": {

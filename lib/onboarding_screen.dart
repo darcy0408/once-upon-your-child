@@ -158,9 +158,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                   )
                   .toList(),
-              onChanged: (newValue) {
-                if (newValue == null) return;
-                setState(() => _childAge = newValue);
+              onChanged: (ageValue) {
+                if (ageValue == null) return;
+                setState(() => _childAge = ageValue);
               },
             ),
           ],

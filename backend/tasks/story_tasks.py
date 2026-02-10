@@ -249,7 +249,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     companion=companion,
                     companion_pets=companion_pets,
                     companion_characters=companion_characters,
-                    extra_characters=char_details.get("additionalCharacters"),
+                    extra_characters=kwargs.get("additional_characters") or char_details.get("additionalCharacters"),
                     story_length=story_length,
                     custom_elements=custom_elements,
                 )
@@ -263,7 +263,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     character_details=char_details,
                     companion_pets=companion_pets,
                     companion_characters=companion_characters,
-                    extra_characters=char_details.get("additionalCharacters"),
+                    extra_characters=kwargs.get("additional_characters") or char_details.get("additionalCharacters"),
                     story_length=story_length,
                     custom_elements=custom_elements,
                 )
@@ -282,7 +282,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     conflict_hook=kwargs.get("conflict_hook"), # NEW
                     sensory_palette=kwargs.get("sensory_palette"), # NEW
                     custom_elements=custom_elements,  # NEW: Free-form custom story requests
-                    additional_characters=char_details.get("additionalCharacters"),
+                    additional_characters=kwargs.get("additional_characters") or char_details.get("additionalCharacters"),
                     therapeutic_prompt=kwargs.get("therapeutic_prompt", ""),
                     feelings_prompt=kwargs.get("feelings_prompt"),
                     character_details=char_details,
@@ -294,6 +294,24 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             logger.info(f"Companion Pets: {companion_pets}")
             logger.info(f"Companion Character Details: {companion_character_details}")
             logger.info(f"Generated Prompt Snippet: {prompt[:500]}...")
+
+            # Collect mandatory names for validation
+            mandatory_names = [character_name]
+            for p in companion_pets:
+                if isinstance(p, dict) and p.get('name'):
+                    mandatory_names.append(p['name'])
+            for c in companion_character_details:
+                if isinstance(c, dict) and c.get('name'):
+                    mandatory_names.append(c['name'])
+            
+            extra_chars = kwargs.get("additional_characters") or char_details.get("additionalCharacters")
+            if extra_chars:
+                for ec in extra_chars:
+                    name = ec.get('name') if isinstance(ec, dict) else str(ec)
+                    if name:
+                        mandatory_names.append(name)
+            
+            logger.info(f"Mandatory names for validation: {mandatory_names}")
 
             # Story generation with validation and retry logic
             max_attempts = 3
@@ -322,6 +340,16 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     is_clean = False
                     validation_error = f"Missing custom elements: {', '.join(missing_custom_elements)}"
                 
+                missing_names = []
+                for name in mandatory_names:
+                    # Basic case-insensitive check for name in story
+                    if name.lower() not in story_body.lower():
+                        missing_names.append(name)
+                
+                if missing_names:
+                    is_clean = False
+                    validation_error = f"Missing characters: {', '.join(missing_names)}"
+
                 # Length Validation with dynamic thresholds
                 is_long_enough = True
                 total_words = sum(len(p.split()) for p in pages)
@@ -357,6 +385,8 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                             prompt += "\n\nRETRY INSTRUCTION: Never output internal meta or 'PAGE X' markers. Return ONLY story text in the pages array."
                             if missing_custom_elements:
                                 prompt += "\n\nRETRY INSTRUCTION: The story must include these exact phrases at least once each: " + ", ".join(missing_custom_elements)
+                            if missing_names:
+                                prompt += "\n\nRETRY INSTRUCTION: The story MUST include these characters by name: " + ", ".join(missing_names)
                         if not is_long_enough:
                             prompt += f"\n\nRETRY INSTRUCTION: The story was too short ({total_words} words). Please expand descriptions, dialogue, and scenes to reach at least {min_words_threshold} words."
                     else:

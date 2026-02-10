@@ -297,6 +297,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             else
               Center(
                 child: TextButton(
+                  key: const Key('go_solo_button'),
                   onPressed: widget.onNext,
                   child: Text(
                     'Go Solo (Be Brave!)',
@@ -350,6 +351,8 @@ class _CompanionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasImage = companion.imagePath != null;
+    final isGlowing = isSelected || isMagical;
     return Semantics(
       button: true,
       selected: isSelected,
@@ -362,8 +365,8 @@ class _CompanionCard extends StatelessWidget {
           curve: Curves.easeInOut,
           decoration: BoxDecoration(
             color: isSelected
-                ? Colors.white.withValues(alpha: 0.85)
-                : Colors.white.withValues(alpha: 0.5),
+                ? Colors.white.withValues(alpha: 0.9)
+                : Colors.white.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(AppRadius.xl),
             border: Border.all(
               color: isSelected ? AppColors.gold : Colors.white.withValues(alpha: 0.6),
@@ -373,15 +376,17 @@ class _CompanionCard extends StatelessWidget {
                 ? [
                     BoxShadow(
                       color: AppColors.gold.withValues(alpha: 0.4),
-                      blurRadius: 16,
-                      spreadRadius: 2,
+                      blurRadius: 22,
+                      spreadRadius: 3,
                       offset: const Offset(0, 4),
                     )
                   ]
                 : [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      blurRadius: 8,
+                      color: isGlowing
+                          ? AppColors.primary.withValues(alpha: 0.18)
+                          : AppColors.primary.withValues(alpha: 0.1),
+                      blurRadius: isGlowing ? 14 : 8,
                       offset: const Offset(0, 4),
                     ),
                   ],
@@ -391,7 +396,7 @@ class _CompanionCard extends StatelessWidget {
             child: Stack(
               children: [
                 // Background image or gradient
-                if (companion.imagePath != null)
+                if (hasImage)
                   SizedBox(
                     height: 140,
                     width: double.infinity,
@@ -417,8 +422,9 @@ class _CompanionCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          companion.color.withValues(alpha: 0.3),
-                          companion.color.withValues(alpha: 0.1),
+                          AppColors.gold.withValues(alpha: 0.35),
+                          companion.color.withValues(alpha: 0.25),
+                          AppColors.primaryLight.withValues(alpha: 0.2),
                         ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -428,6 +434,24 @@ class _CompanionCard extends StatelessWidget {
                       child: Text(
                         companion.emoji,
                         style: const TextStyle(fontSize: 48),
+                      ),
+                    ),
+                  ),
+                if (isMagical)
+                  Positioned.fill(
+                    child: Opacity(
+                      opacity: isSelected ? 0.28 : 0.18,
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          gradient: RadialGradient(
+                            colors: [
+                              AppColors.goldLight,
+                              Colors.transparent,
+                            ],
+                            radius: 1.2,
+                            center: Alignment(-0.6, -0.8),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -507,6 +531,16 @@ class _CompanionCard extends StatelessWidget {
                         ],
                       ),
                       child: const Icon(Icons.check, color: Colors.white, size: 18),
+                    ),
+                  ),
+                if (isSelected)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Icon(
+                      Icons.auto_awesome,
+                      size: 16,
+                      color: AppColors.gold.withValues(alpha: 0.9),
                     ),
                   ),
               ],

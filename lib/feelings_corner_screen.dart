@@ -213,6 +213,7 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
                 });
                 _saveSelectedFeeling();
               },
+              age: widget.characterAge ?? 8,
             ),
 
             // Selected emotion details

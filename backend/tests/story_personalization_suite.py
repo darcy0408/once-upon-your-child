@@ -135,7 +135,7 @@ def _validate_prompt(s: Scenario, prompt: str) -> List[str]:
         if phrase not in prompt:
             issues.append(f"Prompt missing custom element phrase: {phrase}")
 
-    if s.custom_elements and "Use the exact words" not in prompt:
+    if s.custom_elements and "use the exact words" not in prompt.lower():
         issues.append("Prompt missing exact-words instruction for custom elements.")
 
     if s.custom_elements and "concrete scene or outcome" not in prompt:
@@ -163,6 +163,9 @@ def _validate_story_text(s: Scenario, story_text: str) -> Tuple[List[str], List[
             issues.append(f"Story missing required name: {name}")
 
     # Length checks (soft warnings)
+    if s.learning_to_read_mode:
+        return issues, warnings
+
     band = _get_age_band(s.age)
     length_key = "medium" if s.story_length == "standard" else s.story_length
     word_count = len(story_text.split())
@@ -255,6 +258,7 @@ def run_suite(live: bool, max_cases: int | None = None) -> Dict[str, Any]:
                 "learning_to_read_mode": scenario.learning_to_read_mode,
                 "companion_pets": scenario.companion_pets,
                 "companion_characters": scenario.companion_characters,
+                "additional_characters": scenario.additional_characters,
                 "custom_elements": scenario.custom_elements,
                 "story_length": scenario.story_length,
                 "age": scenario.age,

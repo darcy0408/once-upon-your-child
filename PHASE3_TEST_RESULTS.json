@@ -1,5 +1,5 @@
 {
-  "date": "2026-02-02T19:51:11.521431",
+  "date": "2026-02-08T16:56:06.446213",
   "tester": "Automated Test Script",
   "mock_mode": false,
   "tests": [
@@ -7,55 +7,61 @@
       "name": "Backend Health",
       "status": "PASS",
       "details": "Status: ok, Database: ok",
-      "duration_ms": 2073
+      "duration_ms": 2577
     },
     {
       "name": "Custom Elements - Simple",
-      "status": "PASS",
-      "details": "Talking tree found in story",
-      "duration_ms": 19690
+      "status": "PARTIAL",
+      "details": "Story generated but custom element not clearly found",
+      "duration_ms": 54799
+    },
+    {
+      "name": "Custom Elements - Simple",
+      "status": "FAIL",
+      "details": "Exception: slice(None, 200, None)",
+      "duration_ms": 0
     },
     {
       "name": "Custom Elements - Multiple",
       "status": "PARTIAL",
       "details": "Dragon: False, Key/Magic: True",
-      "duration_ms": 17045
+      "duration_ms": 33964
     },
     {
       "name": "Empty Custom Elements",
       "status": "PASS",
       "details": "Story generated without custom elements",
-      "duration_ms": 22083
+      "duration_ms": 28817
     },
     {
       "name": "Special Characters",
       "status": "PASS",
       "details": "Story generated with special characters in input",
-      "duration_ms": 19504
+      "duration_ms": 38883
     },
     {
       "name": "Story Length - QUICK",
       "status": "PASS",
-      "details": "Generated 812 words in 17969ms",
-      "duration_ms": 17969
+      "details": "Generated 806 words in 31287ms",
+      "duration_ms": 31287
     },
     {
       "name": "Story Length - STANDARD",
       "status": "PASS",
-      "details": "Generated 939 words in 18624ms",
-      "duration_ms": 18624
+      "details": "Generated 875 words in 31381ms",
+      "duration_ms": 31381
     },
     {
       "name": "Story Length - EPIC",
-      "status": "PASS",
-      "details": "Generated 1458 words in 20612ms",
-      "duration_ms": 20612
+      "status": "FAIL",
+      "details": "Exception: HTTPConnectionPool(host='localhost', port=5000): Read timed out. (read timeout=60)",
+      "duration_ms": 0
     }
   ],
   "summary": {
-    "total_tests": 8,
-    "passed": 8,
-    "failed": 0,
-    "success_rate": "100.0%"
+    "total_tests": 9,
+    "passed": 7,
+    "failed": 2,
+    "success_rate": "77.8%"
   }
 }

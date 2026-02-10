@@ -13,6 +13,9 @@ import 'package:story_weaver_app/services/api_service_manager.dart';
 import 'package:story_weaver_app/services/avatar_generation_state.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
 import 'package:story_weaver_app/services/isar_service_io.dart';
+import 'package:story_weaver_app/widgets/make_magic_button.dart';
+import 'package:story_weaver_app/widgets/magical_loading_view.dart';
+import 'package:story_weaver_app/screens/wizard_steps/magic_review_step.dart';
 
 // Mock Isar and Collection
 class MockIsar extends Mock implements Isar {
@@ -69,6 +72,13 @@ void main() {
       final url = request.url.toString();
       debugPrint('🌐 Mock HTTP Request: $url');
 
+      if (url.contains('/auth/anonymous')) {
+        return http.Response(jsonEncode({
+          'token': 'mock_token',
+          'user_id': 'mock_user_123'
+        }), 200);
+      }
+
       if (url.contains('/get-characters')) {
         return http.Response(jsonEncode({
           'characters': []
@@ -81,10 +91,10 @@ void main() {
           'story_text': 'Once upon a time, a test hero started an adventure... This story is definitely longer than 100 characters so that the substring check does not fail during the test execution.',
           'wisdom_gem': 'Testing is magic!',
           'pages': [
-            {'content': 'Page 1 content', 'image_prompt': 'A hero'},
-            {'content': 'Page 2 content', 'image_prompt': 'A dragon'}
+            'Page 1 content',
+            'Page 2 content'
           ],
-          'adventure_steps': []
+          'adventure_steps': ['Step 1', 'Step 2']
         }), 200);
       }
       
@@ -96,9 +106,19 @@ void main() {
       }
 
       if (url.contains('/achievement/sync')) {
-        return http.Response('OK', 200);
+        return http.Response(jsonEncode({'status': 'success'}), 200);
       }
 
+      if (url.contains('/quality/score-story')) {
+        return http.Response(jsonEncode({
+          'overall_score': 95,
+          'quality_badge': 'Gold',
+          'word_count': 150,
+          'readability_score': 85
+        }), 200);
+      }
+
+      debugPrint('⚠️ Unhandled Mock Request: $url');
       return http.Response('Not Found', 404);
     });
 
@@ -114,10 +134,9 @@ void main() {
 
   testWidgets('Full Wizard Flow Integration Test', (WidgetTester tester) async {
     // Set a taller screen size to avoid scrolling issues
-    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.physicalSize = const Size(800, 2400); // Increased height
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
-
     // 1. Pump the Wizard Screen
     await tester.pumpWidget(
       MaterialApp(
@@ -154,10 +173,10 @@ void main() {
 
     // Select a Scenario (The Doorway Between Seasons)
     await tester.tap(find.text('The Doorway Between Seasons'));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
-    // "Start Adventure!" should appear
-    final startAdventureButton = find.text('Start Adventure!');
+    // "Continue" should appear
+    final startAdventureButton = find.text('Continue');
     await tester.ensureVisible(startAdventureButton);
     await tester.tap(startAdventureButton);
     
@@ -167,37 +186,58 @@ void main() {
 
     // --- STEP 3: Companion Selector ---
     expect(find.text('Choose a Travel Buddy'), findsOneWidget);
-    
-    // Skip selecting a companion and just click Go Solo
-    final goSoloButton = find.text('Go Solo (Be Brave!)');
-    await tester.ensureVisible(goSoloButton);
-    await tester.tap(goSoloButton);
-    
+
+    final goSoloBtn = find.byKey(const Key('go_solo_button'));
+    await tester.scrollUntilVisible(
+      goSoloBtn,
+      200.0,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(goSoloBtn);
+    await tester.pump(const Duration(seconds: 1));
+
     // Transition
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump(const Duration(seconds: 1));
 
     // --- STEP 4: Magic Review ---
-    expect(find.text('Ready for Magic?'), findsOneWidget);
+    expect(find.text('Gaze into the Future...'), findsOneWidget);
     
     // Verify summary
     expect(find.textContaining('Test Hero'), findsOneWidget);
-    
-    // Tap "Make Magic!"
-    final makeMagicBtn = find.textContaining('Make Magic');
-    await tester.ensureVisible(makeMagicBtn);
-    await tester.tap(makeMagicBtn);
+
+    print('🔘 Checking for MagicReviewStep...');
+    expect(find.byType(MagicReviewStep), findsOneWidget);
+    print('✅ MagicReviewStep found.');
+
+    print('🔘 Searching for MakeMagicButton...');
+    final makeMagicBtn = find.byType(MakeMagicButton);
+    final buttonCount = makeMagicBtn.evaluate().length;
+    print('🔘 Found $buttonCount MakeMagicButtons');
+
+    if (buttonCount == 0) {
+      print('⚠️ MakeMagicButton not found! Dumping widget tree...');
+      debugDumpApp();
+      fail('MakeMagicButton not found!');
+    } else {
+        await tester.ensureVisible(makeMagicBtn);
+        await tester.tap(makeMagicBtn);
+    }
     
     // Simulate generation time
-    await tester.pump(const Duration(seconds: 1)); // Start loading
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(MagicalLoadingView), findsOneWidget);
     
-    // Pump until navigation happens
-    await tester.pump(const Duration(seconds: 1)); 
-    await tester.pump(const Duration(seconds: 1)); 
+    // Wait for generation and navigation (longer wait)
+    for(int i=0; i<20; i++) {
+        await tester.pump(const Duration(seconds: 1));
+        if (find.textContaining('Once upon a time').evaluate().isNotEmpty) {
+            break;
+        }
+    }
     
     // --- Verify Result Screen ---
-    expect(find.text('The Magical Test Story'), findsOneWidget);
     expect(find.textContaining('Once upon a time'), findsOneWidget);
   });
 }

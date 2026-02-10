@@ -10,7 +10,77 @@
 See MULTI_AGENT_SETUP.md for detailed workflow.
 
 ---
+## Supervisor Notes | 2026-02-10 (Comprehensive Testing Suite Plan)
 
+### Session: Full Test Strategy & Coverage Roadmap - COMPLETED
+
+**Goal:** Define a comprehensive, layered testing suite for the entire app (unit, component, integration, API, UI).
+
+**Status:** ✅ COMPLETED
+
+**Plan Summary:**
+1. **Unit Tests:** Backend models/prompt builders/utils; frontend Riverpod providers, serialization, pure Dart logic.
+2. **Component Tests:** Flutter widget tests for wizard, Pick-A-Path UI, story rendering; mocked services.
+3. **Integration Tests:** Local backend + DB with mocked AI/image generators; frontend integration tests using mock mode.
+4. **API Tests:** Contract tests for all endpoints in `API_ENDPOINTS.md`, including error paths and rate limits.
+5. **UI Tests:** End-to-end flows on Chrome + one mobile target (wizard, story gen, library, Pick-A-Path, error recovery).
+
+**Environment & Tooling:**
+- Flutter: `flutter_test`, `integration_test`, `mockito`, golden tests for key screens.
+- Backend: `pytest`, `pytest-cov`, app factory + Flask test client, fixtures for AI responses.
+- Use `MOCK_TESTING_MODE=true` for deterministic integration/UI runs.
+
+**CI & Quality Gates:**
+1. Lint/static checks → Unit tests → Integration/API → UI E2E.
+2. Initial coverage targets: Backend 70%+, Frontend 60%+.
+3. Core flows must pass on Chrome + one mobile target.
+
+**Next Steps:**
+1. Mock Firebase Analytics in widget tests to stabilize `flutter test`.
+2. Add API contract suite mirroring `API_ENDPOINTS.md`.
+3. Add deterministic AI fixtures and enforce mock mode for integration/UI.
+4. Create a `TEST_RUN.md` with local + CI instructions.
+
+---
+## Supervisor Notes | 2026-02-08 (Test Verification)
+
+### Session: Gemini-Led Test Verification - PARTIAL
+
+**Goal:** Run comprehensive test suite to verify app stability.
+
+**Status:** PARTIAL
+
+**Test Results:**
+
+| Suite | Result | Notes |
+|-------|--------|-------|
+| Pre-Flight Checks | PASS | Keys set; cleared OS env override; Gemini connectivity OK. |
+| Backend Unit Tests | 4/4 PASS | Custom elements parsing logic verified. |
+| Phase 3 Integration | 7/8 PASS | "Custom Elements - Multiple" missing "Dragon" (reported PARTIAL). |
+| Flutter Analyze | FAIL | 18 issues (warnings/info); 0 errors. |
+| Interactive Story | FAIL | 404 model not found: gemini-1.5-flash in v1beta. |
+| Error Handling | FAIL | Invalid age returned 500; missing required fields returned 200. |
+| Flutter Test | FAIL | Timeouts and backend busy responses; 2 tests timed out at 10 min. |
+| Manual Story Generation | FAIL | `sequence item 0: expected str instance, dict found` when companion provided. |
+
+**Issues Found:**
+- Manual story generation fails when `companion` is a dict; traceback points to `backend/services/story_service.py` joining non-string companion names.
+- Interactive story endpoint fails with `404 NOT_FOUND` for model `gemini-1.5-flash` in v1beta.
+- Error handling returns 500 for invalid age and 200 for missing required fields (expected 400).
+- Phase 3 summary reports 8/8 pass but includes a PARTIAL custom-elements result (Dragon missing).
+- Flutter tests fail due to backend 500/503 "server busy" and two 10-minute timeouts.
+
+**Actions Taken:**
+- Cleared OS-level `GEMINI_API_KEY` override in session to use `.env` key.
+- Re-ran Gemini connectivity test (OK) and executed backend/unit/integration tests.
+
+**Next Steps:**
+- Fix companion handling in prompt generation to accept dicts (or normalize to strings).
+- Update interactive story model config to a supported v1beta model.
+- Correct validation to return 400 for invalid input and missing fields.
+- Re-run Phase 3 and Flutter tests after fixes; confirm custom elements multiple passes.
+
+---
 ## HANDOFF NOTE | 2026-02-02 (Claude Unavailable for 3 Days)
 
 ### Gemini Test Execution Period

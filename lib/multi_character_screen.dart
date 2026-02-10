@@ -1,11 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 
 import 'models.dart';
 import 'story_result_screen.dart';
 import 'services/achievement_service.dart';
-import 'config/environment.dart';
+import 'services/api_service_manager.dart';
 
 class MultiCharacterScreen extends StatefulWidget {
   const MultiCharacterScreen({super.key});
@@ -30,17 +28,17 @@ class _MultiCharacterScreenState extends State<MultiCharacterScreen> {
 
   Future<void> _loadCharacters() async {
     try {
-      final url = Uri.parse('${Environment.backendUrl}/get-characters');
-      final resp = await http.get(url);
-      if (resp.statusCode == 200) {
-        // Your backend may return either a list or {items:[...]}
-        final decoded = jsonDecode(resp.body);
-        final List list = (decoded is List) ? decoded : (decoded['items'] as List);
-        final chars = list.map((j) => Character.fromJson(j)).toList().cast<Character>();
-        setState(() => _all = chars);
-      } else {
-        _snack('Could not load characters (${resp.statusCode}).');
-      }
+      final api = ApiServiceManager();
+      final resp = await api.get('/get-characters');
+      // Your backend may return either a list or {items:[...]}
+      final List<dynamic> list = resp['data'] is List
+          ? resp['data'] as List<dynamic>
+          : (resp['items'] as List<dynamic>? ?? const []);
+      final chars = list
+          .map((j) => Character.fromJson(j as Map<String, dynamic>))
+          .toList()
+          .cast<Character>();
+      setState(() => _all = chars);
     } catch (e) {
       _snack('Network error loading characters.');
     }
@@ -70,25 +68,19 @@ class _MultiCharacterScreenState extends State<MultiCharacterScreen> {
 
     setState(() => _loading = true);
     try {
-      final url = Uri.parse('${Environment.backendUrl}/generate-multi-character-story');
       final body = {
         'character_ids': _selectedIds.toList(),
         'main_character_id': _mainId,
         'theme': _theme,
       };
 
-      final resp = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json; charset=UTF-8'},
-        body: jsonEncode(body),
-      );
+      final api = ApiServiceManager();
+      final resp = await api.post('/generate-multi-character-story', body);
 
       if (!mounted) return;
 
-      if (resp.statusCode == 200) {
-        final data = jsonDecode(resp.body) as Map<String, dynamic>;
-        final storyText = (data['story'] ?? '') as String;
-        final storyTimestamp = DateTime.now();
+      final storyText = (resp['story'] ?? '') as String;
+      final storyTimestamp = DateTime.now();
 
         // Optional: Generate a title from the kids' names
         final main = _all.firstWhere((c) => c.id == _mainId);
@@ -97,24 +89,21 @@ class _MultiCharacterScreenState extends State<MultiCharacterScreen> {
             ? 'A $_theme Adventure with ${main.name}'
             : 'A $_theme Adventure with ${main.name} & ${others.join(", ")}';
 
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => StoryResultScreen(
-              title: title,
-              storyText: storyText,
-              wisdomGem: '', // multi-character endpoint returns just 'story'; you can add wisdom if you want
-              characterName: main.name,
-              characterId: main.id,
-              theme: _theme,
-              achievementsService: _achievementService,
-              storyCreatedAt: storyTimestamp,
-              trackStoryCreation: true,
-            ),
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => StoryResultScreen(
+            title: title,
+            storyText: storyText,
+            wisdomGem: '', // multi-character endpoint returns just 'story'; you can add wisdom if you want
+            characterName: main.name,
+            characterId: main.id,
+            theme: _theme,
+            achievementsService: _achievementService,
+            storyCreatedAt: storyTimestamp,
+            trackStoryCreation: true,
           ),
-        );
-      } else {
-        _snack('Server error: ${resp.statusCode}');
-      }
+        ),
+      );
     } catch (e) {
       _snack('Network error creating story.');
     } finally {

@@ -1,9 +1,7 @@
 // lib/character_management_screen_v2.dart
 // Enhanced version with DELETE functionality and visual avatars
 
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 
 import 'models.dart';
 import 'character_creation_screen_enhanced.dart';
@@ -12,7 +10,7 @@ import 'character_evolution_screen.dart';
 import 'subscription_service.dart';
 import 'paywall_dialog.dart';
 import 'enhanced_character_avatar.dart';
-import 'config/environment.dart';
+import 'services/api_service_manager.dart';
 
 class CharacterManagementScreenV2 extends StatefulWidget {
   const CharacterManagementScreenV2({super.key});
@@ -34,18 +32,15 @@ class _CharacterManagementScreenV2State
   }
 
   Future<List<Character>> _fetchCharacters() async {
-    final url = Uri.parse('${Environment.backendUrl}/get-characters');
-    final response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      final decoded = jsonDecode(response.body);
-      final List list =
-          (decoded is List) ? decoded : (decoded['items'] as List);
-      return list.map((j) => Character.fromJson(j)).toList().cast<Character>();
-    } else {
-      throw Exception(
-          'Failed to load characters. Status code: ${response.statusCode}');
-    }
+    final api = ApiServiceManager();
+    final response = await api.get('/get-characters');
+    final List<dynamic> list = response['data'] is List
+        ? response['data'] as List<dynamic>
+        : (response['items'] as List<dynamic>? ?? const []);
+    return list
+        .map((j) => Character.fromJson(j as Map<String, dynamic>))
+        .toList()
+        .cast<Character>();
   }
 
   Future<void> _deleteCharacter(Character character) async {
@@ -73,27 +68,18 @@ class _CharacterManagementScreenV2State
     if (confirmed != true) return;
 
     try {
-      final url = Uri.parse('${Environment.backendUrl}/characters/${character.id}');
-      final response = await http.delete(url);
+      final api = ApiServiceManager();
+      await api.delete('/characters/${character.id}');
 
       if (!mounted) return;
 
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${character.name} was deleted'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        _refreshCharacters();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to delete character'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${character.name} was deleted'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      _refreshCharacters();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:story_weaver_app/config/environment.dart';
 import 'package:story_weaver_app/widgets/story_generation_progress.dart';
 import 'package:story_weaver_app/widgets/user_friendly_error_dialog.dart';
 
@@ -12,7 +12,6 @@ import 'achievements_screen.dart' deferred as achievements_screen;
 import 'avatar_models.dart';
 import 'character_evolution.dart';
 import 'coloring_book_library_screen.dart';
-import 'config/environment.dart';
 import 'customizable_avatar_widget.dart';
 import 'dialogs/upgrade_prompt_dialog.dart';
 import 'feelings_corner_screen.dart';
@@ -54,13 +53,13 @@ class StoryCreatorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Story Creator',
+      title: Environment.appName,
       theme: ThemeData(
         primarySwatch: Colors.green,
-        primaryColor: const Color(0xFF2E7D32), // Dark jungle green
+        primaryColor: Environment.primaryColor,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4CAF50),
-          primary: const Color(0xFF2E7D32),
+          seedColor: Environment.primaryColor,
+          primary: Environment.primaryColor,
           secondary: const Color(0xFF81C784),
         ),
         visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -70,7 +69,22 @@ class StoryCreatorApp extends StatelessWidget {
         '/subscription-success': (context) => const SubscriptionSuccessScreen(),
         '/story-home': (context) => const StoryScreen(), // Keep old screen accessible
       },
-      debugShowCheckedModeBanner: false,
+      debugShowCheckedModeBanner: !Environment.isProduction,
+      builder: (context, child) {
+        if (child == null || !Environment.showFlavorBanner) {
+          return child ?? const SizedBox.shrink();
+        }
+        return Banner(
+          message: Environment.bannerLabel,
+          location: BannerLocation.topStart,
+          color: Environment.bannerColor,
+          textStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
+          child: child,
+        );
+      },
     );
   }
 }
@@ -262,16 +276,17 @@ class _StoryScreenState extends State<StoryScreen> {
   }
 
   Future<void> _loadCharacters() async {
-    final url = Uri.parse('${Environment.backendUrl}/get-characters');
     try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        final decoded = json.decode(response.body);
-        // Accept either: [ ... ]  OR  { "items": [ ... ], "meta": {...} }
-        final List list =
-            (decoded is List) ? decoded : (decoded['items'] as List);
-        final characters =
-            list.map((j) => Character.fromJson(j)).toList().cast<Character>();
+      final api = ApiServiceManager();
+      final response = await api.get('/get-characters');
+      // Accept either: [ ... ]  OR  { "items": [ ... ], "meta": {...} }
+      final List<dynamic> list = response['data'] is List
+          ? response['data'] as List<dynamic>
+          : (response['items'] as List<dynamic>? ?? const []);
+      final characters = list
+          .map((j) => Character.fromJson(j as Map<String, dynamic>))
+          .toList()
+          .cast<Character>();
 
         // Sync characters to local storage for offline access
         try {
@@ -293,17 +308,7 @@ class _StoryScreenState extends State<StoryScreen> {
             _learningToReadMode = false;
           }
         });
-      } else {
-        // API returned error - try to load from local storage
-        await _loadCharactersFromLocal();
-        if (mounted && _characters.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(
-                    'Failed to load characters (${response.statusCode}).')),
-          );
-        }
-      }
+      return;
     } catch (e) {
       // Network error - fallback to local storage
       debugPrint('API error, falling back to local storage: $e');

@@ -54,8 +54,9 @@ class ApiServiceManager {
     // Get new anonymous token
     debugPrint('🔐 Getting anonymous auth token...');
     try {
+      final client = _testClient ?? http.Client();
       final uri = Uri.parse('$_localBackendUrl/auth/anonymous');
-      final response = await http.post(
+      final response = await client.post(
         uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'client_id': _userId}),

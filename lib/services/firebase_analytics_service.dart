@@ -12,6 +12,7 @@ class FirebaseAnalyticsService {
       FirebaseAnalyticsObserver(analytics: analytics);
 
   static bool _initialized = false;
+  static bool get isInitialized => _initialized;
 
   static Future<void> initialize() async {
     if (_initialized) return;

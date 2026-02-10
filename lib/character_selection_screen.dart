@@ -1,13 +1,11 @@
 // lib/character_selection_screen.dart
 
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'config/environment.dart';
 import 'models.dart'; // Assuming your Character model is in here
 import 'character_creation_screen_enhanced.dart';
 import 'widgets/app_button.dart';
 import 'services/isar_service.dart';
+import 'services/api_service_manager.dart';
 
 class CharacterSelectionScreen extends StatefulWidget {
   const CharacterSelectionScreen({super.key});
@@ -28,27 +26,22 @@ class _CharacterSelectionScreenState extends State<CharacterSelectionScreen> {
 
   Future<List<Character>> _fetchCharacters() async {
     try {
-      final response = await http.get(
-        Uri.parse('${Environment.backendUrl}/get-characters'),
-      );
+      final api = ApiServiceManager();
+      final response = await api.get('/get-characters');
+      final List<dynamic> data = response['data'] is List
+          ? response['data'] as List<dynamic>
+          : (response['items'] as List<dynamic>? ?? const []);
+      final characters =
+          data.map((json) => Character.fromJson(json as Map<String, dynamic>)).toList();
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        final characters = data.map((json) => Character.fromJson(json)).toList();
-
-        // Sync to local storage for offline access
-        try {
-          await IsarService.syncCharactersFromApi(data);
-        } catch (e) {
-          debugPrint('Failed to sync characters to local storage: $e');
-        }
-
-        return characters;
-      } else {
-        // API error - try loading from local storage
-        debugPrint('API error ${response.statusCode}, trying local storage');
-        return await IsarService.getAllCharacters();
+      // Sync to local storage for offline access
+      try {
+        await IsarService.syncCharactersFromApi(data);
+      } catch (e) {
+        debugPrint('Failed to sync characters to local storage: $e');
       }
+
+      return characters;
     } catch (e) {
       // Network error - fallback to local storage
       debugPrint('Network error, loading from local storage: $e');

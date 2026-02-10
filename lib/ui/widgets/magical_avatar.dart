@@ -14,6 +14,9 @@ class MagicalAvatar extends StatefulWidget {
   /// SVG string from DiceBear API
   final String? svgString;
 
+  /// Local asset path (e.g. for curated WebP avatars)
+  final String? assetPath;
+
   /// Size of the avatar (diameter)
   final double size;
 
@@ -31,7 +34,8 @@ class MagicalAvatar extends StatefulWidget {
 
   const MagicalAvatar({
     super.key,
-    required this.svgString,
+    this.svgString,
+    this.assetPath,
     this.size = 120,
     this.glowColor = const Color(0xFF7C3AED),
     this.enableParticles = false,
@@ -129,22 +133,33 @@ class _MagicalAvatarState extends State<MagicalAvatar>
     );
   }
 
-  /// Build avatar content (SVG or placeholder)
+  /// Build avatar content (SVG, Asset, or placeholder)
   Widget _buildAvatarContent() {
-    if (widget.svgString == null || widget.svgString!.isEmpty) {
-      return widget.placeholder ?? _buildDefaultPlaceholder();
+    if (widget.assetPath != null && widget.assetPath!.isNotEmpty) {
+      return Image.asset(
+        widget.assetPath!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          debugPrint('MagicalAvatar: Failed to load asset: $error');
+          return widget.placeholder ?? _buildDefaultPlaceholder();
+        },
+      );
     }
 
-    try {
-      return SvgPicture.string(
-        widget.svgString!,
-        fit: BoxFit.cover,
-        placeholderBuilder: (context) => _buildDefaultPlaceholder(),
-      );
-    } catch (e) {
-      debugPrint('MagicalAvatar: Failed to render SVG: $e');
-      return widget.placeholder ?? _buildDefaultPlaceholder();
+    if (widget.svgString != null && widget.svgString!.isNotEmpty) {
+      try {
+        return SvgPicture.string(
+          widget.svgString!,
+          fit: BoxFit.cover,
+          placeholderBuilder: (context) => _buildDefaultPlaceholder(),
+        );
+      } catch (e) {
+        debugPrint('MagicalAvatar: Failed to render SVG: $e');
+        return widget.placeholder ?? _buildDefaultPlaceholder();
+      }
     }
+
+    return widget.placeholder ?? _buildDefaultPlaceholder();
   }
 
   /// Default placeholder when avatar is unavailable
