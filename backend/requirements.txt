@@ -21,7 +21,7 @@ MarkupSafe==3.0.2
 click==8.2.1
 Werkzeug==3.1.5
 Pillow
-cryptography==46.0.3
+cryptography==46.0.4
 
 # Error Monitoring
 sentry-sdk[flask]==2.51.0
