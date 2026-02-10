@@ -113,31 +113,36 @@ class AdvancedStoryEngine:
         gender_text = f" (Gender: {gender}{', Pronouns: ' + pronouns if pronouns else ''})"
 
         # Build companion context
-        companion_context = []
+        companion_sections = []
+        all_companion_names = []
         if companion_pets: 
-            for p in companion_pets: 
-                species = p.get('species', 'companion')
-                companion_context.append(f"{p['name']} the {species} [ANIMAL]")
+            pets = []
+            for p in companion_pets:
+                pets.append(f"{p['name']} the {p.get('species', 'pet')}")
+                all_companion_names.append(p['name'])
+            companion_sections.append(f"PETS: {', '.join(pets)}")
         if companion_characters:
+            chars = []
             for c in companion_characters:
-                # If it's a dict from companion_data.dart, it has signaturePower
-                power = c.get('signaturePower', '')
-                power_text = f" (Power: {power})" if power else ""
-                companion_context.append(f"{c['name']}{power_text} [SPEAKING]")
-        
+                chars.append(f"{c['name']}{' (Power: ' + c['signaturePower'] + ')' if c.get('signaturePower') else ''}")
+                all_companion_names.append(c['name'])
+            companion_sections.append(f"FRIENDS: {', '.join(chars)}")
         if additional_characters:
+            others = []
             for ac in additional_characters:
-                if isinstance(ac, dict):
-                    name = ac.get('name')
-                    if name:
-                        companion_context.append(f"{name} [ADDITIONAL]")
-                elif ac:
-                    companion_context.append(f"{ac} [ADDITIONAL]")
+                name = ac.get('name') if isinstance(ac, dict) else str(ac)
+                if name:
+                    others.append(name)
+                    all_companion_names.append(name)
+            if others:
+                companion_sections.append(f"GUESTS: {', '.join(others)}")
 
-        if not companion_context and companion:
-            companion_context.append(f"{companion} [COMPANION]")
+        if not companion_sections and companion:
+            companion_sections.append(f"COMPANION: {companion}")
+            all_companion_names.append(companion)
         
-        comp_str = ", ".join(companion_context) if companion_context else "None"
+        comp_str = "\n".join(companion_sections) if companion_sections else "None"
+        mandatory_names_str = ", ".join(all_companion_names) if all_companion_names else "None"
 
         # Mood Physics & Sensory
         mood_rules = ""
@@ -192,8 +197,10 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 - **SPECIAL ABILITY**: {special_ability} (MUST be used at the climax).
 {tool_section}
 - **IMPOSSIBLE ELEMENTS**: Examples for this age: {age_impossible}
-- **COMPANIONS**: {comp_str} (MUST appear by name and help/bond with {character}).
-- **CUSTOM REQUESTS**: {custom_elements or 'None'} (Use the exact words from this request at least once each, verbatim, in the story).
+- **COMPANIONS**: 
+{comp_str}
+(MANDATORY: Every character/pet listed above MUST be in the story. Checklist of names to include: {mandatory_names_str})
+- **CUSTOM REQUESTS**: {custom_elements or 'None'} (CRITICAL: You MUST use the exact words from this request at least once each, verbatim, in the story).
   If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {mood_rules}
 
@@ -229,20 +236,19 @@ def _safe_extract_title_and_gem(text: str, theme: str):
     clean_text = re.sub(r"^\s*\*\*\s*", "", clean_text)
     clean_text = re.sub(r"\s*\*\*\s*$", "", clean_text)
 
-    # Strip any preamble text before the JSON (e.g., "Here is the story:")
-    # Look for the first { which starts the JSON
+    # Save candidate text for fallback (prose mode)
+    candidate_text = clean_text
+
+    # Try to locate JSON object
     json_start = clean_text.find('{')
-    if json_start > 0:
-        clean_text = clean_text[json_start:]
-
-    # Find the last } to trim any trailing text
     json_end = clean_text.rfind('}')
-    if json_end > 0:
-        clean_text = clean_text[:json_end + 1]
+    
+    sliced_text = clean_text
+    if json_start >= 0 and json_end > json_start:
+        sliced_text = clean_text[json_start:json_end + 1]
 
-    clean_text = clean_text.strip()
-    try:
-        data = json.loads(clean_text)
+    def _parse_story_data(json_str):
+        data = json.loads(json_str)
         title = data.get("title", f"A {theme} Adventure")
         pages_input = data.get("pages", [])
         post_story = data.get("post_story", {})
@@ -265,20 +271,53 @@ def _safe_extract_title_and_gem(text: str, theme: str):
                 elif isinstance(p, str) and p.strip():
                     pages.append(p)
 
-        # If no valid pages extracted, use cleaned text as single page
+        # If valid JSON but missing 'pages', check for 'story' or 'story_text'
         if not pages:
-            pages = [clean_text]
+             if 'story' in data and isinstance(data['story'], str):
+                 pages = [data['story']]
+             elif 'story_text' in data and isinstance(data['story_text'], str):
+                 pages = [data['story_text']]
+        
+        return title, wisdom_gem, pages, post_story
 
-        story_body = "\n\n".join(pages)
-        return title, wisdom_gem, story_body, pages, post_story
-    except json.JSONDecodeError as e:
-        # Log the parsing error for debugging
-        logger.warning(f"Failed to parse story JSON: {e}. First 200 chars: {clean_text[:200]}")
-        # Return clean_text (with code blocks stripped) as fallback, not raw text
-        return f"A {theme} Adventure", "You are magic!", clean_text, [clean_text], {}
+    try:
+        # 1. Try to parse the sliced text (most likely JSON candidate)
+        title, wisdom_gem, pages, post_story = _parse_story_data(sliced_text)
+        
+        # If successful but pages empty, it might be a false positive JSON (rare) or just empty structure
+        if not pages:
+            # Fallback to using the entire sliced text if it was actually prose caught in braces?
+            # Unlikely if it parsed as JSON. 
+            # But let's check if sliced_text is very short/unlikely to be the real story?
+            # For now, trust the JSON parser.
+            pass
+
+    except json.JSONDecodeError:
+        # 2. If sliced failed, maybe the full text is valid JSON (e.g. start at 0)?
+        # Or maybe the braces were part of prose.
+        try:
+             if sliced_text != candidate_text:
+                title, wisdom_gem, pages, post_story = _parse_story_data(candidate_text)
+             else:
+                raise # Already tried candidate (as sliced)
+        except json.JSONDecodeError as e:
+            # 3. Fallback to prose
+            # Use candidate_text (stripped of markdown) as the story
+            # Log the parsing error for debugging but don't fail
+            logger.warning(f"Failed to parse story JSON: {e}. Falling back to raw text.")
+            return f"A {theme} Adventure", "You are magic!", candidate_text, [candidate_text], {}
     except Exception as e:
-        logger.warning(f"Unexpected error parsing story: {e}")
-        return f"A {theme} Adventure", "You are magic!", clean_text, [clean_text], {}
+        logger.warning(f"Unexpected error parsing story: {e}. Falling back to raw text.")
+        return f"A {theme} Adventure", "You are magic!", candidate_text, [candidate_text], {}
+
+    # If we parsed successfully but got no pages, verify content length
+    if not pages:
+         # This shouldn't happen with proper JSON unless 'pages' key was empty list
+         # Use candidate text as fallback
+         pages = [candidate_text]
+
+    story_body = "\n\n".join(pages)
+    return title, wisdom_gem, story_body, pages, post_story
 
 
 def _build_learning_to_read_prompt(character_name, theme, age, character_details, companion=None, companion_pets=None, companion_characters=None, extra_characters=None, story_length="standard", custom_elements=""):
@@ -308,16 +347,20 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
         vocab_instruction = "Early chapter book level. Fluent sentences with varied vocabulary. Still accessible but engaging for a fluent reader."
         format_instruction = "Each page 2-3 sentences."
 
-    companion_context = []
+    # Build companion context
+    companion_sections = []
+    all_companion_names = []
     if character_details:
         pets = character_details.get('pets') or []
         for p in pets:
             name = p.get('name')
             species = p.get('species')
             if name and species:
-                companion_context.append(f"{name} the {species}")
+                companion_sections.append(f"{name} the {species}")
+                all_companion_names.append(name)
             elif name:
-                companion_context.append(name)
+                companion_sections.append(name)
+                all_companion_names.append(name)
 
     if companion_pets:
         for p in companion_pets:
@@ -325,34 +368,43 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
                 name = p.get('name')
                 species = p.get('species')
                 if name and species:
-                    companion_context.append(f"{name} the {species}")
+                    companion_sections.append(f"{name} the {species}")
+                    all_companion_names.append(name)
                 elif name:
-                    companion_context.append(name)
+                    companion_sections.append(name)
+                    all_companion_names.append(name)
             elif p:
-                companion_context.append(str(p))
+                companion_sections.append(str(p))
+                all_companion_names.append(str(p))
 
     if companion_characters:
         for c in companion_characters:
             if isinstance(c, dict):
                 name = c.get('name')
                 if name:
-                    companion_context.append(name)
+                    companion_sections.append(name)
+                    all_companion_names.append(name)
             elif c:
-                companion_context.append(str(c))
+                companion_sections.append(str(c))
+                all_companion_names.append(str(c))
 
     if extra_characters:
         for c in extra_characters:
             if isinstance(c, dict):
                 name = c.get('name')
                 if name:
-                    companion_context.append(name)
+                    companion_sections.append(name)
+                    all_companion_names.append(name)
             elif c:
-                companion_context.append(str(c))
+                companion_sections.append(str(c))
+                all_companion_names.append(str(c))
 
     if companion:
-        companion_context.append(companion)
+        companion_sections.append(companion)
+        all_companion_names.append(companion)
 
-    comp_str = ", ".join(companion_context) if companion_context else "None"
+    comp_str = ", ".join(companion_sections) if companion_sections else "None"
+    mandatory_names_str = ", ".join(all_companion_names) if all_companion_names else "None"
 
     return f"""
 Create a LEARN TO READ story for {character_name} (age {age}).
@@ -360,8 +412,8 @@ Theme: {theme}
 Format: {num_pages} pages. {format_instruction}
 Vocabulary: {vocab_instruction}
 Requirements: Repeating frames, comforting rhythm, 1 coping moment.
-Companions: {comp_str} (If not None, they must appear by name and help/bond with {character_name}.)
-Custom Requests: {custom_elements or 'None'} (Use the exact words from this request at least once each, verbatim, in the story).
+Companions: {comp_str} (MANDATORY Checklist: {mandatory_names_str} - EVERY name here MUST be in the story).
+Custom Requests: {custom_elements or 'None'} (CRITICAL: You MUST use the exact words from this request at least once each, verbatim, in the story).
 If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {SAFETY_GUARDRAILS}
 """
@@ -387,38 +439,47 @@ def _build_rhyme_time_prompt(character_name, theme, age, character_details, comp
     elif age >= 13:
         age_instruction = "Avoid 'babyish' or condescending tones. Use sophisticated rhymes that explore identity, resilience, or complex friendships."
 
-    companion_context = []
+    companion_sections = []
+    all_companion_names = []
     if companion_pets:
         for p in companion_pets:
             if isinstance(p, dict):
                 name = p.get('name')
                 species = p.get('species')
                 if name and species:
-                    companion_context.append(f"{name} the {species}")
+                    companion_sections.append(f"{name} the {species}")
+                    all_companion_names.append(name)
                 elif name:
-                    companion_context.append(name)
+                    companion_sections.append(name)
+                    all_companion_names.append(name)
             elif p:
-                companion_context.append(str(p))
+                companion_sections.append(str(p))
+                all_companion_names.append(str(p))
 
     if companion_characters:
         for c in companion_characters:
             if isinstance(c, dict):
                 name = c.get('name')
                 if name:
-                    companion_context.append(name)
+                    companion_sections.append(name)
+                    all_companion_names.append(name)
             elif c:
-                companion_context.append(str(c))
+                companion_sections.append(str(c))
+                all_companion_names.append(str(c))
 
     if extra_characters:
         for c in extra_characters:
             if isinstance(c, dict):
                 name = c.get('name')
                 if name:
-                    companion_context.append(name)
+                    companion_sections.append(name)
+                    all_companion_names.append(name)
             elif c:
-                companion_context.append(str(c))
+                companion_sections.append(str(c))
+                all_companion_names.append(str(c))
 
-    comp_str = ", ".join(companion_context) if companion_context else "None"
+    comp_str = ", ".join(companion_sections) if companion_sections else "None"
+    mandatory_names_str = ", ".join(all_companion_names) if all_companion_names else "None"
 
     return f"""
 Create a RHYME TIME story for {character_name} (age {age}).
@@ -427,8 +488,8 @@ Tone: {age_instruction or 'Uplifting and fun'}
 Word Count: {word_range[0]}-{word_range[1]} words.
 Scheme: Consistent AABB or ABCB.
 Requirements: Include a magical surprise and a coping moment. {character_name} is the hero.
-Companions: {comp_str} (If not None, they must appear by name and help/bond with {character_name}.)
-Custom Requests: {custom_elements or 'None'} (Use the exact words from this request at least once each, verbatim, in the story).
+Companions: {comp_str} (MANDATORY Checklist: {mandatory_names_str} - EVERY name here MUST be in the story).
+Custom Requests: {custom_elements or 'None'} (CRITICAL: You MUST use the exact words from this request at least once each, verbatim, in the story).
 If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {SAFETY_GUARDRAILS}
 """

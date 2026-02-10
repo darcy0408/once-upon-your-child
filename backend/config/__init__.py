@@ -19,10 +19,10 @@ else:
     # SECURITY: Don't log API keys, even partially masked
     print(f"GEMINI_API_KEY present: {bool(os.environ.get('GEMINI_API_KEY'))}")
 
-# FORCE a stable model for local/dev to avoid deprecated/removed variants
-# Using gemini-2.0-flash for google-genai SDK compatibility
-os.environ['GEMINI_MODEL'] = 'gemini-2.0-flash'
-print(f"FORCED GEMINI_MODEL = {os.environ.get('GEMINI_MODEL')}")
+# Use gemini-1.5-flash as default if not set in environment
+if not os.environ.get('GEMINI_MODEL'):
+    os.environ['GEMINI_MODEL'] = 'gemini-1.5-flash'
+print(f"DEFAULT GEMINI_MODEL = {os.environ.get('GEMINI_MODEL')}")
 
 def _get_required_secret(key_name, allow_dev_fallback=True):
     """
@@ -149,8 +149,8 @@ class DevelopmentConfig(Config):
     DEBUG = True
     basedir = os.path.abspath(os.path.dirname(__file__))
     SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(basedir, 'characters.db')}"
-    # Explicitly force stable model for development (google-genai SDK)
-    GEMINI_MODEL = 'gemini-2.0-flash'
+    # Use environment model or fallback to 1.5-flash
+    GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash')
 
 class ProductionConfig(Config):
     """Production configuration."""

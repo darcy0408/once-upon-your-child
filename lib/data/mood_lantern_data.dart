@@ -1,5 +1,5 @@
 // lib/data/mood_lantern_data.dart
-/// Mood Lantern data for the enchanted shelf mood selector.
+/// Mood Lantern data for the enchanted floating mood selector.
 ///
 /// Each lantern represents a core emotion with magical framing.
 /// Colors are inspired by chakra energy centers for a holistic feel.
@@ -10,7 +10,7 @@ library;
 import 'package:flutter/material.dart';
 import '../feelings_wheel_data.dart';
 
-/// Represents a single mood lantern on the enchanted shelf.
+/// Represents a single mood lantern on the enchanted display.
 class MoodLantern {
   final String id;
   final String name;
@@ -19,6 +19,9 @@ class MoodLantern {
   final String emoji;
   final String storyMagic;
   final String imagePath;
+  // Age-appropriate alternatives for tweens/teens (ages 10+)
+  final String? matureName;
+  final String? matureStoryMagic;
 
   const MoodLantern({
     required this.id,
@@ -28,7 +31,21 @@ class MoodLantern {
     required this.emoji,
     required this.storyMagic,
     required this.imagePath,
+    this.matureName,
+    this.matureStoryMagic,
   });
+
+  /// Get the name appropriate for the given age.
+  String nameForAge(int age) {
+    if (age >= 10 && matureName != null) return matureName!;
+    return name;
+  }
+
+  /// Get the story magic description appropriate for the given age.
+  String storyMagicForAge(int age) {
+    if (age >= 10 && matureStoryMagic != null) return matureStoryMagic!;
+    return storyMagic;
+  }
 
   /// Convert to SelectedFeeling for backend compatibility.
   /// Uses the same format the expanding feelings wheel outputs.
@@ -83,7 +100,7 @@ class MoodLantern {
   }
 }
 
-/// The 7 Mood Lanterns for the enchanted shelf.
+/// The 7 Mood Lanterns for the enchanted collection.
 ///
 /// Design philosophy: "Picking a magic ingredient" not "checking an emotion box"
 /// Colors are inspired by the chakra system for a holistic, magical feel:
@@ -104,6 +121,8 @@ const List<MoodLantern> kMoodLanterns = [
     emoji: '☀️',
     storyMagic: 'Stories full of sunshine and smiles',
     imagePath: 'assets/mood_lanterns/sunshine.png',
+    matureName: 'Triumph',
+    matureStoryMagic: 'Stories of victory and achievement',
   ),
   // Root Chakra - Red - Grounding & Strength
   MoodLantern(
@@ -114,6 +133,8 @@ const List<MoodLantern> kMoodLanterns = [
     emoji: '🔥',
     storyMagic: 'Stories where heroes stand up for what\'s right',
     imagePath: 'assets/mood_lanterns/ember.png',
+    matureName: 'Fury',
+    matureStoryMagic: 'Stories of righteous anger and fighting back',
   ),
   // Throat Chakra - Blue - Expression & Truth
   MoodLantern(
@@ -124,6 +145,8 @@ const List<MoodLantern> kMoodLanterns = [
     emoji: '💧',
     storyMagic: 'Stories with gentle comfort and understanding',
     imagePath: 'assets/mood_lanterns/raindrop.png',
+    matureName: 'Melancholy',
+    matureStoryMagic: 'Stories that understand loss and healing',
   ),
   // Crown Chakra - Violet - Wisdom & Transcendence
   MoodLantern(
@@ -134,6 +157,8 @@ const List<MoodLantern> kMoodLanterns = [
     emoji: '🌙',
     storyMagic: 'Stories where courage conquers fear',
     imagePath: 'assets/mood_lanterns/moonbeam.png',
+    matureName: 'Dread',
+    matureStoryMagic: 'Stories of facing the darkness within',
   ),
   // Heart Chakra - Green - Love & Connection
   MoodLantern(
@@ -144,6 +169,8 @@ const List<MoodLantern> kMoodLanterns = [
     emoji: '🤭',
     storyMagic: 'Stories bursting with giggles and surprises',
     imagePath: 'assets/mood_lanterns/giggle.png',
+    matureName: 'Mischief',
+    matureStoryMagic: 'Stories of chaos, pranks, and clever schemes',
   ),
   // Third Eye Chakra - Cyan/Indigo - Intuition & Peace
   MoodLantern(
@@ -154,6 +181,8 @@ const List<MoodLantern> kMoodLanterns = [
     emoji: '🍃',
     storyMagic: 'Stories as peaceful as a quiet forest',
     imagePath: 'assets/mood_lanterns/dewdrop.png',
+    matureName: 'Serenity',
+    matureStoryMagic: 'Stories of inner peace and clarity',
   ),
   // Sacral Chakra - Pink/Orange - Creativity & Passion
   MoodLantern(
@@ -164,6 +193,8 @@ const List<MoodLantern> kMoodLanterns = [
     emoji: '💖',
     storyMagic: 'Stories full of adventure and discovery',
     imagePath: 'assets/mood_lanterns/heartglow.png',
+    matureName: 'Thrill',
+    matureStoryMagic: 'Stories of adrenaline and high stakes',
   ),
 ];
 
