@@ -151,6 +151,7 @@ class AdvancedStoryEngine:
                 all_companion_names.append(str(companion))
         
         comp_str = "\n".join(companion_sections) if companion_sections else "None"
+        all_companion_names = [str(n) for n in all_companion_names if n]
         mandatory_names_str = ", ".join(all_companion_names) if all_companion_names else "None"
 
         # Mood Physics & Sensory
