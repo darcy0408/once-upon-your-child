@@ -104,24 +104,31 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    _error.toString(),
-                    style: const TextStyle(color: Colors.grey),
-                    textAlign: TextAlign.center,
+                  Flexible(
+                    child: Text(
+                      _error.toString(),
+                      style: const TextStyle(color: Colors.grey),
+                      textAlign: TextAlign.center,
+                      softWrap: true,
+                    ),
                   ),
                   if (_stackTrace != null) ...[
                     const SizedBox(height: 16),
-                    ExpansionTile(
-                      title: const Text('Details (for debugging)'),
-                      children: [
-                        Text(
-                          (_stackTrace ?? StackTrace.empty).toString(),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
+                    SizedBox(
+                      width: double.infinity,
+                      child: ExpansionTile(
+                        tilePadding: EdgeInsets.zero,
+                        title: const Text('Details (for debugging)'),
+                        children: [
+                          Text(
+                            (_stackTrace ?? StackTrace.empty).toString(),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                   const SizedBox(height: 24),

@@ -88,7 +88,7 @@ class _MakeMagicButtonState extends State<MakeMagicButton>
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final buttonWidth = screenWidth * 0.6; // 60% of screen width
+    final buttonWidth = math.min(screenWidth * 0.86, 360.0);
 
     return Semantics(
       button: true,
@@ -161,6 +161,9 @@ class _MakeMagicButtonState extends State<MakeMagicButton>
                         fontWeight: FontWeight.bold,
                         fontSize: 22,
                       ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  softWrap: true,
                 ),
               ],
             ),

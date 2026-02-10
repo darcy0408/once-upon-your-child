@@ -35,7 +35,7 @@ class MagicReviewStep extends StatefulWidget {
 
 class _MagicReviewStepState extends State<MagicReviewStep> {
   bool _isGenerating = false;
-  String _loadingStatus = 'Casting spell...';
+  String _loadingStatus = 'Creating your story...';
 
   // Helper to get scenario image
   String get _scenarioImage {
@@ -560,44 +560,59 @@ class _MagicToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color inactiveText = AppColors.primaryDark;
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          color: isActive ? AppColors.primary : Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: isActive ? AppColors.primary.withValues(alpha: 0.4) : Colors.black12,
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-          border: Border.all(
-            color: isActive ? AppColors.gold : Colors.transparent,
-            width: 2,
-          ),
-        ),
+      child: SizedBox(
+        width: 88,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: isActive ? Colors.white : Colors.grey, size: 24),
-            const SizedBox(height: 2),
-            Flexible(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: isActive ? Colors.white : Colors.grey,
-                  fontWeight: FontWeight.bold,
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                gradient: isActive
+                    ? AppGradients.purpleGlow
+                    : LinearGradient(
+                        colors: [
+                          AppColors.cream,
+                          AppColors.surface.withValues(alpha: 0.6),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: isActive ? AppColors.primary.withValues(alpha: 0.4) : Colors.black12,
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: Border.all(
+                  color: isActive ? AppColors.gold : AppColors.goldLight.withValues(alpha: 0.6),
+                  width: 2,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
+              child: Icon(
+                icon,
+                color: isActive ? Colors.white : inactiveText,
+                size: 26,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10.5,
+                height: 1.1,
+                color: isActive ? AppColors.primaryDark : inactiveText,
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
             ),
           ],
         ),
