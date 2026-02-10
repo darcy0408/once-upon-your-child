@@ -88,6 +88,16 @@ instance/*.db
 # Development test scripts
 test_*.py
 check_*.py
+live_test_*.py
+
+# Test reports and lint outputs
+reports/
+backend/reports/
+lint_report*.txt
+story_output.txt
+story_request.json
+payload.json
+PHASE3_TEST_RESULTS.json
 
 # Accidentally moved personal project folders
 Twins Great Adventures/
