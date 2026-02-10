@@ -24,7 +24,7 @@ Pillow
 cryptography==46.0.3
 
 # Error Monitoring
-sentry-sdk[flask]==2.49.0
+sentry-sdk[flask]==2.51.0
 
 # Payment Processing
 stripe==14.1.0
