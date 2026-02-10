@@ -34,17 +34,27 @@ def runner(app):
 @pytest.fixture(autouse=True)
 def mock_gemini(mocker):
     """Mock Gemini API to prevent real calls during tests."""
-    # Mock the google.generativeai module
-    mock_genai = mocker.patch('backend.services.story_service.genai')
+    try:
+        import google.genai
+    except ImportError:
+        # If not installed, we can't patch it easily, but we should verify why it's missing if expected
+        pass
+
+    # Mock the google.genai module directly
+    # This covers imports like `from google import genai`
+    mock_genai_module = mocker.patch('google.genai')
     
-    # Mock the GenerativeModel
-    mock_model = MagicMock()
-    mock_genai.GenerativeModel.return_value = mock_model
+    # Create a mock client
+    mock_client = MagicMock()
+    mock_genai_module.Client.return_value = mock_client
+    
+    # Mock models
+    mock_models = MagicMock()
+    mock_client.models = mock_models
     
     # Mock generate_content response
     mock_response = MagicMock()
     mock_response.text = '{"story_text": "Once upon a time...", "title": "Test Story"}'
-    mock_model.generate_content.return_value = mock_response
-    mock_model.generate_content_async.return_value = mock_response
+    mock_models.generate_content.return_value = mock_response
     
-    return mock_genai
+    return mock_genai_module

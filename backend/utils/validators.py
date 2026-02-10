@@ -33,10 +33,11 @@ def validate_story_length(length):
     if not length:
         return 'standard'
     
-    if length not in ALLOWED_STORY_LENGTHS:
+    length_lower = str(length).lower()
+    if length_lower not in ALLOWED_STORY_LENGTHS:
         raise ValueError(f"Invalid story length. Must be one of: {', '.join(ALLOWED_STORY_LENGTHS)}")
         
-    return length
+    return length_lower
 
 def sanitize_text(text, max_length=100, allow_newlines=False):
     """

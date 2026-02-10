@@ -54,17 +54,20 @@ void main() {
         'role': 'Hero',
         'generated_avatar': {
           'id': 'avatar_1',
-          'image_url': 'http://example.com/avatar.png',
-          'prompt': 'A hero',
-          'style': 'cartoon'
+          'image_base64': 'data:image/png;base64,abcdef',
+          'seed': '12345',
+          'style': 'cartoon',
+          'attributes': {'hair': 'blue'},
+          'generated_at': DateTime.now().toIso8601String()
         }
       };
 
       final character = Character.fromJson(json);
 
       expect(character.generatedAvatar, isNotNull);
-      expect(character.generatedAvatar!.imageUrl, 'http://example.com/avatar.png');
+      expect(character.generatedAvatar!.imageBase64, 'data:image/png;base64,abcdef');
       expect(character.generatedAvatar!.style, 'cartoon');
+      expect(character.generatedAvatar!.seed, '12345');
     });
   });
 
