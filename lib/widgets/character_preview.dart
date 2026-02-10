@@ -36,7 +36,9 @@ class _CharacterPreviewState extends State<CharacterPreview>
     with TickerProviderStateMixin {
   late AnimationController _sparkleController;
   late AnimationController _scaleController;
+  late AnimationController _breathingController;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _breathingAnimation;
 
   @override
   void initState() {
@@ -65,6 +67,20 @@ class _CharacterPreviewState extends State<CharacterPreview>
       curve: Curves.elasticOut,
     ));
 
+    // Breathing animation (subtle scale up/down 2% every 2 seconds)
+    _breathingController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _breathingAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.02,
+    ).animate(CurvedAnimation(
+      parent: _breathingController,
+      curve: Curves.easeInOut,
+    ));
+
     _scaleController.forward();
   }
 
@@ -84,6 +100,7 @@ class _CharacterPreviewState extends State<CharacterPreview>
   void dispose() {
     _sparkleController.dispose();
     _scaleController.dispose();
+    _breathingController.dispose();
     super.dispose();
   }
 
@@ -129,8 +146,14 @@ class _CharacterPreviewState extends State<CharacterPreview>
                   ),
 
                 // Character image/placeholder (no dotted circle frame)
-                ScaleTransition(
-                  scale: _scaleAnimation,
+                AnimatedBuilder(
+                  animation: _breathingAnimation,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: _scaleAnimation.value * _breathingAnimation.value,
+                      child: child,
+                    );
+                  },
                   child: _buildCharacter(previewSize),
                 ),
               ],
@@ -204,8 +227,9 @@ class _CharacterPreviewState extends State<CharacterPreview>
     try {
       final imageData = widget.generatedAvatar!.imageBase64;
 
-      // Check if it's a URL (from avatar gallery) or base64 data
+      // Check if it's a URL, Asset, or base64 data
       final isUrl = imageData.startsWith('http://') || imageData.startsWith('https://');
+      final isAsset = imageData.startsWith('assets/');
 
       return Container(
         width: size,
@@ -221,27 +245,38 @@ class _CharacterPreviewState extends State<CharacterPreview>
           ],
         ),
         child: ClipOval(
-          child: isUrl
-              ? Image.network(
+          child: isAsset
+              ? Image.asset(
                   imageData,
                   width: size,
                   height: size,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
-                    debugPrint('Error loading avatar from URL: $error');
+                    debugPrint('Error loading avatar from Asset: $error');
                     return _buildEmojiPlaceholder(size);
                   },
                 )
-              : Image.memory(
-                  base64Decode(imageData.split(',').last),
-                  width: size,
-                  height: size,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    debugPrint('Error displaying generated avatar: $error');
-                    return _buildEmojiPlaceholder(size);
-                  },
-                ),
+              : isUrl
+                  ? Image.network(
+                      imageData,
+                      width: size,
+                      height: size,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        debugPrint('Error loading avatar from URL: $error');
+                        return _buildEmojiPlaceholder(size);
+                      },
+                    )
+                  : Image.memory(
+                      base64Decode(imageData.split(',').last),
+                      width: size,
+                      height: size,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        debugPrint('Error displaying generated avatar: $error');
+                        return _buildEmojiPlaceholder(size);
+                      },
+                    ),
         ),
       );
     } catch (e) {
@@ -269,11 +304,11 @@ class _CharacterPreviewState extends State<CharacterPreview>
           children: [
             // The placeholder image
             Image.asset(
-              'assets/images/character_placeholder.png',
+              'thePlaceholderImageBeforeCharacterGeneration.jpeg',
               width: size,
               height: size,
               fit: BoxFit.cover,
-              alignment: const Alignment(0, -0.3), // Show head and upper body
+              alignment: Alignment.center,
               errorBuilder: (context, error, stackTrace) {
                 return _buildEmojiPlaceholder(size);
               },

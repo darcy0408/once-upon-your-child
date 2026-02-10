@@ -1,5 +1,5 @@
 // lib/widgets/mood_lantern_selector.dart
-/// Mood Lantern Selector - An enchanted collection of glowing lanterns
+/// Mood Lantern Selector - An enchanted collection of floating lanterns
 /// for children to choose their story's emotional ingredient.
 ///
 /// Design philosophy: "Picking a magic ingredient" not "checking an emotion box"
@@ -8,7 +8,7 @@
 /// - 7 beautiful lantern images with vivid chakra colors
 /// - Animated glow effects for selected/unselected states
 /// - Short magic description visible under each lantern
-/// - Warm, inviting visual design
+/// - Warm, inviting visual design with floating arrangement
 library;
 
 import 'package:flutter/material.dart';
@@ -26,12 +26,16 @@ class MoodLanternSelector extends StatefulWidget {
   final OnLanternSelected? onFeelingSelected;
   final String? initialLanternId;
   final Color backgroundColor;
+  /// The character's age, used to display age-appropriate content.
+  /// Ages 10+ see mature variants (e.g., "Fury" instead of "Ember").
+  final int age;
 
   const MoodLanternSelector({
     super.key,
     this.onFeelingSelected,
     this.initialLanternId,
     this.backgroundColor = const Color(0xFFFFF8E1), // Warm cream
+    this.age = 8, // Default to middle-childhood
   });
 
   @override
@@ -45,6 +49,7 @@ class _MoodLanternSelectorState extends State<MoodLanternSelector>
   late Animation<double> _glowAnimation;
   late AnimationController _idleController;
   late Animation<double> _idleAnimation;
+  late Listenable _combinedAnimation;
 
   @override
   void initState() {
@@ -68,6 +73,9 @@ class _MoodLanternSelectorState extends State<MoodLanternSelector>
     _idleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
       CurvedAnimation(parent: _idleController, curve: Curves.easeInOut),
     );
+
+    // Cache the merged listenable once - don't recreate in build()
+    _combinedAnimation = Listenable.merge([_glowAnimation, _idleAnimation]);
   }
 
   @override
@@ -90,7 +98,7 @@ class _MoodLanternSelectorState extends State<MoodLanternSelector>
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([_glowAnimation, _idleAnimation]),
+      animation: _combinedAnimation,
       builder: (context, child) {
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -127,12 +135,13 @@ class _MoodLanternSelectorState extends State<MoodLanternSelector>
               glowIntensity: _glowAnimation.value,
               idleIntensity: _idleAnimation.value,
               onLanternTap: _selectLantern,
+              age: widget.age,
             ),
 
             // Selected lantern expanded description
             if (_selectedLantern != null) ...[
               const SizedBox(height: 16),
-              _MoodDescription(lantern: _selectedLantern!),
+              _MoodDescription(lantern: _selectedLantern!, age: widget.age),
             ],
           ],
         );
@@ -147,12 +156,14 @@ class _LanternGrid extends StatelessWidget {
   final double glowIntensity;
   final double idleIntensity;
   final ValueChanged<MoodLantern> onLanternTap;
+  final int age;
 
   const _LanternGrid({
     required this.selectedLanternId,
     required this.glowIntensity,
     required this.idleIntensity,
     required this.onLanternTap,
+    required this.age,
   });
 
   @override
@@ -161,23 +172,50 @@ class _LanternGrid extends StatelessWidget {
       builder: (context, constraints) {
         final availableWidth = constraints.maxWidth;
 
-        // Calculate lantern size based on screen width
-        // Aim for 4 lanterns per row on narrow, 7 on wide
-        final int lanternsPerRow = availableWidth < 400 ? 3 : (availableWidth < 600 ? 4 : 7);
-        final double lanternSize = ((availableWidth - (lanternsPerRow * 8)) / lanternsPerRow).clamp(50.0, 75.0);
+        // Calculate lanterns per row based on screen width
+        // Very narrow (<300): 3, narrow (<450): 4, medium (<600): 5, wide: 7
+        final int lanternsPerRow = availableWidth < 300
+            ? 3
+            : availableWidth < 450
+                ? 4
+                : availableWidth < 600
+                    ? 5
+                    : 7;
+
+        // Each lantern widget needs: size + padding (16) for glow
+        // Plus spacing between items (4px)
+        // Total width per item = size + 16
+        // Available = availableWidth - (spacing * (lanternsPerRow - 1))
+        const double glowPadding = 16.0;
+        const double spacing = 4.0;
+        final double availableForLanterns =
+            availableWidth - (spacing * (lanternsPerRow - 1));
+        final double lanternSize =
+            ((availableForLanterns / lanternsPerRow) - glowPadding)
+                .clamp(40.0, 65.0);
 
         return Wrap(
           alignment: WrapAlignment.center,
-          spacing: 4,
-          runSpacing: 12,
-          children: kMoodLanterns.map((lantern) {
+          spacing: spacing,
+          runSpacing: 24, // Staggered layout needs more vertical space
+          children: kMoodLanterns.asMap().entries.map((entry) {
+            final index = entry.key;
+            final lantern = entry.value;
             final isSelected = selectedLanternId == lantern.id;
-            return _LanternWidget(
-              lantern: lantern,
-              isSelected: isSelected,
-              glowIntensity: isSelected ? glowIntensity : idleIntensity,
-              onTap: () => onLanternTap(lantern),
-              size: lanternSize,
+            
+            // Floating effect: Stagger odd/even lanterns
+            final double topPadding = index.isEven ? 0.0 : 24.0;
+
+            return Padding(
+              padding: EdgeInsets.only(top: topPadding),
+              child: _LanternWidget(
+                lantern: lantern,
+                isSelected: isSelected,
+                glowIntensity: isSelected ? glowIntensity : idleIntensity,
+                onTap: () => onLanternTap(lantern),
+                size: lanternSize,
+                age: age,
+              ),
             );
           }).toList(),
         );
@@ -193,17 +231,42 @@ class _LanternWidget extends StatelessWidget {
   final double glowIntensity;
   final VoidCallback onTap;
   final double size;
+  final int age;
 
   const _LanternWidget({
     required this.lantern,
     required this.isSelected,
     required this.glowIntensity,
     required this.onTap,
+    required this.age,
     this.size = 65,
   });
 
   /// Get a short magic label for the lantern (visible always)
+  /// Uses age-appropriate variants for tweens/teens (10+)
   String get _shortMagic {
+    // For ages 10+, use more mature short labels
+    if (age >= 10) {
+      switch (lantern.coreEmotion.toLowerCase()) {
+        case 'happy':
+          return 'Victory';
+        case 'angry':
+          return 'Justice';
+        case 'sad':
+          return 'Healing';
+        case 'fearful':
+          return 'Bravery';
+        case 'silly':
+          return 'Chaos';
+        case 'calm':
+          return 'Focus';
+        case 'excited':
+          return 'Thrill';
+        default:
+          return lantern.coreEmotion;
+      }
+    }
+    // Default labels for younger children
     switch (lantern.coreEmotion.toLowerCase()) {
       case 'happy':
         return 'Joy & Smiles';
@@ -237,9 +300,9 @@ class _LanternWidget extends StatelessWidget {
       child: Semantics(
         button: true,
         selected: isSelected,
-        label: '${lantern.name} lantern, ${lantern.storyMagic}',
+        label: '${lantern.nameForAge(age)} lantern, ${lantern.storyMagicForAge(age)}',
         child: AnimatedScale(
-          scale: isSelected ? 1.1 : 1.0,
+          scale: isSelected ? (size < 50 ? 1.05 : 1.08) : 1.0,
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutBack,
           child: SizedBox(
@@ -254,7 +317,7 @@ class _LanternWidget extends StatelessWidget {
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Outer glow effect - vivid color
+                      // Outer glow effect - vivid color (smaller on narrow screens)
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
                         width: size,
@@ -265,18 +328,12 @@ class _LanternWidget extends StatelessWidget {
                             BoxShadow(
                               color: vividColor.withValues(
                                 alpha: isSelected
-                                    ? 0.7 * glowIntensity
-                                    : 0.3 * glowIntensity,
+                                    ? 0.6 * glowIntensity
+                                    : 0.25 * glowIntensity,
                               ),
-                              blurRadius: isSelected ? 25 : 12,
-                              spreadRadius: isSelected ? 8 : 2,
+                              blurRadius: isSelected ? (size < 50 ? 15 : 20) : 8,
+                              spreadRadius: isSelected ? (size < 50 ? 4 : 6) : 1,
                             ),
-                            if (isSelected)
-                              BoxShadow(
-                                color: vividColor.withValues(alpha: 0.4),
-                                blurRadius: 40,
-                                spreadRadius: 15,
-                              ),
                           ],
                         ),
                       ),
@@ -324,43 +381,46 @@ class _LanternWidget extends StatelessWidget {
                       // Selection ring
                       if (isSelected)
                         Container(
-                          width: size + 4,
-                          height: size + 4,
+                          width: size + 2,
+                          height: size + 2,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: vividColor,
-                              width: 3,
+                              width: size < 50 ? 2 : 2.5,
                             ),
                           ),
                         ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                // Lantern name - always visible
+                const SizedBox(height: 2),
+                // Lantern name - always visible, smaller on narrow screens
                 Text(
-                  lantern.name,
+                  lantern.nameForAge(age),
                   style: TextStyle(
-                    fontSize: isSelected ? 12 : 10,
+                    fontSize: size < 50 ? 9 : (isSelected ? 11 : 10),
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                     color: isSelected ? vividColor : const Color(0xFF5D4037),
                   ),
                   textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                // Short magic description - always visible
-                Text(
-                  _shortMagic,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w400,
-                    color: isSelected
-                        ? vividColor.withValues(alpha: 0.8)
-                        : const Color(0xFF8D6E63),
-                    fontStyle: FontStyle.italic,
+                // Short magic description - hide on very small sizes
+                if (size >= 50)
+                  Text(
+                    _shortMagic,
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w400,
+                      color: isSelected
+                          ? vividColor.withValues(alpha: 0.8)
+                          : const Color(0xFF8D6E63),
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  textAlign: TextAlign.center,
-                ),
               ],
             ),
           ),
@@ -373,8 +433,9 @@ class _LanternWidget extends StatelessWidget {
 /// Expanded description showing the selected lantern's full magic text.
 class _MoodDescription extends StatelessWidget {
   final MoodLantern lantern;
+  final int age;
 
-  const _MoodDescription({required this.lantern});
+  const _MoodDescription({required this.lantern, required this.age});
 
   @override
   Widget build(BuildContext context) {
@@ -400,8 +461,8 @@ class _MoodDescription extends StatelessWidget {
       },
       child: Container(
         key: ValueKey(lantern.id),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        margin: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        margin: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -430,16 +491,16 @@ class _MoodDescription extends StatelessWidget {
           children: [
             Text(
               lantern.emoji,
-              style: const TextStyle(fontSize: 24),
+              style: const TextStyle(fontSize: 20),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Flexible(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${lantern.name} Magic',
+                    '${lantern.nameForAge(age)} Magic',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: vividColor,
@@ -447,7 +508,7 @@ class _MoodDescription extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    lantern.storyMagic,
+                    lantern.storyMagicForAge(age),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           fontStyle: FontStyle.italic,
                           color: const Color(0xFF5D4037),

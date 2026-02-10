@@ -34,8 +34,17 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   SelectedFeeling? _selectedFeeling;
   bool _showParentalInput = false;
   final TextEditingController _parentalNoteController = TextEditingController();
+  final TextEditingController _safeSpaceController = TextEditingController();
 
   final List<ScenarioCard> _scenarios = ScenarioData.all;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedScenario = widget.wizardData.selectedScenario;
+    _safeSpaceController.text = widget.wizardData.customElements;
+    _parentalNoteController.text = widget.wizardData.parentalNote ?? '';
+  }
 
   void _selectScenario(String scenarioId) {
     setState(() {
@@ -98,6 +107,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   @override
   void dispose() {
     _parentalNoteController.dispose();
+    _safeSpaceController.dispose();
     super.dispose();
   }
 
@@ -157,12 +167,20 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             // Scenario carousels grouped by category
             ..._buildScenarioSections(age),
 
+            // Safe Space Input (Conditional)
+            if (_selectedScenario == 'safe_space') ...[
+              const SizedBox(height: AppSpacing.md),
+              _buildSafeSpaceInput(),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+
             const SizedBox(height: AppSpacing.xl),
 
-            // Mood Lantern Selector - Enchanted shelf of glowing lanterns
+            // Mood Lantern Selector - Enchanted floating lanterns
             MoodLanternSelector(
               onFeelingSelected: _selectFeeling,
               backgroundColor: AppColors.cream,
+              age: widget.wizardData.characterAge,
             ),
             const SizedBox(height: AppSpacing.xxl),
 
@@ -171,7 +189,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
               Center(
                 child: PillButton(
                   emoji: '✨',
-                  label: 'Start Adventure!',
+                  label: 'Continue',
                   onTap: widget.onNext,
                   variant: PillButtonVariant.purple,
                   isSelected: true,
@@ -180,6 +198,76 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             const SizedBox(height: AppSpacing.xl),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSafeSpaceInput() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.primary, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('🤫', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 8),
+              Text(
+                'The Whisperer is Listening...',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Whisper a secret, a worry, or anything you\'re thinking about. We\'ll turn it into a magical adventure!',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textDark.withValues(alpha: 0.6),
+                  fontStyle: FontStyle.italic,
+                ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _safeSpaceController,
+            maxLines: 3,
+            decoration: InputDecoration(
+              hintText: 'e.g., I\'m a little nervous about my first day of school...',
+              hintStyle: TextStyle(
+                color: AppColors.textDark.withValues(alpha: 0.4),
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+              ),
+              filled: true,
+              fillColor: AppColors.primary.withValues(alpha: 0.05),
+            ),
+            onChanged: (value) {
+              widget.wizardData.customElements = value;
+            },
+          ),
+        ],
       ),
     );
   }
