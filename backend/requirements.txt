@@ -48,7 +48,7 @@ redis==7.1.0
 Flask-Caching==2.3.1
 
 # Task Queue
-celery==5.6.1
+celery==5.6.2
 
 # Testing (development only)
 pytest==9.0.2
