@@ -27,7 +27,7 @@ cryptography==46.0.3
 sentry-sdk[flask]==2.51.0
 
 # Payment Processing
-stripe==14.1.0
+stripe==14.3.0
 
 # JWT Authentication
 Flask-JWT-Extended==4.7.1
