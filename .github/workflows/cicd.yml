@@ -89,6 +89,39 @@ jobs:
           flags: backend
           name: backend-coverage
 
+  # API Contract Tests
+  api-contract-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Run API contract tests
+        run: |
+          PYTHONPATH=/home/runner/work/story-weaver-app/story-weaver-app/backend pytest -m api_contract --maxfail=1
+
   # Build Flutter Web
   build-frontend:
     runs-on: ubuntu-latest
