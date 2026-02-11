@@ -97,7 +97,11 @@ lint_report*.txt
 story_output.txt
 story_request.json
 payload.json
-PHASE3_TEST_RESULTS.json
+
+# Temporary test documentation (session-specific, keep consolidated version only)
+TEST_IMPLEMENTATION_STATUS.md
+TEST_IMPLEMENTATION_FINAL_SUMMARY.md
+TEST_RUN.md
 
 # Accidentally moved personal project folders
 Twins Great Adventures/
@@ -107,6 +111,13 @@ Twins Great Adventures - Copy/
 Screenshot*.png
 *.jpg
 HowDoYouFeelToday.jpg
+
+# Marketing and reference images (keep local only)
+SellItPowerpoint images/
+StoryWeaverImagestoShare/
+
+# Old/archived assets
+assets/mood_lanterns/old/
 
 # Documentation files (session-specific)
 handoff*.md
