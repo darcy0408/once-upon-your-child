@@ -25,6 +25,7 @@ class ApiServiceManager {
   static http.Client? _testClient;
   static String? _authToken;
   static String? _userId;
+  static Future<void>? _authInFlight;
   static const String _tokenKey = 'story_weaver_auth_token';
   static const String _userIdKey = 'story_weaver_user_id';
 
@@ -39,6 +40,23 @@ class ApiServiceManager {
 
   /// Ensure we have a valid auth token (get anonymous token if needed)
   Future<void> _ensureAuthenticated() async {
+    if (_authInFlight != null) {
+      await _authInFlight;
+      return;
+    }
+
+    final current = _doEnsureAuthenticated();
+    _authInFlight = current;
+    try {
+      await current;
+    } finally {
+      if (identical(_authInFlight, current)) {
+        _authInFlight = null;
+      }
+    }
+  }
+
+  Future<void> _doEnsureAuthenticated() async {
     if (_authToken != null) return;
 
     // Try to load from storage

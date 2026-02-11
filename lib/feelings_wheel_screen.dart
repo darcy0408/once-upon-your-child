@@ -98,7 +98,11 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
         const SizedBox(height: 14),
         _buildSelectionSummary(),
         const SizedBox(height: 12),
-        Row(
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 8,
           children: [
             TextButton.icon(
               onPressed: () {
@@ -110,7 +114,6 @@ class _FeelingsWheelScreenState extends State<FeelingsWheelScreen> {
               icon: const Icon(Icons.refresh),
               label: const Text('Start over'),
             ),
-            const Spacer(),
             TextButton(
               onPressed: () => setState(() => _useListPicker = !_useListPicker),
               child: Text(_useListPicker ? 'Hide list picker' : 'Use list instead'),

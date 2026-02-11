@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'avatar_models.dart';
 import 'services/avatar_service.dart';
 import 'models/generated_avatar.dart';
+export 'models/generated_avatar.dart';
+export 'models/wizard_data.dart';
 
 class Character {
   final String id;
