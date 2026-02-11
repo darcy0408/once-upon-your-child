@@ -105,6 +105,13 @@ void main() {
          }), 200);
       }
 
+      if (url.contains('/characters/')) {
+        return http.Response(jsonEncode({
+          'status': 'updated',
+          'id': 'char_123'
+        }), 200);
+      }
+
       if (url.contains('/achievement/sync')) {
         return http.Response(jsonEncode({'status': 'success'}), 200);
       }
