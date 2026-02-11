@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../feelings_wheel_data.dart';
-import '../wizard_story_screen.dart';
-import '../../data/companion_data.dart';
-import '../../data/mood_physics.dart';
-import '../../data/scenario_data.dart';
+import 'package:story_weaver_app/feelings_wheel_data.dart';
+import 'package:story_weaver_app/models.dart';
+import 'package:story_weaver_app/data/companion_data.dart';
+import 'package:story_weaver_app/data/mood_physics.dart';
+import 'package:story_weaver_app/data/scenario_data.dart';
 
 /// Helper to map WizardData to API-ready payload
 class WizardDataMapper {

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pill_button.dart';
-import '../wizard_story_screen.dart';
 
 /// Step 3: The Adventure Team Selector
 ///

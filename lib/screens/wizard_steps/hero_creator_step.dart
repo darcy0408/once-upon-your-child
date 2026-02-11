@@ -6,9 +6,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/archetype_card.dart';
 import '../../widgets/character_preview.dart';
 import '../../widgets/pill_button.dart';
-import '../wizard_story_screen.dart';
 import '../../services/api_service_manager.dart';
-import '../../models/generated_avatar.dart';
 import '../../widgets/avatar_gallery_selector.dart';
 import '../../services/avatar_generation_state.dart';
 
