@@ -4,6 +4,7 @@ import traceback
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token
+from sqlalchemy.exc import IntegrityError
 
 from ..database import db
 from ..models.user import User
@@ -184,18 +185,30 @@ def create_utility_blueprint(logger, log_error):
             client_id = f"anon_{uuid.uuid4().hex[:16]}"
 
         # Find or create anonymous user
+        anonymous_email = f"{client_id}@anonymous.storyweaver.app"
         user = User.query.filter_by(id=client_id).first()
         if not user:
             user = User(
                 id=client_id,
                 username=f"guest_{client_id[-8:]}",
-                email=f"{client_id}@anonymous.storyweaver.app"
+                email=anonymous_email
             )
             # Set a random password (user won't need it for anonymous access)
             user.set_password(uuid.uuid4().hex)
             db.session.add(user)
-            db.session.commit()
-            logger.info(f"Created anonymous user: {client_id}")
+            try:
+                db.session.commit()
+                logger.info(f"Created anonymous user: {client_id}")
+            except IntegrityError:
+                # Two concurrent requests can race to create the same anonymous user.
+                # Recover by loading the row created by the winning request.
+                db.session.rollback()
+                user = User.query.filter_by(id=client_id).first()
+                if not user:
+                    user = User.query.filter_by(email=anonymous_email).first()
+                if not user:
+                    raise
+                logger.info(f"Anonymous user already exists after race: {client_id}")
 
         token = create_access_token(identity=user.id)
         return jsonify({

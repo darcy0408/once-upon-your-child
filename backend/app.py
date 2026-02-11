@@ -443,7 +443,10 @@ def create_app(config_name):
         }), 500
 
     print(f"=== All routes registered successfully ===")
-    print(f"=== Registered routes: {[rule.rule for rule in app.url_map.iter_rules()]} ===")
+    print(
+        "=== Registered routes: "
+        f"{sorted([{'path': rule.rule, 'methods': sorted(m for m in rule.methods if m not in {'HEAD', 'OPTIONS'})} for rule in app.url_map.iter_rules()], key=lambda r: (r['path'], tuple(r['methods'])))} ==="
+    )
     return app
 
 # Trigger reload
