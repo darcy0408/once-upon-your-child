@@ -5,7 +5,7 @@
     "buildCommand": "pip install --upgrade pip && pip install --no-cache-dir -r backend/requirements.txt"
   },
   "deploy": {
-    "startCommand": "gunicorn wsgi:app --bind 0.0.0.0:$PORT --timeout 120 --workers 2",
+    "startCommand": "sh -c 'gunicorn wsgi:app --bind 0.0.0.0:$PORT --timeout 120 --workers 2'",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",

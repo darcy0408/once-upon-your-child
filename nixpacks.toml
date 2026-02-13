@@ -10,4 +10,4 @@ cmds = [
 ]
 
 [start]
-cmd = "gunicorn wsgi:app --bind 0.0.0.0:$PORT --timeout 120 --workers 1 --log-level debug"
+cmd = "sh -c 'gunicorn wsgi:app --bind 0.0.0.0:$PORT --timeout 120 --workers 1 --log-level debug'"
