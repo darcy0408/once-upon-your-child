@@ -28,7 +28,7 @@ GEMINI_IMAGE_REQUEST_TIMEOUT_SECONDS = "120"
 # Celery Worker Service (Background task processor)
 [[services]]
 name = "worker"
-dockerfile = "Dockerfile"
+dockerfile = "Dockerfile.worker"
 startCommand = "celery -A backend.celery_config.celery worker --loglevel=info --pool=solo"
 
 # No healthcheck needed for worker (it's not a web service)
