@@ -1,10 +1,8 @@
 # Railway Multi-Service Configuration for Story Weaver App
 # This configuration deploys both backend (Flask/Python) and frontend (Flutter/nginx)
 
-# Default deployment settings
+# Default deployment settings (don't set global healthcheck - only for web services)
 [deploy]
-healthcheckPath = "/health"
-healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 
