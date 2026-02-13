@@ -13,7 +13,7 @@ restartPolicyMaxRetries = 3
 name = "backend"
 dockerfile = "Dockerfile"
 buildCommand = "pip install --no-cache-dir -r backend/requirements.txt"
-startCommand = "gunicorn -w 1 -b 0.0.0.0:$PORT wsgi:app --timeout 120"
+startCommand = "sh -c 'gunicorn -w 1 -b 0.0.0.0:$PORT wsgi:app --timeout 120'"
 
 [services.healthcheck]
 path = "/health"
@@ -23,6 +23,21 @@ timeout = 10
 [services.env]
 FLASK_ENV = "prod"
 FLASK_CONFIG = "prod"
+
+# Celery Worker Service (Background task processor)
+[[services]]
+name = "worker"
+dockerfile = "Dockerfile"
+startCommand = "celery -A backend.celery_config.celery worker --loglevel=info --pool=solo"
+
+# No healthcheck needed for worker (it's not a web service)
+# No public networking needed (worker connects to Redis privately)
+
+[services.env]
+CELERY_TASK_ALWAYS_EAGER = "false"
+CELERY_TASK_EAGER_PROPAGATES = "false"
+CELERY_TASK_STORE_EAGER_RESULT = "false"
+# Redis URL will be set via Railway's environment variable references
 
 # Frontend Service (Flutter Web + nginx)
 [[services]]
