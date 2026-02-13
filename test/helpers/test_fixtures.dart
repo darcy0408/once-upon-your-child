@@ -1,10 +1,5 @@
-/// Centralized test fixtures and mock data for Story Weaver tests
-library test_fixtures;
-
-import 'package:story_weaver_app/models/character.dart';
-import 'package:story_weaver_app/models/generated_avatar.dart';
-import 'package:story_weaver_app/models/story.dart';
-import 'package:story_weaver_app/models/interactive_story_data.dart';
+// Centralized test fixtures and mock data for Story Weaver tests.
+import 'package:story_weaver_app/models.dart';
 
 // ============================================================================
 // CHARACTER FIXTURES
@@ -16,10 +11,10 @@ Character getSampleCharacter() {
     id: 'char_test_123',
     name: 'Luna',
     age: 7,
-    personality: {'brave': 8, 'curious': 9, 'kind': 7},
-    interests: ['astronomy', 'reading', 'adventure'],
-    avatarSeed: 'luna-seed-123',
-    createdAt: DateTime(2024, 1, 1),
+    role: 'Hero',
+    personalitySliders: {'brave': 80, 'curious': 90, 'kind': 70},
+    likes: ['astronomy', 'reading', 'adventure'],
+    generatedAvatar: getSampleAvatar(),
   );
 }
 
@@ -29,7 +24,7 @@ Character getMinimalCharacter() {
     id: 'char_min_456',
     name: 'Sam',
     age: 5,
-    createdAt: DateTime(2024, 1, 1),
+    role: 'Helper',
   );
 }
 
@@ -39,12 +34,12 @@ Character getCharacterWithPets() {
     id: 'char_pets_789',
     name: 'Mia',
     age: 10,
-    personality: {'kind': 9},
+    role: 'Hero',
+    personalitySliders: {'kind': 90},
     pets: [
       {'name': 'Fluffy', 'species': 'cat'},
       {'name': 'Rex', 'species': 'dog'},
     ],
-    createdAt: DateTime(2024, 1, 1),
   );
 }
 
@@ -55,18 +50,36 @@ Character getCharacterWithPets() {
 /// Sample generated avatar
 GeneratedAvatar getSampleAvatar() {
   return GeneratedAvatar(
+    id: 'avatar_test_123',
     imageBase64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
     seed: 'luna-seed-123',
-    prompt: 'A brave young astronomer',
+    style: 'cartoon',
+    attributes: {
+      'hair_style': 'curly',
+      'hair_color': 'brown',
+      'skin_tone': 'medium',
+      'outfit': 'explorer',
+      'expression': 'happy',
+    },
+    generatedAt: DateTime(2024, 1, 1),
   );
 }
 
 /// Avatar with asset path (curated gallery)
 GeneratedAvatar getCuratedAvatar() {
   return GeneratedAvatar(
-    assetPath: 'assets/avatars/midjourney/avatar_001.webp',
+    id: 'avatar_curated_001',
+    imageBase64: 'data:image/webp;base64,AA==',
     seed: 'curated-001',
-    prompt: 'Curated avatar from gallery',
+    style: 'watercolor',
+    attributes: {
+      'hair_style': 'wavy',
+      'hair_color': 'black',
+      'skin_tone': 'light',
+      'outfit': 'wizard',
+      'expression': 'calm',
+    },
+    generatedAt: DateTime(2024, 1, 2),
   );
 }
 
@@ -75,37 +88,36 @@ GeneratedAvatar getCuratedAvatar() {
 // ============================================================================
 
 /// Sample generated story
-Story getSampleStory() {
-  return Story(
+SavedStory getSampleStory() {
+  return SavedStory(
     id: 'story_test_123',
-    characterId: 'char_test_123',
     title: 'Luna and the Starlight Owl',
     storyText: 'Once upon a time, Luna the brave astronomer discovered a talking owl named Hoot. Together they embarked on a magical journey through the stars...',
     wisdomGem: 'True friendship knows no boundaries',
     createdAt: DateTime(2024, 1, 1),
     theme: 'Adventure',
-    customElements: 'talking owl, rainbow bridge',
+    characters: [getSampleCharacter()],
   );
 }
 
 /// Story with rhyme time
-Story getRhymeTimeStory() {
-  return Story(
+SavedStory getRhymeTimeStory() {
+  return SavedStory(
     id: 'story_rhyme_456',
-    characterId: 'char_test_123',
     title: 'The Dragon\'s Flight',
     storyText: 'In a land so far and wide,\nLived a dragon with great pride.\nHe loved to soar up in the sky,\nAnd watch the clouds go floating by.',
     wisdomGem: 'Confidence comes from within',
     createdAt: DateTime(2024, 1, 2),
-    rhymeTime: true,
+    theme: 'Adventure',
+    characters: [getSampleCharacter()],
+    isRhyming: true,
   );
 }
 
 /// Epic length story
-Story getEpicStory() {
-  return Story(
+SavedStory getEpicStory() {
+  return SavedStory(
     id: 'story_epic_789',
-    characterId: 'char_test_123',
     title: 'The Quest for the Crystal Kingdom',
     storyText: '''Chapter 1: The Beginning
 
@@ -118,7 +130,8 @@ As she ventured deeper into the forest, she encountered many challenges...
 [... continues for 1500+ words ...]''',
     wisdomGem: 'Great journeys require great courage',
     createdAt: DateTime(2024, 1, 3),
-    storyLength: 'epic',
+    theme: 'Adventure',
+    characters: [getSampleCharacter()],
   );
 }
 
@@ -129,31 +142,62 @@ As she ventured deeper into the forest, she encountered many challenges...
 /// Sample interactive story data
 InteractiveStoryData getSampleInteractiveStory() {
   return InteractiveStoryData(
-    storyId: 'interactive_123',
-    characterName: 'Luna',
-    currentSegment: 'You find yourself at a crossroads. To the left, a dark forest beckons. To the right, a bright meadow awaits.',
-    choices: [
-      'Explore the dark forest',
-      'Walk through the bright meadow',
-      'Set up camp here',
-    ],
-    path: ['start', 'crossroads'],
+    id: 'interactive_123',
+    title: 'Luna at the Crossroads',
     theme: 'Adventure',
+    tone: 'whimsical',
+    length: 'medium',
+    age: 7,
+    currentSegmentNumber: 2,
+    isCompleted: false,
+    createdAt: DateTime(2024, 1, 1),
+    inventory: [
+      InventoryItemData(
+        id: 'item_map',
+        name: 'Star Map',
+        acquiredAtSegment: 1,
+      ),
+    ],
+    state: StoryStateData(
+      currentLocation: 'Crossroads',
+      currentGoal: 'Choose a path',
+      keyClues: ['forest whispers', 'sunlit meadow'],
+      companionStatus: 'Hoot is nearby',
+    ),
   );
 }
 
 /// Interactive story at different depth
 InteractiveStoryData getDeepInteractiveStory() {
   return InteractiveStoryData(
-    storyId: 'interactive_456',
-    characterName: 'Luna',
-    currentSegment: 'Deep in the forest, you discover a hidden cave...',
-    choices: [
-      'Enter the cave',
-      'Continue exploring',
-    ],
-    path: ['start', 'crossroads', 'dark_forest', 'hidden_path', 'mysterious_cave'],
+    id: 'interactive_456',
+    title: 'Cave of Echoes',
     theme: 'Mystery',
+    tone: 'adventurous',
+    length: 'long',
+    age: 8,
+    currentSegmentNumber: 5,
+    isCompleted: false,
+    createdAt: DateTime(2024, 1, 2),
+    inventory: [
+      InventoryItemData(
+        id: 'item_lantern',
+        name: 'Lantern',
+        acquiredAtSegment: 3,
+      ),
+      InventoryItemData(
+        id: 'item_key',
+        name: 'Crystal Key',
+        acquiredAtSegment: 4,
+      ),
+    ],
+    state: StoryStateData(
+      currentLocation: 'Hidden Cave',
+      currentGoal: 'Unlock the crystal chamber',
+      keyClues: ['faint glow', 'echoing footsteps'],
+      companionStatus: 'Hoot is nervous',
+      timePressure: 'before sunset',
+    ),
   );
 }
 
