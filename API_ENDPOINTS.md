@@ -512,6 +512,156 @@
 
 ---
 
+## Copy-Paste API Examples
+
+### POST /generate-story
+```bash
+curl -X POST https://story-weaver-app-production.up.railway.app/generate-story \
+  -H "Content-Type: application/json" \
+  -d '{
+    "character": "Luna",
+    "age": 7,
+    "theme": "Adventure"
+  }'
+```
+
+**Success (200):**
+```json
+{
+  "status": "complete",
+  "story": {
+    "title": "Luna and the Starlight Path",
+    "story_text": "Once upon a time..."
+  },
+  "task_id": "sync_task"
+}
+```
+
+**Error (400):**
+```json
+{
+  "error": "character_id or character is required"
+}
+```
+
+### POST /api/characters
+```bash
+curl -X POST https://story-weaver-app-production.up.railway.app/api/characters \
+  -H "Authorization: Bearer YOUR_JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Luna",
+    "age": 7
+  }'
+```
+
+**Success (201):**
+```json
+{
+  "id": "char_123",
+  "name": "Luna",
+  "age": 7
+}
+```
+
+**Error (400):**
+```json
+{
+  "error": "name is required"
+}
+```
+
+### GET /api/characters
+```bash
+curl -X GET https://story-weaver-app-production.up.railway.app/api/characters \
+  -H "Authorization: Bearer YOUR_JWT"
+```
+
+**Success (200):**
+```json
+[
+  {
+    "id": "char_123",
+    "name": "Luna",
+    "age": 7
+  }
+]
+```
+
+**Error (401):**
+```json
+{
+  "error": "Authentication required"
+}
+```
+
+### PATCH /api/characters/:id
+```bash
+curl -X PATCH https://story-weaver-app-production.up.railway.app/api/characters/char_123 \
+  -H "Authorization: Bearer YOUR_JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "age": 8
+  }'
+```
+
+**Success (200):**
+```json
+{
+  "id": "char_123",
+  "age": 8
+}
+```
+
+**Error (404):**
+```json
+{
+  "error": "Character not found"
+}
+```
+
+### DELETE /api/characters/:id
+```bash
+curl -X DELETE https://story-weaver-app-production.up.railway.app/api/characters/char_123 \
+  -H "Authorization: Bearer YOUR_JWT"
+```
+
+**Success (204):**
+```json
+{}
+```
+
+**Error (403):**
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+### GET /api/subscription/status
+```bash
+curl -X GET https://story-weaver-app-production.up.railway.app/api/subscription/status \
+  -H "Authorization: Bearer YOUR_JWT"
+```
+
+**Success (200):**
+```json
+{
+  "tier": "premium",
+  "status": "active",
+  "cancel_at_period_end": false
+}
+```
+
+**Error (404):**
+```json
+{
+  "error": "User not found"
+}
+```
+
+---
+
 ## Rate Limits
 
 | Endpoint | Limit |
