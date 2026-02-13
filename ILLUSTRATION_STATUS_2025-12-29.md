@@ -41,7 +41,7 @@ The illustration system is **fully implemented** and ready for testing. All back
 
 ### Backend Settings (backend/.env)
 ```bash
-GEMINI_API_KEY="REDACTED-ROTATED-KEY"
+GEMINI_API_KEY="YOUR_GEMINI_API_KEY_HERE"
 GEMINI_MODEL=gemini-2.0-flash-exp
 MOCK_TESTING_MODE=true  ✅ Enabled (FREE testing)
 FLASK_ENV=production

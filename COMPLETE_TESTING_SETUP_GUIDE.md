@@ -29,7 +29,7 @@ I've implemented **all three features** you requested:
 
 I checked your `.env` file - **you ARE using your Tier 1 key**:
 ```
-GEMINI_API_KEY="REDACTED-ROTATED-KEY"
+GEMINI_API_KEY="YOUR_GEMINI_API_KEY_HERE"
 ```
 
 This matches your `story_weaver_backend` (Tier 1) key from Dec 15.

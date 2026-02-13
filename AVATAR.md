@@ -174,7 +174,7 @@ Use **Midjourney for avatar generation** (already have subscription, 5 days left
 
 **Environment File:** `backend\.env`
 ```env
-GEMINI_API_KEY="REDACTED-ROTATED-KEY"
+GEMINI_API_KEY="YOUR_GEMINI_API_KEY_HERE"
 GEMINI_MODEL=gemini-2.0-flash-exp
 ```
 

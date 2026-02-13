@@ -512,7 +512,7 @@ Deploy Story Weaver to production with **quality, not speed** as the priority.
 # CRITICAL: Set these for production
 MOCK_TESTING_MODE=false  # or remove this line
 FLASK_ENV=production
-GEMINI_API_KEY=REDACTED-ROTATED-KEY
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY_HERE
 GEMINI_MODEL=gemini-2.0-flash-exp  # or gemini-2.5-flash
 
 # Optional
