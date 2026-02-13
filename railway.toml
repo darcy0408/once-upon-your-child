@@ -27,7 +27,7 @@ GEMINI_IMAGE_REQUEST_TIMEOUT_SECONDS = "120"
 
 # Celery Worker Service (Background task processor)
 [[services]]
-name = "worker"
+name = "lovely-perfection"
 dockerfile = "Dockerfile.worker"
 startCommand = "celery -A backend.celery_config.celery worker --loglevel=info --pool=solo"
 
