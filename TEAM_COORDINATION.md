@@ -12,7 +12,7 @@
 
 ## 🎯 CURRENT AGENT ASSIGNMENTS (Updated in Real-Time)
 
-**Last Updated:** 2026-02-13, 8:43 AM
+**Last Updated:** 2026-02-13, 8:45 AM
 
 ### Available for Assignment
 - **Codex Agent:** IDLE (completed Tasks 1, 2, 4, 5, and 8)
@@ -28,6 +28,12 @@
   - `backend/tests/api/test_character_routes.py`
 
 ### Recently Completed
+- **Codex Agent - Task 12:** Documentation - API Endpoint Examples ✅
+  **Status:** COMPLETED
+  **Completed:** 2026-02-13, 8:45 AM
+  **Results:** Added copy-paste request/response examples for story generation, character CRUD, and subscription status.
+  **Files Modified:** `API_ENDPOINTS.md`
+  **Commit:** `bb3b463`
 - **Codex Agent - Task 11:** Backend API Tests - Stripe Webhook Routes ✅
   **Status:** COMPLETED
   **Completed:** 2026-02-13, 8:43 AM
