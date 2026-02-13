@@ -8,6 +8,7 @@ import io
 import logging
 import os
 import uuid
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from datetime import datetime
 
 from PIL import Image
@@ -20,6 +21,7 @@ class GeminiImageGenerator:
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         self._client = None
         self._model_name = "gemini-2.0-flash"
+        self._request_timeout_seconds = int(os.getenv("GEMINI_IMAGE_REQUEST_TIMEOUT_SECONDS", "120"))
         if self.api_key:
             from google import genai
             self._client = genai.Client(api_key=self.api_key)
@@ -68,6 +70,18 @@ class GeminiImageGenerator:
             logger.exception("Error processing image response from Nano Banana")
         
         return images
+
+    def _generate_content_with_timeout(self, prompt: str):
+        executor = ThreadPoolExecutor(max_workers=1)
+        future = executor.submit(
+            self._client.models.generate_content,
+            model=self._model_name,
+            contents=prompt,
+        )
+        try:
+            return future.result(timeout=self._request_timeout_seconds)
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
 
     def generate_story_illustration(
         self,
@@ -186,14 +200,17 @@ Style: {style}, optimized for {age_descriptor}
         try:
             logger.info("Calling Gemini image generation with prompt preview: %s", prompt[:200].replace("\n", " "))
             # Generate images with Gemini
-            response = self._client.models.generate_content(
-                model=self._model_name,
-                contents=prompt
-            )
+            response = self._generate_content_with_timeout(prompt)
             images = self._process_image_response(response, prompt)
             candidate_count = len(getattr(response, "candidates", []) or [])
             logger.info("Gemini image generation returned %s candidates and %s image(s)", candidate_count, len(images))
             return images
+        except FuturesTimeoutError:
+            logger.warning(
+                "Gemini image generation timed out after %ss",
+                self._request_timeout_seconds,
+            )
+            return []
         except Exception as e:
             # Check for quota errors
             error_msg = str(e).lower()
@@ -330,14 +347,17 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
         try:
             logger.info("Calling Gemini coloring page generation with prompt preview: %s", prompt[:200].replace("\n", " "))
             # Generate images with Gemini
-            response = self._client.models.generate_content(
-                model=self._model_name,
-                contents=prompt
-            )
+            response = self._generate_content_with_timeout(prompt)
             images = self._process_image_response(response, prompt)
             candidate_count = len(getattr(response, "candidates", []) or [])
             logger.info("Gemini coloring generation returned %s candidates and %s image(s)", candidate_count, len(images))
             return images
+        except FuturesTimeoutError:
+            logger.warning(
+                "Gemini coloring generation timed out after %ss",
+                self._request_timeout_seconds,
+            )
+            return []
         except Exception as e:
             logger.exception("Error generating coloring page with Gemini")
             return []
@@ -389,10 +409,7 @@ CRITICAL REMINDER FOR IMAGE MODEL:
             logger.debug(f"Avatar prompt preview: {enhanced_prompt[:250].replace(chr(10), ' ')}...")
 
             # Generate avatar with Gemini
-            response = self._client.models.generate_content(
-                model=self._model_name,
-                contents=enhanced_prompt
-            )
+            response = self._generate_content_with_timeout(enhanced_prompt)
 
             # Process response and extract images
             images = self._process_image_response(response, enhanced_prompt)
@@ -405,6 +422,13 @@ CRITICAL REMINDER FOR IMAGE MODEL:
 
             return images
 
+        except FuturesTimeoutError:
+            logger.warning(
+                "Gemini avatar generation timed out after %ss for %s",
+                self._request_timeout_seconds,
+                character_name,
+            )
+            return []
         except Exception as e:
             logger.exception(f"Error generating character avatar with Gemini: {e}")
             return []

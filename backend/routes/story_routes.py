@@ -1,8 +1,11 @@
 import base64
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+import hashlib
 import io
 import os
 import re
 import requests
+from celery.exceptions import TimeoutError as CeleryTimeoutError
 from flask import Blueprint, jsonify, request
 from PIL import Image
 
@@ -49,6 +52,22 @@ def create_story_blueprint(
 ):
     story_bp = Blueprint("story", __name__)
     disable_gemini_image = os.getenv("DISABLE_GEMINI_IMAGE", "").strip().lower() in ("1", "true", "yes")
+    sync_story_timeout = int(os.getenv("SYNC_STORY_TIMEOUT_SECONDS", "75"))
+
+    def _run_sync_story_task_with_timeout(task_kwargs):
+        executor = ThreadPoolExecutor(max_workers=1)
+        future = executor.submit(generate_story_task.apply, kwargs=task_kwargs)
+        try:
+            eager_result = future.result(timeout=sync_story_timeout)
+            return eager_result.get()
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
+
+    def _celery_runs_eagerly() -> bool:
+        try:
+            return bool(getattr(celery.conf, "task_always_eager", False))
+        except Exception:
+            return False
 
     @story_bp.route("/get-story-themes", methods=["GET"])
     @cache.cached(timeout=3600)  # Cache for 1 hour
@@ -88,11 +107,16 @@ def create_story_blueprint(
                 user = db.session.get(User, user_id)
                 if not user:
                     logger.info(f"Creating lazy user account for ID: {user_id}")
+                    user_hash = hashlib.sha1(user_id.encode("utf-8")).hexdigest()[:10]
+                    safe_user = re.sub(r"[^a-zA-Z0-9_]", "_", user_id).strip("_").lower() or "user"
+                    username = f"user_{safe_user[:48]}_{user_hash}"
+                    safe_email_local = re.sub(r"[^a-zA-Z0-9_.+-]", "_", user_id).strip("_").lower() or "user"
+                    email = f"{safe_email_local[:48]}_{user_hash}@storyweaver.app"
                     # Create placeholder user
                     new_user = User(
                         id=user_id,
-                        username=f"user_{user_id[:8]}",
-                        email=f"{user_id}@storyweaver.app"
+                        username=username,
+                        email=email
                     )
                     new_user.set_password("anonymous_guest")
                     db.session.add(new_user)
@@ -155,8 +179,8 @@ def create_story_blueprint(
 
         # Try synchronous execution first (to bypass polling issues on Railway)
         try:
-            # Use .apply() to run synchronously in the same thread/process
-            sync_result = generate_story_task.apply(kwargs=task_kwargs).get()
+            # Run synchronous task in a bounded worker thread so timeout is enforced.
+            sync_result = _run_sync_story_task_with_timeout(task_kwargs)
             
             # Debugging: Log the result type
             logger.info(f"Sync task result type: {type(sync_result)}")
@@ -177,6 +201,43 @@ def create_story_blueprint(
             }
             return jsonify(response_payload), 200
 
+        except (FuturesTimeoutError, CeleryTimeoutError) as exc:
+            logger.warning(
+                "Synchronous story generation timed out after %ss, switching to async fallback.",
+                sync_story_timeout,
+            )
+            logger.error(f"Full task_kwargs that timed out: {task_kwargs}")
+            if _celery_runs_eagerly():
+                logger.warning(
+                    "Celery task_always_eager is enabled; async fallback would still block. Returning timeout response."
+                )
+                return (
+                    jsonify(
+                        {
+                            "error": "STORY_TIMEOUT",
+                            "message": "Story generation took too long. Please try again.",
+                            "details": f"Timed out after {sync_story_timeout}s in synchronous mode.",
+                        }
+                    ),
+                    504,
+                )
+            try:
+                task = generate_story_task.delay(**task_kwargs)
+                return (
+                    jsonify(
+                        {
+                            "task_id": task.id,
+                            "status": "processing",
+                            "message": "Story generation timed out in sync mode; switched to async processing.",
+                            "poll_url": f"/task-status/{task.id}",
+                        }
+                    ),
+                    202,
+                )
+            except Exception as async_exc:
+                logger.exception("Async fallback after sync timeout also failed: %s", async_exc)
+                return jsonify({"error": "Story generation timed out and async fallback failed", "details": str(async_exc)}), 500
+
         except Exception as exc:
             import traceback
             error_trace = traceback.format_exc()
@@ -194,6 +255,16 @@ def create_story_blueprint(
                 return jsonify({"error": "QUOTA_EXCEEDED", "message": "Google Geminin API quota exceeded. Please try again later.", "details": str(exc)}), 429
             
             logger.error(f"Full task_kwargs that failed: {task_kwargs}")
+            if _celery_runs_eagerly():
+                logger.warning(
+                    "Celery task_always_eager is enabled; async fallback would still block. Returning error response."
+                )
+                return jsonify(
+                    {
+                        "error": "Story generation failed",
+                        "details": str(exc),
+                    }
+                ), 500
             try:
                 task = generate_story_task.delay(**task_kwargs)
                 return (
@@ -217,7 +288,7 @@ def create_story_blueprint(
                 return jsonify({"error": "Story generation failed completely", "details": str(async_exc)}), 500
             logger.exception("Falling back to synchronous story generation: %s", exc)
             try:
-                sync_result = generate_story_task.apply(kwargs=task_kwargs).get()
+                sync_result = _run_sync_story_task_with_timeout(task_kwargs)
                 story_payload = (sync_result or {}).get("story", {})
                 response_payload = {
                     "status": sync_result.get("status", "complete"),

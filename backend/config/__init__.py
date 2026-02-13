@@ -46,6 +46,13 @@ def _get_required_secret(key_name, allow_dev_fallback=True):
     raise ValueError(f"{key_name} is required but not set")
 
 
+def _as_bool(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return str(value).strip().lower() in ("1", "true", "yes", "on")
+
+
 class Config:
     """Base configuration."""
     # SECRET_KEY is required in production - no silent fallback
@@ -79,19 +86,34 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JSON_SORT_KEYS = False
 
+    # Caching
+    CACHE_TYPE = 'simple'
+
     # API Configuration
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
     GEMINI_MODEL = os.environ.get('GEMINI_MODEL') or 'gemini-2.0-flash'
 
-    # Celery Configuration (NEW FORMAT - Celery 5.x+)
-    # Fallback to in-memory (Dev/Prod without Redis) to avoid connection errors.
-    CELERY_BROKER_URL = 'memory://'
-    CELERY_RESULT_BACKEND = 'cache+memory://'
-
-    # Run tasks synchronously for now (simplifies deployment without separate worker)
-    CELERY_TASK_ALWAYS_EAGER = True
-    CELERY_TASK_EAGER_PROPAGATES = True
-    CELERY_TASK_STORE_EAGER_RESULT = True  # Required for polling to work in eager mode
+    # Celery Configuration (Celery 5.x+)
+    # Prefer explicit CELERY_* vars, then REDIS_URL, then local in-memory fallback.
+    CELERY_BROKER_URL = (
+        os.environ.get('CELERY_BROKER_URL')
+        or os.environ.get('REDIS_URL')
+        or 'memory://'
+    )
+    CELERY_RESULT_BACKEND = (
+        os.environ.get('CELERY_RESULT_BACKEND')
+        or os.environ.get('REDIS_URL')
+        or 'cache+memory://'
+    )
+    CELERY_TASK_ALWAYS_EAGER = _as_bool('CELERY_TASK_ALWAYS_EAGER', False)
+    CELERY_TASK_EAGER_PROPAGATES = _as_bool(
+        'CELERY_TASK_EAGER_PROPAGATES',
+        CELERY_TASK_ALWAYS_EAGER,
+    )
+    CELERY_TASK_STORE_EAGER_RESULT = _as_bool(
+        'CELERY_TASK_STORE_EAGER_RESULT',
+        CELERY_TASK_ALWAYS_EAGER,
+    )
 
     # CORS - Build allowed origins dynamically
     @staticmethod
@@ -165,6 +187,10 @@ class TestingConfig(Config):
     RATELIMIT_ENABLED = False
     # Disable caching in tests to avoid serialization issues
     CACHE_TYPE = 'null'
+    # Tests run in eager mode unless explicitly overridden.
+    CELERY_TASK_ALWAYS_EAGER = _as_bool('CELERY_TASK_ALWAYS_EAGER', True)
+    CELERY_TASK_EAGER_PROPAGATES = _as_bool('CELERY_TASK_EAGER_PROPAGATES', True)
+    CELERY_TASK_STORE_EAGER_RESULT = _as_bool('CELERY_TASK_STORE_EAGER_RESULT', True)
 
 config_by_name = {
     'dev': DevelopmentConfig,

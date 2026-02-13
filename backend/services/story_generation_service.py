@@ -2,6 +2,7 @@ from google import genai
 import os
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from google.api_core import exceptions as google_exceptions
 
 logger = logging.getLogger(__name__)
@@ -15,6 +16,7 @@ class StoryGenerationService:
         self._client = genai.Client(api_key=api_key)
         # Use configured model from env (defaults to gemini-2.0-flash)
         self._model_name = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
+        self._request_timeout_seconds = int(os.getenv('GEMINI_REQUEST_TIMEOUT_SECONDS', '45'))
         logger.info(f"Initializing Gemini with model: {self._model_name}")
 
     def generate_story(self, prompt: str) -> str:
@@ -25,10 +27,16 @@ class StoryGenerationService:
         for attempt in range(max_retries):
             try:
                 logger.info(f"Generating story with prompt: {prompt[:100]}... (Attempt {attempt + 1})")
-                response = self._client.models.generate_content(
+                executor = ThreadPoolExecutor(max_workers=1)
+                future = executor.submit(
+                    self._client.models.generate_content,
                     model=self._model_name,
                     contents=prompt
                 )
+                try:
+                    response = future.result(timeout=self._request_timeout_seconds)
+                finally:
+                    executor.shutdown(wait=False, cancel_futures=True)
                 logger.info(f"API response received: {type(response)}")
 
                 if response and hasattr(response, 'text') and response.text:
@@ -54,6 +62,27 @@ class StoryGenerationService:
                     logger.error(f"Story generation failed after {max_retries} retries due to rate limiting.", exc_info=True)
                     # Re-raise the exception to be handled by the caller's error handler
                     raise e
+            except FuturesTimeoutError:
+                if attempt < max_retries - 1:
+                    delay = base_delay * (2 ** attempt)
+                    logger.warning(
+                        "Gemini request timed out after %ss. Retrying in %ss... (Attempt %s/%s)",
+                        self._request_timeout_seconds,
+                        delay,
+                        attempt + 1,
+                        max_retries,
+                    )
+                    time.sleep(delay)
+                else:
+                    logger.error(
+                        "Story generation timed out after %s retries (timeout=%ss).",
+                        max_retries,
+                        self._request_timeout_seconds,
+                        exc_info=True,
+                    )
+                    raise TimeoutError(
+                        f"Gemini request timed out after {self._request_timeout_seconds}s"
+                    )
             except Exception as e:
                 error_text = str(e)
                 if "not found for API version" in error_text or "is not supported for generateContent" in error_text:

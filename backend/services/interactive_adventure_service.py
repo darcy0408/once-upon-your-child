@@ -6,6 +6,7 @@ with inventory, state tracking, and illustrations.
 import json
 import logging
 import uuid
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
 
@@ -38,6 +39,7 @@ class InteractiveAdventureService:
         self.api_key = gemini_api_key or os.getenv('GEMINI_API_KEY')
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY not set")
+        self._request_timeout_seconds = int(os.getenv('GEMINI_REQUEST_TIMEOUT_SECONDS', '45'))
 
         self._client = genai.Client(api_key=self.api_key)
 
@@ -399,11 +401,17 @@ class InteractiveAdventureService:
         for attempt in range(max_retries):
             try:
                 logger.info(f"Generating segment (attempt {attempt + 1}/{max_retries})")
-                response = self._client.models.generate_content(
+                executor = ThreadPoolExecutor(max_workers=1)
+                future = executor.submit(
+                    self._client.models.generate_content,
                     model=self._model_name,
                     contents=prompt,
                     config=self._json_config
                 )
+                try:
+                    response = future.result(timeout=self._request_timeout_seconds)
+                finally:
+                    executor.shutdown(wait=False, cancel_futures=True)
 
                 if response and hasattr(response, 'text') and response.text:
                     # Parse JSON response
@@ -440,6 +448,21 @@ class InteractiveAdventureService:
                 else:
                     logger.error("Max retries exceeded for rate limit.")
                     raise e
+
+            except FuturesTimeoutError as e:
+                logger.warning(
+                    "Gemini segment generation timed out after %ss (attempt %s/%s)",
+                    self._request_timeout_seconds,
+                    attempt + 1,
+                    max_retries,
+                )
+                if attempt < max_retries - 1:
+                    import time
+                    time.sleep(base_delay * (2 ** attempt))
+                    continue
+                raise TimeoutError(
+                    f"Gemini segment generation timed out after {self._request_timeout_seconds}s"
+                ) from e
 
             except Exception as e:
                 logger.error(f"Segment generation failed: {e}", exc_info=True)
