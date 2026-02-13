@@ -23,6 +23,9 @@ timeout = 10
 [services.env]
 FLASK_ENV = "prod"
 FLASK_CONFIG = "prod"
+SYNC_STORY_TIMEOUT_SECONDS = "75"
+GEMINI_REQUEST_TIMEOUT_SECONDS = "45"
+GEMINI_IMAGE_REQUEST_TIMEOUT_SECONDS = "120"
 
 # Celery Worker Service (Background task processor)
 [[services]]
@@ -37,7 +40,12 @@ startCommand = "celery -A backend.celery_config.celery worker --loglevel=info --
 CELERY_TASK_ALWAYS_EAGER = "false"
 CELERY_TASK_EAGER_PROPAGATES = "false"
 CELERY_TASK_STORE_EAGER_RESULT = "false"
-# Redis URL will be set via Railway's environment variable references
+SYNC_STORY_TIMEOUT_SECONDS = "75"
+GEMINI_REQUEST_TIMEOUT_SECONDS = "45"
+GEMINI_IMAGE_REQUEST_TIMEOUT_SECONDS = "120"
+# Redis URLs - set these in Railway UI using ${{Redis.REDIS_URL}}
+# CELERY_BROKER_URL = "${{Redis.REDIS_URL}}"
+# CELERY_RESULT_BACKEND = "${{Redis.REDIS_URL}}"
 
 # Frontend Service (Flutter Web + nginx)
 [[services]]
