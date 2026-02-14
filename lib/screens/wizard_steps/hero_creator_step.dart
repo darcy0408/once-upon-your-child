@@ -115,6 +115,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 
   void _loadExistingCharacter(Character character) {
     try {
+      debugPrint('🎯 Loading character: ${character.name}');
+      debugPrint('   - Has generatedAvatar: ${character.generatedAvatar != null}');
+      if (character.generatedAvatar != null) {
+        debugPrint('   - Avatar ID: ${character.generatedAvatar!.id}');
+        debugPrint('   - Image data length: ${character.generatedAvatar!.imageBase64.length}');
+      }
+
       setState(() {
         _isCreatingNew = false;
         _selectedExistingCharacter = character;
@@ -125,6 +132,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         widget.wizardData.selectedArchetypeId = character.role;
         _selectedArchetypeId = character.role;
         _nameController.text = character.name;
+
+        // Load AI avatar if exists
+        _generatedAvatar = character.generatedAvatar;
+        widget.wizardData.generatedAvatar = character.generatedAvatar;
+        debugPrint('   - Set _generatedAvatar in state: ${_generatedAvatar != null}');
 
         // Load existing pets with validation
         if (character.pets != null) {
@@ -206,6 +218,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     setState(() {
       _isCreatingNew = true;
       _selectedExistingCharacter = null;
+      _generatedAvatar = null; // Clear local avatar
+      widget.wizardData.generatedAvatar = null; // Clear wizard data avatar
       widget.wizardData.characterId = null;
       widget.wizardData.characterName = '';
       widget.wizardData.characterAge = 8;
@@ -223,6 +237,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     setState(() {
       _selectedArchetypeId = archetype.name;
       _characterEmoji = archetype.icon ?? '✨';
+      _generatedAvatar = null; // Reset avatar to show archetype icon instead
+      widget.wizardData.generatedAvatar = null;
 
       // Auto-fill wizard data with archetype
       widget.wizardData.selectedArchetypeId = archetype.name;
@@ -496,7 +512,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                           final isSelected = _selectedExistingCharacter?.id == character.id && !_isCreatingNew;
 
                           return GestureDetector(
-                            onTap: () => _loadExistingCharacter(character),
+                            onTap: () {
+                              debugPrint('👆 CLICKED on character: ${character.name}');
+                              _loadExistingCharacter(character);
+                            },
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
