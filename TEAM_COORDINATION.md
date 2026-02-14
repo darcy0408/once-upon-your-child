@@ -1573,3 +1573,22 @@ pytest tests/unit tests/security tests/api/test_story_routes.py -q
 ### Deployment Notes (Railway)
 - Recommended: separate `backend-web` + `backend-worker` services + Redis.
 - Ensure `CELERY_TASK_ALWAYS_EAGER=false` in Railway and set broker/result backend to Redis URL.
+
+---
+
+## Session: 2026-02-14 - Dev Env: Flutter Windows Cache Lock
+
+**Issue:** `flutter run -d chrome` failed while downloading/extracting artifacts due to a locked file:
+`c:\\dev\\flutter\\bin\\cache\\artifacts\\engine\\windows-x64\\icudtl.dat`
+OS error: `errno = 1224` ("user-mapped section open").
+
+**Likely cause:** Another process (often Chrome/Flutter/Dart/AV scanner) holding a lock on Flutter engine cache files.
+
+**Fix (after restart if needed):**
+1. Close Chrome instances launched by Flutter.
+2. Kill stray processes: `dart.exe`, `flutter_tester.exe`, `gen_snapshot.exe`, `dartaotruntime.exe`.
+3. Remove cache folder: `c:\\dev\\flutter\\bin\\cache\\artifacts\\engine\\windows-x64`
+4. Re-run `flutter doctor -v` and `flutter precache`.
+5. Retry `flutter run -d chrome`.
+
+**If recurring:** Add AV/Defender exclusion for `c:\\dev\\flutter\\`.
