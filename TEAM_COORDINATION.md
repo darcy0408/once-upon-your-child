@@ -15,13 +15,43 @@
 **Last Updated:** 2026-02-13, 9:22 AM
 
 ### Available for Assignment
-- **Codex Agent:** IDLE (completed Tasks 1, 2, 4, 5, 8, 10, 11, 12)
-- **Gemini Agent:** IDLE (completed Tasks 3, 6, 7, 9)
+- **Codex Agent:** IDLE (completed Tasks 1, 2, 4, 5, 8, 10, 11, 12, 13)
+- **Gemini Agent:** IDLE (completed Tasks 3, 6, 7, 9, 14, 15, 16, 17, 18, Phase 4 Polish)
 
 ### Active Work
 - **Claude (Supervisor):** Creating comprehensive reports and task delegation plan
 
 ### Recently Completed
+- **Gemini Agent - Task 18:** Frontend Unit Tests - Scenario Data ✅
+  **Status:** COMPLETED
+  **Completed:** 2026-02-13, 1:10 PM
+  **Results:** 7/7 unit tests passing. Verified age-appropriate title/description/hook selection logic.
+  **Files Created:** `test/unit/data/scenario_data_test.dart`
+- **Gemini Agent - Task 17:** Backend API Tests - Analytics Routes ✅
+  **Status:** COMPLETED
+  **Completed:** 2026-02-13, 1:05 PM
+  **Results:** 9/9 tests passing. Covered overview, story stats, user activity, and cost reports. Resolved `IntegrityError` by adding `theme` to `Story` model.
+  **Files Created:** `backend/tests/api/test_analytics_routes.py`
+- **Gemini Agent - Task 16:** Backend Service Tests - Interactive Adventure Service ✅
+  **Status:** COMPLETED
+  **Completed:** 2026-02-13, 1:00 PM
+  **Results:** 4/4 tests passing. Fixed `IntegrityError` by adding cascade delete to `InteractiveStory.segments`.
+  **Files Created:** `backend/tests/unit/test_interactive_adventure_service.py`
+- **Gemini Agent - Task 15:** Frontend Test Coverage Report ✅
+  **Status:** COMPLETED
+  **Completed:** 2026-02-13, 10:25 AM
+  **Results:** Overall coverage 21.0% (captured from partial runs due to coverage tool instability). 117/117 frontend tests passing.
+  **Files Created:** `FRONTEND_COVERAGE_REPORT.md`
+- **Gemini Agent - Phase 4 Content Polish:** Evocative Archetypes & Enhanced Companions ✅
+  **Status:** COMPLETED
+  **Completed:** 2026-02-13, 10:45 AM
+  **Results:** Updated all 6 character archetypes with inspiring names and descriptions. Added detailed backstory/descriptions to all 8 companions. Updated UI to display descriptions in selection grid.
+  **Files Modified:** `lib/services/character_template_service.dart`, `lib/companion_selector.dart`
+- **Gemini Agent - Task 14:** Backend Test Coverage Report ✅
+  **Status:** COMPLETED
+  **Completed:** 2026-02-13, 10:05 AM
+  **Results:** Overall coverage 57%. Gaps identified in AI service logic and maintenance scripts.
+  **Files Created:** `BACKEND_COVERAGE_REPORT.md`
 - **Codex Agent - Task 13:** Fix `test_fixtures.dart` compilation issues ✅
   **Status:** COMPLETED
   **Completed:** 2026-02-13, 9:20 AM
@@ -1510,3 +1540,36 @@ pytest tests/unit tests/security tests/api/test_story_routes.py -q
 - [ ] Fine-tune animation timing if needed
 - [ ] Consider adding scenario title overlay to vision orb (from GUI_ENHANCEMENT_PLANS.md)
 - [ ] GUI Options 2-5 remain available for future implementation
+
+---
+
+## Session: 2026-02-14 - Backend: Gemini Hang Fix + Secret Hygiene
+
+**Agent:** Codex (GPT-5)  
+**Status:** DONE
+
+### Problem
+- Gemini calls could block without timeouts, making `/generate-story` and interactive story endpoints appear stuck.
+- Celery was configured to run eagerly by default, so "async fallback" could still block inline.
+- Secrets were present locally in `backend/.env` and needed guardrails to prevent accidental commits.
+
+### Changes (Code)
+- Added hard request timeouts around Gemini SDK calls (story text, interactive JSON, and Gemini image paths).
+- Added hard sync cutoff for `/generate-story` so the API returns a clear timeout instead of hanging.
+- Made Celery eager mode env-driven (off by default; enabled for tests when needed).
+- Made lazy user creation collision-resistant (unique username/email generation) to stop sqlite UNIQUE constraint noise.
+- Added timeout + Celery guidance to `backend/.env.example`.
+
+### Changes (Process / Security)
+- Added `SECURITY_RUNBOOK.md` with incident response + rotation checklist.
+- Added `.pre-commit-config.yaml` with a gitleaks hook; installed and ran successfully via:
+  - `python -m pre_commit install`
+  - `python -m pre_commit run --all-files`
+
+### Commits (Pushed to main)
+- `0438b76` backend: enforce generation timeouts and disable eager celery by default
+- `5dfea34` security: add incident runbook and pre-commit gitleaks hook
+
+### Deployment Notes (Railway)
+- Recommended: separate `backend-web` + `backend-worker` services + Redis.
+- Ensure `CELERY_TASK_ALWAYS_EAGER=false` in Railway and set broker/result backend to Redis URL.
