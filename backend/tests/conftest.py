@@ -34,30 +34,27 @@ def runner(app):
 @pytest.fixture(autouse=True)
 def mock_gemini(mocker):
     """Mock Gemini API to prevent real calls during tests."""
-    try:
-        import google.genai
-    except ImportError:
-        # If not installed, we can't patch it easily, but we should verify why it's missing if expected
-        pass
-
-    # Mock the google.genai module directly
-    # This covers imports like `from google import genai`
-    mock_genai_module = mocker.patch('google.genai')
-
-    # Create a mock client
-    mock_client = MagicMock()
-    mock_genai_module.Client.return_value = mock_client
-
-    # Mock models
-    mock_models = MagicMock()
-    mock_client.models = mock_models
-
-    # Mock generate_content response
+    # Create a mock response
     mock_response = MagicMock()
     mock_response.text = '{"story_text": "Once upon a time...", "title": "Test Story"}'
+    
+    # Create mock models
+    mock_models = MagicMock()
     mock_models.generate_content.return_value = mock_response
-
-    return mock_genai_module
+    
+    # Create mock client
+    mock_client = MagicMock()
+    mock_client.models = mock_models
+    
+    # Patch the Client class where it's used
+    # The service uses 'from google import genai' and then 'genai.Client'
+    try:
+        mocker.patch('backend.services.story_generation_service.genai.Client', return_value=mock_client)
+    except (AttributeError, ImportError):
+        # Fallback if the above fails
+        mocker.patch('google.genai.Client', return_value=mock_client)
+    
+    return mock_client
 
 # ============================================================================
 # AUTHENTICATION & AUTHORIZATION FIXTURES
@@ -74,7 +71,7 @@ def auth_token():
         'email': 'test@example.com',
         'exp': datetime.utcnow() + timedelta(hours=1)
     }
-    return jwt.encode(payload, 'test_secret', algorithm='HS256')
+    return jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
 
 @pytest.fixture
 def auth_headers(auth_token):
@@ -96,7 +93,7 @@ def free_user_headers():
         'subscription_tier': 'free',
         'exp': datetime.utcnow() + timedelta(hours=1)
     }
-    token = jwt.encode(payload, 'test_secret', algorithm='HS256')
+    token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
     return {
         'Authorization': f'Bearer {token}',
         'Content-Type': 'application/json'
@@ -114,7 +111,7 @@ def premium_user_headers():
         'subscription_tier': 'premium',
         'exp': datetime.utcnow() + timedelta(hours=1)
     }
-    token = jwt.encode(payload, 'test_secret', algorithm='HS256')
+    token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
     return {
         'Authorization': f'Bearer {token}',
         'Content-Type': 'application/json'
@@ -127,7 +124,8 @@ def premium_user_headers():
 @pytest.fixture
 def mock_stripe(mocker):
     """Mock Stripe API to prevent real payment calls."""
-    mock_stripe_module = mocker.patch('stripe')
+    # Patch stripe where it's used in the routes
+    mock_stripe_module = mocker.patch('backend.routes.stripe_routes.stripe')
 
     # Mock checkout session creation
     mock_session = MagicMock()
@@ -159,9 +157,8 @@ def sample_character_data():
     return {
         'name': 'Luna',
         'age': 7,
-        'personality': {'brave': 8, 'curious': 9, 'kind': 7},
-        'interests': ['astronomy', 'reading', 'adventure'],
-        'avatar_seed': 'luna-seed-123'
+        'personality_sliders': {'brave': 8, 'curious': 9, 'kind': 7},
+        'interests': ['astronomy', 'reading', 'adventure']
     }
 
 @pytest.fixture
@@ -234,15 +231,60 @@ def test_user(app):
     with app.app_context():
         user = User(
             id='test_user_123',
+            username='testuser',
             email='test@example.com',
+            password_hash='hashed_password',
             subscription_tier='free',
-            stories_generated=0
+            role='user'
         )
         db.session.add(user)
         db.session.commit()
         yield user
         db.session.delete(user)
         db.session.commit()
+
+@pytest.fixture
+def admin_user(app):
+    """Create an admin user in the database."""
+    from backend.database import db
+    from backend.models import User
+
+    with app.app_context():
+        user = User(
+            id='admin_user_999',
+            username='adminuser',
+            email='admin@example.com',
+            password_hash='hashed_password',
+            subscription_tier='premium',
+            role='admin'
+        )
+        db.session.add(user)
+        db.session.commit()
+        yield user
+        db.session.delete(user)
+        db.session.commit()
+
+@pytest.fixture
+def admin_token(admin_user):
+    """Generate an admin JWT token."""
+    from datetime import datetime, timedelta
+    import jwt
+
+    payload = {
+        'user_id': admin_user.id,
+        'email': admin_user.email,
+        'role': 'admin',
+        'exp': datetime.utcnow() + timedelta(hours=1)
+    }
+    return jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
+
+@pytest.fixture
+def admin_headers(admin_token):
+    """Headers with admin authentication token."""
+    return {
+        'Authorization': f'Bearer {admin_token}',
+        'Content-Type': 'application/json'
+    }
 
 @pytest.fixture
 def test_character(app, test_user):
@@ -256,8 +298,7 @@ def test_character(app, test_user):
             user_id=test_user.id,
             name='Luna',
             age=7,
-            personality={'brave': 8},
-            avatar_seed='luna-seed'
+            personality_sliders={'brave': 8}
         )
         db.session.add(character)
         db.session.commit()

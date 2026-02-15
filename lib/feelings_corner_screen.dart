@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 import 'feelings_wheel_data.dart';
-import 'widgets/mood_lantern_selector.dart';
+import 'widgets/mood_magic_picker.dart';
 import 'services/feelings_analytics_service.dart';
 
 class FeelingsCornerScreen extends StatefulWidget {
@@ -82,7 +82,8 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
     if (_selectedFeeling == null) {
       await prefs.remove('selected_feeling');
     } else {
-      await prefs.setString('selected_feeling', jsonEncode(_selectedFeeling!.toJson()));
+      await prefs.setString(
+          'selected_feeling', jsonEncode(_selectedFeeling!.toJson()));
     }
   }
 
@@ -127,6 +128,26 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
         ),
       );
     }
+  }
+
+  void _onMoodSelected(MoodSelection mood) {
+    final feeling = SelectedFeeling(
+      core: mood.moodName,
+      secondary: mood.moodName,
+      tertiary: mood.moodName,
+      emoji: mood.emoji,
+      eyeType: 'Default',
+      mouthType: 'Smile',
+      color: mood.color,
+    );
+
+    setState(() {
+      _selectedFeeling = feeling;
+      _supportInfo = FeelingSupportLibrary.findSupport(feeling);
+      _detail = FeelingDetails.forFeeling(feeling);
+      _intensity = 3;
+    });
+    _saveSelectedFeeling();
   }
 
   @override
@@ -178,10 +199,13 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
                           children: [
                             Text(
                               'Welcome to Your Feelings Corner',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.purple[900],
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.purple[900],
+                                  ),
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -202,18 +226,10 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
 
             const SizedBox(height: 24),
 
-            // Mood Lantern Selector - Enchanted shelf of glowing lanterns
-            MoodLanternSelector(
-              onFeelingSelected: (feeling) {
-                setState(() {
-                  _selectedFeeling = feeling;
-                  _supportInfo = FeelingSupportLibrary.findSupport(feeling);
-                  _detail = FeelingDetails.forFeeling(feeling);
-                  _intensity = 3;
-                });
-                _saveSelectedFeeling();
-              },
-              age: widget.characterAge ?? 8,
+            // Lightweight Mood Magic picker
+            MoodMagicPicker(
+              childAge: widget.characterAge ?? 8,
+              onMoodSelected: _onMoodSelected,
             ),
 
             // Selected emotion details
@@ -264,17 +280,21 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
                         Expanded(
                           child: Text(
                             'Story Suggestion',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue[900],
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue[900],
+                                ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      _getStorySuggestion(_selectedFeeling!.tertiary, _intensity),
+                      _getStorySuggestion(
+                          _selectedFeeling!.tertiary, _intensity),
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 12),
@@ -304,8 +324,8 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
             Text(
               'Your Recent Check-Ins',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 12),
 
@@ -319,7 +339,8 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.favorite_border, size: 48, color: Colors.grey[400]),
+                      Icon(Icons.favorite_border,
+                          size: 48, color: Colors.grey[400]),
                       const SizedBox(height: 12),
                       Text(
                         'No check-ins yet',
@@ -406,7 +427,8 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
             SwitchListTile(
               value: _dailyReminderEnabled,
               title: const Text('Daily Feelings Reminder'),
-              subtitle: const Text('Receive a gentle nudge to check in once per day'),
+              subtitle:
+                  const Text('Receive a gentle nudge to check in once per day'),
               onChanged: _toggleReminder,
             ),
           ],
@@ -613,19 +635,25 @@ class _FeelingsCornerScreenState extends State<FeelingsCornerScreen> {
       'joyful': 'Your energy is perfect for an exciting adventure!',
       'cheerful': 'Let\'s create a fun story that matches your happy feelings!',
       'sad': 'A gentle story about finding comfort might help right now.',
-      'disappointed': 'How about a story where someone learns to bounce back from setbacks?',
-      'lonely': 'Let\'s create a story about making new friends and connections.',
-      'angry': 'How about a story where someone learns to express big feelings safely?',
-      'frustrated': 'A story about solving problems with patience could be helpful.',
+      'disappointed':
+          'How about a story where someone learns to bounce back from setbacks?',
+      'lonely':
+          'Let\'s create a story about making new friends and connections.',
+      'angry':
+          'How about a story where someone learns to express big feelings safely?',
+      'frustrated':
+          'A story about solving problems with patience could be helpful.',
       'nervous': 'Let\'s create a story about bravery and trying new things.',
-      'worried': 'How about a story that helps you feel more confident and calm?',
+      'worried':
+          'How about a story that helps you feel more confident and calm?',
       'anxious': 'A story about managing worries and finding peace might help.',
       'excited': 'Your energy is perfect for an action-packed adventure!',
       'curious': 'Let\'s create an exploratory mystery story!',
       'scared': 'A story about facing fears with courage could be helpful.',
       'afraid': 'How about a story where someone finds their inner strength?',
       'peaceful': 'Let\'s create a calming, beautiful nature story.',
-      'calm': 'A gentle, thoughtful story would match your current mood perfectly.',
+      'calm':
+          'A gentle, thoughtful story would match your current mood perfectly.',
     };
 
     for (final entry in suggestions.entries) {

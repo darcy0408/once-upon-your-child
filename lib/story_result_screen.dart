@@ -11,6 +11,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:page_flip_builder/page_flip_builder.dart';
 import 'story_reader_screen.dart';
 import 'services/isar_service.dart';
 import 'services/offline_story_service.dart';
@@ -35,8 +36,10 @@ import 'widgets/user_friendly_error_dialog.dart';
 import 'widgets/golden_ticket_animation.dart';
 import 'services/audio_ambience_service.dart';
 import 'widgets/magical_typewriter_text.dart';
+import 'widgets/breathing_avatar.dart';
 import 'services/feature_tour_service.dart';
 import 'widgets/storybook_progress_indicator.dart';
+import 'widgets/storybook_page.dart';
 
 class StoryResultScreen extends StatefulWidget {
   final String title;
@@ -114,6 +117,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   Character? _character; // Stored character for saving
   String? _activeTherapeuticFocus;
   late final PageController _pageController;
+  late final GlobalKey<PageFlipBuilderState> _pageFlipKey;
   late List<String> _storyPages;
   late List<String> _adventureSteps;  // NEW: Adventure step labels
   int _currentPageIndex = 0;
@@ -169,15 +173,40 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     return age;
   }
 
-  void _handlePageChanged(int index) {
-    setState(() => _currentPageIndex = index);
+  Widget _buildBreathingHeroAvatar({required double size}) {
+    final character = _character;
+    if (character == null) return const SizedBox.shrink();
 
-    _trackResultAction(
-      'story_page_viewed',
-      extra: {
-        'page_number': index + 1,
-        'total_pages': _storyPages.length,
-      },
+    Widget content;
+    final generated = character.generatedAvatar;
+    if (generated != null && generated.imageBase64.trim().isNotEmpty) {
+      content = Image.memory(
+        base64Decode(generated.imageBase64.split(',').last),
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return character.buildAvatar(size: size);
+        },
+      );
+    } else {
+      content = character.buildAvatar(size: size);
+    }
+
+    return BreathingAvatar(
+      glowColor: AppColors.gold,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.7),
+            width: 2,
+          ),
+        ),
+        child: ClipOval(child: content),
+      ),
     );
   }
 
@@ -205,6 +234,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     }
 
     _pageController = PageController();
+    _pageFlipKey = GlobalKey<PageFlipBuilderState>();
 
     _loadCharacterDetails();
     _loadFavoriteStatus();
@@ -974,6 +1004,152 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     }
   }
 
+  void _handlePageFlip(bool isForward) {
+    if (mounted) {
+      setState(() {
+        if (isForward) {
+          _currentPageIndex = (_currentPageIndex + 1).clamp(0, _storyPages.length - 1);
+        } else {
+          _currentPageIndex = (_currentPageIndex - 1).clamp(0, _storyPages.length - 1);
+        }
+      });
+      unawaited(AudioAmbienceService().onUserGesture());
+      // Play page turn SFX
+      unawaited(AudioAmbienceService().playSfx('sounds/page_turn.mp3'));
+      
+      _trackResultAction(
+        'story_page_flipped',
+        extra: {
+          'page_number': _currentPageIndex + 1,
+          'total_pages': _storyPages.length,
+          'direction': isForward ? 'forward' : 'backward',
+        },
+      );
+    }
+  }
+
+  Widget _buildStoryPage(int index) {
+    if (index < 0 || index >= _storyPages.length) {
+      return StoryBookPage(
+        backgroundColor: _highContrastMode ? Colors.black : const Color(0xFFFFF8E7),
+        showDecorations: !_highContrastMode,
+        child: const Center(child: Text('End of Adventure')),
+      );
+    }
+
+    // Get illustration for this page if available
+    final inlineIllustration = index < _inlineIllustrations.length
+        ? _inlineIllustrations[index]
+        : null;
+    final cachedIllustration = _cachedIllustrations != null &&
+            index < _cachedIllustrations!.length
+        ? _cachedIllustrations![index]
+        : null;
+    final hasIllustration = inlineIllustration != null || cachedIllustration != null;
+
+    final bool isRevealed = _revealedPages.contains(index);
+
+    return StoryBookPage(
+      backgroundColor: _highContrastMode ? Colors.black : const Color(0xFFFFF8E7),
+      showDecorations: !_highContrastMode,
+      child: InkWell(
+        onTap: () {
+          unawaited(AudioAmbienceService().onUserGesture());
+          if (!isRevealed) {
+            setState(() {
+              _revealedPages.add(index);
+            });
+          }
+        },
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Show illustration at top of page if available
+              if (hasIllustration) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: inlineIllustration != null
+                      ? Image.memory(
+                          inlineIllustration.bytes,
+                          fit: BoxFit.cover,
+                          height: 250,
+                          width: double.infinity,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildImageErrorPlaceholder();
+                          },
+                        )
+                      : Image.network(
+                          cachedIllustration!.imageUrl,
+                          fit: BoxFit.cover,
+                          height: 250,
+                          width: double.infinity,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              height: 250,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                      : null,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildImageErrorPlaceholder();
+                          },
+                        ),
+                ),
+                const SizedBox(height: 24),
+              ],
+              // Story text - MAGIC TYPEWRITER EFFECT
+              if (!isRevealed)
+                MagicalTypewriterText(
+                  text: _storyPages[index],
+                  readerAge: _effectiveAge,
+                  onComplete: () {
+                    setState(() {
+                      _revealedPages.add(index);
+                    });
+                  },
+                  style: GoogleFonts.merriweather(
+                    fontSize: 20 * _textScale,
+                    height: 1.8,
+                    color: _highContrastMode
+                        ? Colors.white
+                        : const Color(0xFF2C3E50),
+                  ),
+                )
+              else
+                SelectableText.rich(
+                  TextSpan(
+                    style: GoogleFonts.merriweather(
+                      fontSize: 20 * _textScale,
+                      height: 1.8,
+                      color: _highContrastMode
+                          ? Colors.white
+                          : const Color(0xFF2C3E50),
+                    ),
+                    children: _buildStorySpans(_storyPages[index]),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showReadingOptions() {
     showModalBottomSheet(
       context: context,
@@ -1158,6 +1334,36 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     );
   }
 
+  double _flipShadowIntensity = 0.0;
+  double _flipShadowAlignment = 0.0;
+
+  void _onFlipStarted(PointerEvent event) {
+    if (mounted) {
+      setState(() {
+        _flipShadowIntensity = 0.2;
+        _flipShadowAlignment = (event.localPosition.dx / MediaQuery.of(context).size.width) * 2 - 1;
+      });
+    }
+  }
+
+  void _onFlipUpdated(PointerEvent event) {
+    if (mounted) {
+      setState(() {
+        _flipShadowAlignment = (event.localPosition.dx / MediaQuery.of(context).size.width) * 2 - 1;
+        // Increase intensity as we move towards the center
+        _flipShadowIntensity = (0.3 - (event.localPosition.dx / MediaQuery.of(context).size.width - 0.5).abs() * 0.4).clamp(0.0, 0.4);
+      });
+    }
+  }
+
+  void _onFlipEnded(PointerEvent event) {
+    if (mounted) {
+      setState(() {
+        _flipShadowIntensity = 0.0;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ErrorBoundary(
@@ -1190,6 +1396,10 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                             ),
                           ),
                           const SizedBox(width: 8),
+                          if (_character != null) ...[
+                            _buildBreathingHeroAvatar(size: isNarrow ? 36 : 42),
+                            const SizedBox(width: 8),
+                          ],
                           if (widget.wisdomGem.isNotEmpty)
                             Expanded(
                               child: Container(
@@ -1309,206 +1519,106 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                             Expanded(
                               child: _isLoading 
                                 ? const Center(child: CircularProgressIndicator(color: Colors.white))
-                                : Container(
-                                    decoration: BoxDecoration(
-                                      color: _highContrastMode ? Colors.black : const Color(0xFFFFF8E7), // Magical parchment
-                                      borderRadius: const BorderRadius.all(Radius.circular(24)),
-                                      border: _highContrastMode ? null : Border.all(
-                                        color: AppColors.gold.withValues(alpha: 0.3),
-                                        width: 2,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.15),
-                                          blurRadius: 20,
-                                          offset: const Offset(0, 8),
-                                        ),
-                                        if (!_highContrastMode)
-                                          BoxShadow(
-                                            color: AppColors.gold.withValues(alpha: 0.1),
-                                            blurRadius: 0,
-                                            spreadRadius: 4, 
-                                            offset: const Offset(0, 0),
-                                          ),
-                                      ],
-                                    ),
-                                    clipBehavior: Clip.antiAlias,
-                                    child: Column(
-                                      children: [
-                                        // Story Content
-                                        Expanded(
-                                          child: PageView.builder(
-                                            controller: _pageController,
-                                            onPageChanged: _handlePageChanged,
-                                            itemCount: _storyPages.length,
-                                            itemBuilder: (context, index) {
-                                              // Get illustration for this page if available
-                                              // Priority: inline (base64) > cached (URL)
-                                              final inlineIllustration = index < _inlineIllustrations.length
-                                                  ? _inlineIllustrations[index]
-                                                  : null;
-                                              final cachedIllustration = _cachedIllustrations != null &&
-                                                      index < _cachedIllustrations!.length
-                                                  ? _cachedIllustrations![index]
-                                                  : null;
-                                              final hasIllustration = inlineIllustration != null || cachedIllustration != null;
-
-                                              final bool isRevealed = _revealedPages.contains(index);
-
-                                              return InkWell(
-                                                onTap: () {
-                                                  if (!isRevealed) {
-                                                    setState(() {
-                                                      _revealedPages.add(index);
-                                                    });
-                                                  }
-                                                },
-                                                splashColor: Colors.transparent,
-                                                highlightColor: Colors.transparent,
-                                                child: SingleChildScrollView(
-                                                  padding: const EdgeInsets.all(32),
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                                    children: [
-                                                      // Show illustration at top of page if available
-                                                      if (hasIllustration) ...[
-                                                        ClipRRect(
-                                                          borderRadius: BorderRadius.circular(16),
-                                                          child: inlineIllustration != null
-                                                              ? Image.memory(
-                                                                  inlineIllustration.bytes,
-                                                                  fit: BoxFit.cover,
-                                                                  height: 250,
-                                                                  width: double.infinity,
-                                                                  errorBuilder: (context, error, stackTrace) {
-                                                                    return _buildImageErrorPlaceholder();
-                                                                  },
-                                                                )
-                                                              : Image.network(
-                                                                  cachedIllustration!.imageUrl,
-                                                                  fit: BoxFit.cover,
-                                                                  height: 250,
-                                                                  width: double.infinity,
-                                                                  loadingBuilder: (context, child, loadingProgress) {
-                                                                    if (loadingProgress == null) return child;
-                                                                    return Container(
-                                                                      height: 250,
-                                                                      decoration: BoxDecoration(
-                                                                        color: Colors.grey[100],
-                                                                        borderRadius: BorderRadius.circular(16),
-                                                                      ),
-                                                                      child: Center(
-                                                                        child: CircularProgressIndicator(
-                                                                          value: loadingProgress.expectedTotalBytes != null
-                                                                              ? loadingProgress.cumulativeBytesLoaded /
-                                                                                  loadingProgress.expectedTotalBytes!
-                                                                              : null,
-                                                                          color: AppColors.primary,
-                                                                        ),
-                                                                      ),
-                                                                    );
-                                                                  },
-                                                                  errorBuilder: (context, error, stackTrace) {
-                                                                    return _buildImageErrorPlaceholder();
-                                                                  },
-                                                                ),
-                                                        ),
-                                                        const SizedBox(height: 24),
-                                                      ],
-                                                      // Story text - MAGIC TYPEWRITER EFFECT
-                                                      if (!isRevealed)
-                                                        MagicalTypewriterText(
-                                                          text: _storyPages[index],
-                                                          wordDelay: Duration(
-                                                              milliseconds: (widget.characterAge ?? 7) < 6 ? 120 : 80),
-                                                          onComplete: () {
-                                                            setState(() {
-                                                              _revealedPages.add(index);
-                                                            });
-                                                          },
-                                                          style: GoogleFonts.merriweather(
-                                                            fontSize: 20 * _textScale,
-                                                            height: 1.8,
-                                                            color: _highContrastMode
-                                                                ? Colors.white
-                                                                : const Color(0xFF2C3E50),
-                                                          ),
-                                                        )
-                                                      else
-                                                        SelectableText.rich(
-                                                          TextSpan(
-                                                            style: GoogleFonts.merriweather(
-                                                              fontSize: 20 * _textScale,
-                                                              height: 1.8,
-                                                              color: _highContrastMode
-                                                                  ? Colors.white
-                                                                  : const Color(0xFF2C3E50),
-                                                            ),
-                                                            children: _buildStorySpans(_storyPages[index]),
-                                                          ),
-                                                        ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                        // Footer controls
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                          decoration: BoxDecoration(
-                                            color: _highContrastMode ? Colors.grey[900] : Colors.grey[50],
-                                            border: Border(
-                                              top: BorderSide(
-                                                color: _highContrastMode ? Colors.grey[800]! : Colors.grey[200]!,
-                                              ),
-                                            ),
-                                          ),
-                                          child: Wrap(
-                                            alignment: WrapAlignment.spaceBetween,
-                                            crossAxisAlignment: WrapCrossAlignment.center,
-                                            spacing: 8,
-                                            runSpacing: 8,
+                                : Column(
+                                    children: [
+                                      // Story Content - ENHANCED PAGE FLIP
+                                      Expanded(
+                                        child: Listener(
+                                          onPointerDown: _onFlipStarted,
+                                          onPointerMove: _onFlipUpdated,
+                                          onPointerUp: _onFlipEnded,
+                                          onPointerCancel: _onFlipEnded,
+                                          child: Stack(
                                             children: [
-                                              // NEW: Storybook progress indicator instead of "Chapter X of Y"
-                                              StorybookProgressIndicator(
-                                                currentPage: _currentPageIndex + 1,
-                                                totalPages: _storyPages.length,
-                                                stageLabel: _adventureSteps.length > _currentPageIndex
-                                                    ? _adventureSteps[_currentPageIndex].replaceAll(RegExp(r'^(Step \d+:|🌟|🚪|🎨|😮|🤔|💪|✨|🏠|🎭|🤪|🎉|💭)\s*'), '')
-                                                    : null,
+                                              PageFlipBuilder(
+                                                key: _pageFlipKey,
+                                                frontBuilder: (context) => _buildStoryPage(_currentPageIndex),
+                                                backBuilder: (context) => _currentPageIndex < _storyPages.length - 1
+                                                    ? _buildStoryPage(_currentPageIndex + 1)
+                                                    : _buildStoryPage(_currentPageIndex),
+                                                flipAxis: Axis.horizontal,
+                                                maxTilt: 0.005, // Increased tilt for more 3D feel
+                                                maxScale: 0.1,
+                                                onFlipComplete: _handlePageFlip,
+                                                interactiveFlipEnabled: true,
                                               ),
-                                              // Simple Feedback
-                                              Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: List.generate(5, (index) {
-                                                  return Semantics(
-                                                    label: 'Rate ${index + 1} stars',
-                                                    button: true,
-                                                    child: InkWell(
-                                                      onTap: () {
-                                                        setState(() => _storyRating = index + 1.0);
-                                                        _submitFeedback();
-                                                      },
-                                                      customBorder: const CircleBorder(),
-                                                      child: Padding(
-                                                        padding: const EdgeInsets.all(8.0),
-                                                        child: Icon(
-                                                          index < _storyRating ? Icons.star_rounded : Icons.star_outline_rounded,
-                                                          color: AppColors.gold,
-                                                          size: 24,
-                                                        ),
+                                              // Dynamic Shadow Overlay
+                                              if (_flipShadowIntensity > 0)
+                                                IgnorePointer(
+                                                  child: AnimatedContainer(
+                                                    duration: const Duration(milliseconds: 100),
+                                                    decoration: BoxDecoration(
+                                                      gradient: LinearGradient(
+                                                        begin: Alignment(_flipShadowAlignment - 0.2, 0),
+                                                        end: Alignment(_flipShadowAlignment + 0.2, 0),
+                                                        colors: [
+                                                          Colors.transparent,
+                                                          Colors.black.withValues(alpha: _flipShadowIntensity),
+                                                          Colors.transparent,
+                                                        ],
                                                       ),
                                                     ),
-                                                  );
-                                                }),
-                                              ),
+                                                  ),
+                                                ),
                                             ],
                                           ),
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                      // Footer controls
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: _highContrastMode ? Colors.grey[900] : Colors.grey[50],
+                                          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+                                          border: Border(
+                                            top: BorderSide(
+                                              color: _highContrastMode ? Colors.grey[800]! : Colors.grey[200]!,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Wrap(
+                                          alignment: WrapAlignment.spaceBetween,
+                                          crossAxisAlignment: WrapCrossAlignment.center,
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          children: [
+                                            // NEW: Storybook progress indicator instead of "Chapter X of Y"
+                                            StorybookProgressIndicator(
+                                              currentPage: _currentPageIndex + 1,
+                                              totalPages: _storyPages.length,
+                                              stageLabel: _adventureSteps.length > _currentPageIndex
+                                                  ? _adventureSteps[_currentPageIndex].replaceAll(RegExp(r'^(Step \d+:|🌟|🚪|🎨|😮|🤔|💪|✨|🏠|🎭|🤪|🎉|💭)\s*'), '')
+                                                  : null,
+                                            ),
+                                            // Simple Feedback
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: List.generate(5, (index) {
+                                                return Semantics(
+                                                  label: 'Rate ${index + 1} stars',
+                                                  button: true,
+                                                  child: InkWell(
+                                                    onTap: () {
+                                                      setState(() => _storyRating = index + 1.0);
+                                                      _submitFeedback();
+                                                    },
+                                                    customBorder: const CircleBorder(),
+                                                    child: Padding(
+                                                      padding: const EdgeInsets.all(8.0),
+                                                      child: Icon(
+                                                        index < _storyRating ? Icons.star_rounded : Icons.star_outline_rounded,
+                                                        color: AppColors.gold,
+                                                        size: 24,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              }),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                             ),
                             const SizedBox(height: 24),

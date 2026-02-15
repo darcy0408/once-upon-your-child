@@ -5,7 +5,6 @@ import '../widgets/moon_phase_progress.dart';
 import '../widgets/avatar_generation_banner.dart';
 import 'character_library_screen.dart';
 import 'wizard_steps/hero_creator_step.dart';
-import 'wizard_steps/feeling_selection_step.dart';
 import 'wizard_steps/companion_selector_step.dart';
 import 'wizard_steps/magic_review_step.dart';
 import '../services/api_service_manager.dart';
@@ -94,7 +93,15 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
     _wizardData.characterName = character.name;
     _wizardData.characterAge = character.age;
     _wizardData.selectedArchetypeId = character.role; // Best guess mapping
+    _wizardData.characterId = character.id;
+    _wizardData.generatedAvatar = character.generatedAvatar;
+    _wizardData.characterGender = character.gender ?? 'Girl';
     
+    // Map personality if available
+    if (character.personalitySliders != null) {
+      _wizardData.personalitySliders = Map<String, int>.from(character.personalitySliders!);
+    }
+
     // Map appearance if available
     if (character.avatar != null) {
         // Simple mapping for now, more detailed one could be added
@@ -110,7 +117,7 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
   }
 
   void _nextStep() {
-    if (_currentStep < 3) {
+    if (_currentStep < 2) {
       setState(() => _currentStep++);
       _pageController.animateToPage(
         _currentStep,
@@ -169,7 +176,15 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
                       child: Center(
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
-                          child: MoonPhaseProgress(currentStep: _currentStep),
+                          child: MoonPhaseProgress(
+                            currentStep: _currentStep,
+                            totalSteps: 3,
+                            stepLabels: const [
+                              'Step 1: Create your hero',
+                              'Step 2: Pick a companion',
+                              'Step 3: Make magic',
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -209,18 +224,13 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
                       onNext: _nextStep,
                       availableCharacters: _savedCharacters,
                     ),
-                    // Step 2: Feeling Selection
-                    FeelingSelectionStep(
-                      wizardData: _wizardData,
-                      onNext: _nextStep,
-                    ),
-                    // Step 3: Companion Selector
+                    // Step 2: Companion Selector
                     CompanionSelectorStep(
                       wizardData: _wizardData,
                       onNext: _nextStep,
                       savedCharacters: _savedCharacters,
                     ),
-                    // Step 4: Review & Launch
+                    // Step 3: Review & Launch
                     MagicReviewStep(
                       wizardData: _wizardData,
                     ),

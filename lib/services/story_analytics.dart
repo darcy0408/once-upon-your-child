@@ -82,7 +82,9 @@ class StoryAnalytics {
       parameters.forEach((key, value) {
         if (value != null) {
           // Only include primitive types that Firebase Analytics accepts
-          if (value is String || value is num || value is bool) {
+          if (value is bool) {
+            cleanParams[key] = value ? 1 : 0;
+          } else if (value is String || value is num) {
             cleanParams[key] = value;
           } else {
             cleanParams[key] = value.toString();

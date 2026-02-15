@@ -20,8 +20,8 @@ void main() {
         parameters: {
           'theme': 'Adventure',
           'character_age': 8,
-          'interactive_mode': false,
-          'rhyme_mode': true,
+          'interactive_mode': 0,
+          'rhyme_mode': 1,
           'character_name_length': 5,
         },
       );
@@ -76,7 +76,7 @@ void main() {
           'age': 8,
           'gender': 'Other',
           'traits_count': 5,
-          'has_custom_name': true,
+          'has_custom_name': 1,
         },
       );
 
@@ -99,7 +99,7 @@ void main() {
         name: 'onboarding_completed',
         parameters: {
           'time_spent_seconds': 300,
-          'skipped_any_step': false,
+          'skipped_any_step': 0,
         },
       );
 
@@ -139,7 +139,7 @@ void main() {
           'character_name_length': 6,
           'character_age': 8,
           'theme': 'Adventure',
-          'has_companion': true,
+          'has_companion': 1,
         },
       );
 

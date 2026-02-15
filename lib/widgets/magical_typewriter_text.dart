@@ -7,14 +7,21 @@ import 'package:google_fonts/google_fonts.dart';
 class MagicalTypewriterText extends StatefulWidget {
   final String text;
   final TextStyle? style;
-  final Duration wordDelay;
+  /// Optional override for word reveal delay. If not provided, the delay is
+  /// derived from [readerAge].
+  final Duration? wordDelay;
+
+  /// Optional reading age used to calibrate reveal speed.
+  /// Younger ages reveal slower; older ages reveal faster.
+  final int? readerAge;
   final VoidCallback? onComplete;
 
   const MagicalTypewriterText({
     super.key,
     required this.text,
     this.style,
-    this.wordDelay = const Duration(milliseconds: 80),
+    this.wordDelay,
+    this.readerAge,
     this.onComplete,
   });
 
@@ -24,15 +31,18 @@ class MagicalTypewriterText extends StatefulWidget {
 
 class _MagicalTypewriterTextState extends State<MagicalTypewriterText>
     with TickerProviderStateMixin {
-  late List<String> _words;
-  int _currentWordIndex = 0;
+  late List<_TypewriterToken> _tokens;
+  late List<int> _wordTokenIndices;
+
+  int _currentWordIndex = 0; // index into _wordTokenIndices
+  int _currentTokenIndex = -1; // index into _tokens (inclusive)
   Timer? _timer;
   bool _isComplete = false;
 
   @override
   void initState() {
     super.initState();
-    _words = widget.text.split(' ');
+    _rebuildTokens();
     _startTyping();
   }
 
@@ -42,33 +52,144 @@ class _MagicalTypewriterTextState extends State<MagicalTypewriterText>
     if (oldWidget.text != widget.text) {
       _timer?.cancel();
       setState(() {
-        _words = widget.text.split(' ');
+        _rebuildTokens();
         _currentWordIndex = 0;
+        _currentTokenIndex = -1;
         _isComplete = false;
       });
       _startTyping();
     }
   }
 
+  void _rebuildTokens() {
+    _tokens = _tokenize(widget.text);
+    _wordTokenIndices = <int>[];
+    for (var i = 0; i < _tokens.length; i++) {
+      if (!_tokens[i].isWhitespace) {
+        _wordTokenIndices.add(i);
+      }
+    }
+  }
+
+  List<_TypewriterToken> _tokenize(String input) {
+    if (input.isEmpty) return const <_TypewriterToken>[];
+
+    final tokens = <_TypewriterToken>[];
+    final ws = RegExp(r'\s+');
+    var last = 0;
+    for (final m in ws.allMatches(input)) {
+      if (m.start > last) {
+        tokens.add(_TypewriterToken(
+          text: input.substring(last, m.start),
+          isWhitespace: false,
+        ));
+      }
+      tokens.add(_TypewriterToken(
+        text: input.substring(m.start, m.end),
+        isWhitespace: true,
+      ));
+      last = m.end;
+    }
+    if (last < input.length) {
+      tokens.add(_TypewriterToken(text: input.substring(last), isWhitespace: false));
+    }
+    return tokens;
+  }
+
   void _startTyping() {
-    if (_words.isEmpty) {
+    _timer?.cancel();
+
+    if (_wordTokenIndices.isEmpty) {
       _handleComplete();
       return;
     }
 
-    _timer = Timer.periodic(widget.wordDelay, (timer) {
-      if (_currentWordIndex < _words.length - 1) {
-        setState(() {
-          _currentWordIndex++;
-        });
-      } else {
-        _handleComplete();
-      }
+    // Reveal the first word immediately.
+    setState(() {
+      _currentWordIndex = 0;
+      _currentTokenIndex = _lastTokenIndexForWord(_currentWordIndex);
     });
+
+    _scheduleNext();
+  }
+
+  void _scheduleNext() {
+    if (!mounted) return;
+    if (_currentWordIndex >= _wordTokenIndices.length - 1) {
+      _handleComplete();
+      return;
+    }
+
+    final delay = _delayForCurrentWord();
+    _timer = Timer(delay, () {
+      if (!mounted) return;
+      setState(() {
+        _currentWordIndex++;
+        _currentTokenIndex = _lastTokenIndexForWord(_currentWordIndex);
+      });
+      _scheduleNext();
+    });
+  }
+
+  Duration _delayForCurrentWord() {
+    final base = widget.wordDelay ?? _delayFromAge(widget.readerAge) ?? const Duration(milliseconds: 80);
+
+    final tokenIndex = _wordTokenIndices[_currentWordIndex];
+    final word = _tokens[tokenIndex].text.trimRight();
+
+    // Give the eye a beat on punctuation and paragraph breaks.
+    var multiplier = 1.0;
+    if (word.endsWith('.') || word.endsWith('!') || word.endsWith('?')) {
+      multiplier = 2.2;
+    } else if (word.endsWith(',') || word.endsWith(';') || word.endsWith(':')) {
+      multiplier = 1.45;
+    }
+
+    // If this word is followed by a newline chunk, slow down a bit more.
+    final lastToken = _lastTokenIndexForWord(_currentWordIndex);
+    if (lastToken + 1 < _tokens.length) {
+      final next = _tokens[lastToken + 1];
+      if (next.isWhitespace && next.text.contains('\n')) {
+        multiplier = multiplier < 1.9 ? 1.9 : multiplier;
+      }
+    }
+
+    final ms = (base.inMilliseconds * multiplier).round().clamp(20, 400);
+    return Duration(milliseconds: ms);
+  }
+
+  Duration? _delayFromAge(int? age) {
+    if (age == null) return null;
+    final a = age.clamp(3, 18);
+
+    // 3yo: 150ms/word, 6yo: 110ms, 9yo: 80ms, 12yo: 60ms, 18yo: 45ms.
+    final ms = switch (a) {
+      <= 4 => 150,
+      <= 5 => 130,
+      <= 6 => 110,
+      <= 7 => 95,
+      <= 9 => 80,
+      <= 12 => 60,
+      _ => 45,
+    };
+    return Duration(milliseconds: ms);
+  }
+
+  int _lastTokenIndexForWord(int wordIndex) {
+    final tokenIndex = _wordTokenIndices[wordIndex];
+
+    // Include any whitespace immediately following this word so spacing/newlines
+    // don't "jump" later.
+    var i = tokenIndex;
+    while (i + 1 < _tokens.length && _tokens[i + 1].isWhitespace) {
+      i++;
+    }
+    return i;
   }
 
   void _handleComplete() {
     _timer?.cancel();
+    if (_isComplete) return;
     setState(() => _isComplete = true);
     widget.onComplete?.call();
   }
@@ -88,8 +209,9 @@ class _MagicalTypewriterTextState extends State<MagicalTypewriterText>
           color: const Color(0xFF2C3E50),
         );
 
-    // Join the words up to the current index
-    final displayedText = _words.take(_currentWordIndex + 1).join(' ');
+    final displayedText = _currentTokenIndex < 0
+        ? ''
+        : _tokens.take(_currentTokenIndex + 1).map((t) => t.text).join();
 
     return SelectionArea(
       child: RichText(
@@ -107,6 +229,16 @@ class _MagicalTypewriterTextState extends State<MagicalTypewriterText>
       ),
     );
   }
+}
+
+class _TypewriterToken {
+  const _TypewriterToken({
+    required this.text,
+    required this.isWhitespace,
+  });
+
+  final String text;
+  final bool isWhitespace;
 }
 
 class _MagicalCursor extends StatefulWidget {
@@ -149,10 +281,10 @@ class _MagicalCursorState extends State<_MagicalCursor>
         margin: const EdgeInsets.only(left: 4),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: widget.color.withOpacity(0.5),
+          color: widget.color.withValues(alpha: 0.5),
           boxShadow: [
             BoxShadow(
-              color: widget.color.withOpacity(0.3),
+              color: widget.color.withValues(alpha: 0.3),
               blurRadius: 8,
               spreadRadius: 2,
             ),

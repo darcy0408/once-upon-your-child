@@ -136,3 +136,12 @@ ng
 check_java.ps1
 *.code-workspace
 test_db_output.txt
+
+# Node.js dependencies
+node_modules/
+
+# Coverage reports
+coverage/
+backend/.coverage
+.coverage
+htmlcov/

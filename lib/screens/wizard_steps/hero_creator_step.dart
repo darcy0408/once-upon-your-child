@@ -377,7 +377,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
       try {
         return Image.memory(base64Decode(data.split(',').last), fit: BoxFit.cover);
       } catch (_) {
-        return _buildAvatarEmoji(character);
+        return _buildAvatarFallback(character);
       }
     }
 
@@ -385,20 +385,28 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
       return Image.network(
         character.avatar!.toAvataaarsUrl(),
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildAvatarEmoji(character),
+        errorBuilder: (context, error, stackTrace) => _buildAvatarFallback(character),
       );
     }
 
-    return _buildAvatarEmoji(character);
+    return _buildAvatarFallback(character);
   }
 
-  Widget _buildAvatarEmoji(Character character) {
-    return Container(
-      color: AppColors.surface,
-      child: Center(
-        child: Text(
-          _getEmojiForCharacter(character),
-          style: const TextStyle(fontSize: 28),
+  Widget _buildAvatarFallback(Character character) {
+    return Image.asset(
+      'assets/images/character_placeholder.png',
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => Image.asset(
+        'thePlaceholderImageBeforeCharacterGeneration.jpeg',
+        fit: BoxFit.cover,
+        errorBuilder: (c, e, s) => Container(
+          color: AppColors.surface,
+          child: Center(
+            child: Text(
+              _getEmojiForCharacter(character),
+              style: const TextStyle(fontSize: 28),
+            ),
+          ),
         ),
       ),
     );
@@ -712,6 +720,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                       opacity: _canContinue ? 1.0 : 0.0,
                       duration: const Duration(milliseconds: 300),
                       child: PillButton(
+                        key: const Key('wizard_continue_hero'),
                         emoji: '➡️',
                         label: 'Continue',
                         onTap: _handleContinue,

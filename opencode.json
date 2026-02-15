@@ -21,7 +21,7 @@
     },
     "sqlite": {
       "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-sqlite", "--db-path", "./instance/app.db"],
+      "command": ["npx", "-y", "@bytebase/dbhub@0.16.0", "--transport", "stdio", "--dsn", "sqlite:///C:/dev/story-weaver-app/instance/app.db"],
       "enabled": true
     }
   },

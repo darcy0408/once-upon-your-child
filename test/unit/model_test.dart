@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:story_weaver_app/models.dart';
+import 'dart:convert';
 
 void main() {
   group('Character Model Tests', () {
@@ -68,6 +69,34 @@ void main() {
       expect(character.generatedAvatar!.imageBase64, 'data:image/png;base64,abcdef');
       expect(character.generatedAvatar!.style, 'cartoon');
       expect(character.generatedAvatar!.seed, '12345');
+    });
+
+    test('Parses generated avatar when stored as JSON string', () {
+      final avatarJson = {
+        'id': 'avatar_2',
+        'image_base64': 'data:image/png;base64,xyz',
+        'seed': 'seed_2',
+        'style': 'watercolor',
+        'attributes': {'hair': 'green'},
+        'generated_at': DateTime.now().toIso8601String(),
+      };
+
+      final json = {
+        'id': '123',
+        'name': 'TestHero',
+        'age': 8,
+        'role': 'Hero',
+        // Older rows may persist avatar_data/generated_avatar as a serialized JSON string.
+        'avatar_data': jsonEncode(avatarJson),
+      };
+
+      final character = Character.fromJson(json);
+
+      expect(character.generatedAvatar, isNotNull);
+      expect(character.generatedAvatar!.id, 'avatar_2');
+      expect(character.generatedAvatar!.style, 'watercolor');
+      expect(character.generatedAvatar!.seed, 'seed_2');
+      expect(character.generatedAvatar!.imageBase64, 'data:image/png;base64,xyz');
     });
   });
 

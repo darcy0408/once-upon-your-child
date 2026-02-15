@@ -21,6 +21,14 @@ logger = logging.getLogger(__name__)
 
 def _get_jwt_secret():
     """Get JWT secret key, raising error if not configured."""
+    # First check app config (useful for testing)
+    try:
+        if current_app and 'JWT_SECRET_KEY' in current_app.config:
+            return current_app.config['JWT_SECRET_KEY']
+    except RuntimeError:
+        # Outside of request context
+        pass
+
     secret = os.getenv('JWT_SECRET_KEY')
     if not secret or secret == 'dev-secret-key':
         # In production, this should never happen

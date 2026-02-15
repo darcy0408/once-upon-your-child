@@ -120,7 +120,7 @@ jobs:
 
       - name: Run API contract tests
         run: |
-          PYTHONPATH=/home/runner/work/story-weaver-app/story-weaver-app/backend pytest -m api_contract --maxfail=1
+          PYTHONPATH=/home/runner/work/story-weaver-app/story-weaver-app/backend pytest tests/api/ --maxfail=1
 
   # Build Flutter Web
   build-frontend:

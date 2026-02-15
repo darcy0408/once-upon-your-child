@@ -37,7 +37,7 @@ class InteractiveStoryAnalytics {
           'character_name_length': characterName.length,
           'character_age': characterAge,
           'theme': theme,
-          'has_companion': hasCompanion,
+          'has_companion': hasCompanion ? 1 : 0,
         },
       );
     } catch (e) {

@@ -194,18 +194,21 @@ class _CharacterPreviewState extends State<CharacterPreview>
     // Character fills the full preview area (no dotted circle border)
     final characterSize = size;
 
-    // Priority: Generated Avatar > Network Image > Emoji Placeholder
+    debugPrint('📺 CharacterPreview._buildCharacter:');
+    debugPrint('   - Has generatedAvatar: ${widget.generatedAvatar != null}');
+    debugPrint('   - Has characterImageUrl: ${widget.characterImageUrl != null}');
+    debugPrint('   - Placeholder emoji: ${widget.placeholderEmoji}');
+
+    // Priority: Generated Avatar > Network Image > Placeholder Image
     if (widget.generatedAvatar != null) {
-      // AI-generated avatar
+      debugPrint('   ✅ Using generated avatar');
       return _buildGeneratedAvatar(characterSize);
     } else if (widget.characterImageUrl != null) {
-      // Network image (future use)
+      debugPrint('   ✅ Using network image');
       return Container(
         width: characterSize,
         height: characterSize,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-        ),
+        decoration: const BoxDecoration(shape: BoxShape.circle),
         child: ClipOval(
           child: Image.network(
             widget.characterImageUrl!,
@@ -213,12 +216,14 @@ class _CharacterPreviewState extends State<CharacterPreview>
             height: characterSize,
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
+              debugPrint('   ⚠️ Network image failed, falling back to placeholder');
               return _buildPlaceholder(characterSize);
             },
           ),
         ),
       );
     } else {
+      debugPrint('   ✅ Using default image placeholder');
       return _buildPlaceholder(characterSize);
     }
   }
@@ -226,6 +231,7 @@ class _CharacterPreviewState extends State<CharacterPreview>
   Widget _buildGeneratedAvatar(double size) {
     try {
       final imageData = widget.generatedAvatar!.imageBase64;
+      debugPrint('   🎨 Avatar data: ${imageData.substring(0, math.min(imageData.length, 50))}...');
 
       // Check if it's a URL, Asset, or base64 data
       final isUrl = imageData.startsWith('http://') || imageData.startsWith('https://');
@@ -238,7 +244,7 @@ class _CharacterPreviewState extends State<CharacterPreview>
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withAlpha(102), // 40% opacity - stronger for generated avatars
+              color: AppColors.primary.withAlpha(102),
               blurRadius: 25,
               spreadRadius: 8,
             ),
@@ -252,8 +258,8 @@ class _CharacterPreviewState extends State<CharacterPreview>
                   height: size,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
-                    debugPrint('Error loading avatar from Asset: $error');
-                    return _buildEmojiPlaceholder(size);
+                    debugPrint('   ❌ Error loading avatar from Asset ($imageData): $error');
+                    return _buildPlaceholder(size);
                   },
                 )
               : isUrl
@@ -263,8 +269,8 @@ class _CharacterPreviewState extends State<CharacterPreview>
                       height: size,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        debugPrint('Error loading avatar from URL: $error');
-                        return _buildEmojiPlaceholder(size);
+                        debugPrint('   ❌ Error loading avatar from URL: $error');
+                        return _buildPlaceholder(size);
                       },
                     )
                   : Image.memory(
@@ -273,15 +279,15 @@ class _CharacterPreviewState extends State<CharacterPreview>
                       height: size,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        debugPrint('Error displaying generated avatar: $error');
-                        return _buildEmojiPlaceholder(size);
+                        debugPrint('   ❌ Error decoding base64 avatar: $error');
+                        return _buildPlaceholder(size);
                       },
                     ),
         ),
       );
     } catch (e) {
-      debugPrint('Error decoding generated avatar: $e');
-      return _buildEmojiPlaceholder(size);
+      debugPrint('   ❌ Critical error in _buildGeneratedAvatar: $e');
+      return _buildPlaceholder(size);
     }
   }
 
@@ -293,7 +299,7 @@ class _CharacterPreviewState extends State<CharacterPreview>
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withAlpha(77), // 30% opacity
+            color: AppColors.primary.withAlpha(77),
             blurRadius: 20,
             spreadRadius: 5,
           ),
@@ -304,16 +310,23 @@ class _CharacterPreviewState extends State<CharacterPreview>
           children: [
             // The placeholder image
             Image.asset(
-              'thePlaceholderImageBeforeCharacterGeneration.jpeg',
+              'assets/images/character_placeholder.png',
               width: size,
               height: size,
               fit: BoxFit.cover,
               alignment: Alignment.center,
               errorBuilder: (context, error, stackTrace) {
-                return _buildEmojiPlaceholder(size);
+                // Final fallback if even the placeholder asset is missing
+                return Image.asset(
+                  'thePlaceholderImageBeforeCharacterGeneration.jpeg',
+                  width: size,
+                  height: size,
+                  fit: BoxFit.cover,
+                  errorBuilder: (c, e, s) => _buildEmojiPlaceholder(size),
+                );
               },
             ),
-            // Soft gradient vignette to blend edges
+            // Soft gradient vignette
             Container(
               width: size,
               height: size,

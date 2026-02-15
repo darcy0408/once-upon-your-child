@@ -55,8 +55,8 @@ void main() {
       ),
     );
 
-    // Allow async operations to complete
-    await tester.pump();
+    // Allow async operations and typewriter animation to complete
+    await tester.pumpAndSettle(const Duration(seconds: 2));
 
     expect(find.text('Test Story'), findsOneWidget);
     expect(find.textContaining('Once upon a testing time'), findsOneWidget);

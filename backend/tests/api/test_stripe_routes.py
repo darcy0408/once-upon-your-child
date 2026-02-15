@@ -9,7 +9,7 @@ from backend.models.user import User
 
 @pytest.fixture(autouse=True)
 def mock_auth_secret(mocker):
-    return mocker.patch('backend.middleware.auth._get_jwt_secret', return_value='test_secret')
+    return mocker.patch('backend.middleware.auth._get_jwt_secret', return_value='dev-secret-key')
 
 
 def _create_user(user_id: str, tier: str = 'free') -> User:
@@ -28,7 +28,7 @@ def _create_user(user_id: str, tier: str = 'free') -> User:
 def _auth_headers(user_id: str) -> dict[str, str]:
     token = jwt.encode(
         {'user_id': user_id, 'exp': datetime.utcnow() + timedelta(hours=1)},
-        'test_secret',
+        'dev-secret-key',
         algorithm='HS256',
     )
     return {
@@ -159,3 +159,38 @@ class TestStripeRoutes:
             assert user.subscription_tier == 'premium'
             assert user.subscription_status == 'active'
             assert user.current_period_end is not None
+
+    def test_webhook_subscription_deleted(self, client, app, monkeypatch, mocker):
+        monkeypatch.setenv('STRIPE_WEBHOOK_SECRET', 'whsec_test')
+
+        with app.app_context():
+            _create_user('stripe_user_4', tier='premium')
+
+        event = {
+            'type': 'customer.subscription.deleted',
+            'data': {
+                'object': {
+                    'metadata': {'user_id': 'stripe_user_4'},
+                    'status': 'canceled',
+                    'current_period_end': 1735689600,
+                    'cancel_at_period_end': True,
+                },
+            },
+        }
+
+        mocker.patch(
+            'backend.routes.webhook_handler.stripe.Webhook.construct_event',
+            return_value=event,
+        )
+
+        response = client.post(
+            '/api/webhooks/stripe',
+            data=b'{"id":"evt_456"}',
+            headers={'Stripe-Signature': 'valid'},
+        )
+
+        assert response.status_code == 200
+        
+        with app.app_context():
+            user = db.session.get(User, 'stripe_user_4')
+            assert user.subscription_status == 'canceled'

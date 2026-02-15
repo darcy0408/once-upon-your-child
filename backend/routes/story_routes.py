@@ -35,6 +35,24 @@ def _looks_like_base64_image(value: str) -> bool:
     return re.fullmatch(r"[A-Za-z0-9+/=\s]+", stripped) is not None
 
 
+def _run_sync_story_task_with_timeout(task_kwargs, sync_story_timeout):
+    executor = ThreadPoolExecutor(max_workers=1)
+    # Important: use current generate_story_task which might be mocked in tests
+    future = executor.submit(generate_story_task.apply, kwargs=task_kwargs)
+    try:
+        eager_result = future.result(timeout=sync_story_timeout)
+        return eager_result.get()
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+
+
+def _celery_runs_eagerly() -> bool:
+    try:
+        return bool(getattr(celery.conf, "task_always_eager", False))
+    except Exception:
+        return False
+
+
 def create_story_blueprint(
     limiter,
     cache,
@@ -52,22 +70,7 @@ def create_story_blueprint(
 ):
     story_bp = Blueprint("story", __name__)
     disable_gemini_image = os.getenv("DISABLE_GEMINI_IMAGE", "").strip().lower() in ("1", "true", "yes")
-    sync_story_timeout = int(os.getenv("SYNC_STORY_TIMEOUT_SECONDS", "75"))
-
-    def _run_sync_story_task_with_timeout(task_kwargs):
-        executor = ThreadPoolExecutor(max_workers=1)
-        future = executor.submit(generate_story_task.apply, kwargs=task_kwargs)
-        try:
-            eager_result = future.result(timeout=sync_story_timeout)
-            return eager_result.get()
-        finally:
-            executor.shutdown(wait=False, cancel_futures=True)
-
-    def _celery_runs_eagerly() -> bool:
-        try:
-            return bool(getattr(celery.conf, "task_always_eager", False))
-        except Exception:
-            return False
+    sync_story_timeout = int(os.getenv("SYNC_STORY_TIMEOUT_SECONDS", "120"))
 
     @story_bp.route("/get-story-themes", methods=["GET"])
     @cache.cached(timeout=3600)  # Cache for 1 hour
@@ -180,8 +183,8 @@ def create_story_blueprint(
         # Try synchronous execution first (to bypass polling issues on Railway)
         try:
             # Run synchronous task in a bounded worker thread so timeout is enforced.
-            sync_result = _run_sync_story_task_with_timeout(task_kwargs)
-            
+            sync_result = _run_sync_story_task_with_timeout(task_kwargs, sync_story_timeout)
+
             # Debugging: Log the result type
             logger.info(f"Sync task result type: {type(sync_result)}")
             if isinstance(sync_result, str):
@@ -242,7 +245,7 @@ def create_story_blueprint(
             import traceback
             error_trace = traceback.format_exc()
             logger.exception("Synchronous story generation failed, attempting async fallback: %s", exc)
-            
+
             # Write error to file for debugging
             try:
                 with open("backend_last_error.log", "w") as f:
@@ -253,7 +256,7 @@ def create_story_blueprint(
             if "429" in str(exc) or "ResourceExhausted" in str(exc) or "Quota exceeded" in str(exc):
                 logger.warning(f"Quota exceeded in sync generation: {exc}")
                 return jsonify({"error": "QUOTA_EXCEEDED", "message": "Google Geminin API quota exceeded. Please try again later.", "details": str(exc)}), 429
-            
+
             logger.error(f"Full task_kwargs that failed: {task_kwargs}")
             if _celery_runs_eagerly():
                 logger.warning(
@@ -282,13 +285,13 @@ def create_story_blueprint(
                 if "429" in str(async_exc) or "ResourceExhausted" in str(async_exc) or "Quota exceeded" in str(async_exc):
                      logger.warning(f"Quota exceeded in async generation: {async_exc}")
                      return jsonify({"error": "QUOTA_EXCEEDED", "message": "Google Gemini API quota exceeded. Please try again later.", "details": str(async_exc)}), 429
-                
+
                 logger.exception("Async fallback also failed: %s", async_exc)
                 logger.error(f"Full error response: {str(async_exc)}")
                 return jsonify({"error": "Story generation failed completely", "details": str(async_exc)}), 500
             logger.exception("Falling back to synchronous story generation: %s", exc)
             try:
-                sync_result = _run_sync_story_task_with_timeout(task_kwargs)
+                sync_result = _run_sync_story_task_with_timeout(task_kwargs, sync_story_timeout)
                 story_payload = (sync_result or {}).get("story", {})
                 response_payload = {
                     "status": sync_result.get("status", "complete"),
@@ -314,13 +317,13 @@ def create_story_blueprint(
         logger.info("Serving mock story for testing.")
         payload = request.get_json(silent=True) or {}
         character = payload.get("character", {})
-        
+
         # Handle character being either a dict or a string
         if isinstance(character, dict):
             character_name = character.get("name", "a brave hero")
         else:
             character_name = str(character) if character else "a brave hero"
-            
+
         theme = payload.get("theme", "Friendship")
 
         mock_story = {

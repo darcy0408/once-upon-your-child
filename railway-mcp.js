@@ -1,14 +1,16 @@
 #!/usr/bin/env node
-// Minimal Railway MCP helper: list services, trigger deploys, fetch logs.
-import { readFileSync } from "fs";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
 import fetch from "node-fetch";
 
 const token = process.env.RAILWAY_TOKEN;
-if (!token) {
-  throw new Error("RAILWAY_TOKEN env var required");
-}
 
 async function gql(query, variables = {}) {
+  if (!token) {
+    throw new Error("RAILWAY_TOKEN env var required");
+  }
+
   const res = await fetch("https://backboard.railway.app/graphql/v2", {
     method: "POST",
     headers: {
@@ -17,97 +19,95 @@ async function gql(query, variables = {}) {
     },
     body: JSON.stringify({ query, variables }),
   });
+
+  if (!res.ok) {
+    throw new Error(`Railway API HTTP ${res.status}`);
+  }
+
   const json = await res.json();
-  if (json.errors) throw new Error(JSON.stringify(json.errors));
+  if (json.errors) {
+    throw new Error(JSON.stringify(json.errors));
+  }
   return json.data;
 }
 
-const input = readFileSync(0, "utf8");
-const req = JSON.parse(input);
-const { method, params, id } = req;
+const server = new McpServer({
+  name: "railway-mcp",
+  version: "1.0.0",
+});
 
-async function handle() {
-  if (method === "initialize") {
-    return {
-      id,
-      result: {
-        resources: [],
-        resourceTemplates: [],
-        actions: [
-          { name: "railway.services", description: "List services" },
-          { name: "railway.deploy", description: "Trigger deploy for serviceId" },
-          { name: "railway.logs", description: "Fetch recent deploy logs" },
-        ],
-      },
-    };
-  }
+server.tool("railway.services", "List Railway projects and services", {}, async () => {
+  const data = await gql(
+    `query {
+      me {
+        projects {
+          edges {
+            node {
+              id
+              name
+              services {
+                edges {
+                  node {
+                    id
+                    name
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }`
+  );
 
-  if (method === "call" && params?.name === "railway.services") {
+  return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+});
+
+server.tool(
+  "railway.deploy",
+  "Trigger deploy for a Railway service ID",
+  { serviceId: z.string().min(1) },
+  async ({ serviceId }) => {
     const data = await gql(
-      `query {
-         me {
-           projects {
-             edges {
-               node {
-                 id
-                 name
-                 services {
-                   edges {
-                     node {
-                       id
-                       name
-                     }
-                   }
-                 }
-                 environments {
-                   edges {
-                     node {
-                       id
-                       name
-                     }
-                   }
-                 }
-               }
-             }
-           }
-         }
-       }`
-    );
-    return { id, result: data };
-  }
-
-  if (method === "call" && params?.name === "railway.deploy") {
-    const { serviceId } = params.arguments || {};
-    if (!serviceId) throw new Error("serviceId required");
-    const data = await gql(
-      `mutation($serviceId: String!) { deployService(serviceId: $serviceId, input: {}) { id status } }`,
+      `mutation($serviceId: String!) {
+        deployService(serviceId: $serviceId, input: {}) {
+          id
+          status
+        }
+      }`,
       { serviceId }
     );
-    return { id, result: data };
-  }
 
-  if (method === "call" && params?.name === "railway.logs") {
-    const { serviceId, limit = 200 } = params.arguments || {};
-    if (!serviceId) throw new Error("serviceId required");
+    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+  }
+);
+
+server.tool(
+  "railway.logs",
+  "Fetch recent deployment logs for a Railway service ID",
+  { serviceId: z.string().min(1), limit: z.number().int().positive().max(500).optional() },
+  async ({ serviceId, limit = 50 }) => {
     const data = await gql(
       `query($serviceId: String!, $limit: Int) {
-         service(id: $serviceId) {
-           deployments(last: $limit) {
-             edges { node { id status createdAt logs } }
-           }
-         }
-       }`,
+        service(id: $serviceId) {
+          deployments(last: $limit) {
+            edges {
+              node {
+                id
+                status
+                createdAt
+                logs
+              }
+            }
+          }
+        }
+      }`,
       { serviceId, limit }
     );
-    return { id, result: data };
+
+    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
   }
+);
 
-  return { id, error: { code: -32601, message: "Method not found" } };
-}
-
-handle()
-  .then((res) => process.stdout.write(JSON.stringify(res)))
-  .catch((err) => {
-    const errRes = { id, error: { code: -32000, message: err.message } };
-    process.stdout.write(JSON.stringify(errRes));
-  });
+const transport = new StdioServerTransport();
+await server.connect(transport);

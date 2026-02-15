@@ -20,7 +20,7 @@ class MakeMagicButton extends StatefulWidget {
 
   const MakeMagicButton({
     super.key,
-    this.label = 'Make Magic ✨',
+    this.label = 'Make Magic',
     required this.onTap,
     this.isEnabled = true,
     this.showSparkles = true,
@@ -105,24 +105,46 @@ class _MakeMagicButtonState extends State<MakeMagicButton>
             height: AppTouchTargets.large, // 88px for primary action
             decoration: BoxDecoration(
               gradient: widget.isEnabled
-                  ? AppGradients.purpleGlow
+                  ? const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFFB565FF), // Bright purple
+                        Color(0xFF6A1B9A), // Deep purple
+                        Color(0xFF4A148C), // Extra deep purple
+                      ],
+                      stops: [0.0, 0.5, 1.0],
+                    )
                   : LinearGradient(
                       colors: [
                         AppColors.textDisabled,
-                        AppColors.textDisabled.withAlpha(204), // 80% opacity
+                        AppColors.textDisabled.withValues(alpha: 0.8),
                       ],
                     ),
               borderRadius: BorderRadius.circular(AppRadius.pill),
               border: Border.all(
-                color: widget.isEnabled ? AppColors.gold : AppColors.textDisabled,
-                width: 3,
+                color: widget.isEnabled ? const Color(0xFFFFD478) : AppColors.textDisabled,
+                width: 3.5,
               ),
               boxShadow: widget.isEnabled
                   ? [
+                      // Outer magical glow
                       BoxShadow(
-                        color: AppColors.primary.withAlpha(102), // 40% opacity
-                        blurRadius: 16,
-                        spreadRadius: 4,
+                        color: const Color(0xFF9E6CFF).withValues(alpha: 0.6),
+                        blurRadius: 24,
+                        spreadRadius: 2,
+                      ),
+                      // Gold edge glow
+                      BoxShadow(
+                        color: const Color(0xFFFFD478).withValues(alpha: 0.3),
+                        blurRadius: 12,
+                        spreadRadius: 0,
+                      ),
+                      // Inner button depth
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
                       ),
                     ]
                   : null,
@@ -130,36 +152,53 @@ class _MakeMagicButtonState extends State<MakeMagicButton>
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Sparkles (if enabled)
+                // Animated Sparkles (if enabled)
                 if (widget.showSparkles && widget.isEnabled) ...[
                   const Positioned(
                     left: 20,
                     top: 15,
-                    child: _SparkleIcon(size: 16),
+                    child: _SparkleIcon(size: 20),
                   ),
                   const Positioned(
                     right: 25,
                     top: 20,
-                    child: _SparkleIcon(size: 12),
+                    child: _SparkleIcon(size: 14),
                   ),
                   const Positioned(
                     left: 30,
                     bottom: 18,
-                    child: _SparkleIcon(size: 14),
+                    child: _SparkleIcon(size: 16),
                   ),
                   const Positioned(
                     right: 20,
                     bottom: 15,
-                    child: _SparkleIcon(size: 16),
+                    child: _SparkleIcon(size: 18),
+                  ),
+                  // Centered top sparkle
+                  const Positioned(
+                    top: 10,
+                    child: _SparkleIcon(size: 10),
                   ),
                 ],
-                // Button label
+                // Button label with text shadow for "glow"
                 Text(
                   widget.label,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: AppColors.textLight,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 24,
+                        letterSpacing: 1.2,
+                        shadows: [
+                          const Shadow(
+                            color: Color(0xAAFFFFFF),
+                            blurRadius: 12,
+                          ),
+                          const Shadow(
+                            color: Color(0x88000000),
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
                       ),
                   textAlign: TextAlign.center,
                   maxLines: 2,

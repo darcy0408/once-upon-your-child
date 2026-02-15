@@ -75,11 +75,12 @@ def test_get_subscription_user_not_found(client, setup_users):
 
 
 def test_get_subscription_server_error(client, monkeypatch, setup_users):
-    class _BrokenQuery:
-        def get(self, _):
-            raise RuntimeError('db offline')
+    from backend.database import db
+    
+    def mock_get(*args, **kwargs):
+        raise RuntimeError('db offline')
 
-    monkeypatch.setattr(User, 'query', _BrokenQuery())
+    monkeypatch.setattr(db.session, 'get', mock_get)
 
     response = client.get('/api/user/any/subscription')
     assert response.status_code == 500

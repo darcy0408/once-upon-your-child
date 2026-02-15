@@ -1,7 +1,12 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../services/api_service_manager.dart';
 import '../models.dart';
 import '../theme/app_theme.dart';
+import '../config/environment.dart';
 import 'wizard_story_screen.dart';
 import 'character_editor_screen.dart';
 
@@ -24,6 +29,9 @@ class _CharacterLibraryScreenState extends State<CharacterLibraryScreen> {
   List<Character> _characters = [];
   bool _isLoading = true;
   String? _error;
+  bool? _backendOnline;
+  bool _isCheckingBackend = false;
+  DateTime? _lastBackendCheck;
 
   @override
   void initState() {
@@ -31,11 +39,38 @@ class _CharacterLibraryScreenState extends State<CharacterLibraryScreen> {
     _loadCharacters();
   }
 
+  Future<void> _checkBackendStatus() async {
+    if (mounted) {
+      setState(() => _isCheckingBackend = true);
+    }
+
+    bool online = false;
+    try {
+      final healthUri = Uri.parse('${Environment.backendUrl}/health');
+      final response = await http.get(healthUri).timeout(
+            const Duration(seconds: 3),
+          );
+      online = response.statusCode >= 200 && response.statusCode < 300;
+    } catch (_) {
+      online = false;
+    }
+
+    if (mounted) {
+      setState(() {
+        _backendOnline = online;
+        _isCheckingBackend = false;
+        _lastBackendCheck = DateTime.now();
+      });
+    }
+  }
+
   Future<void> _loadCharacters() async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
+
+    unawaited(_checkBackendStatus());
 
     try {
       final api = ApiServiceManager();
@@ -73,7 +108,8 @@ class _CharacterLibraryScreenState extends State<CharacterLibraryScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Character?'),
-        content: Text('Are you sure you want to delete ${character.name}? This cannot be undone.'),
+        content: Text(
+            'Are you sure you want to delete ${character.name}? This cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -172,107 +208,135 @@ class _CharacterLibraryScreenState extends State<CharacterLibraryScreen> {
         decoration: const BoxDecoration(
           gradient: AppGradients.magicalBackground,
         ),
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.error_outline, size: 64, color: AppColors.error),
-                          const SizedBox(height: AppSpacing.md),
-                          Text(
-                            _error!,
-                            style: const TextStyle(color: AppColors.error),
-                            textAlign: TextAlign.center,
+        child: Column(
+          children: [
+            _BackendStatusBanner(
+              isChecking: _isCheckingBackend,
+              isOnline: _backendOnline,
+              backendUrl: Environment.backendUrl,
+              lastChecked: _lastBackendCheck,
+              onRefresh: _checkBackendStatus,
+            ),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  size: 64,
+                                  color: AppColors.error,
+                                ),
+                                const SizedBox(height: AppSpacing.md),
+                                Text(
+                                  _error!,
+                                  style:
+                                      const TextStyle(color: AppColors.error),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: AppSpacing.lg),
+                                ElevatedButton.icon(
+                                  onPressed: _loadCharacters,
+                                  icon: const Icon(Icons.refresh),
+                                  label: const Text('Retry'),
+                                ),
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: AppSpacing.lg),
-                          ElevatedButton.icon(
-                            onPressed: _loadCharacters,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : _characters.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSpacing.lg),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text(
-                                '📚',
-                                style: TextStyle(fontSize: 80),
-                              ),
-                              const SizedBox(height: AppSpacing.lg),
-                              Text(
-                                'No Characters Yet',
-                                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                      color: AppColors.textDark,
-                                      fontWeight: FontWeight.bold,
+                        )
+                      : _characters.isEmpty
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(AppSpacing.lg),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      '📚',
+                                      style: TextStyle(fontSize: 80),
                                     ),
-                              ),
-                              const SizedBox(height: AppSpacing.md),
-                              Text(
-                                'Create your first character to get started!',
-                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                      color: AppColors.textDark.withAlpha(179),
+                                    const SizedBox(height: AppSpacing.lg),
+                                    Text(
+                                      'No Characters Yet',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineMedium
+                                          ?.copyWith(
+                                            color: AppColors.textDark,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                     ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: AppSpacing.xl),
-                              ElevatedButton.icon(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const WizardStoryScreen(),
+                                    const SizedBox(height: AppSpacing.md),
+                                    Text(
+                                      'Create your first character to get started!',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge
+                                          ?.copyWith(
+                                            color: AppColors.textDark
+                                                .withAlpha(179),
+                                          ),
+                                      textAlign: TextAlign.center,
                                     ),
-                                  );
-                                },
-                                icon: const Icon(Icons.add),
-                                label: const Text('Create Character'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  foregroundColor: AppColors.textLight,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.xl,
-                                    vertical: AppSpacing.md,
-                                  ),
+                                    const SizedBox(height: AppSpacing.xl),
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const WizardStoryScreen(),
+                                          ),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.add),
+                                      label: const Text('Create Character'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.primary,
+                                        foregroundColor: AppColors.textLight,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: AppSpacing.xl,
+                                          vertical: AppSpacing.md,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _loadCharacters,
-                        child: GridView.builder(
-                          padding: const EdgeInsets.all(AppSpacing.lg),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: AppSpacing.md,
-                            mainAxisSpacing: AppSpacing.md,
-                            childAspectRatio: 0.75,
-                          ),
-                          itemCount: _characters.length,
-                          itemBuilder: (context, index) {
-                            final character = _characters[index];
-                            return _CharacterCard(
-                              character: character,
-                              emoji: _getEmojiForCharacter(character),
-                              onDelete: () => _deleteCharacter(character),
-                              onEdit: () => _editCharacter(character),
-                              onCreateStory: () => _createStoryWithCharacter(character),
-                            );
-                          },
-                        ),
-                      ),
+                            )
+                          : RefreshIndicator(
+                              onRefresh: _loadCharacters,
+                              child: GridView.builder(
+                                padding: const EdgeInsets.all(AppSpacing.lg),
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: AppSpacing.md,
+                                  mainAxisSpacing: AppSpacing.md,
+                                  childAspectRatio: 0.75,
+                                ),
+                                itemCount: _characters.length,
+                                itemBuilder: (context, index) {
+                                  final character = _characters[index];
+                                  return _CharacterCard(
+                                    character: character,
+                                    emoji: _getEmojiForCharacter(character),
+                                    onDelete: () => _deleteCharacter(character),
+                                    onEdit: () => _editCharacter(character),
+                                    onCreateStory: () =>
+                                        _createStoryWithCharacter(character),
+                                  );
+                                },
+                              ),
+                            ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -289,6 +353,103 @@ class _CharacterLibraryScreenState extends State<CharacterLibraryScreen> {
         label: const Text('New Character'),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.textLight,
+      ),
+    );
+  }
+}
+
+class _BackendStatusBanner extends StatelessWidget {
+  final bool isChecking;
+  final bool? isOnline;
+  final String backendUrl;
+  final DateTime? lastChecked;
+  final Future<void> Function() onRefresh;
+
+  const _BackendStatusBanner({
+    required this.isChecking,
+    required this.isOnline,
+    required this.backendUrl,
+    required this.lastChecked,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool offline = isOnline == false;
+    final Color background = offline
+        ? AppColors.error.withAlpha(25)
+        : AppColors.success.withAlpha(25);
+    final Color border = offline ? AppColors.error : AppColors.success;
+    final Color iconColor = offline ? AppColors.error : AppColors.success;
+    final IconData icon = isChecking
+        ? Icons.sync
+        : offline
+            ? Icons.cloud_off
+            : Icons.cloud_done;
+    final String statusText = isChecking
+        ? 'Story service is waking up'
+        : offline
+            ? 'Story service is waking up'
+            : 'Story service is ready';
+
+    final String subtitle = isChecking
+        ? 'Please wait a moment, then tap Retry.'
+        : offline
+            ? 'Please wait a moment, then tap Retry.'
+            : lastChecked != null
+                ? 'Checked ${lastChecked!.hour.toString().padLeft(2, '0')}:${lastChecked!.minute.toString().padLeft(2, '0')}'
+                : 'Ready to load your characters.';
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        0,
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: border.withAlpha(160)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: iconColor),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  statusText,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textDark,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh, size: 18),
+            color: iconColor,
+            tooltip: 'Retry',
+            onPressed: isChecking ? null : onRefresh,
+          ),
+        ],
       ),
     );
   }
@@ -330,7 +491,7 @@ class _CharacterCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Character emoji and name
+          // Character avatar and name
           Expanded(
             flex: 3,
             child: Container(
@@ -348,25 +509,43 @@ class _CharacterCard extends StatelessWidget {
                   topRight: Radius.circular(AppRadius.lg),
                 ),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  Text(
-                    emoji,
-                    style: const TextStyle(fontSize: 64),
+                  // Avatar Image
+                  Positioned.fill(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ClipOval(
+                        child: _buildAvatarImage(),
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                    child: Text(
-                      character.name,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: AppColors.textDark,
-                            fontWeight: FontWeight.bold,
-                          ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  // Name overlay (bottom)
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withAlpha(100),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(0), // Covered by parent
+                          bottomRight: Radius.circular(0),
+                        ),
+                      ),
+                      child: Text(
+                        character.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ],
@@ -390,7 +569,8 @@ class _CharacterCard extends StatelessWidget {
                     icon: Icons.star,
                     label: character.role,
                   ),
-                  if (character.likes != null && character.likes!.isNotEmpty) ...[
+                  if (character.likes != null &&
+                      character.likes!.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     _DetailRow(
                       icon: Icons.favorite,
@@ -437,6 +617,53 @@ class _CharacterCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAvatarImage() {
+    final generated = character.generatedAvatar;
+    if (generated != null && generated.imageBase64.isNotEmpty) {
+      final data = generated.imageBase64;
+      final isUrl = data.startsWith('http://') || data.startsWith('https://');
+      final isAsset = data.startsWith('assets/');
+      if (isAsset) {
+        return Image.asset(data, fit: BoxFit.cover);
+      }
+      if (isUrl) {
+        return Image.network(data, fit: BoxFit.cover);
+      }
+      try {
+        return Image.memory(base64Decode(data.split(',').last), fit: BoxFit.cover);
+      } catch (_) {
+        return _buildPlaceholder();
+      }
+    }
+
+    if (character.avatar != null) {
+      return Image.network(
+        character.avatar!.toAvataaarsUrl(),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+      );
+    }
+
+    return _buildPlaceholder();
+  }
+
+  Widget _buildPlaceholder() {
+    return Image.asset(
+      'assets/images/character_placeholder.png',
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => Image.asset(
+        'thePlaceholderImageBeforeCharacterGeneration.jpeg',
+        fit: BoxFit.cover,
+        errorBuilder: (c, e, s) => Center(
+          child: Text(
+            emoji,
+            style: const TextStyle(fontSize: 40),
+          ),
+        ),
       ),
     );
   }

@@ -1,6 +1,6 @@
 # Story Weaver App - Consolidated Test Status
 
-**Last Updated:** 2026-02-11
+**Last Updated:** 2026-02-12
 **Overall Status:** 🟡 **Phase 1: 63% Complete** (169/270 target tests)
 
 ---
@@ -8,7 +8,7 @@
 ## 📊 Executive Summary
 
 **Current Test Coverage:**
-- ✅ **169 tests PASSING** across backend services, security, and API contracts
+- 🟡 **Core validated suite:** 169 passed, 4 failed, 1 error (174 total)
 - ⏱️ **Fast execution:** All tests run in ~22 seconds
 - 📈 **Coverage:** Backend ~60-65%, Frontend ~45% (existing tests)
 - 🎯 **Target:** 270 tests for Phase 1 completion
@@ -17,7 +17,7 @@
 
 ## 🧪 Test Results Breakdown
 
-### ✅ Completed Tests (169 total)
+### ✅ Completed Tests (Core Suite: 174 total, 169 passing)
 
 #### 1. Backend Unit Tests (110 tests - ALL PASSING)
 
@@ -69,9 +69,9 @@
 - **Edge Cases:** 6 tests (empty, null, long inputs, whitespace-only)
 - **Integration Tests:** 2 tests
 
-#### 3. API Contract Tests (29/33 tests - 88% PASSING)
+#### 3. API Contract Tests (28/33 tests - 85% PASSING)
 
-**test_story_routes.py** - 29 passing, 4 minor issues
+**test_story_routes.py** - 28 passing, 5 current issues
 
 **Passing Tests:**
 - Story generation with minimal payload: 1 test
@@ -91,9 +91,10 @@
 - Response format validation: 3 tests
 - Companion characters (pets, characters, legacy formats): 4 tests
 
-**Known Issues (4 non-critical):**
+**Known Issues (5 current):**
 - ❌ 3 failures: `/get-story-themes` - Cache serialization issue (test environment only)
 - ⚠️ 1 error: `test_generate_story_with_character_id` - Fixture needs User model update
+- ⚠️ 1 failure: `test_mock_story_returns_immediately` - Response shape assertion mismatch (`result.story` vs top-level expectation)
 
 #### 4. Integration Tests (Phase 3 - 8 tests - ALL PASSING)
 
@@ -239,9 +240,10 @@
 
 **Estimated effort:** 1 work session
 
-#### 4. Fix Known Issues (4 tests) - **LOW PRIORITY**
+#### 4. Fix Known Issues (5 tests) - **LOW PRIORITY**
 - Fix cache serialization for `/get-story-themes` (3 tests)
 - Fix `test_user` fixture for character ID test (1 test)
+- Fix mock endpoint response contract assertion (1 test)
 
 **Estimated effort:** 30 minutes
 
@@ -253,7 +255,7 @@
 |----------|--------|---------|-----------|------------|--------|
 | Backend Unit Tests | 150 | 110 | 40 | 73% | 🟢 Good |
 | Security Tests | 50 | 31 | 19-29 | 62% | 🟡 Needs Work |
-| API Contract Tests | 40 | 29 | 11-15 | 73% | 🟢 Good |
+| API Contract Tests | 40 | 28 | 12-16 | 70% | 🟡 Needs Attention |
 | Frontend Service Tests | 30 | 0 | 30-40 | 0% | 🔴 Not Started |
 | **TOTAL** | **270** | **169** | **101** | **63%** | **🟡 In Progress** |
 
@@ -269,7 +271,7 @@
 ### Phase 1 Targets (60% coverage baseline)
 - ✅ Backend service unit tests: **110/150 target** (73%)
 - 🟡 Security tests: **31/50 target** (62%)
-- ✅ API contract tests: **29/40 target** (73%)
+- 🟡 API contract tests: **28/40 target** (70%)
 - 🔴 Frontend service tests: **0/30 target** (0% - NEXT PRIORITY)
 
 ### Quality Metrics (ALL MET ✅)
@@ -301,10 +303,10 @@
 ### Session 3: API Contract Tests + Fixes (2-3 hours)
 - Create `backend/tests/api/test_character_routes.py` (15 tests)
 - Create `backend/tests/api/test_subscription_routes.py` (5 tests)
-- Fix known issues (4 tests)
-- **Output:** 24 new/fixed tests, 258/270 total (96% complete)
+- Fix known issues (5 tests)
+- **Output:** 25 new/fixed tests, 259/270 total (96% complete)
 
-**Expected Phase 1 Completion:** ~235-260 tests (87-96%)
+**Expected Phase 1 Completion (after the 3 sessions above):** ~259/270 tests (96%)
 
 ---
 
@@ -320,7 +322,8 @@
    ```bash
    cd backend
    pytest
-   # 169 tests should pass
+   # Current verified core-suite status (2026-02-12):
+   # 169 passed, 4 failed, 1 error
    ```
 
 3. **Run specific test categories:**
@@ -357,13 +360,12 @@
    ```
 
 ### CI/CD Pipeline
-GitHub Actions workflow (`.github/workflows/cicd.yml`) runs:
-1. Backend unit tests
-2. Backend security tests
-3. Backend API contract tests
-4. Frontend unit tests
-5. Frontend integration tests
-6. Coverage upload to Codecov
+GitHub Actions workflow (`.github/workflows/cicd.yml`) currently defines:
+1. `frontend-test` (runs Flutter tests + integration tests + Codecov upload)
+2. `backend-test` (runs full backend pytest + coverage + Codecov upload)
+3. `api-contract-tests` (runs `pytest -m api_contract --maxfail=1`)
+
+⚠️ **CI mismatch to note:** no `api_contract` markers were found in `backend/tests`, so the API contract job may run zero tests until markers are added or the command is changed.
 
 ---
 
@@ -384,7 +386,7 @@ story-weaver-app/
 │       │   ├── test_authorization.py 🔴 (needed)
 │       │   └── test_rate_limiting.py 🔴 (needed)
 │       ├── api/
-│       │   ├── test_story_routes.py ✅ (29 tests)
+│       │   ├── test_story_routes.py 🟡 (33 tests, 28 currently passing)
 │       │   ├── test_character_routes.py 🔴 (needed)
 │       │   ├── test_subscription_routes.py 🔴 (needed)
 │       │   └── test_stripe_routes.py 🔴 (needed)

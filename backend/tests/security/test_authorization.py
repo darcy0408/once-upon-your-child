@@ -14,7 +14,7 @@ def _auth_headers(user_id: str) -> dict[str, str]:
             "user_id": user_id,
             "exp": datetime.utcnow() + timedelta(hours=1),
         },
-        "test_secret",
+        "dev-secret-key",
         algorithm="HS256",
     )
     return {
@@ -60,7 +60,7 @@ def _create_story(story_id: str, user_id: str, title: str = "Story") -> Story:
 
 
 def test_user_can_access_own_characters(client, app, monkeypatch):
-    monkeypatch.setenv("JWT_SECRET_KEY", "test_secret")
+    monkeypatch.setenv("JWT_SECRET_KEY", "dev-secret-key")
     with app.app_context():
         owner = _create_user("owner_1", "owner1", "owner1@example.com")
         _create_character("owner_char_1", owner.id, "Owner Hero")
@@ -78,7 +78,7 @@ def test_user_can_access_own_characters(client, app, monkeypatch):
 
 
 def test_user_cannot_access_other_users_characters(client, app, monkeypatch):
-    monkeypatch.setenv("JWT_SECRET_KEY", "test_secret")
+    monkeypatch.setenv("JWT_SECRET_KEY", "dev-secret-key")
     with app.app_context():
         _create_user("owner_2", "owner2", "owner2@example.com")
         _create_user("other_2", "other2", "other2@example.com")
@@ -91,7 +91,7 @@ def test_user_cannot_access_other_users_characters(client, app, monkeypatch):
 
 
 def test_user_can_access_own_stories(client, app, monkeypatch):
-    monkeypatch.setenv("JWT_SECRET_KEY", "test_secret")
+    monkeypatch.setenv("JWT_SECRET_KEY", "dev-secret-key")
     with app.app_context():
         owner = _create_user("owner_3", "owner3", "owner3@example.com")
         _create_story("owner_story_1", owner.id, "Owner Story 1")
@@ -110,7 +110,7 @@ def test_user_can_access_own_stories(client, app, monkeypatch):
 
 
 def test_user_cannot_access_other_users_stories(client, app, monkeypatch):
-    monkeypatch.setenv("JWT_SECRET_KEY", "test_secret")
+    monkeypatch.setenv("JWT_SECRET_KEY", "dev-secret-key")
     with app.app_context():
         _create_user("owner_4", "owner4", "owner4@example.com")
         _create_user("other_4", "other4", "other4@example.com")
@@ -126,7 +126,7 @@ def test_user_cannot_access_other_users_stories(client, app, monkeypatch):
 
 
 def test_character_update_by_wrong_user_returns_403(client, app, monkeypatch):
-    monkeypatch.setenv("JWT_SECRET_KEY", "test_secret")
+    monkeypatch.setenv("JWT_SECRET_KEY", "dev-secret-key")
     with app.app_context():
         _create_user("owner_5", "owner5", "owner5@example.com")
         _create_user("other_5", "other5", "other5@example.com")
@@ -143,7 +143,7 @@ def test_character_update_by_wrong_user_returns_403(client, app, monkeypatch):
 
 
 def test_character_delete_by_wrong_user_returns_403(client, app, monkeypatch):
-    monkeypatch.setenv("JWT_SECRET_KEY", "test_secret")
+    monkeypatch.setenv("JWT_SECRET_KEY", "dev-secret-key")
     with app.app_context():
         _create_user("owner_6", "owner6", "owner6@example.com")
         _create_user("other_6", "other6", "other6@example.com")
@@ -159,7 +159,7 @@ def test_character_delete_by_wrong_user_returns_403(client, app, monkeypatch):
 
 
 def test_get_characters_id_requires_ownership(client, app, monkeypatch):
-    monkeypatch.setenv("JWT_SECRET_KEY", "test_secret")
+    monkeypatch.setenv("JWT_SECRET_KEY", "dev-secret-key")
     with app.app_context():
         _create_user("owner_7", "owner7", "owner7@example.com")
         _create_user("other_7", "other7", "other7@example.com")
@@ -171,7 +171,7 @@ def test_get_characters_id_requires_ownership(client, app, monkeypatch):
 
 
 def test_patch_characters_id_requires_ownership(client, app, monkeypatch):
-    monkeypatch.setenv("JWT_SECRET_KEY", "test_secret")
+    monkeypatch.setenv("JWT_SECRET_KEY", "dev-secret-key")
     with app.app_context():
         _create_user("owner_8", "owner8", "owner8@example.com")
         _create_user("other_8", "other8", "other8@example.com")
@@ -187,7 +187,7 @@ def test_patch_characters_id_requires_ownership(client, app, monkeypatch):
 
 
 def test_delete_characters_id_requires_ownership(client, app, monkeypatch):
-    monkeypatch.setenv("JWT_SECRET_KEY", "test_secret")
+    monkeypatch.setenv("JWT_SECRET_KEY", "dev-secret-key")
     with app.app_context():
         _create_user("owner_9", "owner9", "owner9@example.com")
         _create_user("other_9", "other9", "other9@example.com")
@@ -202,7 +202,7 @@ def test_delete_characters_id_requires_ownership(client, app, monkeypatch):
 
 
 def test_owner_can_update_and_delete_own_character(client, app, monkeypatch):
-    monkeypatch.setenv("JWT_SECRET_KEY", "test_secret")
+    monkeypatch.setenv("JWT_SECRET_KEY", "dev-secret-key")
     with app.app_context():
         _create_user("owner_10", "owner10", "owner10@example.com")
         _create_character("owner_char_10", "owner_10", "Original Name")

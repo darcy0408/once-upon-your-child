@@ -9,19 +9,18 @@ import '../theme/app_theme.dart';
 /// - No text labels (icon-only)
 /// - Accessible with screen reader support
 class MoonPhaseProgress extends StatelessWidget {
-  final int currentStep; // 0-3
-  final int totalSteps; // Should be 4
+  final int currentStep; // 0-2
+  final int totalSteps; // Should be 3
   final List<String> stepLabels; // For screen readers
 
   const MoonPhaseProgress({
     super.key,
     required this.currentStep,
-    this.totalSteps = 4,
+    this.totalSteps = 3,
     this.stepLabels = const [
       'Step 1: Create your hero',
-      'Step 2: Choose the feeling',
-      'Step 3: Pick a companion',
-      'Step 4: Make magic',
+      'Step 2: Pick a companion',
+      'Step 3: Make magic',
     ],
   });
 

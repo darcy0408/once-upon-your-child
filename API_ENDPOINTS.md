@@ -21,7 +21,7 @@
   "version": "1.0.2",
   "database": "ok",
   "has_api_key": true,
-  "model": "gemini-1.5-flash",
+  "model": "gemini-2.0-flash",
   "stripe_configured": true,
   "stripe_premium_price": true,
   "stripe_family_price": true,
@@ -45,8 +45,10 @@
 ```json
 {
   "status": "ok",
-  "database_version": "PostgreSQL 14.x",
-  "connection_pool": "active"
+  "pool_size": 5,
+  "checked_in": 5,
+  "checked_out": 0,
+  "overflow": 0
 }
 ```
 
@@ -57,13 +59,13 @@
 ### POST /generate-story
 **Description:** Generate a personalized therapeutic story.
 
-**Rate Limit:** 10 per minute
+**Rate Limit:** Tier-based (varies). See `X-RateLimit-*` headers in responses.
 
 **Request Body:**
 ```json
 {
   "character": "Luna",
-  "character_age": 7,
+  "age": 7,
   "theme": "Adventure",
   "companion": "magical fox",
   "rhyme_time_mode": false,
@@ -88,13 +90,14 @@
     "intensity": 7
   },
   "user_api_key": "your-gemini-api-key",
-  "subscription_tier": "premium"
+  "include_illustrations": false,
+  "async_illustrations": false
 }
 ```
 
 **Required Fields:**
 - `character` (string): Character name
-- `character_age` (integer): Age for age-appropriate content
+- `age` (integer): Age for age-appropriate content
 
 **Optional Fields:**
 - `theme` (string): Story theme (default: "Adventure")
@@ -106,7 +109,8 @@
 - `characters` (array): Supporting characters
 - `current_feeling` (object): Emotional state for therapeutic focus
 - `user_api_key` (string): BYOK (Bring Your Own Key)
-- `subscription_tier` (string): "free", "premium", or "family"
+- `include_illustrations` (boolean): Attempt inline illustration generation
+- `async_illustrations` (boolean): Generate illustrations asynchronously (story returns immediately)
 
 **Response (200 OK):**
 ```json
@@ -154,40 +158,42 @@
 **Request Body:**
 ```json
 {
-  "character": "Alex",
+  "user_id": "user_or_anon_id",
+  "character_id": "optional_character_id",
   "theme": "Mystery",
-  "age": 10,
-  "companion": "detective cat",
-  "user_api_key": "optional-gemini-key"
+  "tone": "whimsical",
+  "length": "medium",
+  "age": 10
 }
 ```
 
 **Response (200 OK):**
 ```json
 {
-  "text": "Alex discovered a mysterious map in the attic...",
-  "choices": [
-    {
-      "id": "choice_1",
-      "text": "Follow the map to the old library"
-    },
-    {
-      "id": "choice_2",
-      "text": "Ask your friend for help decoding it"
-    },
-    {
-      "id": "choice_3",
-      "text": "Research the symbols online"
-    }
-  ]
+  "story_id": "uuid_story_id",
+  "title": "Story Title",
+  "segment": {
+    "id": "uuid_segment_id",
+    "segment_number": 1,
+    "content": "Opening segment text...",
+    "choices": [
+      {
+        "id": "uuid_choice_id",
+        "choice_number": 1,
+        "text": "Choice text..."
+      }
+    ]
+  },
+  "inventory": [],
+  "state": {},
+  "is_completed": false
 }
 ```
 
-**Error Response (403):**
+**Error Response (400):**
 ```json
 {
-  "error": "403 Your API key was reported as leaked. Please use another API key.",
-  "hint": "Interactive story generation failed on the backend."
+  "error": "user_id is required"
 }
 ```
 
@@ -201,35 +207,31 @@
 **Request Body:**
 ```json
 {
-  "character": "Alex",
-  "theme": "Mystery",
-  "age": 10,
-  "choice": "Follow the map to the old library",
-  "story_so_far": "Alex discovered a mysterious map...",
-  "choices_made": ["Enter the attic"],
-  "companion": "detective cat",
-  "user_api_key": "optional-gemini-key"
+  "story_id": "uuid_story_id",
+  "choice_id": "uuid_choice_id"
 }
 ```
 
 **Response (200 OK):**
 ```json
 {
-  "text": "At the old library, Alex found a hidden passage...",
-  "choices": [
-    {
-      "id": "choice_1",
-      "text": "Enter the passage"
-    },
-    {
-      "id": "choice_2",
-      "text": "Ask the librarian about it"
-    },
-    {
-      "id": "choice_end",
-      "text": "End the story here."
-    }
-  ]
+  "story_id": "uuid_story_id",
+  "title": "Story Title",
+  "segment": {
+    "id": "uuid_segment_id",
+    "segment_number": 2,
+    "content": "Next segment text...",
+    "choices": [
+      {
+        "id": "uuid_choice_id",
+        "choice_number": 1,
+        "text": "Choice text..."
+      }
+    ]
+  },
+  "inventory": [],
+  "state": {},
+  "is_completed": false
 }
 ```
 
@@ -240,7 +242,7 @@
 ### POST /generate-illustrations
 **Description:** Generate story illustrations for a scene.
 
-**Rate Limit:** 10 per hour
+**Rate Limit:** Tier-based (varies). See `X-RateLimit-*` headers in responses.
 
 **Request Body:**
 ```json
@@ -351,7 +353,7 @@
 ---
 
 ### GET /api/stripe/subscription-status/:user_id
-**Description:** Get user's current subscription status.
+**Description:** Get user's current subscription status from Stripe.
 
 **Parameters:**
 - `user_id` (path): User identifier
@@ -361,7 +363,27 @@
 {
   "status": "active",
   "tier": "premium",
-  "current_period_end": "2025-12-24T16:00:00Z"
+  "current_period_end": 1735689600,
+  "cancel_at_period_end": false
+}
+```
+
+---
+
+### GET /api/user/:user_id/subscription
+**Description:** Get user's internal subscription record.
+
+**Parameters:**
+- `user_id` (path): User identifier
+
+**Response (200 OK):**
+```json
+{
+  "user_id": "uuid",
+  "tier": "premium",
+  "status": "active",
+  "current_period_end": "2025-12-24T16:00:00Z",
+  "cancel_at_period_end": false
 }
 ```
 
@@ -399,48 +421,43 @@
 
 ## Character Management Endpoints
 
-### GET /api/characters
-**Description:** List all characters for a user.
+### GET /get-characters
+**Description:** List all characters for the authenticated user.
 
-**Query Parameters:**
-- `user_id` (optional): Filter by user
+**Headers:**
+- `Authorization`: Bearer JWT_TOKEN
 
 **Response (200 OK):**
 ```json
-{
-  "characters": [
-    {
-      "id": 1,
-      "name": "Luna",
-      "age": 7,
-      "fears": ["darkness"],
-      "strengths": ["brave", "kind"],
-      "created_at": "2025-11-24T10:00:00Z"
-    }
-  ]
-}
+[
+  {
+    "id": "char_uuid",
+    "name": "Luna",
+    "age": 7,
+    "personality_traits": ["brave"],
+    "created_at": "2025-11-24T10:00:00Z"
+  }
+]
 ```
 
 ---
 
-### POST /api/characters
+### POST /create-character
 **Description:** Create a new character profile.
+
+**Headers:**
+- `Authorization`: Bearer JWT_TOKEN
 
 **Request Body:**
 ```json
 {
   "name": "Max",
   "age": 8,
-  "fears": ["heights"],
-  "strengths": ["creative", "funny"],
-  "likes": ["dinosaurs", "art"],
-  "dislikes": ["vegetables"],
-  "comfort_item": "blanket",
-  "personality_traits": ["imaginative"],
+  "traits": ["creative", "funny"],
+  "likes": ["dinosaurs"],
   "personality_sliders": {
-    "energy": 80,
-    "social": 60,
-    "structure": 40
+    "adventure": 80,
+    "sociability": 60
   }
 }
 ```
@@ -448,7 +465,7 @@
 **Response (201 Created):**
 ```json
 {
-  "id": 2,
+  "id": "char_uuid",
   "name": "Max",
   "age": 8,
   "created_at": "2025-11-24T16:10:00Z"
@@ -457,58 +474,66 @@
 
 ---
 
-### GET /api/characters/:id
+### GET /characters/:id
 **Description:** Get detailed character information.
+
+**Headers:**
+- `Authorization`: Bearer JWT_TOKEN
 
 **Response (200 OK):**
 ```json
 {
-  "id": 1,
+  "id": "char_uuid",
   "name": "Luna",
   "age": 7,
-  "fears": ["darkness", "loud noises"],
-  "strengths": ["brave", "kind"],
-  "likes": ["stars", "animals"],
-  "dislikes": ["bugs"],
-  "comfort_item": "teddy bear",
   "personality_traits": ["curious", "empathetic"],
   "personality_sliders": {
     "energy": 70,
-    "social": 50,
-    "structure": 60
+    "social": 50
   },
-  "created_at": "2025-11-24T10:00:00Z",
-  "updated_at": "2025-11-24T15:00:00Z"
+  "created_at": "2025-11-24T10:00:00Z"
 }
 ```
 
 ---
 
-### PUT /api/characters/:id
-**Description:** Update character details.
+### PATCH /characters/:id
+**Description:** Update character details (partial update).
+
+**Headers:**
+- `Authorization`: Bearer JWT_TOKEN
 
 **Request Body:** (all fields optional)
 ```json
 {
-  "fears": ["darkness", "storms"],
-  "strengths": ["brave", "kind", "helpful"]
+  "traits": ["brave", "kind", "helpful"]
 }
 ```
 
 **Response (200 OK):**
 ```json
 {
-  "id": 1,
-  "updated_at": "2025-11-24T16:15:00Z"
+  "id": "char_uuid",
+  "name": "Luna",
+  "personality_traits": ["brave", "kind", "helpful"]
 }
 ```
 
 ---
 
-### DELETE /api/characters/:id
+### DELETE /characters/:id
 **Description:** Delete a character profile.
 
-**Response (204 No Content)**
+**Headers:**
+- `Authorization`: Bearer JWT_TOKEN
+
+**Response (200 OK):**
+```json
+{
+  "status": "deleted",
+  "id": "char_uuid"
+}
+```
 
 ---
 
@@ -544,9 +569,9 @@ curl -X POST https://story-weaver-app-production.up.railway.app/generate-story \
 }
 ```
 
-### POST /api/characters
+### POST /create-character
 ```bash
-curl -X POST https://story-weaver-app-production.up.railway.app/api/characters \
+curl -X POST https://story-weaver-app-production.up.railway.app/create-character \
   -H "Authorization: Bearer YOUR_JWT" \
   -H "Content-Type: application/json" \
   -d '{
@@ -567,13 +592,13 @@ curl -X POST https://story-weaver-app-production.up.railway.app/api/characters \
 **Error (400):**
 ```json
 {
-  "error": "name is required"
+  "error": "Missing required field(s): age"
 }
 ```
 
-### GET /api/characters
+### GET /get-characters
 ```bash
-curl -X GET https://story-weaver-app-production.up.railway.app/api/characters \
+curl -X GET https://story-weaver-app-production.up.railway.app/get-characters \
   -H "Authorization: Bearer YOUR_JWT"
 ```
 
@@ -588,20 +613,13 @@ curl -X GET https://story-weaver-app-production.up.railway.app/api/characters \
 ]
 ```
 
-**Error (401):**
-```json
-{
-  "error": "Authentication required"
-}
-```
-
-### PATCH /api/characters/:id
+### PATCH /characters/:id
 ```bash
-curl -X PATCH https://story-weaver-app-production.up.railway.app/api/characters/char_123 \
+curl -X PATCH https://story-weaver-app-production.up.railway.app/characters/char_123 \
   -H "Authorization: Bearer YOUR_JWT" \
   -H "Content-Type: application/json" \
   -d '{
-    "age": 8
+    "name": "Luna Updated"
   }'
 ```
 
@@ -620,15 +638,18 @@ curl -X PATCH https://story-weaver-app-production.up.railway.app/api/characters/
 }
 ```
 
-### DELETE /api/characters/:id
+### DELETE /characters/:id
 ```bash
-curl -X DELETE https://story-weaver-app-production.up.railway.app/api/characters/char_123 \
+curl -X DELETE https://story-weaver-app-production.up.railway.app/characters/char_123 \
   -H "Authorization: Bearer YOUR_JWT"
 ```
 
-**Success (204):**
+**Success (200):**
 ```json
-{}
+{
+  "status": "deleted",
+  "id": "char_123"
+}
 ```
 
 **Error (403):**
@@ -638,17 +659,18 @@ curl -X DELETE https://story-weaver-app-production.up.railway.app/api/characters
 }
 ```
 
-### GET /api/subscription/status
+### GET /api/user/:user_id/subscription
 ```bash
-curl -X GET https://story-weaver-app-production.up.railway.app/api/subscription/status \
-  -H "Authorization: Bearer YOUR_JWT"
+curl -X GET https://story-weaver-app-production.up.railway.app/api/user/user_123/subscription
 ```
 
 **Success (200):**
 ```json
 {
+  "user_id": "user_123",
   "tier": "premium",
   "status": "active",
+  "current_period_end": "2025-12-24T16:00:00Z",
   "cancel_at_period_end": false
 }
 ```
@@ -660,17 +682,54 @@ curl -X GET https://story-weaver-app-production.up.railway.app/api/subscription/
 }
 ```
 
+### GET /api/stripe/subscription-status/:user_id
+```bash
+curl -X GET https://story-weaver-app-production.up.railway.app/api/stripe/subscription-status/user_123 \
+  -H "Authorization: Bearer YOUR_JWT"
+```
+
+**Success (200):**
+```json
+{
+  "status": "active",
+  "tier": "premium",
+  "current_period_end": 1735689600,
+  "cancel_at_period_end": false
+}
+```
+
+### POST /api/user/:user_id/cancel-subscription
+```bash
+curl -X POST https://story-weaver-app-production.up.railway.app/api/user/user_123/cancel-subscription \
+  -H "Authorization: Bearer YOUR_JWT"
+```
+
+**Success (200):**
+```json
+{
+  "success": true,
+  "message": "Subscription will be canceled at period end",
+  "cancel_at_period_end": true
+}
+```
+
 ---
 
 ## Rate Limits
 
 | Endpoint | Limit |
 |----------|-------|
-| `/generate-story` | 10 per minute |
+| `/generate-story` | Tier-based (varies) |
 | `/generate-interactive-story` | 5 per minute |
 | `/continue-interactive-story` | 5 per minute |
-| `/generate-illustrations` | 10 per hour |
+| `/generate-illustrations` | Tier-based (varies) |
 | `/generate-coloring-pages` | 10 per hour |
+| `/create-character` | 20 per hour |
+| `/characters/:id` (PATCH/PUT) | 30 per hour |
+| `/characters/:id` (DELETE) | 10 per hour |
+| `/api/user/:user_id/subscription` | 60 per minute |
+| `/api/user/:user_id/usage-stats` | 60 per minute |
+| `/api/user/:user_id/cancel-subscription` | 5 per hour |
 
 **Rate Limit Headers:**
 ```
@@ -707,12 +766,24 @@ X-RateLimit-Reset: 1700000000
 
 ## Authentication
 
-**Current Implementation:** Public endpoints (no auth required)
+**Current Implementation:**
+Some endpoints require a valid JWT (JSON Web Token) in the `Authorization` header.
 
-**Planned (Future):**
-- JWT token authentication
-- User sessions
-- API keys for external integrations
+**Header Format:**
+`Authorization: Bearer <your_jwt_token>`
+
+**Protected Endpoints:**
+- Character management endpoints: `/create-character`, `/get-characters`, `/characters/:id`
+- Stripe subscription status: `/api/stripe/subscription-status/:user_id`
+- User actions: `/api/user/:user_id/usage-stats`, `/api/user/:user_id/cancel-subscription`
+- Some administrative endpoints
+
+**Public Endpoints:**
+- `/health`
+- `/version`
+- `/auth/login` (to obtain JWT)
+- `/auth/anonymous` (to obtain temporary JWT)
+- Story generation endpoints: `/generate-story`, `/generate-interactive-story`, `/continue-interactive-story`
 
 ---
 
@@ -740,7 +811,7 @@ X-RateLimit-Reset: 1700000000
 - `STRIPE_WEBHOOK_SECRET`: Webhook signing secret
 
 **Optional:**
-- `GEMINI_MODEL`: Model name (default: gemini-1.5-flash)
+- `GEMINI_MODEL`: Model name (default: gemini-2.0-flash)
 - `ALLOWED_ORIGINS`: CORS origins (comma-separated)
 - `RAILWAY_ENVIRONMENT`: Environment name
 
@@ -778,7 +849,7 @@ curl https://story-weaver-app-production.up.railway.app/health
 ```bash
 curl -X POST https://story-weaver-app-production.up.railway.app/generate-story \
   -H "Content-Type: application/json" \
-  -d '{"character":"Test","character_age":7,"theme":"Adventure"}'
+  -d '{"character":"Test","age":7,"theme":"Adventure"}'
 ```
 
 **Create Stripe Checkout:**
@@ -820,6 +891,6 @@ curl -X POST https://story-weaver-app-production.up.railway.app/api/stripe/creat
 
 ---
 
-**Last Updated:** 2025-11-24
+**Last Updated:** 2026-02-15
 **API Version:** 1.0.2
 **Status:** Production Ready ✅

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -8,6 +9,10 @@ class ErrorBoundary extends StatefulWidget {
       fallbackBuilder;
   final VoidCallback? onRetry;
   final void Function(Object error, StackTrace stackTrace)? onError;
+
+  /// Whether to catch errors even when running in a test environment.
+  /// Defaults to false to avoid interfering with flutter_test.
+  static bool shouldCatchInTests = false;
 
   const ErrorBoundary({
     super.key,
@@ -26,16 +31,27 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
   StackTrace? _stackTrace;
   FlutterExceptionHandler? _previousHandler;
 
+  bool get _shouldOverrideHandler {
+    if (ErrorBoundary.shouldCatchInTests) return true;
+    // On web, Platform.environment is not available, so just check kDebugMode
+    if (kIsWeb) return !kDebugMode;
+    return !kDebugMode || !Platform.environment.containsKey('FLUTTER_TEST');
+  }
+
   @override
   void initState() {
     super.initState();
-    _previousHandler = FlutterError.onError;
-    FlutterError.onError = _handleFlutterError;
+    if (_shouldOverrideHandler) {
+      _previousHandler = FlutterError.onError;
+      FlutterError.onError = _handleFlutterError;
+    }
   }
 
   @override
   void dispose() {
-    FlutterError.onError = _previousHandler;
+    if (_shouldOverrideHandler) {
+      FlutterError.onError = _previousHandler;
+    }
     super.dispose();
   }
 

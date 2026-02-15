@@ -90,6 +90,11 @@ def create_health_blueprint(logger, api_key: str, app_version: str, gemini_model
         """Detailed database health check"""
         try:
             pool = db.engine.pool
+            from sqlalchemy.pool import StaticPool
+
+            if isinstance(pool, StaticPool):
+                return jsonify({"status": "ok", "pool_type": "StaticPool", "note": "StaticPool has no size metrics"})
+
             return jsonify(
                 {
                     "status": "ok",

@@ -2,6 +2,8 @@
   "name": "railway-mcp",
   "type": "module",
   "dependencies": {
-    "node-fetch": "^3.3.2"
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "node-fetch": "^3.3.2",
+    "zod": "^4.3.6"
   }
 }

@@ -3,21 +3,67 @@ import 'package:flutter/material.dart';
 
 /// Backend-aligned companion names.
 const kCompanionOptions = <CompanionOption>[
-  CompanionOption(label: 'None', keyName: 'None', asset: null),
-  CompanionOption(label: 'Star Dog', keyName: 'Star Dog', asset: 'assets/images/companions/dog.jpg'),
-  CompanionOption(label: 'Shadow Cat', keyName: 'Shadow Cat', asset: 'assets/images/companions/cat.jpg'),
-  CompanionOption(label: 'Tiny Dragon', keyName: 'Tiny Dragon', asset: 'assets/images/companions/dragon.jpg'),
-  CompanionOption(label: 'Wise Owl', keyName: 'Wise Owl', asset: 'assets/images/companions/owl.jpg'),
-  CompanionOption(label: 'Magic Unicorn', keyName: 'Magic Unicorn', asset: 'assets/images/companions/unicorn.jpg'),
-  CompanionOption(label: 'Clever Fox', keyName: 'Clever Fox', asset: 'assets/images/companions/fox.jpg'),
-  CompanionOption(label: 'Rockin\' Robin', keyName: 'Rockin\' Robin', asset: 'assets/images/companions/robin.jpg'),
+  CompanionOption(
+    label: 'None',
+    keyName: 'None',
+    asset: null,
+    description: 'Go on a solo adventure!',
+  ),
+  CompanionOption(
+    label: 'Star Dog',
+    keyName: 'Star Dog',
+    asset: 'assets/images/companions/dog.jpg',
+    description: 'A loyal pup with a coat like the night sky and a super-powered sniff.',
+  ),
+  CompanionOption(
+    label: 'Shadow Cat',
+    keyName: 'Shadow Cat',
+    asset: 'assets/images/companions/cat.jpg',
+    description: 'A sleek, mysterious friend who can vanish into the shadows.',
+  ),
+  CompanionOption(
+    label: 'Tiny Dragon',
+    keyName: 'Tiny Dragon',
+    asset: 'assets/images/companions/dragon.jpg',
+    description: 'A pocket-sized powerhouse who can light the way with a tiny spark.',
+  ),
+  CompanionOption(
+    label: 'Wise Owl',
+    keyName: 'Wise Owl',
+    asset: 'assets/images/companions/owl.jpg',
+    description: 'A clever feathered friend who knows ancient secrets and sees in the dark.',
+  ),
+  CompanionOption(
+    label: 'Magic Unicorn',
+    keyName: 'Magic Unicorn',
+    asset: 'assets/images/companions/unicorn.jpg',
+    description: 'A shimmering guide who can heal spirits and find hidden paths.',
+  ),
+  CompanionOption(
+    label: 'Clever Fox',
+    keyName: 'Clever Fox',
+    asset: 'assets/images/companions/fox.jpg',
+    description: 'A quick-witted trickster who can solve any puzzle or outsmart any trap.',
+  ),
+  CompanionOption(
+    label: 'Rockin\' Robin',
+    keyName: 'Rockin\' Robin',
+    asset: 'assets/images/companions/robin.jpg',
+    description: 'A cheerful singer whose music can lift anyone\'s mood or distract a foe.',
+  ),
 ];
 
 class CompanionOption {
   final String label;   // Shown in UI
   final String keyName; // Sent to backend
   final String? asset;  // Optional image path
-  const CompanionOption({required this.label, required this.keyName, this.asset});
+  final String description; // NEW: Detailed description
+  const CompanionOption({
+    required this.label,
+    required this.keyName,
+    required this.description,
+    this.asset,
+  });
 }
 
 /// A nice, self-contained selector with:
@@ -130,11 +176,14 @@ class _ChipsCompanions extends StatelessWidget {
       runSpacing: 8,
       children: options.map((o) {
         final isSel = o.keyName == selected;
-        return ChoiceChip(
-          label: Text(o.label),
-          selected: isSel,
-          avatar: _ChipAvatar(option: o, selected: isSel),
-          onSelected: (_) => onSelect(o.keyName),
+        return Tooltip(
+          message: o.description,
+          child: ChoiceChip(
+            label: Text(o.label),
+            selected: isSel,
+            avatar: _ChipAvatar(option: o, selected: isSel),
+            onSelected: (_) => onSelect(o.keyName),
+          ),
         );
       }).toList(),
     );
@@ -163,7 +212,7 @@ class _GridViewCompanions extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: cross,
-        childAspectRatio: 1.4,
+        childAspectRatio: 0.85, // Adjusted for description
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
       ),
@@ -175,7 +224,7 @@ class _GridViewCompanions extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
@@ -191,9 +240,24 @@ class _GridViewCompanions extends StatelessWidget {
                 Text(
                   o.label,
                   textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: isSel ? Colors.blueAccent : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Expanded(
+                  child: Text(
+                    o.description,
+                    textAlign: TextAlign.center,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isSel ? Colors.blueGrey : Colors.grey.shade600,
+                    ),
                   ),
                 ),
               ],

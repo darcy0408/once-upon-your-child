@@ -51,7 +51,16 @@ AGE_CONSTRAINTS = {
     }
 }
 
-SAFETY_GUARDRAILS = """
+STRICT_OUTPUT_CONSTRAINTS = """
+STRICT OUTPUT CONSTRAINTS:
+- Do NOT include any meta-talk or introductory phrases (e.g., "Here we go!", "Sure, I can do that", "Here is your story").
+- Do NOT repeat any part of these instructions in the story text.
+- Do NOT include phrases like "MANDATORY Checklist" or "EVERY name here MUST be in the story".
+- ONLY return the story content itself in the requested format.
+"""
+
+SAFETY_GUARDRAILS = f"""
+{STRICT_OUTPUT_CONSTRAINTS}
 SAFETY RULES:
 - No sexual content, no graphic violence, no self-harm, no illegal wrongdoing.
 - Handle sensitive emotions gently. Safe, therapeutic tone.

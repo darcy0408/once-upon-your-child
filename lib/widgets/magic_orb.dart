@@ -9,16 +9,20 @@ class MagicOrbWidget extends StatefulWidget {
   final String imagePath;
   final Color glowColor;
   final double size;
+  final String? topLabel; // NEW: Scenario title overlay (top)
   final String? label; // NEW: Label overlay
   final Widget? child; // Optional overlay content
+  final double childScale; // If child is present, optionally scale it so background stays visible.
 
   const MagicOrbWidget({
     super.key,
     required this.imagePath,
     this.glowColor = AppColors.gold,
     this.size = 200.0,
+    this.topLabel,
     this.label,
     this.child,
+    this.childScale = 1.0,
   });
 
   @override
@@ -59,12 +63,17 @@ class _MagicOrbWidgetState extends State<MagicOrbWidget>
   }
 
   void _generateSparkles() {
-    for (int i = 0; i < 15; i++) { // Increased sparkle count
+    for (int i = 0; i < 22; i++) { // Denser sparkle field
       _sparkles.add(_SparkleParticle(
         angle: _random.nextDouble() * 2 * math.pi,
         distance: 0.4 + _random.nextDouble() * 0.6, 
         size: 2.0 + _random.nextDouble() * 5.0,
         speed: 0.3 + _random.nextDouble() * 0.7,
+        twinklePhase: _random.nextDouble() * 2 * math.pi,
+        twinkleSpeed: 0.8 + _random.nextDouble() * 2.2,
+        driftPhase: _random.nextDouble() * 2 * math.pi,
+        driftSpeed: 0.2 + _random.nextDouble() * 0.8,
+        whiteness: _random.nextDouble() * 0.85,
       ));
     }
   }
@@ -84,20 +93,75 @@ class _MagicOrbWidgetState extends State<MagicOrbWidget>
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // 1. Magical Aura (Outer Glow)
+          // 1. Magical Aura (3-layer gradient halo)
           AnimatedBuilder(
             animation: _pulseAnimation,
             builder: (context, child) {
+              final t = _pulseAnimation.value; // 0.8..1.2
+              final glow = widget.glowColor;
+              final soft = Color.lerp(glow, Colors.white, 0.55)!;
+              final deep = Color.lerp(glow, Colors.black, 0.15)!;
+
               return Container(
-                width: widget.size * 1.1,
-                height: widget.size * 1.1,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: widget.glowColor.withValues(alpha: 0.3 * _pulseAnimation.value),
-                      blurRadius: 40 * _pulseAnimation.value,
-                      spreadRadius: 15 * _pulseAnimation.value,
+                width: widget.size * 1.35,
+                height: widget.size * 1.35,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Layer 1 (outer, soft)
+                    Transform.rotate(
+                      angle: _sparkleController.value * 2 * math.pi * 0.03,
+                      child: Container(
+                        width: widget.size * (1.32 * t),
+                        height: widget.size * (1.32 * t),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              soft.withValues(alpha: 0.0),
+                              glow.withValues(alpha: 0.18 * t),
+                              deep.withValues(alpha: 0.08 * t),
+                              Colors.transparent,
+                            ],
+                            stops: const [0.0, 0.45, 0.75, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Layer 2 (mid, bright)
+                    Transform.rotate(
+                      angle: -_sparkleController.value * 2 * math.pi * 0.05,
+                      child: Container(
+                        width: widget.size * (1.18 * (0.95 + 0.1 * t)),
+                        height: widget.size * (1.18 * (0.95 + 0.1 * t)),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              Colors.white.withValues(alpha: 0.22 * t),
+                              glow.withValues(alpha: 0.22 * t),
+                              Colors.transparent,
+                            ],
+                            stops: const [0.0, 0.55, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Layer 3 (inner, tight energy ring)
+                    Container(
+                      width: widget.size * (1.06 * (1.0 + 0.04 * t)),
+                      height: widget.size * (1.06 * (1.0 + 0.04 * t)),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            glow.withValues(alpha: 0.28 * t),
+                            Colors.white.withValues(alpha: 0.10 * t),
+                            Colors.transparent,
+                          ],
+                          stops: const [0.0, 0.65, 1.0],
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -105,12 +169,12 @@ class _MagicOrbWidgetState extends State<MagicOrbWidget>
             },
           ),
 
-          // 2. Swirling Sparkles
+          // 2. Swirling Sparkles (twinkle + drift)
           AnimatedBuilder(
             animation: _sparkleController,
             builder: (context, child) {
               return CustomPaint(
-                size: Size(widget.size * 1.4, widget.size * 1.4),
+                size: Size(widget.size * 1.5, widget.size * 1.5),
                 painter: _SparklePainter(
                   sparkles: _sparkles,
                   color: widget.glowColor,
@@ -126,15 +190,17 @@ class _MagicOrbWidgetState extends State<MagicOrbWidget>
             height: widget.size,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.9),
-                width: 4,
-              ),
+              // Removed white border for cleaner look
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+                BoxShadow(
+                  color: widget.glowColor.withValues(alpha: 0.3),
                   blurRadius: 15,
-                  offset: const Offset(0, 8),
+                  spreadRadius: 2,
                 ),
               ],
             ),
@@ -142,15 +208,21 @@ class _MagicOrbWidgetState extends State<MagicOrbWidget>
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Scenario Background
-                  Image.asset(
-                    widget.imagePath,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
+                  // Scenario Background (Only if path provided)
+                  if (widget.imagePath.isNotEmpty)
+                    Image.asset(
+                      widget.imagePath,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                        child: const Icon(Icons.auto_awesome, color: Colors.white, size: 64),
+                      ),
+                    )
+                  else if (widget.child == null)
+                    Container(
                       color: AppColors.primary.withValues(alpha: 0.3),
                       child: const Icon(Icons.auto_awesome, color: Colors.white, size: 64),
                     ),
-                  ),
                   
                   // Atmosphere Tint
                   Container(
@@ -158,13 +230,23 @@ class _MagicOrbWidgetState extends State<MagicOrbWidget>
                       gradient: RadialGradient(
                         colors: [
                           Colors.transparent,
-                          widget.glowColor.withValues(alpha: 0.2),
-                          Colors.black.withValues(alpha: 0.4),
+                          widget.glowColor.withValues(alpha: 0.15),
+                          Colors.black.withValues(alpha: 0.35),
                         ],
-                        stops: const [0.5, 0.8, 1.0],
+                        stops: const [0.6, 0.85, 1.0],
                       ),
                     ),
                   ),
+
+                  // Optional Overlay Content (e.g., Hero Avatar)
+                  if (widget.child != null)
+                    Center(
+                      child: FractionallySizedBox(
+                        widthFactor: widget.childScale.clamp(0.25, 1.0),
+                        heightFactor: widget.childScale.clamp(0.25, 1.0),
+                        child: ClipOval(child: widget.child!),
+                      ),
+                    ),
 
                   // Optional Label Overlay
                   if (widget.label != null)
@@ -172,14 +254,14 @@ class _MagicOrbWidgetState extends State<MagicOrbWidget>
                       alignment: Alignment.bottomCenter,
                       child: Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              Colors.black.withValues(alpha: 0.7),
+                              Colors.black.withValues(alpha: 0.8),
                             ],
                           ),
                         ),
@@ -187,7 +269,7 @@ class _MagicOrbWidgetState extends State<MagicOrbWidget>
                           widget.label!,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                             fontFamily: 'Quicksand',
                             shadows: [Shadow(color: Colors.black, blurRadius: 4)],
@@ -197,8 +279,36 @@ class _MagicOrbWidgetState extends State<MagicOrbWidget>
                       ),
                     ),
 
-                  if (widget.child != null)
-                    Center(child: widget.child),
+                  // Optional Top Title Overlay
+                  if (widget.topLabel != null)
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.55),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.22),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            widget.topLabel!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -254,12 +364,22 @@ class _SparkleParticle {
   final double distance;
   final double size;
   final double speed;
+  final double twinklePhase;
+  final double twinkleSpeed;
+  final double driftPhase;
+  final double driftSpeed;
+  final double whiteness; // 0..1: how much this sparkle trends toward white
 
   _SparkleParticle({
     required this.angle,
     required this.distance,
     required this.size,
     required this.speed,
+    required this.twinklePhase,
+    required this.twinkleSpeed,
+    required this.driftPhase,
+    required this.driftSpeed,
+    required this.whiteness,
   });
 }
 
@@ -278,21 +398,37 @@ class _SparklePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
-    
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
 
     for (final sparkle in sparkles) {
       // Calculate current position with rotation
       final currentAngle = sparkle.angle + (rotation * sparkle.speed);
-      final dist = radius * sparkle.distance;
+      final drift = 1.0 + (0.06 * math.sin((rotation * sparkle.driftSpeed) + sparkle.driftPhase));
+      final dist = radius * sparkle.distance * drift;
       
       final dx = center.dx + dist * math.cos(currentAngle);
       final dy = center.dy + dist * math.sin(currentAngle);
 
-      // Draw star shape (simplified cross)
-      _drawStar(canvas, Offset(dx, dy), sparkle.size, paint);
+      // Twinkle (opacity + subtle size change)
+      final tw = 0.5 + 0.5 * math.sin((rotation * sparkle.twinkleSpeed) + sparkle.twinklePhase);
+      final alpha = (0.20 + 0.80 * tw).clamp(0.0, 1.0);
+      final s = sparkle.size * (0.85 + 0.35 * tw);
+
+      final sparkleColor = Color.lerp(Colors.white, color, (1.0 - sparkle.whiteness).clamp(0.0, 1.0))!;
+
+      final glowPaint = Paint()
+        ..color = sparkleColor.withValues(alpha: (0.20 * alpha).clamp(0.0, 1.0))
+        ..style = PaintingStyle.fill
+        ..blendMode = BlendMode.plus
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, (s * 1.2).clamp(1.0, 8.0));
+
+      final starPaint = Paint()
+        ..color = sparkleColor.withValues(alpha: alpha)
+        ..style = PaintingStyle.fill
+        ..blendMode = BlendMode.plus;
+
+      // Small glow core + star
+      canvas.drawCircle(Offset(dx, dy), (s * 0.75).clamp(0.8, 6.0), glowPaint);
+      _drawStar(canvas, Offset(dx, dy), s, starPaint);
     }
   }
 

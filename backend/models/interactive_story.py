@@ -38,6 +38,7 @@ class InteractiveStory(db.Model):
     # Relationships
     segments = db.relationship('StorySegment', backref='story', lazy='dynamic',
                                foreign_keys='StorySegment.story_id',
+                               cascade='all, delete-orphan',
                                order_by='StorySegment.segment_number')
     inventory = db.relationship('InventoryItem', backref='story', lazy='dynamic',
                                 cascade='all, delete-orphan')

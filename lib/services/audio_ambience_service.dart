@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 
 /// Service to handle theme-based background ambience audio.
@@ -6,9 +7,12 @@ class AudioAmbienceService {
   factory AudioAmbienceService() => _instance;
   AudioAmbienceService._internal();
 
-  // final AudioPlayer _player = AudioPlayer();
+  final AudioPlayer _player = AudioPlayer();
   String? _currentTheme;
   bool _isPlaying = false;
+  bool _autoplayBlocked = false;
+  String? _pendingTheme;
+  double _volume = 0.15;
 
   /// Map of story themes to their corresponding audio assets.
   final Map<String, String> _themeAudioMap = {
@@ -18,6 +22,18 @@ class AudioAmbienceService {
     'Magic': 'sounds/magical_shimmer.mp3',
     'Ocean': 'sounds/ocean_waves.mp3',
   };
+
+  /// Plays a one-shot sound effect.
+  Future<void> playSfx(String sfxPath) async {
+    try {
+      final sfxPlayer = AudioPlayer();
+      await sfxPlayer.play(AssetSource(sfxPath));
+      // Cleanup player after completion
+      sfxPlayer.onPlayerComplete.listen((_) => sfxPlayer.dispose());
+    } catch (e) {
+      debugPrint('Error playing SFX: $e');
+    }
+  }
 
   /// Starts playing ambience for a specific theme.
   Future<void> startAmbience(String theme) async {
@@ -34,25 +50,63 @@ class AudioAmbienceService {
     }
 
     try {
-      // await _player.stop();
-      // await _player.setReleaseMode(ReleaseMode.loop);
-      // await _player.setVolume(0.15); // Low volume background
-      // await _player.play(AssetSource(assetPath));
+      _pendingTheme = normalizedTheme;
+      _autoplayBlocked = false;
+
+      await _player.stop();
+      await _player.setReleaseMode(ReleaseMode.loop);
+      await _player.setVolume(_volume);
+      await _player.play(AssetSource(assetPath));
       _currentTheme = normalizedTheme;
       _isPlaying = true;
+      _pendingTheme = null;
       debugPrint('Started ambience for theme: $normalizedTheme');
     } catch (e) {
       debugPrint('Error playing ambience audio: $e');
       _isPlaying = false;
+
+      // Web browsers often block autoplay until a user gesture.
+      if (kIsWeb) {
+        _autoplayBlocked = true;
+        _pendingTheme = normalizedTheme;
+      }
+    }
+  }
+
+  /// Call from a user interaction (tap/flip) to retry starting ambience if a
+  /// platform blocked autoplay (notably web).
+  Future<void> onUserGesture() async {
+    if (!_autoplayBlocked) return;
+    final theme = _pendingTheme;
+    if (theme == null) return;
+
+    try {
+      final assetPath = _themeAudioMap[theme];
+      if (assetPath == null) return;
+
+      await _player.stop();
+      await _player.setReleaseMode(ReleaseMode.loop);
+      await _player.setVolume(_volume);
+      await _player.play(AssetSource(assetPath));
+
+      _currentTheme = theme;
+      _isPlaying = true;
+      _autoplayBlocked = false;
+      _pendingTheme = null;
+      debugPrint('Ambience started after user gesture for theme: $theme');
+    } catch (e) {
+      debugPrint('Error retrying ambience after user gesture: $e');
     }
   }
 
   /// Stops the current ambience audio.
   Future<void> stopAmbience() async {
     try {
-      // await _player.stop();
+      await _player.stop();
       _currentTheme = null;
       _isPlaying = false;
+      _autoplayBlocked = false;
+      _pendingTheme = null;
       debugPrint('Stopped ambience audio');
     } catch (e) {
       debugPrint('Error stopping ambience audio: $e');
@@ -61,7 +115,12 @@ class AudioAmbienceService {
 
   /// Adjusts the volume of the ambience.
   Future<void> setVolume(double volume) async {
-    // await _player.setVolume(volume.clamp(0.0, 1.0));
+    _volume = volume.clamp(0.0, 1.0);
+    try {
+      await _player.setVolume(_volume);
+    } catch (_) {
+      // Ignore; can fail if not yet initialized on some platforms.
+    }
   }
 
   String _normalizeTheme(String theme) {
@@ -74,6 +133,6 @@ class AudioAmbienceService {
   }
 
   void dispose() {
-    // _player.dispose();
+    _player.dispose();
   }
 }

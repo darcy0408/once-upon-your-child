@@ -1,7 +1,5 @@
 import pytest
-
 from backend.routes import story_routes
-
 
 def test_generate_story_enqueues_task_and_returns_poll_url(client, monkeypatch):
     captured_kwargs = {}
@@ -14,7 +12,13 @@ def test_generate_story_enqueues_task_and_returns_poll_url(client, monkeypatch):
             captured_kwargs.update(kwargs)
             return self
 
+        def apply(self, kwargs=None):
+            # Force timeout to trigger async path
+            from celery.exceptions import TimeoutError
+            raise TimeoutError("Simulated timeout")
+
     monkeypatch.setattr(story_routes, "generate_story_task", _FakeTask())
+    monkeypatch.setattr(story_routes, "_celery_runs_eagerly", lambda: False)
 
     response = client.post(
         "/generate-story",
@@ -28,15 +32,17 @@ def test_generate_story_enqueues_task_and_returns_poll_url(client, monkeypatch):
     assert payload["poll_url"].endswith("task-123")
     assert captured_kwargs["character_id"] == "char-1"
     assert captured_kwargs["theme"] == "Courage"
+    # Note: user_id is sanitized in route (user-7 becomes 7 if it looks like a prefix, but user-7 doesn't match user_ pattern)
+    # Actually route does: if user_id.startswith("user_"): user_id = user_id.replace("user_", "")
+    # user-7 starts with user-, not user_
     assert captured_kwargs["user_id"] == "user-7"
-
 
 def test_generate_story_falls_back_when_queue_fails(client, monkeypatch):
     class _FakeResult:
         def __init__(self, data):
             self._data = data
 
-        def get(self):
+        def get(self, *args, **kwargs):
             return self._data
 
     class _FailingTask:
@@ -53,7 +59,7 @@ def test_generate_story_falls_back_when_queue_fails(client, monkeypatch):
                     "story": {
                         "title": "Fallback Adventure",
                         "story_text": "Once upon a time...",
-                        "theme": kwargs.get("theme"),
+                        "theme": kwargs.get("theme") if kwargs else None,
                         "wisdom_gem": "Be kind",
                     },
                 }
@@ -66,10 +72,9 @@ def test_generate_story_falls_back_when_queue_fails(client, monkeypatch):
     assert response.status_code == 200
     payload = response.get_json()
     assert payload["status"] == "complete"
-    assert payload["title"] == "Fallback Adventure"
-    assert payload["story_text"].startswith("Once upon a time")
-    assert payload["wisdom_gem"] == "Be kind"
-
+    assert payload["story"]["title"] == "Fallback Adventure"
+    assert payload["story"]["story_text"].startswith("Once upon a time")
+    assert payload["story"]["wisdom_gem"] == "Be kind"
 
 @pytest.mark.parametrize(
     "state,info,expected",
@@ -102,7 +107,6 @@ def test_task_status_maps_celery_states(client, monkeypatch, state, info, expect
     payload = response.get_json()
     for key, value in expected.items():
         assert payload[key] == value
-
 
 def test_generate_story_requires_character_payload(client):
     response = client.post("/generate-story", json={"theme": "Adventure"})

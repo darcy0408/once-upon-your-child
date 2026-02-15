@@ -33,7 +33,7 @@ def _auth_headers(user_id: str) -> dict[str, str]:
             'user_id': user_id,
             'exp': datetime.utcnow() + timedelta(hours=1),
         },
-        'test_secret',
+        'dev-secret-key',
         algorithm='HS256',
     )
     return {
@@ -65,7 +65,7 @@ def client(app):
 
 @pytest.fixture(autouse=True)
 def mock_auth_secret(mocker):
-    return mocker.patch('backend.middleware.auth._get_jwt_secret', return_value='test_secret')
+    return mocker.patch('backend.middleware.auth._get_jwt_secret', return_value='dev-secret-key')
 
 
 @pytest.fixture

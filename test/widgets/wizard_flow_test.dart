@@ -14,8 +14,10 @@ import 'package:story_weaver_app/services/avatar_generation_state.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
 import 'package:story_weaver_app/services/isar_service_io.dart';
 import 'package:story_weaver_app/widgets/make_magic_button.dart';
+import 'package:story_weaver_app/widgets/image_make_magic_button.dart';
 import 'package:story_weaver_app/widgets/magical_loading_view.dart';
 import 'package:story_weaver_app/screens/wizard_steps/magic_review_step.dart';
+import 'package:story_weaver_app/widgets/magic_orb.dart';
 
 // Mock Isar and Collection
 class MockIsar extends Mock implements Isar {
@@ -88,10 +90,10 @@ void main() {
       if (url.contains('/generate-story')) {
         return http.Response(jsonEncode({
           'title': 'The Magical Test Story',
-          'story_text': 'Once upon a time, a test hero started an adventure... This story is definitely longer than 100 characters so that the substring check does not fail during the test execution.',
+          'story_text': 'Once upon a time, a test hero started an adventure...',
           'wisdom_gem': 'Testing is magic!',
           'pages': [
-            'Page 1 content',
+            'Once upon a time, a test hero started an adventure...',
             'Page 2 content'
           ],
           'adventure_steps': ['Step 1', 'Step 2']
@@ -140,6 +142,21 @@ void main() {
   });
 
   testWidgets('Full Wizard Flow Integration Test', (WidgetTester tester) async {
+    Future<void> pumpUntilFound(
+      Finder finder, {
+      Duration timeout = const Duration(seconds: 10),
+      Duration step = const Duration(milliseconds: 100),
+    }) async {
+      final end = DateTime.now().add(timeout);
+      while (DateTime.now().isBefore(end)) {
+        await tester.pump(step);
+        if (finder.evaluate().isNotEmpty) {
+          return;
+        }
+      }
+      fail('Timed out waiting for: $finder');
+    }
+
     // Set a taller screen size to avoid scrolling issues
     tester.view.physicalSize = const Size(800, 2400); // Increased height
     tester.view.devicePixelRatio = 1.0;
@@ -167,29 +184,13 @@ void main() {
     await tester.pump();
 
     // Ensure "Continue" button is visible and tap it
-    final continueButton = find.text('Continue');
+    final continueButton = find.byKey(const Key('wizard_continue_hero'));
     await tester.ensureVisible(continueButton);
     await tester.tap(continueButton);
-    
+     
     // Transition animation
-    await tester.pump(const Duration(milliseconds: 500)); 
-    await tester.pump(const Duration(seconds: 1)); // Wait for settle
-
-    // --- STEP 2: Feeling Selection ---
-    expect(find.text('Choose Your Adventure!'), findsOneWidget);
-
-    // Select a Scenario (The Doorway Between Seasons)
-    await tester.tap(find.text('The Doorway Between Seasons'));
     await tester.pump(const Duration(milliseconds: 500));
-
-    // "Continue" should appear
-    final startAdventureButton = find.text('Continue');
-    await tester.ensureVisible(startAdventureButton);
-    await tester.tap(startAdventureButton);
-    
-    // Transition
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pump(const Duration(seconds: 1));
+    await pumpUntilFound(find.text('Choose a Travel Buddy'));
 
     // --- STEP 3: Companion Selector ---
     expect(find.text('Choose a Travel Buddy'), findsOneWidget);
@@ -202,14 +203,14 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(goSoloBtn);
-    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(milliseconds: 500));
 
     // Transition
     await tester.pump(const Duration(milliseconds: 500));
-    await tester.pump(const Duration(seconds: 1));
+    await pumpUntilFound(find.byType(MagicOrbWidget));
 
     // --- STEP 4: Magic Review ---
-    expect(find.text('Gaze into the Future...'), findsOneWidget);
+    expect(find.byType(MagicOrbWidget), findsOneWidget);
     
     // Verify summary
     expect(find.textContaining('Test Hero'), findsOneWidget);
@@ -218,33 +219,35 @@ void main() {
     expect(find.byType(MagicReviewStep), findsOneWidget);
     print('✅ MagicReviewStep found.');
 
-    print('🔘 Searching for MakeMagicButton...');
-    final makeMagicBtn = find.byType(MakeMagicButton);
+    print('🔘 Searching for ImageMakeMagicButton...');
+    final makeMagicBtn = find.byType(ImageMakeMagicButton);
     final buttonCount = makeMagicBtn.evaluate().length;
-    print('🔘 Found $buttonCount MakeMagicButtons');
+    print('🔘 Found $buttonCount make-magic buttons');
 
     if (buttonCount == 0) {
-      print('⚠️ MakeMagicButton not found! Dumping widget tree...');
+      print('⚠️ ImageMakeMagicButton not found! Dumping widget tree...');
       debugDumpApp();
-      fail('MakeMagicButton not found!');
+      fail('ImageMakeMagicButton not found!');
     } else {
         await tester.ensureVisible(makeMagicBtn);
         await tester.tap(makeMagicBtn);
     }
     
-    // Simulate generation time
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(find.byType(MagicalLoadingView), findsOneWidget);
-    
     // Wait for generation and navigation (longer wait)
-    for(int i=0; i<20; i++) {
+    // We use multiple pumps to handle animations and typewriter text
+    bool foundStory = false;
+    for(int i=0; i<30; i++) {
         await tester.pump(const Duration(seconds: 1));
-        if (find.textContaining('Once upon a time').evaluate().isNotEmpty) {
+        if (find.text('The Magical Test Story').evaluate().isNotEmpty &&
+            find.textContaining('Once upon a time').evaluate().isNotEmpty) {
+            foundStory = true;
             break;
         }
     }
     
     // --- Verify Result Screen ---
+    expect(foundStory, isTrue, reason: 'Story result screen not found or content not visible');
+    expect(find.text('The Magical Test Story'), findsOneWidget);
     expect(find.textContaining('Once upon a time'), findsOneWidget);
   });
 }

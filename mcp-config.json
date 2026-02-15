@@ -8,6 +8,25 @@
       "env": {
         "RAILWAY_TOKEN": "${RAILWAY_TOKEN}"
       }
+    },
+    "sqlite": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@bytebase/dbhub@latest",
+        "--transport",
+        "stdio",
+        "--dsn",
+        "sqlite:///C:/dev/story-weaver-app/instance/app.db"
+      ]
+    },
+    "context7": {
+      "command": "node",
+      "args": [
+        "context7-server.js"
+      ]
     }
   }
 }
+
+

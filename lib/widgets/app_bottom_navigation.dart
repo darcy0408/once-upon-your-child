@@ -36,10 +36,6 @@ class AppBottomNavigationBar extends StatelessWidget {
           ),
           label: 'Library',
         ),
-        const BottomNavigationBarItem(
-          icon: _NavIcon(icon: Icons.favorite),
-          label: 'Feelings',
-        ),
         BottomNavigationBarItem(
           icon: FeatureUnlockTooltip(
             feature: FeatureType.advancedSettings,

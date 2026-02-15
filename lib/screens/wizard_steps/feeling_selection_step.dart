@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pill_button.dart';
-import '../../widgets/mood_lantern_selector.dart';
 import '../../data/scenario_data.dart';
-import '../../feelings_wheel_data.dart';
 
 const double _settingCardWidth = 220;
 
@@ -31,7 +29,6 @@ class FeelingSelectionStep extends StatefulWidget {
 
 class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   String? _selectedScenario;
-  SelectedFeeling? _selectedFeeling;
   bool _showParentalInput = false;
   final TextEditingController _parentalNoteController = TextEditingController();
   final TextEditingController _safeSpaceController = TextEditingController();
@@ -42,6 +39,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   void initState() {
     super.initState();
     _selectedScenario = widget.wizardData.selectedScenario;
+    widget.wizardData.selectedEmotionChips = [];
     _safeSpaceController.text = widget.wizardData.customElements;
     _parentalNoteController.text = widget.wizardData.parentalNote ?? '';
   }
@@ -61,30 +59,28 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
       if (challengeMap.containsKey(scenarioId)) {
         widget.wizardData.lifeChallenge = challengeMap[scenarioId];
-        debugPrint('🪄 Auto-mapped scenario $scenarioId to challenge: ${widget.wizardData.lifeChallenge}');
+        debugPrint(
+            '🪄 Auto-mapped scenario $scenarioId to challenge: ${widget.wizardData.lifeChallenge}');
       }
     });
   }
 
-  void _selectFeeling(SelectedFeeling feeling) {
-    setState(() {
-      _selectedFeeling = feeling;
-      widget.wizardData.selectedEmotionChips = [feeling.tertiary];
-    });
-  }
+  bool get _canContinue => _selectedScenario != null;
 
-  bool get _canContinue =>
-      _selectedScenario != null || _selectedFeeling != null;
-
-  Widget _buildSlider(String leftLabel, String rightLabel, String key, Map<String, int> sliders) {
+  Widget _buildSlider(String leftLabel, String rightLabel, String key,
+      Map<String, int> sliders) {
     final value = sliders[key]?.toDouble() ?? 50.0;
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(leftLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-            Text(rightLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+            Text(leftLabel,
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+            Text(rightLabel,
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
           ],
         ),
         Slider(
@@ -113,7 +109,9 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
   @override
   Widget build(BuildContext context) {
-    final age = widget.wizardData.characterAge <= 0 ? 5 : widget.wizardData.characterAge;
+    final age = widget.wizardData.characterAge <= 0
+        ? 5
+        : widget.wizardData.characterAge;
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -137,7 +135,9 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                 IconButton(
                   icon: Icon(
                     _showParentalInput ? Icons.close : Icons.shield_outlined,
-                    color: _showParentalInput ? AppColors.primary : AppColors.textDark.withValues(alpha: 0.5),
+                    color: _showParentalInput
+                        ? AppColors.primary
+                        : AppColors.textDark.withValues(alpha: 0.5),
                   ),
                   onPressed: () {
                     setState(() => _showParentalInput = !_showParentalInput);
@@ -174,20 +174,13 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
               const SizedBox(height: AppSpacing.lg),
             ],
 
-            const SizedBox(height: AppSpacing.xl),
-
-            // Mood Lantern Selector - Enchanted floating lanterns
-            MoodLanternSelector(
-              onFeelingSelected: _selectFeeling,
-              backgroundColor: AppColors.cream,
-              age: widget.wizardData.characterAge,
-            ),
             const SizedBox(height: AppSpacing.xxl),
 
             // Continue button
             if (_canContinue)
               Center(
                 child: PillButton(
+                  key: const Key('wizard_continue_scenario'),
                   emoji: '✨',
                   label: 'Continue',
                   onTap: widget.onNext,
@@ -246,7 +239,8 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             controller: _safeSpaceController,
             maxLines: 3,
             decoration: InputDecoration(
-              hintText: 'e.g., I\'m a little nervous about my first day of school...',
+              hintText:
+                  'e.g., I\'m a little nervous about my first day of school...',
               hintStyle: TextStyle(
                 color: AppColors.textDark.withValues(alpha: 0.4),
                 fontSize: 14,
@@ -254,11 +248,13 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
+                borderSide:
+                    BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                borderSide:
+                    const BorderSide(color: AppColors.primary, width: 2),
               ),
               filled: true,
               fillColor: AppColors.primary.withValues(alpha: 0.05),
@@ -292,7 +288,8 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
         children: [
           Row(
             children: [
-              const Icon(Icons.shield_outlined, color: AppColors.primary, size: 28),
+              const Icon(Icons.shield_outlined,
+                  color: AppColors.primary, size: 28),
               const SizedBox(width: 12),
               Text(
                 'Guardian Mode',
@@ -348,13 +345,16 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                 selected: isSelected,
                 onSelected: (selected) {
                   setState(() {
-                    widget.wizardData.lifeChallenge = selected ? challenge : null;
+                    widget.wizardData.lifeChallenge =
+                        selected ? challenge : null;
                   });
                 },
                 selectedColor: AppColors.gold,
                 backgroundColor: Colors.white,
                 labelStyle: TextStyle(
-                  color: isSelected ? AppColors.textDark : AppColors.textDark.withValues(alpha: 0.8),
+                  color: isSelected
+                      ? AppColors.textDark
+                      : AppColors.textDark.withValues(alpha: 0.8),
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   fontSize: 13,
                 ),
@@ -423,12 +423,15 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             controller: _parentalNoteController,
             decoration: InputDecoration(
               hintText: 'e.g., Help with sharing during playdates',
-              hintStyle: TextStyle(color: AppColors.textDark.withValues(alpha: 0.4), fontSize: 14),
+              hintStyle: TextStyle(
+                  color: AppColors.textDark.withValues(alpha: 0.4),
+                  fontSize: 14),
               filled: true,
               fillColor: Colors.white,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
+                borderSide:
+                    BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
               contentPadding: const EdgeInsets.all(12),
             ),
@@ -495,8 +498,6 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   }
 }
 
-
-
 class _ScenarioCardWidget extends StatelessWidget {
   final ScenarioCard scenario;
   final bool isSelected;
@@ -543,7 +544,9 @@ class _ScenarioCardWidget extends StatelessWidget {
                   ),
             borderRadius: BorderRadius.circular(AppRadius.xl),
             border: Border.all(
-              color: isSelected ? AppColors.gold : AppColors.primary.withValues(alpha: 0.3),
+              color: isSelected
+                  ? AppColors.gold
+                  : AppColors.primary.withValues(alpha: 0.3),
               width: isSelected ? 3 : 2,
             ),
             boxShadow: isSelected
@@ -580,7 +583,9 @@ class _ScenarioCardWidget extends StatelessWidget {
                     width: 200,
                     height: 140,
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.white.withValues(alpha: 0.5) : AppColors.secondaryLight.withValues(alpha: 0.2),
+                      color: isSelected
+                          ? Colors.white.withValues(alpha: 0.5)
+                          : AppColors.secondaryLight.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(

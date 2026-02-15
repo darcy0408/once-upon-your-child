@@ -7,9 +7,12 @@ import 'package:story_weaver_app/story_result_screen.dart';
 import 'package:story_weaver_app/pick_a_path_adventure_screen.dart';
 import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
-import 'package:story_weaver_app/widgets/make_magic_button.dart';
 import 'package:story_weaver_app/widgets/magic_orb.dart';
 import 'package:story_weaver_app/widgets/magical_loading_view.dart';
+import 'package:story_weaver_app/widgets/image_progress_orb.dart';
+import 'package:story_weaver_app/widgets/image_mode_orb.dart';
+import 'package:story_weaver_app/widgets/image_crystal_formation.dart';
+import 'package:story_weaver_app/widgets/image_make_magic_button.dart';
 import 'package:story_weaver_app/data/scenario_data.dart';
 import 'package:story_weaver_app/data/companion_data.dart';
 import 'wizard_data_mapper.dart';
@@ -96,6 +99,9 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
     }
 
     setState(() => _isGenerating = true);
+    // Give Flutter a frame to paint the loading UI before starting network work.
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+    if (!mounted) return;
 
     try {
       // 1. Save Character if needed
@@ -263,119 +269,94 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
         child: Column(
           children: [
-            // 1. Crystal progress orbs
+            // 1. Image-based crystal ball progress indicators (3 steps now)
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
-                  _ProgressCrystal(icon: Icons.check_rounded),
-                  SizedBox(width: 10),
-                  _ProgressCrystal(icon: Icons.check_rounded),
-                  SizedBox(width: 10),
-                  _ProgressCrystal(icon: Icons.check_rounded),
-                  SizedBox(width: 10),
-                  _ProgressCrystal(icon: Icons.auto_awesome),
+                  ImageProgressOrb(icon: Icons.check_rounded, showStand: false),
+                  SizedBox(width: 12),
+                  ImageProgressOrb(icon: Icons.check_rounded, showStand: false),
+                  SizedBox(width: 12),
+                  ImageProgressOrb(icon: Icons.auto_awesome, showStand: false),
                 ],
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 24),
 
             // 2. Vision Orb + circular side avatars
             SizedBox(
-              height: 290,
+              height: 340, // Increased height for better spacing
               child: Stack(
                 alignment: Alignment.center,
                 clipBehavior: Clip.none,
                 children: [
+                  // Adjust orbSize to be slightly more compact to avoid crowding
+                  // final orbSize = (screenWidth - 80).clamp(160.0, 220.0); 
+
                   // Enhanced outer aura with multiple layers
                   Container(
-                    width: orbSize + 40,
-                    height: orbSize + 40,
+                    width: orbSize + 50,
+                    height: orbSize + 50,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          const Color(0xFFFFEEA8).withValues(alpha: 0.35),
-                          const Color(0xFFE985FF).withValues(alpha: 0.25),
-                          const Color(0xFFB5F7FF).withValues(alpha: 0.15),
+                          const Color(0xFFFFEEA8).withValues(alpha: 0.4),
+                          const Color(0xFFE985FF).withValues(alpha: 0.3),
+                          const Color(0xFFB5F7FF).withValues(alpha: 0.2),
                           Colors.transparent,
                         ],
                         stops: const [0.0, 0.4, 0.7, 1.0],
                       ),
                     ),
                   ),
-                  // Mid aura layer
-                  Container(
-                    width: orbSize + 20,
-                    height: orbSize + 20,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          const Color(0xFFFFD9A6).withValues(alpha: 0.3),
-                          const Color(0xFFF3AEFF).withValues(alpha: 0.2),
-                          Colors.transparent,
-                        ],
-                        stops: const [0.0, 0.55, 1.0],
-                      ),
-                    ),
-                  ),
 
-                  // Sparkle decorations around orb
-                  ...List.generate(6, (index) {
-                    final angle = (index * 60) * 3.14159 / 180;
-                    final radius = (orbSize / 2) + 30;
-                    return Positioned(
-                      left: MediaQuery.of(context).size.width / 2 + (radius * cos(angle)) - 8,
-                      top: 145 + (radius * sin(angle)) - 8,
-                      child: _SparkleIcon(delay: index * 0.3),
-                    );
-                  }),
-                  // Particle trail orbiting around the vision orb
-                  IgnorePointer(
-                    child: SizedBox(
-                      width: orbSize + 70,
-                      height: orbSize + 70,
-                      child: _OrbParticleTrail(baseColor: AppColors.gold),
-                    ),
-                  ),
-
-                  // Center crystal orb
+                  // Center crystal orb (Hero focus)
                   MagicOrbWidget(
                     imagePath: _scenarioImage,
-                    size: orbSize,
+                    size: orbSize * 0.95, // Slightly smaller hero orb
                     glowColor: AppColors.gold,
-                    label: _scenarioLabel,
+                    topLabel: _scenarioLabel,
+                    label: data.characterName.isNotEmpty ? data.characterName : 'Your Hero',
+                    childScale: 0.92,
+                    child: _HeroAvatar(generatedAvatar: data.generatedAvatar),
                   ),
 
-                  // Hero avatar
+                  // Setting (Scenario) bubble - Moved to BOTTOM LEFT
                   Positioned(
-                    left: 10,
-                    bottom: 30,
+                    left: 5,
+                    bottom: 10,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _FloatingBubble(
                           delay: 0,
                           child: _AuraCircle(
-                            size: 88,
+                            size: 84, // Slightly smaller side bubbles
                             auraColor: const Color(0xFFFFD9A6),
-                            child: _HeroAvatar(generatedAvatar: data.generatedAvatar),
+                            child: ClipOval(
+                              child: Image.asset(
+                                _scenarioImage,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.5),
+                            color: Colors.black.withValues(alpha: 0.6),
                             borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
                           ),
                           child: Text(
-                            data.characterName.isNotEmpty ? data.characterName : 'Hero',
+                            _scenarioLabel,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 14,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -384,41 +365,60 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                     ),
                   ),
 
-                  // Companion avatar
+                  // Companion avatar - Moved to BOTTOM RIGHT
                   if (data.selectedCompanions.isNotEmpty)
                     Positioned(
-                      right: 10,
-                      bottom: 30,
-                      child: _FloatingBubble(
-                        delay: 1.4,
-                        child: _AuraCircle(
-                          size: 88,
-                          auraColor: const Color(0xFFF3AEFF),
-                          child: _CompanionAvatar(
-                            companionImage: _companionImage,
+                      right: 5,
+                      bottom: 10,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _FloatingBubble(
+                            delay: 1.4,
+                            child: _AuraCircle(
+                              size: 84,
+                              auraColor: const Color(0xFFF3AEFF),
+                              child: _CompanionAvatar(
+                                companionImage: _companionImage,
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Text(
+                              'Companion',
+                              style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                 ],
               ),
             ),
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: 24),
 
-            // 3. Crystal mode orbs
+            // 3. Image-based mode orbs with magical effects
             Wrap(
               alignment: WrapAlignment.center,
               spacing: 10,
               runSpacing: 12,
               children: [
-                _CrystalModeOrb(
-                  icon: Icons.auto_stories_rounded,
+                ImageModeOrb(
+                  modeType: 'tales',
                   label: 'Tales',
                   isActive: data.includeIllustrations,
                   onTap: () => setState(() => data.includeIllustrations = !data.includeIllustrations),
+                  primaryColor: const Color(0xFFAA88FF), // Purple
+                  secondaryColor: const Color(0xFFE28EFF), // Magenta
                 ),
-                _CrystalModeOrb(
-                  icon: Icons.music_note_rounded,
+                ImageModeOrb(
+                  modeType: 'rhyme',
                   label: 'Rhyme',
                   isActive: data.rhymeTimeMode,
                   onTap: () => setState(() {
@@ -428,9 +428,11 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                       data.interactiveMode = false;
                     }
                   }),
+                  primaryColor: const Color(0xFF00D4DD), // Cyan
+                  secondaryColor: const Color(0xFF7FDDFF), // Light cyan
                 ),
-                _CrystalModeOrb(
-                  icon: Icons.menu_book_rounded,
+                ImageModeOrb(
+                  modeType: 'reading',
                   label: 'Spellbound Reading',
                   isActive: data.learningToReadMode,
                   onTap: () => setState(() {
@@ -440,9 +442,11 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                       data.interactiveMode = false;
                     }
                   }),
+                  primaryColor: const Color(0xFFB88AFF), // Light purple
+                  secondaryColor: const Color(0xFFFF9ECC), // Pink
                 ),
-                _CrystalModeOrb(
-                  icon: Icons.alt_route_rounded,
+                ImageModeOrb(
+                  modeType: 'pickpath',
                   label: 'Pick Your Path',
                   isActive: data.interactiveMode,
                   onTap: () => setState(() {
@@ -452,44 +456,43 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                       data.learningToReadMode = false;
                     }
                   }),
+                  primaryColor: const Color(0xFF9E6CFF), // Purple
+                  secondaryColor: const Color(0xFFFFB3E6), // Multi-color pink
                 ),
               ],
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // 4. Floating story-length crystals (fixed responsive layout)
+            // 4. Image-based story-length crystals
             LayoutBuilder(
               builder: (context, constraints) {
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Flexible(
-                      child: _LengthCrystal(
+                      child: ImageCrystalFormation(
+                        type: 'quick',
                         label: 'Quick',
-                        val: 'quick',
-                        current: data.storyLength,
-                        onTap: (v) => setState(() => data.storyLength = v),
-                        crystalColors: const [Color(0xFF8EEDFF), Color(0xFFB5F7FF), Color(0xFFE8FEFF)],
+                        isSelected: data.storyLength == 'quick',
+                        onTap: () => setState(() => data.storyLength = 'quick'),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Flexible(
-                      child: _LengthCrystal(
+                      child: ImageCrystalFormation(
+                        type: 'classic',
                         label: 'Classic',
-                        val: 'standard',
-                        current: data.storyLength,
-                        onTap: (v) => setState(() => data.storyLength = v),
-                        crystalColors: const [Color(0xFFFFD65C), Color(0xFFFFEBA5), Color(0xFFFFF7D6)],
+                        isSelected: data.storyLength == 'standard',
+                        onTap: () => setState(() => data.storyLength = 'standard'),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Flexible(
-                      child: _LengthCrystal(
+                      child: ImageCrystalFormation(
+                        type: 'epic',
                         label: 'Epic',
-                        val: 'epic',
-                        current: data.storyLength,
-                        onTap: (v) => setState(() => data.storyLength = v),
-                        crystalColors: const [Color(0xFF9E6CFF), Color(0xFFCBB1FF), Color(0xFFE5DAFF)],
+                        isSelected: data.storyLength == 'epic',
+                        onTap: () => setState(() => data.storyLength = 'epic'),
                       ),
                     ),
                   ],
@@ -528,7 +531,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             ),
             const SizedBox(height: AppSpacing.xxl),
 
-            // 6. Cast Spell Button
+            // 6. Image-based Make Magic Button
             Center(
               child: _isGenerating
                   ? MagicalLoadingView(
@@ -537,10 +540,10 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                     )
                   : _PulsingCastSpellFrame(
                       isReady: !_isGenerating && data.isComplete,
-                      child: MakeMagicButton(
+                      child: ImageMakeMagicButton(
                         onTap: _launchStoryCreation,
                         isEnabled: !_isGenerating && data.isComplete,
-                        label: 'Make Magic ✨', // Thematic label
+                        label: 'MAKE MAGIC', // Updated label to match image
                       ),
                     ),
             ),
@@ -572,16 +575,16 @@ class _FloatingBubbleState extends State<_FloatingBubble> with SingleTickerProvi
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(seconds: 3),
+      duration: const Duration(seconds: 4), // Slower float
       vsync: this,
     );
 
     // Offset each avatar on the animation curve so both bubbles don't move in lockstep.
-    final phaseOffset = ((widget.delay * 1000).toInt() % 3000) / 3000.0;
+    final phaseOffset = ((widget.delay * 1000).toInt() % 4000) / 4000.0;
     _controller.value = phaseOffset;
     _controller.repeat(reverse: true);
 
-    _animation = Tween<double>(begin: -6.0, end: 6.0).animate(
+    _animation = Tween<double>(begin: -10.0, end: 10.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
@@ -606,132 +609,6 @@ class _FloatingBubbleState extends State<_FloatingBubble> with SingleTickerProvi
   }
 }
 
-class _ProgressCrystal extends StatelessWidget {
-  final IconData icon;
-
-  const _ProgressCrystal({required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Stack(
-          alignment: Alignment.center,
-          clipBehavior: Clip.none,
-          children: [
-            // Enhanced outer magical aura with gold accent
-            Container(
-              width: 68,
-              height: 68,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFFA65BFF).withValues(alpha: 0.75),
-                    const Color(0xFFE8A4FF).withValues(alpha: 0.4),
-                    const Color(0xFFFFD878).withValues(alpha: 0.25),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.35, 0.65, 1.0],
-                ),
-              ),
-            ),
-            // Crystal ball with depth
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const RadialGradient(
-                  center: Alignment(-0.3, -0.4),
-                  colors: [
-                    Color(0xFFFFFFFF),
-                    Color(0xFFF5E8FF),
-                    Color(0xFFD5B8FF),
-                    Color(0xFF9E75E0),
-                    Color(0xFF6A3AA9),
-                  ],
-                  stops: [0.0, 0.15, 0.4, 0.75, 1.0],
-                ),
-                border: Border.all(
-                  color: const Color(0xFFFFE8F0).withValues(alpha: 0.8),
-                  width: 2.8,
-                ),
-                boxShadow: const [
-                  // Bright highlight
-                  BoxShadow(
-                    color: Color(0xDDFFFFFF),
-                    blurRadius: 12,
-                    spreadRadius: -6,
-                    offset: Offset(-2, -4),
-                  ),
-                  // Purple glow
-                  BoxShadow(
-                    color: Color(0x99A65BFF),
-                    blurRadius: 22,
-                    spreadRadius: 3,
-                  ),
-                  // Enhanced gold shimmer
-                  BoxShadow(
-                    color: Color(0x88FFD878),
-                    blurRadius: 20,
-                    spreadRadius: 0,
-                  ),
-                  // Secondary gold glow
-                  BoxShadow(
-                    color: Color(0x55FFEBA5),
-                    blurRadius: 28,
-                    spreadRadius: 2,
-                  ),
-                  // Depth shadow
-                  BoxShadow(
-                    color: Color(0x44000000),
-                    blurRadius: 8,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Icon(
-                icon,
-                size: 28,
-                color: Colors.white,
-                shadows: const [
-                  Shadow(color: Color(0x66000000), blurRadius: 4),
-                ],
-              ),
-            ),
-          ],
-        ),
-        // Crystal ball stand/base
-        const SizedBox(height: 2),
-        Container(
-          width: 38,
-          height: 8,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF8B7BA8),
-                Color(0xFF5D4A7A),
-              ],
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x55000000),
-                blurRadius: 4,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _AuraCircle extends StatelessWidget {
   final double size;
   final Color auraColor;
@@ -750,31 +627,31 @@ class _AuraCircle extends StatelessWidget {
       children: [
         // Outermost ethereal halo (third layer)
         Container(
-          width: size + 42,
-          height: size + 42,
+          width: size + 50,
+          height: size + 50,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: RadialGradient(
               colors: [
-                auraColor.withValues(alpha: 0.35),
-                auraColor.withValues(alpha: 0.15),
+                auraColor.withValues(alpha: 0.4),
+                auraColor.withValues(alpha: 0.2),
                 Colors.transparent,
               ],
-              stops: const [0.0, 0.4, 1.0],
+              stops: const [0.0, 0.5, 1.0],
             ),
           ),
         ),
         // Middle magical glow (second layer)
         Container(
-          width: size + 24,
-          height: size + 24,
+          width: size + 32,
+          height: size + 32,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: RadialGradient(
               colors: [
-                auraColor.withValues(alpha: 0.6),
-                auraColor.withValues(alpha: 0.35),
-                auraColor.withValues(alpha: 0.15),
+                auraColor.withValues(alpha: 0.7),
+                auraColor.withValues(alpha: 0.4),
+                auraColor.withValues(alpha: 0.2),
                 Colors.transparent,
               ],
               stops: const [0.0, 0.4, 0.7, 1.0],
@@ -790,29 +667,30 @@ class _AuraCircle extends StatelessWidget {
             boxShadow: [
               // Bright inner glow
               BoxShadow(
-                color: Colors.white.withValues(alpha: 0.6),
-                blurRadius: 12,
+                color: Colors.white.withValues(alpha: 0.8),
+                blurRadius: 16,
                 spreadRadius: -2,
               ),
               // Intensified main aura glow
               BoxShadow(
-                color: auraColor.withValues(alpha: 0.8),
-                blurRadius: 44,
-                spreadRadius: 4,
+                color: auraColor.withValues(alpha: 0.9),
+                blurRadius: 50,
+                spreadRadius: 6,
               ),
               // Secondary gold glow
               BoxShadow(
-                color: const Color(0xFFFFE4B8).withValues(alpha: 0.6),
-                blurRadius: 24,
-                spreadRadius: 0,
+                color: const Color(0xFFFFE4B8).withValues(alpha: 0.7),
+                blurRadius: 30,
+                spreadRadius: 2,
               ),
               // Ethereal white outer glow (fourth shadow layer)
               BoxShadow(
-                color: Colors.white.withValues(alpha: 0.3),
-                blurRadius: 50,
-                spreadRadius: 8,
+                color: Colors.white.withValues(alpha: 0.4),
+                blurRadius: 60,
+                spreadRadius: 10,
               ),
             ],
+            // Removed white border for cleaner look
           ),
           child: child,
         ),
@@ -830,7 +708,7 @@ class _HeroAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     if (generatedAvatar == null) {
       return const _GradientSphereFallback(
-        child: Icon(Icons.face_rounded, color: Colors.white, size: 32),
+        child: Icon(Icons.face_rounded, color: Colors.white, size: 80),
       );
     }
 
@@ -844,7 +722,7 @@ class _HeroAvatar extends StatelessWidget {
               imageData,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => const _GradientSphereFallback(
-                child: Icon(Icons.face_rounded, color: Colors.white, size: 32),
+                child: Icon(Icons.face_rounded, color: Colors.white, size: 80),
               ),
             )
           : isUrl
@@ -852,14 +730,14 @@ class _HeroAvatar extends StatelessWidget {
                   imageData,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => const _GradientSphereFallback(
-                    child: Icon(Icons.face_rounded, color: Colors.white, size: 32),
+                    child: Icon(Icons.face_rounded, color: Colors.white, size: 80),
                   ),
                 )
               : Image.memory(
                   base64Decode(imageData.split(',').last),
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => const _GradientSphereFallback(
-                    child: Icon(Icons.face_rounded, color: Colors.white, size: 32),
+                    child: Icon(Icons.face_rounded, color: Colors.white, size: 80),
                   ),
                 ),
     );
@@ -877,7 +755,7 @@ class _CompanionAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     if (companionImage == null) {
       return const _GradientSphereFallback(
-        child: Icon(Icons.pets_rounded, color: Colors.white, size: 30),
+        child: Icon(Icons.pets_rounded, color: Colors.white, size: 48),
       );
     }
 
@@ -886,7 +764,7 @@ class _CompanionAvatar extends StatelessWidget {
         companionImage!,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => const _GradientSphereFallback(
-          child: Icon(Icons.pets_rounded, color: Colors.white, size: 30),
+          child: Icon(Icons.pets_rounded, color: Colors.white, size: 48),
         ),
       ),
     );
@@ -913,467 +791,6 @@ class _GradientSphereFallback extends StatelessWidget {
   }
 }
 
-class _CrystalModeOrb extends StatefulWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _CrystalModeOrb({
-    required this.icon,
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  State<_CrystalModeOrb> createState() => _CrystalModeOrbState();
-}
-
-class _CrystalModeOrbState extends State<_CrystalModeOrb>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _shimmerController;
-  bool _isHovering = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _shimmerController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
-    _syncShimmerState();
-  }
-
-  @override
-  void didUpdateWidget(covariant _CrystalModeOrb oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.isActive != widget.isActive) {
-      _syncShimmerState();
-    }
-  }
-
-  void _syncShimmerState() {
-    if (widget.isActive || _isHovering) {
-      if (!_shimmerController.isAnimating) {
-        _shimmerController.repeat();
-      }
-    } else {
-      _shimmerController.stop();
-    }
-  }
-
-  void _handleTap() {
-    _shimmerController
-      ..stop()
-      ..forward(from: 0);
-    widget.onTap();
-  }
-
-  @override
-  void dispose() {
-    _shimmerController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    const inactiveText = Color(0xFF2F2748);
-    final activeGlow = const Color(0xFFE28EFF);
-    return MouseRegion(
-      onEnter: (_) {
-        _isHovering = true;
-        _syncShimmerState();
-      },
-      onExit: (_) {
-        _isHovering = false;
-        _syncShimmerState();
-      },
-      child: GestureDetector(
-      onTap: _handleTap,
-      child: SizedBox(
-        width: 90,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedScale(
-              duration: const Duration(milliseconds: 220),
-              scale: widget.isActive ? 1.12 : 1.0,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Outermost radiant halo (second outer layer)
-                  if (widget.isActive)
-                    Container(
-                      width: 124,
-                      height: 124,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            activeGlow.withValues(alpha: 0.3),
-                            activeGlow.withValues(alpha: 0.12),
-                            const Color(0xFFFFD478).withValues(alpha: 0.08),
-                            Colors.transparent,
-                          ],
-                          stops: const [0.0, 0.4, 0.7, 1.0],
-                        ),
-                      ),
-                    ),
-                  // Middle radiant halo (first outer layer)
-                  if (widget.isActive)
-                    Container(
-                      width: 108,
-                      height: 108,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            activeGlow.withValues(alpha: 0.5),
-                            activeGlow.withValues(alpha: 0.25),
-                            activeGlow.withValues(alpha: 0.1),
-                            Colors.transparent,
-                          ],
-                          stops: const [0.0, 0.4, 0.7, 1.0],
-                        ),
-                      ),
-                    ),
-                  // Main 3D crystal orb with enhanced depth
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    width: 76,
-                    height: 76,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Base crystal sphere
-                        Container(
-                          width: 76,
-                          height: 76,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: RadialGradient(
-                              center: const Alignment(-0.2, -0.3),
-                              colors: widget.isActive
-                                  ? [
-                                      const Color(0xFFFFFFFF),
-                                      const Color(0xFFFFF8FF),
-                                      const Color(0xFFE8DAFF),
-                                      const Color(0xFFC8ADFF),
-                                      const Color(0xFFA884FF),
-                                      const Color(0xFF7A5CC8),
-                                    ]
-                                  : [
-                                      const Color(0xFFFFFBFF),
-                                      const Color(0xFFF8F4FF),
-                                      const Color(0xFFE6DEFF),
-                                      const Color(0xFFD4C8F0),
-                                      const Color(0xFF9E8DD8),
-                                      const Color(0xFF7565A8),
-                                    ],
-                              stops: const [0.0, 0.15, 0.3, 0.5, 0.75, 1.0],
-                            ),
-                            border: Border.all(
-                              color: widget.isActive ? const Color(0xFFFFE8A0) : const Color(0xFFE0D4FF),
-                              width: widget.isActive ? 2.5 : 1.5,
-                            ),
-                            boxShadow: [
-                              // Inner glow
-                              BoxShadow(
-                                color: Colors.white.withValues(alpha: widget.isActive ? 0.7 : 0.3),
-                                blurRadius: widget.isActive ? 20 : 10,
-                                spreadRadius: widget.isActive ? -4 : -6,
-                              ),
-                              // Intensified main glow
-                              BoxShadow(
-                                color: (widget.isActive ? activeGlow : const Color(0xFF9D8CEB)).withValues(alpha: 0.75),
-                                blurRadius: widget.isActive ? 36 : 16,
-                                spreadRadius: widget.isActive ? 5 : 1,
-                              ),
-                              // Gold accent glow for active
-                              if (widget.isActive)
-                                BoxShadow(
-                                  color: const Color(0xFFFFD478).withValues(alpha: 0.6),
-                                  blurRadius: 26,
-                                  spreadRadius: 0,
-                                ),
-                              // Ethereal outer glow (fifth shadow layer)
-                              if (widget.isActive)
-                                BoxShadow(
-                                  color: activeGlow.withValues(alpha: 0.4),
-                                  blurRadius: 40,
-                                  spreadRadius: 6,
-                                ),
-                            ],
-                          ),
-                        ),
-                        // Glass highlight overlay
-                        if (widget.isActive)
-                          Positioned(
-                            top: 76 * 0.12,
-                            left: 76 * 0.15,
-                            child: Container(
-                              width: 76 * 0.3,
-                              height: 76 * 0.25,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                gradient: RadialGradient(
-                                  colors: [
-                                    Colors.white.withValues(alpha: 0.7),
-                                    Colors.white.withValues(alpha: 0.3),
-                                    Colors.white.withValues(alpha: 0.0),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        // Icon
-                        Icon(
-                          widget.icon,
-                          color: widget.isActive ? Colors.white : inactiveText,
-                          size: 32,
-                        ),
-                        ClipOval(
-                          child: AnimatedBuilder(
-                            animation: _shimmerController,
-                            builder: (context, child) {
-                              final offset = (_shimmerController.value * 140) - 70;
-                              return Transform.translate(
-                                offset: Offset(offset, 0),
-                                child: Opacity(
-                                  opacity: (widget.isActive || _isHovering) ? 0.55 : 0.0,
-                                  child: Container(
-                                    width: 32,
-                                    height: 76,
-                                    decoration: const BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [
-                                          Colors.transparent,
-                                          Color(0xBBFFFFFF),
-                                          Colors.transparent,
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              widget.label,
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.1,
-                color: const Color(0xFF2D2148),
-                fontWeight: widget.isActive ? FontWeight.w800 : FontWeight.w700,
-                shadows: widget.isActive
-                    ? [
-                        const Shadow(
-                          color: Color(0x33E28EFF),
-                          blurRadius: 4,
-                        )
-                      ]
-                    : null,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-            ),
-          ],
-        ),
-      ),
-    ));
-  }
-}
-
-class _LengthCrystal extends StatelessWidget {
-  final String label;
-  final String val;
-  final String current;
-  final Function(String) onTap;
-  final List<Color> crystalColors;
-
-  const _LengthCrystal({
-    required this.label,
-    required this.val,
-    required this.current,
-    required this.onTap,
-    required this.crystalColors,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bool isSelected = val == current;
-    // Responsive sizing based on available space
-    final screenWidth = MediaQuery.of(context).size.width;
-    final crystalWidth = (screenWidth / 3.5).clamp(85.0, 100.0);
-    final crystalHeight = (crystalWidth * 0.82).clamp(70.0, 82.0);
-
-    return GestureDetector(
-      onTap: () => onTap(val),
-      child: AnimatedScale(
-        duration: const Duration(milliseconds: 250),
-        scale: isSelected ? 1.12 : 1.0,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Outer magical glow aura
-            if (isSelected)
-              Container(
-                width: crystalWidth + 15,
-                height: crystalHeight + 13,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(50),
-                  gradient: RadialGradient(
-                    colors: [
-                      crystalColors[0].withValues(alpha: 0.5),
-                      crystalColors[0].withValues(alpha: 0.2),
-                      Colors.transparent,
-                    ],
-                    stops: const [0.0, 0.6, 1.0],
-                  ),
-                ),
-              ),
-            // Main crystal gemstone
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              width: crystalWidth,
-              height: crystalHeight,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.white.withValues(alpha: isSelected ? 0.95 : 0.85),
-                    crystalColors[0].withValues(alpha: 0.9),
-                    crystalColors[0],
-                    crystalColors[1],
-                    crystalColors[2],
-                  ],
-                  stops: const [0.0, 0.15, 0.35, 0.7, 1.0],
-                ),
-                borderRadius: BorderRadius.circular(40),
-                border: Border.all(
-                  color: isSelected ? Colors.white.withValues(alpha: 0.9) : crystalColors[2].withValues(alpha: 0.7),
-                  width: isSelected ? 3.0 : 1.8,
-                ),
-                boxShadow: [
-                  // Bright inner highlight for glass effect
-                  BoxShadow(
-                    color: Colors.white.withValues(alpha: isSelected ? 0.9 : 0.6),
-                    blurRadius: isSelected ? 18 : 10,
-                    spreadRadius: isSelected ? -6 : -8,
-                    offset: const Offset(-2, -6),
-                  ),
-                  // Main crystal glow
-                  BoxShadow(
-                    color: crystalColors[0].withValues(alpha: isSelected ? 0.85 : 0.5),
-                    blurRadius: isSelected ? 35 : 16,
-                    spreadRadius: isSelected ? 8 : 2,
-                  ),
-                  // Mid-tone glow
-                  BoxShadow(
-                    color: crystalColors[1].withValues(alpha: isSelected ? 0.7 : 0.4),
-                    blurRadius: isSelected ? 24 : 12,
-                    spreadRadius: isSelected ? 2 : 0,
-                  ),
-                  // Deep shadow for depth
-                  BoxShadow(
-                    color: crystalColors[2].withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    spreadRadius: -2,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Multiple facet shine effects for gem-like appearance
-                  Positioned(
-                    top: crystalHeight * 0.12,
-                    left: crystalWidth * 0.18,
-                    child: Container(
-                      width: crystalWidth * 0.35,
-                      height: crystalHeight * 0.28,
-                      decoration: BoxDecoration(
-                        gradient: RadialGradient(
-                          colors: [
-                            Colors.white.withValues(alpha: isSelected ? 0.85 : 0.6),
-                            Colors.white.withValues(alpha: isSelected ? 0.4 : 0.2),
-                            Colors.white.withValues(alpha: 0.0),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                  ),
-                  // Secondary sparkle highlight
-                  if (isSelected)
-                    Positioned(
-                      top: crystalHeight * 0.25,
-                      right: crystalWidth * 0.22,
-                      child: Container(
-                        width: crystalWidth * 0.15,
-                        height: crystalHeight * 0.15,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              Colors.white.withValues(alpha: 0.9),
-                              Colors.white.withValues(alpha: 0.0),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  // Label text
-                  Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: const Color(0xFF2A2040),
-                      fontWeight: isSelected ? FontWeight.w900 : FontWeight.w800,
-                      fontSize: 19,
-                      shadows: isSelected
-                          ? const [
-                              Shadow(
-                                color: Color(0x88FFFFFF),
-                                blurRadius: 12,
-                              ),
-                              Shadow(
-                                color: Color(0x44FFFFFF),
-                                blurRadius: 6,
-                                offset: Offset(0, 2),
-                              ),
-                            ]
-                          : [
-                              const Shadow(
-                                color: Color(0x33FFFFFF),
-                                blurRadius: 4,
-                              ),
-                            ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // Animated sparkle decoration
 class _SparkleIcon extends StatefulWidget {

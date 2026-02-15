@@ -18,6 +18,9 @@ void main() {
     });
 
     testWidgets('shows fallback UI when error occurs', (WidgetTester tester) async {
+      ErrorBoundary.shouldCatchInTests = true;
+      addTearDown(() => ErrorBoundary.shouldCatchInTests = false);
+
       // Create a widget that throws an error
       final errorWidget = Builder(
         builder: (context) {
@@ -43,10 +46,7 @@ void main() {
 
       // Verify error was caught
       expect(errorCaught, true);
-
-      // Note: In Flutter, errors in build are caught by the framework
-      // and shown via ErrorWidget. To properly test ErrorBoundary,
-      // we would need to trigger errors differently.
+      expect(find.text('Oops! Something went wrong.'), findsOneWidget);
     });
 
     testWidgets('retry button clears error', (WidgetTester tester) async {

@@ -12,10 +12,18 @@ class SubscriptionSyncService {
   SubscriptionSyncService._internal({StripeService? stripeService})
       : _stripeService = stripeService ?? StripeService();
 
-  static final SubscriptionSyncService _instance =
-      SubscriptionSyncService._internal();
+  static SubscriptionSyncService? _instance;
 
-  factory SubscriptionSyncService() => _instance;
+  factory SubscriptionSyncService() => _instance ??= SubscriptionSyncService._internal();
+
+  @visibleForTesting
+  SubscriptionSyncService.forTest({StripeService? stripeService})
+      : _stripeService = stripeService ?? StripeService();
+
+  @visibleForTesting
+  static void resetInstance([SubscriptionSyncService? mock]) {
+    _instance = mock;
+  }
 
   final StripeService _stripeService;
   final StreamController<SubscriptionStatus> _subscriptionController =

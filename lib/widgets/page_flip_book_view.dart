@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import 'package:page_flip_builder/page_flip_builder.dart';
 import 'package:story_weaver_app/widgets/storybook_page.dart';
 
@@ -36,16 +38,27 @@ class PageFlipBookView extends StatefulWidget {
   State<PageFlipBookView> createState() => _PageFlipBookViewState();
 }
 
-class _PageFlipBookViewState extends State<PageFlipBookView> {
+class _PageFlipBookViewState extends State<PageFlipBookView> with SingleTickerProviderStateMixin {
   late final PageController _pageController;
   late final GlobalKey<PageFlipBuilderState> _pageFlipKey;
+  late final AnimationController _turnFxController;
+  late final Animation<double> _turnFx;
   int _currentPage = 0;
+  int _turnDirection = 1;
 
   @override
   void initState() {
     super.initState();
     _pageController = widget.controller ?? PageController();
     _pageFlipKey = GlobalKey<PageFlipBuilderState>();
+    _turnFxController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _turnFx = CurvedAnimation(
+      parent: _turnFxController,
+      curve: Curves.easeInOutCubic,
+    );
 
     // Listen to page controller changes
     _pageController.addListener(_onPageControllerChanged);
@@ -58,7 +71,16 @@ class _PageFlipBookViewState extends State<PageFlipBookView> {
     } else {
       _pageController.removeListener(_onPageControllerChanged);
     }
+    _turnFxController.dispose();
     super.dispose();
+  }
+
+  void _playTurnFx({required bool forward}) {
+    _turnDirection = forward ? 1 : -1;
+    _turnFxController
+      ..stop()
+      ..reset()
+      ..forward();
   }
 
   void _onPageControllerChanged() {
@@ -88,6 +110,7 @@ class _PageFlipBookViewState extends State<PageFlipBookView> {
 
   void _goToNextPage() {
     if (_currentPage < widget.pages.length - 1) {
+      _playTurnFx(forward: true);
       _pageFlipKey.currentState?.flip();
       _pageController.nextPage(
         duration: const Duration(milliseconds: 500),
@@ -98,6 +121,7 @@ class _PageFlipBookViewState extends State<PageFlipBookView> {
 
   void _goToPreviousPage() {
     if (_currentPage > 0) {
+      _playTurnFx(forward: false);
       _pageController.previousPage(
         duration: const Duration(milliseconds: 500),
         curve: Curves.easeInOut,
@@ -113,6 +137,20 @@ class _PageFlipBookViewState extends State<PageFlipBookView> {
 
   @override
   Widget build(BuildContext context) {
+    final basePage = PageFlipBuilder(
+      key: _pageFlipKey,
+      frontBuilder: (context) => _buildPage(_currentPage),
+      backBuilder: (context) => _currentPage < widget.pages.length - 1
+          ? _buildPage(_currentPage + 1)
+          : _buildPage(_currentPage),
+      flipAxis: Axis.horizontal,
+      maxTilt: 0.003,
+      maxScale: 0.2,
+      nonInteractiveAnimationDuration: const Duration(milliseconds: 500),
+      interactiveFlipEnabled: true,
+      onFlipComplete: _handlePageFlip,
+    );
+
     return Stack(
       children: [
         // Page flip view
@@ -128,18 +166,55 @@ class _PageFlipBookViewState extends State<PageFlipBookView> {
               _goToNextPage();
             }
           },
-          child: PageFlipBuilder(
-            key: _pageFlipKey,
-            frontBuilder: (context) => _buildPage(_currentPage),
-            backBuilder: (context) => _currentPage < widget.pages.length - 1
-                ? _buildPage(_currentPage + 1)
-                : _buildPage(_currentPage),
-            flipAxis: Axis.horizontal,
-            maxTilt: 0.003,
-            maxScale: 0.2,
-            nonInteractiveAnimationDuration: const Duration(milliseconds: 500),
-            interactiveFlipEnabled: true,
-            onFlipComplete: _handlePageFlip,
+          child: AnimatedBuilder(
+            animation: _turnFx,
+            builder: (context, child) {
+              final t = _turnFx.value;
+              final wave = math.sin(t * math.pi);
+              final angle = (_turnDirection * -0.13) * wave;
+              final shadow = 0.22 * wave;
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  Transform(
+                    alignment: _turnDirection > 0
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    transform: Matrix4.identity()
+                      ..setEntry(3, 2, 0.0014)
+                      ..rotateY(angle),
+                    child: child,
+                  ),
+                  if (shadow > 0)
+                    IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: _turnDirection > 0
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
+                            end: _turnDirection > 0
+                                ? Alignment.centerLeft
+                                : Alignment.centerRight,
+                            colors: [
+                              Colors.black.withValues(alpha: shadow),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  IgnorePointer(
+                    child: CustomPaint(
+                      painter: _PaperTexturePainter(
+                        opacity: 0.032,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+            child: basePage,
           ),
         ),
 
@@ -214,5 +289,33 @@ class _PageFlipBookViewState extends State<PageFlipBookView> {
     return StoryBookPage(
       child: widget.pages[index],
     );
+  }
+}
+
+class _PaperTexturePainter extends CustomPainter {
+  const _PaperTexturePainter({required this.opacity});
+
+  final double opacity;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black.withValues(alpha: opacity)
+      ..strokeWidth = 1;
+    const step = 14.0;
+    for (double y = 4; y < size.height; y += step) {
+      for (double x = 3; x < size.width; x += step) {
+        canvas.drawPoints(
+          PointMode.points,
+          [Offset(x, y)],
+          paint,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _PaperTexturePainter oldDelegate) {
+    return oldDelegate.opacity != opacity;
   }
 }

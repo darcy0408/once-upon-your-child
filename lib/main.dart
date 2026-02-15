@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,10 +17,13 @@ Future<void> main() async {
   await StorageMigration.migrateFromSharedPreferences();
 
   // Initialize Firebase with graceful degradation
-  try {
-    await FirebaseAnalyticsService.initialize();
-  } catch (e) {
-    // Firebase initialization failed - continue without analytics
+  // Skip Firebase on web debug builds to avoid window.dart assertion warnings
+  if (!kIsWeb || kReleaseMode) {
+    try {
+      await FirebaseAnalyticsService.initialize();
+    } catch (e) {
+      // Firebase initialization failed - continue without analytics
+    }
   }
 
   runApp(

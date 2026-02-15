@@ -190,7 +190,12 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         story_duration = kwargs.get("story_duration")  # NEW: '5_minutes' or '10_minutes'
         age = kwargs.get("age", 5)  # User's age
         companion = kwargs.get("companion")  # Legacy support
-        character_name = kwargs.get("character") or "a brave adventurer"
+        character_name_raw = kwargs.get("character") or "a brave adventurer"
+        if isinstance(character_name_raw, dict):
+            character_name = character_name_raw.get("name", "Hero")
+        else:
+            character_name = str(character_name_raw)
+            
         char_details = kwargs.get("character_details") or {}
         custom_elements = kwargs.get("custom_elements", "")  # Free-form custom story requests
         required_custom_elements = _parse_custom_elements(custom_elements)

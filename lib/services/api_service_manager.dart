@@ -29,6 +29,33 @@ class ApiServiceManager {
   static const String _tokenKey = 'story_weaver_auth_token';
   static const String _userIdKey = 'story_weaver_user_id';
 
+  static bool get _isLocalBackend {
+    return _localBackendUrl.contains('127.0.0.1') ||
+        _localBackendUrl.contains('localhost') ||
+        _localBackendUrl.contains('10.0.2.2');
+  }
+
+  static String _buildConnectionErrorMessage() {
+    if (_isLocalBackend) {
+      return 'Cannot reach the local backend at $_localBackendUrl.\n\n'
+          'Start it with: python backend/app.py\n'
+          'Then retry.';
+    }
+    return 'Cannot connect to server. Please check your internet connection and try again.\n\n'
+        'Server: $_localBackendUrl';
+  }
+
+  static String _buildClientErrorMessage(http.ClientException error) {
+    final normalized = error.message.toLowerCase();
+    if (_isLocalBackend &&
+        (normalized.contains('failed to fetch') ||
+            normalized.contains('connection refused') ||
+            normalized.contains('networkerror'))) {
+      return _buildConnectionErrorMessage();
+    }
+    return 'Request failed: ${error.message}\n\nPlease try again.';
+  }
+
   /// Get auth headers including the JWT token
   Future<Map<String, String>> _getAuthHeaders() async {
     await _ensureAuthenticated();
@@ -127,9 +154,9 @@ class ApiServiceManager {
         _authToken = null;
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove(_tokenKey);
-        
+
         await _ensureAuthenticated();
-        
+
         final newHeaders = await _getAuthHeaders();
         final retryResponse = await httpClient
             .post(
@@ -153,7 +180,7 @@ class ApiServiceManager {
       debugPrint('   Error details: $error');
       debugPrint('   Backend URL: $_localBackendUrl');
       throw Exception(
-        'Cannot connect to server. Please check your internet connection and try again.\n\nServer: $_localBackendUrl',
+        _buildConnectionErrorMessage(),
       );
     } on HandshakeException catch (error) {
       debugPrint('❌ SSL/TLS error while calling $uri: $error');
@@ -163,7 +190,7 @@ class ApiServiceManager {
     } on http.ClientException catch (error) {
       debugPrint('❌ HTTP Client error while calling $uri: $error');
       throw Exception(
-        'Request failed: ${error.message}\n\nPlease try again.',
+        _buildClientErrorMessage(error),
       );
     }
   }
@@ -192,9 +219,9 @@ class ApiServiceManager {
         _authToken = null;
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove(_tokenKey);
-        
+
         await _ensureAuthenticated();
-        
+
         final newHeaders = await _getAuthHeaders();
         final retryResponse = await httpClient
             .put(
@@ -216,7 +243,7 @@ class ApiServiceManager {
     } on SocketException {
       debugPrint('❌ Network error while calling $uri');
       throw Exception(
-        'Cannot connect to server. Please check your internet connection and try again.\n\nServer: $_localBackendUrl',
+        _buildConnectionErrorMessage(),
       );
     } on HandshakeException catch (error) {
       debugPrint('❌ SSL/TLS error while calling $uri: $error');
@@ -226,7 +253,7 @@ class ApiServiceManager {
     } on http.ClientException catch (error) {
       debugPrint('❌ HTTP Client error while calling $uri: $error');
       throw Exception(
-        'Request failed: ${error.message}\n\nPlease try again.',
+        _buildClientErrorMessage(error),
       );
     }
   }
@@ -255,9 +282,9 @@ class ApiServiceManager {
         _authToken = null;
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove(_tokenKey);
-        
+
         await _ensureAuthenticated();
-        
+
         final newHeaders = await _getAuthHeaders();
         final retryResponse = await httpClient
             .patch(
@@ -279,7 +306,7 @@ class ApiServiceManager {
     } on SocketException {
       debugPrint('❌ Network error while calling $uri');
       throw Exception(
-        'Cannot connect to server. Please check your internet connection and try again.\n\nServer: $_localBackendUrl',
+        _buildConnectionErrorMessage(),
       );
     } on HandshakeException catch (error) {
       debugPrint('❌ SSL/TLS error while calling $uri: $error');
@@ -289,7 +316,7 @@ class ApiServiceManager {
     } on http.ClientException catch (error) {
       debugPrint('❌ HTTP Client error while calling $uri: $error');
       throw Exception(
-        'Request failed: ${error.message}\n\nPlease try again.',
+        _buildClientErrorMessage(error),
       );
     }
   }
@@ -303,7 +330,8 @@ class ApiServiceManager {
     final uri = Uri.parse('$_localBackendUrl$path');
     final headers = await _getAuthHeaders();
     try {
-      final response = await httpClient.get(uri, headers: headers).timeout(timeout);
+      final response =
+          await httpClient.get(uri, headers: headers).timeout(timeout);
 
       // Handle 401 Unauthorized - Retry logic
       if (response.statusCode == 401) {
@@ -311,11 +339,12 @@ class ApiServiceManager {
         _authToken = null;
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove(_tokenKey);
-        
+
         await _ensureAuthenticated();
-        
+
         final newHeaders = await _getAuthHeaders();
-        final retryResponse = await httpClient.get(uri, headers: newHeaders).timeout(timeout);
+        final retryResponse =
+            await httpClient.get(uri, headers: newHeaders).timeout(timeout);
         return _decodeJsonResponse(retryResponse, uri);
       }
 
@@ -331,7 +360,7 @@ class ApiServiceManager {
       debugPrint('   Error details: $error');
       debugPrint('   Backend URL: $_localBackendUrl');
       throw Exception(
-        'Cannot connect to server. Please check your internet connection and try again.\n\nServer: $_localBackendUrl',
+        _buildConnectionErrorMessage(),
       );
     } on HandshakeException catch (error) {
       debugPrint('❌ SSL/TLS error while calling $uri: $error');
@@ -341,7 +370,7 @@ class ApiServiceManager {
     } on http.ClientException catch (error) {
       debugPrint('❌ HTTP Client error while calling $uri: $error');
       throw Exception(
-        'Request failed: ${error.message}\n\nPlease try again.',
+        _buildClientErrorMessage(error),
       );
     }
   }
@@ -355,7 +384,8 @@ class ApiServiceManager {
     final uri = Uri.parse('$_localBackendUrl$path');
     final headers = await _getAuthHeaders();
     try {
-      final response = await httpClient.delete(uri, headers: headers).timeout(timeout);
+      final response =
+          await httpClient.delete(uri, headers: headers).timeout(timeout);
 
       // Handle 401 Unauthorized - Retry logic
       if (response.statusCode == 401) {
@@ -363,11 +393,12 @@ class ApiServiceManager {
         _authToken = null;
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove(_tokenKey);
-        
+
         await _ensureAuthenticated();
-        
+
         final newHeaders = await _getAuthHeaders();
-        final retryResponse = await httpClient.delete(uri, headers: newHeaders).timeout(timeout);
+        final retryResponse =
+            await httpClient.delete(uri, headers: newHeaders).timeout(timeout);
         return _decodeJsonResponse(retryResponse, uri);
       }
 
@@ -382,12 +413,12 @@ class ApiServiceManager {
       debugPrint('❌ Network error while calling $uri');
       debugPrint('   Error details: $error');
       throw Exception(
-        'Cannot connect to server. Please check your internet connection and try again.',
+        _buildConnectionErrorMessage(),
       );
     } on http.ClientException catch (error) {
       debugPrint('❌ HTTP Client error while calling $uri: $error');
       throw Exception(
-        'Request failed: ${error.message}\n\nPlease try again.',
+        _buildClientErrorMessage(error),
       );
     }
   }
@@ -537,7 +568,8 @@ class ApiServiceManager {
       final decoded = jsonDecode(response.body);
       if (decoded is Map<String, dynamic>) {
         // Check if success response contains an error field
-        if (decoded.containsKey('error_code') && decoded['error_code'] != null) {
+        if (decoded.containsKey('error_code') &&
+            decoded['error_code'] != null) {
           throw ApiError.fromJson(decoded);
         }
         return decoded;
@@ -619,11 +651,14 @@ class ApiServiceManager {
           // Clean potential markdown fences
           var cleanText = trimmed;
           if (cleanText.startsWith('```')) {
-            cleanText = cleanText.replaceAll(RegExp(r'^```(?:json)?\s*', multiLine: true), '');
-            cleanText = cleanText.replaceAll(RegExp(r'\s*```$', multiLine: true), '');
+            cleanText = cleanText.replaceAll(
+                RegExp(r'^```(?:json)?\s*', multiLine: true), '');
+            cleanText =
+                cleanText.replaceAll(RegExp(r'\s*```$', multiLine: true), '');
           }
           final data = jsonDecode(cleanText);
-          return StoryGenerationResult.fromBackend({'story': data, 'used_user_key': true});
+          return StoryGenerationResult.fromBackend(
+              {'story': data, 'used_user_key': true});
         } catch (e) {
           debugPrint('Failed to parse Gemini JSON: $e');
           // Fallback to legacy parsing if JSON fails
@@ -668,7 +703,6 @@ class ApiServiceManager {
     required Duration requestTimeout,
     List<Map<String, dynamic>>? companionPets,
     List<dynamic>? companionCharacters,
-
     required String storyLength,
     String customElements = '',
     void Function(String)? onProgress,
@@ -704,7 +738,14 @@ class ApiServiceManager {
       } catch (error, stackTrace) {
         attempts++;
         debugPrint('Story generation attempt $attempts failed: $error');
-        debugPrintStack(stackTrace: stackTrace);
+        try {
+          if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+            if (kDebugMode &&
+                !Platform.environment.containsKey('FLUTTER_TEST')) {
+              debugPrintStack(stackTrace: stackTrace);
+            }
+          }
+        } catch (_) {}
         if (attempts >= maxAttempts) rethrow;
         await Future.delayed(delay);
         delay *= 2;
@@ -733,7 +774,6 @@ class ApiServiceManager {
     required Duration requestTimeout,
     List<Map<String, dynamic>>? companionPets,
     List<dynamic>? companionCharacters,
-
     required String storyLength,
     String customElements = '',
     void Function(String)? onProgress,
@@ -778,7 +818,8 @@ class ApiServiceManager {
         final payload =
             jsonDecode(generateResponse.body) as Map<String, dynamic>;
         final story = payload['story'] ?? payload['story_text'];
-        if ((story is String && story.isNotEmpty) || (story is Map && story.isNotEmpty)) {
+        if ((story is String && story.isNotEmpty) ||
+            (story is Map && story.isNotEmpty)) {
           return StoryGenerationResult.fromBackend(payload);
         }
         throw HttpException(
@@ -807,7 +848,6 @@ class ApiServiceManager {
       final stopwatch = Stopwatch()..start();
 
       while (stopwatch.elapsed < requestTimeout) {
-        
         // Progress feedback
         if (onProgress != null) {
           final elapsedSec = stopwatch.elapsed.inSeconds;
@@ -876,7 +916,13 @@ class ApiServiceManager {
       rethrow;
     } catch (error, stackTrace) {
       debugPrint('Story generation failed unexpectedly: $error');
-      debugPrintStack(stackTrace: stackTrace);
+      try {
+        if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+          if (kDebugMode && !Platform.environment.containsKey('FLUTTER_TEST')) {
+            debugPrintStack(stackTrace: stackTrace);
+          }
+        }
+      } catch (_) {}
       rethrow;
     } finally {
       if (client == null) {
@@ -1405,10 +1451,10 @@ Create the rhyming learning-to-read story about $characterName now:
     }
 
     // Merge companions for prompt building
-    final effectiveAdditionalChars = additionalCharacters != null 
-        ? List<String>.from(additionalCharacters) 
+    final effectiveAdditionalChars = additionalCharacters != null
+        ? List<String>.from(additionalCharacters)
         : <String>[];
-    
+
     if (companionCharacters != null) {
       for (final char in companionCharacters) {
         if (char is String) {
@@ -1417,11 +1463,11 @@ Create the rhyming learning-to-read story about $characterName now:
           final name = char['name'] ?? 'Friend';
           final desc = char['description'] ?? char['role'] ?? '';
           final power = char['signaturePower'];
-          
+
           String entry = name;
           if (desc.isNotEmpty) entry += ' ($desc)';
           if (power != null) entry += ' [Magic: $power]';
-          
+
           effectiveAdditionalChars.add(entry);
         }
       }
@@ -1720,14 +1766,16 @@ Do NOT wrap JSON in backticks.
           'Failed to continue interactive story: ${response.statusCode}');
     }
   }
+
   // Helper for rigorous JSON extraction
   // Visible for testing
   static String cleanJsonForTesting(String text) {
     text = text.trim();
-    
+
     // 1. Try to find JSON inside code blocks
     // Matches ```json {...} ``` or ``` {...} ```
-    final codeBlockRegex = RegExp(r'```(?:json)?\s*(\{[\s\S]*?\})\s*```', caseSensitive: false);
+    final codeBlockRegex =
+        RegExp(r'```(?:json)?\s*(\{[\s\S]*?\})\s*```', caseSensitive: false);
     final codeBlockMatch = codeBlockRegex.firstMatch(text);
     if (codeBlockMatch != null) {
       return codeBlockMatch.group(1)!;
@@ -1737,7 +1785,7 @@ Do NOT wrap JSON in backticks.
     // This handles cases where Gemini replies "Here is the JSON: {...}" without code blocks
     final int start = text.indexOf('{');
     final int end = text.lastIndexOf('}');
-    
+
     if (start != -1 && end != -1 && end > start) {
       return text.substring(start, end + 1);
     }

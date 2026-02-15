@@ -6,6 +6,13 @@ This folder contains sound effect audio files for the Story Creator App.
 
 To enable sound effects, add the following audio files to this directory:
 
+### Ambient Theme Loops (Story Reading Mode)
+- `adventure_wind.mp3` - Soft wind / travel ambience (loopable)
+- `space_hum.mp3` - Gentle spaceship hum (loopable)
+- `forest_crickets.mp3` - Night forest / crickets (loopable)
+- `magical_shimmer.mp3` - Soft magical sparkle pad (loopable)
+- `ocean_waves.mp3` - Calm ocean waves (loopable)
+
 ### Celebration Sounds
 - `achievement.mp3` - General achievement unlocked
 - `level_up.mp3` - Level increased

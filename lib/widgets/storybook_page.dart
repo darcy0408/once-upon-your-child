@@ -49,11 +49,74 @@ class StoryBookPage extends StatelessWidget {
       ),
       child: Stack(
         children: [
+          // Spine shadow (Inner shadow on the left/right depending on page side)
+          // For simplicity, we add a subtle spine shadow on the left
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 30,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.1),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Edge highlight (Top/Right edge highlight)
+          Positioned(
+            right: 2,
+            top: 2,
+            bottom: 2,
+            width: 4,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Colors.transparent,
+                    Colors.white.withValues(alpha: 0.2),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Paper Texture Overlay
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: PaperTexturePainter(
+                  opacity: 0.05,
+                ),
+              ),
+            ),
+          ),
+
           // Main content
           Padding(
             padding: contentPadding ??
                 const EdgeInsets.fromLTRB(40, 50, 40, 40),
             child: child,
+          ),
+
+          // Paper texture overlay
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: PaperTexturePainter(
+                  opacity: 0.04,
+                ),
+              ),
+            ),
           ),
 
           // Corner ornaments

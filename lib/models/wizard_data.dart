@@ -55,13 +55,12 @@ class WizardData {
   bool get isStep1Complete =>
       selectedArchetypeId != null && characterName.isNotEmpty;
 
-  bool get isStep2Complete =>
-      selectedScenario != null || selectedEmotionChips.isNotEmpty;
+  bool get isStep2Complete => true; // Feeling section removed
 
   bool get isStep3Complete => true; // selectedCompanions is optional
 
   bool get isComplete =>
-      isStep1Complete && isStep2Complete && isStep3Complete;
+      isStep1Complete && isStep3Complete;
 
   Map<String, dynamic> toJson() {
     return {

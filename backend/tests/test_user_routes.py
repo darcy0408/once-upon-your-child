@@ -6,6 +6,8 @@ from backend.models.user import User
 from backend.models.character import Character
 from backend.models.story import Story
 
+import jwt
+
 @pytest.fixture(scope='function')
 def setup_data(app):
     with app.app_context():
@@ -15,11 +17,23 @@ def setup_data(app):
         db.session.query(User).delete()
         db.session.commit()
 
+def _auth_headers(app, user_id):
+    secret = app.config.get("JWT_SECRET_KEY") or "dev-secret-key"
+    token = jwt.encode(
+        {
+            "user_id": user_id,
+            "exp": datetime.now(UTC) + timedelta(hours=1),
+        },
+        secret,
+        algorithm="HS256",
+    )
+    return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
 def _create_user(**overrides):
     payload = {
-        'id': overrides.pop('id', None),
-        'username': overrides.pop('username', 'test-user'),
-        'email': overrides.pop('email', 'test@example.com'),
+        'id': overrides.pop('id', str(uuid.uuid4())),
+        'username': overrides.pop('username', f"user_{uuid.uuid4().hex[:8]}"),
+        'email': overrides.pop('email', f"{uuid.uuid4().hex[:8]}@example.com"),
         'password_hash': 'hashed',
         'subscription_tier': overrides.pop('subscription_tier', 'premium'),
         'subscription_status': overrides.pop('subscription_status', 'active'),
@@ -72,7 +86,8 @@ def test_get_usage_stats_success(client, setup_data):
         for _ in range(3):
             _create_character(user_id)
 
-    response = client.get(f'/api/user/{user_id}/usage-stats')
+    headers = _auth_headers(client.application, user_id)
+    response = client.get(f'/api/user/{user_id}/usage-stats', headers=headers)
     assert response.status_code == 200
     data = response.get_json()
 
@@ -84,8 +99,10 @@ def test_get_usage_stats_success(client, setup_data):
     assert 'period_end' in data
 
 def test_get_usage_stats_user_not_found(client, setup_data):
-    response = client.get('/api/user/does-not-exist/usage-stats')
-    assert response.status_code == 404
+    user_id = "some-random-id"
+    headers = _auth_headers(client.application, user_id)
+    response = client.get(f'/api/user/{user_id}/usage-stats', headers=headers)
+    assert response.status_code == 401
     data = response.get_json()
     assert data['error'] == 'User not found'
 
@@ -93,7 +110,8 @@ def test_cancel_subscription_success(client, setup_data):
     with client.application.app_context():
         user_id = _create_user()
 
-    response = client.post(f'/api/user/{user_id}/cancel-subscription')
+    headers = _auth_headers(client.application, user_id)
+    response = client.post(f'/api/user/{user_id}/cancel-subscription', headers=headers)
     assert response.status_code == 200
     data = response.get_json()
 

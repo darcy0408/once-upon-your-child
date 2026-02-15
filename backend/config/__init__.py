@@ -173,10 +173,14 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(basedir, 'characters.db')}"
     # Use environment model or fallback to 1.5-flash
     GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash')
+    # Rate limiting should be enabled outside tests.
+    RATELIMIT_ENABLED = True
 
 class ProductionConfig(Config):
     """Production configuration."""
     DEBUG = False
+    # Explicitly enable rate limiting in production.
+    RATELIMIT_ENABLED = True
 
 class TestingConfig(Config):
     """Testing configuration."""
@@ -187,6 +191,12 @@ class TestingConfig(Config):
     RATELIMIT_ENABLED = False
     # Disable caching in tests to avoid serialization issues
     CACHE_TYPE = 'null'
+    # Match conftest.py
+    JWT_SECRET_KEY = 'dev-secret-key'
+    # Ensure Celery is eager in tests
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
+    CELERY_TASK_STORE_EAGER_RESULT = True
     # Tests run in eager mode unless explicitly overridden.
     CELERY_TASK_ALWAYS_EAGER = _as_bool('CELERY_TASK_ALWAYS_EAGER', True)
     CELERY_TASK_EAGER_PROPAGATES = _as_bool('CELERY_TASK_EAGER_PROPAGATES', True)

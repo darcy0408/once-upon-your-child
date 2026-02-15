@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../models.dart';
 import '../../theme/app_theme.dart';
@@ -59,6 +60,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
         color: AppColors.gold,
         greeting: 'Let\'s have an adventure!',
         description: description,
+        character: char, // Attach the character object here
       );
     }).toList();
   }
@@ -323,6 +325,7 @@ class Companion {
   final String greeting;
   final String description;
   final String? imagePath;
+  final Character? character; // Optional reference to a full character object
 
   Companion({
     required this.id,
@@ -332,6 +335,7 @@ class Companion {
     required this.greeting,
     this.description = '',
     this.imagePath,
+    this.character,
   });
 }
 
@@ -350,8 +354,9 @@ class _CompanionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasImage = companion.imagePath != null;
+    final hasImage = companion.imagePath != null || companion.character?.generatedAvatar != null;
     final isGlowing = isSelected || isMagical;
+    
     return Semantics(
       button: true,
       selected: isSelected,
@@ -395,47 +400,8 @@ class _CompanionCard extends StatelessWidget {
             child: Stack(
               children: [
                 // Background image or gradient
-                if (hasImage)
-                  SizedBox(
-                    height: 140,
-                    width: double.infinity,
-                    child: Image.asset(
-                      companion.imagePath!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: companion.color.withValues(alpha: 0.2),
-                          child: Center(
-                            child: Text(
-                              companion.emoji,
-                              style: const TextStyle(fontSize: 48),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  )
-                else
-                  Container(
-                    height: 140,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.gold.withValues(alpha: 0.35),
-                          companion.color.withValues(alpha: 0.25),
-                          AppColors.primaryLight.withValues(alpha: 0.2),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        companion.emoji,
-                        style: const TextStyle(fontSize: 48),
-                      ),
-                    ),
-                  ),
+                _buildCompanionBackground(context),
+                
                 if (isMagical)
                   Positioned.fill(
                     child: Opacity(
@@ -545,6 +511,135 @@ class _CompanionCard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompanionBackground(BuildContext context) {
+    // 1. If companion is a Character object, try to show their avatar
+    if (companion.character != null) {
+      final char = companion.character!;
+      final generated = char.generatedAvatar;
+
+      // Debug logging
+      debugPrint('🎭 Companion ${char.name}: generatedAvatar = ${generated != null ? "present" : "null"}');
+      if (generated != null) {
+        debugPrint('   - imageBase64 length: ${generated.imageBase64.length}');
+        debugPrint('   - Starts with: ${generated.imageBase64.substring(0, generated.imageBase64.length < 50 ? generated.imageBase64.length : 50)}');
+      }
+
+      // Try generated avatar first
+      if (generated != null && generated.imageBase64.isNotEmpty) {
+        final data = generated.imageBase64;
+        final isUrl = data.startsWith('http://') || data.startsWith('https://');
+        final isAsset = data.startsWith('assets/');
+
+        debugPrint('   - Display mode: ${isUrl ? "URL" : isAsset ? "Asset" : "Base64"}');
+
+        return SizedBox(
+          height: 140,
+          width: double.infinity,
+          child: isAsset
+              ? Image.asset(data, fit: BoxFit.cover, errorBuilder: (_, __, ___) {
+                  debugPrint('   ⚠️ Asset image failed to load: $data');
+                  return _buildCharacterFallback(char);
+                })
+              : isUrl
+                  ? Image.network(data, fit: BoxFit.cover, errorBuilder: (_, __, ___) {
+                      debugPrint('   ⚠️ Network image failed to load: $data');
+                      return _buildCharacterFallback(char);
+                    })
+                  : Image.memory(
+                      base64Decode(data.split(',').last),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) {
+                        debugPrint('   ⚠️ Base64 image failed to decode');
+                        return _buildCharacterFallback(char);
+                      },
+                    ),
+        );
+      }
+
+      // Fallback: Show character's DiceBear avatar in a nice container
+      debugPrint('   - Using DiceBear fallback avatar');
+      return _buildCharacterFallback(char);
+    }
+
+    // 2. If it has a direct image path (magical companions)
+    if (companion.imagePath != null) {
+      return SizedBox(
+        height: 140,
+        width: double.infinity,
+        child: Image.asset(
+          companion.imagePath!,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildEmojiFallback();
+          },
+        ),
+      );
+    }
+
+    // 3. Fallback: Emoji with gradient
+    return _buildEmojiFallback();
+  }
+
+  Widget _buildCharacterFallback(Character char) {
+    // Show the character's DiceBear avatar prominently
+    return Container(
+      height: 140,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withValues(alpha: 0.25),
+            AppColors.primaryLight.withValues(alpha: 0.15),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: Center(
+        child: Container(
+          width: 110,
+          height: 110,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withValues(alpha: 0.9),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.2),
+                blurRadius: 15,
+                spreadRadius: 3,
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: char.buildAvatar(size: 110),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmojiFallback() {
+    return Container(
+      height: 140,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.gold.withValues(alpha: 0.35),
+            companion.color.withValues(alpha: 0.25),
+            AppColors.primaryLight.withValues(alpha: 0.2),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          companion.emoji,
+          style: const TextStyle(fontSize: 48),
         ),
       ),
     );

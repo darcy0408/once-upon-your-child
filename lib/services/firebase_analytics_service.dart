@@ -42,7 +42,9 @@ class FirebaseAnalyticsService {
       final Map<String, Object> cleanParams = {};
       parameters.forEach((key, value) {
         if (value != null) {
-          if (value is String || value is num || value is bool) {
+          if (value is bool) {
+            cleanParams[key] = value ? 1 : 0;
+          } else if (value is String || value is num) {
             cleanParams[key] = value;
           } else {
             cleanParams[key] = value.toString();

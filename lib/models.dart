@@ -137,15 +137,40 @@ class Character {
           .toList();
     }
 
-    // Parse generated avatar
+    // Parse generated avatar (check multiple common keys; accept map or JSON string)
     GeneratedAvatar? generatedAvatar;
-    final generatedAvatarJson = json['generated_avatar'];
-    if (generatedAvatarJson is Map<String, dynamic>) {
+    final generatedAvatarRaw = json['generated_avatar'] ??
+        json['avatar_data'] ??
+        json['generatedAvatar'] ??
+        json['avatarData'];
+        
+    if (generatedAvatarRaw != null) {
+      debugPrint('🎨 Found avatar data for ${json['name']}: $generatedAvatarRaw');
       try {
-        generatedAvatar = GeneratedAvatar.fromJson(generatedAvatarJson);
+        Map<String, dynamic>? generatedAvatarJson;
+        if (generatedAvatarRaw is Map) {
+          generatedAvatarJson = Map<String, dynamic>.from(generatedAvatarRaw);
+        } else if (generatedAvatarRaw is String) {
+          final trimmed = generatedAvatarRaw.trim();
+          if (trimmed.isNotEmpty && trimmed != 'null') {
+            final parsed = jsonDecode(trimmed);
+            if (parsed is Map) {
+              generatedAvatarJson = Map<String, dynamic>.from(parsed);
+            }
+          }
+        }
+
+        if (generatedAvatarJson != null) {
+          generatedAvatar = GeneratedAvatar.fromJson(generatedAvatarJson);
+          debugPrint('   ✅ Successfully parsed GeneratedAvatar: ${generatedAvatar.id}');
+        } else {
+          debugPrint('   ⚠️ Avatar data was present but could not be converted to Map');
+        }
       } catch (e) {
-        debugPrint('Error parsing generated avatar: $e');
+        debugPrint('   ❌ Error parsing generated avatar: $e');
       }
+    } else {
+      debugPrint('   ℹ️ No avatar data found for ${json['name']}');
     }
 
     return Character(

@@ -21,7 +21,12 @@ class MockHttpResponse extends Mock implements http.Response {}
 class MockSharedPreferences extends Mock implements SharedPreferences {}
 
 /// Mock Isar Database
-class MockIsar extends Mock implements Isar {}
+class MockIsar extends Mock implements Isar {
+  @override
+  Future<T> writeTxn<T>(Future<T> Function() callback, {bool silent = false}) {
+    return callback();
+  }
+}
 
 /// Mock Isar Collection
 class MockIsarCollection<T> extends Mock implements IsarCollection<T> {}

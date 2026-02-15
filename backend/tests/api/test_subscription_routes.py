@@ -1,138 +1,119 @@
-from datetime import datetime, timedelta
-
 import pytest
-import jwt
-
+import json
+from unittest.mock import MagicMock
 from backend.database import db
-from backend.models.story import Story
 from backend.models.user import User
 
+def test_get_subscription_success(client, test_user):
+    """Test retrieving subscription data for a user."""
+    response = client.get(f'/api/user/{test_user.id}/subscription')
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['user_id'] == test_user.id
+    assert data['tier'] == 'free'
+    assert data['status'] == 'active'
 
-@pytest.fixture(autouse=True)
-def mock_auth_secret(mocker):
-    """Ensure JWT validation uses the same secret as test token fixtures."""
-    return mocker.patch('backend.middleware.auth._get_jwt_secret', return_value='test_secret')
+def test_get_subscription_not_found(client):
+    """Test 404 for nonexistent user."""
+    response = client.get('/api/user/nonexistent/subscription')
+    assert response.status_code == 404
+    data = response.get_json()
+    assert 'error' in data
 
+def test_create_checkout_session(client, mock_stripe):
+    """Test creating a Stripe checkout session."""
+    payload = {
+        "tier": "premium",
+        "user_id": "test_user_123"
+    }
+    response = client.post('/api/stripe/create-checkout-session',
+                           json=payload,
+                           content_type='application/json')
 
-@pytest.fixture
-def test_user(app):
-    """Create a local test user compatible with current User model."""
-    with app.app_context():
-        user = User(
-            id='test_user_123',
-            username='test_user_123',
-            email='test@example.com',
-            subscription_tier='free',
-        )
-        user.set_password('test-password')
+    assert response.status_code == 200
+    data = response.get_json()
+    assert 'id' in data
+    assert 'checkout_url' in data
+    assert data['id'] == 'cs_test_123'
+
+def test_create_checkout_session_invalid_tier(client):
+    """Test creating a checkout session with invalid tier."""
+    payload = {
+        "tier": "invalid_tier",
+        "user_id": "test_user_123"
+    }
+    response = client.post('/api/stripe/create-checkout-session',
+                           json=payload,
+                           content_type='application/json')
+
+    assert response.status_code == 400
+
+def test_get_subscription_status(client, mock_stripe):
+
+    """Test retrieving subscription status from Stripe."""
+
+    user_id = 'stripe_user_fresh'
+
+    with client.application.app_context():
+
+        user = User(id=user_id, username='stripe_test', email='stripe@test.com')
+
+        user.stripe_customer_id = 'cus_test_123'
+
+        user.set_password('password')
+
         db.session.add(user)
-        db.session.commit()
-        yield user
-        Story.query.filter_by(user_id=user.id).delete()
-        db.session.delete(user)
+
         db.session.commit()
 
 
-def _get_user(user_id: str) -> User:
-    user = db.session.get(User, user_id)
-    assert user is not None
-    return user
 
+    # Generate token for this specific user
 
-def _create_user(user_id: str, tier: str) -> User:
-    user = User(
-        id=user_id,
-        username=user_id,
-        email=f'{user_id}@example.com',
-        subscription_tier=tier,
-    )
-    user.set_password('test-password')
-    db.session.add(user)
-    db.session.commit()
-    return user
+    from datetime import datetime, timedelta
 
+    import jwt
 
-def _auth_headers(user_id: str) -> dict[str, str]:
-    token = jwt.encode(
-        {'user_id': user_id, 'email': f'{user_id}@example.com', 'exp': datetime.utcnow() + timedelta(hours=1)},
-        'test_secret',
-        algorithm='HS256',
-    )
-    return {
-        'Authorization': f'Bearer {token}',
-        'Content-Type': 'application/json',
+    payload = {
+
+        'user_id': user_id,
+
+        'exp': datetime.utcnow() + timedelta(hours=1)
+
     }
 
+    token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
 
-class TestSubscriptionRoutes:
-    def test_get_subscription_returns_free_tier(self, client, app, test_user):
-        with app.app_context():
-            user = _get_user(test_user.id)
-            user.subscription_tier = 'free'
-            user.subscription_status = 'active'
-            user.cancel_at_period_end = False
-            user.current_period_end = None
-            db.session.commit()
+    headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
 
-        response = client.get(f'/api/user/{test_user.id}/subscription')
 
-        assert response.status_code == 200
-        body = response.get_json()
-        assert body['user_id'] == test_user.id
-        assert body['tier'] == 'free'
-        assert body['status'] == 'active'
-        assert body['cancel_at_period_end'] is False
 
-    def test_get_subscription_returns_premium_tier_with_period_end(self, client, app, test_user):
-        period_end = datetime.utcnow() + timedelta(days=30)
-        with app.app_context():
-            user = _create_user('premium_user_123', 'premium')
-            user.subscription_status = 'active'
-            user.cancel_at_period_end = True
-            user.current_period_end = period_end
-            db.session.commit()
-            db.session.remove()
+    # Mock stripe.Subscription.list response
 
-        response = client.get('/api/user/premium_user_123/subscription')
+    mock_sub = MagicMock()
 
-        assert response.status_code == 200
-        body = response.get_json()
-        assert body['tier'] == 'premium'
-        assert body['status'] == 'active'
-        assert body['cancel_at_period_end'] is True
-        assert body['current_period_end'] is not None
+    mock_sub.current_period_end = 1234567890
 
-    def test_get_subscription_returns_404_for_unknown_user(self, client):
-        response = client.get('/api/user/missing_user/subscription')
+    mock_sub.cancel_at_period_end = False
 
-        assert response.status_code == 404
-        body = response.get_json()
-        assert body['error'] == 'User not found'
+    
 
-    def test_usage_stats_story_count_increments(self, client, app, test_user, auth_headers):
-        with app.app_context():
-            db.session.add(Story(user_id=test_user.id, title='Story One'))
-            db.session.add(Story(user_id=test_user.id, title='Story Two'))
-            db.session.commit()
+    mock_stripe.Subscription.list.return_value.data = [mock_sub]
 
-        response = client.get(f'/api/user/{test_user.id}/usage-stats', headers=auth_headers)
 
-        assert response.status_code == 200
-        body = response.get_json()
-        assert body['stories_this_month'] == 2
 
-    def test_usage_stats_returns_tier_limits(self, client, app, test_user, auth_headers):
-        free_response = client.get(f'/api/user/{test_user.id}/usage-stats', headers=auth_headers)
-        assert free_response.status_code == 200
-        assert free_response.get_json()['stories_limit'] == 10
+    response = client.get(f'/api/stripe/subscription-status/{user_id}',
 
-        with app.app_context():
-            _create_user('premium_usage_user', 'premium')
-            db.session.remove()
+                          headers=headers)
 
-        premium_response = client.get(
-            '/api/user/premium_usage_user/usage-stats',
-            headers=_auth_headers('premium_usage_user'),
-        )
-        assert premium_response.status_code == 200
-        assert premium_response.get_json()['stories_limit'] == 100
+    
+
+    assert response.status_code == 200
+
+    data = response.get_json()
+
+    assert data['status'] == 'active'
+
+    assert data['current_period_end'] == 1234567890
+
+

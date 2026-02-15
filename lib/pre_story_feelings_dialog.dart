@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 
 import 'feelings_wheel_data.dart';
 import 'widgets/mood_magic_picker.dart';
-import 'widgets/mood_lantern_selector.dart';
 
 class CurrentFeeling {
   final SelectedFeeling selectedFeeling;
@@ -32,8 +31,7 @@ class CurrentFeeling {
         'tertiary_emotion': selectedFeeling.tertiary,
         'intensity': intensity,
         'what_happened': whatHappened,
-        'physical_signs':
-            physicalSigns?.join(', '),
+        'physical_signs': physicalSigns?.join(', '),
         'coping_strategies': copingStrategies ?? const [],
       };
 }
@@ -151,26 +149,11 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
                 ),
                 const SizedBox(height: 24),
 
-                // Age-appropriate feelings selection
-                if (widget.childAge <= 5) ...[
-                  // Simple mood picker for young children
-                  MoodMagicPicker(
-                    childAge: widget.childAge,
-                    onMoodSelected: _onMoodSelected,
-                  ),
-                ] else ...[
-                  // Mood Lantern Selector for older children
-                  MoodLanternSelector(
-                    onFeelingSelected: (feeling) {
-                      setState(() {
-                        _selectedFeeling = feeling;
-                        _supportInfo = FeelingSupportLibrary.findSupport(feeling);
-                        _intensity = 3;
-                      });
-                    },
-                    age: widget.childAge,
-                  ),
-                ],
+                // Single lightweight picker for all ages
+                MoodMagicPicker(
+                  childAge: widget.childAge,
+                  onMoodSelected: _onMoodSelected,
+                ),
 
                 // Emotion Details
                 if (_selectedFeeling != null) ...[
@@ -287,8 +270,10 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
                   TextField(
                     controller: _whatHappenedController,
                     decoration: InputDecoration(
-                      hintText: 'Tell us what happened that made you feel this way...',
-                      hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+                      hintText:
+                          'Tell us what happened that made you feel this way...',
+                      hintStyle:
+                          TextStyle(fontSize: 13, color: Colors.grey.shade400),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -335,7 +320,8 @@ class _PreStoryFeelingsDialogState extends State<PreStoryFeelingsDialog> {
                                 Navigator.of(context).pop(feeling);
                               },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _selectedFeeling?.color ?? Colors.purple,
+                          backgroundColor:
+                              _selectedFeeling?.color ?? Colors.purple,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -448,7 +434,8 @@ class _FeelingSupportSection extends StatelessWidget {
 extension on Color {
   Color darken([double amount = .2]) {
     final hsl = HSLColor.fromColor(this);
-    final adjusted = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
+    final adjusted =
+        hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
     return adjusted.toColor();
   }
 }

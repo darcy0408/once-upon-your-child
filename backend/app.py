@@ -148,7 +148,13 @@ def create_app(config_name):
     else:
         rate_limit_storage = "memory://"
         if not testing_mode:
-            logger.warning("Rate limiting using in-memory storage - not suitable for multi-instance deployments")
+            if is_production():
+                logger.error(
+                    "Rate limiting is using in-memory storage in production. "
+                    "This is not safe for multi-instance deployments; set REDIS_URL/REDIS_PRIVATE_URL."
+                )
+            else:
+                logger.warning("Rate limiting using in-memory storage - not suitable for multi-instance deployments")
 
     limiter = Limiter(
         app=app,
@@ -156,11 +162,12 @@ def create_app(config_name):
         default_limits=["200 per day", "50 per hour"],
         storage_uri=rate_limit_storage
     )
+    logger.info("Rate limiting enabled=%s storage=%s", limiter.enabled, rate_limit_storage)
     # Store limiter on app to prevent garbage collection when passed to blueprints
     app.limiter = limiter
 
     # Caching setup
-    cache = Cache(app, config={'CACHE_TYPE': 'simple'})
+    cache = Cache(app)
 
     @app.after_request
     def add_rate_limit_headers(response):
