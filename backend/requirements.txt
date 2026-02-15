@@ -24,7 +24,7 @@ Pillow
 cryptography==46.0.4
 
 # Error Monitoring
-sentry-sdk[flask]==2.51.0
+sentry-sdk[flask]==2.52.0
 
 # Payment Processing
 stripe==14.3.0
@@ -44,7 +44,7 @@ marshmallow==4.2.1
 # aiohttp==3.9.1
 
 # Caching (optional but useful)
-redis==7.1.0
+redis==7.1.1
 Flask-Caching==2.3.1
 
 # Task Queue
