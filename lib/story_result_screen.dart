@@ -1632,110 +1632,105 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
             ),
           ),
         ),
-        floatingActionButton: _isLoading ? null : Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final bool isNarrow = MediaQuery.of(context).size.width < 350;
-              
-              if (isNarrow) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        FloatingActionButton.extended(
-                          heroTag: 'read_fab',
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => StoryReaderScreen(
-                                  storyText: widget.storyText,
-                                  title: widget.title,
-                                ),
-                              ),
-                            );
-                          },
-                          backgroundColor: AppColors.primary,
-                          icon: const Icon(Icons.record_voice_over_rounded),
-                          label: const Text('Read'),
-                        ),
-                        const SizedBox(width: 12),
-                        FloatingActionButton.extended(
-                          heroTag: 'color_fab',
-                          onPressed: _generateColoringPages,
-                          backgroundColor: AppColors.secondary,
-                          icon: const Icon(Icons.palette_rounded),
-                          label: const Text('Color'),
-                        ),
-                      ],
+        // Use a bottom action bar instead of a floating button cluster so it doesn't
+        // cover the story footer controls on smaller viewports.
+        bottomNavigationBar: _isLoading
+            ? null
+            : SafeArea(
+                top: false,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    border: Border(
+                      top: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
                     ),
-                    const SizedBox(height: 12),
-                    FloatingActionButton(
-                      heroTag: 'share_fab',
-                      mini: true,
-                      onPressed: () => showModalBottomSheet(
-                        context: context, 
-                        backgroundColor: Colors.transparent,
-                        builder: (context) => _buildShareActions(),
-                      ),
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppColors.primary,
-                      child: const Icon(Icons.more_vert_rounded),
-                    ),
-                  ],
-                );
-              }
+                  ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isNarrow = constraints.maxWidth < 420;
 
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                    FloatingActionButton.extended(
-                    heroTag: 'read_fab',
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => StoryReaderScreen(
-                            storyText: widget.storyText,
-                            title: widget.title,
-                          ),
+                      final readButton = ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => StoryReaderScreen(
+                                storyText: widget.storyText,
+                                title: widget.title,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.record_voice_over_rounded),
+                        label: const Text('Read'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                          shape: const StadiumBorder(),
                         ),
                       );
+
+                      final colorButton = ElevatedButton.icon(
+                        onPressed: _generateColoringPages,
+                        icon: const Icon(Icons.palette_rounded),
+                        label: const Text('Color'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.secondary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                          shape: const StadiumBorder(),
+                        ),
+                      );
+
+                      final moreButton = IconButton(
+                        onPressed: () => showModalBottomSheet(
+                          context: context,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => _buildShareActions(),
+                        ),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: AppColors.primary,
+                          padding: const EdgeInsets.all(12),
+                          shape: const CircleBorder(),
+                          side: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+                        ),
+                        icon: const Icon(Icons.more_vert_rounded),
+                        tooltip: 'More actions',
+                      );
+
+                      if (isNarrow) {
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(child: readButton),
+                                const SizedBox(width: 12),
+                                Expanded(child: colorButton),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Align(alignment: Alignment.centerRight, child: moreButton),
+                          ],
+                        );
+                      }
+
+                      return Row(
+                        children: [
+                          Expanded(child: readButton),
+                          const SizedBox(width: 12),
+                          Expanded(child: colorButton),
+                          const SizedBox(width: 12),
+                          moreButton,
+                        ],
+                      );
                     },
-                    backgroundColor: AppColors.primary,
-                    icon: const Icon(Icons.record_voice_over_rounded),
-                    label: const Text('Read'),
                   ),
-                  const SizedBox(width: 16),
-                  FloatingActionButton.extended(
-                    heroTag: 'color_fab',
-                    onPressed: _generateColoringPages,
-                    backgroundColor: AppColors.secondary,
-                    icon: const Icon(Icons.palette_rounded),
-                    label: const Text('Color'),
-                  ),
-                  const SizedBox(width: 16),
-                  FloatingActionButton(
-                    heroTag: 'share_fab',
-                    onPressed: () => showModalBottomSheet(
-                      context: context, 
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => _buildShareActions(),
-                    ),
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.primary,
-                    child: const Icon(Icons.more_vert_rounded),
-                    // label: const Text('More'),
-                  ),
-                ],
-              );
-            }
-          ),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+                ),
+              ),
       ),
     );
   }

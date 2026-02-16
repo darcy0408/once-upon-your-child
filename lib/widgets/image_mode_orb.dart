@@ -1,8 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
-/// Image-based Mode Orb using transparent PNG assets
-/// Displays Tales, Rhyme, Spellbound Reading, or Pick Your Path mode icons
+/// Code-rendered mode orb. Keeps transparent visuals and avoids raster checkerboard artifacts.
 class ImageModeOrb extends StatefulWidget {
   final String modeType; // 'tales', 'rhyme', 'reading', 'pickpath'
   final String label;
@@ -87,18 +86,18 @@ class _ImageModeOrbState extends State<ImageModeOrb>
     super.dispose();
   }
 
-  String _getImagePath(String modeType) {
+  IconData _getIcon(String modeType) {
     switch (modeType) {
       case 'tales':
-        return 'assets/images/ui/Tales.jpg';
+        return Icons.menu_book_rounded;
       case 'rhyme':
-        return 'assets/images/ui/RhymeTime.jpg';
+        return Icons.music_note_rounded;
       case 'reading':
-        return 'assets/images/ui/easyRead.jpg';
+        return Icons.chrome_reader_mode_rounded;
       case 'pickpath':
-        return 'assets/images/ui/PickAPath.jpg';
+        return Icons.alt_route_rounded;
       default:
-        return 'assets/images/ui/Tales.jpg';
+        return Icons.auto_awesome_rounded;
     }
   }
 
@@ -193,7 +192,7 @@ class _ImageModeOrbState extends State<ImageModeOrb>
                       },
                     ),
 
-                    // Mode icon image (transparent PNG)
+                    // Mode icon orb
                     AnimatedBuilder(
                       animation: _floatController,
                       builder: (context, child) {
@@ -207,48 +206,53 @@ class _ImageModeOrbState extends State<ImageModeOrb>
                               boxShadow: [
                                 // Glass highlight
                                 BoxShadow(
-                                  color: Colors.white.withValues(alpha: widget.isActive ? 0.6 : 0.3),
+                                  color: Colors.white.withValues(
+                                      alpha: widget.isActive ? 0.6 : 0.3),
                                   blurRadius: widget.isActive ? 12 : 6,
                                   spreadRadius: widget.isActive ? -3 : -5,
                                   offset: const Offset(-1, -3),
                                 ),
                                 // Primary glow
                                 BoxShadow(
-                                  color: widget.primaryColor.withValues(alpha: widget.isActive ? 0.8 : 0.3),
+                                  color: widget.primaryColor.withValues(
+                                      alpha: widget.isActive ? 0.8 : 0.3),
                                   blurRadius: widget.isActive ? 35 : 10,
                                   spreadRadius: widget.isActive ? 5 : 0,
                                 ),
                                 // Secondary glow
                                 if (widget.isActive)
                                   BoxShadow(
-                                    color: widget.secondaryColor.withValues(alpha: 0.5),
+                                    color: widget.secondaryColor
+                                        .withValues(alpha: 0.5),
                                     blurRadius: 25,
                                     spreadRadius: 3,
                                   ),
                               ],
                             ),
                             child: ClipOval(
-                              child: Image.asset(
-                                _getImagePath(widget.modeType),
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      gradient: RadialGradient(
-                                        colors: [
-                                          widget.primaryColor.withValues(alpha: 0.7),
-                                          widget.secondaryColor.withValues(alpha: 0.5),
-                                        ],
-                                      ),
-                                    ),
-                                    child: Icon(
-                                      Icons.auto_awesome,
-                                      size: 34,
-                                      color: Colors.white,
-                                    ),
-                                  );
-                                },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      Colors.white.withValues(alpha: 0.35),
+                                      widget.primaryColor
+                                          .withValues(alpha: 0.75),
+                                      widget.secondaryColor
+                                          .withValues(alpha: 0.65),
+                                      const Color(0xFF2A1E3D)
+                                          .withValues(alpha: 0.9),
+                                    ],
+                                    stops: const [0.0, 0.32, 0.72, 1.0],
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    _getIcon(widget.modeType),
+                                    size: 34,
+                                    color: Colors.white.withValues(alpha: 0.95),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -264,8 +268,10 @@ class _ImageModeOrbState extends State<ImageModeOrb>
                 widget.label,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: widget.isActive ? const Color(0xFF2F2748) : inactiveText,
-                  fontWeight: widget.isActive ? FontWeight.w700 : FontWeight.w600,
+                  color:
+                      widget.isActive ? const Color(0xFF2F2748) : inactiveText,
+                  fontWeight:
+                      widget.isActive ? FontWeight.w700 : FontWeight.w600,
                   fontSize: 13,
                   height: 1.2,
                 ),

@@ -79,6 +79,8 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final buttonWidth = math.min(screenWidth * 0.86, 360.0);
+    final borderColor =
+        widget.isEnabled ? const Color(0xFFFFD478) : const Color(0xFF9A93AB);
 
     return Semantics(
       button: true,
@@ -86,7 +88,9 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
       label: widget.label,
       hint: 'Start creating your magical story',
       child: ScaleTransition(
-        scale: widget.isEnabled ? _pulseAnimation : const AlwaysStoppedAnimation(1.0),
+        scale: widget.isEnabled
+            ? _pulseAnimation
+            : const AlwaysStoppedAnimation(1.0),
         child: GestureDetector(
           onTap: _handleTap,
           child: SizedBox(
@@ -117,69 +121,82 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
                     ),
                   ),
 
-                // Button image
-                Opacity(
-                  opacity: widget.isEnabled ? 1.0 : 0.5,
-                  child: Image.asset(
-                    'assets/images/ui/make magic button.jpg',
-                    width: buttonWidth,
-                    height: 88,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      // Fallback to styled container if image fails
-                      return Container(
-                        width: buttonWidth,
-                        height: 88,
-                        decoration: BoxDecoration(
-                          gradient: widget.isEnabled
-                              ? const LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Color(0xFFB565FF),
-                                    Color(0xFF6A1B9A),
-                                    Color(0xFF4A148C),
-                                  ],
-                                  stops: [0.0, 0.5, 1.0],
-                                )
-                              : const LinearGradient(
-                                  colors: [
-                                    Color(0xFF999999),
-                                    Color(0xFF666666),
-                                  ],
-                                ),
-                          borderRadius: BorderRadius.circular(44),
-                          border: Border.all(
-                            color: widget.isEnabled
-                                ? const Color(0xFFFFD478)
-                                : const Color(0xFF999999),
-                            width: 3.5,
+                // Code-rendered magical button avoids checkerboard artifacts from legacy JPG assets.
+                Container(
+                  width: buttonWidth,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    gradient: widget.isEnabled
+                        ? const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFFBE73FF),
+                              Color(0xFF7E3FC6),
+                              Color(0xFF57238B),
+                            ],
+                            stops: [0.0, 0.45, 1.0],
+                          )
+                        : const LinearGradient(
+                            colors: [
+                              Color(0xFF8A8297),
+                              Color(0xFF666072),
+                            ],
                           ),
+                    borderRadius: BorderRadius.circular(44),
+                    border: Border.all(color: borderColor, width: 3.2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Positioned(
+                        top: 10,
+                        left: 24,
+                        child: Icon(
+                          Icons.auto_awesome,
+                          color: const Color(0xFFFFE6A1)
+                              .withValues(alpha: widget.isEnabled ? 0.85 : 0.4),
+                          size: 17,
                         ),
-                        child: Center(
-                          child: Text(
-                            widget.label,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 24,
-                              letterSpacing: 1.2,
-                              shadows: [
-                                Shadow(
-                                  color: Color(0xAAFFFFFF),
-                                  blurRadius: 12,
-                                ),
-                                Shadow(
-                                  color: Color(0x88000000),
-                                  blurRadius: 4,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
+                      ),
+                      Positioned(
+                        bottom: 12,
+                        right: 26,
+                        child: Icon(
+                          Icons.auto_awesome,
+                          color: const Color(0xFFFFE6A1)
+                              .withValues(alpha: widget.isEnabled ? 0.85 : 0.4),
+                          size: 15,
+                        ),
+                      ),
+                      Text(
+                        widget.label,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 24,
+                          letterSpacing: 1.2,
+                          shadows: [
+                            Shadow(
+                              color: Color(0xAAFFFFFF),
+                              blurRadius: 10,
                             ),
-                          ),
+                            Shadow(
+                              color: Color(0x88000000),
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
                         ),
-                      );
-                    },
+                      ),
+                    ],
                   ),
                 ),
               ],

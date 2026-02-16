@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
 
@@ -172,6 +174,33 @@ class StoryBookPage extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Subtle paper speckle overlay used by [StoryBookPage].
+class PaperTexturePainter extends CustomPainter {
+  const PaperTexturePainter({required this.opacity});
+
+  final double opacity;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black.withValues(alpha: opacity)
+      ..strokeWidth = 1;
+
+    // Deterministic speckle pattern (no randomness) to keep goldens stable.
+    const step = 14.0;
+    for (double y = 4; y < size.height; y += step) {
+      for (double x = 3; x < size.width; x += step) {
+        canvas.drawPoints(ui.PointMode.points, [Offset(x, y)], paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant PaperTexturePainter oldDelegate) {
+    return oldDelegate.opacity != opacity;
   }
 }
 

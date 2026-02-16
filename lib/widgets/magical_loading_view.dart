@@ -78,7 +78,7 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
     }
 
     // Rotate flavor messages independent of backend status updates.
-    _messageTimer = Timer.periodic(const Duration(milliseconds: 1800), (_) {
+    _messageTimer = Timer.periodic(const Duration(milliseconds: 2600), (_) {
       if (!mounted) return;
       setState(() => _messageIndex = (_messageIndex + 1) % _phaseMessages.length);
     });
@@ -97,181 +97,220 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final stageSize = (screenWidth * 0.42).clamp(150.0, 210.0);
+    final panelWidth = screenWidth.clamp(280.0, 460.0);
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            blurRadius: 20,
-            spreadRadius: 5,
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: panelWidth),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFFFFF4D1).withValues(alpha: 0.72),
+              const Color(0xFFE7C5FF).withValues(alpha: 0.78),
+              const Color(0xFFBCE8FF).withValues(alpha: 0.74),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            height: stageSize,
-            width: stageSize,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Layered aura (3 gradient layers)
-                AnimatedBuilder(
-                  animation: _pulseController,
-                  builder: (context, child) {
-                    return _AuraHalo(
-                      size: stageSize,
-                      t: _pulseController.value,
-                      primary: AppColors.gold,
-                      secondary: AppColors.primary,
-                      tertiary: const Color(0xFF80DEEA),
-                    );
-                  },
-                ),
-
-                // Rotating magical ring
-                AnimatedBuilder(
-                  animation: _rotationController,
-                  builder: (context, child) {
-                    final ringSize = stageSize * 0.80;
-                    return Transform.rotate(
-                      angle: _rotationController.value * 2 * pi,
-                      child: Container(
-                        width: ringSize,
-                        height: ringSize,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.gold.withValues(alpha: 0.28),
-                            width: 2,
-                          ),
-                          gradient: SweepGradient(
-                            colors: [
-                              AppColors.gold.withValues(alpha: 0.0),
-                              AppColors.gold.withValues(alpha: 0.55),
-                              AppColors.gold.withValues(alpha: 0.0),
-                            ],
-                            stops: const [0.0, 0.5, 1.0],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-                // Central "magic loom" weaving animation
-                AnimatedBuilder(
-                  animation: Listenable.merge([_weaveController, _pulseController]),
-                  builder: (context, child) {
-                    final loomSize = stageSize * 0.60;
-                    final pulse = _pulseController.value;
-                    return Transform.scale(
-                      scale: 0.98 + (pulse * 0.04),
-                      child: CustomPaint(
-                        size: Size.square(loomSize),
-                        painter: _MagicLoomPainter(
-                          phase: _weaveController.value,
-                          glow: AppColors.gold,
-                          accent: AppColors.primary,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-                // Center sigil
-                AnimatedBuilder(
-                  animation: _pulseController,
-                  builder: (context, child) {
-                    final pulse = _pulseController.value;
-                    final sigilSize = stageSize * 0.34;
-                    return Transform.scale(
-                      scale: 1.0 + (pulse * 0.08),
-                      child: Container(
-                        width: sigilSize,
-                        height: sigilSize,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.08),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.30 * pulse),
-                              blurRadius: 20 * pulse,
-                              spreadRadius: 5 * pulse,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.auto_awesome,
-                          size: 36,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-                // Orbiting sparkles
-                ..._sparkles.map((sparkle) {
-                  return _AnimatedSparkle(
-                    controller: _rotationController,
-                    twinkleController: _weaveController,
-                    sparkle: sparkle,
-                  );
-                }),
-              ],
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.55),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.18),
+              blurRadius: 26,
+              spreadRadius: 2,
             ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            widget.status,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Quicksand',
-                ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            transitionBuilder: (child, anim) {
-              return FadeTransition(
-                opacity: anim,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.15),
-                    end: Offset.zero,
-                  ).animate(anim),
-                  child: child,
-                ),
-              );
-            },
-            child: Text(
-              _phaseMessages[_messageIndex],
-              key: ValueKey<int>(_messageIndex),
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                    fontStyle: FontStyle.italic,
-                  ),
-            ),
-          ),
-          if (widget.onCancel != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            TextButton(
-              onPressed: widget.onCancel,
-              child: const Text('Cancel'),
+            BoxShadow(
+              color: AppColors.gold.withValues(alpha: 0.14),
+              blurRadius: 34,
+              spreadRadius: 5,
             ),
           ],
-        ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: stageSize,
+              width: stageSize,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Layered aura (3 gradient layers)
+                  AnimatedBuilder(
+                    animation: _pulseController,
+                    builder: (context, child) {
+                      return _AuraHalo(
+                        size: stageSize,
+                        t: _pulseController.value,
+                        primary: AppColors.gold,
+                        secondary: AppColors.primary,
+                        tertiary: const Color(0xFF80DEEA),
+                      );
+                    },
+                  ),
+
+                  // Rotating magical ring
+                  AnimatedBuilder(
+                    animation: _rotationController,
+                    builder: (context, child) {
+                      final ringSize = stageSize * 0.80;
+                      return Transform.rotate(
+                        angle: _rotationController.value * 2 * pi,
+                        child: Container(
+                          width: ringSize,
+                          height: ringSize,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.gold.withValues(alpha: 0.28),
+                              width: 2,
+                            ),
+                            gradient: SweepGradient(
+                              colors: [
+                                AppColors.gold.withValues(alpha: 0.0),
+                                AppColors.gold.withValues(alpha: 0.55),
+                                AppColors.gold.withValues(alpha: 0.0),
+                              ],
+                              stops: const [0.0, 0.5, 1.0],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                  // Central "magic loom" weaving animation
+                  AnimatedBuilder(
+                    animation: Listenable.merge([_weaveController, _pulseController]),
+                    builder: (context, child) {
+                      final loomSize = stageSize * 0.60;
+                      final pulse = _pulseController.value;
+                      return Transform.scale(
+                        scale: 0.98 + (pulse * 0.04),
+                        child: CustomPaint(
+                          size: Size.square(loomSize),
+                          painter: _MagicLoomPainter(
+                            phase: _weaveController.value,
+                            glow: AppColors.gold,
+                            accent: AppColors.primary,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                  // Center sigil
+                  AnimatedBuilder(
+                    animation: _pulseController,
+                    builder: (context, child) {
+                      final pulse = _pulseController.value;
+                      final sigilSize = stageSize * 0.34;
+                      return Transform.scale(
+                        scale: 1.0 + (pulse * 0.08),
+                        child: Container(
+                          width: sigilSize,
+                          height: sigilSize,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.08),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.30 * pulse),
+                                blurRadius: 20 * pulse,
+                                spreadRadius: 5 * pulse,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.auto_awesome,
+                            size: 36,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                  // Orbiting sparkles
+                  ..._sparkles.map((sparkle) {
+                    return _AnimatedSparkle(
+                      controller: _rotationController,
+                      twinkleController: _weaveController,
+                      sparkle: sparkle,
+                    );
+                  }),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              widget.status,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Quicksand',
+                  ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(minHeight: 54, maxHeight: 54),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.36),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.58),
+                  width: 1,
+                ),
+              ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 650),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, anim) {
+                  return FadeTransition(
+                    opacity: anim,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.08),
+                        end: Offset.zero,
+                      ).animate(anim),
+                      child: child,
+                    ),
+                  );
+                },
+                child: Center(
+                  child: Text(
+                    _phaseMessages[_messageIndex],
+                    key: ValueKey<int>(_messageIndex),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFF4D3D6A),
+                          fontStyle: FontStyle.italic,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+              ),
+            ),
+            if (widget.onCancel != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              TextButton(
+                onPressed: widget.onCancel,
+                child: const Text('Cancel'),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

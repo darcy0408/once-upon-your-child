@@ -43,7 +43,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
   // Helper to get scenario image
   String get _scenarioImage {
     if (widget.wizardData.selectedScenario != null) {
-      final scenario = ScenarioData.getById(widget.wizardData.selectedScenario!);
+      final scenario =
+          ScenarioData.getById(widget.wizardData.selectedScenario!);
       if (scenario != null) {
         // Ensure path has assets/ prefix if missing
         if (!scenario.illustration.startsWith('assets/')) {
@@ -79,7 +80,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
   // Helper to get scenario name
   String get _scenarioLabel {
     if (widget.wizardData.selectedScenario != null) {
-      final scenario = ScenarioData.getById(widget.wizardData.selectedScenario!);
+      final scenario =
+          ScenarioData.getById(widget.wizardData.selectedScenario!);
       if (scenario != null) return scenario.title;
     }
     return 'Magical Adventure';
@@ -113,9 +115,10 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       // 2. CHECK MODE: If Pick-A-Path, skip standard generation
       if (widget.wizardData.interactiveMode) {
         if (mounted) {
-           // Create a Character object from wizard data
+          // Create a Character object from wizard data
           final character = Character(
-            id: widget.wizardData.characterId ?? 'temp-${DateTime.now().millisecondsSinceEpoch}',
+            id: widget.wizardData.characterId ??
+                'temp-${DateTime.now().millisecondsSinceEpoch}',
             name: widget.wizardData.characterName,
             age: widget.wizardData.characterAge,
             role: widget.wizardData.selectedArchetypeId ?? 'Adventurer',
@@ -175,7 +178,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 title: result.title ?? 'My Magical Story',
                 storyText: result.storyText,
                 wisdomGem: result.wisdomGem ?? 'You are magic!',
-                characterName: requestData['characterName'] ?? widget.wizardData.characterName,
+                characterName: requestData['characterName'] ??
+                    widget.wizardData.characterName,
                 theme: requestData['theme'],
                 characterAge: requestData['age'],
                 pages: result.pages,
@@ -191,7 +195,6 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
           );
         }
       }
-
     } catch (e) {
       debugPrint('❌ Error generating story: $e');
       String userMessage = 'Magic needed a recharge';
@@ -200,13 +203,16 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       } else if (e.toString().contains('timeout')) {
         userMessage = 'Story took too long.';
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('$userMessage\nTry again?'),
             backgroundColor: AppColors.error,
-            action: SnackBarAction(label: 'Retry', textColor: Colors.white, onPressed: _launchStoryCreation),
+            action: SnackBarAction(
+                label: 'Retry',
+                textColor: Colors.white,
+                onPressed: _launchStoryCreation),
           ),
         );
       }
@@ -217,7 +223,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
 
   Future<void> _saveCharacterIfNeeded() async {
     try {
-      final characterDetails = WizardDataMapper.mapToStoryRequest(widget.wizardData)['characterDetails'] as Map<String, dynamic>;
+      final characterDetails = WizardDataMapper.mapToStoryRequest(
+          widget.wizardData)['characterDetails'] as Map<String, dynamic>;
       final body = {
         'name': widget.wizardData.characterName,
         'age': widget.wizardData.characterAge,
@@ -236,14 +243,14 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
 
       final api = ApiServiceManager();
       if (widget.wizardData.characterId != null) {
-          await api.patch('/characters/${widget.wizardData.characterId}', body);
+        await api.patch('/characters/${widget.wizardData.characterId}', body);
       } else {
-          final response = await api.post('/create-character', body);
-          if (response.containsKey('character_id')) {
-             widget.wizardData.characterId = response['character_id']?.toString();
-          } else if (response.containsKey('id')) {
-             widget.wizardData.characterId = response['id']?.toString();
-          }
+        final response = await api.post('/create-character', body);
+        if (response.containsKey('character_id')) {
+          widget.wizardData.characterId = response['character_id']?.toString();
+        } else if (response.containsKey('id')) {
+          widget.wizardData.characterId = response['id']?.toString();
+        }
       }
     } catch (e) {
       debugPrint('⚠️ Character save failed: $e');
@@ -252,9 +259,12 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
 
   String _mapStoryLength(String wizardLength) {
     switch (wizardLength) {
-      case 'quick': return 'short';
-      case 'epic': return 'long';
-      default: return 'medium';
+      case 'quick':
+        return 'short';
+      case 'epic':
+        return 'long';
+      default:
+        return 'medium';
     }
   }
 
@@ -266,7 +276,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
 
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
         child: Column(
           children: [
             // 1. Image-based crystal ball progress indicators (3 steps now)
@@ -293,7 +304,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 clipBehavior: Clip.none,
                 children: [
                   // Adjust orbSize to be slightly more compact to avoid crowding
-                  // final orbSize = (screenWidth - 80).clamp(160.0, 220.0); 
+                  // final orbSize = (screenWidth - 80).clamp(160.0, 220.0);
 
                   // Enhanced outer aura with multiple layers
                   Container(
@@ -319,9 +330,15 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                     size: orbSize * 0.95, // Slightly smaller hero orb
                     glowColor: AppColors.gold,
                     topLabel: _scenarioLabel,
-                    label: data.characterName.isNotEmpty ? data.characterName : 'Your Hero',
+                    label: data.characterName.isNotEmpty
+                        ? data.characterName
+                        : 'Your Hero',
                     childScale: 0.92,
-                    child: _HeroAvatar(generatedAvatar: data.generatedAvatar),
+                    child: _HeroAvatar(
+                      generatedAvatar: data.generatedAvatar,
+                      characterName: data.characterName,
+                      role: data.selectedArchetypeId,
+                    ),
                   ),
 
                   // Setting (Scenario) bubble - Moved to BOTTOM LEFT
@@ -346,11 +363,14 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                         ),
                         const SizedBox(height: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.black.withValues(alpha: 0.6),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                width: 1),
                           ),
                           child: Text(
                             _scenarioLabel,
@@ -385,14 +405,18 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                           ),
                           const SizedBox(height: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: Colors.black.withValues(alpha: 0.6),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Text(
                               'Companion',
-                              style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold),
                             ),
                           ),
                         ],
@@ -413,7 +437,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                   modeType: 'tales',
                   label: 'Tales',
                   isActive: data.includeIllustrations,
-                  onTap: () => setState(() => data.includeIllustrations = !data.includeIllustrations),
+                  onTap: () => setState(() =>
+                      data.includeIllustrations = !data.includeIllustrations),
                   primaryColor: const Color(0xFFAA88FF), // Purple
                   secondaryColor: const Color(0xFFE28EFF), // Magenta
                 ),
@@ -483,7 +508,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                         type: 'classic',
                         label: 'Classic',
                         isSelected: data.storyLength == 'standard',
-                        onTap: () => setState(() => data.storyLength = 'standard'),
+                        onTap: () =>
+                            setState(() => data.storyLength = 'standard'),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -506,9 +532,11 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
               children: [
                 TextField(
                   maxLines: 3,
-                  onChanged: (value) => setState(() => data.customElements = value),
+                  onChanged: (value) =>
+                      setState(() => data.customElements = value),
                   decoration: InputDecoration(
-                    hintText: 'Whisper a wish to the orb...\n(e.g., "I want to ride a giant eagle")',
+                    hintText:
+                        'Whisper a wish to the orb...\n(e.g., "I want to ride a giant eagle")',
                     hintStyle: TextStyle(
                       color: AppColors.textDark.withValues(alpha: 0.4),
                       fontStyle: FontStyle.italic,
@@ -525,7 +553,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 const Positioned(
                   right: 12,
                   bottom: 12,
-                  child: Icon(Icons.auto_awesome, color: AppColors.gold, size: 20),
+                  child:
+                      Icon(Icons.auto_awesome, color: AppColors.gold, size: 20),
                 ),
               ],
             ),
@@ -567,7 +596,8 @@ class _FloatingBubble extends StatefulWidget {
   State<_FloatingBubble> createState() => _FloatingBubbleState();
 }
 
-class _FloatingBubbleState extends State<_FloatingBubble> with SingleTickerProviderStateMixin {
+class _FloatingBubbleState extends State<_FloatingBubble>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -701,45 +731,132 @@ class _AuraCircle extends StatelessWidget {
 
 class _HeroAvatar extends StatelessWidget {
   final GeneratedAvatar? generatedAvatar;
+  final String characterName;
+  final String? role;
 
-  const _HeroAvatar({required this.generatedAvatar});
+  const _HeroAvatar({
+    required this.generatedAvatar,
+    required this.characterName,
+    required this.role,
+  });
 
   @override
   Widget build(BuildContext context) {
     if (generatedAvatar == null) {
-      return const _GradientSphereFallback(
-        child: Icon(Icons.face_rounded, color: Colors.white, size: 80),
+      return _GradientSphereFallback(
+        child: _HeroFallbackIdentity(
+          name: characterName,
+          role: role,
+        ),
       );
     }
 
     final imageData = generatedAvatar!.imageBase64;
-    final isUrl = imageData.startsWith('http://') || imageData.startsWith('https://');
+    final isUrl =
+        imageData.startsWith('http://') || imageData.startsWith('https://');
     final isAsset = imageData.startsWith('assets/');
+    final isDataUri = imageData.startsWith('data:image');
 
-    return ClipOval(
-      child: isAsset
-          ? Image.asset(
-              imageData,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const _GradientSphereFallback(
-                child: Icon(Icons.face_rounded, color: Colors.white, size: 80),
+    if (isAsset) {
+      return ClipOval(
+        child: Image.asset(
+          imageData,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _GradientSphereFallback(
+            child: _HeroFallbackIdentity(name: characterName, role: role),
+          ),
+        ),
+      );
+    }
+
+    if (isUrl) {
+      return ClipOval(
+        child: Image.network(
+          imageData,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _GradientSphereFallback(
+            child: _HeroFallbackIdentity(name: characterName, role: role),
+          ),
+        ),
+      );
+    }
+
+    if (isDataUri || imageData.contains(',')) {
+      try {
+        return ClipOval(
+          child: Image.memory(
+            base64Decode(imageData.split(',').last),
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _GradientSphereFallback(
+              child: _HeroFallbackIdentity(name: characterName, role: role),
+            ),
+          ),
+        );
+      } catch (_) {
+        return _GradientSphereFallback(
+          child: _HeroFallbackIdentity(name: characterName, role: role),
+        );
+      }
+    }
+
+    return _GradientSphereFallback(
+      child: _HeroFallbackIdentity(name: characterName, role: role),
+    );
+  }
+}
+
+class _HeroFallbackIdentity extends StatelessWidget {
+  final String name;
+  final String? role;
+
+  const _HeroFallbackIdentity({
+    required this.name,
+    required this.role,
+  });
+
+  String get _initial {
+    if (name.trim().isEmpty) return 'H';
+    return name.trim().substring(0, 1).toUpperCase();
+  }
+
+  IconData get _roleIcon {
+    final normalized = (role ?? '').toLowerCase();
+    if (normalized.contains('artist')) return Icons.palette_rounded;
+    if (normalized.contains('athlete')) return Icons.bolt_rounded;
+    if (normalized.contains('helper')) return Icons.volunteer_activism_rounded;
+    if (normalized.contains('thinker')) return Icons.psychology_alt_rounded;
+    if (normalized.contains('advent')) return Icons.explore_rounded;
+    return Icons.face_rounded;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(_roleIcon, color: Colors.white.withValues(alpha: 0.95), size: 42),
+        const SizedBox(height: 8),
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withValues(alpha: 0.22),
+            border: Border.all(
+                color: Colors.white.withValues(alpha: 0.45), width: 1.2),
+          ),
+          child: Center(
+            child: Text(
+              _initial,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 18,
               ),
-            )
-          : isUrl
-              ? Image.network(
-                  imageData,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const _GradientSphereFallback(
-                    child: Icon(Icons.face_rounded, color: Colors.white, size: 80),
-                  ),
-                )
-              : Image.memory(
-                  base64Decode(imageData.split(',').last),
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const _GradientSphereFallback(
-                    child: Icon(Icons.face_rounded, color: Colors.white, size: 80),
-                  ),
-                ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -791,18 +908,16 @@ class _GradientSphereFallback extends StatelessWidget {
   }
 }
 
-
 // Animated sparkle decoration
 class _SparkleIcon extends StatefulWidget {
-  final double delay;
-
-  const _SparkleIcon({this.delay = 0});
+  const _SparkleIcon();
 
   @override
   State<_SparkleIcon> createState() => _SparkleIconState();
 }
 
-class _SparkleIconState extends State<_SparkleIcon> with SingleTickerProviderStateMixin {
+class _SparkleIconState extends State<_SparkleIcon>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _opacityAnimation;
@@ -825,11 +940,7 @@ class _SparkleIconState extends State<_SparkleIcon> with SingleTickerProviderSta
       TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.4), weight: 50),
     ]).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
-    Future.delayed(Duration(milliseconds: (widget.delay * 1000).toInt()), () {
-      if (mounted) {
-        _controller.repeat();
-      }
-    });
+    _controller.repeat();
   }
 
   @override
@@ -922,14 +1033,16 @@ class _PulsingCastSpellFrameState extends State<_PulsingCastSpellFrame>
     return AnimatedBuilder(
       animation: _pulse,
       builder: (context, child) {
-        final glowStrength = widget.isReady ? (0.35 + (_pulse.value * 0.35)) : 0.2;
+        final glowStrength =
+            widget.isReady ? (0.35 + (_pulse.value * 0.35)) : 0.2;
         return Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(32),
             gradient: RadialGradient(
               colors: [
-                Color.lerp(const Color(0xFFB565FF), const Color(0xFFFFD478), _pulse.value)!
+                Color.lerp(const Color(0xFFB565FF), const Color(0xFFFFD478),
+                        _pulse.value)!
                     .withValues(alpha: glowStrength),
                 Colors.transparent,
               ],
@@ -938,7 +1051,8 @@ class _PulsingCastSpellFrameState extends State<_PulsingCastSpellFrame>
             boxShadow: widget.isReady
                 ? [
                     BoxShadow(
-                      color: Color.lerp(const Color(0xFF9E6CFF), const Color(0xFFFFD478), _pulse.value)!
+                      color: Color.lerp(const Color(0xFF9E6CFF),
+                              const Color(0xFFFFD478), _pulse.value)!
                           .withValues(alpha: 0.45),
                       blurRadius: 28,
                       spreadRadius: 2,
@@ -1033,6 +1147,7 @@ class _OrbParticleTrailPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _OrbParticleTrailPainter oldDelegate) {
-    return oldDelegate.progress != progress || oldDelegate.baseColor != baseColor;
+    return oldDelegate.progress != progress ||
+        oldDelegate.baseColor != baseColor;
   }
 }
