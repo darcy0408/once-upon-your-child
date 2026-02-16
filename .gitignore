@@ -146,3 +146,14 @@ coverage/
 backend/.coverage
 .coverage
 htmlcov/
+
+# Temporary test scripts and utilities
+check_*.py
+live_test_*.py
+test_*_integration.py
+test_gemini_*.py
+test_mock_*.py
+test_coloring_*.py
+test_illustrations.py
+test_interactive_story.py
+tests/test_backend_*.py
