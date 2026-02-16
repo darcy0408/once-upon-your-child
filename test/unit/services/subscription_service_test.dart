@@ -72,7 +72,8 @@ void main() {
         final singletonA = SubscriptionSyncService();
         final singletonB = SubscriptionSyncService();
         expect(identical(singletonA, singletonB), isTrue);
-        expect(singletonA.subscriptionStream, isA<Stream<SubscriptionStatus>>());
+        expect(
+            singletonA.subscriptionStream, isA<Stream<SubscriptionStatus>>());
         singletonA.dispose();
         SubscriptionSyncService.resetInstance();
 
@@ -211,11 +212,11 @@ void main() {
 
         await service!.syncSubscriptionStatus(userId: 'user-free');
 
-        final freeLimitFromFixture =
-            _freeStatusFixture()['story_limit'] as int;
+        final freeLimitFromFixture = _freeStatusFixture()['story_limit'] as int;
         expect(freeLimitFromFixture, 3);
         expect(service!.currentStatus!.tier, SubscriptionTier.free);
-        expect(TierLimits.forTier(SubscriptionTier.free).unlimitedStories, isFalse);
+        expect(TierLimits.forTier(SubscriptionTier.free).unlimitedStories,
+            isFalse);
       });
 
       test('test_unlimited_usage_premium_tier', () async {
@@ -234,6 +235,68 @@ void main() {
     });
 
     group('API Synchronization', () {
+      test('test_sync_caches_subscription_payload_for_offline_use', () async {
+        final fakeStripe = _FakeStripeService(
+          results: <Object>[_premiumStatusFixture()],
+        );
+        service = SubscriptionSyncService.forTest(stripeService: fakeStripe);
+
+        await service!.syncSubscriptionStatus(userId: 'user-cache-write');
+
+        final prefs = await SharedPreferences.getInstance();
+        final cachedRaw = prefs.getString('subscription_status');
+        expect(cachedRaw, isNotNull);
+
+        final cached = jsonDecode(cachedRaw!) as Map<String, dynamic>;
+        expect(cached['user_id'], 'user-cache-write');
+        expect(cached['tier'], 'premium');
+      });
+
+      test('test_sync_uses_explicit_user_id_when_provided', () async {
+        SharedPreferences.setMockInitialValues(
+          <String, Object>{'story_weaver_user_id': 'stored-user'},
+        );
+
+        final fakeStripe = _FakeStripeService(
+          results: <Object>[_freeStatusFixture()],
+        );
+        service = SubscriptionSyncService.forTest(stripeService: fakeStripe);
+
+        await service!.syncSubscriptionStatus(userId: 'override-user');
+
+        expect(fakeStripe.requestedUserIds, <String>['override-user']);
+      });
+
+      test('test_initialize_hydrates_cache_before_network_refresh', () async {
+        final cached = SubscriptionStatus(
+          userId: 'user-cache',
+          tier: SubscriptionTier.free,
+          status: 'active',
+          currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
+        );
+        SharedPreferences.setMockInitialValues(
+          <String, Object>{'subscription_status': jsonEncode(cached.toJson())},
+        );
+
+        final fakeStripe = _FakeStripeService(
+          results: <Object>[_premiumStatusFixture()],
+        );
+        service = SubscriptionSyncService.forTest(stripeService: fakeStripe);
+
+        final emitted = <SubscriptionStatus>[];
+        final sub = service!.subscriptionStream.listen(emitted.add);
+
+        await service!.initialize(userId: 'user-cache');
+        await Future<void>.delayed(Duration.zero);
+        await sub.cancel();
+
+        expect(emitted.length, 2);
+        expect(emitted.first.tier, SubscriptionTier.free);
+        expect(emitted.last.tier, SubscriptionTier.premium);
+        expect(service!.currentStatus!.tier, SubscriptionTier.premium);
+      });
+
       test('test_sync_from_backend_api', () async {
         final fakeStripe = _FakeStripeService(
           results: <Object>[_premiumStatusFixture()],
@@ -247,6 +310,52 @@ void main() {
 
         expect(fakeStripe.requestedUserIds, <String>['user-api']);
         expect(service!.currentStatus!.tier, SubscriptionTier.premium);
+      });
+
+      test('test_successful_sync_overwrites_cached_status', () async {
+        final cached = SubscriptionStatus(
+          userId: 'user-cache',
+          tier: SubscriptionTier.free,
+          status: 'active',
+          currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
+        );
+        SharedPreferences.setMockInitialValues(
+          <String, Object>{'subscription_status': jsonEncode(cached.toJson())},
+        );
+        final fakeStripe = _FakeStripeService(
+          results: <Object>[_premiumStatusFixture()],
+        );
+        service = SubscriptionSyncService.forTest(stripeService: fakeStripe);
+
+        await service!.syncSubscriptionStatus(userId: 'user-cache');
+
+        final prefs = await SharedPreferences.getInstance();
+        final raw = prefs.getString('subscription_status');
+        expect(raw, isNotNull);
+        final decoded = jsonDecode(raw!) as Map<String, dynamic>;
+        expect(decoded['tier'], 'premium');
+        expect(service!.currentStatus!.tier, SubscriptionTier.premium);
+      });
+
+      test('test_stream_emits_for_repeated_identical_payloads', () async {
+        final payload = _premiumStatusFixture();
+        final fakeStripe = _FakeStripeService(
+          results: <Object>[payload, payload],
+        );
+        service = SubscriptionSyncService.forTest(stripeService: fakeStripe);
+
+        final emitted = <SubscriptionStatus>[];
+        final sub = service!.subscriptionStream.listen(emitted.add);
+
+        await service!.syncSubscriptionStatus(userId: 'user-repeat');
+        await service!.syncSubscriptionStatus(userId: 'user-repeat');
+        await Future<void>.delayed(Duration.zero);
+        await sub.cancel();
+
+        expect(emitted.length, 2);
+        expect(emitted[0].tier, SubscriptionTier.premium);
+        expect(emitted[1].tier, SubscriptionTier.premium);
       });
 
       test('test_sync_error_handling', () {

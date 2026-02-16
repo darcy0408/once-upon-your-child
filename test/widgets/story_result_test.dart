@@ -18,7 +18,21 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('StoryResultScreen shows story text and wisdom gem', (tester) async {
+  Future<void> pumpUntilFound(
+    WidgetTester tester, {
+    required Finder finder,
+    int maxPumps = 40,
+    Duration step = const Duration(milliseconds: 100),
+  }) async {
+    for (var i = 0; i < maxPumps; i++) {
+      await tester.pump(step);
+      if (finder.evaluate().isNotEmpty) return;
+    }
+    fail('Timed out waiting for finder: $finder');
+  }
+
+  testWidgets('StoryResultScreen shows story text and wisdom gem',
+      (tester) async {
     final story = SavedStory(
       title: 'Test Story',
       storyText: 'Once upon a testing time...',
@@ -55,11 +69,44 @@ void main() {
       ),
     );
 
-    // Allow async operations and typewriter animation to complete
-    await tester.pumpAndSettle(const Duration(seconds: 2));
+    // Wait for first story content frame without relying on full settle.
+    await pumpUntilFound(
+      tester,
+      finder: find.textContaining('Once upon a testing time'),
+      maxPumps: 50,
+      step: const Duration(milliseconds: 100),
+    );
 
     expect(find.text('Test Story'), findsOneWidget);
     expect(find.textContaining('Once upon a testing time'), findsOneWidget);
     expect(find.textContaining('Be kind and curious'), findsOneWidget);
+  });
+
+  testWidgets('StoryResultScreen hides wisdom chip when wisdom text is empty',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StoryResultScreen(
+          title: 'No Wisdom Story',
+          storyText: 'A tiny test story.',
+          wisdomGem: '',
+          characterName: 'Ava',
+          storyId: 'story_no_wisdom',
+          trackStoryCreation: false,
+          trackAnalytics: false,
+          offlineService: FakeOfflineStoryService(),
+        ),
+      ),
+    );
+
+    await pumpUntilFound(
+      tester,
+      finder: find.textContaining('A tiny test story'),
+      maxPumps: 40,
+      step: const Duration(milliseconds: 100),
+    );
+
+    expect(find.textContaining('A tiny test story'), findsOneWidget);
+    expect(find.byIcon(Icons.auto_awesome), findsNothing);
   });
 }

@@ -25,17 +25,20 @@ void main() {
   });
 
   group('StripeService', () {
-    test('createCheckoutSession returns session data on successful POST', () async {
+    test('createCheckoutSession returns session data on successful POST',
+        () async {
       final mockResponse = {
         'id': 'cs_test_123',
         'url': 'https://checkout.stripe.com/pay/cs_test_123',
       };
 
       when(() => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          )).thenAnswer((_) async => http.Response(jsonEncode(mockResponse), 200));
+                any(),
+                headers: any(named: 'headers'),
+                body: any(named: 'body'),
+              ))
+          .thenAnswer(
+              (_) async => http.Response(jsonEncode(mockResponse), 200));
 
       final result = await stripeService.createCheckoutSession(
         tier: 'premium',
@@ -57,12 +60,15 @@ void main() {
 
     test('createCheckoutSession sends provided user ID', () async {
       when(() => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          )).thenAnswer((_) async => http.Response(jsonEncode({'id': 'cs_test'}), 200));
+                any(),
+                headers: any(named: 'headers'),
+                body: any(named: 'body'),
+              ))
+          .thenAnswer(
+              (_) async => http.Response(jsonEncode({'id': 'cs_test'}), 200));
 
-      await stripeService.createCheckoutSession(tier: 'premium', userId: 'user_abc');
+      await stripeService.createCheckoutSession(
+          tier: 'premium', userId: 'user_abc');
 
       final captured = verify(() => mockHttpClient.post(
             any(),
@@ -75,7 +81,58 @@ void main() {
       expect(payload['user_id'], 'user_abc');
     });
 
-    test('createCheckoutSession throws exception on non-200 response', () async {
+    test('createCheckoutSession sends bearer token when present', () async {
+      when(() => mockHttpClient.post(
+                any(),
+                headers: any(named: 'headers'),
+                body: any(named: 'body'),
+              ))
+          .thenAnswer(
+              (_) async => http.Response(jsonEncode({'id': 'cs_test'}), 200));
+
+      await stripeService.createCheckoutSession(
+          tier: 'premium', userId: 'user_123');
+
+      final headers = verify(() => mockHttpClient.post(
+            any(),
+            headers: captureAny(named: 'headers'),
+            body: any(named: 'body'),
+          )).captured.single as Map<String, String>;
+
+      expect(headers['Content-Type'], 'application/json');
+      expect(headers['Authorization'], 'Bearer mock_token');
+    });
+
+    test('createCheckoutSession omits bearer token when not present', () async {
+      SharedPreferences.setMockInitialValues({
+        'story_weaver_auth_token': '',
+        'story_weaver_user_id': 'user_123',
+      });
+      stripeService = StripeService(httpClient: mockHttpClient);
+
+      when(() => mockHttpClient.post(
+                any(),
+                headers: any(named: 'headers'),
+                body: any(named: 'body'),
+              ))
+          .thenAnswer(
+              (_) async => http.Response(jsonEncode({'id': 'cs_test'}), 200));
+
+      await stripeService.createCheckoutSession(
+          tier: 'premium', userId: 'user_123');
+
+      final headers = verify(() => mockHttpClient.post(
+            any(),
+            headers: captureAny(named: 'headers'),
+            body: any(named: 'body'),
+          )).captured.single as Map<String, String>;
+
+      expect(headers['Content-Type'], 'application/json');
+      expect(headers.containsKey('Authorization'), isFalse);
+    });
+
+    test('createCheckoutSession throws exception on non-200 response',
+        () async {
       when(() => mockHttpClient.post(
             any(),
             headers: any(named: 'headers'),
@@ -113,16 +170,19 @@ void main() {
       );
     });
 
-    test('getSubscriptionStatus returns status data on successful GET', () async {
+    test('getSubscriptionStatus returns status data on successful GET',
+        () async {
       final mockResponse = {
         'status': 'active',
         'tier': 'premium',
       };
 
       when(() => mockHttpClient.get(
-            any(),
-            headers: any(named: 'headers'),
-          )).thenAnswer((_) async => http.Response(jsonEncode(mockResponse), 200));
+                any(),
+                headers: any(named: 'headers'),
+              ))
+          .thenAnswer(
+              (_) async => http.Response(jsonEncode(mockResponse), 200));
 
       final result = await stripeService.getSubscriptionStatus('user_123');
 
@@ -142,7 +202,27 @@ void main() {
       expect(result['tier'], 'free');
     });
 
-    test('getSubscriptionStatus throws exception on other error status codes', () async {
+    test('getSubscriptionStatus calls subscription endpoint with user id',
+        () async {
+      when(() => mockHttpClient.get(
+                any(),
+                headers: any(named: 'headers'),
+              ))
+          .thenAnswer((_) async => http.Response(
+              jsonEncode({'status': 'active', 'tier': 'premium'}), 200));
+
+      await stripeService.getSubscriptionStatus('user_999');
+
+      final capturedUri = verify(() => mockHttpClient.get(
+            captureAny(),
+            headers: any(named: 'headers'),
+          )).captured.single as Uri;
+      expect(capturedUri.path,
+          endsWith('/api/stripe/subscription-status/user_999'));
+    });
+
+    test('getSubscriptionStatus throws exception on other error status codes',
+        () async {
       when(() => mockHttpClient.get(
             any(),
             headers: any(named: 'headers'),
@@ -160,7 +240,37 @@ void main() {
       );
     });
 
-    test('cancelSubscription returns true on successful cancellation', () async {
+    test('getSubscriptionStatus throws on malformed JSON payload', () async {
+      when(() => mockHttpClient.get(
+            any(),
+            headers: any(named: 'headers'),
+          )).thenAnswer((_) async => http.Response('{bad-json', 200));
+
+      expect(
+        () => stripeService.getSubscriptionStatus('user_123'),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Network error getting subscription status'),
+          ),
+        ),
+      );
+    });
+
+    test('getSubscriptionStatus returns empty map for empty 200 body',
+        () async {
+      when(() => mockHttpClient.get(
+            any(),
+            headers: any(named: 'headers'),
+          )).thenAnswer((_) async => http.Response('', 200));
+
+      final result = await stripeService.getSubscriptionStatus('user_123');
+      expect(result, isEmpty);
+    });
+
+    test('cancelSubscription returns true on successful cancellation',
+        () async {
       when(() => mockHttpClient.post(
             any(),
             headers: any(named: 'headers'),
@@ -182,6 +292,24 @@ void main() {
           )).captured.single as String;
       final payload = jsonDecode(captured) as Map<String, dynamic>;
       expect(payload['user_id'], 'user_123');
+    });
+
+    test('cancelSubscription sends authorization header', () async {
+      when(() => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          )).thenAnswer((_) async => http.Response('', 200));
+
+      await stripeService.cancelSubscription('user_123');
+
+      final headers = verify(() => mockHttpClient.post(
+            any(),
+            headers: captureAny(named: 'headers'),
+            body: any(named: 'body'),
+          )).captured.single as Map<String, String>;
+
+      expect(headers['Authorization'], 'Bearer mock_token');
     });
 
     test('cancelSubscription returns false on failed cancellation', () async {

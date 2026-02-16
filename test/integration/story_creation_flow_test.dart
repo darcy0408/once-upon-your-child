@@ -51,7 +51,11 @@ void main() {
         expect(extras, isNotNull);
         expect(extras, contains('Maya'));
         expect(body['subscription_tier'], 'free');
-        return http.Response(jsonEncode({'story': {'story_text': 'Group adventure'}}), 200);
+        return http.Response(
+            jsonEncode({
+              'story': {'story_text': 'Group adventure'}
+            }),
+            200);
       });
 
       final story = await ApiServiceManager.generateStory(
@@ -73,7 +77,11 @@ void main() {
         if (attempts < 3) {
           return http.Response('server busy', 500);
         }
-        return http.Response(jsonEncode({'story': {'story_text': 'Retried story!'}}), 200);
+        return http.Response(
+            jsonEncode({
+              'story': {'story_text': 'Retried story!'}
+            }),
+            200);
       });
 
       final story = await ApiServiceManager.generateStory(
@@ -96,7 +104,11 @@ void main() {
         if (attempts < 3) {
           return http.Response('server busy', 500);
         }
-        return http.Response(jsonEncode({'story': {'story_text': 'Timing story'}}), 200);
+        return http.Response(
+            jsonEncode({
+              'story': {'story_text': 'Timing story'}
+            }),
+            200);
       });
 
       final story = await ApiServiceManager.generateStory(
@@ -132,14 +144,23 @@ void main() {
           retryInitialDelay: const Duration(milliseconds: 10),
           maxAttempts: 2,
         ),
-        throwsA(isA<HttpException>()),
+        throwsA(
+          allOf(
+            isA<HttpException>(),
+            predicate((error) => error.toString().contains('503')),
+          ),
+        ),
       );
     });
 
     test('throws TimeoutException when backend stalls', () async {
       final mockClient = MockClient((request) async {
         await Future.delayed(const Duration(milliseconds: 100));
-        return http.Response(jsonEncode({'story': {'story_text': 'Too late'}}), 200);
+        return http.Response(
+            jsonEncode({
+              'story': {'story_text': 'Too late'}
+            }),
+            200);
       });
 
       await expectLater(
@@ -150,7 +171,12 @@ void main() {
           client: mockClient,
           requestTimeout: const Duration(milliseconds: 20),
         ),
-        throwsA(isA<TimeoutException>()),
+        throwsA(
+          allOf(
+            isA<TimeoutException>(),
+            predicate((error) => error.toString().contains('too long')),
+          ),
+        ),
       );
     });
   });

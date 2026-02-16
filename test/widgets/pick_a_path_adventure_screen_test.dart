@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -25,7 +26,8 @@ void main() {
   });
 
   group('PickAPathAdventureScreen - Loading State', () {
-    testWidgets('G1: Shows loading spinner when story is generating', (tester) async {
+    testWidgets('G1: Shows loading spinner when story is generating',
+        (tester) async {
       final mockClient = MockClient((request) async {
         // Simulate slow response
         await Future.delayed(const Duration(milliseconds: 100));
@@ -65,8 +67,7 @@ void main() {
       final mockClient = MockClient((request) async {
         return http.Response(
           jsonEncode(PickAPathTestHelpers.createStartStoryResponseJson(
-            title: 'Pick-A-Path Adventure'
-          )),
+              title: 'Pick-A-Path Adventure')),
           200,
         );
       });
@@ -92,7 +93,8 @@ void main() {
   });
 
   group('PickAPathAdventureScreen - Initial Segment Display', () {
-    testWidgets('G2: Displays first segment with story content', (tester) async {
+    testWidgets('G2: Displays first segment with story content',
+        (tester) async {
       final responseJson = PickAPathTestHelpers.createStartStoryResponseJson(
         content: 'You stand at the edge of the Enchanted Forest.',
       );
@@ -118,7 +120,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Check story content is displayed
-      expect(find.text('You stand at the edge of the Enchanted Forest.'), findsOneWidget);
+      expect(find.text('You stand at the edge of the Enchanted Forest.'),
+          findsOneWidget);
 
       // Check progress indicator
       // StorybookProgressIndicator uses 'Wake Up!' for page 1 by default
@@ -129,7 +132,8 @@ void main() {
       expect(find.textContaining('Choice 2'), findsOneWidget);
     });
 
-    testWidgets('G2: Shows correct number of choices for short story', (tester) async {
+    testWidgets('G2: Shows correct number of choices for short story',
+        (tester) async {
       final responseJson = PickAPathTestHelpers.createStartStoryResponseJson(
         choiceCount: 2,
       );
@@ -228,11 +232,12 @@ void main() {
     testWidgets('G7: Updates inventory when items are added', (tester) async {
       final startResponse = PickAPathTestHelpers.createStartStoryResponseJson(
         inventory: [
-           {'id': 'item_000', 'name': 'Old Map', 'acquired_at_segment': 1}
+          {'id': 'item_000', 'name': 'Old Map', 'acquired_at_segment': 1}
         ],
       );
 
-      final continueResponse = PickAPathTestHelpers.createContinueStoryResponseJson(
+      final continueResponse =
+          PickAPathTestHelpers.createContinueStoryResponseJson(
         inventory: [
           {'id': 'item_000', 'name': 'Old Map', 'acquired_at_segment': 1},
           {
@@ -336,7 +341,8 @@ void main() {
         },
       );
 
-      final continueResponse = PickAPathTestHelpers.createContinueStoryResponseJson(
+      final continueResponse =
+          PickAPathTestHelpers.createContinueStoryResponseJson(
         content: 'Continued content',
         state: {
           'current_location': 'Deep Forest',
@@ -387,9 +393,11 @@ void main() {
   });
 
   group('PickAPathAdventureScreen - Choice Selection', () {
-    testWidgets('G5: Shows loading state when choice is selected', (tester) async {
+    testWidgets('G5: Shows loading state when choice is selected',
+        (tester) async {
       final startResponse = PickAPathTestHelpers.createStartStoryResponseJson();
-      final continueResponse = PickAPathTestHelpers.createContinueStoryResponseJson();
+      final continueResponse =
+          PickAPathTestHelpers.createContinueStoryResponseJson();
 
       int requestCount = 0;
       final mockClient = MockClient((request) async {
@@ -428,7 +436,7 @@ void main() {
       for (var button in buttons) {
         expect(button.onPressed, isNull);
       }
-      
+
       // Clean up timer
       await tester.pumpAndSettle();
     });
@@ -437,7 +445,8 @@ void main() {
       final startResponse = PickAPathTestHelpers.createStartStoryResponseJson(
         content: 'First segment content',
       );
-      final continueResponse = PickAPathTestHelpers.createContinueStoryResponseJson(
+      final continueResponse =
+          PickAPathTestHelpers.createContinueStoryResponseJson(
         content: 'Second segment content',
         segmentNumber: 2,
       );
@@ -489,7 +498,8 @@ void main() {
   group('PickAPathAdventureScreen - Story Completion', () {
     testWidgets('G9: Shows completion UI when story ends', (tester) async {
       final startResponse = PickAPathTestHelpers.createStartStoryResponseJson();
-      final continueResponse = PickAPathTestHelpers.createContinueStoryResponseJson(
+      final continueResponse =
+          PickAPathTestHelpers.createContinueStoryResponseJson(
         isCompleted: true,
         content: 'The adventure comes to an end.',
       );
@@ -533,7 +543,8 @@ void main() {
 
     testWidgets('G10: Shows save button on completion', (tester) async {
       final startResponse = PickAPathTestHelpers.createStartStoryResponseJson();
-      final continueResponse = PickAPathTestHelpers.createContinueStoryResponseJson(
+      final continueResponse =
+          PickAPathTestHelpers.createContinueStoryResponseJson(
         isCompleted: true,
       );
 
@@ -574,7 +585,8 @@ void main() {
   });
 
   group('PickAPathAdventureScreen - Error Handling', () {
-    testWidgets('I1: Shows error message on network failure during generation', (tester) async {
+    testWidgets('I1: Shows error message on network failure during generation',
+        (tester) async {
       final mockClient = MockClient((request) async {
         return http.Response('Network error', 500);
       });
@@ -600,7 +612,8 @@ void main() {
       expect(find.text('Try again'), findsOneWidget);
     });
 
-    testWidgets('I2: Shows error message on network failure during choice', (tester) async {
+    testWidgets('I2: Shows error message on network failure during choice',
+        (tester) async {
       final startResponse = PickAPathTestHelpers.createStartStoryResponseJson();
 
       int requestCount = 0;
@@ -636,6 +649,31 @@ void main() {
       // Should show error message
       expect(find.byType(ErrorMessage), findsOneWidget);
       expect(find.textContaining('Unable to continue'), findsOneWidget);
+    });
+
+    testWidgets('I3: Shows retry UI on timeout during initial generation',
+        (tester) async {
+      final mockClient = MockClient((request) async {
+        throw TimeoutException('Request timed out');
+      });
+
+      InteractiveStoryService.setTestClient(mockClient);
+
+      final character = PickAPathTestHelpers.createTestCharacter();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PickAPathAdventureScreen(
+            userId: 'test_user',
+            character: character,
+            theme: 'Magic',
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ErrorMessage), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
     });
   });
 
