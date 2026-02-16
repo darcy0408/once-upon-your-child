@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import jwt
 import pytest
@@ -25,7 +25,7 @@ def _auth_headers(app, user_id):
     token = jwt.encode(
         {
             "user_id": user_id,
-            "exp": datetime.utcnow() + timedelta(hours=1),
+            "exp": datetime.now(timezone.utc) + timedelta(hours=1),
         },
         secret,
         algorithm="HS256",

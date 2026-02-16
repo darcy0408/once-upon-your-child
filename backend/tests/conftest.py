@@ -63,13 +63,13 @@ def mock_gemini(mocker):
 @pytest.fixture
 def auth_token():
     """Generate a test JWT token."""
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
     import jwt
 
     payload = {
         'user_id': 'test_user_123',
         'email': 'test@example.com',
-        'exp': datetime.utcnow() + timedelta(hours=1)
+        'exp': datetime.now(timezone.utc) + timedelta(hours=1)
     }
     return jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
 
@@ -84,14 +84,14 @@ def auth_headers(auth_token):
 @pytest.fixture
 def free_user_headers():
     """Headers for a free tier user (for rate limiting tests)."""
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
     import jwt
 
     payload = {
         'user_id': 'free_user_456',
         'email': 'free@example.com',
         'subscription_tier': 'free',
-        'exp': datetime.utcnow() + timedelta(hours=1)
+        'exp': datetime.now(timezone.utc) + timedelta(hours=1)
     }
     token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
     return {
@@ -102,14 +102,14 @@ def free_user_headers():
 @pytest.fixture
 def premium_user_headers():
     """Headers for a premium tier user."""
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
     import jwt
 
     payload = {
         'user_id': 'premium_user_789',
         'email': 'premium@example.com',
         'subscription_tier': 'premium',
-        'exp': datetime.utcnow() + timedelta(hours=1)
+        'exp': datetime.now(timezone.utc) + timedelta(hours=1)
     }
     token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
     return {
@@ -267,14 +267,14 @@ def admin_user(app):
 @pytest.fixture
 def admin_token(admin_user):
     """Generate an admin JWT token."""
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
     import jwt
 
     payload = {
         'user_id': admin_user.id,
         'email': admin_user.email,
         'role': 'admin',
-        'exp': datetime.utcnow() + timedelta(hours=1)
+        'exp': datetime.now(timezone.utc) + timedelta(hours=1)
     }
     return jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
 
