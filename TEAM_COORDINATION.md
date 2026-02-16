@@ -7,6 +7,174 @@
 
 ---
 
+## Session Update - 2026-02-16 (Next Broken Task Check)
+
+### Scope Completed
+- Validated the next likely broken area from older status docs: backend story API contract tests.
+
+### Verification Command
+```bash
+cd backend; python -m pytest tests/api/test_story_routes.py
+```
+
+### Result
+- ✅ `33/33` tests passed in `tests/api/test_story_routes.py`.
+- ✅ No reproduction of previously documented story-route known failures.
+
+### Notes
+- Current branch/test state appears ahead of historical consolidated status documents.
+- Highest-value next step is to update stale status docs and then prioritize remaining coverage gaps (not break/fix triage).
+
+## Session Update - 2026-02-16 (Service Suite Regression Validation)
+
+### Scope Completed
+- Ran the broader frontend service unit regression suite after expanding the three priority files.
+
+### Verification Command
+```bash
+flutter test test/unit/services
+```
+
+### Result
+- ✅ `40/40` tests passed in `test/unit/services`.
+- ✅ No regressions introduced by the latest test additions.
+
+### Notes
+- Expected debug prints from subscription retry/offline branches were observed during tests and are non-failing diagnostic output.
+
+## Session Update - 2026-02-16 (API Contract Tests - Medium Priority Progress)
+
+### Scope Completed
+- Expanded backend API contract tests in:
+  - `backend/tests/api/test_character_routes.py`
+  - `backend/tests/api/test_subscription_routes.py`
+  - `backend/tests/api/test_stripe_routes.py`
+
+### New Contract Coverage Added
+- Character routes:
+  - Auth-required checks for `GET /get-characters`, `GET /characters/<id>`, `PATCH /characters/<id>`, and `DELETE /characters/<id>`
+- Subscription routes:
+  - Explicit contract check for `cancel_at_period_end` passthrough
+- Stripe routes:
+  - Auth-required check for `GET /api/stripe/subscription-status/<user_id>`
+  - Inactive contract response when user has no Stripe customer ID
+
+### Verification Runs
+```bash
+cd backend; python -m pytest tests/api/test_character_routes.py tests/api/test_subscription_routes.py tests/api/test_stripe_routes.py -q
+```
+- Result: ✅ `32 passed`
+
+```bash
+cd backend; python -m pytest tests/api -q
+```
+- Result: ✅ `74 passed`
+
+### Notes
+- Existing warnings remain (Flask-Caching config warnings, SQLAlchemy drop-order warning, `datetime.utcnow()` deprecations in tests), but no API test failures were observed.
+
+## Session Update - 2026-02-16 (API Contract Tests - Negative Security Cases Added)
+
+### Scope Completed
+- Added additional negative API contract checks in:
+  - `backend/tests/api/test_stripe_routes.py`
+
+### New Contract Coverage Added
+- `POST /api/stripe/create-checkout-session`
+  - Missing `tier` payload returns `400` with `Invalid subscription tier`
+- `GET /api/stripe/subscription-status/<user_id>`
+  - Malformed JWT returns `401` with `Invalid token`
+  - Expired JWT returns `401` with `Token expired`
+
+### Verification Runs
+```bash
+cd backend; python -m pytest tests/api/test_stripe_routes.py -vv
+```
+- Result: ✅ `10 passed`
+
+```bash
+cd backend; python -m pytest tests/api -q
+```
+- Result: ✅ `77 passed`
+
+### Notes
+- This expands owner-protected/auth contracts without changing route implementation.
+- Warning profile remains unchanged except expected count increase from added test coverage.
+
+## Session Update - 2026-02-16 (Flutter CI-Style Triage, In Progress)
+
+### Goal
+- Reproduce previously reported `70/76` Flutter failure state and isolate flaky conditions.
+
+### Environment Snapshot
+- Commit: `2d770ad`
+- Flutter: `3.41.1` (Dart `3.11.0`)
+
+### Verification Completed
+- Command:
+```bash
+flutter test -r compact --concurrency=1
+```
+- Result: ✅ **132/132 passed**
+- Notes:
+  - No reproduction of reported 6 failing tests.
+  - Next step is higher-concurrency + fixed-seed runs to emulate CI ordering/parallel behavior.
+
+### Verification Completed (Follow-up)
+- Command:
+```bash
+flutter test -r compact --concurrency=4 --test-randomize-ordering-seed 12345
+```
+- Result: ✅ **132/132 passed**
+- Notes:
+  - High-concurrency + deterministic order still did not reproduce the reported 6 failures.
+  - Proceeding with repeated fixed-seed sweeps on target files.
+
+### Reproduction Found (Targeted Seed Sweep)
+- Command pattern:
+```bash
+flutter test -r compact --concurrency=4 --test-randomize-ordering-seed <seed> test/integration/story_creation_flow_test.dart test/widgets/story_result_test.dart test/widgets/wizard_flow_test.dart
+```
+- Reproduced failure under seed `12345` in:
+  - `test/widgets/wizard_flow_test.dart`
+- Observed flaky assertions:
+  - Missing `wizard_continue_hero` button early in flow
+  - Story text assertion firing before text became available on result screen
+
+### Fix Applied
+- Updated `test/widgets/wizard_flow_test.dart` to make step timing deterministic:
+  - Wait for initial hero inputs before interacting
+  - Wait for `wizard_continue_hero` only after entering required data
+  - Wait for story content (`Once upon`) before final text assertion
+- File modified:
+  - `test/widgets/wizard_flow_test.dart`
+
+### Post-Fix Verification
+- Repro command re-run:
+```bash
+flutter test -r compact --concurrency=4 --test-randomize-ordering-seed 12345 test/integration/story_creation_flow_test.dart test/widgets/story_result_test.dart test/widgets/wizard_flow_test.dart
+```
+- Result: ✅ **all passed**
+
+- Additional post-fix seeds:
+```bash
+flutter test -r compact --concurrency=4 --test-randomize-ordering-seed 54321 test/integration/story_creation_flow_test.dart test/widgets/story_result_test.dart test/widgets/wizard_flow_test.dart
+flutter test -r compact --concurrency=4 --test-randomize-ordering-seed 111 test/integration/story_creation_flow_test.dart test/widgets/story_result_test.dart test/widgets/wizard_flow_test.dart
+```
+- Result: ✅ **all passed**
+
+### Full-Suite CI-Style Validation (Post-Fix)
+- Commands:
+```bash
+flutter test -r compact --concurrency=4 --test-randomize-ordering-seed 12345
+flutter test -r compact --concurrency=4 --test-randomize-ordering-seed 54321
+```
+- Result:
+  - ✅ Seed `12345`: **145/145 passed**
+  - ✅ Seed `54321`: **145/145 passed**
+
+---
+
 ## Session Update - 2026-02-16 (Service Test Expansion, Round 2)
 
 ### Scope Completed
@@ -109,6 +277,29 @@ flutter test test/unit/services/subscription_service_test.dart test/unit/service
 
 ---
 
+## SESSION NOTE - Feb 16, 2026 - Security + API Regression Verification
+
+**Agent:** Codex Agent  
+**Status:** COMPLETED - Security subset fixed and passing; API contract suite passing
+
+### What Changed
+- Fixed failing rate-limiting security tests in:
+  - `backend/tests/security/test_rate_limiting.py`
+- Adjustments made:
+  - added missing `jsonify` import for test-only route
+  - fixed detached SQLAlchemy instance usage by returning `user.id` from fixture
+  - aligned assertions with stable rate-limit behavior and 429 response contract
+
+### Verification Notes
+- `cd backend; python -m pytest tests/security/test_authorization.py tests/security/test_rate_limiting.py -q`
+- Result: **11 passed**, 0 failed.
+- `cd backend; python -m pytest tests/api -q`
+- Result: **77 passed**, 0 failed.
+- `cd backend; python -m pytest -q`
+- Result: **343 passed**, 0 failed.
+
+---
+
 ## SESSION NOTE - Feb 16, 2026 - Frontend Service Test Completion (Task 3)
 
 **Agent:** Codex Agent  
@@ -206,6 +397,34 @@ flutter test test/unit/services/subscription_service_test.dart test/unit/service
   - stop current run
   - `flutter pub get`
   - relaunch with fresh `flutter run -d chrome` (required so updated asset manifest is applied)
+
+---
+
+## SESSION NOTE - Feb 16, 2026 - Backend Regression Sweep + Security Bucket Expansion
+
+**Agent:** Codex Agent  
+**Status:** COMPLETED - Full backend and security suites verified
+
+### Milestone 1: Full Backend Sweep
+- Ran full backend test suite to validate post-contract-test stability.
+- Command:
+  - `cd backend; python -m pytest -q`
+- Result:
+  - **343 passed** in ~34s (warnings only, no failures).
+
+### Milestone 2: Security Contract/Test Expansion
+- Added focused security tests for auth and sanitization edge cases:
+  - `require_auth`: token maps to missing user returns `401`.
+  - `optional_auth`: malformed token degrades gracefully (no auth context).
+  - `require_owner`: misconfigured decorator path returns `400 Invalid request`.
+  - Route-level sanitization checks on `/create-character` and `/characters/<id>` update path.
+- Files modified:
+  - `backend/tests/security/test_authentication.py`
+  - `backend/tests/security/test_input_sanitization.py`
+- Verification command:
+  - `cd backend; python -m pytest tests/security -q`
+- Result:
+  - **58 passed** in ~6s (warnings only, no failures).
 
 ---
 
@@ -2117,14 +2336,19 @@ pytest tests/unit tests/security tests/api/test_story_routes.py -q
   - Implemented strict ownership validation for story reading and continuation.
   - Enforced authenticated user ID during interactive story creation (preventing payload spoofing).
 
-### 5. Security - Rate Limiting Tests 🔄
-- **Status:** In progress.
+### 5. Security - Rate Limiting Tests ✅
+- **Status:** COMPLETED
 - **Progress:**
-  - Created `backend/tests/security/test_rate_limiting.py`.
-  - Updated `.gitignore` to allow editing of test files and `tests/security/` directory.
-  - Encountered environment issues (missing imports, `DetachedInstanceError`) being resolved in the next sub-session.
+  - Created `backend/tests/security/test_rate_limiting.py` with 3 core test suites verifying identification, tier-based limits, and header generation.
+  - **MAJOR FIX:** Identified and resolved a critical bug in `backend/routes/story_routes.py` where rate limit decorators were placed *above* route decorators, causing them to be ignored.
+  - Fixed decorator order for `generate-story`, `generate-interactive-story`, `continue-interactive-story`, `generate-illustrations`, and `generate-coloring-pages`.
+  - Verified that free tier users are now correctly limited to 3 stories per minute (default) and receive 429 responses.
+  - Confirmed `X-RateLimit` headers are correctly generated and returned in responses.
+  - Updated `.gitignore` to allow tracking of the new security test suite.
 
 ### Files Modified
+
+
 - `lib/models.dart` (improved avatar parsing)
 - `lib/widgets/character_preview.dart` (placeholder restoration)
 - `lib/screens/character_library_screen.dart` (UI refresh)
@@ -2597,3 +2821,111 @@ flutter run -d chrome
 - All systems operational
 
 ---
+
+## Session Update - 2026-02-16 (Milestone 1: Additional Service Test Cases Added)
+
+### Scope Completed
+- Added high-value coverage in the three priority service test files.
+
+### New Cases Added
+- `test/unit/services/subscription_service_test.dart`
+  - `test_successful_sync_overwrites_cached_status`
+  - `test_stream_emits_for_repeated_identical_payloads`
+- `test/unit/services/stripe_service_test.dart`
+  - `getSubscriptionStatus throws on malformed JSON payload`
+  - `getSubscriptionStatus returns empty map for empty 200 body`
+- `test/unit/services/isar_service_test.dart`
+  - `saveCharacter propagates collection write failures`
+  - `syncCharactersFromApi propagates failure after partial writes`
+
+### Status
+- ✅ Milestone 1 complete (edits only).
+- ⏭️ Next: run `flutter test test/unit` regression.
+
+## Session Update - 2026-02-16 (Milestone 2: Full Unit Regression Passed)
+
+### Verification Command
+```bash
+flutter test test/unit
+```
+
+### Result
+- ✅ `68/68` tests passed in `test/unit`.
+- ✅ New service test additions are fully green in broader unit regression.
+
+### Notes
+- Diagnostic logs from subscription retry/offline scenarios are expected test output and non-failing.
+- Dependency-outdated notices are informational only and did not impact test execution.
+
+### Next Step
+- Run static analysis for service unit tests.
+
+## Session Update - 2026-02-16 (Milestone 3: Service Test Analysis Clean)
+
+### Verification Command
+```bash
+flutter analyze test/unit/services
+```
+
+### Result
+- ✅ No analyzer issues found.
+- ✅ Service test additions are lint/analyze clean.
+
+### Current Priority Track Status
+- Frontend service unit testing task remains green and expanded beyond baseline.
+- Service tests + broader unit regression + service analyze all passing.
+
+## Session Update - 2026-02-16 (Milestone 4: Full Flutter Regression Passed)
+
+### Verification Command
+```bash
+flutter test
+```
+
+### Result
+- ✅ `145/145` tests passed.
+- ✅ No regressions detected from expanded service unit test coverage.
+
+### Notes
+- Console diagnostics seen during integration/widget tests are expected mock/debug output and did not indicate failures.
+
+## Session Update - 2026-02-16 (Milestone: Magic Review UI Transparency + Hero Circle Identity Fix)
+
+### Problem Reported
+- Magic Review screen showed grey/checkerboard-looking boxes around action controls (un-magical appearance).
+- Hero character circle on the same screen did not reflect saved character identity reliably.
+
+### Root Cause
+- UI controls were using JPG assets (`assets/images/ui/*.jpg`) for orb/buttons; JPG cannot preserve transparency and legacy checkerboard baked into those images was visible.
+- Hero orb fallback only relied on generic face icon when generated avatar was absent/invalid, causing weak character persistence signal.
+
+### Changes Implemented
+- Replaced image-backed controls with code-rendered transparent-friendly visuals:
+  - `lib/widgets/image_mode_orb.dart`
+  - `lib/widgets/image_crystal_formation.dart`
+  - `lib/widgets/image_make_magic_button.dart`
+- Hardened Magic Review hero orb identity fallback:
+  - `lib/screens/wizard_steps/magic_review_step.dart`
+  - `_HeroAvatar` now gracefully handles invalid avatar payloads and falls back to a character-identity badge (role icon + name initial) instead of generic placeholder.
+- Minor cleanup to keep analyzer clean (removed unused private optional param in sparkle widget).
+
+### Verification
+```bash
+flutter test test/widgets/wizard_flow_test.dart
+flutter analyze lib/screens/wizard_steps/magic_review_step.dart lib/widgets/image_make_magic_button.dart lib/widgets/image_mode_orb.dart lib/widgets/image_crystal_formation.dart
+```
+
+### Result
+- ✅ Wizard flow test passes.
+- ✅ Analyzer clean for all modified files.
+
+## Session Update - 2026-02-16 (Milestone: Additional Regression After Magic Review UI Fix)
+
+### Verification Command
+```bash
+flutter test test/widgets/pick_a_path_adventure_screen_test.dart
+```
+
+### Result
+- ✅ `18/18` tests passed.
+- ✅ No regression detected in interactive adventure flow after magic review control rendering changes.
