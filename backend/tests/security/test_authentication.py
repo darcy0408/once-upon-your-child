@@ -1,8 +1,9 @@
 import pytest
+import json
 from flask import jsonify, request
 from backend.middleware.auth import require_auth, require_admin, require_owner, optional_auth
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 from backend.models.user import User
 from backend.database import db
@@ -74,7 +75,7 @@ def test_require_auth_expired_token(app, client):
     
     payload = {
         'user_id': 'test_user_123',
-        'exp': datetime.utcnow() - timedelta(hours=1)
+        'exp': datetime.now(timezone.utc) - timedelta(hours=1)
     }
     expired_token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
     headers = {'Authorization': f'Bearer {expired_token}'}
@@ -89,7 +90,7 @@ def test_require_auth_user_not_found(app, client):
 
     payload = {
         'user_id': 'ghost_user_404',
-        'exp': datetime.utcnow() + timedelta(hours=1)
+        'exp': datetime.now(timezone.utc) + timedelta(hours=1)
     }
     token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
     headers = {'Authorization': f'Bearer {token}'}
@@ -111,7 +112,7 @@ def test_require_admin_success(app, client):
     # Generate token for this specific user
     payload = {
         'user_id': admin_id,
-        'exp': datetime.utcnow() + timedelta(hours=1)
+        'exp': datetime.now(timezone.utc) + timedelta(hours=1)
     }
     token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
     headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
@@ -175,6 +176,127 @@ def test_require_owner_missing_param_returns_400(app, client, test_user, auth_he
     response = client.get('/test/owner-misconfigured', headers=auth_headers)
     assert response.status_code == 400
     assert response.json['error'] == 'Invalid request'
+
+# ============================================================================
+# NEW AUTHENTICATION TESTS (Token Refresh & Login)
+# ============================================================================
+
+def test_get_anonymous_token_new_user(app, client):
+    """Test creating a brand new anonymous user."""
+    client_id = 'new_anon_device_777'
+    payload = {'client_id': client_id}
+    
+    response = client.post('/auth/anonymous', 
+                          data=json.dumps(payload), 
+                          headers={'Content-Type': 'application/json'})
+    
+    assert response.status_code == 200
+    assert 'token' in response.json
+    assert response.json['user_id'] == client_id
+    assert response.json['is_anonymous'] is True
+    
+    # Verify user was created in DB
+    with app.app_context():
+        user = db.session.get(User, client_id)
+        assert user is not None
+        assert user.id == client_id
+        db.session.delete(user)
+        db.session.commit()
+
+def test_get_anonymous_token_existing_user_refresh(app, client):
+    """Test 'refreshing' token for existing anonymous user (same client_id)."""
+    client_id = 'existing_device_888'
+    
+    # Pre-create the user
+    with app.app_context():
+        user = User(id=client_id, username='existing_guest', email=f'{client_id}@anonymous.storyweaver.app')
+        user.set_password('random')
+        db.session.add(user)
+        db.session.commit()
+        
+    payload = {'client_id': client_id}
+    response = client.post('/auth/anonymous', 
+                          data=json.dumps(payload), 
+                          headers={'Content-Type': 'application/json'})
+    
+    assert response.status_code == 200
+    assert 'token' in response.json
+    assert response.json['user_id'] == client_id
+    
+    # Ensure no duplicate user was created
+    with app.app_context():
+        count = User.query.filter_by(id=client_id).count()
+        assert count == 1
+        
+        # Cleanup
+        user = db.session.get(User, client_id)
+        db.session.delete(user)
+        db.session.commit()
+
+def test_login_success(app, client):
+    """Test successful login with credentials."""
+    username = 'login_test_user'
+    password = 'secure_password'
+    
+    with app.app_context():
+        user = User(id='login_uid_123', username=username, email='login@test.com')
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        
+    payload = {'username': username, 'password': password}
+    response = client.post('/auth/login', 
+                          data=json.dumps(payload), 
+                          headers={'Content-Type': 'application/json'})
+    
+    assert response.status_code == 200
+    assert 'token' in response.json
+    
+    # Cleanup
+    with app.app_context():
+        user = db.session.get(User, 'login_uid_123')
+        db.session.delete(user)
+        db.session.commit()
+
+def test_login_invalid_credentials(app, client):
+    """Test login failure with wrong password."""
+    username = 'wrong_pass_user'
+    
+    with app.app_context():
+        user = User(id='wrong_uid_456', username=username, email='wrong@test.com')
+        user.set_password('correct_password')
+        db.session.add(user)
+        db.session.commit()
+        
+    payload = {'username': username, 'password': 'incorrect_password'}
+    response = client.post('/auth/login', 
+                          data=json.dumps(payload), 
+                          headers={'Content-Type': 'application/json'})
+    
+    assert response.status_code == 401
+    assert 'Invalid credentials' in response.json['message']
+    
+    # Cleanup
+    with app.app_context():
+        user = db.session.get(User, 'wrong_uid_456')
+        db.session.delete(user)
+        db.session.commit()
+
+def test_token_validation_edge_cases(app, client, auth_headers):
+    """Verify various token failure modes are handled correctly."""
+    setup_test_routes(app)
+    
+    # 1. Malformed token (missing 'Bearer ' prefix)
+    bad_headers = {'Authorization': 'JustTheTokenValue'}
+    response = client.get('/test/auth', headers=bad_headers)
+    assert response.status_code == 401
+    
+    # 2. Token with non-existent user_id in payload
+    payload = {'user_id': 'missing_user_uuid', 'exp': datetime.now(timezone.utc) + timedelta(hours=1)}
+    ghost_token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
+    response = client.get('/test/auth', headers={'Authorization': f'Bearer {ghost_token}'})
+    assert response.status_code == 401
+    assert response.json['error'] == 'User not found'
 
 def test_idor_protection_detailed(app, client, test_user, auth_headers):
     """Test detailed IDOR protection scenarios."""

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import jwt
@@ -17,7 +17,7 @@ def _create_user(user_id: str, tier: str = "free") -> User:
 
 def _auth_headers(user_id: str) -> dict[str, str]:
     token = jwt.encode(
-        {"user_id": user_id, "exp": datetime.utcnow() + timedelta(hours=1)},
+        {"user_id": user_id, "exp": datetime.now(timezone.utc) + timedelta(hours=1)},
         "dev-secret-key",
         algorithm="HS256",
     )
@@ -48,6 +48,24 @@ def test_create_checkout_session_success(client, mocker):
 
 def test_create_checkout_session_invalid_tier_returns_400(client):
     response = client.post("/api/stripe/create-checkout-session", json={"tier": "starter"})
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "Invalid subscription tier"
+
+
+def test_create_checkout_session_missing_tier_returns_400(client):
+    response = client.post("/api/stripe/create-checkout-session", json={})
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "Invalid subscription tier"
+
+
+def test_create_checkout_session_missing_json_body_returns_400(client):
+    response = client.post(
+        "/api/stripe/create-checkout-session",
+        data="",
+        headers={"Content-Type": "application/json"},
+    )
 
     assert response.status_code == 400
     assert response.get_json()["error"] == "Invalid subscription tier"
@@ -127,3 +145,55 @@ def test_get_subscription_status_returns_inactive_without_customer(client, app):
 
     assert response.status_code == 200
     assert response.get_json() == {"status": "inactive", "tier": "free"}
+
+
+def test_get_subscription_status_stripe_error_returns_500(client, app, mocker):
+    with app.app_context():
+        user = _create_user("stripe-user-error", tier="premium")
+        user.stripe_customer_id = "cus_err_123"
+        db.session.commit()
+
+    mocker.patch(
+        "backend.routes.stripe_routes.stripe.Subscription.list",
+        side_effect=Exception("stripe unavailable"),
+    )
+
+    response = client.get(
+        "/api/stripe/subscription-status/stripe-user-error",
+        headers=_auth_headers("stripe-user-error"),
+    )
+
+    assert response.status_code == 500
+    assert response.get_json()["error"] == "Failed to retrieve subscription status"
+
+
+def test_get_subscription_status_rejects_malformed_token(client, app):
+    with app.app_context():
+        _create_user("stripe-user-malformed-token")
+
+    response = client.get(
+        "/api/stripe/subscription-status/stripe-user-malformed-token",
+        headers={"Authorization": "Bearer definitely-not-a-jwt"},
+    )
+
+    assert response.status_code == 401
+    assert response.get_json()["error"] == "Invalid token"
+
+
+def test_get_subscription_status_rejects_expired_token(client, app):
+    with app.app_context():
+        _create_user("stripe-user-expired-token")
+
+    expired_token = jwt.encode(
+        {"user_id": "stripe-user-expired-token", "exp": datetime.now(timezone.utc) - timedelta(hours=1)},
+        "dev-secret-key",
+        algorithm="HS256",
+    )
+
+    response = client.get(
+        "/api/stripe/subscription-status/stripe-user-expired-token",
+        headers={"Authorization": f"Bearer {expired_token}"},
+    )
+
+    assert response.status_code == 401
+    assert response.get_json()["error"] == "Token expired"

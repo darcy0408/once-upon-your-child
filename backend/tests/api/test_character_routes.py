@@ -170,6 +170,23 @@ def test_update_character_success(client, auth_headers, test_user, app):
     assert body["age"] == 5
 
 
+def test_update_character_put_success(client, auth_headers, test_user, app):
+    with app.app_context():
+        db.session.add(Character(id="char-update-put", user_id=test_user.id, name="Old", age=7))
+        db.session.commit()
+
+    response = client.put(
+        "/characters/char-update-put",
+        json={"name": "New Name"},
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["id"] == "char-update-put"
+    assert body["name"] == "New Name"
+
+
 def test_update_character_requires_auth(client, auth_headers, test_user, app):
     with app.app_context():
         db.session.add(Character(id="char-update-auth", user_id=test_user.id, name="Kid", age=5))
@@ -208,6 +225,17 @@ def test_update_character_other_user_forbidden(client, auth_headers, test_user, 
     assert response.get_json()["error"] == "Unauthorized"
 
 
+def test_update_character_not_found_returns_404(client, auth_headers, test_user):
+    response = client.patch(
+        "/characters/missing-update-id",
+        json={"name": "Ignored"},
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 404
+    assert response.get_json()["error"] == "Character not found"
+
+
 def test_delete_character_success(client, auth_headers, test_user, app):
     with app.app_context():
         db.session.add(Character(id="char-delete-1", user_id=test_user.id, name="Gone", age=9))
@@ -243,3 +271,10 @@ def test_delete_character_other_user_forbidden(client, auth_headers, test_user, 
 
     assert response.status_code == 403
     assert response.get_json()["error"] == "Unauthorized"
+
+
+def test_delete_character_not_found_returns_404(client, auth_headers, test_user):
+    response = client.delete("/characters/missing-delete-id", headers=auth_headers)
+
+    assert response.status_code == 404
+    assert response.get_json()["error"] == "Character not found"
