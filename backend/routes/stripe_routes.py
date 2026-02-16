@@ -32,7 +32,7 @@ def get_price_ids():
 
 @stripe_routes.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     tier = data.get('tier')
     user_id = data.get('user_id')  # Optional user ID for tracking
 

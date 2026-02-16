@@ -93,7 +93,7 @@ def test_checkout_completed_creates_subscription(client, monkeypatch):
     assert response.status_code == 200
 
     with client.application.app_context():
-        updated = User.query.get(user_id)
+        updated = db.session.get(User, user_id)
         assert updated.subscription_tier == "premium"
         assert updated.subscription_status == "active"
         assert updated.cancel_at_period_end is False
@@ -123,7 +123,7 @@ def test_subscription_updated_changes_status(client, monkeypatch):
     assert response.status_code == 200
 
     with client.application.app_context():
-        updated = User.query.get(user_id)
+        updated = db.session.get(User, user_id)
         assert updated.subscription_tier == "family"
         assert updated.subscription_status == "trialing"
         assert updated.cancel_at_period_end is True
@@ -150,7 +150,7 @@ def test_subscription_deleted_cancels(client, monkeypatch):
     assert response.status_code == 200
 
     with client.application.app_context():
-        updated = User.query.get(user_id)
+        updated = db.session.get(User, user_id)
         assert updated.subscription_status == "canceled"
         assert updated.cancel_at_period_end is True
 
@@ -174,7 +174,7 @@ def test_payment_failed_marks_past_due(client, monkeypatch):
     assert response.status_code == 200
 
     with client.application.app_context():
-        updated = User.query.get(user_id)
+        updated = db.session.get(User, user_id)
         assert updated.subscription_status == "past_due"
 
 
@@ -230,5 +230,5 @@ def test_unknown_event_returns_200(client, monkeypatch):
     assert response.status_code == 200
 
     with client.application.app_context():
-        unchanged = User.query.get(user_id)
+        unchanged = db.session.get(User, user_id)
         assert unchanged.subscription_status == "active"

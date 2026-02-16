@@ -58,7 +58,7 @@ def start_backend():
 
         # Verify it's running
         import requests
-        response = requests.get("http://localhost:5000/health", timeout=5)
+        response = requests.get("http://localhost:5000/health", timeout=15)
         if response.status_code == 200:
             print("   ✅ Backend started successfully")
             return True
