@@ -1028,6 +1028,16 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     }
   }
 
+  void _goToNextStoryPage() {
+    if (_currentPageIndex >= _storyPages.length - 1) return;
+    _handlePageFlip(true);
+  }
+
+  void _goToPreviousStoryPage() {
+    if (_currentPageIndex <= 0) return;
+    _handlePageFlip(false);
+  }
+
   Widget _buildStoryPage(int index) {
     if (index < 0 || index >= _storyPages.length) {
       return StoryBookPage(
@@ -1582,6 +1592,35 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                           spacing: 8,
                                           runSpacing: 8,
                                           children: [
+                                            if (_storyPages.length > 1)
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  IconButton(
+                                                    tooltip: 'Previous page',
+                                                    onPressed: _currentPageIndex > 0
+                                                        ? _goToPreviousStoryPage
+                                                        : null,
+                                                    icon: const Icon(Icons.arrow_back_rounded),
+                                                    color: AppColors.primary,
+                                                  ),
+                                                  Text(
+                                                    'Page ${_currentPageIndex + 1} of ${_storyPages.length}',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.w700,
+                                                      color: _highContrastMode ? Colors.white : AppColors.primary,
+                                                    ),
+                                                  ),
+                                                  IconButton(
+                                                    tooltip: 'Next page',
+                                                    onPressed: _currentPageIndex < _storyPages.length - 1
+                                                        ? _goToNextStoryPage
+                                                        : null,
+                                                    icon: const Icon(Icons.arrow_forward_rounded),
+                                                    color: AppColors.primary,
+                                                  ),
+                                                ],
+                                              ),
                                             // NEW: Storybook progress indicator instead of "Chapter X of Y"
                                             StorybookProgressIndicator(
                                               currentPage: _currentPageIndex + 1,
