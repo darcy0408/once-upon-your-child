@@ -1,14 +1,21 @@
 # Story Weaver App - Consolidated Test Status
 
-**Last Updated:** 2026-02-12
-**Overall Status:** 🟡 **Phase 1: 63% Complete** (169/270 target tests)
+**Last Updated:** 2026-02-16
+**Overall Status:** 🟢 **Current validated suites are green** (latest runs passing)
 
 ---
 
 ## 📊 Executive Summary
 
+### 2026-02-16 Refresh Snapshot (Current Baseline)
+- ✅ `flutter test --no-pub -r compact` -> **132/132 passed**
+- ✅ `flutter test --no-pub test/unit/services -r compact` -> **51/51 passed**
+- ✅ `cd backend; python -m pytest tests/api -q` -> **77/77 passed**
+
+> Note: Detailed sections below contain historical planning context and are being progressively refreshed to match the new baseline.
+
 **Current Test Coverage:**
-- 🟡 **Core validated suite:** 169 passed, 4 failed, 1 error (174 total)
+- 🟢 **Current validated suite:** no failing tests reproduced in latest local verification runs above
 - ⏱️ **Fast execution:** All tests run in ~22 seconds
 - 📈 **Coverage:** Backend ~60-65%, Frontend ~45% (existing tests)
 - 🎯 **Target:** 270 tests for Phase 1 completion
@@ -168,248 +175,100 @@
 
 ---
 
-## 🔴 Remaining Work (Phase 1 - 37% to complete)
+## 🔴 Execution Backlog (Actionable Tickets)
 
-### Critical Priority - Must Complete for Phase 1
+### Verified Current Baseline (2026-02-16)
+- ✅ Frontend full suite: `flutter test --no-pub -r compact` -> 132/132 passed
+- ✅ Frontend service suite: `flutter test --no-pub test/unit/services -r compact` -> 51/51 passed
+- ✅ Backend API contracts: `cd backend; python -m pytest tests/api -q` -> 77/77 passed
+- ✅ Backend security suite: `cd backend; python -m pytest tests/security -q` -> 66/66 passed
 
-#### 1. Frontend Service Unit Tests (30-40 tests needed) - **HIGH PRIORITY**
-**Location:** `test/unit/services/` (not yet created)
+### Ticket Queue (priority order)
 
-**Services to test:**
-- **subscription_service_test.dart** (~15 tests)
-  - Subscription state management
-  - Tier detection (free/premium)
-  - Usage tracking
-  - API synchronization
+#### P0 - CI Baseline Lock
+- **Owner:** Codex Agent
+- **Scope:** Ensure CI runs the same deterministic command set used in local verification.
+- **Acceptance Criteria:**
+  - CI workflow executes:
+    - `flutter test --no-pub -r compact`
+    - `flutter test --no-pub test/unit/services -r compact`
+    - `cd backend; python -m pytest tests/api -q`
+    - `cd backend; python -m pytest tests/security -q`
+  - CI passes on one clean run from current mainline.
+- **Estimate:** 0.5 session
 
-- **stripe_service_test.dart** (~10 tests)
-  - Checkout session creation
-  - Payment success handling
-  - Error handling
+#### P0 - Flake Detection Sweep
+- **Owner:** Codex Agent
+- **Scope:** Add seeded/concurrency sweeps for the historically flaky Flutter integration/widget subset.
+- **Acceptance Criteria:**
+  - Add one script or CI step that runs target files with:
+    - `--concurrency=4`
+    - `--test-randomize-ordering-seed <fixed seed(s)>`
+  - Document pass/fail matrix in `TEAM_COORDINATION.md`.
+- **Estimate:** 0.5 session
 
-- **isar_service_test.dart** (~10 tests)
-  - Local database operations
-  - Character storage/retrieval
-  - Story persistence
+#### P1 - Frontend Service Coverage Expansion
+- **Owner:** Codex Agent
+- **Scope:** Extend tests in `test/unit/services/` for contract-drift and negative paths.
+- **Acceptance Criteria:**
+  - Add coverage for retry exhaustion payload shape, malformed cache payloads, and auth-header edge behavior.
+  - Maintain green status for `flutter test --no-pub test/unit/services -r compact`.
+- **Estimate:** 1 session
 
-**Estimated effort:** 1-2 work sessions
+#### P1 - API Contract Marker Alignment
+- **Owner:** Codex Agent
+- **Scope:** Align API contract CI job and test markers.
+- **Acceptance Criteria:**
+  - `pytest -m api_contract` executes expected contract scope (not near-zero by mistake).
+  - Update workflow or markers with explicit docs in this file.
+- **Estimate:** 0.5 session
 
-#### 2. Authentication & Authorization Security Tests (20-30 tests needed) - **CRITICAL PRIORITY**
-**Location:** `backend/tests/security/` (needs new files)
-
-**Files to create:**
-- **test_authentication.py** (~10 tests)
-  - JWT token validation
-  - Token expiry handling
-  - Invalid token rejection
-  - Token refresh flow
-
-- **test_authorization.py** (~10 tests)
-  - User ownership checks
-  - Cross-user access prevention
-  - Resource ownership validation
-  - Admin vs. user permissions
-
-- **test_rate_limiting.py** (~10 tests)
-  - Free tier limits (3 stories)
-  - Premium tier unlimited
-  - Abuse prevention
-  - Rate limit headers
-
-**Estimated effort:** 1 work session
-
-#### 3. Additional API Contract Tests (15-20 tests needed) - **MEDIUM PRIORITY**
-**Location:** `backend/tests/api/` (needs new files)
-
-**Files to create:**
-- **test_character_routes.py** (~15 tests)
-  - Character CRUD endpoints
-  - Validation errors
-  - Authorization checks
-  - Update/delete character endpoints
-
-- **test_subscription_routes.py** (~5 tests) - From TEAM_COORDINATION notes
-  - Subscription status endpoint
-  - Usage tracking
-
-- **test_stripe_routes.py** (~5 tests) - From TEAM_COORDINATION notes
-  - Checkout endpoint
-  - Portal endpoint
-  - Status endpoint
-  - Webhook handling (with fixtures)
-
-**Estimated effort:** 1 work session
-
-#### 4. Fix Known Issues (5 tests) - **LOW PRIORITY**
-- Fix cache serialization for `/get-story-themes` (3 tests)
-- Fix `test_user` fixture for character ID test (1 test)
-- Fix mock endpoint response contract assertion (1 test)
-
-**Estimated effort:** 30 minutes
+#### P2 - Warning Debt Reduction
+- **Owner:** Gemini Agent
+- **Scope:** Reduce noisy deprecation warnings in backend tests (notably `datetime.utcnow()` usage in tests/fixtures).
+- **Acceptance Criteria:**
+  - Replace deprecated UTC patterns in touched tests/fixtures.
+  - Preserve all passing baselines.
+- **Estimate:** 1 session
 
 ---
 
-## 📊 Phase 1 Progress Tracker
+## 📊 Progress Tracker (Refreshed 2026-02-16)
 
-| Category | Target | Current | Remaining | % Complete | Status |
-|----------|--------|---------|-----------|------------|--------|
-| Backend Unit Tests | 150 | 110 | 40 | 73% | 🟢 Good |
-| Security Tests | 50 | 31 | 19-29 | 62% | 🟡 Needs Work |
-| API Contract Tests | 40 | 28 | 12-16 | 70% | 🟡 Needs Attention |
-| Frontend Service Tests | 30 | 0 | 30-40 | 0% | 🔴 Not Started |
-| **TOTAL** | **270** | **169** | **101** | **63%** | **🟡 In Progress** |
-
-### Legend
-- 🟢 On Track (>70%)
-- 🟡 Needs Attention (40-70%)
-- 🔴 Critical (0-40%)
+| Suite | Latest Verified Result | Status |
+|-------|-------------------------|--------|
+| Flutter full tests | 132/132 passed | 🟢 Stable |
+| Flutter unit services | 51/51 passed | 🟢 Stable |
+| Backend API tests | 77/77 passed | 🟢 Stable |
+| Backend security tests | 66/66 passed | 🟢 Stable |
 
 ---
 
-## 🎯 Success Criteria
-
-### Phase 1 Targets (60% coverage baseline)
-- ✅ Backend service unit tests: **110/150 target** (73%)
-- 🟡 Security tests: **31/50 target** (62%)
-- 🟡 API contract tests: **28/40 target** (70%)
-- 🔴 Frontend service tests: **0/30 target** (0% - NEXT PRIORITY)
-
-### Quality Metrics (ALL MET ✅)
-- ✅ All critical business logic tested
-- ✅ Security vulnerabilities addressed (XSS, SQL injection)
-- ✅ API contracts validated
-- ✅ Edge cases covered (unicode, long inputs, empty values)
-- ✅ Error handling validated
-- ✅ Fast execution time (<25 seconds)
+## 🎯 Success Criteria (Current)
+- ✅ All validated suites green on local deterministic commands.
+- ✅ No active reproducible regression in previously flagged fixture/API areas.
+- 🎯 Next milestone: stability hardening in CI plus targeted coverage expansion (tickets above).
 
 ---
 
-## 📅 Timeline to Phase 1 Completion
+## 🚀 How to Run Tests (Current Baseline Commands)
 
-**Remaining Effort:** 2-3 work sessions (~6-9 hours)
-
-### Session 1: Frontend Service Tests (2-3 hours)
-- Create `test/unit/services/subscription_service_test.dart` (15 tests)
-- Create `test/unit/services/stripe_service_test.dart` (10 tests)
-- Create `test/unit/services/isar_service_test.dart` (10 tests)
-- **Output:** 35 new tests, 204/270 total (76% complete)
-
-### Session 2: Security Tests (2-3 hours)
-- Create `backend/tests/security/test_authentication.py` (10 tests)
-- Create `backend/tests/security/test_authorization.py` (10 tests)
-- Create `backend/tests/security/test_rate_limiting.py` (10 tests)
-- **Output:** 30 new tests, 234/270 total (87% complete)
-
-### Session 3: API Contract Tests + Fixes (2-3 hours)
-- Create `backend/tests/api/test_character_routes.py` (15 tests)
-- Create `backend/tests/api/test_subscription_routes.py` (5 tests)
-- Fix known issues (5 tests)
-- **Output:** 25 new/fixed tests, 259/270 total (96% complete)
-
-**Expected Phase 1 Completion (after the 3 sessions above):** ~259/270 tests (96%)
-
----
-
-## 🚀 How to Run Tests
-
-### Quick Start (Local, Deterministic)
-1. **Enable mock mode** in `backend/.env`:
-   ```
-   MOCK_TESTING_MODE=true
-   ```
-
-2. **Run all backend tests:**
-   ```bash
-   cd backend
-   pytest
-   # Current verified core-suite status (2026-02-12):
-   # 169 passed, 4 failed, 1 error
-   ```
-
-3. **Run specific test categories:**
-   ```bash
-   # Unit tests only
-   pytest tests/unit/ -q
-
-   # Security tests only
-   pytest tests/security/ -q
-
-   # API contract tests only
-   pytest tests/api/ -q
-
-   # With coverage report
-   pytest --cov=. --cov-report=term-missing
-   ```
-
-4. **Run frontend tests:**
-   ```bash
-   flutter test
-
-   # Integration tests
-   flutter test integration_test/
-
-   # Update golden files (if needed)
-   flutter test --update-goldens
-   ```
-
-5. **Run Phase 3 integration tests:**
-   ```bash
-   cd backend
-   python run_phase3_tests.py
-   # 8/8 tests should pass
-   ```
-
-### CI/CD Pipeline
-GitHub Actions workflow (`.github/workflows/cicd.yml`) currently defines:
-1. `frontend-test` (runs Flutter tests + integration tests + Codecov upload)
-2. `backend-test` (runs full backend pytest + coverage + Codecov upload)
-3. `api-contract-tests` (runs `pytest -m api_contract --maxfail=1`)
-
-⚠️ **CI mismatch to note:** no `api_contract` markers were found in `backend/tests`, so the API contract job may run zero tests until markers are added or the command is changed.
-
----
-
-## 📁 Test File Structure
-
-```
-story-weaver-app/
-├── backend/
-│   └── tests/
-│       ├── conftest.py (comprehensive fixtures)
-│       ├── unit/
-│       │   ├── test_story_service.py ✅ (48 tests)
-│       │   ├── test_character_service.py ✅ (57 tests)
-│       │   └── test_story_constraints.py ✅ (5 tests)
-│       ├── security/
-│       │   ├── test_input_sanitization.py ✅ (31 tests)
-│       │   ├── test_authentication.py 🔴 (needed)
-│       │   ├── test_authorization.py 🔴 (needed)
-│       │   └── test_rate_limiting.py 🔴 (needed)
-│       ├── api/
-│       │   ├── test_story_routes.py 🟡 (33 tests, 28 currently passing)
-│       │   ├── test_character_routes.py 🔴 (needed)
-│       │   ├── test_subscription_routes.py 🔴 (needed)
-│       │   └── test_stripe_routes.py 🔴 (needed)
-│       ├── integration/ (Phase 2)
-│       ├── performance/ (Phase 3)
-│       └── database/ (Phase 2)
-└── test/
-    ├── helpers/
-    │   ├── test_fixtures.dart ✅ (comprehensive sample data)
-    │   └── mocks.dart ✅ (service mocks)
-    ├── unit/
-    │   └── services/
-    │       ├── subscription_service_test.dart 🔴 (needed)
-    │       ├── stripe_service_test.dart 🔴 (needed)
-    │       └── isar_service_test.dart 🔴 (needed)
-    ├── widgets/ ✅ (existing tests)
-    └── integration_test/ ✅ (existing tests)
+### Local Verification Set
+```bash
+flutter test --no-pub -r compact
+flutter test --no-pub test/unit/services -r compact
+cd backend
+python -m pytest tests/api -q
+python -m pytest tests/security -q
 ```
 
-**Legend:**
-- ✅ Completed
-- 🔴 Not started (needed for Phase 1)
-- 🟡 In progress
+### Optional Stability Sweep (Flake Check)
+```bash
+flutter test -r compact --concurrency=4 --test-randomize-ordering-seed 12345 test/integration/story_creation_flow_test.dart test/widgets/story_result_test.dart test/widgets/wizard_flow_test.dart
+```
+
+### CI/CD Note
+- `api_contract` markers are present in `backend/tests/test_api_contracts.py`; keep workflow selection aligned with intended suite.
 
 ---
 

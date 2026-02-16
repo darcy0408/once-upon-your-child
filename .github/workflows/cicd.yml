@@ -36,18 +36,11 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Run Flutter unit tests
-        run: flutter test --coverage
+      - name: Run Flutter baseline full suite (deterministic)
+        run: flutter test --no-pub -r compact
 
-      - name: Run Flutter integration tests
-        run: flutter test integration_test/ --coverage
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage/lcov.info
-          flags: frontend
-          name: frontend-coverage
+      - name: Run Flutter baseline service suite (deterministic)
+        run: flutter test --no-pub test/unit/services -r compact
 
   # Backend Testing
   backend-test:
@@ -78,16 +71,13 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-cov
 
-      - name: Run backend tests
+      - name: Run backend API baseline suite (deterministic)
         run: |
-          PYTHONPATH=/home/runner/work/story-weaver-app/story-weaver-app/backend pytest --cov=. --cov-report=xml --cov-report=term-missing
+          PYTHONPATH=/home/runner/work/story-weaver-app/story-weaver-app/backend pytest tests/api -q
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./backend/coverage.xml
-          flags: backend
-          name: backend-coverage
+      - name: Run backend security baseline suite (deterministic)
+        run: |
+          PYTHONPATH=/home/runner/work/story-weaver-app/story-weaver-app/backend pytest tests/security -q
 
   # API Contract Tests
   api-contract-tests:

@@ -70,14 +70,38 @@
 
 ---
 
-## 4. Current Status
+## 4. Current Status (Refreshed 2026-02-16)
 
 *   **Backend:** ✅ PASSED. All tests including flow simulation are green.
-*   **Frontend:** 🔴 FAILED. Compilation fixed, but runtime errors due to unmocked Firebase Analytics.
+*   **Frontend:** ✅ PASSED in latest local validation runs.
+    *   `flutter test --no-pub -r compact` -> 132/132 passed
+    *   `flutter test --no-pub test/unit/services -r compact` -> 51/51 passed
+*   **Backend API Contracts:** ✅ PASSED in latest local validation run.
+    *   `cd backend; python -m pytest tests/api -q` -> 77/77 passed
 
 ---
 
-## 5. New Tests to Create/Fix
+## 5. Next Focus (Post-Baseline)
 
-1.  `tests/test_backend_interactive_flow.py`: A script to simulate a user playing through an entire interactive story to verify state persistence and "Three-Key Lock" logic. (Created and Passed)
-2.  **Frontend Fix:** Mock `FirebaseAnalytics` in widget tests to prevent `[core/no-app]` errors.
+1.  Keep the passing baseline stable in CI (same command set as above).
+2.  Add higher-value coverage where behavior is still under-specified:
+    *   Auth edge cases and ownership boundary checks
+    *   Failure-mode contract assertions (timeouts, malformed payloads, partial backend outages)
+    *   Deterministic flake checks (seeded/concurrency sweeps) for integration/widget flows
+
+### 5.1 Execution Queue (Actionable)
+
+1.  **P0 - CI baseline lock**
+    *   Ensure CI runs:
+        *   `flutter test --no-pub -r compact`
+        *   `flutter test --no-pub test/unit/services -r compact`
+        *   `cd backend; python -m pytest tests/api -q`
+        *   `cd backend; python -m pytest tests/security -q`
+2.  **P0 - Flake sweep harness**
+    *   Add deterministic seed + concurrency sweep for historically noisy Flutter integration/widget tests.
+3.  **P1 - Frontend service negative-path expansion**
+    *   Add retry/cache/auth-header edge-case assertions in `test/unit/services/`.
+4.  **P1 - API contract marker/workflow alignment**
+    *   Verify `pytest -m api_contract` scope matches intended CI contract coverage.
+5.  **P2 - Deprecation warning cleanup**
+    *   Replace `datetime.utcnow()` usage in backend tests/fixtures with timezone-aware UTC patterns.

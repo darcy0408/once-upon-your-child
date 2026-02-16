@@ -86,9 +86,7 @@ instance/*.db
 /bin/
 
 # Development test scripts
-test_*.py
-check_*.py
-live_test_*.py
+
 
 # Test reports and lint outputs
 reports/
@@ -97,6 +95,7 @@ lint_report*.txt
 story_output.txt
 story_request.json
 payload.json
+
 
 # Temporary test documentation (session-specific, keep consolidated version only)
 TEST_IMPLEMENTATION_STATUS.md
@@ -136,6 +135,8 @@ ng
 check_java.ps1
 *.code-workspace
 test_db_output.txt
+--help
+--version
 
 # Node.js dependencies
 node_modules/

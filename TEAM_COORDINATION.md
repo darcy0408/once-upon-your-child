@@ -7,6 +7,29 @@
 
 ---
 
+## Session Update - 2026-02-16 (P0 CI Baseline Lock Started)
+
+### Scope Completed
+- Updated CI workflow to run the currently verified deterministic baseline command set.
+
+### File Modified
+- `.github/workflows/cicd.yml`
+
+### Workflow Changes
+- `frontend-test` now runs:
+  - `flutter test --no-pub -r compact`
+  - `flutter test --no-pub test/unit/services -r compact`
+- `backend-test` now runs:
+  - `pytest tests/api -q`
+  - `pytest tests/security -q`
+
+### Verification
+- YAML parse check passed:
+  - `python -c "import yaml; yaml.safe_load(open('.github/workflows/cicd.yml', encoding='utf-8')); print('ok')"`
+
+### Next
+- Open PR/CI run to confirm one clean pipeline pass on these baseline commands.
+
 ## Session Update - 2026-02-16 (Next Broken Task Check)
 
 ### Scope Completed
@@ -100,6 +123,31 @@ cd backend; python -m pytest tests/api -q
 ### Notes
 - This expands owner-protected/auth contracts without changing route implementation.
 - Warning profile remains unchanged except expected count increase from added test coverage.
+
+## Session Update - 2026-02-16 (Backend Test Warning Cleanup - `datetime.utcnow` Removal)
+
+### Scope Completed
+- Replaced `datetime.utcnow()` usage in backend tests with timezone-aware UTC:
+  - `backend/tests/conftest.py`
+  - `backend/tests/api/test_stripe_routes.py`
+  - `backend/tests/test_api_contracts.py`
+  - `backend/tests/security/test_authorization.py`
+  - `backend/tests/security/test_authentication.py`
+
+### Verification Runs
+```bash
+cd backend; python -m pytest tests/api -q
+```
+- Result: ✅ `77 passed` (warnings reduced from previous API run)
+
+```bash
+cd backend; python -m pytest tests/security/test_authorization.py tests/security/test_authentication.py tests/test_api_contracts.py -q
+```
+- Result: ✅ `75 passed`
+
+### Notes
+- Direct `utcnow()` usage in backend tests is now eliminated.
+- Remaining warnings are primarily framework/library-level (Flask-Caching + SQLAlchemy drop-order/deprecation context).
 
 ## Session Update - 2026-02-16 (Flutter CI-Style Triage, In Progress)
 
@@ -397,6 +445,41 @@ flutter test test/unit/services/subscription_service_test.dart test/unit/service
   - stop current run
   - `flutter pub get`
   - relaunch with fresh `flutter run -d chrome` (required so updated asset manifest is applied)
+
+---
+
+## SESSION NOTE - Feb 16, 2026 - Repo Hygiene + Deprecation Cleanup + Interactive Security Verification
+
+**Agent:** Codex Agent  
+**Status:** COMPLETED - Hygiene and security follow-up executed end-to-end
+
+### Milestone 1: Repo Hygiene / Noise Reduction
+- Added line-ending policy to reduce cross-platform churn:
+  - `.gitattributes` (LF for source/docs/config; CRLF for `.bat`/`.ps1`)
+- Updated ignore rules for accidental root artifacts:
+  - `.gitignore` now ignores `--help` and `--version`
+- Removed accidental root files from workspace:
+  - `--help`
+  - `--version`
+
+### Milestone 2: Deprecation Cleanup (Test Layer)
+- Removed deprecated SQLAlchemy `Query.get()` usage in webhook tests:
+  - `backend/tests/test_webhook_handler.py` now uses `db.session.get(...)`
+- Verified no remaining `utcnow()` or `Query.get()` usage under `backend/tests` via ripgrep scan.
+
+### Milestone 3: Interactive Story Security Validation
+- Verified interactive story routes are auth-protected and ownership-enforced:
+  - `/generate-interactive-story`
+  - `/continue-interactive-story`
+  - `/interactive-story/<story_id>`
+  - `/interactive-story/<story_id>/resume`
+- Security test coverage for these IDOR/auth contracts remains passing in `backend/tests/security/test_authorization.py`.
+
+### Verification Notes
+- Full backend regression run (post changes):
+  - `cd backend; python -m pytest -q`
+- Result:
+  - **361 passed** in ~55s (warnings only, no failures)
 
 ---
 
@@ -2345,6 +2428,26 @@ pytest tests/unit tests/security tests/api/test_story_routes.py -q
   - Verified that free tier users are now correctly limited to 3 stories per minute (default) and receive 429 responses.
   - Confirmed `X-RateLimit` headers are correctly generated and returned in responses.
   - Updated `.gitignore` to allow tracking of the new security test suite.
+
+### 6. Security - Authentication Tests ✅
+- **Status:** COMPLETED
+- **Progress:**
+  - Expanded `backend/tests/security/test_authentication.py` to 19 tests.
+  - **New Coverage:**
+    - Anonymous authentication flow (client-side ID persistence).
+    - Token "refresh" behavior (retrieving new JWT for existing anonymous IDs).
+    - Standard credential login (`/auth/login`) with success and failure paths.
+    - Advanced token validation (malformed tokens, ghost users).
+    - IDOR protection detailed scenarios.
+  - Verified all decorators (`@require_auth`, `@require_admin`, `@require_owner`, `@optional_auth`) against the new test routes.
+
+### Summary of Backend Security Hardening ✅
+- **Total Security Tests:** 30+ tests across Authorization, Rate Limiting, and Authentication.
+- **Critical Gaps Fixed:**
+  - **Reordered rate limit decorators** across all generation endpoints to ensure they are actually active.
+  - **Added authentication requirements** to all interactive story endpoints.
+  - **Fixed IDOR vulnerabilities** in character and interactive story routes (preventing cross-user access).
+  - **Enforced user ID integrity** by using authenticated identity for story creation instead of unverified request payloads.
 
 ### Files Modified
 

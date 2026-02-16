@@ -76,11 +76,11 @@
 
 #### Frontend Widget Tests 🟡 (70/76 - 92%)
 - [x] ✅ Most widget tests passing (70 tests)
-- [ ] 🔴 Fix failing tests (6 failures)
-  - [ ] Story creation flow test (3 failures)
-  - [ ] Story result test (1 failure)
-  - [ ] Wizard flow test (1 failure)
-  - [ ] Interactive story test (1 failure)
+- [x] ✅ Fix failing tests (6 failures) *(validated February 16, 2026)*
+  - [x] Story creation flow test (3 failures)
+  - [x] Story result test (1 failure)
+  - [x] Wizard flow test (1 failure)
+  - [x] Interactive story test (1 failure)
 
 #### Integration Tests 🔴 (8/50 - 16%)
 - [x] ✅ Phase 3 integration tests (8 tests)
@@ -288,7 +288,7 @@ Every story must have:
 **Goal:** Reach 270 tests, 75% backend coverage, 100% Flutter tests passing
 
 #### Day 1-2: Fix Frontend Tests & Create Service Tests
-- [ ] Fix 6 failing Flutter tests (2-3 hours)
+- [x] Fix 6 failing Flutter tests (2-3 hours)
 - [ ] Create subscription_service_test.dart (3-4 hours)
 - [ ] Create stripe_service_test.dart (2-3 hours)
 - [ ] Create isar_service_test.dart (2-3 hours)
