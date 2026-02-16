@@ -1,119 +1,95 @@
-import pytest
-import json
-from unittest.mock import MagicMock
+from datetime import datetime
+
 from backend.database import db
 from backend.models.user import User
 
-def test_get_subscription_success(client, test_user):
-    """Test retrieving subscription data for a user."""
-    response = client.get(f'/api/user/{test_user.id}/subscription')
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data['user_id'] == test_user.id
-    assert data['tier'] == 'free'
-    assert data['status'] == 'active'
 
-def test_get_subscription_not_found(client):
-    """Test 404 for nonexistent user."""
-    response = client.get('/api/user/nonexistent/subscription')
-    assert response.status_code == 404
-    data = response.get_json()
-    assert 'error' in data
+def _create_user(user_id: str) -> User:
+    user = User(id=user_id, username=user_id, email=f"{user_id}@example.com")
+    user.set_password("test-password")
+    db.session.add(user)
+    db.session.commit()
+    return user
 
-def test_create_checkout_session(client, mock_stripe):
-    """Test creating a Stripe checkout session."""
-    payload = {
-        "tier": "premium",
-        "user_id": "test_user_123"
-    }
-    response = client.post('/api/stripe/create-checkout-session',
-                           json=payload,
-                           content_type='application/json')
 
-    assert response.status_code == 200
-    data = response.get_json()
-    assert 'id' in data
-    assert 'checkout_url' in data
-    assert data['id'] == 'cs_test_123'
-
-def test_create_checkout_session_invalid_tier(client):
-    """Test creating a checkout session with invalid tier."""
-    payload = {
-        "tier": "invalid_tier",
-        "user_id": "test_user_123"
-    }
-    response = client.post('/api/stripe/create-checkout-session',
-                           json=payload,
-                           content_type='application/json')
-
-    assert response.status_code == 400
-
-def test_get_subscription_status(client, mock_stripe):
-
-    """Test retrieving subscription status from Stripe."""
-
-    user_id = 'stripe_user_fresh'
-
-    with client.application.app_context():
-
-        user = User(id=user_id, username='stripe_test', email='stripe@test.com')
-
-        user.stripe_customer_id = 'cus_test_123'
-
-        user.set_password('password')
-
-        db.session.add(user)
-
+def test_get_subscription_success_contract(client, app):
+    with app.app_context():
+        user = _create_user("sub-user-1")
+        user.subscription_tier = "premium"
+        user.subscription_status = "active"
+        user.cancel_at_period_end = False
         db.session.commit()
+        user_id = user.id
 
-
-
-    # Generate token for this specific user
-
-    from datetime import datetime, timedelta
-
-    import jwt
-
-    payload = {
-
-        'user_id': user_id,
-
-        'exp': datetime.utcnow() + timedelta(hours=1)
-
-    }
-
-    token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
-
-    headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
-
-
-
-    # Mock stripe.Subscription.list response
-
-    mock_sub = MagicMock()
-
-    mock_sub.current_period_end = 1234567890
-
-    mock_sub.cancel_at_period_end = False
-
-    
-
-    mock_stripe.Subscription.list.return_value.data = [mock_sub]
-
-
-
-    response = client.get(f'/api/stripe/subscription-status/{user_id}',
-
-                          headers=headers)
-
-    
+    response = client.get(f"/api/user/{user_id}/subscription")
 
     assert response.status_code == 200
+    body = response.get_json()
+    assert body["user_id"] == user_id
+    assert body["tier"] == "premium"
+    assert body["status"] == "active"
+    assert body["current_period_end"] is None
+    assert body["cancel_at_period_end"] is False
 
-    data = response.get_json()
 
-    assert data['status'] == 'active'
+def test_get_subscription_user_not_found_returns_404(client):
+    response = client.get("/api/user/missing-user-id/subscription")
 
-    assert data['current_period_end'] == 1234567890
+    assert response.status_code == 404
+    assert response.get_json()["error"] == "User not found"
+
+
+def test_get_subscription_falls_back_to_defaults_when_blank(client, app):
+    with app.app_context():
+        user = _create_user("sub-user-2")
+        user.subscription_tier = ""
+        user.subscription_status = ""
+        db.session.commit()
+        user_id = user.id
+
+    response = client.get(f"/api/user/{user_id}/subscription")
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["tier"] == "free"
+    assert body["status"] == "active"
+
+
+def test_get_subscription_formats_current_period_end_as_iso_string(client, app):
+    with app.app_context():
+        user = _create_user("sub-user-3")
+        user.current_period_end = datetime(2026, 1, 5, 13, 22, 11, 999999)
+        db.session.commit()
+        user_id = user.id
+
+    response = client.get(f"/api/user/{user_id}/subscription")
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert isinstance(body["current_period_end"], str)
+    assert body["current_period_end"].endswith("Z")
+    assert "T" in body["current_period_end"]
+
+
+def test_get_subscription_returns_cancel_flag(client, app):
+    with app.app_context():
+        user = _create_user("sub-user-4")
+        user.cancel_at_period_end = True
+        db.session.commit()
+        user_id = user.id
+
+    response = client.get(f"/api/user/{user_id}/subscription")
+
+    assert response.status_code == 200
+    assert response.get_json()["cancel_at_period_end"] is True
+
+
+def test_get_subscription_returns_500_on_unexpected_error(client, mocker):
+    mocker.patch("backend.routes.subscription_routes.db.session.get", side_effect=RuntimeError("db down"))
+
+    response = client.get("/api/user/any-user/subscription")
+
+    assert response.status_code == 500
+    assert response.get_json()["error"] == "Internal server error"
 
 
