@@ -15,6 +15,7 @@ from ..tasks.story_tasks import generate_story_task
 from ..models.user import User
 from ..models import Character
 from ..database import db
+from ..middleware.auth import require_auth
 from ..services.interactive_adventure_service import InteractiveAdventureService
 from ..utils.validators import (
     validate_age,
@@ -73,6 +74,7 @@ def create_story_blueprint(
     sync_story_timeout = int(os.getenv("SYNC_STORY_TIMEOUT_SECONDS", "120"))
 
     @story_bp.route("/get-story-themes", methods=["GET"])
+    @limiter.limit("60 per minute")
     @cache.cached(timeout=3600)  # Cache for 1 hour
     def get_story_themes():
         return jsonify(
@@ -88,8 +90,8 @@ def create_story_blueprint(
             ]
         )
 
-    @limiter.limit(lambda: get_tier_limits() or "1000/minute")  # BYOK users get high limit
     @story_bp.route("/generate-story", methods=["POST"])
+    @limiter.limit(lambda: get_tier_limits() or "1000/minute")  # BYOK users get high limit
     def generate_story_endpoint():
         payload = request.get_json(silent=True) or {}
 
@@ -380,14 +382,14 @@ def create_story_blueprint(
 
         return jsonify(response), 200
 
-    @limiter.limit("5 per minute")  # Rate limit for interactive story start
     @story_bp.route("/generate-interactive-story", methods=["POST"])
+    @limiter.limit("5 per minute")  # Rate limit for interactive story start
+    @require_auth
     def generate_interactive_story_endpoint():
         """
         Create new interactive adventure story with first segment.
         Request body:
             - character_id: str (optional)
-            - user_id: str (required)
             - theme: str (Adventure, Magic, Dragons, etc.)
             - tone: str (whimsical, mystery, sci-fi, fantasy, cozy-adventure)
             - length: str (short, medium, long)
@@ -407,7 +409,9 @@ def create_story_blueprint(
         if not is_valid:
             return jsonify(mode_error), 400
 
-        user_id = payload.get("user_id")
+        # Enforce authenticated user ID
+        user_id = request.current_user.id
+        
         character_id = payload.get("character_id")
         theme = payload.get("theme", "Adventure")
         tone = payload.get("tone", "whimsical")
@@ -418,10 +422,6 @@ def create_story_blueprint(
         avoid = payload.get("avoid")
         life_challenge = payload.get("life_challenge")
         personality_sliders = payload.get("personality_sliders")
-
-        # Validate required fields
-        if not user_id:
-            return jsonify({"error": "user_id is required"}), 400
 
         try:
             # Initialize service
@@ -472,8 +472,9 @@ def create_story_blueprint(
                 }
             ), 500
 
-    @limiter.limit("5 per minute")  # Rate limit for continuing interactive stories
     @story_bp.route("/continue-interactive-story", methods=["POST"])
+    @limiter.limit("5 per minute")  # Rate limit for continuing interactive stories
+    @require_auth
     def continue_interactive_story_endpoint():
         """
         Continue interactive story based on choice selection.
@@ -492,6 +493,17 @@ def create_story_blueprint(
             return jsonify({"error": "story_id and choice_id are required"}), 400
 
         try:
+            from backend.models import InteractiveStory
+            
+            # Ownership check
+            story = db.session.get(InteractiveStory, story_id)
+            if not story:
+                return jsonify({"error": f"Story {story_id} not found"}), 404
+            
+            if str(story.user_id) != str(request.current_user.id):
+                logger.warning(f"IDOR attempt: User {request.current_user.id} tried to continue story {story_id}")
+                return jsonify({"error": "Access denied"}), 403
+
             # Initialize service
             service = InteractiveAdventureService(gemini_api_key=api_key)
 
@@ -535,6 +547,7 @@ def create_story_blueprint(
             ), 500
 
     @story_bp.route("/interactive-story/<story_id>", methods=["GET"])
+    @require_auth
     def get_interactive_story(story_id):
         """
         Get full interactive story with all segments and current state.
@@ -542,6 +555,17 @@ def create_story_blueprint(
         logger.info(f"GET /interactive-story/{story_id} called")
 
         try:
+            from backend.models import InteractiveStory
+            
+            # Ownership check
+            story = db.session.get(InteractiveStory, story_id)
+            if not story:
+                return jsonify({"error": f"Story {story_id} not found"}), 404
+            
+            if str(story.user_id) != str(request.current_user.id):
+                logger.warning(f"IDOR attempt: User {request.current_user.id} tried to read story {story_id}")
+                return jsonify({"error": "Access denied"}), 403
+
             # Initialize service
             service = InteractiveAdventureService(gemini_api_key=api_key)
 
@@ -559,6 +583,7 @@ def create_story_blueprint(
             return jsonify({"error": str(e)}), 500
 
     @story_bp.route("/interactive-story/<story_id>/resume", methods=["GET"])
+    @require_auth
     def resume_interactive_story(story_id):
         """
         Resume an in-progress story from current segment.
@@ -570,9 +595,14 @@ def create_story_blueprint(
             from backend.models import InteractiveStory
 
             # Load story
-            story = InteractiveStory.query.filter_by(id=story_id).first()
+            story = db.session.get(InteractiveStory, story_id)
             if not story:
                 return jsonify({"error": f"Story {story_id} not found"}), 404
+
+            # Ownership check
+            if str(story.user_id) != str(request.current_user.id):
+                logger.warning(f"IDOR attempt: User {request.current_user.id} tried to resume story {story_id}")
+                return jsonify({"error": "Access denied"}), 403
 
             if story.is_completed:
                 return jsonify({"error": "Story is already completed"}), 400
@@ -613,8 +643,8 @@ def create_story_blueprint(
 
         return jsonify({"status": "reported", "message": "Thank you for your report"}), 200
 
-    @limiter.limit(lambda: get_tier_limits("expensive") or "100/hour")  # BYOK users get high limit
     @story_bp.route("/generate-illustrations", methods=["POST"])
+    @limiter.limit(lambda: get_tier_limits("expensive") or "100/hour")  # BYOK users get high limit
     def generate_illustrations_endpoint():
         """Generate illustrations for a story scene"""
         try:
@@ -811,8 +841,8 @@ def create_story_blueprint(
 
             return jsonify({"error": str(exc), "hint": "Image generation failed. Check your API key quota or try again later."}), 500
 
-    @limiter.limit("10 per hour")
     @story_bp.route("/generate-coloring-pages", methods=["POST"])
+    @limiter.limit("10 per hour")
     def generate_coloring_pages_endpoint():
         """Generate coloring book pages for story scene(s)"""
         try:
