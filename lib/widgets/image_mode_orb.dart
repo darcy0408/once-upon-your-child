@@ -118,13 +118,14 @@ class _ImageModeOrbState extends State<ImageModeOrb>
       child: GestureDetector(
         onTap: _handleTap,
         child: SizedBox(
-          width: 90,
+          width: 104,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               AnimatedScale(
                 duration: const Duration(milliseconds: 220),
-                scale: widget.isActive ? 1.12 : 1.0,
+                // Keep all mode circles visually the same size; use glow (not scale) for active state.
+                scale: 1.0,
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
@@ -263,17 +264,25 @@ class _ImageModeOrbState extends State<ImageModeOrb>
                 ),
               ),
               const SizedBox(height: 8),
-              // Label text
-              Text(
-                widget.label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color:
-                      widget.isActive ? const Color(0xFF2F2748) : inactiveText,
-                  fontWeight:
-                      widget.isActive ? FontWeight.w700 : FontWeight.w600,
-                  fontSize: 13,
-                  height: 1.2,
+              // Fixed-height label area keeps all orbs aligned in rows even with multi-line labels.
+              SizedBox(
+                height: 34,
+                child: Center(
+                  child: Text(
+                    widget.label,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: widget.isActive
+                          ? const Color(0xFF2F2748)
+                          : inactiveText,
+                      fontWeight:
+                          widget.isActive ? FontWeight.w700 : FontWeight.w600,
+                      fontSize: 13,
+                      height: 1.2,
+                    ),
+                  ),
                 ),
               ),
             ],

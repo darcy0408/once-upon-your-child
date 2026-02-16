@@ -458,7 +458,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 ),
                 ImageModeOrb(
                   modeType: 'reading',
-                  label: 'Spellbound Reading',
+                  label: 'Read-Along',
                   isActive: data.learningToReadMode,
                   onTap: () => setState(() {
                     data.learningToReadMode = !data.learningToReadMode;

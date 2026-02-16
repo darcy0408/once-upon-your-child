@@ -78,7 +78,7 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
     }
 
     // Rotate flavor messages independent of backend status updates.
-    _messageTimer = Timer.periodic(const Duration(milliseconds: 2600), (_) {
+    _messageTimer = Timer.periodic(const Duration(milliseconds: 4200), (_) {
       if (!mounted) return;
       setState(() => _messageIndex = (_messageIndex + 1) % _phaseMessages.length);
     });
