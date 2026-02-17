@@ -42,6 +42,8 @@ dependencies:
   isar_flutter_libs: ^3.1.0
   uuid: ^4.5.1              # Generate unique IDs
   path_provider: ^2.1.1     # File paths
+  camera: ^0.11.0+2          # Snapshot photos for custom avatars
+  image_picker: ^1.1.2       # Pick images from gallery
   riverpod_annotation: ^2.6.1
   google_generative_ai: ^0.4.6  # Direct Gemini API access for BYOK users
   firebase_core: ^3.8.1
@@ -51,7 +53,7 @@ dependencies:
   url_launcher: ^6.3.0
   page_flip_builder: ^0.1.4  # Premium page-turn animations
   flutter_svg: ^2.0.10  # SVG rendering for avatars
-  google_fonts: 6.2.1  # Quicksand font for magical UI
+  google_fonts: 4.0.5  # Quicksand font for magical UI
   crypto: ^3.0.3  # SHA256 hashing for avatar cache keys
   audioplayers: ^6.1.0  # For background ambience and SFX
 
@@ -76,6 +78,10 @@ dev_dependencies:
   build_runner: ^2.4.13
   riverpod_generator: ^2.4.0
   isar_generator: ^3.1.0
+
+dependency_overrides:
+  google_fonts:
+    path: third_party/google_fonts_stub
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

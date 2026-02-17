@@ -11,6 +11,7 @@ include: package:flutter_lints/flutter.yaml
 
 analyzer:
   exclude:
+    - '**/*.g.dart'
     - 'story_weaver_core/**'
     - 'story_weaver_mvp/**'
     - 'therapy_companion/**'
