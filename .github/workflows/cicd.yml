@@ -79,6 +79,10 @@ jobs:
         run: |
           PYTHONPATH=/home/runner/work/story-weaver-app/story-weaver-app/backend pytest tests/security -q
 
+      - name: Run backend integration baseline suite (deterministic)
+        run: |
+          PYTHONPATH=/home/runner/work/story-weaver-app/story-weaver-app/backend pytest tests/integration/test_story_generation_integration.py -q
+
   # API Contract Tests
   api-contract-tests:
     runs-on: ubuntu-latest
