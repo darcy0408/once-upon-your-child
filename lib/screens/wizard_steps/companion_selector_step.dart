@@ -354,7 +354,6 @@ class _CompanionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasImage = companion.imagePath != null || companion.character?.generatedAvatar != null;
     final isGlowing = isSelected || isMagical;
     
     return Semantics(

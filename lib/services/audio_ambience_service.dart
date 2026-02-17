@@ -25,13 +25,17 @@ class AudioAmbienceService {
 
   /// Plays a one-shot sound effect.
   Future<void> playSfx(String sfxPath) async {
+    // Web audio in this app is already busy with ambience and some SFX assets
+    // are optional; skip one-shot SFX to avoid noisy browser runtime errors.
+    if (kIsWeb) return;
+
     try {
       final sfxPlayer = AudioPlayer();
       await sfxPlayer.play(AssetSource(sfxPath));
       // Cleanup player after completion
       sfxPlayer.onPlayerComplete.listen((_) => sfxPlayer.dispose());
-    } catch (e) {
-      debugPrint('Error playing SFX: $e');
+    } catch (_) {
+      // Non-critical effect; fail silently.
     }
   }
 

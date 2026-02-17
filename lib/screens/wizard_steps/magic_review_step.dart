@@ -184,6 +184,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 characterAge: requestData['age'],
                 pages: result.pages,
                 adventureSteps: result.adventureSteps,
+                storyLengthHint: requestData['storyLength']?.toString() ??
+                    widget.wizardData.storyLength,
                 trackStoryCreation: true,
                 trackAnalytics: true,
                 achievementsService: AchievementService(),
@@ -536,7 +538,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                       setState(() => data.customElements = value),
                   decoration: InputDecoration(
                     hintText:
-                        'Whisper a wish to the orb...\n(e.g., "I want to ride a giant eagle")',
+                        'I want to ride a magic carpet and learn to make friends',
                     hintStyle: TextStyle(
                       color: AppColors.textDark.withValues(alpha: 0.4),
                       fontStyle: FontStyle.italic,
@@ -781,27 +783,25 @@ class _HeroAvatar extends StatelessWidget {
       );
     }
 
-    if (isDataUri || imageData.contains(',')) {
-      try {
-        return ClipOval(
-          child: Image.memory(
-            base64Decode(imageData.split(',').last),
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _GradientSphereFallback(
-              child: _HeroFallbackIdentity(name: characterName, role: role),
-            ),
+    // Support both full data URIs and raw base64 strings.
+    final normalizedBase64 = isDataUri || imageData.contains(',')
+        ? imageData.split(',').last
+        : imageData;
+    try {
+      return ClipOval(
+        child: Image.memory(
+          base64Decode(normalizedBase64),
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _GradientSphereFallback(
+            child: _HeroFallbackIdentity(name: characterName, role: role),
           ),
-        );
-      } catch (_) {
-        return _GradientSphereFallback(
-          child: _HeroFallbackIdentity(name: characterName, role: role),
-        );
-      }
+        ),
+      );
+    } catch (_) {
+      return _GradientSphereFallback(
+        child: _HeroFallbackIdentity(name: characterName, role: role),
+      );
     }
-
-    return _GradientSphereFallback(
-      child: _HeroFallbackIdentity(name: characterName, role: role),
-    );
   }
 }
 

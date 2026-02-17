@@ -1191,6 +1191,15 @@ Maintain plain text (no markdown fences).''';
     String customElements = '',
   }) {
     final ageInstructions = StoryComplexityService.buildAgeInstructions(age);
+    String pageGuideline = '10-12 pages';
+    String wordsPerPageGuideline = 'about 60-80 words per page';
+    if (lengthGuideline.contains('300-400')) {
+      pageGuideline = '6-7 pages';
+      wordsPerPageGuideline = 'about 45-60 words per page';
+    } else if (lengthGuideline.contains('1000-1200')) {
+      pageGuideline = '12-14 pages';
+      wordsPerPageGuideline = 'about 85-110 words per page';
+    }
 
     final bool useSecondPerson = age <= 5;
     final String perspectiveInstruction = useSecondPerson
@@ -1339,7 +1348,8 @@ JSON SCHEMA:
 
 STORY REQUIREMENTS:
 - TARGET LENGTH: $lengthGuideline total.
-- PAGES: Split into 10-12 pages for a "medium" duration read (~10 mins).
+- PAGES: Split into $pageGuideline.
+- PAGE DENSITY: Keep $wordsPerPageGuideline.
 - TONE: For an 8-year-old, make it magical, adventurous, funny, and vivid.
 - NO META: Do NOT include "PAGE X", "REQUEST SUMMARY", or any internal labels inside the page text.
 - READABILITY: Use double newlines (\\n\\n) for paragraph breaks inside pages.
@@ -1435,7 +1445,7 @@ Create the rhyming learning-to-read story about $characterName now:
     String storyLength = 'standard',
     String customElements = '',
   }) {
-    // Map story length to word count targets (matching backend)
+    // Map story length to word count targets (matching backend).
     String lengthGuideline;
     switch (storyLength) {
       case 'quick':

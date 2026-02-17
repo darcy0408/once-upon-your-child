@@ -2,7 +2,7 @@
 import 'package:isar/isar.dart';
 export 'package:isar/isar.dart'; // Export Isar type
 import 'package:path_provider/path_provider.dart';
-import 'package:meta/meta.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/local/character_local_io.dart';
 import '../avatar_models.dart';

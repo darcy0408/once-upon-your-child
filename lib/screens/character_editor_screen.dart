@@ -120,7 +120,7 @@ class _CharacterEditorScreenState extends State<CharacterEditorScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  initialValue: species,
+                  value: species,
                   items: ['Dog', 'Cat', 'Bird', 'Hamster', 'Fish', 'Bunny', 'Reptile', 'Other']
                       .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                       .toList(),
@@ -311,7 +311,7 @@ class _CharacterEditorScreenState extends State<CharacterEditorScreen> {
                             ),
                             const SizedBox(height: AppSpacing.sm),
                             DropdownButtonFormField<int>(
-                              initialValue: _age,
+                              value: _age,
                               items: List.generate(15, (i) => i + 3)
                                   .map((age) => DropdownMenuItem(
                                         value: age,
@@ -342,7 +342,7 @@ class _CharacterEditorScreenState extends State<CharacterEditorScreen> {
                             ),
                             const SizedBox(height: AppSpacing.sm),
                             DropdownButtonFormField<String>(
-                              initialValue: _gender,
+                              value: _gender,
                               items: ['Girl', 'Boy', 'Other']
                                   .map((g) => DropdownMenuItem(
                                         value: g,
@@ -382,7 +382,7 @@ class _CharacterEditorScreenState extends State<CharacterEditorScreen> {
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       DropdownButtonFormField<String>(
-                        initialValue: _role,
+                        value: _role,
                         items: [
                           'Adventurer',
                           'Thinker',
