@@ -1,6 +1,7 @@
 // lib/customizable_avatar_widget.dart
 // Avatar preview widget that renders Avataaars-based SVGs via network image.
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
@@ -20,6 +21,30 @@ class CustomizableAvatarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (avatar.isCustom && avatar.customImagePath != null) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.indigo.withOpacity(0.5), width: 3),
+            image: DecorationImage(
+              image: FileImage(File(avatar.customImagePath!)),
+              fit: BoxFit.cover,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final imageUrl = avatar.toAvataaarsUrl(
       circleBackground: false,
       customSeed: customSeed,
