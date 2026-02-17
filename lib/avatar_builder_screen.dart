@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'sunset_jungle_theme.dart';
 import 'avatar_models.dart';
 import 'customizable_avatar_widget.dart';
+import 'custom_avatar_screen.dart';
 import 'services/progression_service.dart';
 
 class AvatarBuilderScreen extends StatefulWidget {
@@ -315,6 +316,30 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
                 avatar: _currentAvatar,
                 size: 135,
               ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CustomAvatarScreen(
+                    initialName: _nameController.text,
+                  ),
+                ),
+              );
+              if (result != null && result is CharacterAvatar) {
+                _updateAvatar(result);
+              }
+            },
+            icon: const Icon(Icons.auto_awesome),
+            label: const Text('✨ Magic Custom Avatar'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.indigo,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             ),
           ),
         ],
