@@ -35,7 +35,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.2.1              # API calls to backend
   flutter_tts: ^4.2.5       # Text-to-speech for stories
-  shared_preferences: ^2.5.4 # Local storage
+  shared_preferences: 2.4.0 # Local storage
   share_plus: ^11.0.0       # Share stories
   flutter_riverpod: ^2.6.1
   isar: ^3.1.0
