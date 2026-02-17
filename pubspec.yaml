@@ -54,7 +54,7 @@ dependencies:
   url_launcher: ^6.3.0
   page_flip_builder: ^0.1.4  # Premium page-turn animations
   flutter_svg: ^2.0.10  # SVG rendering for avatars
-  google_fonts: 4.0.5  # Quicksand font for magical UI
+  google_fonts: ^6.2.1  # Quicksand font for magical UI
   crypto: ^3.0.3  # SHA256 hashing for avatar cache keys
   audioplayers: ^6.1.0  # For background ambience and SFX
 
