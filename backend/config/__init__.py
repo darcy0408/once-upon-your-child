@@ -189,8 +189,8 @@ class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     # Disable rate limiting in tests
     RATELIMIT_ENABLED = False
-    # Disable caching in tests to avoid serialization issues
-    CACHE_TYPE = 'null'
+    # Use NullCache in tests to avoid Flask-Caching serialization bugs
+    CACHE_TYPE = 'NullCache'
     # Match conftest.py
     JWT_SECRET_KEY = 'dev-secret-key'
     # Ensure Celery is eager in tests
