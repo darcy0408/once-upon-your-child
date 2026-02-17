@@ -150,7 +150,7 @@ htmlcov/
 # Temporary test scripts and utilities
 check_*.py
 live_test_*.py
-test_*_integration.py
+/test_*_integration.py
 test_gemini_*.py
 test_mock_*.py
 test_coloring_*.py

@@ -3066,3 +3066,25 @@ flutter test test/widgets/pick_a_path_adventure_screen_test.dart
 ### Result
 - ✅ `18/18` tests passed.
 - ✅ No regression detected in interactive adventure flow after magic review control rendering changes.
+
+## Session Update - 2026-02-16 (Milestone: Hero Creator Placeholder Shape Fix)
+
+### Problem Reported
+- Hero Creator placeholder appeared stretched/oval instead of correct circular framing.
+
+### Root Cause
+- `CharacterPreview` sized the orb from full-screen dimensions and also imposed a fixed `height: screenHeight * 0.5`, which could clip the orb inside `Expanded` layouts and visually flatten it.
+
+### Fix Implemented
+- Updated `lib/widgets/character_preview.dart` to use `LayoutBuilder` constraints for orb sizing.
+- Removed fixed-height forcing and sized the preview orb from available width/height so it remains properly circular.
+
+### Verification
+```bash
+dart format lib/widgets/character_preview.dart
+flutter test test/widgets/character_creation_test.dart test/widgets/wizard_flow_test.dart
+```
+
+### Result
+- ✅ Both targeted widget tests passed.
+- ✅ Placeholder preview now maintains correct shape in constrained layouts.
