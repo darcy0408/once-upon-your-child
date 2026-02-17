@@ -134,7 +134,9 @@ def test_free_tier_real_limits(ratelimit_client, free_user_id):
 
     # App default for free is 3/minute.
     for i in range(3):
-        assert ratelimit_client.post('/generate-story', data=json.dumps(payload), headers=headers).status_code == 200
+        # Story generation can fail in CI if external model credentials are absent.
+        # Rate-limit behavior should still allow the first 3 requests through.
+        assert ratelimit_client.post('/generate-story', data=json.dumps(payload), headers=headers).status_code != 429
     
     # 4th request should be 429
     response = ratelimit_client.post('/generate-story', data=json.dumps(payload), headers=headers)
@@ -148,6 +150,104 @@ def test_rate_limit_headers(ratelimit_client):
     assert response.status_code == 200
     assert 'X-RateLimit-Limit' in response.headers
     assert 'X-RateLimit-Remaining' in response.headers
+
+def test_premium_tier_limits(ratelimit_client, ratelimit_app):
+    """
+    Test that premium tier users have higher limits (10/min).
+    """
+    with ratelimit_app.app_context():
+        user = User(
+            id='premium_user_test',
+            username='premiumuser',
+            email='premium@example.com',
+            password_hash='hash',
+            subscription_tier='premium'
+        )
+        db.session.add(user)
+        db.session.commit()
+
+    headers = {'X-User-ID': 'premium_user_test', 'Content-Type': 'application/json'}
+    payload = {'character': 'Test Hero', 'age': 5}
+
+    # Should allow 10 requests
+    for i in range(10):
+        resp = ratelimit_client.post('/generate-story', data=json.dumps(payload), headers=headers)
+        assert resp.status_code == 200, f"Request {i+1} failed"
+    
+    # 11th request should be 429
+    assert ratelimit_client.post('/generate-story', data=json.dumps(payload), headers=headers).status_code == 429
+
+def test_family_tier_limits(ratelimit_client, ratelimit_app):
+    """
+    Test that family tier users have even higher limits (15/min).
+    """
+    with ratelimit_app.app_context():
+        user = User(
+            id='family_user_test',
+            username='familyuser',
+            email='family@example.com',
+            password_hash='hash',
+            subscription_tier='family'
+        )
+        db.session.add(user)
+        db.session.commit()
+
+    headers = {'X-User-ID': 'family_user_test', 'Content-Type': 'application/json'}
+    payload = {'character': 'Test Hero', 'age': 5}
+
+    # Should allow 15 requests
+    for i in range(15):
+        resp = ratelimit_client.post('/generate-story', data=json.dumps(payload), headers=headers)
+        assert resp.status_code == 200, f"Request {i+1} failed"
+    
+    # 16th request should be 429
+    assert ratelimit_client.post('/generate-story', data=json.dumps(payload), headers=headers).status_code == 429
+
+def test_rate_limit_reset_behavior(ratelimit_client, ratelimit_app):
+    """
+    Test that rate limits eventually reset.
+    """
+    # Use a very low limit for quick testing
+    @ratelimit_app.route("/quick-reset")
+    @ratelimit_app.limiter.limit("1 per 2 seconds")
+    def quick_reset():
+        return flask.jsonify({"status": "ok"}), 200
+
+    headers = {'X-User-ID': 'reset_user_test'}
+    
+    # 1st request ok
+    assert ratelimit_client.get('/quick-reset', headers=headers).status_code == 200
+    # 2nd request 429
+    assert ratelimit_client.get('/quick-reset', headers=headers).status_code == 429
+    
+    # Wait for reset
+    time.sleep(2.1)
+    
+    # 3rd request ok again
+    assert ratelimit_client.get('/quick-reset', headers=headers).status_code == 200
+
+def test_byok_tier_limits(ratelimit_client, ratelimit_app):
+    """
+    Test that BYOK users have extremely high limits (effectively unlimited for tests).
+    """
+    with ratelimit_app.app_context():
+        user = User(
+            id='byok_user_test',
+            username='byokuser',
+            email='byok@example.com',
+            password_hash='hash',
+            subscription_tier='byok'
+        )
+        db.session.add(user)
+        db.session.commit()
+
+    headers = {'X-User-ID': 'byok_user_test', 'Content-Type': 'application/json'}
+    payload = {'character': 'Test Hero', 'age': 5}
+
+    # Should allow 20 requests without any issue (higher than family limit)
+    for i in range(20):
+        resp = ratelimit_client.post('/generate-story', data=json.dumps(payload), headers=headers)
+        assert resp.status_code == 200, f"Request {i+1} failed"
 
 def test_ip_fallback_identifier_when_no_user_header(ratelimit_client):
     """
