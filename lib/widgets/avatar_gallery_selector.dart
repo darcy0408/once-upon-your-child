@@ -22,13 +22,13 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
   final AvatarService _avatarService = AvatarService();
   List<String> _avatars = [];
   Map<String, List<String>> _filterOptions = {};
-  
+
   // Active filters
   String? _selectedAgeGroup;
   String? _selectedSkinTone;
   String? _selectedGender;
   String? _selectedHairColor;
-  
+
   bool _isLoading = true;
   String? _selectedAvatarPath;
 
@@ -40,7 +40,7 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
 
   Future<void> _initializeService() async {
     await _avatarService.initialize();
-    
+
     if (mounted) {
       setState(() {
         _filterOptions = _avatarService.getCuratedOptions();
@@ -66,16 +66,15 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
       _selectedAvatarPath = assetPath;
     });
 
-    // Create avatar object
     final avatarId = assetPath.split('/').last.split('.').first;
     final avatar = GeneratedAvatar(
       id: avatarId,
-      imageBase64: assetPath, // Storing asset path for local rendering
+      imageBase64: assetPath,
       seed: avatarId,
       style: 'pixar',
       attributes: {
-        'ageGroup': _selectedAgeGroup ?? 'any',
-        'skinTone': _selectedSkinTone ?? 'any',
+        'ageGroup': _selectedAgeGroup ?? 'all',
+        'skinTone': _selectedSkinTone ?? 'all',
       },
       generatedAt: DateTime.now(),
     );
@@ -85,16 +84,29 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
 
   @override
   Widget build(BuildContext context) {
+    final hasActiveFilters = _selectedAgeGroup != null ||
+        _selectedSkinTone != null ||
+        _selectedHairColor != null ||
+        _selectedGender != null;
+
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
         constraints: const BoxConstraints(maxWidth: 900, maxHeight: 800),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFF9E6),
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFF2C1B47),
+              Color(0xFF5C3A84),
+              Color(0xFF4A2F72),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
+              color: Colors.black.withAlpha(52),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -106,7 +118,11 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(
-                color: Color(0xFFFFD93D),
+                gradient: LinearGradient(
+                  colors: [Color(0xFFFFC44D), Color(0xFFFF9F43)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
@@ -114,7 +130,8 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.collections, color: Colors.white, size: 28),
+                  const Icon(Icons.auto_awesome,
+                      color: Color(0xFF3B2363), size: 28),
                   const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
@@ -122,47 +139,76 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Color(0xFF3B2363),
                       ),
                     ),
                   ),
                   IconButton(
                     onPressed: widget.onCancel,
-                    icon: const Icon(Icons.close, color: Colors.white),
+                    icon: const Icon(Icons.close, color: Color(0xFF3B2363)),
                   ),
                 ],
               ),
             ),
 
-            // Filter Bar
+            // Chip filters (no dropdowns)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(237),
+                border: Border(
+                  bottom: BorderSide(color: Colors.white.withAlpha(120)),
+                ),
+              ),
               child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildFilterDropdown('Age', _filterOptions['ageGroups'], _selectedAgeGroup, (v) {
-                      setState(() => _selectedAgeGroup = v);
-                      _refreshAvatars();
-                    }),
-                    const SizedBox(width: 12),
-                    _buildFilterDropdown('Skin', _filterOptions['skinTones'], _selectedSkinTone, (v) {
-                      setState(() => _selectedSkinTone = v);
-                      _refreshAvatars();
-                    }),
-                    const SizedBox(width: 12),
-                    _buildFilterDropdown('Hair Color', _filterOptions['hairColors'], _selectedHairColor, (v) {
-                      setState(() => _selectedHairColor = v);
-                      _refreshAvatars();
-                    }),
-                    const SizedBox(width: 12),
-                    _buildFilterDropdown('Style', _filterOptions['genders'], _selectedGender, (v) {
-                      setState(() => _selectedGender = v);
-                      _refreshAvatars();
-                    }),
-                    if (_selectedAgeGroup != null || _selectedSkinTone != null || _selectedHairColor != null || _selectedGender != null) ...[
-                      const SizedBox(width: 12),
+                    _buildFilterSection(
+                      title: 'Age',
+                      icon: Icons.cake_outlined,
+                      options: _filterOptions['ageGroups'] ?? const [],
+                      selectedValue: _selectedAgeGroup,
+                      onChanged: (value) {
+                        setState(() => _selectedAgeGroup = value);
+                        _refreshAvatars();
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    _buildFilterSection(
+                      title: 'Skin Tone',
+                      icon: Icons.palette_outlined,
+                      options: _filterOptions['skinTones'] ?? const [],
+                      selectedValue: _selectedSkinTone,
+                      onChanged: (value) {
+                        setState(() => _selectedSkinTone = value);
+                        _refreshAvatars();
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    _buildFilterSection(
+                      title: 'Hair Color',
+                      icon: Icons.brush_outlined,
+                      options: _filterOptions['hairColors'] ?? const [],
+                      selectedValue: _selectedHairColor,
+                      onChanged: (value) {
+                        setState(() => _selectedHairColor = value);
+                        _refreshAvatars();
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    _buildFilterSection(
+                      title: 'Vibe',
+                      icon: Icons.auto_awesome_outlined,
+                      options: _filterOptions['genders'] ?? const [],
+                      selectedValue: _selectedGender,
+                      onChanged: (value) {
+                        setState(() => _selectedGender = value);
+                        _refreshAvatars();
+                      },
+                    ),
+                    if (hasActiveFilters) ...[
+                      const SizedBox(height: 10),
                       TextButton.icon(
                         onPressed: () {
                           setState(() {
@@ -174,7 +220,10 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
                           _refreshAvatars();
                         },
                         icon: const Icon(Icons.clear, size: 16),
-                        label: const Text('Clear Filters'),
+                        label: const Text('Show all looks'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFF5C3A84),
+                        ),
                       ),
                     ],
                   ],
@@ -191,40 +240,71 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.person_off, size: 64, color: Colors.grey[400]),
+                              Icon(
+                                Icons.person_off,
+                                size: 64,
+                                color: Colors.white.withAlpha(204),
+                              ),
                               const SizedBox(height: 16),
                               Text(
-                                'No avatars match these filters.\nTry clearing some filters!',
+                                'No heroes match this combo yet.\nTry a different vibe!',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                                style: TextStyle(
+                                  color: Colors.white.withAlpha(230),
+                                  fontSize: 16,
+                                ),
                               ),
                             ],
                           ),
                         )
-                      : GridView.builder(
-                          padding: const EdgeInsets.all(20),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4, // Responsive ideally, but 4 is safe for tablet/dialog
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                            childAspectRatio: 1.0,
+                      : Container(
+                          decoration: const BoxDecoration(
+                            gradient: RadialGradient(
+                              colors: [Color(0x447E57C2), Color(0x002C1B47)],
+                              radius: 1.2,
+                              center: Alignment(-0.2, -0.8),
+                            ),
                           ),
-                          itemCount: _avatars.length,
-                          itemBuilder: (context, index) {
-                            final assetPath = _avatars[index];
-                            final isSelected = _selectedAvatarPath == assetPath;
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final maxWidth = constraints.maxWidth;
+                              final crossAxisCount = maxWidth >= 820
+                                  ? 4
+                                  : maxWidth >= 560
+                                      ? 3
+                                      : 2;
 
-                            return GestureDetector(
-                              onTap: () => _selectAvatar(assetPath),
-                              child: MagicalAvatar(
-                                assetPath: assetPath,
-                                size: 150,
-                                borderWidth: isSelected ? 4 : 0,
-                                glowColor: isSelected ? const Color(0xFF6C63FF) : Colors.transparent,
-                                enableParticles: isSelected,
-                              ),
-                            );
-                          },
+                              return GridView.builder(
+                                padding: const EdgeInsets.all(20),
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: crossAxisCount,
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 16,
+                                  childAspectRatio: 1.0,
+                                ),
+                                itemCount: _avatars.length,
+                                itemBuilder: (context, index) {
+                                  final assetPath = _avatars[index];
+                                  final isSelected =
+                                      _selectedAvatarPath == assetPath;
+
+                                  return GestureDetector(
+                                    onTap: () => _selectAvatar(assetPath),
+                                    child: MagicalAvatar(
+                                      assetPath: assetPath,
+                                      size: 150,
+                                      borderWidth: isSelected ? 4 : 0,
+                                      glowColor: isSelected
+                                          ? const Color(0xFFFFC44D)
+                                          : Colors.transparent,
+                                      enableParticles: isSelected,
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
                         ),
             ),
           ],
@@ -233,46 +313,81 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
     );
   }
 
-  Widget _buildFilterDropdown(
-    String label,
-    List<String>? options,
-    String? currentValue,
-    ValueChanged<String?> onChanged,
-  ) {
-    if (options == null || options.isEmpty) return const SizedBox.shrink();
+  Widget _buildFilterSection({
+    required String title,
+    required IconData icon,
+    required List<String> options,
+    required String? selectedValue,
+    required ValueChanged<String?> onChanged,
+  }) {
+    if (options.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: currentValue != null ? const Color(0xFFFFF3E0) : Colors.grey[100],
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: currentValue != null ? const Color(0xFFFFD93D) : Colors.grey[300]!,
-        ),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: currentValue,
-          hint: Text(label, style: const TextStyle(fontSize: 14)),
-          icon: const Icon(Icons.arrow_drop_down),
-          isDense: true,
-          onChanged: onChanged,
-          items: [
-            DropdownMenuItem<String>(
-              value: null,
-              child: Text('Any $label', style: const TextStyle(color: Colors.grey)),
-            ),
-            ...options.map((opt) => DropdownMenuItem(
-              value: opt,
-              child: Text(
-                opt.split('-').map((s) => s[0].toUpperCase() + s.substring(1)).join(' '),
-                style: const TextStyle(color: Colors.black87),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 16, color: const Color(0xFF4A2F72)),
+            const SizedBox(width: 6),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF4A2F72),
               ),
-            )),
+            ),
           ],
         ),
-      ),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options.map((option) {
+            final isSelected = selectedValue == option;
+            return ChoiceChip(
+              label: Text(
+                _friendlyLabelFor(option),
+                style: TextStyle(
+                  color: isSelected
+                      ? const Color(0xFF3B2363)
+                      : const Color(0xFF4A2F72),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              selected: isSelected,
+              selectedColor: const Color(0xFFFFD98A),
+              backgroundColor: const Color(0xFFF4ECFF),
+              side: BorderSide(
+                color: isSelected
+                    ? const Color(0xFFFFB347)
+                    : const Color(0xFFD9C6F0),
+              ),
+              onSelected: (_) {
+                onChanged(isSelected ? null : option);
+              },
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
-}
 
+  String _friendlyLabelFor(String value) {
+    switch (value) {
+      case 'masculine':
+        return 'Boyish';
+      case 'feminine':
+        return 'Girlish';
+      case 'androgynous':
+        return 'Mixed';
+      default:
+        return value
+            .split('-')
+            .map((segment) => segment.isEmpty
+                ? segment
+                : '${segment[0].toUpperCase()}${segment.substring(1)}')
+            .join(' ');
+    }
+  }
+}

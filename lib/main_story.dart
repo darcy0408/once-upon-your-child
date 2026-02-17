@@ -465,6 +465,16 @@ class _StoryScreenState extends State<StoryScreen> {
       );
     }
 
+    CurrentFeeling? currentFeeling;
+    if (guidedByFeeling && _selectedCharacter != null) {
+      if (!mounted) return;
+      currentFeeling = await PreStoryFeelingsDialog.show(
+        context: context,
+        characterName: _selectedCharacter!.name,
+        childAge: _selectedCharacter!.age,
+      );
+    }
+
     // Start loading state
     _startProgress();
 
@@ -501,6 +511,7 @@ class _StoryScreenState extends State<StoryScreen> {
         theme: theme,
         mode: mode,
         allCharacters: allSelectedCharacters,
+        currentFeeling: currentFeeling,
       );
 
       if (mounted) {
@@ -508,9 +519,6 @@ class _StoryScreenState extends State<StoryScreen> {
       }
 
       if (!mounted) return;
-
-      // TODO: Consider adding feelings check earlier in the process (before story generation)
-      // Removed the post-story feelings popup as it was disruptive to UX
 
       // Generate title and wisdom gem
       final story = storyResult.storyText;
@@ -547,9 +555,9 @@ class _StoryScreenState extends State<StoryScreen> {
       final storyLocal = StoryLocal.fromSavedStory(saved);
       await OfflineStoryService(IsarService.instance).saveStory(storyLocal);
 
-      // Update character evolution (no feelings data for now)
+      // Update character evolution with therapeutic context + optional feelings check-in
       await _updateCharacterEvolution(
-          allSelectedCharacters, _therapeuticCustomization, null);
+          allSelectedCharacters, _therapeuticCustomization, currentFeeling);
 
       // Record story creation for usage tracking
       await _subscriptionService.recordStoryCreation();
@@ -631,6 +639,7 @@ class _StoryScreenState extends State<StoryScreen> {
     required String theme,
     required String mode,
     required List<Character> allCharacters,
+    CurrentFeeling? currentFeeling,
   }) async {
     return await ApiServiceManager.generateStory(
       characterName: characterName,
@@ -651,7 +660,7 @@ class _StoryScreenState extends State<StoryScreen> {
       includeIllustrations: _includeIllustrations,
       subscriptionTier:
           (_currentSubscription?.tier ?? SubscriptionTier.free).name,
-      currentFeeling: null, // Could be added later
+      currentFeeling: currentFeeling?.toJson(),
     );
   }
 

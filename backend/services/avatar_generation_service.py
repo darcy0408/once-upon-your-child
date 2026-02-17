@@ -6,6 +6,7 @@ import base64
 import logging
 import os
 import re
+import io
 from datetime import datetime
 from typing import Dict, Optional, List
 from .avatar_prompt_service import AvatarPromptService
@@ -473,10 +474,10 @@ This prompt is designed for "Story Weaver," an app that transforms real-world im
         """
         Verify that generated image is non-photorealistic.
 
-        This is a basic implementation. Could be enhanced with:
-        - Gemini vision model to analyze the image
-        - Style classifier model
-        - Metadata analysis
+        This applies lightweight vision-based heuristics:
+        - Image decode and dimensions sanity
+        - Visual complexity checks (variance, edge density, color diversity)
+        - Reject obvious blank/invalid outputs
 
         Args:
             image_data: Image bytes to verify
@@ -484,15 +485,60 @@ This prompt is designed for "Story Weaver," an app that transforms real-world im
         Returns:
             True if image appears non-photorealistic, False otherwise
         """
-        # Basic check - for now just verify we have image data
-        # In production, this could use Gemini's vision capabilities to verify style
         if not image_data or len(image_data) < 1000:
             logger.warning("Image data suspiciously small")
             return False
 
-        # TODO: Implement vision-based verification
-        # For now, trust the prompt engineering and style anchors
-        return True
+        try:
+            from PIL import Image, ImageFilter, ImageStat
+
+            with Image.open(io.BytesIO(image_data)) as img:
+                if img.width < 128 or img.height < 128:
+                    logger.warning(
+                        "Avatar image too small for verification: %sx%s",
+                        img.width,
+                        img.height,
+                    )
+                    return False
+
+                sample = img.convert("RGB")
+                sample.thumbnail((128, 128))
+
+                stat = ImageStat.Stat(sample)
+                avg_stddev = sum(stat.stddev) / max(1, len(stat.stddev))
+
+                edges = sample.filter(ImageFilter.FIND_EDGES)
+                edge_stat = ImageStat.Stat(edges)
+                edge_mean = sum(edge_stat.mean) / max(1, len(edge_stat.mean))
+
+                palette = sample.convert("P", palette=Image.ADAPTIVE, colors=64)
+                histogram = palette.histogram()
+                unique_colors = sum(1 for value in histogram if value > 0)
+                color_density = unique_colors / 64.0
+
+                logger.debug(
+                    "Avatar vision verification metrics: stddev=%.2f edge_mean=%.2f color_density=%.2f",
+                    avg_stddev,
+                    edge_mean,
+                    color_density,
+                )
+
+                # Reject obviously blank/low-information images.
+                if avg_stddev < 10 or edge_mean < 2 or color_density < 0.08:
+                    logger.warning(
+                        "Avatar vision verification failed: low visual complexity "
+                        "(stddev=%.2f edge_mean=%.2f color_density=%.2f)",
+                        avg_stddev,
+                        edge_mean,
+                        color_density,
+                    )
+                    return False
+
+                return True
+
+        except Exception as e:
+            logger.warning("Avatar vision verification failed due to analyzer error: %s", e)
+            return False
 
     def get_fallback_avatars(self, style: str = None) -> List[Dict]:
         """

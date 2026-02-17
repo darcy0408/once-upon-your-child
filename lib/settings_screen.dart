@@ -141,15 +141,16 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     );
 
     try {
-      final testUrl =
-          Uri.parse('https://generativelanguage.googleapis.com/v1beta/models?key=$trimmedKey');
+      final testUrl = Uri.parse(
+          'https://generativelanguage.googleapis.com/v1beta/models?key=$trimmedKey');
       final response = await http.get(testUrl).timeout(
             const Duration(seconds: 10),
           );
 
       if (response.statusCode == 200) {
         state = state.copyWith(
-          validationMessage: '✓ API Key is valid! All premium features unlocked.',
+          validationMessage:
+              '✓ API Key is valid! All premium features unlocked.',
           isValid: true,
           isValidating: false,
         );
@@ -204,7 +205,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await prefs.setBool('use_own_api_key', state.useOwnApiKey);
     await SecureStorageService.saveApiKey('gemini', state.apiKey.trim());
 
-    final premiumFlag = isPremium ?? (state.useOwnApiKey && state.isValid == true);
+    final premiumFlag =
+        isPremium ?? (state.useOwnApiKey && state.isValid == true);
     await prefs.setBool('is_premium_byok', premiumFlag);
   }
 }
@@ -223,13 +225,15 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late final TextEditingController _apiKeyController;
+  ProviderSubscription<SettingsState>? _settingsSubscription;
 
   @override
   void initState() {
     super.initState();
     _apiKeyController = TextEditingController();
     _apiKeyController.addListener(_onApiKeyChanged);
-    ref.listen<SettingsState>(settingsProvider, (previous, next) {
+    _settingsSubscription =
+        ref.listenManual<SettingsState>(settingsProvider, (previous, next) {
       if (_apiKeyController.text != next.apiKey) {
         _apiKeyController.text = next.apiKey;
       }
@@ -245,6 +249,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   void dispose() {
+    _settingsSubscription?.close();
     _apiKeyController.dispose();
     super.dispose();
   }
@@ -382,8 +387,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
             const SizedBox(height: AppSpacing.md),
             AppButton.primary(
-              label: settings.isValidating ? 'Validating...' : 'Validate & Save',
-              onPressed: settings.isValidating ? null : () => _onValidateApiKey(context),
+              label:
+                  settings.isValidating ? 'Validating...' : 'Validate & Save',
+              onPressed: settings.isValidating
+                  ? null
+                  : () => _onValidateApiKey(context),
               icon: settings.isValidating ? null : Icons.verified_user,
             ),
             if (settings.isValidating)
@@ -414,7 +422,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           children: [
             IconButton(
               icon: Icon(
-                settings.obscureApiKey ? Icons.visibility : Icons.visibility_off,
+                settings.obscureApiKey
+                    ? Icons.visibility
+                    : Icons.visibility_off,
               ),
               onPressed: ref.read(settingsProvider.notifier).toggleObscure,
             ),

@@ -84,9 +84,10 @@ class AvatarService {
   /// Get available options for curated avatars
   Map<String, List<String>> getCuratedOptions() {
     if (_localMetadata == null) return {};
-    
+
     final categories = _localMetadata!['categories'] as Map<String, dynamic>;
-    return categories.map((key, value) => MapEntry(key, List<String>.from(value)));
+    return categories
+        .map((key, value) => MapEntry(key, List<String>.from(value)));
   }
 
   /// Get curated avatars matching filters
@@ -100,17 +101,50 @@ class AvatarService {
 
     final avatars = _localMetadata!['avatars'] as Map<String, dynamic>;
     final matches = <String>[];
+    final targetGender = _normalizeGenderFilterValue(gender);
 
     avatars.forEach((filename, data) {
       if (ageGroup != null && data['ageGroup'] != ageGroup) return;
       if (skinTone != null && data['skinTone'] != skinTone) return;
-      if (gender != null && data['gender'] != gender) return;
       if (hairColor != null && data['hairColor'] != hairColor) return;
-      
+      if (targetGender != null) {
+        final avatarGender = _normalizeAvatarGender(data['gender']?.toString());
+        if (avatarGender != targetGender) return;
+      }
+
       matches.add('assets/avatars/midjourney/$filename');
     });
 
     return matches;
+  }
+
+  String? _normalizeGenderFilterValue(String? filterValue) {
+    switch (filterValue) {
+      case 'masculine':
+        return 'male';
+      case 'feminine':
+        return 'female';
+      case 'androgynous':
+        return 'neutral';
+      default:
+        return filterValue;
+    }
+  }
+
+  String? _normalizeAvatarGender(String? value) {
+    switch (value) {
+      case 'male':
+      case 'masculine':
+        return 'male';
+      case 'female':
+      case 'feminine':
+        return 'female';
+      case 'neutral':
+      case 'androgynous':
+        return 'neutral';
+      default:
+        return value;
+    }
   }
 
   /// Ensure service is initialized before use

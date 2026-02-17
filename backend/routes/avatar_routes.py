@@ -1,9 +1,16 @@
 """
 Avatar Routes - API endpoints for magical avatar generation
 """
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, make_response
 import logging
 from functools import wraps
+import threading
+import time
+
+try:
+    from backend.utils.app_helpers import get_user_tier, get_user_identifier
+except ImportError:
+    from utils.app_helpers import get_user_tier, get_user_identifier
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +19,19 @@ avatar_bp = Blueprint('avatar', __name__)
 
 # Lazy import to avoid circular dependencies
 _avatar_service = None
+_RATE_LIMIT_WINDOW_SECONDS = 3600
+_rate_limit_hits = {}
+_rate_limit_lock = threading.Lock()
+
+
+def _resolve_hourly_limit(user_tier: str, free: int, premium: int, byok):
+    """Resolve hourly limit for a user tier."""
+    tier = (user_tier or 'free').lower()
+    if tier == 'byok':
+        return byok
+    if tier in ('premium', 'family'):
+        return premium
+    return free
 
 
 def get_avatar_service():
@@ -35,10 +55,42 @@ def rate_limit_by_user_tier(free=5, premium=50, byok=None):
     def decorator(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
-            # TODO: Implement rate limiting based on user tier
-            # For now, allow all requests
-            # In production, integrate with Flask-Limiter or similar
-            return f(*args, **kwargs)
+            user_tier = get_user_tier()
+            resolved_limit = _resolve_hourly_limit(user_tier, free, premium, byok)
+
+            # Unlimited tier (e.g., BYOK when byok=None)
+            if resolved_limit is None:
+                return f(*args, **kwargs)
+
+            now = time.time()
+            key = f"{request.endpoint}:{get_user_identifier()}:{(user_tier or 'free').lower()}"
+
+            with _rate_limit_lock:
+                hits = _rate_limit_hits.setdefault(key, [])
+                cutoff = now - _RATE_LIMIT_WINDOW_SECONDS
+                hits[:] = [ts for ts in hits if ts > cutoff]
+
+                if len(hits) >= int(resolved_limit):
+                    retry_after = int(max(1, _RATE_LIMIT_WINDOW_SECONDS - (now - hits[0])))
+                    return jsonify({
+                        'status': 'error',
+                        'error_code': 'RATE_LIMIT_EXCEEDED',
+                        'message': get_error_message('rate_limit'),
+                        'user_tier': user_tier or 'free',
+                        'limit_per_hour': int(resolved_limit),
+                        'retry_after_seconds': retry_after
+                    }), 429
+
+                hits.append(now)
+                remaining = max(0, int(resolved_limit) - len(hits))
+                reset_in = int(max(1, _RATE_LIMIT_WINDOW_SECONDS - (now - hits[0])))
+
+            response = make_response(f(*args, **kwargs))
+            response.headers['X-Avatar-RateLimit-Limit'] = str(int(resolved_limit))
+            response.headers['X-Avatar-RateLimit-Remaining'] = str(remaining)
+            response.headers['X-Avatar-RateLimit-Reset'] = str(reset_in)
+            response.headers['X-Avatar-RateLimit-Tier'] = (user_tier or 'free').lower()
+            return response
         return wrapped
     return decorator
 

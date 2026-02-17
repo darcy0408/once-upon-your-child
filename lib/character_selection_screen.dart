@@ -17,6 +17,7 @@ class CharacterSelectionScreen extends StatefulWidget {
 
 class _CharacterSelectionScreenState extends State<CharacterSelectionScreen> {
   late Future<List<Character>> _charactersFuture;
+  Character? _selectedCharacter;
 
   @override
   void initState() {
@@ -31,8 +32,9 @@ class _CharacterSelectionScreenState extends State<CharacterSelectionScreen> {
       final List<dynamic> data = response['data'] is List
           ? response['data'] as List<dynamic>
           : (response['items'] as List<dynamic>? ?? const []);
-      final characters =
-          data.map((json) => Character.fromJson(json as Map<String, dynamic>)).toList();
+      final characters = data
+          .map((json) => Character.fromJson(json as Map<String, dynamic>))
+          .toList();
 
       // Sync to local storage for offline access
       try {
@@ -64,9 +66,20 @@ class _CharacterSelectionScreenState extends State<CharacterSelectionScreen> {
   }
 
   void _selectCharacter(Character character) {
-    // TODO: Implement the logic to proceed with the selected character
-    // For now, we'll just pop and return the character
-    Navigator.of(context).pop(character);
+    setState(() {
+      _selectedCharacter = character;
+    });
+  }
+
+  void _proceedWithSelectedCharacter() {
+    final selected = _selectedCharacter;
+    if (selected == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a character first.')),
+      );
+      return;
+    }
+    Navigator.of(context).pop(selected);
   }
 
   @override
@@ -104,6 +117,28 @@ class _CharacterSelectionScreenState extends State<CharacterSelectionScreen> {
         label: const Text('Create New Character'),
         backgroundColor: Colors.deepPurple,
       ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: ElevatedButton.icon(
+            onPressed: _selectedCharacter == null
+                ? null
+                : _proceedWithSelectedCharacter,
+            icon: const Icon(Icons.arrow_forward),
+            label: Text(
+              _selectedCharacter == null
+                  ? 'Select a Character to Continue'
+                  : 'Continue as ${_selectedCharacter!.name}',
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -133,7 +168,6 @@ class _CharacterSelectionScreenState extends State<CharacterSelectionScreen> {
     );
   }
 
-
   Widget _buildCharacterList(List<Character> characters) {
     return GridView.builder(
       padding: const EdgeInsets.all(16.0),
@@ -147,9 +181,18 @@ class _CharacterSelectionScreenState extends State<CharacterSelectionScreen> {
       itemBuilder: (context, index) {
         final character = characters[index];
         return Card(
+          color: _selectedCharacter?.id == character.id
+              ? Colors.deepPurple.withValues(alpha: 0.08)
+              : null,
           elevation: 4,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: _selectedCharacter?.id == character.id
+                  ? Colors.deepPurple
+                  : Colors.transparent,
+              width: 2,
+            ),
           ),
           child: InkWell(
             onTap: () => _selectCharacter(character),

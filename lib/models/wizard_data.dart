@@ -20,6 +20,7 @@ class WizardData {
   String selectedSkinTone = '';
   String selectedOutfit = '';
   GeneratedAvatar? generatedAvatar; // AI-generated avatar
+  String? customAvatarPath; // Path to a custom avatar image (local file) for story illustrations
 
   // Advanced character features
   List<String> fears = [];

@@ -1,13 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
-import 'models/generated_avatar.dart';
-import 'services/avatar_generation_service.dart';
 import 'avatar_models.dart';
 import 'config/environment.dart';
 
@@ -118,15 +115,16 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
           
           // Save locally
           final localPath = await _saveImageLocally(imageBase64);
-          
-          setState(() {
-            _generatedImagePath = localPath;
-            _isGenerating = false;
-          });
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Magical Avatar Created! ✨')),
-          );
+
+          if (mounted) {
+            setState(() {
+              _generatedImagePath = localPath;
+              _isGenerating = false;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Magical Avatar Created! ✨')),
+            );
+          }
         } else {
           throw Exception(data['message'] ?? 'Generation failed');
         }
@@ -135,12 +133,14 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
       }
     } catch (e) {
       debugPrint('❌ Error generating custom avatar: $e');
-      setState(() {
-        _isGenerating = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      if (mounted) {
+        setState(() {
+          _isGenerating = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Our magic paintbrush hit a snag! Let\'s try again! ✨')),
+        );
+      }
     }
   }
 
@@ -211,7 +211,32 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                   icon: const Icon(Icons.refresh),
                   label: const Text('Retake Photo'),
                 ),
-              
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: _isGenerating ? null : _takePhoto,
+                    icon: const Icon(Icons.camera_alt),
+                    label: const Text('Camera'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.indigo,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: _isGenerating ? null : _pickFromGallery,
+                    icon: const Icon(Icons.photo_library),
+                    label: const Text('Gallery'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.purple,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+
               const SizedBox(height: 20),
               
               // Inputs
@@ -234,7 +259,13 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                   prefixIcon: Icon(Icons.cake),
                 ),
                 keyboardType: TextInputType.number,
-                validator: (value) => (value == null || value.isEmpty) ? 'Enter age' : null,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Enter age';
+                  final age = int.tryParse(value);
+                  if (age == null) return 'Enter a valid number';
+                  if (age < 3 || age > 18) return 'Age must be between 3 and 18';
+                  return null;
+                },
               ),
               const SizedBox(height: 15),
               
@@ -326,7 +357,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                 )
               else
                 ElevatedButton(
-                  onPressed: _generate_avatar,
+                  onPressed: _generateAvatar,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.indigo,
                     foregroundColor: Colors.white,

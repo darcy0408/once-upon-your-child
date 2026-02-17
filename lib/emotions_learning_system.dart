@@ -3,16 +3,17 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'services/therapeutic_analytics.dart';
 
 /// Emotion categories for kids to learn
 enum EmotionCategory {
-  happy,      // Joy, excited, proud, grateful
-  sad,        // Disappointed, lonely, hurt
-  angry,      // Frustrated, annoyed, furious
-  scared,     // Worried, nervous, afraid
-  surprised,  // Amazed, shocked, confused
-  calm,       // Peaceful, relaxed, content
-  mixed,      // Conflicted, overwhelmed
+  happy, // Joy, excited, proud, grateful
+  sad, // Disappointed, lonely, hurt
+  angry, // Frustrated, annoyed, furious
+  scared, // Worried, nervous, afraid
+  surprised, // Amazed, shocked, confused
+  calm, // Peaceful, relaxed, content
+  mixed, // Conflicted, overwhelmed
 }
 
 /// Individual emotion with teaching info
@@ -39,7 +40,8 @@ class Emotion {
     this.intensityLevel = 3,
   });
 
-  Color get color => Color(int.parse(colorHex.substring(1), radix: 16) + 0xFF000000);
+  Color get color =>
+      Color(int.parse(colorHex.substring(1), radix: 16) + 0xFF000000);
 }
 
 /// How a character felt in a story moment
@@ -426,12 +428,11 @@ class EmotionsLearningService {
     try {
       final emotion = getEmotionById(checkIn.emotionId);
       if (emotion != null) {
-        // TODO: Add TherapeuticAnalytics tracking
-        // await TherapeuticAnalytics.trackFeelingsCheckIn(
-        //   emotionName: checkIn.selectedFeeling.tertiary,
-        //   intensity: checkIn.intensity,
-        //   copingStrategies: checkIn.copingStrategies ?? [],
-        // );
+        await TherapeuticAnalytics.trackFeelingsCheckIn(
+          emotionName: emotion.name,
+          intensity: checkIn.intensity,
+          copingStrategies: checkIn.copingStrategies,
+        );
       }
     } catch (e) {
       // Analytics failure shouldn't break check-in
