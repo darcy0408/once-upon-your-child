@@ -102,7 +102,7 @@ class _MagicOrbWidgetState extends State<MagicOrbWidget>
               final soft = Color.lerp(glow, Colors.white, 0.55)!;
               final deep = Color.lerp(glow, Colors.black, 0.15)!;
 
-              return Container(
+              return SizedBox(
                 width: widget.size * 1.35,
                 height: widget.size * 1.35,
                 child: Stack(

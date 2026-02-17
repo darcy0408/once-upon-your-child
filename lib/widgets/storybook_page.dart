@@ -96,7 +96,7 @@ class StoryBookPage extends StatelessWidget {
           Positioned.fill(
             child: IgnorePointer(
               child: CustomPaint(
-                painter: PaperTexturePainter(
+                painter: const PaperTexturePainter(
                   opacity: 0.05,
                 ),
               ),
@@ -114,7 +114,7 @@ class StoryBookPage extends StatelessWidget {
           Positioned.fill(
             child: IgnorePointer(
               child: CustomPaint(
-                painter: PaperTexturePainter(
+                painter: const PaperTexturePainter(
                   opacity: 0.04,
                 ),
               ),

@@ -101,7 +101,7 @@ class _GoldenTicketAnimationState extends State<GoldenTicketAnimation>
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black.withOpacity(0.7),
+      color: Colors.black.withValues(alpha: 0.7),
       child: Center(
         child: AnimatedBuilder(
           animation: _mainController,
@@ -132,7 +132,7 @@ class _GoldenTicketAnimationState extends State<GoldenTicketAnimation>
         border: Border.all(color: AppColors.gold, width: 4),
         boxShadow: [
           BoxShadow(
-            color: AppColors.gold.withOpacity(0.5),
+            color: AppColors.gold.withValues(alpha: 0.5),
             blurRadius: 30,
             spreadRadius: 10,
           ),
@@ -217,7 +217,7 @@ class _GoldenTicketAnimationState extends State<GoldenTicketAnimation>
         border: Border.all(color: Colors.white, width: 4),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),

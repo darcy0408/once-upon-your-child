@@ -21,6 +21,14 @@ class ImageProgressOrb extends StatefulWidget {
 class _ImageProgressOrbState extends State<ImageProgressOrb>
     with SingleTickerProviderStateMixin {
   late AnimationController _shimmerController;
+  String get _orbAssetPath {
+    final isDoneIcon = widget.icon == Icons.check_rounded ||
+        widget.icon == Icons.check ||
+        widget.icon == Icons.check_circle;
+    return isDoneIcon
+        ? 'assets/images/ui/glassy/progress_done_orb.png'
+        : 'assets/images/ui/glassy/progress_active_orb.png';
+  }
 
   @override
   void initState() {
@@ -90,8 +98,8 @@ class _ImageProgressOrbState extends State<ImageProgressOrb>
             ),
             child: ClipOval(
               child: Image.asset(
-                'assets/images/ui/Progress Indicator.jpg',
-                fit: BoxFit.cover,
+                _orbAssetPath,
+                fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
                     decoration: const BoxDecoration(

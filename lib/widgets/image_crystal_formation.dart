@@ -38,16 +38,16 @@ class _ImageCrystalFormationState extends State<ImageCrystalFormation>
     super.dispose();
   }
 
-  IconData _getIcon(String type) {
+  String _getImagePath(String type) {
     switch (type) {
       case 'quick':
-        return Icons.bolt_rounded;
+        return 'assets/images/ui/glassy/quick_orb.png';
       case 'classic':
-        return Icons.auto_stories_rounded;
+        return 'assets/images/ui/glassy/classic_orb.png';
       case 'epic':
-        return Icons.local_fire_department_rounded;
+        return 'assets/images/ui/glassy/epic_orb.png';
       default:
-        return Icons.auto_awesome_rounded;
+        return 'assets/images/ui/glassy/classic_orb.png';
     }
   }
 
@@ -116,7 +116,7 @@ class _ImageCrystalFormationState extends State<ImageCrystalFormation>
                           },
                         ),
 
-                      // Crystal orb with glow
+                      // Crystal orb artwork (transparent PNG)
                       Container(
                         width: crystalSize,
                         height: crystalSize,
@@ -148,23 +148,10 @@ class _ImageCrystalFormationState extends State<ImageCrystalFormation>
                                   ),
                                 ],
                         ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: RadialGradient(
-                              colors: [
-                                Colors.white.withValues(alpha: 0.4),
-                                glowColor.withValues(alpha: 0.65),
-                                const Color(0xFF2A1E3D).withValues(alpha: 0.88),
-                              ],
-                              stops: const [0.0, 0.4, 1.0],
-                            ),
-                          ),
-                          child: Icon(
-                            _getIcon(widget.type),
-                            size: crystalSize * 0.48,
-                            color: Colors.white.withValues(alpha: 0.95),
-                          ),
+                        child: Image.asset(
+                          _getImagePath(widget.type),
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.high,
                         ),
                       ),
                     ],

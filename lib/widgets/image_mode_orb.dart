@@ -1,7 +1,6 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 
-/// Code-rendered mode orb. Keeps transparent visuals and avoids raster checkerboard artifacts.
+/// Image-backed mode orb using cleaned transparent assets.
 class ImageModeOrb extends StatefulWidget {
   final String modeType; // 'tales', 'rhyme', 'reading', 'pickpath'
   final String label;
@@ -25,268 +24,133 @@ class ImageModeOrb extends StatefulWidget {
 }
 
 class _ImageModeOrbState extends State<ImageModeOrb>
-    with TickerProviderStateMixin {
-  late AnimationController _shimmerController;
-  late AnimationController _galaxyController;
-  late AnimationController _floatController;
-  bool _isHovering = false;
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
-
-    _shimmerController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1800),
       vsync: this,
     );
-
-    _galaxyController = AnimationController(
-      duration: const Duration(seconds: 6),
-      vsync: this,
-    )..repeat();
-
-    _floatController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _syncShimmerState();
+    if (widget.isActive) {
+      _pulseController.repeat(reverse: true);
+    }
   }
 
   @override
   void didUpdateWidget(covariant ImageModeOrb oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.isActive != widget.isActive) {
-      _syncShimmerState();
+    if (widget.isActive && !oldWidget.isActive) {
+      _pulseController.repeat(reverse: true);
+    } else if (!widget.isActive && oldWidget.isActive) {
+      _pulseController.stop();
+      _pulseController.value = 0;
     }
-  }
-
-  void _syncShimmerState() {
-    if (widget.isActive || _isHovering) {
-      if (!_shimmerController.isAnimating) {
-        _shimmerController.repeat();
-      }
-    } else {
-      _shimmerController.stop();
-    }
-  }
-
-  void _handleTap() {
-    _shimmerController
-      ..stop()
-      ..forward(from: 0);
-    widget.onTap();
   }
 
   @override
   void dispose() {
-    _shimmerController.dispose();
-    _galaxyController.dispose();
-    _floatController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
-  IconData _getIcon(String modeType) {
-    switch (modeType) {
+  String _getAssetPath() {
+    switch (widget.modeType) {
       case 'tales':
-        return Icons.menu_book_rounded;
+        return 'assets/images/ui/glassy/tales_orb.png';
       case 'rhyme':
-        return Icons.music_note_rounded;
+        return 'assets/images/ui/glassy/rhyme_time_orb.png';
       case 'reading':
-        return Icons.chrome_reader_mode_rounded;
+        return 'assets/images/ui/glassy/easy_read_orb.png';
       case 'pickpath':
-        return Icons.alt_route_rounded;
+        return 'assets/images/ui/glassy/pick_path_orb.png';
       default:
-        return Icons.auto_awesome_rounded;
+        return 'assets/images/ui/glassy/tales_orb.png';
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    const inactiveText = Color(0xFF2F2748);
-    final activeGlow = widget.primaryColor;
+    final glowColor = widget.primaryColor;
 
-    return MouseRegion(
-      onEnter: (_) {
-        _isHovering = true;
-        _syncShimmerState();
-      },
-      onExit: (_) {
-        _isHovering = false;
-        _syncShimmerState();
-      },
-      child: GestureDetector(
-        onTap: _handleTap,
-        child: SizedBox(
-          width: 104,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedScale(
-                duration: const Duration(milliseconds: 220),
-                // Keep all mode circles visually the same size; use glow (not scale) for active state.
-                scale: 1.0,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Outermost radiant halo
-                    if (widget.isActive)
-                      Container(
-                        width: 124,
-                        height: 124,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              activeGlow.withValues(alpha: 0.3),
-                              activeGlow.withValues(alpha: 0.12),
-                              const Color(0xFFFFD478).withValues(alpha: 0.08),
-                              Colors.transparent,
-                            ],
-                            stops: const [0.0, 0.4, 0.7, 1.0],
-                          ),
-                        ),
-                      ),
-
-                    // Middle radiant halo
-                    if (widget.isActive)
-                      Container(
-                        width: 108,
-                        height: 108,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              activeGlow.withValues(alpha: 0.5),
-                              activeGlow.withValues(alpha: 0.25),
-                              activeGlow.withValues(alpha: 0.1),
-                              Colors.transparent,
-                            ],
-                            stops: const [0.0, 0.4, 0.7, 1.0],
-                          ),
-                        ),
-                      ),
-
-                    // Animated galaxy swirl background
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: SizedBox(
+        width: 104,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 88,
+              height: 88,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (widget.isActive)
                     AnimatedBuilder(
-                      animation: _galaxyController,
+                      animation: _pulseController,
                       builder: (context, child) {
+                        final t = _pulseController.value;
                         return Container(
-                          width: 76,
-                          height: 76,
+                          width: 96 + (12 * t),
+                          height: 96 + (12 * t),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: SweepGradient(
-                              transform: GradientRotation(
-                                _galaxyController.value * 2 * pi,
-                              ),
+                            gradient: RadialGradient(
                               colors: [
-                                widget.primaryColor.withValues(alpha: 0.6),
-                                widget.secondaryColor.withValues(alpha: 0.5),
-                                widget.primaryColor.withValues(alpha: 0.4),
-                                widget.secondaryColor.withValues(alpha: 0.5),
+                                glowColor.withValues(alpha: 0.45 * (1 - t * 0.3)),
+                                glowColor.withValues(alpha: 0.16 * (1 - t * 0.3)),
+                                Colors.transparent,
                               ],
-                              stops: const [0.0, 0.25, 0.5, 1.0],
                             ),
                           ),
                         );
                       },
                     ),
-
-                    // Mode icon orb
-                    AnimatedBuilder(
-                      animation: _floatController,
-                      builder: (context, child) {
-                        return Transform.translate(
-                          offset: Offset(0, _floatController.value * 3),
-                          child: Container(
-                            width: 76,
-                            height: 76,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                // Glass highlight
-                                BoxShadow(
-                                  color: Colors.white.withValues(
-                                      alpha: widget.isActive ? 0.6 : 0.3),
-                                  blurRadius: widget.isActive ? 12 : 6,
-                                  spreadRadius: widget.isActive ? -3 : -5,
-                                  offset: const Offset(-1, -3),
-                                ),
-                                // Primary glow
-                                BoxShadow(
-                                  color: widget.primaryColor.withValues(
-                                      alpha: widget.isActive ? 0.8 : 0.3),
-                                  blurRadius: widget.isActive ? 35 : 10,
-                                  spreadRadius: widget.isActive ? 5 : 0,
-                                ),
-                                // Secondary glow
-                                if (widget.isActive)
-                                  BoxShadow(
-                                    color: widget.secondaryColor
-                                        .withValues(alpha: 0.5),
-                                    blurRadius: 25,
-                                    spreadRadius: 3,
-                                  ),
-                              ],
-                            ),
-                            child: ClipOval(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      Colors.white.withValues(alpha: 0.35),
-                                      widget.primaryColor
-                                          .withValues(alpha: 0.75),
-                                      widget.secondaryColor
-                                          .withValues(alpha: 0.65),
-                                      const Color(0xFF2A1E3D)
-                                          .withValues(alpha: 0.9),
-                                    ],
-                                    stops: const [0.0, 0.32, 0.72, 1.0],
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Icon(
-                                    _getIcon(widget.modeType),
-                                    size: 34,
-                                    color: Colors.white.withValues(alpha: 0.95),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+                  AnimatedScale(
+                    duration: const Duration(milliseconds: 180),
+                    scale: widget.isActive ? 1.03 : 1.0,
+                    child: Image.asset(
+                      _getAssetPath(),
+                      width: 84,
+                      height: 84,
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.high,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              // Fixed-height label area keeps all orbs aligned in rows even with multi-line labels.
-              SizedBox(
-                height: 34,
-                child: Center(
-                  child: Text(
-                    widget.label,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: widget.isActive
-                          ? const Color(0xFF2F2748)
-                          : inactiveText,
-                      fontWeight:
-                          widget.isActive ? FontWeight.w700 : FontWeight.w600,
-                      fontSize: 13,
-                      height: 1.2,
-                    ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 34,
+              child: Center(
+                child: Text(
+                  widget.label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: const Color(0xFF2F2748),
+                    fontWeight:
+                        widget.isActive ? FontWeight.w800 : FontWeight.w600,
+                    fontSize: 13,
+                    height: 1.2,
+                    shadows: widget.isActive
+                        ? [
+                            Shadow(
+                              color: glowColor.withValues(alpha: 0.55),
+                              blurRadius: 8,
+                            ),
+                          ]
+                        : null,
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -29,7 +29,7 @@ class MoodSelection {
         'mood_id': moodId,
         'mood_name': moodName,
         'emoji': emoji,
-        'color': '#${color.toARGB32().toRadixString(16).substring(2)}',
+        'color': '#${color.value.toRadixString(16).substring(2)}',
       };
 
   factory MoodSelection.fromMoodEntry(MoodEntry entry) => MoodSelection(

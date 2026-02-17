@@ -106,61 +106,74 @@ class _CharacterPreviewState extends State<CharacterPreview>
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final previewSize = math.min(size.width * 0.8, 380.0);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.of(context).size.width;
+        final maxHeight = constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : MediaQuery.of(context).size.height * 0.5;
+        final previewSize = math.min(
+          math.min(maxWidth * 0.8, maxHeight * 0.88),
+          380.0,
+        );
 
-    return Semantics(
-      image: true,
-      label: 'Character preview',
-      child: Container(
-        height: size.height * 0.5, // Top 50% of screen
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              widget.backgroundColor.withAlpha(128), // 50% opacity
-              widget.backgroundColor.withAlpha(25), // 10% opacity
-            ],
-          ),
-        ),
-        child: Center(
-          child: SizedBox(
-            width: previewSize,
-            height: previewSize,
-            child: Stack(
-              alignment: Alignment.center,
-              clipBehavior: Clip.none,
-              children: [
-                // Rotating sparkles circle (if enabled)
-                if (widget.showSparkles)
-                  AnimatedBuilder(
-                    animation: _sparkleController,
-                    builder: (context, child) {
-                      return Transform.rotate(
-                        angle: _sparkleController.value * 2 * math.pi,
-                        child: child,
-                      );
-                    },
-                    child: _buildSparkleCircle(previewSize),
-                  ),
+        return Semantics(
+          image: true,
+          label: 'Character preview',
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  widget.backgroundColor.withAlpha(128), // 50% opacity
+                  widget.backgroundColor.withAlpha(25), // 10% opacity
+                ],
+              ),
+            ),
+            child: Center(
+              child: SizedBox(
+                width: previewSize,
+                height: previewSize,
+                child: Stack(
+                  alignment: Alignment.center,
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Rotating sparkles circle (if enabled)
+                    if (widget.showSparkles)
+                      AnimatedBuilder(
+                        animation: _sparkleController,
+                        builder: (context, child) {
+                          return Transform.rotate(
+                            angle: _sparkleController.value * 2 * math.pi,
+                            child: child,
+                          );
+                        },
+                        child: _buildSparkleCircle(previewSize),
+                      ),
 
-                // Character image/placeholder (no dotted circle frame)
-                AnimatedBuilder(
-                  animation: _breathingAnimation,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _scaleAnimation.value * _breathingAnimation.value,
-                      child: child,
-                    );
-                  },
-                  child: _buildCharacter(previewSize),
+                    // Character image/placeholder (no dotted circle frame)
+                    AnimatedBuilder(
+                      animation: _breathingAnimation,
+                      builder: (context, child) {
+                        return Transform.scale(
+                          scale:
+                              _scaleAnimation.value * _breathingAnimation.value,
+                          child: child,
+                        );
+                      },
+                      child: _buildCharacter(previewSize),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -194,17 +207,10 @@ class _CharacterPreviewState extends State<CharacterPreview>
     // Character fills the full preview area (no dotted circle border)
     final characterSize = size;
 
-    debugPrint('📺 CharacterPreview._buildCharacter:');
-    debugPrint('   - Has generatedAvatar: ${widget.generatedAvatar != null}');
-    debugPrint('   - Has characterImageUrl: ${widget.characterImageUrl != null}');
-    debugPrint('   - Placeholder emoji: ${widget.placeholderEmoji}');
-
     // Priority: Generated Avatar > Network Image > Placeholder Image
     if (widget.generatedAvatar != null) {
-      debugPrint('   ✅ Using generated avatar');
       return _buildGeneratedAvatar(characterSize);
     } else if (widget.characterImageUrl != null) {
-      debugPrint('   ✅ Using network image');
       return Container(
         width: characterSize,
         height: characterSize,
@@ -216,14 +222,12 @@ class _CharacterPreviewState extends State<CharacterPreview>
             height: characterSize,
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
-              debugPrint('   ⚠️ Network image failed, falling back to placeholder');
               return _buildPlaceholder(characterSize);
             },
           ),
         ),
       );
     } else {
-      debugPrint('   ✅ Using default image placeholder');
       return _buildPlaceholder(characterSize);
     }
   }
@@ -231,10 +235,10 @@ class _CharacterPreviewState extends State<CharacterPreview>
   Widget _buildGeneratedAvatar(double size) {
     try {
       final imageData = widget.generatedAvatar!.imageBase64;
-      debugPrint('   🎨 Avatar data: ${imageData.substring(0, math.min(imageData.length, 50))}...');
 
       // Check if it's a URL, Asset, or base64 data
-      final isUrl = imageData.startsWith('http://') || imageData.startsWith('https://');
+      final isUrl =
+          imageData.startsWith('http://') || imageData.startsWith('https://');
       final isAsset = imageData.startsWith('assets/');
 
       return Container(
@@ -258,7 +262,6 @@ class _CharacterPreviewState extends State<CharacterPreview>
                   height: size,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
-                    debugPrint('   ❌ Error loading avatar from Asset ($imageData): $error');
                     return _buildPlaceholder(size);
                   },
                 )
@@ -269,7 +272,6 @@ class _CharacterPreviewState extends State<CharacterPreview>
                       height: size,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        debugPrint('   ❌ Error loading avatar from URL: $error');
                         return _buildPlaceholder(size);
                       },
                     )
@@ -279,14 +281,12 @@ class _CharacterPreviewState extends State<CharacterPreview>
                       height: size,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        debugPrint('   ❌ Error decoding base64 avatar: $error');
                         return _buildPlaceholder(size);
                       },
                     ),
         ),
       );
     } catch (e) {
-      debugPrint('   ❌ Critical error in _buildGeneratedAvatar: $e');
       return _buildPlaceholder(size);
     }
   }
@@ -369,14 +369,12 @@ class _CharacterPreviewState extends State<CharacterPreview>
         ],
       ),
       child: Center(
-        child: Text(
-          widget.placeholderEmoji,
-          style: TextStyle(
-            fontSize: size * 0.5,
-          ),
+        child: Icon(
+          Icons.face_rounded,
+          size: size * 0.45,
+          color: AppColors.primary.withValues(alpha: 0.8),
         ),
       ),
     );
   }
 }
-
