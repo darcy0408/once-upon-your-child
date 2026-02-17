@@ -37,19 +37,22 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   String _characterEmoji = '👧';
   late TextEditingController _nameController;
   Character? _selectedExistingCharacter;
-  bool _isCreatingNew = true; // Toggle between creating new vs selecting existing
+  bool _isCreatingNew =
+      true; // Toggle between creating new vs selecting existing
   GeneratedAvatar? _generatedAvatar; // AI-generated avatar
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.wizardData.characterName);
+    _nameController =
+        TextEditingController(text: widget.wizardData.characterName);
 
     // Listen for completed avatar from background generation
     AvatarGenerationState().addListener(_onAvatarStateChanged);
 
     // If wizard data already has a characterId, try to find and select it
-    if (widget.wizardData.characterId != null && widget.availableCharacters.isNotEmpty) {
+    if (widget.wizardData.characterId != null &&
+        widget.availableCharacters.isNotEmpty) {
       _selectedExistingCharacter = widget.availableCharacters.firstWhere(
         (c) => c.id == widget.wizardData.characterId,
         orElse: () => widget.availableCharacters.first,
@@ -115,13 +118,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 
   void _loadExistingCharacter(Character character) {
     try {
-      debugPrint('🎯 Loading character: ${character.name}');
-      debugPrint('   - Has generatedAvatar: ${character.generatedAvatar != null}');
-      if (character.generatedAvatar != null) {
-        debugPrint('   - Avatar ID: ${character.generatedAvatar!.id}');
-        debugPrint('   - Image data length: ${character.generatedAvatar!.imageBase64.length}');
-      }
-
       setState(() {
         _isCreatingNew = false;
         _selectedExistingCharacter = character;
@@ -136,16 +132,15 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         // Load AI avatar if exists
         _generatedAvatar = character.generatedAvatar;
         widget.wizardData.generatedAvatar = character.generatedAvatar;
-        debugPrint('   - Set _generatedAvatar in state: ${_generatedAvatar != null}');
 
         // Load existing pets with validation
         if (character.pets != null) {
           final safePets = <Map<String, String>>[];
           for (var p in character.pets!) {
             try {
-               // Ensure p is a map and convert contents to strings safely
-               safePets.add(Map<String, String>.from(p));
-                         } catch (e) {
+              // Ensure p is a map and convert contents to strings safely
+              safePets.add(Map<String, String>.from(p));
+            } catch (e) {
               debugPrint('Warning: Skipping invalid pet data: $p ($e)');
             }
           }
@@ -154,35 +149,38 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 
         // Load friends with validation
         if (character.friends != null) {
-           widget.wizardData.additionalCharacters = [];
-           for (var f in character.friends!) {
-             widget.wizardData.additionalCharacters.add(f);
-                      }
+          widget.wizardData.additionalCharacters = [];
+          for (var f in character.friends!) {
+            widget.wizardData.additionalCharacters.add(f);
+          }
         }
 
         if (character.personalitySliders != null) {
-        widget.wizardData.personalitySliders = Map<String, int>.from(character.personalitySliders!);
-      }
+          widget.wizardData.personalitySliders =
+              Map<String, int>.from(character.personalitySliders!);
+        }
 
-      // Set emoji based on role
-      if (character.role.contains('Adventurer')) {
-        _characterEmoji = '🗺️';
-      } else if (character.role.contains('Thinker')) {
-        _characterEmoji = '💭';
-      } else if (character.role.contains('Artist')) {
-        _characterEmoji = '🎨';
-      } else if (character.role.contains('Helper')) {
-        _characterEmoji = '🤝';
-      } else if (character.role.contains('Athlete')) {
-        _characterEmoji = '⚡';
-      } else {
-        _characterEmoji = '👧';
-      }
+        // Set emoji based on role
+        if (character.role.contains('Adventurer')) {
+          _characterEmoji = '🗺️';
+        } else if (character.role.contains('Thinker')) {
+          _characterEmoji = '💭';
+        } else if (character.role.contains('Artist')) {
+          _characterEmoji = '🎨';
+        } else if (character.role.contains('Helper')) {
+          _characterEmoji = '🤝';
+        } else if (character.role.contains('Athlete')) {
+          _characterEmoji = '⚡';
+        } else {
+          _characterEmoji = '👧';
+        }
       });
     } catch (e, stack) {
       debugPrint('❌ Error loading character: $e\n$stack');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not load character: $e'), backgroundColor: Colors.red),
+        SnackBar(
+            content: Text('Could not load character: $e'),
+            backgroundColor: Colors.red),
       );
     }
   }
@@ -191,12 +189,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   Future<void> _autoSaveCharacter() async {
     // Only auto-save if we have a character ID (existing character)
     if (widget.wizardData.characterId == null) {
-      debugPrint('[Hero Creator] Skipping auto-save - no character ID yet');
       return;
     }
 
     try {
-      debugPrint('[Hero Creator] Auto-saving character pets...');
       final body = {
         'name': widget.wizardData.characterName,
         'age': widget.wizardData.characterAge,
@@ -208,7 +204,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 
       final api = ApiServiceManager();
       await api.patch('/characters/${widget.wizardData.characterId}', body);
-      debugPrint('[Hero Creator] Auto-save successful - pets saved!');
     } catch (e) {
       debugPrint('[Hero Creator] Auto-save failed: $e');
     }
@@ -231,8 +226,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     });
   }
 
-
-
   void _selectArchetype(ArchetypeData archetype) {
     setState(() {
       _selectedArchetypeId = archetype.name;
@@ -242,7 +235,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 
       // Auto-fill wizard data with archetype
       widget.wizardData.selectedArchetypeId = archetype.name;
-      widget.wizardData.personalitySliders = Map<String, int>.from(archetype.attributes);
+      widget.wizardData.personalitySliders =
+          Map<String, int>.from(archetype.attributes);
       // Ensure default age is set if 0 or uninitialized
       if (widget.wizardData.characterAge < 1) {
         widget.wizardData.characterAge = 5;
@@ -252,18 +246,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   }
 
   void _showAvatarCreator() {
-    debugPrint('🎨 Opening avatar gallery for ${widget.wizardData.characterName}');
-
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AvatarGallerySelector(
         onCancel: () {
-          debugPrint('❌ Avatar selection cancelled');
           Navigator.pop(context);
         },
         onAvatarSelected: (avatar) {
-          debugPrint('✅ Avatar selected from gallery');
           setState(() {
             _generatedAvatar = avatar;
             widget.wizardData.generatedAvatar = avatar; // Save to wizard data
@@ -338,7 +328,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 
   Widget _buildAvatarThumb(Character character, {required bool isSelected}) {
     const size = 64.0;
-    final borderColor = isSelected ? AppColors.gold : AppColors.primary.withAlpha(100);
+    final borderColor =
+        isSelected ? AppColors.gold : AppColors.primary.withAlpha(100);
 
     return Container(
       width: size,
@@ -375,7 +366,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         return Image.network(data, fit: BoxFit.cover);
       }
       try {
-        return Image.memory(base64Decode(data.split(',').last), fit: BoxFit.cover);
+        return Image.memory(base64Decode(data.split(',').last),
+            fit: BoxFit.cover);
       } catch (_) {
         return _buildAvatarFallback(character);
       }
@@ -385,7 +377,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
       return Image.network(
         character.avatar!.toAvataaarsUrl(),
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildAvatarFallback(character),
+        errorBuilder: (context, error, stackTrace) =>
+            _buildAvatarFallback(character),
       );
     }
 
@@ -412,7 +405,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     );
   }
 
-  bool get _canContinue => _selectedArchetypeId != null && widget.wizardData.characterName.trim().isNotEmpty;
+  bool get _canContinue =>
+      _selectedArchetypeId != null &&
+      widget.wizardData.characterName.trim().isNotEmpty;
 
   String _getEmojiForCharacter(Character character) {
     final role = character.role;
@@ -458,9 +453,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                   Text(
                     _isCreatingNew ? 'Create a Character' : 'Select Your Hero',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppColors.textDark,
-                      fontWeight: FontWeight.bold,
-                    ),
+                          color: AppColors.textDark,
+                          fontWeight: FontWeight.bold,
+                        ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
@@ -479,9 +474,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                       height: 120,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm),
                         itemCount: widget.availableCharacters.length + 1,
-                        separatorBuilder: (context, index) => const SizedBox(width: 12),
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(width: 12),
                         itemBuilder: (context, index) {
                           if (index == widget.availableCharacters.length) {
                             final isSelected = _isCreatingNew;
@@ -496,17 +493,23 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: isSelected ? AppColors.gold : AppColors.primary.withAlpha(100),
+                                        color: isSelected
+                                            ? AppColors.gold
+                                            : AppColors.primary.withAlpha(100),
                                         width: isSelected ? 3 : 2,
                                       ),
                                       color: AppColors.surface,
                                     ),
-                                    child: const Icon(Icons.add, color: AppColors.primary, size: 28),
+                                    child: const Icon(Icons.add,
+                                        color: AppColors.primary, size: 28),
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
                                     'Create New',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
                                           fontWeight: FontWeight.w600,
                                           color: AppColors.textDark,
                                         ),
@@ -517,21 +520,26 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                           }
 
                           final character = widget.availableCharacters[index];
-                          final isSelected = _selectedExistingCharacter?.id == character.id && !_isCreatingNew;
+                          final isSelected =
+                              _selectedExistingCharacter?.id == character.id &&
+                                  !_isCreatingNew;
 
                           return GestureDetector(
                             onTap: () {
-                              debugPrint('👆 CLICKED on character: ${character.name}');
                               _loadExistingCharacter(character);
                             },
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                _buildAvatarThumb(character, isSelected: isSelected),
+                                _buildAvatarThumb(character,
+                                    isSelected: isSelected),
                                 const SizedBox(height: 8),
                                 Text(
                                   character.name,
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
                                         fontWeight: FontWeight.w600,
                                         color: AppColors.textDark,
                                       ),
@@ -551,67 +559,68 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                   // Character Name (only editable when creating new)
                   if (_isCreatingNew)
                     TextField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Hero Name', 
-                      hintText: 'e.g. Vivian or Lydia',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.person),
-                      contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Hero Name',
+                        hintText: 'e.g. Vivian or Lydia',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.person),
+                        contentPadding:
+                            EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                      ),
+                      onChanged: (v) {
+                        setState(() {
+                          widget.wizardData.characterName = v;
+                        });
+                      },
                     ),
-                    onChanged: (v) {
-                      setState(() {
-                         widget.wizardData.characterName = v;
-                      });
-                    },
-                  ),
-                  if (_isCreatingNew)
-                    const SizedBox(height: 24),
+                  if (_isCreatingNew) const SizedBox(height: 24),
 
                   // Subtitle (only for new characters)
                   if (_isCreatingNew)
                     Text(
                       'Then, choose an archetype to start',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textDark.withAlpha(179), // 70% opacity
+                            color: AppColors.textDark
+                                .withAlpha(179), // 70% opacity
                           ),
                       textAlign: TextAlign.center,
                     ),
-                  if (_isCreatingNew)
-                    const SizedBox(height: 12),
+                  if (_isCreatingNew) const SizedBox(height: 12),
 
                   // Archetype cards (horizontal scroll) - only for new characters
                   if (_isCreatingNew)
                     ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      minHeight: 200,
-                      maxHeight: 240,
-                    ),
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                      itemCount: CharacterArchetypes.all.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(width: AppSpacing.md),
-                      itemBuilder: (context, index) {
-                        final archetype = CharacterArchetypes.all[index];
-                        final isSelected = _selectedArchetypeId == archetype.name;
+                      constraints: const BoxConstraints(
+                        minHeight: 200,
+                        maxHeight: 240,
+                      ),
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm),
+                        itemCount: CharacterArchetypes.all.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(width: AppSpacing.md),
+                        itemBuilder: (context, index) {
+                          final archetype = CharacterArchetypes.all[index];
+                          final isSelected =
+                              _selectedArchetypeId == archetype.name;
 
-                        return ArchetypeCard(
-                          icon: archetype.icon,
-                          imagePath: archetype.imagePath,
-                          name: archetype.name,
-                          description: archetype.description,
-                          specialAbility: archetype.specialAbility,
-                          traits: archetype.traits,
-                          isSelected: isSelected,
-                          onUseTemplate: () => _selectArchetype(archetype),
-                        );
-                      },
+                          return ArchetypeCard(
+                            icon: archetype.icon,
+                            imagePath: archetype.imagePath,
+                            name: archetype.name,
+                            description: archetype.description,
+                            specialAbility: archetype.specialAbility,
+                            traits: archetype.traits,
+                            isSelected: isSelected,
+                            onUseTemplate: () => _selectArchetype(archetype),
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                  if (_isCreatingNew)
-                    const SizedBox(height: 16),
+                  if (_isCreatingNew) const SizedBox(height: 16),
 
                   // Name & Age Section (show if creating new and archetype selected, or if existing character selected)
                   if (_canContinue || !_isCreatingNew) ...[
@@ -621,29 +630,36 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                         final isNarrow = constraints.maxWidth < 320;
                         return Row(
                           children: [
-                            Text('Gender:', style: Theme.of(context).textTheme.titleSmall),
+                            Text('Gender:',
+                                style: Theme.of(context).textTheme.titleSmall),
                             const SizedBox(width: 8),
                             Expanded(
                               child: SegmentedButton<String>(
                                 segments: [
                                   ButtonSegment(
                                     value: 'Girl',
-                                    label: Text('Girl', style: TextStyle(fontSize: isNarrow ? 12 : 14)),
+                                    label: Text('Girl',
+                                        style: TextStyle(
+                                            fontSize: isNarrow ? 12 : 14)),
                                   ),
                                   ButtonSegment(
                                     value: 'Boy',
-                                    label: Text('Boy', style: TextStyle(fontSize: isNarrow ? 12 : 14)),
+                                    label: Text('Boy',
+                                        style: TextStyle(
+                                            fontSize: isNarrow ? 12 : 14)),
                                   ),
                                 ],
                                 selected: {widget.wizardData.characterGender},
                                 onSelectionChanged: (Set<String> newSelection) {
                                   setState(() {
-                                    widget.wizardData.characterGender = newSelection.first;
+                                    widget.wizardData.characterGender =
+                                        newSelection.first;
                                   });
                                 },
                                 style: const ButtonStyle(
                                   visualDensity: VisualDensity.compact,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
                               ),
                             ),
@@ -688,7 +704,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                           ),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: const BorderSide(color: Color(0xFFFFD93D), width: 2),
+                            side: const BorderSide(
+                                color: Color(0xFFFFD93D), width: 2),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -700,22 +717,23 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 
                   // Custom Pets Section (only when creating a new character)
                   if (_isCreatingNew && _canContinue)
-                     _PetsSection(
-                        wizardData: widget.wizardData,
-                        onUpdate: () => setState(() {}),
-                        onAutoSave: _autoSaveCharacter,
-                     ),
+                    _PetsSection(
+                      wizardData: widget.wizardData,
+                      onUpdate: () => setState(() {}),
+                      onAutoSave: _autoSaveCharacter,
+                    ),
 
                   if (_isCreatingNew && _canContinue)
-                     const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
 // Siblings section removed per user request
 
                   if (_canContinue || !_isCreatingNew)
-                     const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
                   // Continue button
-                  if (_canContinue || (!_isCreatingNew && _selectedExistingCharacter != null))
+                  if (_canContinue ||
+                      (!_isCreatingNew && _selectedExistingCharacter != null))
                     AnimatedOpacity(
                       opacity: _canContinue ? 1.0 : 0.0,
                       duration: const Duration(milliseconds: 300),
@@ -743,6 +761,22 @@ class _PetsSection extends StatelessWidget {
   final WizardData wizardData;
   final VoidCallback onUpdate;
   final VoidCallback onAutoSave;
+  static const List<String> _speciesOptions = [
+    'Dog',
+    'Cat',
+    'Bird',
+    'Hamster',
+    'Fish',
+    'Bunny',
+    'Reptile',
+    'Other',
+  ];
+  static const Map<String, String> _speciesImageAssets = {
+    'Fish': 'assets/images/companions/fish.png',
+    'Bunny': 'assets/images/companions/bunny.png',
+    'Hamster': 'assets/images/companions/hamster.png',
+    'Reptile': 'assets/images/companions/reptile.png',
+  };
 
   const _PetsSection({
     required this.wizardData,
@@ -753,125 +787,253 @@ class _PetsSection extends StatelessWidget {
   void _showAddPetDialog(BuildContext context) {
     final nameController = TextEditingController();
     final colorController = TextEditingController();
-    String species = 'Dog';
+    String species = 'Fish';
     String gender = 'Boy';
     String personality = '';
-    
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
+          final selectedPreviewImage = _speciesImageAssets[species];
+
           return Dialog(
             backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            insetPadding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
             child: Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [
-                    Color(0xFFFFF8E1),
-                    Color(0xFFF3E5F5),
+                    Color(0xFFFDF8E8),
+                    Color(0xFFF5EAFB),
+                    Color(0xFFE3F3F2)
                   ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: [0.0, 0.58, 1.0],
                 ),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.gold.withAlpha(140), width: 2),
+                border:
+                    Border.all(color: AppColors.gold.withAlpha(150), width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.gold.withAlpha(120),
-                    blurRadius: 20,
-                    spreadRadius: 2,
+                    color: AppColors.primary.withAlpha(55),
+                    blurRadius: 26,
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.pets, color: AppColors.primary, size: 22),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Add Your Pet',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textDark,
-                              ),
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withAlpha(22),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.pets,
+                              color: AppColors.primary, size: 20),
                         ),
-                        const SizedBox(width: 6),
-                        const Icon(Icons.pets, size: 18, color: AppColors.primary),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Choose Your Magical Pet',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textDark,
+                                ),
+                          ),
+                        ),
+                        const Icon(Icons.auto_awesome,
+                            size: 18, color: AppColors.gold),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        height: 126,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.primary.withAlpha(165),
+                              AppColors.primaryDark.withAlpha(190),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            if (selectedPreviewImage != null)
+                              Opacity(
+                                opacity: 0.47,
+                                child: Image.asset(
+                                  selectedPreviewImage,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            Container(
+                              color: Colors.black.withAlpha(35),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Pick your sidekick',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelLarge
+                                        ?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Name them and add a fun detail to make stories feel personal.',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: Colors.white.withAlpha(220),
+                                        ),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    '${_getEmojiForSpecies(species)} $species selected',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Pet type',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: AppColors.primaryDark,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _speciesOptions.map((option) {
+                        final isSelected = option == species;
+                        return _buildSpeciesChip(
+                          context: context,
+                          option: option,
+                          isSelected: isSelected,
+                          onTap: () => setState(() => species = option),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 14),
                     TextField(
                       controller: nameController,
-                      decoration: const InputDecoration(
+                      decoration: _petFieldDecoration(
+                        context: context,
                         labelText: 'Pet Name',
-                        hintText: 'e.g. Spot',
-                        prefixIcon: Icon(Icons.badge),
+                        hintText: 'e.g. Bubbles',
+                        icon: Icons.badge_outlined,
                       ),
-                      onChanged: (v) {
-                        setState(() {}); // Rebuild to update button state
-                      },
+                      onChanged: (_) => setState(() {}),
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       value: species,
-                      items: ['Dog', 'Cat', 'Bird', 'Hamster', 'Fish', 'Bunny', 'Reptile', 'Other']
-                          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                      items: _speciesOptions
+                          .map((s) => DropdownMenuItem(
+                              value: s,
+                              child: Text('${_getEmojiForSpecies(s)} $s')))
                           .toList(),
                       onChanged: (v) {
-                         if (v != null) setState(() => species = v);
+                        if (v != null) {
+                          setState(() => species = v);
+                        }
                       },
-                      decoration: const InputDecoration(
+                      decoration: _petFieldDecoration(
+                        context: context,
                         labelText: 'Species',
-                        prefixIcon: Icon(Icons.pets),
+                        icon: Icons.pets_outlined,
                       ),
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       value: gender,
                       items: ['Boy', 'Girl']
-                          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                          .map(
+                              (s) => DropdownMenuItem(value: s, child: Text(s)))
                           .toList(),
                       onChanged: (v) {
-                         if (v != null) setState(() => gender = v);
+                        if (v != null) {
+                          setState(() => gender = v);
+                        }
                       },
-                      decoration: const InputDecoration(
+                      decoration: _petFieldDecoration(
+                        context: context,
                         labelText: 'Gender',
-                        prefixIcon: Icon(Icons.favorite),
+                        icon: Icons.favorite_outline,
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: colorController,
-                      decoration: const InputDecoration(
+                      decoration: _petFieldDecoration(
+                        context: context,
                         labelText: 'Color / Looks',
-                        hintText: 'e.g. Black with white paws',
-                        prefixIcon: Icon(Icons.palette),
+                        hintText: 'e.g. Golden scales with tiny spots',
+                        icon: Icons.palette_outlined,
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
-                      decoration: const InputDecoration(
+                      decoration: _petFieldDecoration(
+                        context: context,
                         labelText: 'Personality / Fun Fact',
-                        hintText: 'e.g. Loves to chase tails',
-                        prefixIcon: Icon(Icons.auto_awesome),
+                        hintText: 'e.g. Falls asleep to bedtime stories',
+                        icon: Icons.auto_awesome_outlined,
                       ),
                       onChanged: (v) => personality = v,
                     ),
                     const SizedBox(height: 18),
-                    Wrap(
-                      alignment: WrapAlignment.end,
-                      spacing: 8,
-                      runSpacing: 8,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.primaryDark,
+                          ),
                           child: const Text('Cancel'),
                         ),
+                        const SizedBox(width: 10),
                         ElevatedButton.icon(
                           onPressed: nameController.text.trim().isEmpty
                               ? null
@@ -885,25 +1047,130 @@ class _PetsSection extends StatelessWidget {
                                   });
                                   onUpdate();
                                   Navigator.pop(context);
-                                  // Auto-save the character with the new pet
                                   onAutoSave();
                                 },
                           icon: const Icon(Icons.auto_awesome),
                           label: const Text('Add Pet'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: AppColors.primaryDark,
                             foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                           ),
                         ),
                       ],
-                    ),
+                    )
                   ],
                 ),
               ),
             ),
           );
-        }
+        },
       ),
+    ).whenComplete(() {
+      nameController.dispose();
+      colorController.dispose();
+    });
+  }
+
+  Widget _buildSpeciesChip({
+    required BuildContext context,
+    required String option,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final imageAsset = _speciesImageAssets[option];
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withAlpha(26)
+              : Colors.white.withAlpha(180),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : AppColors.primary.withAlpha(50),
+            width: isSelected ? 1.8 : 1.0,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withAlpha(35),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : const [],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (imageAsset != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(7),
+                child: Image.asset(
+                  imageAsset,
+                  width: 26,
+                  height: 26,
+                  fit: BoxFit.cover,
+                ),
+              )
+            else
+              Text(
+                _getEmojiForSpecies(option),
+                style: const TextStyle(fontSize: 18),
+              ),
+            const SizedBox(width: 6),
+            Text(
+              option,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textDark,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _petFieldDecoration({
+    required BuildContext context,
+    required String labelText,
+    String? hintText,
+    required IconData icon,
+  }) {
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      prefixIcon: Icon(icon, color: AppColors.primaryDark.withAlpha(180)),
+      fillColor: Colors.white.withAlpha(195),
+      filled: true,
+      labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: AppColors.textDark.withAlpha(190),
+            fontWeight: FontWeight.w600,
+          ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: AppColors.primary.withAlpha(60)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: AppColors.primary.withAlpha(60)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: AppColors.primaryDark, width: 2),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
     );
   }
 
@@ -935,7 +1202,10 @@ class _PetsSection extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Text(
               'No pets added yet. Add one to join the adventure!',
-              style: TextStyle(color: AppColors.textDark.withAlpha(128), fontStyle: FontStyle.italic, fontSize: 13),
+              style: TextStyle(
+                  color: AppColors.textDark.withAlpha(128),
+                  fontStyle: FontStyle.italic,
+                  fontSize: 13),
             ),
           )
         else
@@ -949,10 +1219,10 @@ class _PetsSection extends StatelessWidget {
                 backgroundColor: AppColors.surface,
                 side: BorderSide(color: AppColors.primary.withAlpha(50)),
                 onDeleted: () {
-                   wizardData.pets.remove(pet);
-                   onUpdate();
-                   // Auto-save the character with updated pets
-                   onAutoSave();
+                  wizardData.pets.remove(pet);
+                  onUpdate();
+                  // Auto-save the character with updated pets
+                  onAutoSave();
                 },
               );
             }).toList(),
@@ -960,23 +1230,28 @@ class _PetsSection extends StatelessWidget {
       ],
     );
   }
-  
+
   String _getEmojiForSpecies(String? species) {
     switch (species) {
-      case 'Dog': return '🐕';
-      case 'Cat': return '🐱';
-      case 'Bird': return '🐦';
-      case 'Hamster': return '🐹';
-      case 'Fish': return '🐠';
-      case 'Bunny': return '🐰';
-      case 'Reptile': return '🦎';
-      default: return '🐾';
+      case 'Dog':
+        return '🐕';
+      case 'Cat':
+        return '🐱';
+      case 'Bird':
+        return '🐦';
+      case 'Hamster':
+        return '🐹';
+      case 'Fish':
+        return '🐠';
+      case 'Bunny':
+        return '🐰';
+      case 'Reptile':
+        return '🦎';
+      default:
+        return '🐾';
     }
   }
-
 }
-
-
 
 /// Improved Age Picker Widget
 ///
@@ -1130,7 +1405,8 @@ class _ImprovedAgePickerState extends State<_ImprovedAgePicker> {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(Icons.edit, size: 12, color: AppColors.textLight),
+                    const Icon(Icons.edit,
+                        size: 12, color: AppColors.textLight),
                   ],
                 ),
               ),
@@ -1160,8 +1436,10 @@ class _ImprovedAgePickerState extends State<_ImprovedAgePicker> {
                           decoration: BoxDecoration(
                             color: AppColors.primary.withAlpha(51),
                             border: const Border(
-                              top: BorderSide(color: AppColors.primary, width: 1),
-                              bottom: BorderSide(color: AppColors.primary, width: 1),
+                              top: BorderSide(
+                                  color: AppColors.primary, width: 1),
+                              bottom: BorderSide(
+                                  color: AppColors.primary, width: 1),
                             ),
                           ),
                         ),
@@ -1198,4 +1476,3 @@ class _ImprovedAgePickerState extends State<_ImprovedAgePicker> {
     );
   }
 }
-

@@ -3255,6 +3255,48 @@ flutter test test/unit/services/subscription_service_test.dart test/unit/service
 - PASS: `test/unit/services/isar_service_test.dart` (15 tests)
 - Total verified service tests in this sweep: `51` passing
 
+## Session Update - 2026-02-17 (Milestone: Transparent Glassy Asset Rewire + Tales Alignment)
+
+### Problems Addressed
+- Checkerboard artifacts were visible inside story-length and mode-orb controls.
+- Requested progress indicator and mode-orb assets were not all wired to the provided artwork.
+- `Tales` option appeared vertically misaligned relative to other story-mode choices.
+
+### Changes Implemented
+- Added extraction pipeline:
+  - `scripts/extract_glassy_ui_assets.py`
+  - Uses GrabCut foreground extraction + alpha cleanup to produce transparent PNG UI assets from provided JPG sources.
+- Generated cleaned assets in:
+  - `assets/images/ui/glassy/quick_orb.png`
+  - `assets/images/ui/glassy/classic_orb.png`
+  - `assets/images/ui/glassy/epic_orb.png`
+  - `assets/images/ui/glassy/easy_read_orb.png`
+  - `assets/images/ui/glassy/pick_path_orb.png`
+  - `assets/images/ui/glassy/rhyme_time_orb.png`
+  - `assets/images/ui/glassy/tales_orb.png`
+  - `assets/images/ui/glassy/progress_done_orb.png`
+  - `assets/images/ui/glassy/progress_active_orb.png`
+  - `assets/images/ui/glassy/make_magic_button.png`
+- Rewired UI widgets to new assets:
+  - `lib/widgets/image_crystal_formation.dart` (quick/classic/epic story length crystals)
+  - `lib/widgets/image_mode_orb.dart` (Tales, Rhyme, Read-Along, Pick Your Path)
+  - `lib/widgets/image_progress_orb.dart` (check vs active orb variants)
+  - `lib/widgets/image_make_magic_button.dart` (Make Magic button asset)
+- Explicitly registered asset folder:
+  - `pubspec.yaml`: added `assets/images/ui/glassy/`
+- Fixed mode row alignment:
+  - Normalized orb container dimensions and fixed-height label slot in `ImageModeOrb` to keep `Tales` aligned with the rest.
+
+### Verification
+```bash
+flutter analyze lib/widgets/image_mode_orb.dart lib/widgets/image_progress_orb.dart lib/widgets/image_crystal_formation.dart lib/widgets/image_make_magic_button.dart lib/screens/wizard_steps/magic_review_step.dart
+flutter test test/widgets/wizard_flow_test.dart
+```
+
+### Result
+- PASS: analyzer clean for touched UI files.
+- PASS: `test/widgets/wizard_flow_test.dart`
+
 ## Session Update - 2026-02-17 (Milestone: Full Hero Journey Integration Stabilization Re-Verification)
 
 ### Verification
@@ -3283,3 +3325,35 @@ flutter test
   - `test/unit/services/stripe_service_test.dart`
   - `test/unit/services/isar_service_test.dart`
 
+## Session Update - 2026-02-17 (Milestone: Pet Modal Aesthetic Redesign + Image-Based Species Picker)
+
+### Problems Addressed
+- "Add Your Pet" dialog styling did not match the app's magical illustrated aesthetic.
+- Species selection relied on basic form controls with no visual pet previews.
+- User-provided BYO pet references (fish, bunny, hamster, reptile) were not integrated into the selector UI.
+
+### Changes Implemented
+- Redesigned `_showAddPetDialog` in `lib/screens/wizard_steps/hero_creator_step.dart`:
+  - Added themed gradient shell, glow, improved title/header treatment.
+  - Added a top hero-preview panel reflecting current species selection.
+  - Added card/chip-style species picker with image thumbnails for supported species.
+  - Standardized and polished field styling via shared `_petFieldDecoration`.
+- Added species metadata/helpers in `_PetsSection`:
+  - `_speciesOptions`
+  - `_speciesImageAssets`
+  - `_buildSpeciesChip`
+- Added new companion assets (PNG, tracked by git):
+  - `assets/images/companions/fish.png`
+  - `assets/images/companions/bunny.png`
+  - `assets/images/companions/hamster.png`
+  - `assets/images/companions/reptile.png`
+
+### Verification
+```bash
+dart format lib/screens/wizard_steps/hero_creator_step.dart
+flutter analyze lib/screens/wizard_steps/hero_creator_step.dart
+```
+
+### Result
+- PASS: formatter applied cleanly.
+- PASS: analyzer clean for the touched screen file.
