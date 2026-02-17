@@ -19,6 +19,7 @@ import 'services/offline_story_service.dart';
 import 'models/local/story_local.dart';
 import 'story_illustration_service.dart';
 import 'coloring_book_service.dart';
+import 'character_appearance.dart';
 import 'coloring_book_library_screen.dart';
 import 'models.dart';
 import 'therapeutic_focus_options.dart';
@@ -174,6 +175,152 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       return 7;
     }
     return age;
+  }
+
+  CharacterAppearance? _buildCharacterAppearance() {
+    final character = _character;
+    if (character == null) return null;
+
+    final avatarAttributes = character.generatedAvatar?.attributes ?? const {};
+
+    final hairColorSource = avatarAttributes['hair_color'] ?? character.hair;
+    final hairStyleSource =
+        avatarAttributes['hair_style'] ?? character.hairstyle;
+    final eyeColorSource = avatarAttributes['eye_color'] ?? character.eyes;
+    final skinToneSource = avatarAttributes['skin_tone'] ?? character.skinTone;
+    final outfitSource = avatarAttributes['outfit'] ??
+        character.outfit ??
+        character.characterStyle;
+
+    return CharacterAppearance(
+      characterName: character.name,
+      hairColor: _mapHairColor(hairColorSource),
+      hairLength: _mapHairLength(hairStyleSource),
+      hairStyle: _mapHairStyle(hairStyleSource),
+      eyeColor: _mapEyeColor(eyeColorSource),
+      skinTone: _mapSkinTone(skinToneSource),
+      clothingStyle: _mapClothingStyle(outfitSource),
+      clothingColors: _mapClothingColors(outfitSource),
+      bodyBuild: BodyBuild.average,
+    );
+  }
+
+  HairColor _mapHairColor(String? value) {
+    final input = (value ?? '').toLowerCase();
+    if (input.contains('strawberry')) return HairColor.strawberryBlonde;
+    if (input.contains('light') && input.contains('brown')) {
+      return HairColor.lightBrown;
+    }
+    if (input.contains('dark') && input.contains('brown')) {
+      return HairColor.darkBrown;
+    }
+    if (input.contains('auburn')) return HairColor.auburn;
+    if (input.contains('blond')) return HairColor.blonde;
+    if (input.contains('red') || input.contains('ginger')) return HairColor.red;
+    if (input.contains('gray') || input.contains('grey')) return HairColor.gray;
+    if (input.contains('white') || input.contains('silver')) {
+      return HairColor.white;
+    }
+    if (input.contains('black')) return HairColor.black;
+    return HairColor.brown;
+  }
+
+  HairLength _mapHairLength(String? value) {
+    final input = (value ?? '').toLowerCase();
+    if (input.contains('very long')) return HairLength.veryLong;
+    if (input.contains('long')) return HairLength.long;
+    if (input.contains('medium') || input.contains('shoulder')) {
+      return HairLength.medium;
+    }
+    return HairLength.short;
+  }
+
+  HairStyle _mapHairStyle(String? value) {
+    final input = (value ?? '').toLowerCase();
+    if (input.contains('braid')) return HairStyle.braided;
+    if (input.contains('ponytail')) return HairStyle.ponytail;
+    if (input.contains('pigtail')) return HairStyle.pigtails;
+    if (input.contains('bun')) return HairStyle.bun;
+    if (input.contains('curly')) return HairStyle.curly;
+    if (input.contains('wavy')) return HairStyle.wavy;
+    if (input.contains('messy')) return HairStyle.messy;
+    return HairStyle.straight;
+  }
+
+  EyeColor _mapEyeColor(String? value) {
+    final input = (value ?? '').toLowerCase();
+    if (input.contains('dark') && input.contains('brown')) {
+      return EyeColor.darkBrown;
+    }
+    if (input.contains('light') && input.contains('blue')) {
+      return EyeColor.lightBlue;
+    }
+    if (input.contains('hazel')) return EyeColor.hazel;
+    if (input.contains('amber')) return EyeColor.amber;
+    if (input.contains('green')) return EyeColor.green;
+    if (input.contains('gray') || input.contains('grey')) return EyeColor.gray;
+    if (input.contains('blue')) return EyeColor.blue;
+    return EyeColor.brown;
+  }
+
+  SkinTone _mapSkinTone(String? value) {
+    final input = (value ?? '').toLowerCase();
+    if (input.contains('very fair')) return SkinTone.veryFair;
+    if (input.contains('fair')) return SkinTone.fair;
+    if (input.contains('light-medium') || input.contains('light medium')) {
+      return SkinTone.lightMedium;
+    }
+    if (input.contains('medium-tan') || input.contains('medium tan')) {
+      return SkinTone.mediumTan;
+    }
+    if (input.contains('tan')) return SkinTone.tan;
+    if (input.contains('dark') && input.contains('brown')) {
+      return SkinTone.darkBrown;
+    }
+    if (input.contains('very dark')) return SkinTone.veryDark;
+    if (input.contains('brown')) return SkinTone.brown;
+    if (input.contains('medium')) return SkinTone.medium;
+    return SkinTone.light;
+  }
+
+  ClothingStyle _mapClothingStyle(String? value) {
+    final input = (value ?? '').toLowerCase();
+    if (input.contains('superhero') || input.contains('hero')) {
+      return ClothingStyle.superhero;
+    }
+    if (input.contains('princess') || input.contains('royal')) {
+      return ClothingStyle.princess;
+    }
+    if (input.contains('fantasy') || input.contains('magic')) {
+      return ClothingStyle.fantasy;
+    }
+    if (input.contains('adventur')) return ClothingStyle.adventurer;
+    if (input.contains('sport')) return ClothingStyle.sporty;
+    if (input.contains('dress') || input.contains('formal')) {
+      return ClothingStyle.dressy;
+    }
+    if (input.contains('scientist') || input.contains('lab')) {
+      return ClothingStyle.scientist;
+    }
+    return ClothingStyle.casual;
+  }
+
+  ClothingColors _mapClothingColors(String? value) {
+    final input = (value ?? '').toLowerCase();
+    if (input.contains('rainbow') || input.contains('multicolor')) {
+      return ClothingColors.rainbow;
+    }
+    if (input.contains('pastel')) return ClothingColors.pastel;
+    if (input.contains('earth')) return ClothingColors.earth;
+    if (input.contains('dark') || input.contains('black')) {
+      return ClothingColors.dark;
+    }
+    if (input.contains('blue')) return ClothingColors.blue;
+    if (input.contains('gold')) return ClothingColors.gold;
+    if (input.contains('mono') || input.contains('white')) {
+      return ClothingColors.monochrome;
+    }
+    return ClothingColors.bright;
   }
 
   Widget _buildBreathingHeroAvatar({required double size}) {
@@ -607,7 +754,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
             widget.storyId ?? DateTime.now().millisecondsSinceEpoch.toString(),
         storyTitle: widget.title,
         scenes: scenes,
-        characterAppearance: null, // TODO: Hydrate from character appearance
+        characterAppearance: _buildCharacterAppearance(),
         age: _effectiveAge,
         therapeuticFocus: therapeuticFocus,
       );

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math' show cos, sin;
 import 'package:story_weaver_app/services/api_service_manager.dart';
 import 'package:story_weaver_app/services/achievement_service.dart';
 import 'package:story_weaver_app/story_result_screen.dart';
+import 'package:story_weaver_app/story_illustration_service.dart';
 import 'package:story_weaver_app/pick_a_path_adventure_screen.dart';
 import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
@@ -39,6 +41,8 @@ class MagicReviewStep extends StatefulWidget {
 class _MagicReviewStepState extends State<MagicReviewStep> {
   bool _isGenerating = false;
   String _loadingStatus = 'Creating your story...';
+  final StoryIllustrationService _illustrationService =
+      StoryIllustrationService();
 
   // Helper to get scenario image
   String get _scenarioImage {
@@ -171,6 +175,37 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
           },
         );
 
+        // Inject custom avatar base64 into characterDetails for illustration use
+        if (widget.wizardData.customAvatarPath != null) {
+          try {
+            final avatarFile = File(widget.wizardData.customAvatarPath!);
+            if (await avatarFile.exists()) {
+              final avatarBytes = await avatarFile.readAsBytes();
+              final avatarBase64 = base64Encode(avatarBytes);
+              final charDetails = requestData['characterDetails'];
+              if (charDetails is Map<String, dynamic>) {
+                charDetails['custom_avatar_base64'] = avatarBase64;
+              }
+            }
+          } catch (e) {
+            debugPrint('⚠️ Could not load custom avatar for illustration: $e');
+          }
+        }
+
+        List<Map<String, dynamic>> inlineIllustrations = result.illustrations;
+        if (widget.wizardData.includeIllustrations &&
+            inlineIllustrations.isEmpty) {
+          if (mounted) {
+            setState(
+                () => _loadingStatus = 'Painting magical illustrations...');
+          }
+          inlineIllustrations = await _generateInlineIllustrations(
+            storyText: result.storyText,
+            storyTitle: result.title ?? 'My Magical Story',
+            requestData: requestData,
+          );
+        }
+
         if (mounted) {
           await Navigator.of(context).push(
             MaterialPageRoute(
@@ -192,6 +227,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 storyCreatedAt: DateTime.now(),
                 isRhyming: widget.wizardData.rhymeTimeMode,
                 isLearningToReadMode: widget.wizardData.learningToReadMode,
+                backendIllustrations: inlineIllustrations,
+                asyncIllustrations: result.asyncIllustrations,
               ),
             ),
           );
@@ -220,6 +257,48 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       }
     } finally {
       if (mounted) setState(() => _isGenerating = false);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _generateInlineIllustrations({
+    required String storyText,
+    required String storyTitle,
+    required Map<String, dynamic> requestData,
+  }) async {
+    try {
+      final generated = await _illustrationService.generateIllustrations(
+        storyText: storyText,
+        storyTitle: storyTitle,
+        characterName:
+            requestData['character']?.toString() ?? widget.wizardData.characterName,
+        theme: requestData['theme']?.toString(),
+        numberOfImages: 1,
+        age: requestData['age'] as int? ?? widget.wizardData.characterAge,
+        characterAppearance:
+            requestData['characterDetails'] as Map<String, dynamic>?,
+      );
+
+      return generated
+          .map((illustration) {
+            final url = illustration.imageUrl;
+            if (url.startsWith('data:image/') && url.contains(',')) {
+              final commaIndex = url.indexOf(',');
+              if (commaIndex < 0 || commaIndex + 1 >= url.length) {
+                return null;
+              }
+              return {
+                'id': illustration.id,
+                'prompt': illustration.prompt,
+                'image_data': url.substring(commaIndex + 1),
+              };
+            }
+            return null;
+          })
+          .whereType<Map<String, dynamic>>()
+          .toList();
+    } catch (e) {
+      debugPrint('⚠️ Illustration generation failed: $e');
+      return const [];
     }
   }
 

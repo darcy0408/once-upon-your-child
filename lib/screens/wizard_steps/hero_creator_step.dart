@@ -307,15 +307,24 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
       return true;
     } catch (e) {
       debugPrint('⚠️ Character save failed in Hero Creator: $e');
+      final message = e.toString();
+      final isLocalBackendUnavailable =
+          message.contains('Cannot reach the local backend');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Could not save character: $e'),
-            backgroundColor: AppColors.error,
+            content: Text(
+              isLocalBackendUnavailable
+                  ? 'Avatar selected. We could not sync right now, but you can keep going.'
+                  : 'Could not save character: $e',
+            ),
+            backgroundColor:
+                isLocalBackendUnavailable ? AppColors.gold : AppColors.error,
           ),
         );
       }
-      return false;
+      return isLocalBackendUnavailable;
     }
   }
 
@@ -422,6 +431,198 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     return '👧';
   }
 
+  InputDecoration _heroNameDecoration(BuildContext context) {
+    return InputDecoration(
+      labelText: 'Hero Name',
+      hintText: 'e.g. Vivian or Lydia',
+      prefixIcon: const Icon(Icons.auto_awesome),
+      filled: true,
+      fillColor: Colors.white.withAlpha(235),
+      labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: AppColors.primaryDark,
+            fontWeight: FontWeight.w600,
+          ),
+      hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: AppColors.textDark.withAlpha(128),
+          ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: AppColors.primary.withAlpha(80)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: AppColors.primary.withAlpha(80)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AppColors.primaryDark, width: 2),
+      ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+    );
+  }
+
+  Widget _buildPlayfulGenderPicker(BuildContext context) {
+    final options = [
+      (label: 'Girl', icon: Icons.auto_awesome),
+      (label: 'Boy', icon: Icons.bolt),
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(185),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withAlpha(60)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Hero Style',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: AppColors.primaryDark,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            children: options.map((option) {
+              final isSelected =
+                  widget.wizardData.characterGender == option.label;
+              return ChoiceChip(
+                selected: isSelected,
+                onSelected: (_) {
+                  setState(() {
+                    widget.wizardData.characterGender = option.label;
+                  });
+                },
+                avatar: Icon(
+                  option.icon,
+                  size: 16,
+                  color:
+                      isSelected ? const Color(0xFF3B2363) : AppColors.primary,
+                ),
+                label: Text(
+                  option.label,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: isSelected
+                        ? const Color(0xFF3B2363)
+                        : AppColors.primaryDark,
+                  ),
+                ),
+                selectedColor: const Color(0xFFFFD98A),
+                backgroundColor: Colors.white.withAlpha(225),
+                side: BorderSide(
+                  color: isSelected
+                      ? const Color(0xFFFFB347)
+                      : AppColors.primary.withAlpha(80),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlayfulAgePicker(BuildContext context) {
+    final quickAges = [4, 5, 6, 7, 8, 9, 10];
+    final age = widget.wizardData.characterAge;
+
+    void setAge(int newAge) {
+      setState(() {
+        widget.wizardData.characterAge = newAge.clamp(1, 99);
+      });
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(185),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withAlpha(60)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Hero Age',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: AppColors.primaryDark,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD98A),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$age',
+                  style: const TextStyle(
+                    color: Color(0xFF3B2363),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                onPressed: () => setAge(age - 1),
+                icon: const Icon(Icons.remove_circle_outline),
+                color: AppColors.primaryDark,
+                tooltip: 'Younger',
+              ),
+              IconButton(
+                onPressed: () => setAge(age + 1),
+                icon: const Icon(Icons.add_circle_outline),
+                color: AppColors.primaryDark,
+                tooltip: 'Older',
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: quickAges.map((optionAge) {
+              final isSelected = age == optionAge;
+              return ChoiceChip(
+                selected: isSelected,
+                onSelected: (_) => setAge(optionAge),
+                label: Text(
+                  '$optionAge',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: isSelected
+                        ? const Color(0xFF3B2363)
+                        : AppColors.primaryDark,
+                  ),
+                ),
+                selectedColor: const Color(0xFFFFD98A),
+                backgroundColor: Colors.white.withAlpha(225),
+                side: BorderSide(
+                  color: isSelected
+                      ? const Color(0xFFFFB347)
+                      : AppColors.primary.withAlpha(80),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -442,8 +643,31 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
           child: Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.lg,
-
               vertical: AppSpacing.md, // Reduced from XL
+            ),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFFEFE1FF).withAlpha(220),
+                  const Color(0xFFE6F3FF).withAlpha(205),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(28),
+                topRight: Radius.circular(28),
+              ),
+              border: Border(
+                top: BorderSide(color: AppColors.gold.withAlpha(110), width: 2),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withAlpha(35),
+                  blurRadius: 20,
+                  offset: const Offset(0, -4),
+                ),
+              ],
             ),
             child: SingleChildScrollView(
               child: Column(
@@ -451,9 +675,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                 children: [
                   // Title
                   Text(
-                    _isCreatingNew ? 'Create a Character' : 'Select Your Hero',
+                    _isCreatingNew ? 'Create Your Hero' : 'Pick Your Hero',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: AppColors.textDark,
+                          color: AppColors.primaryDark,
                           fontWeight: FontWeight.bold,
                         ),
                     textAlign: TextAlign.center,
@@ -463,15 +687,23 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                   // Saved Characters Section (if any exist)
                   if (widget.availableCharacters.isNotEmpty) ...[
                     Text(
-                      'Choose your hero or create a new one',
+                      'Choose a hero or make a brand new one',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textDark.withAlpha(179),
+                            color: AppColors.primaryDark.withAlpha(185),
                           ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
-                    SizedBox(
-                      height: 120,
+                    Container(
+                      height: 132,
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(170),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: AppColors.primary.withAlpha(55),
+                        ),
+                      ),
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(
@@ -560,14 +792,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                   if (_isCreatingNew)
                     TextField(
                       controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Hero Name',
-                        hintText: 'e.g. Vivian or Lydia',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.person),
-                        contentPadding:
-                            EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                      ),
+                      decoration: _heroNameDecoration(context),
                       onChanged: (v) {
                         setState(() {
                           widget.wizardData.characterName = v;
@@ -579,10 +804,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                   // Subtitle (only for new characters)
                   if (_isCreatingNew)
                     Text(
-                      'Then, choose an archetype to start',
+                      'Now choose your hero style',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textDark
-                                .withAlpha(179), // 70% opacity
+                            color: AppColors.primaryDark.withAlpha(190),
+                            fontWeight: FontWeight.w600,
                           ),
                       textAlign: TextAlign.center,
                     ),
@@ -624,74 +849,21 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 
                   // Name & Age Section (show if creating new and archetype selected, or if existing character selected)
                   if (_canContinue || !_isCreatingNew) ...[
-                    // Gender Selection - responsive layout
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final isNarrow = constraints.maxWidth < 320;
-                        return Row(
-                          children: [
-                            Text('Gender:',
-                                style: Theme.of(context).textTheme.titleSmall),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: SegmentedButton<String>(
-                                segments: [
-                                  ButtonSegment(
-                                    value: 'Girl',
-                                    label: Text('Girl',
-                                        style: TextStyle(
-                                            fontSize: isNarrow ? 12 : 14)),
-                                  ),
-                                  ButtonSegment(
-                                    value: 'Boy',
-                                    label: Text('Boy',
-                                        style: TextStyle(
-                                            fontSize: isNarrow ? 12 : 14)),
-                                  ),
-                                ],
-                                selected: {widget.wizardData.characterGender},
-                                onSelectionChanged: (Set<String> newSelection) {
-                                  setState(() {
-                                    widget.wizardData.characterGender =
-                                        newSelection.first;
-                                  });
-                                },
-                                style: const ButtonStyle(
-                                  visualDensity: VisualDensity.compact,
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
+                    _buildPlayfulGenderPicker(context),
                     const SizedBox(height: 12),
 
-                    // Age Picker
-                    _ImprovedAgePicker(
-                      label: 'Hero Age',
-                      age: widget.wizardData.characterAge,
-                      minAge: 1,
-                      maxAge: 99,
-                      onAgeChanged: (newAge) {
-                        setState(() {
-                          widget.wizardData.characterAge = newAge;
-                        });
-                      },
-                    ),
+                    _buildPlayfulAgePicker(context),
                     const SizedBox(height: 20),
 
                     // Create Avatar Button
                     if (widget.wizardData.characterName.isNotEmpty)
                       SizedBox(
                         width: double.infinity,
-                        child: OutlinedButton.icon(
+                        child: ElevatedButton.icon(
                           onPressed: () => _showAvatarCreator(),
                           icon: Icon(
                             _generatedAvatar != null ? Icons.edit : Icons.face,
-                            color: const Color(0xFFFFD93D),
+                            color: const Color(0xFF2C1B47),
                           ),
                           label: Text(
                             _generatedAvatar != null
@@ -700,12 +872,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
+                              color: Color(0xFF2C1B47),
                             ),
                           ),
-                          style: OutlinedButton.styleFrom(
+                          style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: const BorderSide(
-                                color: Color(0xFFFFD93D), width: 2),
+                            elevation: 0,
+                            backgroundColor: const Color(0xFFFFD36A),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),

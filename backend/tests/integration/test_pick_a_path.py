@@ -241,15 +241,14 @@ class TestGenerateInteractiveStoryAPI:
     def test_create_interactive_story_rhyme_mode_is_invalid(
         self, client, auth_headers, test_character_fixture
     ):
-        """Test that interactive + rhymes combination returns 400."""
+        """Test that interactive + rhyme_time_mode combination returns 400."""
         response = client.post(
             "/generate-interactive-story",
             headers=auth_headers,
             json={
                 "character_id": test_character_fixture.id,
                 "theme": "Magic",
-                "mode": "rhymes",
-                "interactive": True,
+                "rhyme_time_mode": True,
             },
         )
 
