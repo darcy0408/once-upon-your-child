@@ -63,7 +63,7 @@ class _ColoringScreenState extends State<ColoringScreen> {
       final point = _drawingPoints[i];
       if (point.offset != null) {
         coloredAreas['point_$i'] =
-            '#${point.color.toARGB32().toRadixString(16).padLeft(8, '0')}';
+            '#${point.color.value.toRadixString(16).padLeft(8, '0')}';
       }
     }
 

@@ -386,7 +386,7 @@ class _TherapeuticCustomizationScreenState
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<WishType>(
-                    initialValue: selectedType,
+                    value: selectedType,
                     decoration: const InputDecoration(
                       labelText: 'Type of wish',
                       border: OutlineInputBorder(),
