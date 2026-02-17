@@ -15,6 +15,8 @@ class CharacterAvatar {
   final String? topType;
   final String? facialHairType;
   final String? accessoriesType;
+  final String? customImagePath;
+  final bool isCustom;
 
   const CharacterAvatar({
     required this.skinColor,
@@ -27,6 +29,8 @@ class CharacterAvatar {
     this.topType,
     this.facialHairType,
     this.accessoriesType,
+    this.customImagePath,
+    this.isCustom = false,
   });
 
   /// Create from JSON (compatible with React web app format)
@@ -42,6 +46,8 @@ class CharacterAvatar {
       topType: json['topType'],
       facialHairType: json['facialHairType'],
       accessoriesType: json['accessoriesType'],
+      customImagePath: json['customImagePath'] ?? json['custom_image_path'],
+      isCustom: json['isCustom'] ?? json['is_custom'] ?? false,
     );
   }
 
@@ -55,10 +61,12 @@ class CharacterAvatar {
       'mouthType': mouthType,
       'clotheType': clothingStyle,
       'clotheColor': clothingColor,
+      'isCustom': isCustom,
     };
     if (topType != null) json['topType'] = topType!;
     if (facialHairType != null) json['facialHairType'] = facialHairType!;
     if (accessoriesType != null) json['accessoriesType'] = accessoriesType!;
+    if (customImagePath != null) json['customImagePath'] = customImagePath!;
     return json;
   }
 
@@ -95,6 +103,8 @@ class CharacterAvatar {
     String? topType,
     String? facialHairType,
     String? accessoriesType,
+    String? customImagePath,
+    bool? isCustom,
   }) {
     return CharacterAvatar(
       skinColor: skinColor ?? this.skinColor,
@@ -107,6 +117,8 @@ class CharacterAvatar {
       topType: topType ?? this.topType,
       facialHairType: facialHairType ?? this.facialHairType,
       accessoriesType: accessoriesType ?? this.accessoriesType,
+      customImagePath: customImagePath ?? this.customImagePath,
+      isCustom: isCustom ?? this.isCustom,
     );
   }
 

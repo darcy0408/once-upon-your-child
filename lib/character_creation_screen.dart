@@ -122,7 +122,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
                 gap,
                 // Character Style dropdown
                 DropdownButtonFormField<String>(
-                  initialValue: _characterStyle,
+                  value: _characterStyle,
                   decoration: const InputDecoration(
                     labelText: 'Character Style',
                     border: OutlineInputBorder(),
@@ -147,7 +147,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
                 gap,
                 // Is a: dropdown (for story language)
                 DropdownButtonFormField<String>(
-                  initialValue: _isA,
+                  value: _isA,
                   decoration: const InputDecoration(
                     labelText: 'Is a:',
                     border: OutlineInputBorder(),

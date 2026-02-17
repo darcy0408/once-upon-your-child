@@ -378,7 +378,7 @@ class _CharacterAppearanceScreenState extends State<CharacterAppearanceScreen> {
     required String Function(T) getDisplayName,
   }) {
     return DropdownButtonFormField<T>(
-      initialValue: value,
+      value: value,
       decoration: InputDecoration(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),

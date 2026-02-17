@@ -347,7 +347,7 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
     return _buildOptionGroup(
       title: 'Hair Style',
       child: DropdownButtonFormField<String>(
-        initialValue: _currentAvatar.hairStyle,
+        value: _currentAvatar.hairStyle,
         decoration: SunsetJungleTheme.inputDecoration(),
         items: _hairStyles.map((style) {
           return DropdownMenuItem(
@@ -436,7 +436,7 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
           const SizedBox(height: 12),
           // Clothing dropdown
           DropdownButtonFormField<String>(
-            initialValue: _currentAvatar.clothingStyle,
+            value: _currentAvatar.clothingStyle,
             decoration: SunsetJungleTheme.inputDecoration(),
             items: currentCategory.map((item) {
               return DropdownMenuItem(
@@ -480,7 +480,7 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
     return _buildOptionGroup(
       title: 'Eyes Expression',
       child: DropdownButtonFormField<String>(
-        initialValue: _currentAvatar.eyeType,
+        value: _currentAvatar.eyeType,
         decoration: SunsetJungleTheme.inputDecoration(),
         items: _eyeExpressions.map((expr) {
           return DropdownMenuItem(
@@ -501,7 +501,7 @@ class _AvatarBuilderScreenState extends State<AvatarBuilderScreen> {
     return _buildOptionGroup(
       title: 'Mouth Expression',
       child: DropdownButtonFormField<String>(
-        initialValue: _currentAvatar.mouthType,
+        value: _currentAvatar.mouthType,
         decoration: SunsetJungleTheme.inputDecoration(),
         items: _mouthExpressions.map((expr) {
           return DropdownMenuItem(

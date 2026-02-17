@@ -387,7 +387,7 @@ class _CharacterCreationScreenV3State extends State<CharacterCreationScreenV3> {
         ],
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          initialValue: value,
+          value: value,
           dropdownColor: CharacterCustomization.secondaryBackground,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(

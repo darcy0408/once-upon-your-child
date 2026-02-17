@@ -553,7 +553,7 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: DropdownButtonFormField<String>(
-                initialValue: _isA,
+                value: _isA,
                 decoration: InputDecoration(
                   labelText: 'Is a: *',
                   border: OutlineInputBorder(
@@ -572,7 +572,7 @@ class _CharacterEditScreenState extends State<CharacterEditScreen> {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          initialValue: _characterStyle,
+          value: _characterStyle,
           decoration: InputDecoration(
             labelText: 'Character Style *',
             hintText: 'Choose appearance and personality',

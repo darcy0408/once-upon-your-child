@@ -410,7 +410,7 @@ class _CharacterEditScreenEnhancedState extends State<CharacterEditScreenEnhance
             const SizedBox(width: 12),
             Expanded(
               child: DropdownButtonFormField<String>(
-                initialValue: _gender,
+                value: _gender,
                 decoration: InputDecoration(
                   labelText: 'Gender *',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -437,7 +437,7 @@ class _CharacterEditScreenEnhancedState extends State<CharacterEditScreenEnhance
       [
         // Skin Tone
         DropdownButtonFormField<String>(
-          initialValue: _skinTone,
+          value: _skinTone,
           decoration: InputDecoration(
             labelText: 'Skin Tone *',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -466,7 +466,7 @@ class _CharacterEditScreenEnhancedState extends State<CharacterEditScreenEnhance
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                initialValue: _hairColor,
+                value: _hairColor,
                 decoration: InputDecoration(
                   labelText: 'Hair Color *',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -488,7 +488,7 @@ class _CharacterEditScreenEnhancedState extends State<CharacterEditScreenEnhance
             const SizedBox(width: 12),
             Expanded(
               child: DropdownButtonFormField<String>(
-                initialValue: _hairstyle,
+                value: _hairstyle,
                 decoration: InputDecoration(
                   labelText: 'Hairstyle *',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -516,7 +516,7 @@ class _CharacterEditScreenEnhancedState extends State<CharacterEditScreenEnhance
 
         // Eye Color
         DropdownButtonFormField<String>(
-          initialValue: _eyeColor,
+          value: _eyeColor,
           decoration: InputDecoration(
             labelText: 'Eye Color *',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
