@@ -810,6 +810,49 @@ flutter test test/unit/services/subscription_service_test.dart test/unit/service
 
 ---
 
+## SESSION NOTE - Feb 17, 2026 - Story Generation Load/Latency Audit (Task 2)
+
+**Agent:** Codex Agent  
+**Status:** COMPLETED - Load behavior audited for sync, async fallback, quota 429, and limiter reset
+
+### Scope
+- Target endpoint: `POST /generate-story`
+- Focus areas from handoff: `429` behavior, reset behavior, and `202` async fallback path
+- Method: local Flask test-client load harness with mocked task behaviors (to isolate route/fallback latency from upstream model variability)
+
+### Artifacts
+- `backend/tests/tools/run_story_load_audit.py` (new reusable audit runner)
+- `backend/tests/artifacts/story_load_audit_latest.json` (structured results)
+- `backend/tests/artifacts/story_load_audit_run.log` (execution log)
+
+### Measured Results (UTC 2026-02-17)
+1. **Sync Fast Path Load (24 req, concurrency 6):**
+   - Status mix: `200` = 24/24
+   - Latency: p50 `190.07ms`, p95 `199.05ms`, p99 `199.35ms`, mean `190.83ms`
+2. **Timeout -> Async Fallback (16 req, concurrency 4, sync timeout = 1s):**
+   - Status mix: `202` = 16/16
+   - Latency: p50 `1016.52ms`, p95 `1023.14ms`, p99 `1025.72ms`, mean `1016.3ms`
+   - Response body consistently reported `status=processing`
+3. **Quota Error Path (12 req, concurrency 4):**
+   - Status mix: `429` = 12/12
+   - Latency: p50 `19.42ms`, p95 `26.38ms`, p99 `32.34ms`, mean `20.37ms`
+   - Error payload consistently returned `error=QUOTA_EXCEEDED`
+4. **Rate-Limit Reset Check (`2/second` override for fast validation):**
+   - Sequence: `200`, `200`, `429`, then after `~1.2s` wait -> `200`
+   - Headers populated (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`)
+
+### Findings
+- Async fallback path is functioning and deterministic under timeout pressure.
+- Quota/ResourceExhausted mapping to `429 QUOTA_EXCEEDED` is functioning and low-latency.
+- Limiter reset behavior is functioning (window expiry allows recovery).
+- Main latency inflection point is the sync timeout boundary: requests crossing timeout shift into async mode at ~1s wall time.
+
+### Caveats
+- This audit intentionally used mocked story task behavior and local test-client traffic; it does not include network/model-provider latency variance from live Gemini/OpenRouter traffic.
+- For production SLO sign-off, run the same harness against live infra with real queue workers and external model calls.
+
+---
+
 ## 🚀 SESSION HANDOFF - Feb 13, 2026 - GUI Integration: Transparent PNG Assets
 
 **Agent:** Claude Sonnet 4.5
