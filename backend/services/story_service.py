@@ -203,6 +203,39 @@ class AdvancedStoryEngine:
         if age >= 14:
             coping_instruction = "a clever plot twist, a moment of wonder, a moment of resilience or perspective-shifting (internal monologue)"
 
+        # Explicit writing calibration so models do not flatten all ages to simple prose.
+        if age <= 7:
+            complexity_instruction = "Short, concrete sentences. Simple vocabulary. Single-thread plot with clear cause/effect."
+        elif age <= 10:
+            complexity_instruction = "Mix short and medium sentences. Introduce richer descriptive words with context clues. Two-step challenge arc."
+        elif age <= 13:
+            complexity_instruction = "Use varied sentence structure with occasional complex clauses. Include nuanced emotions and at least one meaningful tradeoff."
+        elif age <= 18:
+            complexity_instruction = "Use sophisticated but readable prose, layered motivation, and multi-step consequences. Avoid childish phrasing."
+        else:
+            complexity_instruction = "Use mature, nuanced prose with reflective inner monologue, relational complexity, and thematic depth suitable for adults."
+
+        # Hard constraints to force complexity scaling for older readers.
+        hard_complexity_constraints = ""
+        if age >= 11 and age <= 13:
+            hard_complexity_constraints = (
+                "At least 30% of sentences should be compound or complex. "
+                "Include at least one clear tradeoff where every option has a cost. "
+                "Include at least one short internal reflection paragraph by the hero."
+            )
+        elif age >= 14 and age <= 18:
+            hard_complexity_constraints = (
+                "At least 35% of sentences should be compound or complex. "
+                "Include at least two internal reflection moments (motivation, doubt, or reframing). "
+                "Show a 3-step consequence chain where earlier choices reshape later outcomes."
+            )
+        elif age > 18:
+            hard_complexity_constraints = (
+                "At least 40% of sentences should be compound or complex with varied rhythm. "
+                "Include at least two reflective passages with relational or existential tension. "
+                "Show a 3-step consequence chain and resolve it with an earned, non-obvious insight."
+            )
+
         return f"""
 **PERSONA**: Expert Child Narrative Architect & Therapeutic Narrative Specialist.
 
@@ -226,6 +259,8 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 **WRITING GUIDELINES**:
 - **Tone**: {config['notes']}
 - **Word Count**: Approximately {word_range[0]}-{word_range[1]} words total.
+- **Complexity Calibration**: {complexity_instruction}
+- **Hard Complexity Targets**: {hard_complexity_constraints or 'N/A for this age band.'}
 - **Safety**: {SAFETY_GUARDRAILS.strip()}{safety_reinforcement}
 - **Mandatory Elements**: Must include {coping_instruction}, and a satisfying earned ending.
 

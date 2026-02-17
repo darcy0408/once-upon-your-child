@@ -121,8 +121,21 @@ class GeminiImageGenerator:
 
         # Build character appearance description
         character_description = f"Main character: {character_name}"
+        reference_image_bytes = None
+
         if character_appearance:
             appearance_details = []
+
+            # Check for custom avatar image
+            custom_avatar_b64 = character_appearance.get('custom_avatar_base64')
+            if custom_avatar_b64:
+                try:
+                    if "," in custom_avatar_b64:
+                        custom_avatar_b64 = custom_avatar_b64.split(",", 1)[1]
+                    reference_image_bytes = base64.b64decode(custom_avatar_b64)
+                    appearance_details.append("This character MUST look exactly like the provided reference photo")
+                except Exception as e:
+                    logger.warning(f"Failed to decode custom avatar image: {e}")
 
             # Add physical characteristics
             if character_appearance.get('hair'):
@@ -179,6 +192,7 @@ CRITICAL REQUIREMENTS:
 - The illustration MUST match the SCENE description above (same setting, action, and mood).
 - The main character MUST match the selected character exactly: {character_description}
 - Keep character appearance consistent with the provided description (hair/skin/outfit/etc).
+- If a reference photo is provided, match the character's facial features and likeness precisely.
 - If companions are listed, they MUST appear in the illustration and be clearly visible as companions{companions_text if companions_text else ""}
 
 Visual requirements:
@@ -198,9 +212,19 @@ Style: {style}, optimized for {age_descriptor}
 """
 
         try:
+            from google.genai import types
             logger.info("Calling Gemini image generation with prompt preview: %s", prompt[:200].replace("\n", " "))
+            
+            # Prepare contents
+            contents = [prompt]
+            if reference_image_bytes:
+                contents.append(types.Part.from_bytes(data=reference_image_bytes, mime_type="image/png"))
+
             # Generate images with Gemini
-            response = self._generate_content_with_timeout(prompt)
+            response = self._client.models.generate_content(
+                model=self._model_name,
+                contents=contents,
+            )
             images = self._process_image_response(response, prompt)
             candidate_count = len(getattr(response, "candidates", []) or [])
             logger.info("Gemini image generation returned %s candidates and %s image(s)", candidate_count, len(images))
@@ -264,8 +288,21 @@ Style: {style}, optimized for {age_descriptor}
 
         # Build character appearance description
         character_description = f"Main character: {character_name}"
+        reference_image_bytes = None
+
         if character_appearance:
             appearance_details = []
+
+            # Check for custom avatar image
+            custom_avatar_b64 = character_appearance.get('custom_avatar_base64')
+            if custom_avatar_b64:
+                try:
+                    if "," in custom_avatar_b64:
+                        custom_avatar_b64 = custom_avatar_b64.split(",", 1)[1]
+                    reference_image_bytes = base64.b64decode(custom_avatar_b64)
+                    appearance_details.append("This character MUST look exactly like the provided reference photo")
+                except Exception as e:
+                    logger.warning(f"Failed to decode custom avatar image: {e}")
 
             # Add physical characteristics
             if character_appearance.get('hair'):
@@ -331,6 +368,7 @@ Critical requirements:
 - No text or words in the image
 - Printable quality (suitable for app display or printing)
 - MATCH THE CHARACTER APPEARANCE EXACTLY: {character_description}
+- If a reference photo is provided, match the character's facial features and likeness precisely.
 - If companions are listed, they MUST appear in the coloring page{companions_text if companions_text else ""}
 
 DELIGHTFUL DETAILS FOR CHILDREN:
@@ -345,9 +383,19 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
 """
 
         try:
+            from google.genai import types
             logger.info("Calling Gemini coloring page generation with prompt preview: %s", prompt[:200].replace("\n", " "))
+            
+            # Prepare contents
+            contents = [prompt]
+            if reference_image_bytes:
+                contents.append(types.Part.from_bytes(data=reference_image_bytes, mime_type="image/png"))
+
             # Generate images with Gemini
-            response = self._generate_content_with_timeout(prompt)
+            response = self._client.models.generate_content(
+                model=self._model_name,
+                contents=contents,
+            )
             images = self._process_image_response(response, prompt)
             candidate_count = len(getattr(response, "candidates", []) or [])
             logger.info("Gemini coloring generation returned %s candidates and %s image(s)", candidate_count, len(images))
@@ -360,6 +408,63 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
             return []
         except Exception as e:
             logger.exception("Error generating coloring page with Gemini")
+            return []
+
+    def generate_custom_avatar(
+        self,
+        base_image_bytes: bytes,
+        prompt: str,
+        character_name: str,
+        age: int,
+        num_images: int = 1
+    ) -> list:
+        """
+        Generate a custom magical avatar based on a reference photo.
+        
+        Args:
+            base_image_bytes: Bytes of the reference photo
+            prompt: Complete avatar generation prompt
+            character_name: Character's name
+            age: Character age
+            num_images: Number of variations (default: 1)
+            
+        Returns:
+            List of image dicts with base64-encoded PNG data
+        """
+        if not self._client:
+            logger.warning("Gemini image generator unavailable; skipping custom avatar generation")
+            return []
+
+        try:
+            from google.genai import types
+            
+            logger.info(f"Generating custom avatar for {character_name} using reference photo")
+            
+            # Create the content parts: prompt + image
+            # Note: The new SDK might handle this differently depending on the model.
+            # For gemini-2.0-flash (image-to-image/inpainting/etc), we use content parts.
+            
+            contents = [
+                prompt,
+                types.Part.from_bytes(data=base_image_bytes, mime_type="image/jpeg")
+            ]
+            
+            # Call Gemini
+            response = self._client.models.generate_content(
+                model=self._model_name,
+                contents=contents,
+            )
+
+            # Process response and extract images
+            images = self._process_image_response(response, prompt)
+
+            candidate_count = len(getattr(response, "candidates", []) or [])
+            logger.info(f"Custom avatar generation returned {candidate_count} candidates and {len(images)} image(s)")
+
+            return images
+
+        except Exception as e:
+            logger.exception(f"Error generating custom avatar with Gemini: {e}")
             return []
 
     def generate_character_avatar(

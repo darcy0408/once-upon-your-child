@@ -43,6 +43,93 @@ def rate_limit_by_user_tier(free=5, premium=50, byok=None):
     return decorator
 
 
+@avatar_bp.route('/generate-custom-avatar', methods=['POST'])
+@rate_limit_by_user_tier(free=3, premium=20, byok=None)
+def generate_custom_avatar():
+    """
+    Generate a custom magical avatar based on a child's photo and preferences.
+    Expects multipart/form-data with:
+    - photo: Image file
+    - character_name: str
+    - age: int
+    - gender: 'boy' | 'girl'
+    - eye_color: str
+    - favorite_color: str
+    """
+    try:
+        # Check if photo is present
+        if 'photo' not in request.files:
+            return jsonify({
+                'status': 'error',
+                'error_code': 'MISSING_PHOTO',
+                'message': 'Photo is required'
+            }), 400
+
+        photo_file = request.files['photo']
+        photo_bytes = photo_file.read()
+
+        # Extract other data from form
+        character_name = request.form.get('character_name')
+        age = request.form.get('age')
+        gender = request.form.get('gender')
+        eye_color = request.form.get('eye_color')
+        favorite_color = request.form.get('favorite_color')
+
+        # Basic validation
+        if not all([character_name, age, gender, eye_color, favorite_color]):
+            return jsonify({
+                'status': 'error',
+                'error_code': 'MISSING_DATA',
+                'message': 'All fields (character_name, age, gender, eye_color, favorite_color) are required'
+            }), 400
+
+        try:
+            age = int(age)
+        except ValueError:
+            return jsonify({
+                'status': 'error',
+                'error_code': 'INVALID_AGE',
+                'message': 'Age must be a number'
+            }), 400
+
+        logger.info(f"Custom avatar request: name={character_name}, age={age}, gender={gender}")
+
+        service = get_avatar_service()
+
+        try:
+            avatar_data = service.generate_custom_avatar(
+                character_name=character_name,
+                age=age,
+                gender=gender,
+                eye_color=eye_color,
+                favorite_color=favorite_color,
+                photo_bytes=photo_bytes
+            )
+
+            logger.info(f"Custom avatar generated successfully: {avatar_data['id']}")
+
+            return jsonify({
+                'status': 'success',
+                'avatar': avatar_data
+            }), 200
+
+        except Exception as e:
+            logger.error(f"Custom avatar generation failed: {e}")
+            return jsonify({
+                'status': 'error',
+                'error_code': 'GENERATION_FAILED',
+                'message': f"Our magic paintbrush hit a snag: {str(e)}"
+            }), 500
+
+    except Exception as e:
+        logger.exception(f"Unexpected error in generate_custom_avatar endpoint: {e}")
+        return jsonify({
+            'status': 'error',
+            'error_code': 'INTERNAL_ERROR',
+            'message': 'Something magical went wrong! Let\'s try again! ✨'
+        }), 500
+
+
 @avatar_bp.route('/generate-avatar', methods=['POST'])
 @rate_limit_by_user_tier(free=5, premium=50, byok=None)
 def generate_avatar():

@@ -1,5 +1,5 @@
 from ..database import db
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 class UserAchievement(db.Model):
@@ -14,7 +14,7 @@ class UserAchievement(db.Model):
     is_unlocked = db.Column(db.Boolean, default=False, nullable=False)
     unlocked_at = db.Column(db.DateTime, nullable=True)
     is_new = db.Column(db.Boolean, default=False, nullable=False)
-    last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_updated = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
     user = db.relationship('User', backref=db.backref('achievements', lazy=True))
@@ -62,10 +62,10 @@ class AchievementStats(db.Model):
     # Emotion tracking
     unique_emotions_logged = db.Column(db.Integer, default=0, nullable=False)
 
-    last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_updated = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
-    user = db.relationship('User', backref=db.backref('achievement_stats', uselist=False))
+    user = db.relationship('User', backref=db.backref('achievement_stats', uselist=False, cascade='all, delete-orphan'))
 
     def to_dict(self):
         return {

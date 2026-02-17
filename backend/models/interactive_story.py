@@ -4,7 +4,7 @@ Models for the new interactive story system with branching narratives,
 inventory tracking, and persistent state management.
 """
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from backend.database import db
 
 
@@ -27,13 +27,13 @@ class InteractiveStory(db.Model):
     age = db.Column(db.Integer, nullable=False)  # Target age for content calibration
 
     # Progress tracking
-    current_segment_id = db.Column(db.String(36), db.ForeignKey('story_segment.id'), nullable=True)
+    current_segment_id = db.Column(db.String(36), db.ForeignKey('story_segment.id', use_alter=True, name='fk_story_current_segment'), nullable=True)
     current_segment_number = db.Column(db.Integer, default=0, nullable=False)
     is_completed = db.Column(db.Boolean, default=False, nullable=False)
 
     # Timestamps
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relationships
     segments = db.relationship('StorySegment', backref='story', lazy='dynamic',
@@ -94,10 +94,10 @@ class StorySegment(db.Model):
     image_url = db.Column(db.String(500), nullable=True)  # Base64 data URI or URL
 
     # Navigation
-    parent_choice_id = db.Column(db.String(36), db.ForeignKey('story_choice.id'), nullable=True)
+    parent_choice_id = db.Column(db.String(36), db.ForeignKey('story_choice.id', use_alter=True, name='fk_segment_parent_choice'), nullable=True)
 
     # Timestamp
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relationships
     choices = db.relationship('StoryChoice', backref='segment', lazy='dynamic',
@@ -204,7 +204,7 @@ class StoryState(db.Model):
     additional_state = db.Column(db.JSON, default=dict, nullable=False)
 
     # Timestamp
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     def to_dict(self):
         """Serialize to dictionary for API responses"""

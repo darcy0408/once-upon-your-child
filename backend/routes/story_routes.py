@@ -153,6 +153,15 @@ def create_story_blueprint(
         companion_pets = payload.get("companion_pets", [])
         companion_characters = payload.get("companion_characters", [])
 
+        # Accept multiple age keys for backward compatibility with older clients.
+        resolved_age = payload.get("age")
+        if resolved_age is None:
+            resolved_age = payload.get("character_age")
+        if resolved_age is None and isinstance(character_details, dict):
+            resolved_age = character_details.get("age")
+        if resolved_age is None:
+            resolved_age = 5
+
         task_kwargs = {
             "character_id": payload.get("character_id"),
             "character": payload.get("character"),
@@ -174,7 +183,7 @@ def create_story_blueprint(
             "therapeutic_prompt": payload.get("therapeutic_prompt", ""),
             "feelings_prompt": feelings_prompt_text or payload.get("feelings_prompt"),
             "story_length": payload.get("story_length", "standard"),
-            "age": payload.get("age", 5),
+            "age": resolved_age,
         }
 
         # If async mode is requested, disable inline illustrations but pass the flag

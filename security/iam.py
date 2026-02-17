@@ -9,7 +9,7 @@ import jwt
 import bcrypt
 import secrets
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any, Optional, Tuple
 from functools import wraps
 import pyotp
@@ -83,15 +83,15 @@ class IdentityAccessManager:
 
     def generate_tokens(self, user_id: str, role: str, additional_claims: Dict[str, Any] = None) -> Dict[str, str]:
         """Generate access and refresh tokens"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Access token payload
         access_payload = {
             'user_id': user_id,
             'role': role,
             'type': 'access',
-            'iat': now,
-            'exp': now + timedelta(seconds=self.access_token_expiry),
+            'iat': int(now.timestamp()),
+            'exp': int((now + timedelta(seconds=self.access_token_expiry)).timestamp()),
             'iss': 'story-weaver-iam',
             'aud': 'story-weaver-api'
         }
@@ -100,8 +100,8 @@ class IdentityAccessManager:
         refresh_payload = {
             'user_id': user_id,
             'type': 'refresh',
-            'iat': now,
-            'exp': now + timedelta(seconds=self.refresh_token_expiry),
+            'iat': int(now.timestamp()),
+            'exp': int((now + timedelta(seconds=self.refresh_token_expiry)).timestamp()),
             'iss': 'story-weaver-iam'
         }
 
@@ -135,15 +135,20 @@ class IdentityAccessManager:
     def validate_token(self, token: str, token_type: str = 'access') -> Optional[Dict[str, Any]]:
         """Validate a JWT token"""
         try:
-            payload = jwt.decode(token, self.jwt_secret, algorithms=[self.jwt_algorithm])
+            payload = jwt.decode(
+                token, 
+                self.jwt_secret, 
+                algorithms=[self.jwt_algorithm],
+                audience='story-weaver-api' if token_type == 'access' else None
+            )
 
             # Check token type
             if payload.get('type') != token_type:
                 return None
 
             # Check if token is expired
-            exp = datetime.fromtimestamp(payload['exp'])
-            if exp < datetime.utcnow():
+            exp = datetime.fromtimestamp(payload['exp'], tz=timezone.utc)
+            if exp < datetime.now(timezone.utc):
                 return None
 
             # Check if session is still active
@@ -153,7 +158,7 @@ class IdentityAccessManager:
 
             # Update session activity
             if session_id:
-                self.active_sessions[session_id]['last_activity'] = datetime.utcnow()
+                self.active_sessions[session_id]['last_activity'] = datetime.now(timezone.utc)
 
             return payload
 
@@ -284,7 +289,7 @@ class IdentityAccessManager:
 
     def cleanup_expired_sessions(self):
         """Clean up expired sessions"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         expired_sessions = []
 
         for session_id, session_data in self.active_sessions.items():

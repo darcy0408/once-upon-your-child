@@ -133,11 +133,23 @@ def validate_story_modes(payload: dict) -> tuple:
     """
     from .error_codes import ErrorCodes, make_error_response
 
-    # Extract mode flags
-    rhyme_time_mode = payload.get("rhyme_time_mode", False)
-    pick_a_path = payload.get("pick_a_path", False)
-    # Also check for interactive story mode which is essentially Pick-a-Path
-    is_interactive = payload.get("interactive", False)
+    # Extract mode flags.
+    # Support both boolean flags and legacy mode strings used by older clients/tests.
+    raw_mode = str(payload.get("mode", "") or "").strip().lower()
+    rhyme_time_mode = bool(payload.get("rhyme_time_mode", False)) or raw_mode in {
+        "rhyme",
+        "rhymes",
+        "rhyme_time",
+        "rhyme-time",
+    }
+    pick_a_path = bool(payload.get("pick_a_path", False)) or raw_mode in {
+        "pick_a_path",
+        "pick-a-path",
+        "pickapath",
+        "interactive",
+    }
+    # Also check explicit interactive story mode, which is effectively Pick-a-Path.
+    is_interactive = bool(payload.get("interactive", False))
 
     # Rule 1: Pick-a-Path + Rhymes = INVALID
     # Rhyming stories need consistent meter and structure that doesn't work

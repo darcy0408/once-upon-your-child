@@ -70,6 +70,134 @@ class AvatarGenerationService:
                 logger.warning(f"Failed to initialize OpenRouter fallback: {e}")
                 self.fallback_generator = None
 
+    def generate_custom_avatar(
+        self,
+        character_name: str,
+        age: int,
+        gender: str,
+        eye_color: str,
+        favorite_color: str,
+        photo_bytes: bytes,
+    ) -> Dict:
+        """
+        Generate a custom magical avatar based on a child's photo and preferences.
+
+        Args:
+            character_name: Child's name
+            age: Child's age
+            gender: 'boy' or 'girl'
+            eye_color: Child's eye color
+            favorite_color: Child's favorite color
+            photo_bytes: Bytes of the snapped photo
+
+        Returns:
+            Dict with avatar data (same format as generate_avatar)
+        """
+        start_time = datetime.now()
+
+        # Validate inputs
+        if not character_name or not character_name.strip():
+            raise ValueError("Character name is required")
+        if not (3 <= age <= 18):
+            raise ValueError("Age must be between 3 and 18")
+        if gender.lower() not in ['boy', 'girl']:
+            raise ValueError("Gender must be 'boy' or 'girl'")
+
+        # Use the specific user-provided prompt template
+        prompt_template = """
+**Generated Prompt:** Magical Avatar Creator v3 (Dynamic Celestial Edition)
+
+**Context & Background**
+This prompt is designed for "Story Weaver," an app that transforms real-world images of children into Pixar-style digital avatars. The system maintains facial resemblance while applying a 3D animation aesthetic, placing the character in a whimsical, storybook world.
+
+**Core Role & Capabilities**
+* **Avatar Stylist:** Expert in translating human features into stylized 3D character designs.
+* **Feature Preservation:** Maintains identifiable traits (eye shape, smile lines, hair texture) while applying animation filters.
+* **Dynamic Tailoring:** Adjusts outfit proportions based on the child's gender to ensure a relatable, heroic silhouette.
+
+**Technical Configuration**
+* **Model:** Nano Banana (Image-to-Image / Text-to-Image).
+* **Compositional Control:** Reference the uploaded photo for head shape, skin tone, and facial features.
+* **Style Anchor:** Professional 3D animated film aesthetic; vibrant textures, soft "subsurface scattering" on skin, and cinematic lighting.
+
+**Operational Guidelines**
+1. **Likeness Synthesis:** Prioritize the uploaded photo for structural likeness. Use the user-provided **Age: {age}** to set correct head-to-body proportions and the provided **Eye Color: {eye_color}** for the iris tint.
+2. **The "Color-Matched Explorer" Wardrobe:**
+   - **Base Layer:** Clothe the character in a "Hero’s Tunic" made of iridescent, star-spun silk. Use a jewel-tone version of the user's **Favorite Color: {favorite_color}** as the primary fabric hue. 
+   - **Gender-Specific Tailoring:** {gender_tailoring}
+   - **The Celestial Cape:** A semi-translucent flowing cape that glows with internal nebula light. The nebula should shimmer in a shade matching the **Favorite Color: {favorite_color}**, filled with tiny floating gold star particles.
+   - **Details:** Add gold constellation embroidery along the collar and cuffs. No modern zippers/buttons.
+3. **Environment:** Place the character in a "Painterly Storybook Forest" with soft-focus "bokeh" glowing mushrooms and floating fireflies. 
+4. **Final Render:** Chest-up or waist-up portrait, center-aligned, high-resolution.
+
+**Output Specifications**
+* **Format:** Single high-resolution square image (1024x1024+).
+* **Style:** Pixar-inspired 3D animation with soft lighting.
+
+**Error Handling**
+* **Photo Quality:** If the photo is low-quality, lean heavily on provided text (Age, Eye Color, Favorite Color) to generate a representative "best-fit" avatar.
+* **Color Clashes:** Use gold accents (embroidery/stars) to create visual separation if the favorite color is too close to the child's hair or skin tone.
+"""
+        gender_tailoring = ""
+        if gender.lower() == 'boy':
+            gender_tailoring = "* For **Boys**: Ensure the tunic is hip-length and paired with dark, fitted trousers or leggings to create a clear 'heroic shirt' silhouette."
+        else:
+            gender_tailoring = "* For **Girls**: The tunic may be styled as a whimsical tunic-dress or a hip-length top with leggings."
+
+        prompt = prompt_template.format(
+            age=age,
+            eye_color=eye_color,
+            favorite_color=favorite_color,
+            gender_tailoring=gender_tailoring
+        )
+
+        logger.info(f"Generating custom avatar for {character_name}, age {age}, eye_color {eye_color}, fav_color {favorite_color}")
+
+        # Call the new generator method
+        try:
+            results = self.image_generator.generate_custom_avatar(
+                base_image_bytes=photo_bytes,
+                prompt=prompt,
+                character_name=character_name,
+                age=age,
+                num_images=1
+            )
+
+            if results and len(results) > 0:
+                result = results[0]
+                image_base64 = result.get('image_data')
+                
+                # Check for "data:image" prefix and clean up
+                if image_base64 and "," in image_base64:
+                    image_base64 = image_base64.split(",", 1)[1]
+                
+                # Build response
+                avatar_id = str(uuid.uuid4())
+                end_time = datetime.now()
+                generation_time_ms = int((end_time - start_time).total_seconds() * 1000)
+
+                return {
+                    'id': avatar_id,
+                    'image_base64': f"data:image/png;base64,{image_base64}",
+                    'style': 'pixar-custom',
+                    'attributes': {
+                        'character_name': character_name,
+                        'age': age,
+                        'gender': gender,
+                        'eye_color': eye_color,
+                        'favorite_color': favorite_color
+                    },
+                    'generated_at': datetime.now().isoformat(),
+                    'generation_time_ms': generation_time_ms,
+                    'version': 3
+                }
+            else:
+                raise Exception("No image generated for custom avatar")
+
+        except Exception as e:
+            logger.error(f"Custom avatar generation failed: {e}")
+            raise Exception(f"Custom avatar generation failed: {str(e)}")
+
     def generate_avatar(
         self,
         character_name: str,
