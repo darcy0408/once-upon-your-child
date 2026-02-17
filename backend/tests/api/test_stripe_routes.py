@@ -17,7 +17,10 @@ def _create_user(user_id: str, tier: str = "free") -> User:
 
 def _auth_headers(user_id: str) -> dict[str, str]:
     token = jwt.encode(
-        {"user_id": user_id, "exp": datetime.now(timezone.utc) + timedelta(hours=1)},
+        {
+            "user_id": user_id,
+            "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
+        },
         "dev-secret-key",
         algorithm="HS256",
     )
@@ -185,7 +188,10 @@ def test_get_subscription_status_rejects_expired_token(client, app):
         _create_user("stripe-user-expired-token")
 
     expired_token = jwt.encode(
-        {"user_id": "stripe-user-expired-token", "exp": datetime.now(timezone.utc) - timedelta(hours=1)},
+        {
+            "user_id": "stripe-user-expired-token",
+            "exp": int((datetime.now(timezone.utc) - timedelta(hours=1)).timestamp()),
+        },
         "dev-secret-key",
         algorithm="HS256",
     )

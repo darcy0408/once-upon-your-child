@@ -75,7 +75,7 @@ def test_require_auth_expired_token(app, client):
     
     payload = {
         'user_id': 'test_user_123',
-        'exp': datetime.now(timezone.utc) - timedelta(hours=1)
+        'exp': int((datetime.now(timezone.utc) - timedelta(hours=1)).timestamp())
     }
     expired_token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
     headers = {'Authorization': f'Bearer {expired_token}'}
@@ -90,7 +90,7 @@ def test_require_auth_user_not_found(app, client):
 
     payload = {
         'user_id': 'ghost_user_404',
-        'exp': datetime.now(timezone.utc) + timedelta(hours=1)
+        'exp': int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
     }
     token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
     headers = {'Authorization': f'Bearer {token}'}
@@ -112,7 +112,7 @@ def test_require_admin_success(app, client):
     # Generate token for this specific user
     payload = {
         'user_id': admin_id,
-        'exp': datetime.now(timezone.utc) + timedelta(hours=1)
+        'exp': int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
     }
     token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
     headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
@@ -292,11 +292,72 @@ def test_token_validation_edge_cases(app, client, auth_headers):
     assert response.status_code == 401
     
     # 2. Token with non-existent user_id in payload
-    payload = {'user_id': 'missing_user_uuid', 'exp': datetime.now(timezone.utc) + timedelta(hours=1)}
+    payload = {
+        'user_id': 'missing_user_uuid',
+        'exp': int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
+    }
     ghost_token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
     response = client.get('/test/auth', headers={'Authorization': f'Bearer {ghost_token}'})
     assert response.status_code == 401
     assert response.json['error'] == 'User not found'
+
+def test_anonymous_token_refresh_flow(app, client):
+    """Test getting a new token for an existing anonymous user."""
+    setup_test_routes(app)
+    client_id = 'persistent_device_id'
+    payload = {'client_id': client_id}
+    
+    # 1. Get initial token
+    resp1 = client.post('/auth/anonymous', 
+                       data=json.dumps(payload), 
+                       headers={'Content-Type': 'application/json'})
+    token1 = resp1.json['token']
+    
+    # 2. Get "refreshed" token (same client_id)
+    resp2 = client.post('/auth/anonymous', 
+                       data=json.dumps(payload), 
+                       headers={'Content-Type': 'application/json'})
+    token2 = resp2.json['token']
+    
+    assert token1 != token2  # Tokens should be different because of 'iat' or 'jti'
+    
+    # 3. Verify both tokens are valid
+    for token in [token1, token2]:
+        headers = {'Authorization': f'Bearer {token}'}
+        resp = client.get('/test/auth', headers=headers)
+        assert resp.status_code == 200
+        assert resp.json['user_id'] == client_id
+
+def test_iam_manager_isolation():
+    """Test the IdentityAccessManager in isolation (from security/iam.py)."""
+    from security.iam import IdentityAccessManager
+    iam = IdentityAccessManager()
+    
+    user_id = 'test_iam_user'
+    role = 'user'
+    
+    # Test token generation
+    tokens = iam.generate_tokens(user_id, role)
+    assert 'access_token' in tokens
+    assert 'refresh_token' in tokens
+    
+    # Test validation
+    payload = iam.validate_token(tokens['access_token'])
+    assert payload is not None
+    assert payload['user_id'] == user_id
+    assert payload['role'] == role
+    
+    # Test refresh flow
+    import time
+    time.sleep(1.1)
+    new_tokens = iam.refresh_access_token(tokens['refresh_token'])
+    assert new_tokens is not None
+    assert new_tokens['access_token'] != tokens['access_token']
+    
+    # Test permission check
+    assert iam.check_permission('admin', 'any:permission') is True
+    assert iam.check_permission('user', 'create:story') is True
+    assert iam.check_permission('user', 'admin:access') is False
 
 def test_idor_protection_detailed(app, client, test_user, auth_headers):
     """Test detailed IDOR protection scenarios."""

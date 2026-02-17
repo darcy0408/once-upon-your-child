@@ -68,8 +68,9 @@ def auth_token():
 
     payload = {
         'user_id': 'test_user_123',
+        'sub': 'test_user_123',
         'email': 'test@example.com',
-        'exp': datetime.now(timezone.utc) + timedelta(hours=1)
+        'exp': int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
     }
     return jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
 
@@ -89,9 +90,10 @@ def free_user_headers():
 
     payload = {
         'user_id': 'free_user_456',
+        'sub': 'free_user_456',
         'email': 'free@example.com',
         'subscription_tier': 'free',
-        'exp': datetime.now(timezone.utc) + timedelta(hours=1)
+        'exp': int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
     }
     token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
     return {
@@ -107,9 +109,10 @@ def premium_user_headers():
 
     payload = {
         'user_id': 'premium_user_789',
+        'sub': 'premium_user_789',
         'email': 'premium@example.com',
         'subscription_tier': 'premium',
-        'exp': datetime.now(timezone.utc) + timedelta(hours=1)
+        'exp': int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
     }
     token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
     return {
@@ -274,7 +277,7 @@ def admin_token(admin_user):
         'user_id': admin_user.id,
         'email': admin_user.email,
         'role': 'admin',
-        'exp': datetime.now(timezone.utc) + timedelta(hours=1)
+        'exp': int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
     }
     return jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
 

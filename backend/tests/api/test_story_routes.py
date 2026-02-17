@@ -73,6 +73,9 @@ class TestGenerateStory:
             }
         }
 
+        # Also mock that illustrations are enabled
+        mock_result['include_illustrations'] = True
+
         # Mock the synchronous task execution
         mock_task = MagicMock()
         mock_task.apply.return_value.get.return_value = mock_result
@@ -113,6 +116,26 @@ class TestGenerateStory:
                                 headers=auth_headers)
 
         assert response.status_code == 200
+
+    def test_generate_story_accepts_character_age_alias(self, client, auth_headers, mock_story_generation):
+        """Test backend accepts legacy character_age field and maps to task age."""
+        payload = {
+            'character': 'Luna',
+            'character_age': 46,
+            'theme': 'Adventure'
+        }
+
+        response = client.post(
+            '/generate-story',
+            json=payload,
+            content_type='application/json',
+            headers=auth_headers
+        )
+
+        assert response.status_code == 200
+        task_call = mock_story_generation.apply.call_args
+        assert task_call is not None
+        assert task_call.kwargs['kwargs']['age'] == 46
 
     def test_generate_story_full_payload(self, client, auth_headers):
         """Test story generation with full payload"""
@@ -296,12 +319,14 @@ class TestGenerateStory:
 
         assert response.status_code == 200
 
-    def test_generate_story_async_illustrations(self, client, auth_headers):
-        """Test story generation with async illustrations"""
+
+
+    def test_generate_story_with_illustration_generation(self, client, auth_headers):
+        """Test story generation with illustration generation enabled"""
         payload = {
             'character': 'Luna',
             'age': 7,
-            'async_illustrations': True
+            'include_illustrations': True
         }
 
         response = client.post('/generate-story',
@@ -312,8 +337,8 @@ class TestGenerateStory:
         assert response.status_code == 200
         data = response.get_json()
 
-        # Should indicate async illustrations are enabled
-        assert data.get('async_illustrations') is True
+        # Should indicate illustrations are enabled
+        assert data.get('include_illustrations') is True
 
     def test_generate_story_creates_user_if_not_exists(self, client, auth_headers):
         """Test that story generation creates user if they don't exist"""

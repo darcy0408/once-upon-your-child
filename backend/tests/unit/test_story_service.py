@@ -106,6 +106,30 @@ class TestAdvancedStoryEngine:
         # Should specify 3200-5200 word range for adult, medium length
         assert "3200-5200 words" in prompt or ("3200" in prompt and "5200" in prompt)
 
+    def test_hard_complexity_targets_for_preteen(self, engine):
+        """Age 12 prompt should include hard complexity targets."""
+        prompt = engine.generate_enhanced_prompt(
+            character="Riley",
+            theme="Mystery",
+            age=12
+        )
+
+        assert "Hard Complexity Targets" in prompt
+        assert "30% of sentences" in prompt
+        assert "tradeoff" in prompt
+
+    def test_hard_complexity_targets_for_adult(self, engine):
+        """Adult prompt should include strongest hard complexity targets."""
+        prompt = engine.generate_enhanced_prompt(
+            character="Jordan",
+            theme="Self-Discovery",
+            age=46
+        )
+
+        assert "Hard Complexity Targets" in prompt
+        assert "40% of sentences" in prompt
+        assert "non-obvious insight" in prompt
+
     # ========================================================================
     # STORY LENGTH VARIATIONS
     # ========================================================================
