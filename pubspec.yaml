@@ -42,6 +42,7 @@ dependencies:
   isar_flutter_libs: ^3.1.0
   uuid: ^4.5.1              # Generate unique IDs
   path_provider: ^2.1.1     # File paths
+  path: ^1.9.0               # Path manipulation utilities
   camera: ^0.11.0+2          # Snapshot photos for custom avatars
   image_picker: ^1.1.2       # Pick images from gallery
   riverpod_annotation: ^2.6.1
@@ -78,10 +79,6 @@ dev_dependencies:
   build_runner: ^2.4.13
   riverpod_generator: ^2.4.0
   isar_generator: ^3.1.0
-
-dependency_overrides:
-  google_fonts:
-    path: third_party/google_fonts_stub
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
