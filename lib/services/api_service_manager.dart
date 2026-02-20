@@ -24,9 +24,11 @@ class ApiServiceManager {
   static String get _localBackendUrl => Environment.backendUrl;
   static http.Client? _testClient;
   static String? _authToken;
+  static String? _refreshToken;
   static String? _userId;
   static Future<void>? _authInFlight;
   static const String _tokenKey = 'story_weaver_auth_token';
+  static const String _refreshTokenKey = 'story_weaver_refresh_token';
   static const String _userIdKey = 'story_weaver_user_id';
 
   static bool get _isLocalBackend {
@@ -65,6 +67,17 @@ class ApiServiceManager {
     };
   }
 
+  /// Static helper — ensures auth then returns JSON headers with Bearer token.
+  /// Use this from services that don't own an ApiServiceManager instance.
+  static Future<Map<String, String>> authHeaders() async {
+    final mgr = ApiServiceManager();
+    await mgr._ensureAuthenticated();
+    return {
+      'Content-Type': 'application/json',
+      if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+    };
+  }
+
   /// Ensure we have a valid auth token (get anonymous token if needed)
   Future<void> _ensureAuthenticated() async {
     if (_authInFlight != null) {
@@ -89,6 +102,7 @@ class ApiServiceManager {
     // Try to load from storage
     final prefs = await SharedPreferences.getInstance();
     _authToken = prefs.getString(_tokenKey);
+    _refreshToken = prefs.getString(_refreshTokenKey);
     _userId = prefs.getString(_userIdKey);
 
     if (_authToken != null) {
@@ -110,10 +124,14 @@ class ApiServiceManager {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         _authToken = data['token'];
+        _refreshToken = data['refresh_token'];
         _userId = data['user_id'];
 
         // Save to storage
         await prefs.setString(_tokenKey, _authToken!);
+        if (_refreshToken != null && _refreshToken!.isNotEmpty) {
+          await prefs.setString(_refreshTokenKey, _refreshToken!);
+        }
         await prefs.setString(_userIdKey, _userId!);
         debugPrint('✅ Got anonymous auth token for user: $_userId');
       } else {
@@ -121,6 +139,50 @@ class ApiServiceManager {
       }
     } catch (e) {
       debugPrint('⚠️ Error getting anonymous token: $e');
+    }
+  }
+
+  Future<void> _clearAuthState() async {
+    _authToken = null;
+    _refreshToken = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
+    await prefs.remove(_refreshTokenKey);
+  }
+
+  Future<bool> _tryRefreshAccessToken({
+    required http.Client httpClient,
+    required Duration timeout,
+  }) async {
+    if (_refreshToken == null || _refreshToken!.isEmpty) {
+      return false;
+    }
+
+    try {
+      final response = await httpClient.post(
+        Uri.parse('$_localBackendUrl/auth/refresh'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_refreshToken',
+        },
+      ).timeout(timeout);
+
+      if (response.statusCode != 200) {
+        return false;
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final newToken = data['token']?.toString();
+      if (newToken == null || newToken.isEmpty) {
+        return false;
+      }
+
+      _authToken = newToken;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_tokenKey, newToken);
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -151,11 +213,14 @@ class ApiServiceManager {
       // Handle 401 Unauthorized - Retry logic
       if (response.statusCode == 401) {
         debugPrint('⚠️ 401 Unauthorized from $uri. Refreshing token...');
-        _authToken = null;
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove(_tokenKey);
-
-        await _ensureAuthenticated();
+        final refreshed = await _tryRefreshAccessToken(
+          httpClient: httpClient,
+          timeout: timeout,
+        );
+        if (!refreshed) {
+          await _clearAuthState();
+          await _ensureAuthenticated();
+        }
 
         final newHeaders = await _getAuthHeaders();
         final retryResponse = await httpClient
@@ -216,11 +281,14 @@ class ApiServiceManager {
       // Handle 401 Unauthorized - Retry logic
       if (response.statusCode == 401) {
         debugPrint('⚠️ 401 Unauthorized from $uri. Refreshing token...');
-        _authToken = null;
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove(_tokenKey);
-
-        await _ensureAuthenticated();
+        final refreshed = await _tryRefreshAccessToken(
+          httpClient: httpClient,
+          timeout: timeout,
+        );
+        if (!refreshed) {
+          await _clearAuthState();
+          await _ensureAuthenticated();
+        }
 
         final newHeaders = await _getAuthHeaders();
         final retryResponse = await httpClient
@@ -279,11 +347,14 @@ class ApiServiceManager {
       // Handle 401 Unauthorized - Retry logic
       if (response.statusCode == 401) {
         debugPrint('⚠️ 401 Unauthorized from $uri. Refreshing token...');
-        _authToken = null;
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove(_tokenKey);
-
-        await _ensureAuthenticated();
+        final refreshed = await _tryRefreshAccessToken(
+          httpClient: httpClient,
+          timeout: timeout,
+        );
+        if (!refreshed) {
+          await _clearAuthState();
+          await _ensureAuthenticated();
+        }
 
         final newHeaders = await _getAuthHeaders();
         final retryResponse = await httpClient
@@ -336,11 +407,14 @@ class ApiServiceManager {
       // Handle 401 Unauthorized - Retry logic
       if (response.statusCode == 401) {
         debugPrint('⚠️ 401 Unauthorized from $uri. Refreshing token...');
-        _authToken = null;
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove(_tokenKey);
-
-        await _ensureAuthenticated();
+        final refreshed = await _tryRefreshAccessToken(
+          httpClient: httpClient,
+          timeout: timeout,
+        );
+        if (!refreshed) {
+          await _clearAuthState();
+          await _ensureAuthenticated();
+        }
 
         final newHeaders = await _getAuthHeaders();
         final retryResponse =
@@ -390,11 +464,14 @@ class ApiServiceManager {
       // Handle 401 Unauthorized - Retry logic
       if (response.statusCode == 401) {
         debugPrint('⚠️ 401 Unauthorized from $uri. Refreshing token...');
-        _authToken = null;
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove(_tokenKey);
-
-        await _ensureAuthenticated();
+        final refreshed = await _tryRefreshAccessToken(
+          httpClient: httpClient,
+          timeout: timeout,
+        );
+        if (!refreshed) {
+          await _clearAuthState();
+          await _ensureAuthenticated();
+        }
 
         final newHeaders = await _getAuthHeaders();
         final retryResponse =
@@ -1653,9 +1730,10 @@ Ensure text is vivid, age-tuned, playful, with a strong hook/problem and embodie
     required int age,
     String? companion,
   }) async {
+    final headers = await authHeaders();
     final response = await http.post(
       Uri.parse('$_localBackendUrl/generate-interactive-story'),
-      headers: {'Content-Type': 'application/json'},
+      headers: headers,
       body: jsonEncode({
         'character': characterName,
         'theme': theme,
@@ -1757,9 +1835,10 @@ Do NOT wrap JSON in backticks.
     required String storySoFar,
     required List<String> choicesMade,
   }) async {
+    final headers = await authHeaders();
     final response = await http.post(
       Uri.parse('$_localBackendUrl/continue-interactive-story'),
-      headers: {'Content-Type': 'application/json'},
+      headers: headers,
       body: jsonEncode({
         'character': characterName,
         'theme': theme,

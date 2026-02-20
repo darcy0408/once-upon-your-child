@@ -322,6 +322,7 @@ def test_auth_anonymous_contract(client):
     payload = response.get_json()
     assert isinstance(payload, dict)
     assert isinstance(payload.get("token"), str)
+    assert isinstance(payload.get("refresh_token"), str)
     assert isinstance(payload.get("user_id"), str)
     assert payload.get("is_anonymous") is True
 
@@ -355,6 +356,36 @@ def test_auth_login_success_returns_token(client):
     assert response.status_code == 200
     payload = response.get_json()
     assert isinstance(payload.get("token"), str)
+    assert isinstance(payload.get("refresh_token"), str)
+
+
+@pytest.mark.api_contract
+def test_auth_refresh_contract(client):
+    auth_resp = client.post("/auth/anonymous", json={})
+    assert auth_resp.status_code == 200
+    auth_payload = auth_resp.get_json()
+    refresh_token = auth_payload.get("refresh_token")
+    user_id = auth_payload.get("user_id")
+    assert isinstance(refresh_token, str)
+
+    refresh_resp = client.post(
+        "/auth/refresh",
+        headers={"Authorization": f"Bearer {refresh_token}"},
+    )
+    assert refresh_resp.status_code == 200
+    refresh_payload = refresh_resp.get_json()
+    assert isinstance(refresh_payload.get("token"), str)
+    assert refresh_payload.get("user_id") == user_id
+
+
+@pytest.mark.api_contract
+def test_security_headers_present_on_json_response(client):
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.headers.get("X-Content-Type-Options") == "nosniff"
+    assert response.headers.get("X-Frame-Options") == "DENY"
+    assert response.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+    assert "Content-Security-Policy" in response.headers
 
 
 @pytest.mark.api_contract

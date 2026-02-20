@@ -3,6 +3,7 @@ import uuid
 import logging
 import traceback
 from datetime import datetime
+from datetime import timedelta
 import time
 import sys
 
@@ -139,6 +140,40 @@ def create_app(config_name):
         }
     })
 
+    def _is_allowed_origin(origin_value):
+        if not origin_value:
+            return True
+        for allowed in app.config.get("ALLOWED_ORIGINS", []):
+            if hasattr(allowed, "match"):
+                if allowed.match(origin_value):
+                    return True
+            elif origin_value == allowed:
+                return True
+        return False
+
+    @app.before_request
+    def enforce_csrf_origin_policy():
+        """
+        CSRF hardening for browser-triggered unsafe requests.
+        If Origin/Referer is present, require it to match allowed origins.
+        """
+        if request.method in {"GET", "HEAD", "OPTIONS"}:
+            return None
+
+        origin = request.headers.get("Origin")
+        referer = request.headers.get("Referer")
+
+        if origin and not _is_allowed_origin(origin):
+            return jsonify({"error": "Origin not allowed"}), 403
+
+        if not origin and referer:
+            from urllib.parse import urlparse
+            referer_origin = f"{urlparse(referer).scheme}://{urlparse(referer).netloc}"
+            if not _is_allowed_origin(referer_origin):
+                return jsonify({"error": "Referer origin not allowed"}), 403
+
+        return None
+
     # Rate limiting setup
     # Use Redis in production for distributed rate limiting, fallback to memory for dev
     redis_url = os.getenv('REDIS_URL') or os.getenv('REDIS_PRIVATE_URL')
@@ -182,6 +217,28 @@ def create_app(config_name):
         except Exception:
             # Don't fail the request if header addition fails
             pass
+
+        # Baseline transport/security headers
+        response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+        response.headers.setdefault('X-Frame-Options', 'DENY')
+        response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+        response.headers.setdefault(
+            'Permissions-Policy',
+            'camera=(), microphone=(), geolocation=(), payment=()',
+        )
+
+        # Apply a strict CSP for API responses while leaving static HTML assets functional.
+        if response.mimetype == 'application/json':
+            response.headers.setdefault(
+                'Content-Security-Policy',
+                "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+            )
+        else:
+            response.headers.setdefault(
+                'Content-Security-Policy',
+                "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https: wss:; frame-ancestors 'none'",
+            )
         return response
 
     @app.errorhandler(429)
@@ -205,7 +262,8 @@ def create_app(config_name):
         response_data = {
             'error': 'Rate limit exceeded',
             'message': message,
-            'retry_after': e.description,
+            'retry_after': getattr(e, 'description', None),
+            'retry_after_seconds': int(getattr(e, 'retry_after', 0) or 0),
             'user_tier': user_tier
         }
 
@@ -334,6 +392,8 @@ def create_app(config_name):
 
     # JWT setup - SECURITY: Require proper secret in production
     jwt = JWTManager(app)
+    app.config.setdefault('JWT_ACCESS_TOKEN_EXPIRES', timedelta(hours=1))
+    app.config.setdefault('JWT_REFRESH_TOKEN_EXPIRES', timedelta(days=30))
     jwt_secret = app.config.get('JWT_SECRET_KEY') or os.getenv('JWT_SECRET_KEY')
     if not jwt_secret or jwt_secret == 'dev-secret-key':
         if os.getenv('FLASK_ENV') in ('prod', 'production'):
@@ -423,7 +483,7 @@ def create_app(config_name):
     character_bp = create_character_blueprint(limiter=limiter, logger=logger)
     admin_bp = create_admin_blueprint(logger=logger, limiter=limiter)
     health_bp = create_health_blueprint(logger=logger, api_key=api_key, app_version="1.0.2", gemini_model=GEMINI_MODEL)
-    utility_bp = create_utility_blueprint(logger=logger, log_error=log_error)
+    utility_bp = create_utility_blueprint(logger=logger, log_error=log_error, limiter=limiter)
 
     app.register_blueprint(story_bp)
     app.register_blueprint(character_bp)

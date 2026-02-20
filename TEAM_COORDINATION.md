@@ -2,6 +2,77 @@
 
 ---
 
+## Session Update - 2026-02-20 (Frontend Widget Test Expansion)
+
+### Scope Completed
+**Frontend Widget & Screen Testing:**
+- **Wizard Step Screens:**
+    - **Hero Creator:** Added tests for age increment/decrement and gender selection. Fixed existing tests to use correct archetypes ("The Storm Rider") and handle initial-based character thumbnails.
+    - **Companion Selector:** Added tests for multi-selection and verified custom pet display from hero data.
+    - **Magic Review:** Fixed scenario label verification and mode toggle functionality tests.
+- **Settings Screen:**
+    - Enhanced API key validation tests by mocking `HttpOverrides` to simulate backend validation messages (success/fail) without real network calls.
+- **Character Library:**
+    - Added verification for the **Backend Status Banner** (Story service waking up/ready).
+    - Verified character list display, deletion confirmation flow, and wizard navigation.
+- **Story Reader:**
+    - Verified rendering of title, story text, and character attribution.
+    - Confirmed TTS control wiring (Read/Stop/Pause).
+- **Coloring Screen:**
+    - Added "Clear All" functionality test with user confirmation dialog logic.
+    - Verified palette rendering and drawing interaction recording.
+
+### Status
+- **Testing:** 38 widget/screen tests PASS (100% green).
+- **Coverage:** Established solid baseline for critical UI components.
+
+---
+
+## Session Update - 2026-02-20 (Magical Pet Companion Implementation & Launch Plan Audit)
+
+### Scope Completed
+**Magical Pet Companion Feature (Backend):**
+- **GeminiImageGenerator:** Refactored `generate_pet_avatar` to accept explicit metadata parameters: `photo_bytes`, `species`, `breed_description`, and `owner_favorite_color`.
+- **Prompt Engineering:** Integrated the **"Magical Pet Avatar Creator v1"** template, ensuring breed preservation (markings, anatomy) and color-coordinated accessories (collars/harnesses).
+- **Service Layer:** Updated `AvatarGenerationService.generate_pet_avatar` to utilize the new generator signature and handle response shaping.
+- **Verification:** Created `backend/tests/unit/test_pet_avatar.py` and verified all tests pass (3/3).
+
+**Comprehensive Project Audit & Launch Planning:**
+- Audited last 10 days of activity (UI refactors, test expansion, backend stabilization).
+- Formulated a **3-Week Launch Plan** (Target: March 12, 2026).
+- Identified critical remaining tasks in Pet UI integration, Cross-browser QA, and Security Hardening.
+
+### Status
+- **Launch Readiness:** 75%
+- **Testing:** 503+ tests passing locally.
+- **Pet Backend:** ✅ Complete.
+- **Next Blocker:** Pet Photo UI and Cross-Browser verification.
+
+### 📋 3-Week Launch Plan & Remaining Tasks
+
+#### 1. Magical Pet Avatar (UI Completion)
+- [ ] **Frontend: Pet Photo Upload:** Add a "Make Pet Magical" button in the Hero Creator pet dialog that opens a photo capture screen (mirroring `CustomAvatarScreen`).
+- [ ] **Frontend: Result Integration:** Ensure generated pet avatars are passed via `WizardDataMapper` and displayed in the `CompanionSelectorStep` and `StoryResultScreen`.
+- [ ] **Testing:** Add an E2E integration test specifically for the pet-to-story flow.
+
+#### 2. Launch-Critical Testing & QA
+- [ ] **Cross-Browser Verification:** Systematic testing on Firefox, Safari (Mac/iOS), and Edge (currently listed as "Not Started").
+- [ ] **Content Quality Audit:** Complete the 15-story manual verification checklist (3 per age band) to ensure "warm glow" endings and sensory richness.
+- [ ] **Mobile Performance Pass:** Verify the new crystal/orb animations and "magic loom" loading UI for frame drops on lower-end mobile devices.
+- [ ] **Accessibility:** Perform a WCAG 2.1 check on the new magical UI (color contrast and screen reader labels).
+
+#### 3. Security Hardening
+- [ ] **Token Refresh Flow:** Implement backend endpoint and frontend logic to refresh JWT tokens, preventing session expiry during long story sessions.
+- [ ] **Production Headers:** Configure CSP (Content Security Policy) and HSTS in `app.py`.
+- [ ] **Rate Limit Fine-Tuning:** Configure production-grade DDoS protection and verify Railway/Netlify quota behaviors.
+
+#### 4. UI/UX Polish
+- [ ] **Animation Tuning:** Final visual QA on the transition timing for the Vision Orb and particle effects.
+- [ ] **Audio Ambience:** Finalize seamless looping for all 5 ambient tracks (`forest_crickets`, `ocean_waves`, etc.).
+- [ ] **Documentation:** Finalize the user-facing FAQ and Privacy Policy.
+
+---
+
 ## Session Update - 2026-02-20 (Magical Pet Companion & Asset Optimization Fix)
 
 ### Scope Completed
@@ -3846,3 +3917,94 @@ flutter analyze lib/screens/wizard_steps/hero_creator_step.dart
 - Staged files for commit preparation:
   - `TEAM_COORDINATION.md`
   - `lib/screens/wizard_steps/hero_creator_step.dart`
+
+## Session Update - 2026-02-20 (Service Test Coverage: Avatar, Achievement, Analytics)
+
+### Scope Completed
+- Added new backend unit tests for service-layer coverage:
+  - `backend/tests/unit/test_avatar_generation_service.py`
+  - `backend/tests/unit/test_achievement_service.py`
+  - `backend/tests/unit/test_usage_tracking_service.py`
+- Covered requested areas:
+  - Avatar service behavior (validation, generation success path, retry/fallback behavior, fallback catalog, error messaging)
+  - Achievement service behavior (stats initialization, story/character unlock flows, sync updates, exception handling)
+  - Analytics service behavior via usage tracking service (cost tracking, summary/date filtering, daily breakdown, stale data cleanup)
+
+### Verification
+```bash
+python -m pytest backend/tests/unit/test_avatar_generation_service.py backend/tests/unit/test_achievement_service.py backend/tests/unit/test_usage_tracking_service.py -q
+```
+
+### Result
+- PASS: `16 passed in 4.23s`
+
+## Session Update - 2026-02-20 (Service Coverage Re-Verification + Staging)
+
+### Scope Completed
+- Re-ran targeted backend service unit suite for avatar, achievement, and analytics usage tracking coverage.
+- Prepared service coverage test files and coordination log for commit.
+
+### Verification
+```bash
+python -m pytest backend/tests/unit/test_avatar_generation_service.py backend/tests/unit/test_achievement_service.py backend/tests/unit/test_usage_tracking_service.py -q
+```
+
+### Result
+- PASS: `16 passed in 3.23s`
+
+## Session Update - 2026-02-20 (Milestone: Security Hardening - Token Refresh, Rate-Limit Edge Cases, CSRF/CSP)
+
+### Scope Completed
+- Implemented token refresh flow across backend and Flutter client.
+- Hardened auth endpoint abuse controls with explicit per-endpoint rate limits.
+- Added CSRF-oriented origin checks for unsafe HTTP methods.
+- Added baseline security headers including CSP for API responses.
+- Improved rate-limit response metadata for retry handling.
+
+### Changes Implemented
+- `backend/routes/utility_routes.py`
+  - Added refresh token issuance to:
+    - `POST /auth/anonymous`
+    - `POST /auth/login`
+  - Added `POST /auth/refresh` protected with `@jwt_required(refresh=True)`
+  - Added endpoint-level rate limits:
+    - anonymous: `20/min`
+    - login: `10/min`
+    - refresh: `30/min`
+- `backend/app.py`
+  - Added CSRF-origin enforcement for non-GET/HEAD/OPTIONS requests:
+    - Validates `Origin` against configured allowed origins.
+    - Falls back to `Referer` origin validation when needed.
+  - Added security response headers:
+    - `X-Content-Type-Options: nosniff`
+    - `X-Frame-Options: DENY`
+    - `Referrer-Policy: strict-origin-when-cross-origin`
+    - `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`
+    - `Content-Security-Policy` (strict for JSON API responses; compatible fallback for non-JSON responses)
+  - Added JWT expiry defaults:
+    - access: `1 hour`
+    - refresh: `30 days`
+  - Improved 429 payload with numeric retry metadata:
+    - `retry_after_seconds`
+- `lib/services/api_service_manager.dart`
+  - Added refresh-token persistence and in-memory state.
+  - On `401`, client now attempts `/auth/refresh` before falling back to anonymous re-auth.
+  - Added safe auth-state clear helper when refresh fails.
+- `backend/tests/test_api_contracts.py`
+  - Updated auth contract expectations to include `refresh_token`.
+  - Added refresh endpoint contract test.
+  - Added security-header presence contract test.
+
+### Verification
+```bash
+python -m pytest backend/tests/test_api_contracts.py -k "auth_anonymous_contract or auth_login_success_returns_token or auth_refresh_contract or security_headers_present_on_json_response" -q
+python -m py_compile backend/app.py backend/routes/utility_routes.py
+dart format lib/services/api_service_manager.dart
+flutter analyze lib/services/api_service_manager.dart
+```
+
+### Result
+- PASS: targeted backend contract tests (`4 passed`).
+- PASS: backend modules compile check passed.
+- PASS: Dart formatting completed.
+- PASS: Flutter analyzer clean for updated API service (`No issues found`).

@@ -3,7 +3,12 @@ import time
 import traceback
 
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import (
+    create_access_token,
+    create_refresh_token,
+    get_jwt_identity,
+    jwt_required,
+)
 from sqlalchemy.exc import IntegrityError
 
 from ..database import db
@@ -12,8 +17,16 @@ from ..openrouter_image_generator import OpenRouterImageGenerator
 from ..quality_service import StoryQualityService
 
 
-def create_utility_blueprint(logger, log_error):
+def create_utility_blueprint(logger, log_error, limiter=None):
     utility_bp = Blueprint("utility", __name__)
+
+    def rate_limit(limit_value):
+        def decorator(func):
+            if limiter is None:
+                return func
+            return limiter.limit(limit_value)(func)
+
+        return decorator
 
     @utility_bp.route('/quality/score-story', methods=['POST'])
     def score_story_quality():
@@ -169,6 +182,7 @@ def create_utility_blueprint(logger, log_error):
         return jsonify({"status": status, "username": username}), 201 if status == "created" else 200
 
     @utility_bp.route("/auth/anonymous", methods=["POST"])
+    @rate_limit("20 per minute")
     def get_anonymous_token():
         """Get or create an anonymous user and return a JWT token.
 
@@ -211,13 +225,16 @@ def create_utility_blueprint(logger, log_error):
                 logger.info(f"Anonymous user already exists after race: {client_id}")
 
         token = create_access_token(identity=user.id)
+        refresh_token = create_refresh_token(identity=user.id)
         return jsonify({
             'token': token,
+            'refresh_token': refresh_token,
             'user_id': user.id,
             'is_anonymous': True
         }), 200
 
     @utility_bp.route("/auth/login", methods=["POST"])
+    @rate_limit("10 per minute")
     def login():
         """Simple login endpoint for testing."""
         data = request.get_json(silent=True) or {}
@@ -227,9 +244,29 @@ def create_utility_blueprint(logger, log_error):
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
             token = create_access_token(identity=user.id)
-            return jsonify({'token': token}), 200
+            refresh_token = create_refresh_token(identity=user.id)
+            return jsonify({'token': token, 'refresh_token': refresh_token}), 200
 
         return jsonify({'message': 'Invalid credentials'}), 401
+
+    @utility_bp.route("/auth/refresh", methods=["POST"])
+    @rate_limit("30 per minute")
+    @jwt_required(refresh=True)
+    def refresh_auth_token():
+        """Issue a new access token using a valid refresh token."""
+        user_id = get_jwt_identity()
+        if not user_id:
+            return jsonify({'error': 'Invalid refresh token'}), 401
+
+        user = User.query.filter_by(id=user_id).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 401
+
+        token = create_access_token(identity=user.id)
+        return jsonify({
+            'token': token,
+            'user_id': user.id,
+        }), 200
 
     @utility_bp.route("/users/<string:user_id>/feature-unlocks", methods=["GET"])
     def get_feature_unlocks(user_id: str):
