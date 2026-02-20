@@ -26,8 +26,8 @@ class _ImageProgressOrbState extends State<ImageProgressOrb>
         widget.icon == Icons.check ||
         widget.icon == Icons.check_circle;
     return isDoneIcon
-        ? 'assets/images/ui/glassy/progress_done_orb.png'
-        : 'assets/images/ui/glassy/progress_active_orb.png';
+        ? 'assets/images/ui/clean/progress_done_orb.png'
+        : 'assets/images/ui/clean/progress_active_orb.png';
   }
 
   @override
@@ -67,8 +67,10 @@ class _ImageProgressOrbState extends State<ImageProgressOrb>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFFB388FF).withValues(alpha: 0.4 * (1 - _shimmerController.value * 0.3)),
-                      const Color(0xFF9E6CFF).withValues(alpha: 0.2 * (1 - _shimmerController.value * 0.3)),
+                      const Color(0xFFB388FF).withValues(
+                          alpha: 0.4 * (1 - _shimmerController.value * 0.3)),
+                      const Color(0xFF9E6CFF).withValues(
+                          alpha: 0.2 * (1 - _shimmerController.value * 0.3)),
                       Colors.transparent,
                     ],
                   ),

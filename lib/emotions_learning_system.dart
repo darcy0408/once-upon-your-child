@@ -519,6 +519,17 @@ class EmotionsLearningService {
       _storyMomentsKey,
       jsonEncode(moments.map((m) => m.toJson()).toList()),
     );
+
+    // Track analytics
+    try {
+      await TherapeuticAnalytics.trackStoryMoment(
+        emotion: moment.emotion,
+        copingStrategy: moment.copingStrategy,
+      );
+    } catch (e) {
+      // Analytics failure shouldn't break story moment recording
+      debugPrint('Failed to track story moment analytics: $e');
+    }
   }
 
   /// Get story moments

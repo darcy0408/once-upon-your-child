@@ -45,4 +45,23 @@ class TherapeuticAnalytics {
       }
     }
   }
+
+  static Future<void> trackStoryMoment({
+    required String emotion,
+    required String copingStrategy,
+  }) async {
+    try {
+      await _analytics.logEvent(
+        name: 'story_emotion_moment',
+        parameters: {
+          'emotion': emotion,
+          'coping_strategy': copingStrategy,
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('TherapeuticAnalytics error: ${e.toString()}');
+      }
+    }
+  }
 }

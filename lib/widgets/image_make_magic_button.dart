@@ -124,51 +124,54 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
                 // Code-rendered magical button avoids checkerboard artifacts from legacy JPG assets.
                 Opacity(
                   opacity: widget.isEnabled ? 1.0 : 0.45,
-                  child: Image.asset(
-                    'assets/images/ui/glassy/make_magic_button.png',
-                    width: buttonWidth,
-                    height: 88,
-                    fit: BoxFit.contain,
-                    filterQuality: FilterQuality.high,
-                    errorBuilder: (context, error, stackTrace) {
-                      // Fallback to code-rendered button if the custom asset fails.
-                      return Container(
-                        width: buttonWidth,
-                        height: 88,
-                        decoration: BoxDecoration(
-                          gradient: widget.isEnabled
-                              ? const LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Color(0xFFBE73FF),
-                                    Color(0xFF7E3FC6),
-                                    Color(0xFF57238B),
-                                  ],
-                                  stops: [0.0, 0.45, 1.0],
-                                )
-                              : const LinearGradient(
-                                  colors: [
-                                    Color(0xFF8A8297),
-                                    Color(0xFF666072),
-                                  ],
-                                ),
-                          borderRadius: BorderRadius.circular(44),
-                          border: Border.all(color: borderColor, width: 3.2),
-                        ),
-                        child: Center(
-                          child: Text(
-                            widget.label,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 24,
-                              letterSpacing: 1.2,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(44),
+                    child: Image.asset(
+                      'assets/images/ui/clean/make_magic_button.png',
+                      width: buttonWidth,
+                      height: 88,
+                      fit: BoxFit.cover,
+                      filterQuality: FilterQuality.high,
+                      errorBuilder: (context, error, stackTrace) {
+                        // Fallback to code-rendered button if the custom asset fails.
+                        return Container(
+                          width: buttonWidth,
+                          height: 88,
+                          decoration: BoxDecoration(
+                            gradient: widget.isEnabled
+                                ? const LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Color(0xFFBE73FF),
+                                      Color(0xFF7E3FC6),
+                                      Color(0xFF57238B),
+                                    ],
+                                    stops: [0.0, 0.45, 1.0],
+                                  )
+                                : const LinearGradient(
+                                    colors: [
+                                      Color(0xFF8A8297),
+                                      Color(0xFF666072),
+                                    ],
+                                  ),
+                            borderRadius: BorderRadius.circular(44),
+                            border: Border.all(color: borderColor, width: 3.2),
+                          ),
+                          child: Center(
+                            child: Text(
+                              widget.label,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 24,
+                                letterSpacing: 1.2,
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],

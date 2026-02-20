@@ -538,6 +538,59 @@ CRITICAL REMINDER FOR IMAGE MODEL:
             logger.exception(f"Error generating character avatar with Gemini: {e}")
             return []
 
+    def generate_pet_avatar(
+        self,
+        base_image_bytes: bytes,
+        prompt: str,
+        pet_name: str,
+        species: str,
+        num_images: int = 1
+    ) -> list:
+        """
+        Generate a magical pet companion avatar based on a reference photo.
+        
+        Args:
+            base_image_bytes: Bytes of the pet's photo
+            prompt: Complete pet avatar generation prompt
+            pet_name: Pet's name
+            species: Pet's species (e.g., dog, cat, hamster)
+            num_images: Number of variations (default: 1)
+            
+        Returns:
+            List of image dicts with base64-encoded PNG data
+        """
+        if not self._client:
+            logger.warning("Gemini image generator unavailable; skipping pet avatar generation")
+            return []
+
+        try:
+            from google.genai import types
+            
+            logger.info(f"Generating magical pet avatar for {pet_name} ({species}) using reference photo")
+            
+            contents = [
+                prompt,
+                types.Part.from_bytes(data=base_image_bytes, mime_type="image/jpeg")
+            ]
+            
+            # Call Gemini
+            response = self._client.models.generate_content(
+                model=self._model_name,
+                contents=contents,
+            )
+
+            # Process response and extract images
+            images = self._process_image_response(response, prompt)
+
+            candidate_count = len(getattr(response, "candidates", []) or [])
+            logger.info(f"Pet avatar generation returned {candidate_count} candidates and {len(images)} image(s)")
+
+            return images
+
+        except Exception as e:
+            logger.exception(f"Error generating pet avatar with Gemini: {e}")
+            return []
+
 
 # Example usage
 if __name__ == "__main__":

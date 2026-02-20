@@ -99,8 +99,8 @@ class AvatarGenerationService:
         # Validate inputs
         if not character_name or not character_name.strip():
             raise ValueError("Character name is required")
-        if not (3 <= age <= 18):
-            raise ValueError("Age must be between 3 and 18")
+        if not (3 <= age <= 99):
+            raise ValueError("Age must be between 3 and 99")
         if gender.lower() not in ['boy', 'girl']:
             raise ValueError("Gender must be 'boy' or 'girl'")
 
@@ -199,6 +199,119 @@ This prompt is designed for "Story Weaver," an app that transforms real-world im
             logger.error(f"Custom avatar generation failed: {e}")
             raise Exception(f"Custom avatar generation failed: {str(e)}")
 
+    def generate_pet_avatar(
+        self,
+        pet_name: str,
+        species: str,
+        breed_description: str,
+        owner_favorite_color: str,
+        photo_bytes: bytes,
+    ) -> Dict:
+        """
+        Generate a magical pet avatar based on a pet's photo and preferences.
+
+        Args:
+            pet_name: Pet's name
+            species: Pet's species (e.g., dog, cat)
+            breed_description: Detailed description of the breed/markings
+            owner_favorite_color: Favorite color of the owner (for accessories)
+            photo_bytes: Bytes of the snapped photo
+
+        Returns:
+            Dict with avatar data
+        """
+        start_time = datetime.now()
+
+        # Validate inputs
+        if not pet_name or not pet_name.strip():
+            raise ValueError("Pet name is required")
+        if not species or not species.strip():
+            raise ValueError("Species is required")
+
+        # Use the requested Magical Pet Avatar Creator v1 prompt
+        prompt_template = """
+**Generated Prompt:** Magical Pet Avatar Creator v1 (Storybook Companion Edition)
+
+**Context & Background**
+This prompt is designed for "Story Weaver," an app that transforms real-world images of family pets into Pixar-style magical companions. The system maintains breed identity and specific markings while applying a 3D animation aesthetic, placing the pet in a whimsical, storybook world that matches their owner's avatar.
+
+**Core Role & Capabilities**
+* **Creature Stylist:** Expert in translating animal features into stylized 3D companion designs.
+* **Breed Preservation:** MANDATORY: Maintain identifiable traits (tuxedo markings, specific ear shapes, tail carriage, and unique coat patterns) so the owner recognizes their specific pet.
+* **Magical Enhancement:** Adds subtle magical elements like a glowing collar or swirling sparkles that represent the pet's unique bond with their human.
+
+**Technical Configuration**
+* **Model:** Nano Banana (Image-to-Image / Text-to-Image).
+* **Compositional Control:** Reference the uploaded photo for body shape, coat markings, and breed characteristics.
+* **Style Anchor:** Painterly Storybook illustration with 3D animated depth; soft textures, vibrant colors, and cinematic lighting.
+
+**Operational Guidelines**
+1. **Breed Likeness:** Prioritize the uploaded photo for structural likeness and coat markings. Use the provided **Species: {species}** and **Breed/Description: {breed_description}** to refine the AI's understanding of the pet's anatomy.
+2. **The "Bond-Matched" Accessory:**
+   - **Primary Accessory:** Clothe the pet in a "Magical Guardian Collar" or "Hero’s Harness." Use a jewel-tone version of the **Owner’s Favorite Color: {owner_favorite_color}** as the primary color for the accessory.
+   - **Celestial Charm:** Attached to the collar is a glowing, semi-translucent star charm that emits soft nebula light in the same **Owner’s Favorite Color: {owner_favorite_color}**.
+3. **Environment:** Place the pet in the "Painterly Storybook Forest" to match the human avatars. Include soft-focus "bokeh" glowing mushrooms and floating fireflies. 
+4. **Final Render:** Full-body or chest-up portrait, expressive eyes, high-resolution.
+
+**Output Specifications**
+* **Format:** Single high-resolution square image (1024x1024+).
+* **Style:** Pixar-inspired 3D animation with soft, painterly lighting.
+
+**Error Handling**
+* **Photo Quality:** If the photo is low-quality, lean heavily on provided text (Species, Breed) to generate a representative "best-fit" pet companion.
+* **Color Clashes:** Ensure the magical accessory stands out clearly against the pet's fur color by adding gold or silver trim to the edges.
+"""
+        prompt = prompt_template.format(
+            species=species,
+            breed_description=breed_description,
+            owner_favorite_color=owner_favorite_color
+        )
+
+        logger.info(f"Generating magical pet avatar for {pet_name} ({species})")
+
+        try:
+            results = self.image_generator.generate_pet_avatar(
+                base_image_bytes=photo_bytes,
+                prompt=prompt,
+                pet_name=pet_name,
+                species=species,
+                num_images=1
+            )
+
+            if results and len(results) > 0:
+                result = results[0]
+                image_base64 = result.get('image_data')
+                
+                # Check for "data:image" prefix and clean up
+                if image_base64 and "," in image_base64:
+                    image_base64 = image_base64.split(",", 1)[1]
+                
+                # Build response
+                avatar_id = str(uuid.uuid4())
+                end_time = datetime.now()
+                generation_time_ms = int((end_time - start_time).total_seconds() * 1000)
+
+                return {
+                    'id': avatar_id,
+                    'image_base64': f"data:image/png;base64,{image_base64}",
+                    'style': 'pixar-pet-custom',
+                    'attributes': {
+                        'pet_name': pet_name,
+                        'species': species,
+                        'breed_description': breed_description,
+                        'owner_favorite_color': owner_favorite_color
+                    },
+                    'generated_at': datetime.now().isoformat(),
+                    'generation_time_ms': generation_time_ms,
+                    'version': 1
+                }
+            else:
+                raise Exception("No image generated for pet avatar")
+
+        except Exception as e:
+            logger.error(f"Pet avatar generation failed: {e}")
+            raise Exception(f"Pet avatar generation failed: {str(e)}")
+
     def generate_avatar(
         self,
         character_name: str,
@@ -284,24 +397,44 @@ This prompt is designed for "Story Weaver," an app that transforms real-world im
 
         logger.debug(f"Avatar prompt (first 200 chars): {prompt[:200]}...")
 
-        # Generate avatar image using Gemini
-        try:
-            image_data = self._generate_image_with_gemini(
-                prompt=prompt,
-                character_name=character_name,
-                age=age,
-                style=style
-            )
+        # Generate avatar image with retry logic for vision verification
+        MAX_RETRIES = 3
+        image_data = None
 
-            # Verify non-photorealistic (basic check - could be enhanced with vision model)
-            if not self._verify_non_photorealistic(image_data):
-                logger.warning("Generated avatar may be too photorealistic, regenerating...")
-                # Could implement retry logic here
-                pass
+        for attempt in range(MAX_RETRIES):
+            try:
+                image_data = self._generate_image_with_gemini(
+                    prompt=prompt,
+                    character_name=character_name,
+                    age=age,
+                    style=style
+                )
 
-        except Exception as e:
-            logger.error(f"Avatar generation failed: {e}")
-            raise Exception(f"Avatar generation failed: {str(e)}")
+                # Verify non-photorealistic
+                if self._verify_non_photorealistic(image_data):
+                    logger.info(f"Avatar passed vision verification on attempt {attempt + 1}")
+                    break  # Success!
+                else:
+                    if attempt < MAX_RETRIES - 1:
+                        logger.warning(
+                            f"Avatar failed vision verification on attempt {attempt + 1}/{MAX_RETRIES}, "
+                            "retrying with adjusted prompt..."
+                        )
+                        # Add variation to prompt for next attempt
+                        prompt = prompt + f" (variation {attempt + 2})"
+                    else:
+                        logger.error(f"Avatar failed vision verification after {MAX_RETRIES} attempts")
+                        raise Exception(
+                            "Generated avatar failed visual quality verification after multiple attempts. "
+                            "Please try again or contact support if issue persists."
+                        )
+
+            except Exception as e:
+                if attempt < MAX_RETRIES - 1:
+                    logger.warning(f"Avatar generation attempt {attempt + 1}/{MAX_RETRIES} failed: {e}, retrying...")
+                else:
+                    logger.error(f"Avatar generation failed after {MAX_RETRIES} attempts: {e}")
+                    raise Exception(f"Avatar generation failed: {str(e)}")
 
         # Calculate generation time
         end_time = datetime.now()

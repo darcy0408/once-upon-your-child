@@ -41,13 +41,13 @@ class _ImageCrystalFormationState extends State<ImageCrystalFormation>
   String _getImagePath(String type) {
     switch (type) {
       case 'quick':
-        return 'assets/images/ui/glassy/quick_orb.png';
+        return 'assets/images/ui/clean/quick_orb.png';
       case 'classic':
-        return 'assets/images/ui/glassy/classic_orb.png';
+        return 'assets/images/ui/clean/classic_orb.png';
       case 'epic':
-        return 'assets/images/ui/glassy/epic_orb.png';
+        return 'assets/images/ui/clean/epic_orb.png';
       default:
-        return 'assets/images/ui/glassy/classic_orb.png';
+        return 'assets/images/ui/clean/classic_orb.png';
     }
   }
 

@@ -231,7 +231,7 @@ class _TraitChip extends StatelessWidget {
 class CharacterArchetypes {
   static const adventurer = ArchetypeData(
     icon: '⚡',
-    imagePath: 'assets/images/archetypes/storm_rider.jpg',
+    imagePath: 'assets/images/archetypes/storm_rider_framed.png',
     name: 'The Storm Rider',
     description: 'Commands wind and weather, brave explorer',
     traits: ['Brave', 'Curious', 'Determined'],
@@ -248,7 +248,7 @@ class CharacterArchetypes {
 
   static const thinker = ArchetypeData(
     icon: '🧩',
-    imagePath: 'assets/images/archetypes/quiz_whiz.jpg',
+    imagePath: 'assets/images/archetypes/quiz_whiz_framed.png',
     name: 'The Quiz Whiz',
     description: 'Solves tricky puzzles and brain teasers',
     traits: ['Smart', 'Modest', 'Curious'],
@@ -265,7 +265,7 @@ class CharacterArchetypes {
 
   static const artist = ArchetypeData(
     icon: '🎨',
-    imagePath: 'assets/images/archetypes/master_creator.jpg',
+    imagePath: 'assets/images/archetypes/master_creator_framed.png',
     name: 'The Master Creator',
     description: 'Magic paintbrush brings drawings to life',
     traits: ['Creative', 'Expressive', 'Imaginative'],
@@ -282,7 +282,7 @@ class CharacterArchetypes {
 
   static const helper = ArchetypeData(
     icon: '💚',
-    imagePath: 'assets/images/archetypes/heart_healer.jpg',
+    imagePath: 'assets/images/archetypes/heart_healer_framed.png',
     name: 'The Heart Healer',
     description: 'Senses emotions and heals broken spirits',
     traits: ['Caring', 'Patient', 'Loyal'],
@@ -299,7 +299,7 @@ class CharacterArchetypes {
 
   static const athlete = ArchetypeData(
     icon: '🏃',
-    imagePath: 'assets/images/archetypes/lightning_runner.jpg',
+    imagePath: 'assets/images/archetypes/lightning_runner_framed.png',
     name: 'The Lightning Runner',
     description: 'Moves faster than sound, leaves stardust trails',
     traits: ['Energetic', 'Fast', 'Determined'],
@@ -316,7 +316,7 @@ class CharacterArchetypes {
 
   static const shyOne = ArchetypeData(
     icon: '🦉',
-    imagePath: 'assets/images/archetypes/animal_whisperer.jpg',
+    imagePath: 'assets/images/archetypes/animal_whisperer_framed.png',
     name: 'The Animal Whisperer',
     description: 'Talks to animals and hears nature\'s secrets',
     traits: ['Kind', 'Observant', 'Gentle'],
@@ -359,4 +359,236 @@ class ArchetypeData {
     required this.attributes,
     required this.specialAbility,
   });
+}
+
+/// Drum/slot-machine style spinning wheel for archetype selection.
+///
+/// Shows 3 items at a time. The center item snaps and is auto-selected.
+/// An animated details banner below the wheel shows the selected archetype's
+/// special ability.
+class ArchetypeWheelSelector extends StatefulWidget {
+  final List<ArchetypeData> archetypes;
+  final String? initialSelectedId;
+  final ValueChanged<ArchetypeData> onSelected;
+
+  const ArchetypeWheelSelector({
+    super.key,
+    required this.archetypes,
+    this.initialSelectedId,
+    required this.onSelected,
+  });
+
+  @override
+  State<ArchetypeWheelSelector> createState() => _ArchetypeWheelSelectorState();
+}
+
+class _ArchetypeWheelSelectorState extends State<ArchetypeWheelSelector> {
+  late FixedExtentScrollController _controller;
+  late int _selectedIndex;
+
+  static const double _itemExtent = 88.0;
+
+  @override
+  void initState() {
+    super.initState();
+    final idx = widget.archetypes.indexWhere(
+      (a) => a.name == widget.initialSelectedId,
+    );
+    _selectedIndex = idx >= 0 ? idx : 0;
+    _controller = FixedExtentScrollController(initialItem: _selectedIndex);
+    // Auto-select the centered item on mount.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        widget.onSelected(widget.archetypes[_selectedIndex]);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const wheelHeight = _itemExtent * 3;
+    final selected = widget.archetypes[_selectedIndex];
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: wheelHeight,
+          child: Stack(
+            fit: StackFit.expand,
+            alignment: Alignment.center,
+            children: [
+              // Gold "center window" highlight
+              Positioned(
+                top: _itemExtent + 4,
+                left: 12,
+                right: 12,
+                child: IgnorePointer(
+                  child: Container(
+                    height: _itemExtent - 8,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.gold, width: 2.5),
+                      color: AppColors.gold.withAlpha(25),
+                    ),
+                  ),
+                ),
+              ),
+              // The wheel
+              ListWheelScrollView.useDelegate(
+                controller: _controller,
+                itemExtent: _itemExtent,
+                diameterRatio: 2.0,
+                physics: const FixedExtentScrollPhysics(),
+                overAndUnderCenterOpacity: 0.4,
+                onSelectedItemChanged: (index) {
+                  setState(() => _selectedIndex = index);
+                  widget.onSelected(widget.archetypes[index]);
+                },
+                childDelegate: ListWheelChildBuilderDelegate(
+                  childCount: widget.archetypes.length,
+                  builder: (context, index) {
+                    if (index < 0 || index >= widget.archetypes.length) {
+                      return null;
+                    }
+                    return _WheelItem(archetype: widget.archetypes[index]);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Animated details banner for the selected archetype
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.12),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
+            ),
+          ),
+          child: _ArchetypeDetailsBanner(
+            key: ValueKey(selected.name),
+            archetype: selected,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _WheelItem extends StatelessWidget {
+  final ArchetypeData archetype;
+
+  const _WheelItem({required this.archetype});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: archetype.imagePath != null
+                ? Image.asset(
+                    archetype.imagePath!,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        _ArchetypeIconFallback(icon: archetype.icon),
+                  )
+                : _ArchetypeIconFallback(icon: archetype.icon),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  archetype.name,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textDark,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 2,
+                  children: archetype.traits
+                      .map((t) => _TraitChip(label: t))
+                      .toList(),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ArchetypeIconFallback extends StatelessWidget {
+  final String? icon;
+  const _ArchetypeIconFallback({this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 56,
+      height: 56,
+      child: Center(
+        child: Text(icon ?? '✨', style: const TextStyle(fontSize: 36)),
+      ),
+    );
+  }
+}
+
+class _ArchetypeDetailsBanner extends StatelessWidget {
+  final ArchetypeData archetype;
+  const _ArchetypeDetailsBanner({super.key, required this.archetype});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withAlpha(15),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.primary.withAlpha(50)),
+      ),
+      child: Row(
+        children: [
+          const Text('✨', style: TextStyle(fontSize: 18)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              archetype.specialAbility,
+              style: const TextStyle(
+                fontSize: 13,
+                fontStyle: FontStyle.italic,
+                color: AppColors.textDark,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -129,3 +129,29 @@ def test_get_achievement_stats(client):
     assert 'characters_created' in data
     assert 'current_streak' in data
     assert 'longest_streak' in data
+
+
+def test_record_story_returns_500_when_service_raises(client, mocker):
+    """Achievement route should fail safely when service throws unexpectedly."""
+    client.post('/setup-test-account')
+    login_response = client.post('/auth/login', json={
+        'username': 'testuser',
+        'password': 'password'
+    })
+    token = login_response.get_json()['token']
+
+    mocker.patch(
+        'backend.routes.achievement_routes.AchievementService.record_story_created',
+        side_effect=RuntimeError('forced failure'),
+    )
+
+    response = client.post(
+        '/achievement/record/story',
+        json={'theme': 'Adventure'},
+        headers={'Authorization': f'Bearer {token}'}
+    )
+
+    assert response.status_code == 500
+    data = response.get_json()
+    assert data['status'] == 'error'
+    assert data['message'] == 'Failed to record story'

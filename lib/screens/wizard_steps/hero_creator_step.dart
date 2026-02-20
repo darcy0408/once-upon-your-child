@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
+import 'dart:io';
 import '../../models.dart';
+import '../../avatar_models.dart';
+import '../../custom_avatar_screen.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/archetype_card.dart';
-import '../../widgets/character_preview.dart';
-import '../../widgets/pill_button.dart';
 import '../../services/api_service_manager.dart';
-import '../../widgets/avatar_gallery_selector.dart';
 import '../../services/avatar_generation_state.dart';
 
-/// Step 1: The Hero Creator
+/// Hero Creator — Step 1 of the story wizard.
 ///
-/// Layout:
-/// - Top 50%: Large character preview with sparkles
-/// - Bottom 50%: Archetype selection cards in horizontal scroll
-/// - Continue button appears when archetype selected
+/// Screen layout (top → bottom):
+///   1. Existing-character thumbnails (only when saved characters exist)
+///   2. Circular avatar preview + +/− Hero Age picker
+///   3. Hero / Heroine gender orbs
+///   4. Magical parchment scroll name-entry
+///   5. Horizontal archetype selection cards
+///   6. "Create Your Avatar" image button
+///   7. "Continue" button (visible once name + archetype chosen)
 class HeroCreatorStep extends StatefulWidget {
   final WizardData wizardData;
   final VoidCallback onNext;
@@ -33,24 +38,36 @@ class HeroCreatorStep extends StatefulWidget {
 }
 
 class _HeroCreatorStepState extends State<HeroCreatorStep> {
+  // ─── Assets ─────────────────────────────────────────────────────────────────
+  static const _placeholderAsset = 'assets/images/character_placeholder.png';
+
+  // ─── State ──────────────────────────────────────────────────────────────────
   String? _selectedArchetypeId;
-  String _characterEmoji = '👧';
   late TextEditingController _nameController;
   Character? _selectedExistingCharacter;
-  bool _isCreatingNew =
-      true; // Toggle between creating new vs selecting existing
-  GeneratedAvatar? _generatedAvatar; // AI-generated avatar
+  bool _isContinuePressed     = false;
+  bool _isCreateAvatarPressed = false;
+  bool _isCreatingNew         = true;
+  GeneratedAvatar? _generatedAvatar;
+  String? _customAvatarFilePath; // local file path from CustomAvatarScreen
 
+  // ─── Lifecycle ──────────────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
-    _nameController =
-        TextEditingController(text: widget.wizardData.characterName);
-
-    // Listen for completed avatar from background generation
+    if (widget.wizardData.characterAge < 3 ||
+        widget.wizardData.characterAge > 99) {
+      widget.wizardData.characterAge = 7;
+    }
+    // Default gender if empty
+    if (widget.wizardData.characterGender.isEmpty) {
+      widget.wizardData.characterGender = 'Girl';
+    }
+    _nameController = TextEditingController(
+      text: widget.wizardData.characterName,
+    );
     AvatarGenerationState().addListener(_onAvatarStateChanged);
 
-    // If wizard data already has a characterId, try to find and select it
     if (widget.wizardData.characterId != null &&
         widget.availableCharacters.isNotEmpty) {
       _selectedExistingCharacter = widget.availableCharacters.firstWhere(
@@ -62,50 +79,19 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         _loadExistingCharacter(_selectedExistingCharacter!);
       }
     } else if (widget.availableCharacters.isNotEmpty) {
-      // Default to selecting existing if user has characters
       _isCreatingNew = false;
-    }
-  }
-
-  void _onAvatarStateChanged() {
-    final state = AvatarGenerationState();
-
-    // If avatar completed and not already consumed, apply it
-    if (state.completedAvatar != null && _generatedAvatar == null) {
-      setState(() {
-        _generatedAvatar = state.completedAvatar;
-        widget.wizardData.generatedAvatar = state.completedAvatar;
-      });
-
-      // Show success notification
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✨ Your avatar is ready!'),
-            backgroundColor: Color(0xFF4CAF50),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-
-      // Consume the avatar so it doesn't get applied again
-      state.consumeAvatar();
     }
   }
 
   @override
   void didUpdateWidget(HeroCreatorStep oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // If characters loaded and we were in "create new" mode without explicit selection
-    // AND the user hasn't typed anything yet, switch to "My Heroes"
     if (widget.availableCharacters.isNotEmpty &&
         oldWidget.availableCharacters.isEmpty &&
         _isCreatingNew &&
         widget.wizardData.characterId == null &&
         _nameController.text.isEmpty) {
-      setState(() {
-        _isCreatingNew = false;
-      });
+      setState(() => _isCreatingNew = false);
     }
   }
 
@@ -116,6 +102,26 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     super.dispose();
   }
 
+  // ─── Avatar state listener ───────────────────────────────────────────────────
+  void _onAvatarStateChanged() {
+    final state = AvatarGenerationState();
+    if (state.completedAvatar != null && _generatedAvatar == null) {
+      if (mounted) {
+        setState(() {
+          _generatedAvatar = state.completedAvatar;
+          widget.wizardData.generatedAvatar = state.completedAvatar;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('✨ Your avatar is ready!'),
+          backgroundColor: Color(0xFF4CAF50),
+          duration: Duration(seconds: 3),
+        ));
+      }
+      state.consumeAvatar();
+    }
+  }
+
+  // ─── Character helpers ────────────────────────────────────────────────────────
   void _loadExistingCharacter(Character character) {
     try {
       setState(() {
@@ -128,84 +134,31 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         widget.wizardData.selectedArchetypeId = character.role;
         _selectedArchetypeId = character.role;
         _nameController.text = character.name;
-
-        // Load AI avatar if exists
         _generatedAvatar = character.generatedAvatar;
         widget.wizardData.generatedAvatar = character.generatedAvatar;
-
-        // Load existing pets with validation
         if (character.pets != null) {
           final safePets = <Map<String, String>>[];
-          for (var p in character.pets!) {
-            try {
-              // Ensure p is a map and convert contents to strings safely
-              safePets.add(Map<String, String>.from(p));
-            } catch (e) {
-              debugPrint('Warning: Skipping invalid pet data: $p ($e)');
-            }
+          for (final p in character.pets!) {
+            try { safePets.add(Map<String, String>.from(p)); } catch (_) {}
           }
           widget.wizardData.pets = safePets;
         }
-
-        // Load friends with validation
         if (character.friends != null) {
-          widget.wizardData.additionalCharacters = [];
-          for (var f in character.friends!) {
-            widget.wizardData.additionalCharacters.add(f);
-          }
+          widget.wizardData.additionalCharacters = [...character.friends!];
         }
-
         if (character.personalitySliders != null) {
           widget.wizardData.personalitySliders =
               Map<String, int>.from(character.personalitySliders!);
         }
-
-        // Set emoji based on role
-        if (character.role.contains('Adventurer')) {
-          _characterEmoji = '🗺️';
-        } else if (character.role.contains('Thinker')) {
-          _characterEmoji = '💭';
-        } else if (character.role.contains('Artist')) {
-          _characterEmoji = '🎨';
-        } else if (character.role.contains('Helper')) {
-          _characterEmoji = '🤝';
-        } else if (character.role.contains('Athlete')) {
-          _characterEmoji = '⚡';
-        } else {
-          _characterEmoji = '👧';
-        }
       });
     } catch (e, stack) {
       debugPrint('❌ Error loading character: $e\n$stack');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Could not load character: $e'),
-            backgroundColor: Colors.red),
-      );
-    }
-  }
-
-  /// Auto-save the character when pets are modified
-  Future<void> _autoSaveCharacter() async {
-    // Only auto-save if we have a character ID (existing character)
-    if (widget.wizardData.characterId == null) {
-      return;
-    }
-
-    try {
-      final body = {
-        'name': widget.wizardData.characterName,
-        'age': widget.wizardData.characterAge,
-        'gender': widget.wizardData.characterGender,
-        'role': widget.wizardData.selectedArchetypeId,
-        'pets': widget.wizardData.pets,
-        'friends': widget.wizardData.additionalCharacters,
-      };
-
-      final api = ApiServiceManager();
-      await api.patch('/characters/${widget.wizardData.characterId}', body);
-    } catch (e) {
-      debugPrint('[Hero Creator] Auto-save failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not load character: $e'),
+          backgroundColor: Colors.red,
+        ));
+      }
     }
   }
 
@@ -213,14 +166,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     setState(() {
       _isCreatingNew = true;
       _selectedExistingCharacter = null;
-      _generatedAvatar = null; // Clear local avatar
-      widget.wizardData.generatedAvatar = null; // Clear wizard data avatar
+      _generatedAvatar = null;
+      widget.wizardData.generatedAvatar = null;
       widget.wizardData.characterId = null;
       widget.wizardData.characterName = '';
-      widget.wizardData.characterAge = 8;
+      widget.wizardData.characterAge = 7;
       _selectedArchetypeId = null;
       _nameController.clear();
-      _characterEmoji = '👧';
       widget.wizardData.pets = [];
       widget.wizardData.additionalCharacters = [];
     });
@@ -229,55 +181,19 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   void _selectArchetype(ArchetypeData archetype) {
     setState(() {
       _selectedArchetypeId = archetype.name;
-      _characterEmoji = archetype.icon ?? '✨';
-      _generatedAvatar = null; // Reset avatar to show archetype icon instead
+      _generatedAvatar = null;
       widget.wizardData.generatedAvatar = null;
-
-      // Auto-fill wizard data with archetype
       widget.wizardData.selectedArchetypeId = archetype.name;
       widget.wizardData.personalitySliders =
           Map<String, int>.from(archetype.attributes);
-      // Ensure default age is set if 0 or uninitialized
       if (widget.wizardData.characterAge < 1) {
         widget.wizardData.characterAge = 5;
       }
-      // widget.wizardData.characterName = archetype.name.replaceAll('The ', ''); // User requested to remove this
     });
   }
 
-  void _showAvatarCreator() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AvatarGallerySelector(
-        onCancel: () {
-          Navigator.pop(context);
-        },
-        onAvatarSelected: (avatar) {
-          setState(() {
-            _generatedAvatar = avatar;
-            widget.wizardData.generatedAvatar = avatar; // Save to wizard data
-          });
-          Navigator.pop(context);
-
-          // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Avatar selected! It will appear in your stories!'),
-              backgroundColor: Color(0xFF4CAF50),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
   Future<bool> _saveCharacterDraft() async {
-    if (!_isCreatingNew || !_canContinue) {
-      return true;
-    }
-
+    if (!_isCreatingNew || !_canContinue) return true;
     try {
       final body = {
         'name': widget.wizardData.characterName,
@@ -292,7 +208,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         if (widget.wizardData.generatedAvatar != null)
           'avatar_data': widget.wizardData.generatedAvatar!.toJson(),
       };
-
       final api = ApiServiceManager();
       if (widget.wizardData.characterId != null) {
         await api.patch('/characters/${widget.wizardData.characterId}', body);
@@ -306,937 +221,431 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
       }
       return true;
     } catch (e) {
-      debugPrint('⚠️ Character save failed in Hero Creator: $e');
-      final message = e.toString();
-      final isLocalBackendUnavailable =
-          message.contains('Cannot reach the local backend');
-
+      debugPrint('⚠️ Character save failed: $e');
+      final isLocal = e.toString().contains('Cannot reach the local backend');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isLocalBackendUnavailable
-                  ? 'Avatar selected. We could not sync right now, but you can keep going.'
-                  : 'Could not save character: $e',
-            ),
-            backgroundColor:
-                isLocalBackendUnavailable ? AppColors.gold : AppColors.error,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(isLocal
+              ? 'Avatar selected. Could not sync right now.'
+              : 'Could not save character: $e'),
+          backgroundColor: isLocal ? AppColors.gold : AppColors.error,
+        ));
       }
-      return isLocalBackendUnavailable;
+      return isLocal;
     }
   }
 
   Future<void> _handleContinue() async {
     final ok = await _saveCharacterDraft();
-    if (ok) {
-      widget.onNext();
-    }
+    if (ok) widget.onNext();
   }
 
-  Widget _buildAvatarThumb(Character character, {required bool isSelected}) {
-    const size = 64.0;
-    final borderColor =
-        isSelected ? AppColors.gold : AppColors.primary.withAlpha(100);
-
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: borderColor, width: isSelected ? 3 : 2),
-        boxShadow: isSelected
-            ? [
-                BoxShadow(
-                  color: AppColors.gold.withAlpha(128),
-                  blurRadius: 8,
-                  spreadRadius: 2,
-                ),
-              ]
-            : null,
-      ),
-      child: ClipOval(
-        child: _buildAvatarImage(character),
-      ),
-    );
-  }
-
-  Widget _buildAvatarImage(Character character) {
-    final generated = character.generatedAvatar;
-    if (generated != null && generated.imageBase64.isNotEmpty) {
-      final data = generated.imageBase64;
-      final isUrl = data.startsWith('http://') || data.startsWith('https://');
-      final isAsset = data.startsWith('assets/');
-      if (isAsset) {
-        return Image.asset(data, fit: BoxFit.cover);
-      }
-      if (isUrl) {
-        return Image.network(data, fit: BoxFit.cover);
-      }
-      try {
-        return Image.memory(base64Decode(data.split(',').last),
-            fit: BoxFit.cover);
-      } catch (_) {
-        return _buildAvatarFallback(character);
-      }
-    }
-
-    if (character.avatar != null) {
-      return Image.network(
-        character.avatar!.toAvataaarsUrl(),
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            _buildAvatarFallback(character),
-      );
-    }
-
-    return _buildAvatarFallback(character);
-  }
-
-  Widget _buildAvatarFallback(Character character) {
-    return Image.asset(
-      'assets/images/character_placeholder.png',
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => Image.asset(
-        'thePlaceholderImageBeforeCharacterGeneration.jpeg',
-        fit: BoxFit.cover,
-        errorBuilder: (c, e, s) => Container(
-          color: AppColors.surface,
-          child: Center(
-            child: Text(
-              _getEmojiForCharacter(character),
-              style: const TextStyle(fontSize: 28),
-            ),
-          ),
+  Future<void> _openAvatarCreation() async {
+    final result = await Navigator.push<CharacterAvatar>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CustomAvatarScreen(
+          initialName: widget.wizardData.characterName.isNotEmpty
+              ? widget.wizardData.characterName
+              : null,
+          initialAge: widget.wizardData.characterAge > 0
+              ? widget.wizardData.characterAge
+              : null,
         ),
       ),
     );
+    if (!mounted) return;
+    if (result != null && result.customImagePath != null) {
+      setState(() {
+        _customAvatarFilePath = result.customImagePath;
+        widget.wizardData.customAvatarPath = result.customImagePath;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('✨ Avatar created! It will appear in your story.'),
+        backgroundColor: Color(0xFF4CAF50),
+        duration: Duration(seconds: 3),
+      ));
+    }
   }
 
   bool get _canContinue =>
       _selectedArchetypeId != null &&
       widget.wizardData.characterName.trim().isNotEmpty;
 
-  String _getEmojiForCharacter(Character character) {
-    final role = character.role;
-    if (role.contains('Adventurer')) return '🗺️';
-    if (role.contains('Thinker')) return '💭';
-    if (role.contains('Artist')) return '🎨';
-    if (role.contains('Helper')) return '🤝';
-    if (role.contains('Athlete')) return '⚡';
-    if (role.contains('Shy')) return '😊';
-    // Default based on gender
-    if (character.gender == 'Boy') return '👦';
-    return '👧';
-  }
-
-  InputDecoration _heroNameDecoration(BuildContext context) {
-    return InputDecoration(
-      labelText: 'Hero Name',
-      hintText: 'e.g. Vivian or Lydia',
-      prefixIcon: const Icon(Icons.auto_awesome),
-      filled: true,
-      fillColor: Colors.white.withAlpha(235),
-      labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppColors.primaryDark,
-            fontWeight: FontWeight.w600,
-          ),
-      hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppColors.textDark.withAlpha(128),
-          ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: AppColors.primary.withAlpha(80)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: AppColors.primary.withAlpha(80)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.primaryDark, width: 2),
-      ),
-      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
-    );
-  }
-
-  Widget _buildPlayfulGenderPicker(BuildContext context) {
-    final options = [
-      (label: 'Girl', icon: Icons.auto_awesome),
-      (label: 'Boy', icon: Icons.bolt),
-    ];
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(185),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withAlpha(60)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Hero Style',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: AppColors.primaryDark,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 10,
-            runSpacing: 8,
-            children: options.map((option) {
-              final isSelected =
-                  widget.wizardData.characterGender == option.label;
-              return ChoiceChip(
-                selected: isSelected,
-                onSelected: (_) {
-                  setState(() {
-                    widget.wizardData.characterGender = option.label;
-                  });
-                },
-                avatar: Icon(
-                  option.icon,
-                  size: 16,
-                  color:
-                      isSelected ? const Color(0xFF3B2363) : AppColors.primary,
-                ),
-                label: Text(
-                  option.label,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: isSelected
-                        ? const Color(0xFF3B2363)
-                        : AppColors.primaryDark,
-                  ),
-                ),
-                selectedColor: const Color(0xFFFFD98A),
-                backgroundColor: Colors.white.withAlpha(225),
-                side: BorderSide(
-                  color: isSelected
-                      ? const Color(0xFFFFB347)
-                      : AppColors.primary.withAlpha(80),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPlayfulAgePicker(BuildContext context) {
-    final quickAges = [4, 5, 6, 7, 8, 9, 10];
-    final age = widget.wizardData.characterAge;
-
-    void setAge(int newAge) {
-      setState(() {
-        widget.wizardData.characterAge = newAge.clamp(1, 99);
-      });
+  // ─── Avatar image content ────────────────────────────────────────────────────
+  Widget _buildAvatarContent() {
+    if (_customAvatarFilePath != null) {
+      return Image.file(
+        File(_customAvatarFilePath!),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _placeholderWidget(),
+      );
     }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(185),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withAlpha(60)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                'Hero Age',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: AppColors.primaryDark,
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFD98A),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '$age',
-                  style: const TextStyle(
-                    color: Color(0xFF3B2363),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              IconButton(
-                onPressed: () => setAge(age - 1),
-                icon: const Icon(Icons.remove_circle_outline),
-                color: AppColors.primaryDark,
-                tooltip: 'Younger',
-              ),
-              IconButton(
-                onPressed: () => setAge(age + 1),
-                icon: const Icon(Icons.add_circle_outline),
-                color: AppColors.primaryDark,
-                tooltip: 'Older',
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: quickAges.map((optionAge) {
-              final isSelected = age == optionAge;
-              return ChoiceChip(
-                selected: isSelected,
-                onSelected: (_) => setAge(optionAge),
-                label: Text(
-                  '$optionAge',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: isSelected
-                        ? const Color(0xFF3B2363)
-                        : AppColors.primaryDark,
-                  ),
-                ),
-                selectedColor: const Color(0xFFFFD98A),
-                backgroundColor: Colors.white.withAlpha(225),
-                side: BorderSide(
-                  color: isSelected
-                      ? const Color(0xFFFFB347)
-                      : AppColors.primary.withAlpha(80),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
+    if (_generatedAvatar != null) {
+      final data = _generatedAvatar!.imageBase64;
+      if (data.startsWith('assets/')) {
+        return Image.asset(data, fit: BoxFit.cover);
+      }
+      if (data.startsWith('http')) {
+        return Image.network(data, fit: BoxFit.cover);
+      }
+      try {
+        return Image.memory(
+          base64Decode(data.split(',').last),
+          fit: BoxFit.cover,
+        );
+      } catch (_) {}
+    }
+    return _placeholderWidget();
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _placeholderWidget() => Image.asset(
+    _placeholderAsset,
+    fit: BoxFit.cover,
+    errorBuilder: (_, __, ___) => Container(
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [Color(0xFF7B4BAA), Color(0xFF2D0A4E)],
+        ),
+      ),
+    ),
+  );
+
+  // ─── SECTION: Avatar + Age picker ───────────────────────────────────────────
+  Widget _buildAvatarSection() {
     return Column(
       children: [
-        // Top 40%: Character Preview
-        Expanded(
-          flex: 2,
-          child: CharacterPreview(
-            generatedAvatar: _generatedAvatar,
-            placeholderEmoji: _characterEmoji,
-            showSparkles: true,
-          ),
-        ),
-
-        // Bottom 60%: Archetype Selection
-        Expanded(
-          flex: 3,
+        // Avatar circle with a golden glow ring
+        GestureDetector(
+          onTap: _openAvatarCreation,
           child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.md, // Reduced from XL
-            ),
+            width: 148,
+            height: 148,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFFEFE1FF).withAlpha(220),
-                  const Color(0xFFE6F3FF).withAlpha(205),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(28),
-                topRight: Radius.circular(28),
-              ),
-              border: Border(
-                top: BorderSide(color: AppColors.gold.withAlpha(110), width: 2),
-              ),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFFFD700), width: 3),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withAlpha(35),
-                  blurRadius: 20,
-                  offset: const Offset(0, -4),
+                  color: const Color(0xFFFFD700).withAlpha(120),
+                  blurRadius: 22,
+                  spreadRadius: 2,
+                ),
+                BoxShadow(
+                  color: const Color(0xFF9B3FD8).withAlpha(80),
+                  blurRadius: 30,
+                  spreadRadius: 4,
                 ),
               ],
             ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Title
-                  Text(
-                    _isCreatingNew ? 'Create Your Hero' : 'Pick Your Hero',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: AppColors.primaryDark,
-                          fontWeight: FontWeight.bold,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Saved Characters Section (if any exist)
-                  if (widget.availableCharacters.isNotEmpty) ...[
-                    Text(
-                      'Choose a hero or make a brand new one',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.primaryDark.withAlpha(185),
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      height: 132,
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(170),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: AppColors.primary.withAlpha(55),
-                        ),
-                      ),
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.sm),
-                        itemCount: widget.availableCharacters.length + 1,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(width: 12),
-                        itemBuilder: (context, index) {
-                          if (index == widget.availableCharacters.length) {
-                            final isSelected = _isCreatingNew;
-                            return GestureDetector(
-                              onTap: _switchToNewCharacter,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    width: 64,
-                                    height: 64,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? AppColors.gold
-                                            : AppColors.primary.withAlpha(100),
-                                        width: isSelected ? 3 : 2,
-                                      ),
-                                      color: AppColors.surface,
-                                    ),
-                                    child: const Icon(Icons.add,
-                                        color: AppColors.primary, size: 28),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Create New',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.textDark,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-
-                          final character = widget.availableCharacters[index];
-                          final isSelected =
-                              _selectedExistingCharacter?.id == character.id &&
-                                  !_isCreatingNew;
-
-                          return GestureDetector(
-                            onTap: () {
-                              _loadExistingCharacter(character);
-                            },
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _buildAvatarThumb(character,
-                                    isSelected: isSelected),
-                                const SizedBox(height: 8),
-                                Text(
-                                  character.name,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.textDark,
-                                      ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-
-                  // Character Name (only editable when creating new)
-                  if (_isCreatingNew)
-                    TextField(
-                      controller: _nameController,
-                      decoration: _heroNameDecoration(context),
-                      onChanged: (v) {
-                        setState(() {
-                          widget.wizardData.characterName = v;
-                        });
-                      },
-                    ),
-                  if (_isCreatingNew) const SizedBox(height: 24),
-
-                  // Subtitle (only for new characters)
-                  if (_isCreatingNew)
-                    Text(
-                      'Now choose your hero style',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.primaryDark.withAlpha(190),
-                            fontWeight: FontWeight.w600,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                  if (_isCreatingNew) const SizedBox(height: 12),
-
-                  // Archetype cards (horizontal scroll) - only for new characters
-                  if (_isCreatingNew)
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        minHeight: 200,
-                        maxHeight: 240,
-                      ),
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.sm),
-                        itemCount: CharacterArchetypes.all.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(width: AppSpacing.md),
-                        itemBuilder: (context, index) {
-                          final archetype = CharacterArchetypes.all[index];
-                          final isSelected =
-                              _selectedArchetypeId == archetype.name;
-
-                          return ArchetypeCard(
-                            icon: archetype.icon,
-                            imagePath: archetype.imagePath,
-                            name: archetype.name,
-                            description: archetype.description,
-                            specialAbility: archetype.specialAbility,
-                            traits: archetype.traits,
-                            isSelected: isSelected,
-                            onUseTemplate: () => _selectArchetype(archetype),
-                          );
-                        },
-                      ),
-                    ),
-                  if (_isCreatingNew) const SizedBox(height: 16),
-
-                  // Name & Age Section (show if creating new and archetype selected, or if existing character selected)
-                  if (_canContinue || !_isCreatingNew) ...[
-                    _buildPlayfulGenderPicker(context),
-                    const SizedBox(height: 12),
-
-                    _buildPlayfulAgePicker(context),
-                    const SizedBox(height: 20),
-
-                    // Create Avatar Button
-                    if (widget.wizardData.characterName.isNotEmpty)
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () => _showAvatarCreator(),
-                          icon: Icon(
-                            _generatedAvatar != null ? Icons.edit : Icons.face,
-                            color: const Color(0xFF2C1B47),
-                          ),
-                          label: Text(
-                            _generatedAvatar != null
-                                ? 'Change Avatar'
-                                : 'Create Magic Avatar',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF2C1B47),
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            elevation: 0,
-                            backgroundColor: const Color(0xFFFFD36A),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Custom Pets Section (only when creating a new character)
-                  if (_isCreatingNew && _canContinue)
-                    _PetsSection(
-                      wizardData: widget.wizardData,
-                      onUpdate: () => setState(() {}),
-                      onAutoSave: _autoSaveCharacter,
-                    ),
-
-                  if (_isCreatingNew && _canContinue)
-                    const SizedBox(height: 16),
-
-// Siblings section removed per user request
-
-                  if (_canContinue || !_isCreatingNew)
-                    const SizedBox(height: 16),
-
-                  // Continue button
-                  if (_canContinue ||
-                      (!_isCreatingNew && _selectedExistingCharacter != null))
-                    AnimatedOpacity(
-                      opacity: _canContinue ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 300),
-                      child: PillButton(
-                        key: const Key('wizard_continue_hero'),
-                        emoji: '➡️',
-                        label: 'Continue',
-                        onTap: _handleContinue,
-                        variant: PillButtonVariant.purple,
-                        isSelected: true,
-                      ),
-                    ),
-                  const SizedBox(height: AppSpacing.md),
-                ],
-              ),
-            ),
+            child: ClipOval(child: _buildAvatarContent()),
           ),
+        ),
+        const SizedBox(height: 14),
+        // +/− Hero Age picker
+        _buildAgePicker(),
+      ],
+    );
+  }
+
+  Widget _buildAgePicker() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _AgeStepButton(
+          icon: Icons.remove_rounded,
+          onTap: () => setState(() {
+            widget.wizardData.characterAge =
+                (widget.wizardData.characterAge - 1).clamp(3, 99);
+          }),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            children: [
+              Text(
+                '${widget.wizardData.characterAge}',
+                style: GoogleFonts.cinzelDecorative(
+                  color: const Color(0xFFFFD700),
+                  fontSize: 34,
+                  fontWeight: FontWeight.bold,
+                  shadows: const [
+                    Shadow(color: Color(0xFFFFD700), blurRadius: 12),
+                  ],
+                ),
+              ),
+              Text(
+                'Hero Age',
+                style: GoogleFonts.cinzelDecorative(
+                  color: Colors.white.withAlpha(200),
+                  fontSize: 11,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        _AgeStepButton(
+          icon: Icons.add_rounded,
+          onTap: () => setState(() {
+            widget.wizardData.characterAge =
+                (widget.wizardData.characterAge + 1).clamp(3, 99);
+          }),
         ),
       ],
     );
   }
-}
 
-class _PetsSection extends StatelessWidget {
-  final WizardData wizardData;
-  final VoidCallback onUpdate;
-  final VoidCallback onAutoSave;
-  static const List<String> _speciesOptions = [
-    'Dog',
-    'Cat',
-    'Bird',
-    'Hamster',
-    'Fish',
-    'Bunny',
-    'Reptile',
-    'Other',
-  ];
-  static const Map<String, String> _speciesImageAssets = {
-    'Fish': 'assets/images/companions/fish.png',
-    'Bunny': 'assets/images/companions/bunny.png',
-    'Hamster': 'assets/images/companions/hamster.png',
-    'Reptile': 'assets/images/companions/reptile.png',
-  };
+  // ─── SECTION: Gender picker orbs ─────────────────────────────────────────────
+  Widget _buildGenderPicker() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildGenderOrb(
+          imagePath: 'assets/images/ui/hero_icon.png',
+          label: 'Hero',
+          gender: 'Boy',
+        ),
+        const SizedBox(width: 32),
+        _buildGenderOrb(
+          imagePath: 'assets/images/ui/heroine_icon.png',
+          label: 'Heroine',
+          gender: 'Girl',
+        ),
+      ],
+    );
+  }
 
-  const _PetsSection({
-    required this.wizardData,
-    required this.onUpdate,
-    required this.onAutoSave,
-  });
-
-  void _showAddPetDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    final colorController = TextEditingController();
-    String species = 'Fish';
-    String gender = 'Boy';
-    String personality = '';
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          final selectedPreviewImage = _speciesImageAssets[species];
-
-          return Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFFDF8E8),
-                    Color(0xFFF5EAFB),
-                    Color(0xFFE3F3F2)
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  stops: [0.0, 0.58, 1.0],
-                ),
-                borderRadius: BorderRadius.circular(24),
-                border:
-                    Border.all(color: AppColors.gold.withAlpha(150), width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withAlpha(55),
-                    blurRadius: 26,
-                    offset: const Offset(0, 10),
+  Widget _buildGenderOrb({
+    required String imagePath,
+    required String label,
+    required String gender,
+  }) {
+    final isSelected = widget.wizardData.characterGender == gender;
+    return GestureDetector(
+      onTap: () => setState(() => widget.wizardData.characterGender = gender),
+      child: Column(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 92,
+            height: 92,
+            decoration: isSelected
+                ? BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFFD700).withAlpha(180),
+                        blurRadius: 22,
+                        spreadRadius: 4,
+                      ),
+                    ],
+                    border: Border.all(
+                      color: const Color(0xFFFFD700),
+                      width: 3,
+                    ),
+                  )
+                : BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(60),
+                        blurRadius: 8,
+                      ),
+                    ],
                   ),
-                ],
+            child: ClipOval(
+              child: Image.asset(
+                imagePath,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.person,
+                  color: Colors.white,
+                  size: 48,
+                ),
               ),
-              child: SingleChildScrollView(
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: GoogleFonts.cinzelDecorative(
+              color: isSelected
+                  ? const Color(0xFFFFD700)
+                  : Colors.white.withAlpha(160),
+              fontSize: 12,
+              fontWeight:
+                  isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── SECTION: Scroll name field ───────────────────────────────────────────────
+  Widget _buildNameScrollInput() {
+    return SizedBox(
+      height: 100,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Scroll background image
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/ui/magical_scroll_bg.png',
+              fit: BoxFit.fill,
+              errorBuilder: (_, __, ___) => _fallbackNameBox(),
+            ),
+          ),
+          // Text input centered over the scroll's flat middle area
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 76),
+            child: TextField(
+              controller: _nameController,
+              inputFormatters: [
+                LengthLimitingTextInputFormatter(24),
+                _SafeNameFormatter(),
+              ],
+              textAlign: TextAlign.center,
+              textAlignVertical: TextAlignVertical.center,
+              style: GoogleFonts.cinzelDecorative(
+                fontSize: 17,
+                color: const Color(0xFF3A1C00),
+                fontWeight: FontWeight.w700,
+              ),
+              decoration: InputDecoration(
+                hintText: "Write your hero's name",
+                hintStyle: GoogleFonts.cinzelDecorative(
+                  fontSize: 13,
+                  color: const Color(0x993A1C00),
+                ),
+                filled: true,
+                fillColor: Colors.transparent,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 4),
+              ),
+              onChanged: (v) =>
+                  setState(() => widget.wizardData.characterName = v.trim()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _fallbackNameBox() => Container(
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [Color(0xFFF9EEC8), Color(0xFFEDD89A), Color(0xFFF5E4B0)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: const Color(0xFFFFD700), width: 2),
+    ),
+  );
+
+  // ─── SECTION: Archetype cards ─────────────────────────────────────────────────
+  Widget _buildArchetypeCards() {
+    final archetypes = CharacterArchetypes.all;
+    return SizedBox(
+      height: 230,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        itemCount: archetypes.length,
+        itemBuilder: (context, index) {
+          final a = archetypes[index];
+          final isSelected = _selectedArchetypeId == a.name;
+          return GestureDetector(
+            onTap: () => _selectArchetype(a),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              width: isSelected ? 155 : 128,
+              margin: EdgeInsets.symmetric(
+                horizontal: 5,
+                vertical: isSelected ? 0 : 10,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                gradient: LinearGradient(
+                  colors: isSelected
+                      ? [
+                          const Color(0xFF9B3FD8).withAlpha(190),
+                          const Color(0xFFFFD700).withAlpha(65),
+                        ]
+                      : [
+                          Colors.white.withAlpha(20),
+                          const Color(0xFF9B3FD8).withAlpha(50),
+                        ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border.all(
+                  color: isSelected
+                      ? const Color(0xFFFFD700)
+                      : const Color(0xFFFFD700).withAlpha(80),
+                  width: isSelected ? 2.5 : 1,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFFFFD700).withAlpha(130),
+                          blurRadius: 22,
+                          spreadRadius: 3,
+                        ),
+                        BoxShadow(
+                          color: const Color(0xFF9B3FD8).withAlpha(100),
+                          blurRadius: 16,
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(60),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    vertical: 10, horizontal: 8),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withAlpha(22),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.pets,
-                              color: AppColors.primary, size: 20),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Choose Your Magical Pet',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textDark,
-                                ),
-                          ),
-                        ),
-                        const Icon(Icons.auto_awesome,
-                            size: 18, color: AppColors.gold),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        height: 126,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.primary.withAlpha(165),
-                              AppColors.primaryDark.withAlpha(190),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            if (selectedPreviewImage != null)
-                              Opacity(
-                                opacity: 0.47,
-                                child: Image.asset(
-                                  selectedPreviewImage,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            Container(
-                              color: Colors.black.withAlpha(35),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Pick your sidekick',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelLarge
-                                        ?.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Name them and add a fun detail to make stories feel personal.',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
-                                          color: Colors.white.withAlpha(220),
-                                        ),
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    '${_getEmojiForSpecies(species)} $species selected',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
+                    // Elaborately framed archetype image
+                    _buildArchetypeImage(a, isSelected),
+                    const SizedBox(height: 7),
                     Text(
-                      'Pet type',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: AppColors.primaryDark,
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _speciesOptions.map((option) {
-                        final isSelected = option == species;
-                        return _buildSpeciesChip(
-                          context: context,
-                          option: option,
-                          isSelected: isSelected,
-                          onTap: () => setState(() => species = option),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: nameController,
-                      decoration: _petFieldDecoration(
-                        context: context,
-                        labelText: 'Pet Name',
-                        hintText: 'e.g. Bubbles',
-                        icon: Icons.badge_outlined,
-                      ),
-                      onChanged: (_) => setState(() {}),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: species,
-                      items: _speciesOptions
-                          .map((s) => DropdownMenuItem(
-                              value: s,
-                              child: Text('${_getEmojiForSpecies(s)} $s')))
-                          .toList(),
-                      onChanged: (v) {
-                        if (v != null) {
-                          setState(() => species = v);
-                        }
-                      },
-                      decoration: _petFieldDecoration(
-                        context: context,
-                        labelText: 'Species',
-                        icon: Icons.pets_outlined,
+                      a.name,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.fredoka(
+                        color: Colors.white,
+                        fontSize: isSelected ? 13 : 11,
+                        fontWeight: FontWeight.w700,
+                        shadows: const [
+                          Shadow(color: Colors.black54, blurRadius: 4),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: gender,
-                      items: ['Boy', 'Girl']
-                          .map(
-                              (s) => DropdownMenuItem(value: s, child: Text(s)))
-                          .toList(),
-                      onChanged: (v) {
-                        if (v != null) {
-                          setState(() => gender = v);
-                        }
-                      },
-                      decoration: _petFieldDecoration(
-                        context: context,
-                        labelText: 'Gender',
-                        icon: Icons.favorite_outline,
+                    const SizedBox(height: 4),
+                    Text(
+                      a.description,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.comicNeue(
+                        color: Colors.white.withAlpha(190),
+                        fontSize: 9,
+                        height: 1.2,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: colorController,
-                      decoration: _petFieldDecoration(
-                        context: context,
-                        labelText: 'Color / Looks',
-                        hintText: 'e.g. Golden scales with tiny spots',
-                        icon: Icons.palette_outlined,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      decoration: _petFieldDecoration(
-                        context: context,
-                        labelText: 'Personality / Fun Fact',
-                        hintText: 'e.g. Falls asleep to bedtime stories',
-                        icon: Icons.auto_awesome_outlined,
-                      ),
-                      onChanged: (v) => personality = v,
-                    ),
-                    const SizedBox(height: 18),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.primaryDark,
-                          ),
-                          child: const Text('Cancel'),
-                        ),
-                        const SizedBox(width: 10),
-                        ElevatedButton.icon(
-                          onPressed: nameController.text.trim().isEmpty
-                              ? null
-                              : () {
-                                  wizardData.pets.add({
-                                    'name': nameController.text.trim(),
-                                    'species': species,
-                                    'gender': gender,
-                                    'color': colorController.text.trim(),
-                                    'personality': personality,
-                                  });
-                                  onUpdate();
-                                  Navigator.pop(context);
-                                  onAutoSave();
-                                },
-                          icon: const Icon(Icons.auto_awesome),
-                          label: const Text('Add Pet'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryDark,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
-                          ),
-                        ),
-                      ],
-                    )
                   ],
                 ),
               ),
@@ -1244,408 +653,471 @@ class _PetsSection extends StatelessWidget {
           );
         },
       ),
-    ).whenComplete(() {
-      nameController.dispose();
-      colorController.dispose();
-    });
+    );
   }
 
-  Widget _buildSpeciesChip({
-    required BuildContext context,
-    required String option,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    final imageAsset = _speciesImageAssets[option];
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
+  Widget _buildArchetypeImage(ArchetypeData a, bool isSelected) {
+    final imgSize = isSelected ? 110.0 : 90.0;
+    Widget imageWidget;
+
+    if (a.imagePath != null) {
+      imageWidget = Image.asset(
+        a.imagePath!,
+        width: imgSize,
+        height: imgSize,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Text(
+          a.icon ?? '✨',
+          style: TextStyle(fontSize: isSelected ? 52 : 42),
+        ),
+      );
+    } else {
+      imageWidget = Text(
+        a.icon ?? '✨',
+        style: TextStyle(fontSize: isSelected ? 52 : 42),
+      );
+    }
+
+    // Decorative gold frame around the image
+    return Container(
+      width: imgSize,
+      height: imgSize,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
           color: isSelected
-              ? AppColors.primary.withAlpha(26)
-              : Colors.white.withAlpha(180),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
+              ? const Color(0xFFFFD700)
+              : const Color(0xFFFFD700).withAlpha(120),
+          width: isSelected ? 2.5 : 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
             color: isSelected
-                ? AppColors.primary
-                : AppColors.primary.withAlpha(50),
-            width: isSelected ? 1.8 : 1.0,
+                ? const Color(0xFFFFD700).withAlpha(160)
+                : const Color(0xFFFFD700).withAlpha(60),
+            blurRadius: isSelected ? 16 : 8,
+            spreadRadius: isSelected ? 2 : 0,
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withAlpha(35),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : const [],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (imageAsset != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(7),
-                child: Image.asset(
-                  imageAsset,
-                  width: 26,
-                  height: 26,
-                  fit: BoxFit.cover,
-                ),
-              )
-            else
-              Text(
-                _getEmojiForSpecies(option),
-                style: const TextStyle(fontSize: 18),
-              ),
-            const SizedBox(width: 6),
-            Text(
-              option,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textDark,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  InputDecoration _petFieldDecoration({
-    required BuildContext context,
-    required String labelText,
-    String? hintText,
-    required IconData icon,
-  }) {
-    return InputDecoration(
-      labelText: labelText,
-      hintText: hintText,
-      prefixIcon: Icon(icon, color: AppColors.primaryDark.withAlpha(180)),
-      fillColor: Colors.white.withAlpha(195),
-      filled: true,
-      labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppColors.textDark.withAlpha(190),
-            fontWeight: FontWeight.w600,
+          BoxShadow(
+            color: Colors.black.withAlpha(80),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
           ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: AppColors.primary.withAlpha(60)),
+        ],
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: AppColors.primary.withAlpha(60)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.primaryDark, width: 2),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Your Pets',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
-                  ),
-            ),
-            TextButton.icon(
-              onPressed: () => _showAddPetDialog(context),
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add Pet'),
-              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-            ),
-          ],
-        ),
-        if (wizardData.pets.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Text(
-              'No pets added yet. Add one to join the adventure!',
-              style: TextStyle(
-                  color: AppColors.textDark.withAlpha(128),
-                  fontStyle: FontStyle.italic,
-                  fontSize: 13),
-            ),
-          )
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: wizardData.pets.map((pet) {
-              return Chip(
-                avatar: Text(_getEmojiForSpecies(pet['species'])),
-                label: Text(pet['name'] ?? ''),
-                backgroundColor: AppColors.surface,
-                side: BorderSide(color: AppColors.primary.withAlpha(50)),
-                onDeleted: () {
-                  wizardData.pets.remove(pet);
-                  onUpdate();
-                  // Auto-save the character with updated pets
-                  onAutoSave();
-                },
-              );
-            }).toList(),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: imageWidget,
           ),
-      ],
-    );
-  }
-
-  String _getEmojiForSpecies(String? species) {
-    switch (species) {
-      case 'Dog':
-        return '🐕';
-      case 'Cat':
-        return '🐱';
-      case 'Bird':
-        return '🐦';
-      case 'Hamster':
-        return '🐹';
-      case 'Fish':
-        return '🐠';
-      case 'Bunny':
-        return '🐰';
-      case 'Reptile':
-        return '🦎';
-      default:
-        return '🐾';
-    }
-  }
-}
-
-/// Improved Age Picker Widget
-///
-/// Features:
-/// - Large, clickable age display
-/// - Direct text input field
-/// - Scrollable wheel picker
-/// - Better visual feedback
-class _ImprovedAgePicker extends StatefulWidget {
-  final String label;
-  final int age;
-  final int minAge;
-  final int maxAge;
-  final ValueChanged<int> onAgeChanged;
-
-  const _ImprovedAgePicker({
-    required this.label,
-    required this.age,
-    required this.minAge,
-    required this.maxAge,
-    required this.onAgeChanged,
-  });
-
-  @override
-  State<_ImprovedAgePicker> createState() => _ImprovedAgePickerState();
-}
-
-class _ImprovedAgePickerState extends State<_ImprovedAgePicker> {
-  late TextEditingController _textController;
-  late FixedExtentScrollController _scrollController;
-
-  @override
-  void initState() {
-    super.initState();
-    _textController = TextEditingController(text: widget.age.toString());
-    _scrollController = FixedExtentScrollController(
-      initialItem: widget.age - widget.minAge,
-    );
-  }
-
-  @override
-  void dispose() {
-    _textController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _updateAge(int newAge) {
-    if (newAge >= widget.minAge && newAge <= widget.maxAge) {
-      widget.onAgeChanged(newAge);
-      _textController.text = newAge.toString();
-    }
-  }
-
-  void _showQuickEditDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final controller = TextEditingController(text: widget.age.toString());
-        return AlertDialog(
-          title: Text('Enter ${widget.label}'),
-          content: TextField(
-            controller: controller,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'Age',
-              hintText: '${widget.minAge}-${widget.maxAge}',
-              border: const OutlineInputBorder(),
-              suffixText: 'years',
-            ),
-            autofocus: true,
-            onSubmitted: (value) {
-              final parsed = int.tryParse(value);
-              if (parsed != null) {
-                _updateAge(parsed);
-                Navigator.pop(context);
-              }
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final parsed = int.tryParse(controller.text);
-                if (parsed != null) {
-                  _updateAge(parsed);
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Done'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 300;
-        final showWheelPicker = constraints.maxWidth >= 280;
-
-        return Row(
-          children: [
-            // Label
-            Text(
-              widget.label,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: isNarrow ? 13 : 14,
-                color: AppColors.textDark,
-              ),
-            ),
-
-            const Spacer(),
-
-            // Clickable age display
-            GestureDetector(
-              onTap: _showQuickEditDialog,
+          // Inner golden shimmer overlay on selection
+          if (isSelected)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isNarrow ? 8 : 12,
-                  vertical: 6,
-                ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '${widget.age}',
-                      style: TextStyle(
-                        fontSize: isNarrow ? 18 : 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textLight,
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-                    const Text(
-                      'yrs',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textLight,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.edit,
-                        size: 12, color: AppColors.textLight),
-                  ],
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFFFFD700).withAlpha(50),
+                      Colors.transparent,
+                      const Color(0xFF9B3FD8).withAlpha(30),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                 ),
               ),
             ),
+          // Corner sparkle accents
+          Positioned(
+            top: 3,
+            left: 3,
+            child: _cornerGem(isSelected),
+          ),
+          Positioned(
+            top: 3,
+            right: 3,
+            child: _cornerGem(isSelected),
+          ),
+          Positioned(
+            bottom: 3,
+            left: 3,
+            child: _cornerGem(isSelected),
+          ),
+          Positioned(
+            bottom: 3,
+            right: 3,
+            child: _cornerGem(isSelected),
+          ),
+        ],
+      ),
+    );
+  }
 
-            // Compact wheel picker - only show if we have space
-            if (showWheelPicker) ...[
-              const SizedBox(width: 8),
-              SizedBox(
-                width: isNarrow ? 50 : 60,
-                height: 80,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.primary, width: 2),
-                    borderRadius: BorderRadius.circular(8),
-                    color: AppColors.primary.withAlpha(26),
-                  ),
-                  child: Stack(
-                    children: [
-                      // Selection indicator
-                      Positioned(
-                        top: 28,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withAlpha(51),
-                            border: const Border(
-                              top: BorderSide(
-                                  color: AppColors.primary, width: 1),
-                              bottom: BorderSide(
-                                  color: AppColors.primary, width: 1),
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Wheel picker
-                      CupertinoPicker(
-                        scrollController: _scrollController,
-                        itemExtent: 24,
-                        onSelectedItemChanged: (index) {
-                          _updateAge(index + widget.minAge);
-                        },
-                        children: List.generate(
-                          widget.maxAge - widget.minAge + 1,
-                          (index) => Center(
-                            child: Text(
-                              '${index + widget.minAge}',
-                              style: TextStyle(
-                                fontSize: isNarrow ? 14 : 16,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textDark,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+  Widget _cornerGem(bool bright) => Container(
+    width: 7,
+    height: 7,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: bright
+          ? const Color(0xFFFFD700)
+          : const Color(0xFFFFD700).withAlpha(120),
+      boxShadow: bright
+          ? [
+              BoxShadow(
+                color: const Color(0xFFFFD700).withAlpha(200),
+                blurRadius: 6,
+              ),
+            ]
+          : null,
+    ),
+  );
+
+  // ─── SECTION: Create Your Avatar image button ─────────────────────────────────
+  Widget _buildCreateAvatarButton() {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isCreateAvatarPressed = true),
+      onTapUp: (_) => setState(() => _isCreateAvatarPressed = false),
+      onTapCancel: () => setState(() => _isCreateAvatarPressed = false),
+      onTap: _openAvatarCreation,
+      child: AnimatedScale(
+        scale: _isCreateAvatarPressed ? 0.94 : 1.0,
+        duration: const Duration(milliseconds: 110),
+        child: Image.asset(
+          'assets/images/ui/create_magic_btn.png',
+          height: 80,
+          width: double.infinity,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => _buildFallbackAvatarButton(),
+        ),
+      ),
+    );
+  }
+
+  // Flutter-native fallback if image fails
+  Widget _buildFallbackAvatarButton() => Container(
+    height: 62,
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(31),
+      gradient: const LinearGradient(
+        colors: [Color(0xFF5B1BAA), Color(0xFF9B3FD8), Color(0xFF5B1BAA)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      border: Border.all(color: const Color(0xFFFFD700), width: 2),
+    ),
+    child: Center(
+      child: Text(
+        'Create Magic Avatar',
+        style: GoogleFonts.cinzelDecorative(
+          color: const Color(0xFFFFE066),
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    ),
+  );
+
+  // ─── SECTION: Continue button ─────────────────────────────────────────────────
+  Widget _buildContinueButton() {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isContinuePressed = true),
+      onTapUp: (_) => setState(() => _isContinuePressed = false),
+      onTapCancel: () => setState(() => _isContinuePressed = false),
+      onTap: _handleContinue,
+      child: AnimatedScale(
+        scale: _isContinuePressed ? 0.94 : 1.0,
+        duration: const Duration(milliseconds: 110),
+        child: Container(
+          height: 62,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(31),
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFF5B1BAA),
+                Color(0xFF9B3FD8),
+                Color(0xFF5B1BAA),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            border: Border.all(color: const Color(0xFFFFD700), width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFFD700).withAlpha(100),
+                blurRadius: 16,
+                spreadRadius: 2,
+              ),
+              BoxShadow(
+                color: const Color(0xFF9B3FD8).withAlpha(80),
+                blurRadius: 24,
               ),
             ],
+          ),
+          child: Center(
+            child: Text(
+              'Continue',
+              style: GoogleFonts.cinzelDecorative(
+                color: const Color(0xFFFFE066),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+                shadows: const [
+                  Shadow(color: Colors.black54, blurRadius: 6),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── Existing character row ────────────────────────────────────────────────────
+  Widget _buildExistingCharactersRow() {
+    return SizedBox(
+      height: 86,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: widget.availableCharacters.length + 1,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          if (index == widget.availableCharacters.length) {
+            return GestureDetector(
+              onTap: _switchToNewCharacter,
+              child: Container(
+                width: 62,
+                height: 62,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF3A2363),
+                  border: Border.all(
+                    color: _isCreatingNew
+                        ? const Color(0xFFF8D27E)
+                        : Colors.white54,
+                    width: _isCreatingNew ? 3 : 1.5,
+                  ),
+                  boxShadow: _isCreatingNew
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFFFFD700).withAlpha(80),
+                            blurRadius: 10,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: const Icon(Icons.add, color: Colors.white),
+              ),
+            );
+          }
+          final char = widget.availableCharacters[index];
+          final sel =
+              _selectedExistingCharacter?.id == char.id && !_isCreatingNew;
+          return GestureDetector(
+            onTap: () => _loadExistingCharacter(char),
+            child: Container(
+              width: 62,
+              height: 62,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: sel ? const Color(0xFFF8D27E) : Colors.white54,
+                  width: sel ? 3 : 1.5,
+                ),
+                boxShadow: sel
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFFFFD700).withAlpha(128),
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: ClipOval(
+                child: Image.asset(
+                  _placeholderAsset,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: const Color(0xFF3A2363),
+                    child: Center(
+                      child: Text(
+                        char.name.isNotEmpty
+                            ? char.name[0].toUpperCase()
+                            : '?',
+                        style: GoogleFonts.fredoka(
+                          color: Colors.white,
+                          fontSize: 22,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ─── Build ─────────────────────────────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
+    final hPad = w < 760 ? 16.0 : 28.0;
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color(0xFF120226),
+            Color(0xFF3D1166),
+            Color(0xFF4A1A72),
+            Color(0xFF2A0A4E),
+            Color(0xFF120226),
           ],
-        );
+          stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(hPad, 12, hPad, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Existing characters row (only when characters are saved)
+              if (widget.availableCharacters.isNotEmpty) ...[
+                _buildExistingCharactersRow(),
+                const SizedBox(height: 10),
+              ],
+
+              // ── Avatar + Hero Age picker ───────────────────────────────────
+              Center(child: _buildAvatarSection()),
+              const SizedBox(height: 20),
+
+              // ── Hero / Heroine gender picker ───────────────────────────────
+              _buildGenderPicker(),
+              const SizedBox(height: 20),
+
+              // ── Magical scroll name field (create-new only) ────────────────
+              if (_isCreatingNew) ...[
+                _buildNameScrollInput(),
+                const SizedBox(height: 20),
+              ],
+
+              // ── Archetype cards ────────────────────────────────────────────
+              _buildArchetypeCards(),
+              const SizedBox(height: 20),
+
+              // ── Create Your Avatar button (image) ─────────────────────────
+              _buildCreateAvatarButton(),
+              const SizedBox(height: 14),
+
+              // ── Continue (gated until name + archetype chosen) ─────────────
+              if (_canContinue ||
+                  (!_isCreatingNew && _selectedExistingCharacter != null))
+                _buildContinueButton(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Age step button ──────────────────────────────────────────────────────────
+class _AgeStepButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _AgeStepButton({required this.icon, required this.onTap});
+
+  @override
+  State<_AgeStepButton> createState() => _AgeStepButtonState();
+}
+
+class _AgeStepButtonState extends State<_AgeStepButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
       },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.88 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: _pressed
+                  ? [const Color(0xFF3A0A7A), const Color(0xFF6B2BAA)]
+                  : [const Color(0xFF5B1BAA), const Color(0xFF9B3FD8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            border: Border.all(
+              color: const Color(0xFFFFD700),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFFD700).withAlpha(100),
+                blurRadius: 12,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: Icon(
+            widget.icon,
+            color: const Color(0xFFFFE066),
+            size: 26,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Name input formatter ──────────────────────────────────────────────────────
+class _SafeNameFormatter extends TextInputFormatter {
+  const _SafeNameFormatter();
+
+  static const Set<String> _blockedWords = {
+    'damn', 'hell', 'stupid', 'idiot', 'dumb', 'hate',
+  };
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final cleaned = newValue.text
+        .replaceAll(RegExp(r"[^a-zA-Z0-9 '\\-]"), '')
+        .replaceAll(RegExp(r'\s{2,}'), ' ')
+        .trimLeft();
+    if (cleaned.isEmpty) return const TextEditingValue();
+
+    final safeWords = cleaned
+        .split(' ')
+        .where((w) => !_blockedWords.contains(w.toLowerCase()))
+        .toList();
+    final safeText = safeWords.join(' ');
+    return TextEditingValue(
+      text: safeText,
+      selection: TextSelection.collapsed(offset: safeText.length),
     );
   }
 }

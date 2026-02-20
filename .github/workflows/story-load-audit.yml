@@ -1,0 +1,69 @@
+name: Story Load Audit
+
+on:
+  schedule:
+    - cron: "30 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Run Story Load Audit (Non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run story load audit
+        run: |
+          python backend/tests/story_load_audit.py
+
+      - name: Check thresholds
+        id: threshold
+        continue-on-error: true
+        run: |
+          python backend/tests/story_load_thresholds.py
+
+      - name: Upload audit artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: story-load-audit-artifacts
+          path: |
+            backend/tests/artifacts/story_load_audit_latest.json
+            backend/tests/artifacts/story_load_audit_latest.md
+            backend/tests/artifacts/story_load_threshold_summary.md
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Job summary
+        if: always()
+        shell: bash
+        run: |
+          echo "## Story Load Audit" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f backend/tests/artifacts/story_load_audit_latest.md ]; then
+            cat backend/tests/artifacts/story_load_audit_latest.md >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f backend/tests/artifacts/story_load_threshold_summary.md ]; then
+            cat backend/tests/artifacts/story_load_threshold_summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ "${{ steps.threshold.outcome }}" = "failure" ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "> Threshold check failed. Workflow is intentionally non-blocking." >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -173,8 +173,8 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(basedir, 'characters.db')}"
     # Use environment model or fallback to 1.5-flash
     GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash')
-    # Rate limiting should be enabled outside tests.
-    RATELIMIT_ENABLED = True
+    # Rate limiting should be enabled outside tests by default.
+    RATELIMIT_ENABLED = _as_bool('RATELIMIT_ENABLED', False)
 
 class ProductionConfig(Config):
     """Production configuration."""

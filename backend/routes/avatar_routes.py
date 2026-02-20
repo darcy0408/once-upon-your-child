@@ -72,14 +72,19 @@ def rate_limit_by_user_tier(free=5, premium=50, byok=None):
 
                 if len(hits) >= int(resolved_limit):
                     retry_after = int(max(1, _RATE_LIMIT_WINDOW_SECONDS - (now - hits[0])))
-                    return jsonify({
+                    rate_limited_response = make_response(jsonify({
                         'status': 'error',
                         'error_code': 'RATE_LIMIT_EXCEEDED',
                         'message': get_error_message('rate_limit'),
                         'user_tier': user_tier or 'free',
                         'limit_per_hour': int(resolved_limit),
                         'retry_after_seconds': retry_after
-                    }), 429
+                    }), 429)
+                    rate_limited_response.headers['X-Avatar-RateLimit-Limit'] = str(int(resolved_limit))
+                    rate_limited_response.headers['X-Avatar-RateLimit-Remaining'] = "0"
+                    rate_limited_response.headers['X-Avatar-RateLimit-Reset'] = str(retry_after)
+                    rate_limited_response.headers['X-Avatar-RateLimit-Tier'] = (user_tier or 'free').lower()
+                    return rate_limited_response
 
                 hits.append(now)
                 remaining = max(0, int(resolved_limit) - len(hits))
@@ -165,6 +170,14 @@ def generate_custom_avatar():
                 'avatar': avatar_data
             }), 200
 
+        except ValueError as e:
+            logger.warning(f"Custom avatar validation error: {e}")
+            return jsonify({
+                'status': 'error',
+                'error_code': 'VALIDATION_ERROR',
+                'message': str(e)
+            }), 400
+
         except Exception as e:
             logger.error(f"Custom avatar generation failed: {e}")
             return jsonify({
@@ -175,6 +188,81 @@ def generate_custom_avatar():
 
     except Exception as e:
         logger.exception(f"Unexpected error in generate_custom_avatar endpoint: {e}")
+        return jsonify({
+            'status': 'error',
+            'error_code': 'INTERNAL_ERROR',
+            'message': 'Something magical went wrong! Let\'s try again! ✨'
+        }), 500
+
+
+@avatar_bp.route('/generate-pet-avatar', methods=['POST'])
+@rate_limit_by_user_tier(free=3, premium=20, byok=None)
+def generate_pet_avatar():
+    """
+    Generate a magical pet companion avatar based on a pet's photo and metadata.
+    Expects multipart/form-data with:
+    - photo: Image file
+    - pet_name: str
+    - species: str
+    - breed_description: str
+    - owner_favorite_color: str
+    """
+    try:
+        # Check if photo is present
+        if 'photo' not in request.files:
+            return jsonify({
+                'status': 'error',
+                'error_code': 'MISSING_PHOTO',
+                'message': 'Photo is required'
+            }), 400
+
+        photo_file = request.files['photo']
+        photo_bytes = photo_file.read()
+
+        # Extract other data from form
+        pet_name = request.form.get('pet_name')
+        species = request.form.get('species')
+        breed_description = request.form.get('breed_description')
+        owner_favorite_color = request.form.get('owner_favorite_color')
+
+        # Basic validation
+        if not all([pet_name, species, breed_description, owner_favorite_color]):
+            return jsonify({
+                'status': 'error',
+                'error_code': 'MISSING_DATA',
+                'message': 'All fields (pet_name, species, breed_description, owner_favorite_color) are required'
+            }), 400
+
+        logger.info(f"Pet avatar request: name={pet_name}, species={species}")
+
+        service = get_avatar_service()
+
+        try:
+            avatar_data = service.generate_pet_avatar(
+                pet_name=pet_name,
+                species=species,
+                breed_description=breed_description,
+                owner_favorite_color=owner_favorite_color,
+                photo_bytes=photo_bytes
+            )
+
+            logger.info(f"Pet avatar generated successfully: {avatar_data['id']}")
+
+            return jsonify({
+                'status': 'success',
+                'avatar': avatar_data
+            }), 200
+
+        except Exception as e:
+            logger.error(f"Pet avatar generation failed: {e}")
+            return jsonify({
+                'status': 'error',
+                'error_code': 'GENERATION_FAILED',
+                'message': f"Our magic paintbrush hit a snag with the pet avatar: {str(e)}"
+            }), 500
+
+    except Exception as e:
+        logger.exception(f"Unexpected error in generate_pet_avatar endpoint: {e}")
         return jsonify({
             'status': 'error',
             'error_code': 'INTERNAL_ERROR',

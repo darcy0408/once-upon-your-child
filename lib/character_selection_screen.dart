@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'models.dart'; // Assuming your Character model is in here
 import 'character_creation_screen_enhanced.dart';
+import 'screens/wizard_story_screen.dart';
 import 'widgets/app_button.dart';
 import 'services/isar_service.dart';
 import 'services/api_service_manager.dart';
@@ -18,6 +19,7 @@ class CharacterSelectionScreen extends StatefulWidget {
 class _CharacterSelectionScreenState extends State<CharacterSelectionScreen> {
   late Future<List<Character>> _charactersFuture;
   Character? _selectedCharacter;
+  List<Character> _allCharacters = [];
 
   @override
   void initState() {
@@ -43,11 +45,14 @@ class _CharacterSelectionScreenState extends State<CharacterSelectionScreen> {
         debugPrint('Failed to sync characters to local storage: $e');
       }
 
+      _allCharacters = characters;
       return characters;
     } catch (e) {
       // Network error - fallback to local storage
       debugPrint('Network error, loading from local storage: $e');
-      return await IsarService.getAllCharacters();
+      final local = await IsarService.getAllCharacters();
+      _allCharacters = local;
+      return local;
     }
   }
 
@@ -79,7 +84,14 @@ class _CharacterSelectionScreenState extends State<CharacterSelectionScreen> {
       );
       return;
     }
-    Navigator.of(context).pop(selected);
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => WizardStoryScreen(
+          initialCharacter: selected,
+          availableCharacters: _allCharacters,
+        ),
+      ),
+    );
   }
 
   @override

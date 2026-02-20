@@ -1,9 +1,243 @@
 # Team Coordination Log
 
+---
+
+## Session Update - 2026-02-17 (Comprehensive Integration Testing - ALL PASSING)
+
+### Scope Completed
+
+**Full Integration Test Suite (42 tests):**
+- **Age Group Testing (15/15 Passed):** Verified Standard, Rhyme, and Learn-to-Read modes for ages 4, 7, 9, 12, 16.
+- **Pick-A-Path Testing (5/5 Passed):** Validated interactive adventure flow (start + continuation) across 5 scenarios.
+- **Story Duration Testing (15/15 Passed):** Verified Quick, Standard, and Epic lengths across age groups.
+- **Feature Verification (7/7 Passed):** Confirmed all 6 archetypes and custom element inclusion ("flying skateboard and talking robot bird").
+
+**Backend Stabilization:**
+- Created `run_backend_no_reload.py` to run the Flask server without the reloader, preventing crash loops during bulk testing.
+- Fixed database schema issues by ensuring `avatar_data` and other missing columns are present in `character` table.
+- Implemented `wait_for_backend` robust initialization in test scripts.
+- Disabled rate limiting for testing to ensure uninterrupted suite execution.
+
+**Infrastructure:**
+- Verified `gemini-2.0-flash` model integration for all generation modes.
+- Aggregated results in `INTEGRATION_TEST_RESULTS_2026-02-17.md`.
+
+### Status
+- **Backend:** ✅ 100% Passing (42/42 integration tests).
+- **Database:** ✅ Schema synchronized and verified.
+- **Stability:** ✅ Reloader crash loop resolved.
+
+---
+
 **Structure:** 3 AI Agents + 1 Supervisor (Claude)
 - **Claude Sonnet 4.5** (Supervisor) - Planning, architecture, coordination, complex problem-solving
 - **Codex Agent** (Specialist) - Implementation, testing, specific features
 - **Gemini Agent** (Specialist) - Implementation, testing, specific features
+
+---
+
+## Session Update - 2026-02-20 (Backlog Cleanup & Code TODOs)
+
+### Scope Completed
+**Dependency Fix:**
+- Upgraded `google_fonts` from pinned `4.0.5` to `^6.2.1` to resolve Dart SDK incompatibility
+- Fixed compile error: `FontWeight` const map key issue in newer Flutter/Dart versions
+
+**TODO #8: Tier-based Avatar Rate Limiting (Verified Complete)**
+- Confirmed `rate_limit_by_user_tier()` decorator is fully implemented in `backend/routes/avatar_routes.py`
+- In-memory rate tracking with rolling window, per-user-tier limits (free/premium/byok)
+- Already applied to `/generate-custom-avatar`, `/generate-avatar`, `/regenerate-avatar`
+- Returns 429 with retry headers when limits exceeded
+
+**TODO #9: Avatar Vision Verification with Retry Logic (`backend/services/avatar_generation_service.py`)**
+- Implemented retry loop (MAX_RETRIES = 3) for avatar generation with vision verification
+- On verification failure: retries with prompt variation, logs attempt count
+- After max retries: raises descriptive exception for user-facing error handling
+- `_verify_non_photorealistic()` checks: image size, dimensions, stddev, edge density, color complexity
+
+**TODO #10: Character Selection Proceed Logic (`lib/character_selection_screen.dart`)**
+- Added import for `WizardStoryScreen`
+- Added `_allCharacters` state to track fetched character list
+- Updated `_fetchCharacters()` to populate `_allCharacters` from both network and local Isar fallback
+- Replaced stub `Navigator.pop(selected)` with `Navigator.pushReplacement(WizardStoryScreen(initialCharacter: selected, availableCharacters: _allCharacters))`
+- Screen now properly launches wizard with pre-selected character when user taps "Continue"
+
+**TODO #11: TherapeuticAnalytics Tracking (`lib/emotions_learning_system.dart`)**
+- Added `trackStoryMoment()` method to `TherapeuticAnalytics` service
+- Logs Firebase `story_emotion_moment` event with `emotion` and `coping_strategy` parameters
+- Added analytics call in `recordStoryMoment()` with try/catch error handling
+- Matches existing pattern from `recordCheckIn()` analytics
+
+**TODO #12: Feelings Check Before Generation (Verified Complete)**
+- Confirmed `PreStoryFeelingsDialog.show()` is already fully implemented in `lib/main_story.dart:468-476`
+- Triggered when `guidedByFeeling: true` parameter is passed to `_createStory()`
+- Wired to "Create Story About a Feeling" UI button (line 1306)
+- `currentFeeling` passed to story generation API
+
+**TODO #13: CharacterAppearance Hydration (Verified Complete)**
+- Confirmed `_buildCharacterAppearance()` properly extracts character traits from `generatedAvatar.attributes` with fallbacks
+- Maps to standardized enums (`HairColor`, `SkinTone`, `BodyBuild`, etc.)
+- Passed to `generateColoringPagesFromStory()` at line 757
+- Serialized to JSON and sent to backend API in `character_appearance` field
+- Flutter analyzer clean (no compile errors)
+
+### Notes
+- `CharacterSelectionScreen` is still not wired into the main app navigation (future work)
+- All analytics tracking follows non-blocking pattern (failures don't break core functionality)
+- `google_fonts ^6.2.1` maintains same API as 4.0.5 (`GoogleFonts.quicksand()`, etc.)
+- Avatar retry logic adds prompt variations to encourage different outputs on subsequent attempts
+- All 6 backlog TODOs (#8-#13) are now complete
+
+---
+
+## Session Update - 2026-02-20 (Illustrations Root-Cause Investigation + Fix Verification)
+
+### Scope Completed
+- Traced end-to-end illustration path across frontend and backend (`generate-story` → result screen rendering → `/generate-illustrations`).
+- Confirmed primary behavior mismatch:
+  - `backend/tasks/story_tasks.py` intentionally returns `illustrations = []` (inline generation removed).
+  - App flow was still expecting story response to include images.
+- Identified API contract mismatch in Flutter service:
+  - `GeminiIllustrationService` was using a `scenes` payload for `/generate-illustrations`, while backend expects `scene_description`.
+- Verified backend/provider health and key loading:
+  - `/debug-openrouter`: success, image generated.
+  - `/debug-gemini`: success, text generation succeeded.
+  - `/health`: `has_api_key: true`.
+
+### Code Changes Applied
+- `lib/screens/wizard_steps/magic_review_step.dart`
+  - Added post-story illustration generation call when `includeIllustrations` is enabled and backend story payload has no images.
+  - Passed generated illustration payload into `StoryResultScreen` via `backendIllustrations`.
+- `lib/story_illustration_service.dart`
+  - Simplified `GeminiIllustrationService.generateIllustrations()` to use the working base implementation aligned to current backend contract.
+
+### Verification
+```bash
+python -m pytest backend/tests/test_api_contracts.py -k "generate_illustrations or illustrations" -q
+```
+- Result: PASS (`3 passed`)
+
+```bash
+flutter analyze --no-pub lib/screens/wizard_steps/magic_review_step.dart lib/story_illustration_service.dart
+```
+- Result: PASS (`No issues found`)
+
+### Notes
+- Keys are present in `backend/.env` for Gemini + OpenRouter.
+- Remaining failures (if any) should now be runtime/provider-side and diagnosable from endpoint logs, not missing-key configuration.
+
+---
+
+## Session Update - 2026-02-20 (Backlog Cleanup & Code TODOs)
+
+### Scope Completed
+**Dependency Fix:**
+- Upgraded `google_fonts` from pinned `4.0.5` to `^6.2.1` to resolve Dart SDK incompatibility
+- Fixed compile error: `FontWeight` const map key issue in newer Flutter/Dart versions
+
+**TODO #10: Character Selection Proceed Logic (`lib/character_selection_screen.dart`)**
+- Added import for `WizardStoryScreen`
+- Added `_allCharacters` state to track fetched character list
+- Updated `_fetchCharacters()` to populate `_allCharacters` from both network and local Isar fallback
+- Replaced stub `Navigator.pop(selected)` with `Navigator.pushReplacement(WizardStoryScreen(initialCharacter: selected, availableCharacters: _allCharacters))`
+- Screen now properly launches wizard with pre-selected character when user taps "Continue"
+
+**TODO #11: TherapeuticAnalytics Tracking (`lib/emotions_learning_system.dart`)**
+- Added `trackStoryMoment()` method to `TherapeuticAnalytics` service
+- Logs Firebase `story_emotion_moment` event with `emotion` and `coping_strategy` parameters
+- Added analytics call in `recordStoryMoment()` with try/catch error handling
+- Matches existing pattern from `recordCheckIn()` analytics
+
+### Notes
+- `CharacterSelectionScreen` is still not wired into the main app navigation (future work)
+- All analytics tracking follows non-blocking pattern (failures don't break core functionality)
+- `google_fonts ^6.2.1` maintains same API as 4.0.5 (`GoogleFonts.quicksand()`, etc.)
+
+---
+
+## Session Update - 2026-02-20 (Button Image Batch Optimization via WSL)
+
+### Scope Completed
+- Created `optimize_buttons.sh` to batch-process UI button images in `StoryWeaverImagestoShare/buttonsToOptimize/ButtonsToOptimize`.
+- Script steps:
+  - `rembg` background removal → `_clean.png`
+  - Generate `_normal.png`, `_hover.png`, `_pressed.png` variants (200x200, brightness adjustments, pressed 95% size centered on transparent canvas)
+  - Cleanup temp `_clean.png`
+  - Success message per file
+- Added auto-detection of local venv to ensure `rembg` runs from `.venv` when present.
+
+### Dependency Resolution (WSL)
+- Set up Python venv and installed rembg backend dependencies:
+  - `rembg[cpu]`, `filetype`, `watchdog`, `aiohttp`, `gradio`, `asyncer`
+- Downloaded U2Net model to `/home/darcy/.u2net/u2net.onnx` during first successful run.
+
+### Output Verification
+- Confirmed generated `_normal`, `_hover`, `_pressed` outputs for all processed inputs.
+- Verified additional outputs for:
+  - `girl_*`, `makeMagic_*`, `robinFrame_*`
+
+### Notes
+- Script now works without manual venv activation if `.venv` exists.
+- Processing confirmed for both PNG and JPG inputs.
+
+## Session Update - 2026-02-20 (Backend TODO Sweep + Story Load Audit + Non-Blocking CI)
+
+### Scope Completed
+- Completed open code TODOs and supporting tests across backend/frontend:
+  - Tier-based avatar route rate limiting
+  - Avatar vision-based verification heuristics
+  - Character selection proceed flow
+  - Therapeutic analytics check-in tracking
+  - Earlier feelings check before story generation
+  - Story result `characterAppearance` hydration for coloring generation
+- Added/expanded backend test coverage in avatar/achievement/analytics areas.
+- Added repeatable story generation load/latency audit harness with artifact output.
+- Added scheduled/manual GitHub Actions workflow for non-blocking load audits + threshold checks.
+
+### Files Added/Updated
+- `backend/routes/avatar_routes.py`
+- `backend/services/avatar_generation_service.py`
+- `lib/character_selection_screen.dart`
+- `lib/emotions_learning_system.dart`
+- `lib/main_story.dart`
+- `lib/story_result_screen.dart`
+- `backend/tests/api/test_avatar_routes.py`
+- `backend/tests/api/test_analytics_routes.py`
+- `backend/tests/test_achievements.py`
+- `backend/tests/story_load_audit.py`
+- `backend/tests/story_load_thresholds.py`
+- `.github/workflows/story-load-audit.yml`
+- `backend/tests/artifacts/story_load_audit_latest.json`
+- `backend/tests/artifacts/story_load_audit_latest.md`
+- `backend/tests/artifacts/story_load_threshold_summary.md`
+
+### Verification Commands + Results
+```bash
+python -m py_compile backend/routes/avatar_routes.py backend/services/avatar_generation_service.py
+```
+- Result: PASS
+
+```bash
+flutter analyze lib/character_selection_screen.dart lib/emotions_learning_system.dart lib/main_story.dart lib/story_result_screen.dart
+```
+- Result: PASS (only pre-existing deprecation infos in `lib/story_result_screen.dart`)
+
+```bash
+cd backend; python -m pytest tests/api/test_avatar_routes.py tests/api/test_analytics_routes.py tests/test_achievements.py -q
+```
+- Result: PASS (`19 passed`)
+
+```bash
+python backend/tests/story_load_audit.py
+python backend/tests/story_load_thresholds.py
+```
+- Result: PASS (artifacts generated and thresholds passed)
+
+### Baseline Audit Snapshot (latest)
+- `sync_fast_path`: `24/24` responses `200`, mean `~201 ms`, p95 `~226 ms`
+- `timeout_async_fallback`: `16/16` responses `202`, mean `~27 ms`, status `processing`
+- `quota_error_429`: `12/12` responses `429`, mean `~66 ms`, error `QUOTA_EXCEEDED`
+- `reset_check`: `200, 200, 429` then `200` after wait (reset confirmed)
 
 ---
 
@@ -3400,3 +3634,173 @@ flutter analyze lib/screens/wizard_steps/hero_creator_step.dart
 ### Result
 - PASS: formatter applied cleanly.
 - PASS: analyzer clean for the touched screen file.
+
+## Session Update - 2026-02-20 (Milestone: Task A3 Feature Integration Tests)
+
+### Scope
+- Implemented Task A3 integration coverage in:
+  - `backend/tests/integration/test_features.py`
+- Added `7` feature-focused integration tests for:
+  - Archetypes (`character_details.role` forwarding)
+  - Companion pets (`companion_pets` forwarding)
+  - Companion characters (`companion_characters` forwarding)
+  - Custom elements mapping (`customElements` -> `custom_elements`)
+  - Mood physics mapping (`moodPhysics` -> `mood_physics`)
+  - Rhyme Time mode forwarding (`rhyme_time_mode`)
+  - Illustration generation endpoint (`/generate-illustrations`) with mocked `GeminiImageGenerator`
+
+### Verification
+```bash
+python -m pytest backend/tests/integration/test_features.py -q
+```
+
+### Result
+- PASS: `backend/tests/integration/test_features.py`
+- Total: `7/7` tests passing (`7 passed in 2.47s`)
+
+## Session Update - 2026-02-20 (Milestone: UI Asset Recovery + Transparency Cleanup)
+
+### Problems Addressed
+- Faux transparency checkerboard artifacts were visible in:
+  - Progress indicators
+  - Story mode orbs
+  - Duration orbs
+  - Make Magic button edges
+- Existing glassy assets needed cleanup and safer UI masking to preserve magical appearance.
+
+### Changes Implemented
+- Added cleanup pipeline script:
+  - `clean_assets.py`
+  - Removes checker colors near `#e0e0e0` and `#ffffff` with tolerance (`10` default)
+  - Uses edge-connected + checker-neighborhood detection to avoid stripping intentional highlights
+  - Applies selective alpha Gaussian feathering to soften jagged cut edges
+  - Applies hard pill alpha mask for `make_magic_button.png`
+- Generated cleaned assets in `assets/images/ui/clean/`:
+  - `progress_active_orb.png`
+  - `progress_done_orb.png`
+  - `tales_orb.png`
+  - `rhyme_time_orb.png`
+  - `easy_read_orb.png`
+  - `pick_path_orb.png`
+  - `quick_orb.png`
+  - `classic_orb.png`
+  - `epic_orb.png`
+  - `make_magic_button.png`
+- Rewired widgets from `assets/images/ui/glassy/` to `assets/images/ui/clean/`:
+  - `lib/widgets/image_mode_orb.dart`
+  - `lib/widgets/image_crystal_formation.dart`
+  - `lib/widgets/image_progress_orb.dart`
+  - `lib/widgets/image_make_magic_button.dart`
+- Added masking/cover-up polish in UI:
+  - `ImageModeOrb` now wraps orb image in `ClipOval` + stronger glow shadow
+  - `ImageMakeMagicButton` now wraps image in `ClipRRect(borderRadius: 44)` with `BoxFit.cover`
+
+### Verification
+```bash
+python clean_assets.py
+dart format lib/widgets/image_mode_orb.dart lib/widgets/image_crystal_formation.dart lib/widgets/image_progress_orb.dart lib/widgets/image_make_magic_button.dart
+flutter analyze
+flutter test
+```
+
+### Result
+- PASS: cleanup script completed for all targeted assets and wrote outputs to `assets/images/ui/clean/`
+- PASS: formatting completed on touched widget files
+- `flutter analyze`: completed with existing info-level deprecation items (no new compile errors attributed to touched asset widgets)
+- `flutter test`: suite currently red due to pre-existing wizard/hero/integration failures (not specific to asset-path rewiring)
+
+## Session Update - 2026-02-20 (Hero Creator Magical UI Refactor)
+
+### Scope Completed
+- Refactored lib/screens/wizard_steps/hero_creator_step.dart into a game-like, horizontal, asset-driven profile creation flow.
+- Replaced plain form UX with:
+  - Circular avatar stack fix (uniform circle background + matching ClipOval foreground).
+  - Horizontal archetype spinner using RotatedBox + ListWheelScrollView.useDelegate + FixedExtentScrollPhysics.
+  - Horizontal age spinner (3-99) with centered magical lens overlay.
+  - Scroll-themed name input with transparent TextField overlay.
+  - Hero/heroine large tap targets with animated scale + selected glow.
+  - Image-based magic buttons with press-scale interaction.
+  - Summoning-token pets row with summon-plus empty state.
+- Added local name safety filtering with _SafeNameFormatter (character filtering + basic blocked-word suppression).
+
+### Assets Wired
+- Added UI assets in ssets/images/ui/:
+  - hero_icon.png
+  - heroine_icon.png
+  - magical_scroll_bg.png
+  - create_magic_btn.png
+  - magical_lens.png
+
+### Verification
+`ash
+flutter analyze lib/screens/wizard_steps/hero_creator_step.dart
+`
+- Result: PASS (No issues found)
+
+## Session Update - 2026-02-20 (Milestone: Hero Creator Magical UX Pass + Avatar Flow Reliability)
+
+### Problems Addressed
+- Avatar selection UI felt utilitarian (dropdown-heavy, "Any ..." labels, and jargon terms).
+- Hero Creator needed better visual alignment with the app's magical aesthetic.
+- Character save errors when local backend was down were blocking progression.
+
+### Changes Implemented
+- Redesigned avatar look picker in `lib/widgets/avatar_gallery_selector.dart`:
+  - Replaced dropdown filters with chip-based filters.
+  - Removed "Any ..." labels and added friendlier language.
+  - Mapped style labels to kid-friendly terms (`Boyish`, `Girlish`, `Mixed`).
+  - Applied a magical gradient + glow treatment to the modal and gallery.
+- Fixed curated avatar style filtering in `lib/services/avatar_service.dart`:
+  - Added normalization so picker categories (`masculine/feminine/androgynous`) match metadata values (`male/female/neutral`).
+- Improved save resilience in `lib/screens/wizard_steps/hero_creator_step.dart`:
+  - Local backend outage now shows a non-blocking warning and allows continue.
+- Applied Hero Creator visual refresh in `lib/screens/wizard_steps/hero_creator_step.dart`:
+  - Themed section panel, refined copy, enhanced name field and action button styling.
+  - Kept gameplay behavior/data flow unchanged.
+- Final polish in active Hero Creator implementation:
+  - Updated create-avatar CTA to magical asset/text (`assets/images/ui/create_magic_btn.png`, "Create Magic Avatar").
+
+### Verification
+```bash
+dart format lib/widgets/avatar_gallery_selector.dart lib/services/avatar_service.dart lib/screens/wizard_steps/hero_creator_step.dart
+flutter analyze lib/screens/wizard_steps/hero_creator_step.dart
+flutter run -d chrome --web-port 49676
+```
+
+### Result
+- PASS: formatter applied on touched files.
+- PASS: analyzer clean for active Hero Creator screen (`No issues found`).
+- PASS: app launched in Chrome with debug service connected.
+- Note: automated DevTools viewport showed a blank Flutter canvas, so pixel-level visual confirmation in this session is limited despite successful app launch.
+
+## Session Update - 2026-02-20 (Milestone: Magical Avatar Creator Age Range Fix + UX Alignment)
+
+### Problems Addressed
+- Custom avatar flow rejected valid ages above 18 despite product requirement of `3-99`.
+- Backend custom avatar endpoint returned generic generation errors for age validation failures.
+- Magical Avatar Creator UI looked utilitarian and visually inconsistent with Hero Creator / app aesthetic.
+
+### Changes Implemented
+- Updated custom avatar age validation to `3-99` in:
+  - `lib/custom_avatar_screen.dart`
+  - `backend/services/avatar_generation_service.py`
+- Improved custom avatar endpoint validation handling in `backend/routes/avatar_routes.py`:
+  - `ValueError` now returns `400` with `error_code: VALIDATION_ERROR`.
+- Refreshed Magical Avatar Creator screen styling in `lib/custom_avatar_screen.dart`:
+  - Themed magical gradient background and decorative overlays
+  - Styled photo capture/upload panel and controls
+  - Updated form controls, typography, and action states to match app visual language
+  - Improved surfaced error messages from backend responses
+- Added regression API coverage in `backend/tests/api/test_avatar_routes.py`:
+  - Accepts upper-bound age `99` for `/avatar/generate-custom-avatar`
+  - Returns `400` + `VALIDATION_ERROR` for out-of-range custom age
+
+### Verification
+```bash
+flutter analyze lib/custom_avatar_screen.dart
+python -m pytest backend/tests/api/test_avatar_routes.py -q
+```
+
+### Result
+- PASS: analyzer clean for `lib/custom_avatar_screen.dart`.
+- PASS: avatar route tests passing (`5 passed in 4.48s`).

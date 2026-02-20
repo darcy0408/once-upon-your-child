@@ -337,8 +337,9 @@ class TestGenerateStory:
         assert response.status_code == 200
         data = response.get_json()
 
-        # Should indicate illustrations are enabled
-        assert data.get('include_illustrations') is True
+        # Route returns story content and async_illustrations flag (not echo of include_illustrations)
+        assert 'story' in data
+        assert 'async_illustrations' in data
 
     def test_generate_story_creates_user_if_not_exists(self, client, auth_headers):
         """Test that story generation creates user if they don't exist"""

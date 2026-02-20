@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 import 'avatar_models.dart';
 import 'config/environment.dart';
+import 'theme/app_theme.dart';
 
 class CustomAvatarScreen extends StatefulWidget {
   final String? initialName;
@@ -26,15 +28,15 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
-  
+
   String _gender = 'girl';
   String _eyeColor = 'Brown';
   String _favoriteColor = 'Blue';
-  
+
   File? _imageFile;
   bool _isGenerating = false;
   String? _generatedImagePath;
-  
+
   final List<String> _eyeColors = ['Brown', 'Blue', 'Green', 'Hazel', 'Grey'];
   final List<String> _favoriteColors = [
     'Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Pink', 'Orange', 'Teal', 'Gold'
@@ -82,7 +84,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
   Future<void> _generateAvatar() async {
     if (!_formKey.currentState!.validate() || _imageFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields and take a photo!')),
+        const SnackBar(content: Text('Please complete all fields and add a photo.')),
       );
       return;
     }
@@ -94,7 +96,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
     try {
       final baseUrl = Environment.backendUrl;
       final url = Uri.parse('$baseUrl/avatar/generate-custom-avatar');
-      
+
       var request = http.MultipartRequest('POST', url);
       request.files.add(await http.MultipartFile.fromPath('photo', _imageFile!.path));
       request.fields['character_name'] = _nameController.text;
@@ -112,8 +114,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
         if (data['status'] == 'success') {
           final avatarData = data['avatar'];
           final imageBase64 = avatarData['image_base64'] as String;
-          
-          // Save locally
+
           final localPath = await _saveImageLocally(imageBase64);
 
           if (mounted) {
@@ -129,7 +130,15 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
           throw Exception(data['message'] ?? 'Generation failed');
         }
       } else {
-        throw Exception('Server error: ${response.statusCode}');
+        String serverMessage = 'Server error: ${response.statusCode}';
+        try {
+          final body = json.decode(response.body) as Map<String, dynamic>;
+          final message = body['message']?.toString();
+          if (message != null && message.trim().isNotEmpty) {
+            serverMessage = message;
+          }
+        } catch (_) {}
+        throw Exception(serverMessage);
       }
     } catch (e) {
       debugPrint('❌ Error generating custom avatar: $e');
@@ -138,7 +147,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
           _isGenerating = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Our magic paintbrush hit a snag! Let\'s try again! ✨')),
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
         );
       }
     }
@@ -151,225 +160,403 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
     if (!await avatarsDir.exists()) {
       await avatarsDir.create(recursive: true);
     }
-    
+
     final fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.png';
     final file = File(path.join(avatarsDir.path, fileName));
     await file.writeAsBytes(bytes);
     return file.path;
   }
 
+  InputDecoration _fieldDecoration({
+    required String label,
+    required IconData icon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: GoogleFonts.quicksand(
+        color: const Color(0xFF3A2A57),
+        fontWeight: FontWeight.w700,
+      ),
+      prefixIcon: Icon(icon, color: const Color(0xFF5B3D8A)),
+      filled: true,
+      fillColor: Colors.white.withAlpha(235),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: AppColors.primary.withAlpha(70)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: AppColors.primary.withAlpha(70)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AppColors.primary, width: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Magical Avatar Creator'),
-        backgroundColor: Colors.indigo,
+        title: Text(
+          'Magical Avatar Creator',
+          style: GoogleFonts.cinzelDecorative(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         foregroundColor: Colors.white,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Create a hero that looks like you!',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.indigo),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              
-              // Photo Section
-              GestureDetector(
-                onTap: _isGenerating ? null : _takePhoto,
-                child: Container(
-                  height: 250,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.indigo.withOpacity(0.3), width: 2),
-                    image: _imageFile != null 
-                        ? DecorationImage(image: FileImage(_imageFile!), fit: BoxFit.cover)
-                        : null,
-                  ),
-                  child: _imageFile == null 
-                      ? const Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.camera_alt, size: 60, color: Colors.indigo),
-                            SizedBox(height: 10),
-                            Text('Tap to snap a photo', style: TextStyle(color: Colors.indigo)),
-                          ],
-                        )
-                      : null,
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppGradients.magicalBackground),
+        child: Stack(
+          children: [
+            Positioned(
+              top: 90,
+              left: -40,
+              child: Container(
+                width: 180,
+                height: 180,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withAlpha(38),
                 ),
               ),
-              if (_imageFile != null)
-                TextButton.icon(
-                  onPressed: _isGenerating ? null : _takePhoto,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retake Photo'),
+            ),
+            Positioned(
+              right: -60,
+              bottom: 140,
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.goldLight.withAlpha(55),
                 ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: _isGenerating ? null : _takePhoto,
-                    icon: const Icon(Icons.camera_alt),
-                    label: const Text('Camera'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.indigo,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: _isGenerating ? null : _pickFromGallery,
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text('Gallery'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purple,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
               ),
-
-              const SizedBox(height: 20),
-              
-              // Inputs
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Hero Name',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person),
-                ),
-                validator: (value) => (value == null || value.isEmpty) ? 'Enter a name' : null,
-              ),
-              const SizedBox(height: 15),
-              
-              TextFormField(
-                controller: _ageController,
-                decoration: const InputDecoration(
-                  labelText: 'Age',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.cake),
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Enter age';
-                  final age = int.tryParse(value);
-                  if (age == null) return 'Enter a valid number';
-                  if (age < 3 || age > 18) return 'Age must be between 3 and 18';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 15),
-              
-              Row(
-                children: [
-                  const Text('Gender: ', style: TextStyle(fontSize: 16)),
-                  Expanded(
-                    child: SegmentedButton<String>(
-                      segments: const [
-                        ButtonSegment(value: 'girl', label: Text('Girl'), icon: Icon(Icons.female)),
-                        ButtonSegment(value: 'boy', label: Text('Boy'), icon: Icon(Icons.male)),
-                      ],
-                      selected: {_gender},
-                      onSelectionChanged: (Set<String> newSelection) {
-                        setState(() {
-                          _gender = newSelection.first;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 15),
-              
-              DropdownButtonFormField<String>(
-                value: _eyeColor,
-                decoration: const InputDecoration(
-                  labelText: 'Eye Color',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.visibility),
-                ),
-                items: _eyeColors.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                onChanged: (val) => setState(() => _eyeColor = val!),
-              ),
-              const SizedBox(height: 15),
-              
-              DropdownButtonFormField<String>(
-                value: _favoriteColor,
-                decoration: const InputDecoration(
-                  labelText: 'Favorite Color',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.favorite),
-                ),
-                items: _favoriteColors.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                onChanged: (val) => setState(() => _favoriteColor = val!),
-              ),
-              
-              const SizedBox(height: 30),
-              
-              if (_isGenerating)
-                const Column(
+            ),
+            SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 110, 20, 32),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 10),
-                    Text('Brewing your magical avatar...', style: TextStyle(fontStyle: FontStyle.italic)),
-                    Text('(This takes about a minute)', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  ],
-                )
-              else if (_generatedImagePath != null)
-                Column(
-                  children: [
-                    Container(
-                      height: 300,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10)],
-                        image: DecorationImage(image: FileImage(File(_generatedImagePath!)), fit: BoxFit.contain),
+                    Text(
+                      'Create a hero that looks like you',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.cinzelDecorative(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        shadows: const [
+                          Shadow(color: Color(0x55000000), blurRadius: 10),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Snap or upload a photo, then we paint it into story magic.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.quicksand(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withAlpha(230),
                       ),
                     ),
                     const SizedBox(height: 20),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        // Return the custom avatar data
-                        final customAvatar = CharacterAvatar.defaultAvatar.copyWith(
-                          customImagePath: _generatedImagePath,
-                          isCustom: true,
-                        );
-                        Navigator.pop(context, customAvatar);
-                      },
-                      icon: const Icon(Icons.check_circle),
-                      label: const Text('Use This Avatar!'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(24),
+                        color: Colors.white.withAlpha(30),
+                        border: Border.all(color: Colors.white.withAlpha(95)),
+                      ),
+                      child: Column(
+                        children: [
+                          GestureDetector(
+                            onTap: _isGenerating ? null : _takePhoto,
+                            child: Container(
+                              height: 240,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: AppColors.gold.withAlpha(220),
+                                  width: 2.4,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.gold.withAlpha(90),
+                                    blurRadius: 18,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                                image: _imageFile != null
+                                    ? DecorationImage(
+                                        image: FileImage(_imageFile!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child: _imageFile == null
+                                  ? Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(
+                                          Icons.camera_alt_rounded,
+                                          size: 64,
+                                          color: Colors.white,
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Text(
+                                          'Tap to open camera',
+                                          style: GoogleFonts.fredoka(
+                                            color: Colors.white,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: _isGenerating ? null : _takePhoto,
+                                  icon: const Icon(Icons.camera_alt_rounded),
+                                  label: const Text('Camera'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF5F4BDB),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 13),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: _isGenerating ? null : _pickFromGallery,
+                                  icon: const Icon(Icons.photo_library_rounded),
+                                  label: const Text('Upload'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF7A3FC8),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 13),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (_imageFile != null) ...[
+                            const SizedBox(height: 8),
+                            TextButton.icon(
+                              onPressed: _isGenerating ? null : _takePhoto,
+                              icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                              label: Text(
+                                'Retake',
+                                style: GoogleFonts.quicksand(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(24),
+                        color: Colors.white.withAlpha(20),
+                        border: Border.all(color: Colors.white.withAlpha(70)),
+                      ),
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: _nameController,
+                            decoration: _fieldDecoration(label: 'Hero Name', icon: Icons.person_rounded),
+                            validator: (value) => (value == null || value.trim().isEmpty) ? 'Enter a name' : null,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _ageController,
+                            decoration: _fieldDecoration(label: 'Age (3-99)', icon: Icons.cake_rounded),
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) return 'Enter age';
+                              final age = int.tryParse(value);
+                              if (age == null) return 'Enter a valid number';
+                              if (age < 3 || age > 99) return 'Age must be between 3 and 99';
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              color: Colors.white.withAlpha(230),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Gender',
+                                  style: GoogleFonts.quicksand(
+                                    color: const Color(0xFF3A2A57),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: SegmentedButton<String>(
+                                    segments: const [
+                                      ButtonSegment(
+                                        value: 'girl',
+                                        label: Text('Girl'),
+                                        icon: Icon(Icons.female),
+                                      ),
+                                      ButtonSegment(
+                                        value: 'boy',
+                                        label: Text('Boy'),
+                                        icon: Icon(Icons.male),
+                                      ),
+                                    ],
+                                    selected: {_gender},
+                                    onSelectionChanged: (Set<String> newSelection) {
+                                      setState(() {
+                                        _gender = newSelection.first;
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String>(
+                            initialValue: _eyeColor,
+                            decoration: _fieldDecoration(label: 'Eye Color', icon: Icons.visibility_rounded),
+                            items: _eyeColors
+                                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                                .toList(),
+                            onChanged: (val) => setState(() => _eyeColor = val!),
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String>(
+                            initialValue: _favoriteColor,
+                            decoration: _fieldDecoration(label: 'Favorite Color', icon: Icons.auto_awesome_rounded),
+                            items: _favoriteColors
+                                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                                .toList(),
+                            onChanged: (val) => setState(() => _favoriteColor = val!),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    if (_isGenerating)
+                      Column(
+                        children: [
+                          const CircularProgressIndicator(color: AppColors.gold),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Brewing your magical avatar...',
+                            style: GoogleFonts.fredoka(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            '(Usually about a minute)',
+                            style: GoogleFonts.quicksand(
+                              color: Colors.white.withAlpha(225),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      )
+                    else if (_generatedImagePath != null)
+                      Column(
+                        children: [
+                          Container(
+                            height: 300,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: AppColors.gold, width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha(60),
+                                  blurRadius: 10,
+                                ),
+                              ],
+                              image: DecorationImage(
+                                image: FileImage(File(_generatedImagePath!)),
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              final customAvatar = CharacterAvatar.defaultAvatar.copyWith(
+                                customImagePath: _generatedImagePath,
+                                isCustom: true,
+                              );
+                              Navigator.pop(context, customAvatar);
+                            },
+                            icon: const Icon(Icons.check_circle),
+                            label: const Text('Use This Avatar'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF208D62),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      ElevatedButton(
+                        onPressed: _generateAvatar,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryDark,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 2,
+                        ),
+                        child: Text(
+                          'Generate Magic Avatar ✨',
+                          style: GoogleFonts.fredoka(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                   ],
-                )
-              else
-                ElevatedButton(
-                  onPressed: _generateAvatar,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.indigo,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: const Text('Generate Magic Avatar ✨', style: TextStyle(fontSize: 18)),
                 ),
-                
-              const SizedBox(height: 40),
-            ],
-          ),
+              ),
+            ),
+          ],
         ),
       ),
     );

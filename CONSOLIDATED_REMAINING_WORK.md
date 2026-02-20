@@ -12,9 +12,9 @@
 
 ## Open Code TODOs (Recently Touched Code)
 
-8. Implement tier-based avatar route rate limiting (`backend/routes/avatar_routes.py:38`).
-9. Implement avatar vision-based verification (`backend/services/avatar_generation_service.py:493`).
-10. Implement selected-character proceed logic (`lib/character_selection_screen.dart:67`).
-11. Add `TherapeuticAnalytics` tracking (`lib/emotions_learning_system.dart:429`).
-12. Add earlier feelings check before generation (`lib/main_story.dart:512`).
-13. Hydrate `characterAppearance` into story result request (`lib/story_result_screen.dart:610`).
+~~8. Implement tier-based avatar route rate limiting (`backend/routes/avatar_routes.py:38`).~~ ✅ **COMPLETE** (2026-02-20)
+~~9. Implement avatar vision-based verification (`backend/services/avatar_generation_service.py:493`).~~ ✅ **COMPLETE** (2026-02-20)
+~~10. Implement selected-character proceed logic (`lib/character_selection_screen.dart:67`).~~ ✅ **COMPLETE** (2026-02-20)
+~~11. Add `TherapeuticAnalytics` tracking (`lib/emotions_learning_system.dart:429`).~~ ✅ **COMPLETE** (2026-02-20)
+~~12. Add earlier feelings check before generation (`lib/main_story.dart:512`).~~ ✅ **COMPLETE** (2026-02-20) - Already implemented
+~~13. Hydrate `characterAppearance` into story result request (`lib/story_result_screen.dart:610`).~~ ✅ **COMPLETE** (2026-02-20) - Verified working in coloring page generation

@@ -59,15 +59,15 @@ class _ImageModeOrbState extends State<ImageModeOrb>
   String _getAssetPath() {
     switch (widget.modeType) {
       case 'tales':
-        return 'assets/images/ui/glassy/tales_orb.png';
+        return 'assets/images/ui/clean/tales_orb.png';
       case 'rhyme':
-        return 'assets/images/ui/glassy/rhyme_time_orb.png';
+        return 'assets/images/ui/clean/rhyme_time_orb.png';
       case 'reading':
-        return 'assets/images/ui/glassy/easy_read_orb.png';
+        return 'assets/images/ui/clean/easy_read_orb.png';
       case 'pickpath':
-        return 'assets/images/ui/glassy/pick_path_orb.png';
+        return 'assets/images/ui/clean/pick_path_orb.png';
       default:
-        return 'assets/images/ui/glassy/tales_orb.png';
+        return 'assets/images/ui/clean/tales_orb.png';
     }
   }
 
@@ -100,8 +100,10 @@ class _ImageModeOrbState extends State<ImageModeOrb>
                             shape: BoxShape.circle,
                             gradient: RadialGradient(
                               colors: [
-                                glowColor.withValues(alpha: 0.45 * (1 - t * 0.3)),
-                                glowColor.withValues(alpha: 0.16 * (1 - t * 0.3)),
+                                glowColor.withValues(
+                                    alpha: 0.45 * (1 - t * 0.3)),
+                                glowColor.withValues(
+                                    alpha: 0.16 * (1 - t * 0.3)),
                                 Colors.transparent,
                               ],
                             ),
@@ -112,12 +114,28 @@ class _ImageModeOrbState extends State<ImageModeOrb>
                   AnimatedScale(
                     duration: const Duration(milliseconds: 180),
                     scale: widget.isActive ? 1.03 : 1.0,
-                    child: Image.asset(
-                      _getAssetPath(),
-                      width: 84,
-                      height: 84,
-                      fit: BoxFit.contain,
-                      filterQuality: FilterQuality.high,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: glowColor.withValues(
+                              alpha: widget.isActive ? 0.75 : 0.45,
+                            ),
+                            blurRadius: widget.isActive ? 20 : 14,
+                            spreadRadius: widget.isActive ? 5 : 2,
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          _getAssetPath(),
+                          width: 84,
+                          height: 84,
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.high,
+                        ),
+                      ),
                     ),
                   ),
                 ],

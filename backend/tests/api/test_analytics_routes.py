@@ -95,3 +95,15 @@ def test_get_cost_report_success(client, admin_headers, mocker):
     assert response.status_code == 200
     data = response.get_json()
     assert data['total_cost'] == 1.23
+
+
+def test_get_cost_report_failure_returns_500(client, admin_headers, mocker):
+    """Route should return a safe 500 payload on report generation failure."""
+    mocker.patch('backend.analytics_routes.get_cost_report', side_effect=RuntimeError("boom"))
+
+    response = client.get('/admin/cost-report?days=7', headers=admin_headers)
+
+    assert response.status_code == 500
+    data = response.get_json()
+    assert 'error' in data
+    assert 'Failed to generate cost report' in data['error']
