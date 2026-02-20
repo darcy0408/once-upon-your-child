@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/pill_button.dart';
+import '../../widgets/image_continue_button.dart';
 import '../../data/scenario_data.dart';
 
 const double _settingCardWidth = 220;
@@ -179,14 +179,8 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             // Continue button
             if (_canContinue)
               Center(
-                child: PillButton(
-                  key: const Key('wizard_continue_scenario'),
-                  emoji: '✨',
-                  label: 'Continue',
-                  onTap: widget.onNext,
-                  variant: PillButtonVariant.purple,
-                  isSelected: true,
-                ),
+                key: const Key('wizard_continue_scenario'),
+                child: ImageContinueButton(onTap: widget.onNext),
               ),
             const SizedBox(height: AppSpacing.xl),
           ],

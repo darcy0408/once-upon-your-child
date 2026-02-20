@@ -127,10 +127,10 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(44),
                     child: Image.asset(
-                      'assets/images/ui/clean/make_magic_button.png',
+                      'assets/images/ui/make_magic_codex.png',
                       width: buttonWidth,
                       height: 88,
-                      fit: BoxFit.cover,
+                      fit: BoxFit.contain,
                       filterQuality: FilterQuality.high,
                       errorBuilder: (context, error, stackTrace) {
                         // Fallback to code-rendered button if the custom asset fails.
