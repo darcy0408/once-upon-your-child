@@ -88,7 +88,7 @@ class SelectedFeeling {
         'emoji': emoji,
         'eyeType': eyeType,
         'mouthType': mouthType,
-        'color': '#${color.value.toRadixString(16).substring(2)}',
+        'color': '#${color.toARGB32().toRadixString(16).substring(2)}',
       };
 
   factory SelectedFeeling.fromJson(Map<String, dynamic> json) {

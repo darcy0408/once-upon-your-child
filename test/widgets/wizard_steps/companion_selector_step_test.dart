@@ -107,4 +107,56 @@ void main() {
     expect(find.text('Kai'), findsOneWidget);
     expect(find.text('Luna'), findsNothing);
   });
+
+  testWidgets('selecting multiple companions updates wizard data',
+      (tester) async {
+    setLargeScreen(tester);
+    addTearDown(tester.view.resetPhysicalSize);
+    final wizardData = WizardData()..characterName = 'Hero';
+
+    await tester.pumpWidget(
+      buildSubject(
+        wizardData: wizardData,
+        onNext: () {},
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('a tiny dragon'));
+    await tester.pump();
+    await tester.tap(find.text('a wise owl'));
+    await tester.pump();
+
+    expect(wizardData.selectedCompanions, contains('dragon'));
+    expect(wizardData.selectedCompanions, contains('owl'));
+    expect(wizardData.companionNames, contains('a tiny dragon'));
+    expect(wizardData.companionNames, contains('a wise owl'));
+  });
+
+  testWidgets('shows custom pets from wizard data', (tester) async {
+    setLargeScreen(tester);
+    addTearDown(tester.view.resetPhysicalSize);
+    final wizardData = WizardData()
+      ..characterName = 'Hero'
+      ..pets = [
+        {'name': 'Sparky', 'species': 'Dog', 'personality': 'Playful'}
+      ];
+
+    await tester.pumpWidget(
+      buildSubject(
+        wizardData: wizardData,
+        onNext: () {},
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Sparky'), findsOneWidget);
+    expect(find.text('Your faithful Dog companion'), findsOneWidget);
+
+    await tester.tap(find.text('Sparky'));
+    await tester.pump();
+
+    expect(wizardData.selectedCompanions, contains('Sparky'));
+    expect(wizardData.companionNames, contains('Sparky'));
+  });
 }

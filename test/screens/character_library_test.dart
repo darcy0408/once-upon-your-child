@@ -153,4 +153,14 @@ void main() {
         findsOneWidget);
     expect(find.text('Create Character'), findsOneWidget);
   });
+
+  testWidgets('shows backend online status', (tester) async {
+    setLargeScreen(tester);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await pumpScreen(tester);
+
+    // In tests, global http.get fails by default, showing "Story service is waking up"
+    expect(find.text('Story service is waking up'), findsOneWidget);
+  });
 }

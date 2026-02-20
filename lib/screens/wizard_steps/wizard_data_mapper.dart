@@ -67,7 +67,13 @@ class WizardDataMapper {
 
       if (isPet) {
         // Find the pet details
-        final petDetails = data.pets.firstWhere((pet) => pet['name'] == companionName);
+        final petDetails = Map<String, dynamic>.from(
+          data.pets.firstWhere((pet) => pet['name'] == companionName),
+        );
+        // Add avatar if available
+        if (data.petAvatars.containsKey(companionName)) {
+          petDetails['avatar_data'] = data.petAvatars[companionName]!.toJson();
+        }
         companionsPets.add(petDetails);
       } else {
         // It's another character or magical creature

@@ -1,9 +1,51 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/services/secure_storage_service.dart';
 import 'package:story_weaver_app/settings_screen.dart';
+
+class _MockHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return _MockHttpClient();
+  }
+}
+
+class _MockHttpClient extends Fake implements HttpClient {
+  @override
+  Future<HttpClientRequest> openUrl(String method, Uri url) async {
+    return _MockHttpClientRequest();
+  }
+
+  @override
+  bool autoUncompress = true;
+}
+
+class _MockHttpClientRequest extends Fake implements HttpClientRequest {
+  @override
+  Future<HttpClientResponse> close() async {
+    return _MockHttpClientResponse();
+  }
+}
+
+class _MockHttpClientResponse extends Fake implements HttpClientResponse {
+  @override
+  int get statusCode => 400;
+
+  @override
+  StreamSubscription<List<int>> listen(void Function(List<int> event)? onData,
+      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
+    final body = jsonEncode({
+      'error': {'message': 'Malformed key'}
+    });
+    return Stream.value(utf8.encode(body)).listen(onData,
+        onError: onError, onDone: onDone, cancelOnError: cancelOnError);
+  }
+}
 
 void main() {
   void setLargeScreen(WidgetTester tester) {
@@ -24,6 +66,11 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
+    HttpOverrides.global = _MockHttpOverrides();
+  });
+
+  tearDown(() {
+    HttpOverrides.global = null;
   });
 
   testWidgets('theme toggle switches dark mode on', (tester) async {
@@ -104,5 +151,20 @@ void main() {
     final saved = await SecureStorageService.getApiKey('gemini');
     expect(saved, isNull);
     expect(find.text('API key cleared'), findsOneWidget);
+  });
+
+  testWidgets('validates empty API key', (tester) async {
+    setLargeScreen(tester);
+    addTearDown(tester.view.resetPhysicalSize);
+    await pumpSettingsScreen(tester);
+
+    await tester.tap(find.text('Use my own Gemini API key'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '   ');
+    await tester.tap(find.text('Validate & Save'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Please enter an API key'), findsOneWidget);
   });
 }

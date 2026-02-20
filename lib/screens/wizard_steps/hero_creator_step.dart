@@ -10,6 +10,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/archetype_card.dart';
 import '../../services/api_service_manager.dart';
 import '../../services/avatar_generation_state.dart';
+import 'custom_pet_avatar_screen.dart';
 
 /// Hero Creator — Step 1 of the story wizard.
 ///
@@ -1014,6 +1015,15 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
               _buildArchetypeCards(),
               const SizedBox(height: 20),
 
+              // ── Pets Section ───────────────────────────────────────────────
+              if (_isCreatingNew && _canContinue) ...[
+                _PetsSection(
+                  wizardData: widget.wizardData,
+                  onUpdate: () => setState(() {}),
+                ),
+                const SizedBox(height: 20),
+              ],
+
               // ── Create Your Avatar button (image) ─────────────────────────
               _buildCreateAvatarButton(),
               const SizedBox(height: 14),
@@ -1027,6 +1037,358 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         ),
       ),
     );
+  }
+}
+
+class _PetsSection extends StatelessWidget {
+  final WizardData wizardData;
+  final VoidCallback onUpdate;
+
+  static const List<String> _speciesOptions = [
+    'Dog',
+    'Cat',
+    'Bird',
+    'Hamster',
+    'Fish',
+    'Bunny',
+    'Reptile',
+    'Other',
+  ];
+
+  static const Map<String, String> _speciesImageAssets = {
+    'Fish': 'assets/images/companions/fish.png',
+    'Bunny': 'assets/images/companions/bunny.png',
+    'Hamster': 'assets/images/companions/hamster.png',
+    'Reptile': 'assets/images/companions/reptile.png',
+  };
+
+  const _PetsSection({
+    required this.wizardData,
+    required this.onUpdate,
+  });
+
+  void _showAddPetDialog(BuildContext context) {
+    final nameController = TextEditingController();
+    final breedController = TextEditingController();
+    String species = 'Dog';
+    String gender = 'Boy';
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          final selectedPreviewImage = _speciesImageAssets[species];
+
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF120226), Color(0xFF3D1166)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: const Color(0xFFFFD700).withAlpha(150), width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF9B3FD8).withAlpha(100),
+                    blurRadius: 26,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Summon a Magical Pet',
+                      style: GoogleFonts.cinzelDecorative(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFFFFD700),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    if (selectedPreviewImage != null)
+                      Center(
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFFFFD700), width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFFFD700).withAlpha(100),
+                                blurRadius: 12,
+                              ),
+                            ],
+                          ),
+                          child: ClipOval(
+                            child: Image.asset(
+                              selectedPreviewImage,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: nameController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _petFieldDecoration(
+                        labelText: 'Pet Name',
+                        hintText: 'e.g. Luna',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: species,
+                      dropdownColor: const Color(0xFF2A0A4E),
+                      style: const TextStyle(color: Colors.white),
+                      items: _speciesOptions
+                          .map((s) => DropdownMenuItem(
+                              value: s,
+                              child: Text('${_getEmojiForSpecies(s)} $s')))
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) setState(() => species = v);
+                      },
+                      decoration: _petFieldDecoration(labelText: 'Species'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: breedController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _petFieldDecoration(
+                        labelText: 'Breed / Appearance',
+                        hintText: 'e.g. Golden Retriever, fluffy white cat',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: gender,
+                      dropdownColor: const Color(0xFF2A0A4E),
+                      style: const TextStyle(color: Colors.white),
+                      items: ['Boy', 'Girl']
+                          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) setState(() => gender = v);
+                      },
+                      decoration: _petFieldDecoration(labelText: 'Gender'),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton(
+                          onPressed: () {
+                            if (nameController.text.trim().isNotEmpty) {
+                              wizardData.pets.add({
+                                'name': nameController.text.trim(),
+                                'species': species,
+                                'gender': gender,
+                                'breed': breedController.text.trim(),
+                              });
+                              onUpdate();
+                              Navigator.pop(context);
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF9B3FD8),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('Add Pet'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  InputDecoration _petFieldDecoration({required String labelText, String? hintText}) {
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      labelStyle: const TextStyle(color: Color(0xFFFFD700)),
+      hintStyle: const TextStyle(color: Colors.white38),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: const Color(0xFFFFD700).withAlpha(100)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
+      ),
+      filled: true,
+      fillColor: Colors.white.withAlpha(10),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Text(
+            'Your Adventure Team',
+            style: GoogleFonts.cinzelDecorative(
+              color: const Color(0xFFFFD700),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 80,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              // Add Pet Button
+              GestureDetector(
+                onTap: () => _showAddPetDialog(context),
+                child: Container(
+                  width: 70,
+                  margin: const EdgeInsets.only(right: 12),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFFFD700).withAlpha(150), width: 2),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF5B1BAA), Color(0xFF2D0A4E)],
+                    ),
+                  ),
+                  child: const Icon(Icons.add, color: Color(0xFFFFD700), size: 30),
+                ),
+              ),
+              // Current Pets
+              ...wizardData.pets.map((pet) {
+                final name = pet['name'] ?? '';
+                final species = pet['species'] ?? 'Other';
+                final avatar = wizardData.petAvatars[name];
+
+                return GestureDetector(
+                  onTap: () async {
+                    final result = await Navigator.push<GeneratedAvatar>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CustomPetAvatarScreen(
+                          petName: name,
+                          species: species,
+                          breedDescription: pet['breed'] ?? species,
+                          ownerFavoriteColor: 'Blue', // Default for now
+                        ),
+                      ),
+                    );
+                    if (result != null) {
+                      wizardData.petAvatars[name] = result;
+                      onUpdate();
+                    }
+                  },
+                  child: Container(
+                    width: 70,
+                    margin: const EdgeInsets.only(right: 12),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: avatar != null 
+                                  ? const Color(0xFFFFD700)
+                                  : const Color(0xFFFFD700).withAlpha(100), 
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: avatar != null
+                                    ? const Color(0xFFFFD700).withAlpha(150)
+                                    : const Color(0xFF9B3FD8).withAlpha(80),
+                                blurRadius: avatar != null ? 12 : 8,
+                              ),
+                            ],
+                          ),
+                          child: ClipOval(
+                            child: avatar != null
+                                ? Image.memory(
+                                    base64Decode(avatar.imageBase64.split(',').last),
+                                    fit: BoxFit.cover,
+                                  )
+                                : Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Text(
+                                        _getEmojiForSpecies(species),
+                                        style: const TextStyle(fontSize: 30),
+                                      ),
+                                      Positioned(
+                                        bottom: 0,
+                                        right: 0,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(2),
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFF9B3FD8),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(Icons.auto_awesome, size: 12, color: Colors.white),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          name,
+                          style: const TextStyle(color: Colors.white, fontSize: 10),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _getEmojiForSpecies(String? species) {
+  switch (species) {
+    case 'Dog': return '🐕';
+    case 'Cat': return '🐱';
+    case 'Bird': return '🐦';
+    case 'Hamster': return '🐹';
+    case 'Fish': return '🐠';
+    case 'Bunny': return '🐰';
+    case 'Reptile': return '🦎';
+    default: return '🐾';
   }
 }
 

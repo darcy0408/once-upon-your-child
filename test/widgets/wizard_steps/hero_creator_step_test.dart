@@ -52,7 +52,7 @@ void main() {
     await tester.tap(find.text('The Storm Rider'));
     await pumpFor(tester, const Duration(milliseconds: 300));
 
-    expect(find.byKey(const Key('wizard_continue_hero')), findsOneWidget);
+    expect(find.text('Continue'), findsOneWidget);
   });
 
   testWidgets('loads existing character and continues', (tester) async {
@@ -78,10 +78,23 @@ void main() {
     );
     await pumpFor(tester, const Duration(seconds: 1));
 
-    await tester.tap(find.text('Milo'));
+    // Existing character row shows first initial 'M' if asset fails
+    // Or we can find by type and tap the first one
+    final miloThumbnail = find.ancestor(
+      of: find.text('M'),
+      matching: find.byType(GestureDetector),
+    );
+    
+    // Fallback if 'M' is not found immediately due to Image.asset behavior
+    if (miloThumbnail.evaluate().isEmpty) {
+      await tester.tap(find.byType(ClipOval).first);
+    } else {
+      await tester.tap(miloThumbnail.first);
+    }
+    
     await pumpFor(tester, const Duration(milliseconds: 300));
-    await tester.ensureVisible(find.byKey(const Key('wizard_continue_hero')));
-    await tester.tap(find.byKey(const Key('wizard_continue_hero')));
+    await tester.ensureVisible(find.text('Continue'));
+    await tester.tap(find.text('Continue'));
     await pumpFor(tester, const Duration(milliseconds: 500));
 
     expect(didContinue, isTrue);
@@ -99,7 +112,7 @@ void main() {
         id: 'char-1',
         name: 'Nova',
         age: 8,
-        role: 'The Dream Weaver',
+        role: 'The Master Creator',
       ),
     ];
 
@@ -112,11 +125,59 @@ void main() {
     );
     await pumpFor(tester, const Duration(milliseconds: 500));
 
-    expect(find.text('Select Your Hero'), findsOneWidget);
-    await tester.tap(find.text('Create New'));
+    // It should show existing characters and the "add" button icon
+    expect(find.byIcon(Icons.add), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.add));
     await pumpFor(tester, const Duration(milliseconds: 300));
 
-    expect(find.text('Create a Character'), findsOneWidget);
-    expect(find.text('Hero Name'), findsOneWidget);
+    expect(find.text("Write your hero's name"), findsOneWidget);
+  });
+
+  testWidgets('increments and decrements age', (tester) async {
+    setLargeScreen(tester);
+    addTearDown(tester.view.resetPhysicalSize);
+    final wizardData = WizardData()..characterAge = 7;
+
+    await tester.pumpWidget(
+      buildSubject(
+        wizardData: wizardData,
+        onNext: () {},
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('7'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pump();
+    expect(wizardData.characterAge, 8);
+    expect(find.text('8'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.remove_rounded));
+    await tester.pump();
+    expect(wizardData.characterAge, 7);
+    expect(find.text('7'), findsOneWidget);
+  });
+
+  testWidgets('selects gender', (tester) async {
+    setLargeScreen(tester);
+    addTearDown(tester.view.resetPhysicalSize);
+    final wizardData = WizardData()..characterGender = 'Girl';
+
+    await tester.pumpWidget(
+      buildSubject(
+        wizardData: wizardData,
+        onNext: () {},
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('Hero'));
+    await tester.pump();
+    expect(wizardData.characterGender, 'Boy');
+
+    await tester.tap(find.text('Heroine'));
+    await tester.pump();
+    expect(wizardData.characterGender, 'Girl');
   });
 }

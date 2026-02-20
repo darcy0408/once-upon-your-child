@@ -28,14 +28,14 @@ class CustomizableAvatarWidget extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.indigo.withOpacity(0.5), width: 3),
+            border: Border.all(color: Colors.indigo.withValues(alpha: 0.5), width: 3),
             image: DecorationImage(
               image: FileImage(File(avatar.customImagePath!)),
               fit: BoxFit.cover,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withValues(alpha: 0.15),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),

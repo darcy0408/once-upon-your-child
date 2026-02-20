@@ -277,11 +277,23 @@ def run_story_load_audit() -> Dict[str, Any]:
         samples = _run_load(app, total_requests=12, concurrency=4)
         report["scenarios"]["quota_error_429"] = _scenario_report(samples, 12, 4)
 
-    # 4) Reset behavior (use dev config because testing config disables limiter)
-    reset_app = create_app("dev")
+    # 4) Reset behavior (use dedicated testing config with limiter enabled)
+    from backend.config import TestingConfig
+
+    class _RateLimitTestingConfig(TestingConfig):
+        RATELIMIT_ENABLED = True
+        RATELIMIT_STORAGE_URI = "memory://"
+        RATELIMIT_HEADERS_ENABLED = True
+
+    with patch(
+        "backend.app.config_by_name",
+        {k: _RateLimitTestingConfig for k in ("dev", "development", "prod", "production", "testing", "default")},
+    ):
+        reset_app = create_app("testing")
+
     _ensure_reset_probe_route(reset_app)
     report["reset_check"] = _run_reset_check(reset_app)
-    report["notes"]["reset_check_app_config"] = "dev"
+    report["notes"]["reset_check_app_config"] = "testing(rate-limit-enabled)"
 
     ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
     timestamp_tag = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")

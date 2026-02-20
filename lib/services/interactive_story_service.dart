@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../models.dart';
 import '../config/environment.dart';
+import 'api_service_manager.dart';
 
 /// Response from starting a new interactive adventure story
 class StartStoryResponse {
@@ -103,11 +104,12 @@ class InteractiveStoryService {
     String? lifeChallenge,
     Map<String, int>? personalitySliders,
   }) async {
+    final headers = await ApiServiceManager.authHeaders();
     final uri = Uri.parse('$_baseUrl/generate-interactive-story');
     final response = await _httpClient
         .post(
           uri,
-          headers: {'Content-Type': 'application/json'},
+          headers: headers,
           body: jsonEncode({
             'user_id': userId,
             'character_id': characterId,
@@ -142,11 +144,12 @@ class InteractiveStoryService {
     required String storyId,
     required String choiceId,
   }) async {
+    final headers = await ApiServiceManager.authHeaders();
     final uri = Uri.parse('$_baseUrl/continue-interactive-story');
     final response = await _httpClient
         .post(
           uri,
-          headers: {'Content-Type': 'application/json'},
+          headers: headers,
           body: jsonEncode({
             'story_id': storyId,
             'choice_id': choiceId,
@@ -168,8 +171,11 @@ class InteractiveStoryService {
 
   /// Get full story with all segments
   Future<InteractiveStoryData> getStory(String storyId) async {
+    final headers = await ApiServiceManager.authHeaders();
     final uri = Uri.parse('$_baseUrl/interactive-story/$storyId');
-    final response = await _httpClient.get(uri).timeout(const Duration(seconds: 10));
+    final response = await _httpClient
+        .get(uri, headers: headers)
+        .timeout(const Duration(seconds: 10));
 
     if (response.statusCode != 200) {
       final error = _parseError(response);
@@ -185,8 +191,11 @@ class InteractiveStoryService {
 
   /// Resume an in-progress story from current segment
   Future<ContinueStoryResponse> resumeStory(String storyId) async {
+    final headers = await ApiServiceManager.authHeaders();
     final uri = Uri.parse('$_baseUrl/interactive-story/$storyId/resume');
-    final response = await _httpClient.get(uri).timeout(const Duration(seconds: 10));
+    final response = await _httpClient
+        .get(uri, headers: headers)
+        .timeout(const Duration(seconds: 10));
 
     if (response.statusCode != 200) {
       final error = _parseError(response);
@@ -207,11 +216,12 @@ class InteractiveStoryService {
     required String theme,
     String? companion,
   }) async {
+    final headers = await ApiServiceManager.authHeaders();
     final uri = Uri.parse('$_baseUrl/generate-interactive-story');
     final response = await http
         .post(
           uri,
-          headers: {'Content-Type': 'application/json'},
+          headers: headers,
           body: jsonEncode({
             'character': character.name,
             'theme': theme,
@@ -249,11 +259,12 @@ class InteractiveStoryService {
     required List<String> choiceIds,
     String? companion,
   }) async {
+    final headers = await ApiServiceManager.authHeaders();
     final uri = Uri.parse('$_baseUrl/continue-interactive-story');
     final response = await http
         .post(
           uri,
-          headers: {'Content-Type': 'application/json'},
+          headers: headers,
           body: jsonEncode({
             'character': character.name,
             'theme': theme,

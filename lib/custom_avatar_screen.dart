@@ -1,11 +1,10 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
-import 'package:path/path.dart' as path;
 import 'avatar_models.dart';
 import 'config/environment.dart';
 import 'theme/app_theme.dart';
@@ -33,9 +32,9 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
   String _eyeColor = 'Brown';
   String _favoriteColor = 'Blue';
 
-  File? _imageFile;
+  Uint8List? _imageBytes; // In-memory bytes — works on web + native
   bool _isGenerating = false;
-  String? _generatedImagePath;
+  String? _generatedImageBase64; // Pure base64, no data: prefix
 
   final List<String> _eyeColors = ['Brown', 'Blue', 'Green', 'Hazel', 'Grey'];
   final List<String> _favoriteColors = [
@@ -58,47 +57,52 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
 
   Future<void> _takePhoto() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
+    final picked = await picker.pickImage(
       source: ImageSource.camera,
       preferredCameraDevice: CameraDevice.front,
     );
-
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
+    if (picked != null) {
+      final bytes = await picked.readAsBytes();
+      if (mounted) {
+        setState(() { _imageBytes = bytes; });
+      }
     }
   }
 
   Future<void> _pickFromGallery() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      final bytes = await picked.readAsBytes();
+      if (mounted) {
+        setState(() { _imageBytes = bytes; });
+      }
     }
   }
 
   Future<void> _generateAvatar() async {
-    if (!_formKey.currentState!.validate() || _imageFile == null) {
+    if (!_formKey.currentState!.validate() || _imageBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please complete all fields and add a photo.')),
       );
       return;
     }
 
-    setState(() {
-      _isGenerating = true;
-    });
+    setState(() { _isGenerating = true; });
 
     try {
       final baseUrl = Environment.backendUrl;
       final url = Uri.parse('$baseUrl/avatar/generate-custom-avatar');
 
-      var request = http.MultipartRequest('POST', url);
-      request.files.add(await http.MultipartFile.fromPath('photo', _imageFile!.path));
+      final request = http.MultipartRequest('POST', url);
+      // fromBytes works on all platforms including web (no dart:io needed)
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'photo',
+          _imageBytes!,
+          filename: 'photo.jpg',
+        ),
+      );
       request.fields['character_name'] = _nameController.text;
       request.fields['age'] = _ageController.text;
       request.fields['gender'] = _gender;
@@ -106,20 +110,21 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
       request.fields['favorite_color'] = _favoriteColor;
 
       debugPrint('📡 Sending custom avatar request to $url');
-      final streamedResponse = await request.send().timeout(const Duration(minutes: 3));
+      final streamedResponse =
+          await request.send().timeout(const Duration(minutes: 3));
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['status'] == 'success') {
           final avatarData = data['avatar'];
-          final imageBase64 = avatarData['image_base64'] as String;
-
-          final localPath = await _saveImageLocally(imageBase64);
+          final raw = avatarData['image_base64'] as String;
+          // Strip any data: prefix that may be present
+          final base64Only = raw.contains(',') ? raw.split(',').last : raw;
 
           if (mounted) {
             setState(() {
-              _generatedImagePath = localPath;
+              _generatedImageBase64 = base64Only;
               _isGenerating = false;
             });
             ScaffoldMessenger.of(context).showSnackBar(
@@ -143,28 +148,12 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
     } catch (e) {
       debugPrint('❌ Error generating custom avatar: $e');
       if (mounted) {
-        setState(() {
-          _isGenerating = false;
-        });
+        setState(() { _isGenerating = false; });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
         );
       }
     }
-  }
-
-  Future<String> _saveImageLocally(String base64String) async {
-    final bytes = base64Decode(base64String.split(',').last);
-    final directory = await getApplicationDocumentsDirectory();
-    final avatarsDir = Directory(path.join(directory.path, 'custom_avatars'));
-    if (!await avatarsDir.exists()) {
-      await avatarsDir.create(recursive: true);
-    }
-
-    final fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.png';
-    final file = File(path.join(avatarsDir.path, fileName));
-    await file.writeAsBytes(bytes);
-    return file.path;
   }
 
   InputDecoration _fieldDecoration({
@@ -269,6 +258,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
+                    // ── Photo picker ─────────────────────────────────────────
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -279,7 +269,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                       child: Column(
                         children: [
                           GestureDetector(
-                            onTap: _isGenerating ? null : _takePhoto,
+                            onTap: _isGenerating ? null : _pickFromGallery,
                             child: Container(
                               height: 240,
                               decoration: BoxDecoration(
@@ -295,25 +285,25 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                                     spreadRadius: 1,
                                   ),
                                 ],
-                                image: _imageFile != null
-                                    ? DecorationImage(
-                                        image: FileImage(_imageFile!),
-                                        fit: BoxFit.cover,
-                                      )
-                                    : null,
                               ),
-                              child: _imageFile == null
-                                  ? Column(
+                              clipBehavior: Clip.antiAlias,
+                              child: _imageBytes != null
+                                  ? Image.memory(
+                                      _imageBytes!,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                    )
+                                  : Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         const Icon(
-                                          Icons.camera_alt_rounded,
+                                          Icons.add_photo_alternate_rounded,
                                           size: 64,
                                           color: Colors.white,
                                         ),
                                         const SizedBox(height: 10),
                                         Text(
-                                          'Tap to open camera',
+                                          'Tap to choose a photo',
                                           style: GoogleFonts.fredoka(
                                             color: Colors.white,
                                             fontSize: 18,
@@ -321,8 +311,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                                           ),
                                         ),
                                       ],
-                                    )
-                                  : null,
+                                    ),
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -361,11 +350,16 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                               ),
                             ],
                           ),
-                          if (_imageFile != null) ...[
+                          if (_imageBytes != null) ...[
                             const SizedBox(height: 8),
                             TextButton.icon(
-                              onPressed: _isGenerating ? null : _takePhoto,
-                              icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                              onPressed: _isGenerating
+                                  ? null
+                                  : () => setState(() {
+                                        _imageBytes = null;
+                                      }),
+                              icon: const Icon(Icons.refresh_rounded,
+                                  color: Colors.white),
                               label: Text(
                                 'Retake',
                                 style: GoogleFonts.quicksand(
@@ -379,6 +373,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    // ── Form fields ──────────────────────────────────────────
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -390,25 +385,35 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                         children: [
                           TextFormField(
                             controller: _nameController,
-                            decoration: _fieldDecoration(label: 'Hero Name', icon: Icons.person_rounded),
-                            validator: (value) => (value == null || value.trim().isEmpty) ? 'Enter a name' : null,
+                            decoration: _fieldDecoration(
+                                label: 'Hero Name', icon: Icons.person_rounded),
+                            validator: (value) =>
+                                (value == null || value.trim().isEmpty)
+                                    ? 'Enter a name'
+                                    : null,
                           ),
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _ageController,
-                            decoration: _fieldDecoration(label: 'Age (3-99)', icon: Icons.cake_rounded),
+                            decoration: _fieldDecoration(
+                                label: 'Age (3-99)', icon: Icons.cake_rounded),
                             keyboardType: TextInputType.number,
                             validator: (value) {
-                              if (value == null || value.isEmpty) return 'Enter age';
+                              if (value == null || value.isEmpty) {
+                                return 'Enter age';
+                              }
                               final age = int.tryParse(value);
                               if (age == null) return 'Enter a valid number';
-                              if (age < 3 || age > 99) return 'Age must be between 3 and 99';
+                              if (age < 3 || age > 99) {
+                                return 'Age must be between 3 and 99';
+                              }
                               return null;
                             },
                           ),
                           const SizedBox(height: 12),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(16),
                               color: Colors.white.withAlpha(230),
@@ -439,7 +444,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                                       ),
                                     ],
                                     selected: {_gender},
-                                    onSelectionChanged: (Set<String> newSelection) {
+                                    onSelectionChanged:
+                                        (Set<String> newSelection) {
                                       setState(() {
                                         _gender = newSelection.first;
                                       });
@@ -452,29 +458,39 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                           const SizedBox(height: 12),
                           DropdownButtonFormField<String>(
                             initialValue: _eyeColor,
-                            decoration: _fieldDecoration(label: 'Eye Color', icon: Icons.visibility_rounded),
+                            decoration: _fieldDecoration(
+                                label: 'Eye Color',
+                                icon: Icons.visibility_rounded),
                             items: _eyeColors
-                                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                                .map((c) =>
+                                    DropdownMenuItem(value: c, child: Text(c)))
                                 .toList(),
-                            onChanged: (val) => setState(() => _eyeColor = val!),
+                            onChanged: (val) =>
+                                setState(() => _eyeColor = val!),
                           ),
                           const SizedBox(height: 12),
                           DropdownButtonFormField<String>(
                             initialValue: _favoriteColor,
-                            decoration: _fieldDecoration(label: 'Favorite Color', icon: Icons.auto_awesome_rounded),
+                            decoration: _fieldDecoration(
+                                label: 'Favorite Color',
+                                icon: Icons.auto_awesome_rounded),
                             items: _favoriteColors
-                                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                                .map((c) =>
+                                    DropdownMenuItem(value: c, child: Text(c)))
                                 .toList(),
-                            onChanged: (val) => setState(() => _favoriteColor = val!),
+                            onChanged: (val) =>
+                                setState(() => _favoriteColor = val!),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 24),
+                    // ── Generate / result ────────────────────────────────────
                     if (_isGenerating)
                       Column(
                         children: [
-                          const CircularProgressIndicator(color: AppColors.gold),
+                          const CircularProgressIndicator(
+                              color: AppColors.gold),
                           const SizedBox(height: 10),
                           Text(
                             'Brewing your magical avatar...',
@@ -493,31 +509,38 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                           ),
                         ],
                       )
-                    else if (_generatedImagePath != null)
+                    else if (_generatedImageBase64 != null)
                       Column(
                         children: [
                           Container(
                             height: 300,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: AppColors.gold, width: 2),
+                              border:
+                                  Border.all(color: AppColors.gold, width: 2),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withAlpha(60),
                                   blurRadius: 10,
                                 ),
                               ],
-                              image: DecorationImage(
-                                image: FileImage(File(_generatedImagePath!)),
-                                fit: BoxFit.contain,
-                              ),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: Image.memory(
+                              base64Decode(_generatedImageBase64!),
+                              fit: BoxFit.contain,
+                              width: double.infinity,
                             ),
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
                             onPressed: () {
-                              final customAvatar = CharacterAvatar.defaultAvatar.copyWith(
-                                customImagePath: _generatedImagePath,
+                              // Store as data URI — works on web + native
+                              final dataUri =
+                                  'data:image/png;base64,$_generatedImageBase64';
+                              final customAvatar =
+                                  CharacterAvatar.defaultAvatar.copyWith(
+                                customImagePath: dataUri,
                                 isCustom: true,
                               );
                               Navigator.pop(context, customAvatar);
@@ -527,7 +550,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF208D62),
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 15, horizontal: 30),
                             ),
                           ),
                         ],

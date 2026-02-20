@@ -88,4 +88,31 @@ void main() {
 
     expect(find.byType(ColoringScreen), findsOneWidget);
   });
+
+  testWidgets('clear drawing removes points after confirmation',
+      (tester) async {
+    await pumpScreen(tester);
+
+    // Add some points
+    await tester.drag(drawingCanvasFinder(), const Offset(30, 30));
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('Clear All'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Clear Coloring?'), findsOneWidget);
+    await tester.tap(find.text('Clear'));
+    await tester.pumpAndSettle();
+
+    // Verify drawing points are cleared (by trying to save)
+    await tester.tap(find.byTooltip('Save'));
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('user_colorings');
+    final decoded = jsonDecode(raw!) as List<dynamic>;
+    final first = decoded.first as Map<String, dynamic>;
+    final coloredAreas = first['coloredAreas'] as Map<String, dynamic>;
+    expect(coloredAreas.keys, isEmpty);
+  });
 }

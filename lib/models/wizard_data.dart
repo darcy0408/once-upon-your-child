@@ -29,6 +29,7 @@ class WizardData {
 
   // Custom Pets & Additional Characters
   List<Map<String, String>> pets = [];
+  Map<String, GeneratedAvatar> petAvatars = {}; // NEW: Map of pet name to generated avatar
   List<String> additionalCharacters = [];
 
   // Step 2: Feeling Selection
@@ -81,6 +82,7 @@ class WizardData {
       'strengths': strengths,
       'comfortItem': comfortItem,
       'pets': pets,
+      'petAvatars': petAvatars.map((key, value) => MapEntry(key, value.toJson())),
       'additionalCharacters': additionalCharacters,
       'scenario': selectedScenario,
       'emotions': selectedEmotionChips,

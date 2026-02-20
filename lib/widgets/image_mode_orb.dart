@@ -57,17 +57,18 @@ class _ImageModeOrbState extends State<ImageModeOrb>
   }
 
   String _getAssetPath() {
+    final suffix = widget.isActive ? '_pressed' : '';
     switch (widget.modeType) {
       case 'tales':
-        return 'assets/images/ui/clean/tales_orb.png';
+        return 'assets/images/ui/clean/tales_orb$suffix.png';
       case 'rhyme':
-        return 'assets/images/ui/clean/rhyme_time_orb.png';
+        return 'assets/images/ui/clean/rhyme_time_orb$suffix.png';
       case 'reading':
-        return 'assets/images/ui/clean/easy_read_orb.png';
+        return 'assets/images/ui/clean/easy_read_orb$suffix.png';
       case 'pickpath':
-        return 'assets/images/ui/clean/pick_path_orb.png';
+        return 'assets/images/ui/clean/pick_path_orb$suffix.png';
       default:
-        return 'assets/images/ui/clean/tales_orb.png';
+        return 'assets/images/ui/clean/tales_orb$suffix.png';
     }
   }
 
@@ -132,7 +133,7 @@ class _ImageModeOrbState extends State<ImageModeOrb>
                           _getAssetPath(),
                           width: 84,
                           height: 84,
-                          fit: BoxFit.contain,
+                          fit: BoxFit.cover,
                           filterQuality: FilterQuality.high,
                         ),
                       ),

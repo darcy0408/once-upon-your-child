@@ -90,4 +90,19 @@ void main() {
 
     expect(wizardData.customElements, 'Include a rainbow castle and a puzzle.');
   });
+
+  testWidgets('displays correct scenario label', (tester) async {
+    setLargeScreen(tester);
+    addTearDown(tester.view.resetPhysicalSize);
+    final wizardData = WizardData()
+      ..characterName = 'Nova'
+      ..selectedArchetypeId = 'The Bold Adventurer'
+      ..selectedScenario = 'doorway_seasons';
+
+    await tester.pumpWidget(buildSubject(wizardData));
+    await tester.pump();
+
+    // "The Doorway Between Seasons" is the title for ID 'doorway_seasons'
+    expect(find.text('The Doorway Between Seasons'), findsWidgets);
+  });
 }

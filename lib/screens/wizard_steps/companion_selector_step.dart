@@ -140,14 +140,18 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
       ),
     ];
 
-    final customPets = widget.wizardData.pets.map((pet) => Companion(
-      id: pet['name']!,
-      emoji: _getEmojiForSpecies(pet['species']),
-      name: pet['name']!,
-      color: AppColors.primary,
-      greeting: pet['personality']?.isNotEmpty == true ? pet['personality']! : 'I am your ${pet['species']}!',
-      description: 'Your faithful ${pet['species']} companion',
-    )).toList();
+    final customPets = widget.wizardData.pets.map((pet) {
+      final name = pet['name']!;
+      return Companion(
+        id: name,
+        emoji: _getEmojiForSpecies(pet['species']),
+        name: name,
+        color: AppColors.primary,
+        greeting: pet['personality']?.isNotEmpty == true ? pet['personality']! : 'I am your ${pet['species']}!',
+        description: 'Your faithful ${pet['species']} companion',
+        generatedAvatar: widget.wizardData.petAvatars[name],
+      );
+    }).toList();
 
     return [...customPets, ...defaultCompanions];
   }
@@ -326,6 +330,7 @@ class Companion {
   final String description;
   final String? imagePath;
   final Character? character; // Optional reference to a full character object
+  final GeneratedAvatar? generatedAvatar; // NEW: AI-generated avatar for pet
 
   Companion({
     required this.id,
@@ -336,6 +341,7 @@ class Companion {
     this.description = '',
     this.imagePath,
     this.character,
+    this.generatedAvatar,
   });
 }
 
@@ -516,7 +522,21 @@ class _CompanionCard extends StatelessWidget {
   }
 
   Widget _buildCompanionBackground(BuildContext context) {
-    // 1. If companion is a Character object, try to show their avatar
+    // 1. If it has a generated avatar (new pet flow)
+    if (companion.generatedAvatar != null) {
+      final avatar = companion.generatedAvatar!;
+      return SizedBox(
+        height: 140,
+        width: double.infinity,
+        child: Image.memory(
+          base64Decode(avatar.imageBase64.split(',').last),
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildEmojiFallback(),
+        ),
+      );
+    }
+
+    // 2. If companion is a Character object, try to show their avatar
     if (companion.character != null) {
       final char = companion.character!;
       final generated = char.generatedAvatar;
