@@ -62,7 +62,7 @@ class _AgeGateScreenState extends State<AgeGateScreen> {
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     DropdownButtonFormField<int>(
-                      value: _selectedAge,
+                      initialValue: _selectedAge,
                       isExpanded: true,
                       hint: const Text('Select your age'),
                       items: List.generate(97, (index) => index + 4)

@@ -540,21 +540,25 @@ CRITICAL REMINDER FOR IMAGE MODEL:
 
     def generate_pet_avatar(
         self,
-        base_image_bytes: bytes,
-        prompt: str,
-        pet_name: str,
+        photo_bytes: bytes,
         species: str,
-        num_images: int = 1
+        breed_description: str,
+        owner_favorite_color: str,
+        pet_name: str = "your pet",
+        num_images: int = 1,
+        prompt: str = None
     ) -> list:
         """
-        Generate a magical pet companion avatar based on a reference photo.
+        Generate a magical pet companion avatar based on a reference photo and metadata.
         
         Args:
-            base_image_bytes: Bytes of the pet's photo
-            prompt: Complete pet avatar generation prompt
-            pet_name: Pet's name
+            photo_bytes: Bytes of the pet's photo
             species: Pet's species (e.g., dog, cat, hamster)
+            breed_description: Description of the pet's breed/markings
+            owner_favorite_color: Favorite color of the owner (for accessories)
+            pet_name: Pet's name (optional)
             num_images: Number of variations (default: 1)
+            prompt: Optional pre-built prompt (if not provided, one will be built)
             
         Returns:
             List of image dicts with base64-encoded PNG data
@@ -563,6 +567,21 @@ CRITICAL REMINDER FOR IMAGE MODEL:
             logger.warning("Gemini image generator unavailable; skipping pet avatar generation")
             return []
 
+        # If prompt is not provided, build a basic one, but usually it should come from the service
+        if not prompt:
+            prompt = f"""
+Create a magical Pixar-style 3D animated character portrait of {pet_name}, a {species}.
+Breed/Appearance: {breed_description}
+Owner's Favorite Color: {owner_favorite_color}
+
+MANDATORY REQUIREMENTS:
+- Match the breed characteristics and unique markings of the pet in the reference photo.
+- Include a magical collar or harness in a jewel-tone version of {owner_favorite_color}.
+- Professional children's book illustration style with soft cinematic lighting.
+- Whimsical, painterly storybook forest background with glowing mushrooms.
+- Non-photorealistic, clearly stylized and magical.
+"""
+
         try:
             from google.genai import types
             
@@ -570,7 +589,7 @@ CRITICAL REMINDER FOR IMAGE MODEL:
             
             contents = [
                 prompt,
-                types.Part.from_bytes(data=base_image_bytes, mime_type="image/jpeg")
+                types.Part.from_bytes(data=photo_bytes, mime_type="image/jpeg")
             ]
             
             # Call Gemini

@@ -82,7 +82,7 @@ class _IllustrationSettingsDialogState
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _selectedTherapeuticFocus,
+              initialValue: _selectedTherapeuticFocus,
               decoration: InputDecoration(
                 border:
                     OutlineInputBorder(borderRadius: BorderRadius.circular(8)),

@@ -271,11 +271,13 @@ This prompt is designed for "Story Weaver," an app that transforms real-world im
 
         try:
             results = self.image_generator.generate_pet_avatar(
-                base_image_bytes=photo_bytes,
-                prompt=prompt,
-                pet_name=pet_name,
+                photo_bytes=photo_bytes,
                 species=species,
-                num_images=1
+                breed_description=breed_description,
+                owner_favorite_color=owner_favorite_color,
+                pet_name=pet_name,
+                num_images=1,
+                prompt=prompt
             )
 
             if results and len(results) > 0:

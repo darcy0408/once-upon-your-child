@@ -923,7 +923,7 @@ class _CharacterCreationScreenEnhancedState
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          value: _isA,
+          initialValue: _isA,
           decoration: InputDecoration(
             labelText: 'Gender *',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -1011,7 +1011,7 @@ class _CharacterCreationScreenEnhancedState
             const SizedBox(width: 12),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _isA,
+                initialValue: _isA,
                 decoration: InputDecoration(
                   labelText: 'Is a: *',
                   border: OutlineInputBorder(
@@ -1034,7 +1034,7 @@ class _CharacterCreationScreenEnhancedState
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          value: _characterStyle,
+          initialValue: _characterStyle,
           decoration: InputDecoration(
             labelText: 'Character Style *',
             hintText: 'Choose appearance and personality',
@@ -1280,7 +1280,7 @@ class _CharacterCreationScreenEnhancedState
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          value: _hairStyle,
+          initialValue: _hairStyle,
           decoration: InputDecoration(
             labelText: 'Hair Style',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
