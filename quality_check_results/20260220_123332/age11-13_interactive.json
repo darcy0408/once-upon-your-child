@@ -1,0 +1,45 @@
+{
+  "inventory": [],
+  "is_completed": false,
+  "segment": {
+    "choices": [
+      {
+        "choice_number": 1,
+        "consequence_type": null,
+        "id": "65e7654d-e722-43f9-b86e-e291fd327bcb",
+        "is_selected": false,
+        "selected_at": null,
+        "text": "Follow Flicker's faint light toward the Whispering Woods, hoping he can lead the way."
+      },
+      {
+        "choice_number": 2,
+        "consequence_type": null,
+        "id": "556ca2f2-1a20-47f9-a3a5-70a54065c4eb",
+        "is_selected": false,
+        "selected_at": null,
+        "text": "Venture toward the Silken Stream, remembering old tales of the water's magical properties and what secrets it holds."
+      }
+    ],
+    "content": "Dew-kissed grass tickles your bare feet as you step out of your cozy cottage. The morning air smells of honeysuckle and damp earth. But something is amiss. The meadow, usually ablaze with the twinkling lights of fireflies, is dark. An unnatural, heavy darkness blankets everything. A shiver traces your spine, not from cold, but from a prickling sense of unease.\n\nYou cup your hands around your mouth and call out, \"Hello?\" Your voice echoes strangely in the unusually quiet morning. Suddenly, a tiny voice, like the chime of distant bells, answers you. It's Flicker, the bravest firefly in the meadow, his light usually the brightest of all. But now, only a faint, flickering spark remains.\n\n\"Hero... thank goodness you're here,\" Flicker whispers, his light dimming further. \"The Great Light... it's gone! Stolen by… something. All the other fireflies are too scared to even glow. I tried to follow, but I'm too weak.\" He flits closer, his faint light brushing against your cheek like a gentle kiss. \"You're the only one who can help. Please, Hero, you have to find the Great Light!\" Flicker bumps your hand gently. His own light is so dim, he needs your help to be found. \"I can point you in the right direction, but... be careful.\" \n\nThe weight of the meadow's hope settles on your shoulders. You know this won't be easy, but you also know you can't let Flicker, or the meadow, down.\n\n",
+    "created_at": "2026-02-20T19:40:17.660120",
+    "id": "7161eeaf-8e03-4751-b29e-e9e8a69bf9d6",
+    "image_description": "A darkened meadow with a small, faintly glowing firefly speaking to a twelve-year-old child.",
+    "image_url": null,
+    "output_type": "CHOICE",
+    "segment_number": 1,
+    "stage_label": "Whispers in the Meadow",
+    "title": "The Firefly's Lost Light",
+    "word_count": 285
+  },
+  "state": {
+    "additional_state": {},
+    "companion_status": "Weakened, needs help",
+    "current_goal": "Find the stolen Great Light",
+    "current_location": "A darkened meadow",
+    "key_clues": [],
+    "time_pressure": null,
+    "updated_at": "2026-02-20T19:40:17.665942"
+  },
+  "story_id": "d91b060b-7e07-44ae-9034-a3677491036c",
+  "title": "The Firefly's Lost Light"
+}

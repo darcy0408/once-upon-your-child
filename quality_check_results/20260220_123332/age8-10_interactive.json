@@ -1,0 +1,45 @@
+{
+  "inventory": [],
+  "is_completed": false,
+  "segment": {
+    "choices": [
+      {
+        "choice_number": 1,
+        "consequence_type": null,
+        "id": "d3cb09c2-a801-409c-8459-76a4c1a7a689",
+        "is_selected": false,
+        "selected_at": null,
+        "text": "Carefully pull the firefly from the sticky web?"
+      },
+      {
+        "choice_number": 2,
+        "consequence_type": null,
+        "id": "e8074295-00d0-470a-a86e-ef084d83df84",
+        "is_selected": false,
+        "selected_at": null,
+        "text": "Follow the muffled sound of the waterfall deeper into the woods?"
+      }
+    ],
+    "content": "Dewdrops cling to blades of grass, sparkling like scattered jewels in the early morning light. A crisp, earthy aroma rises from the forest floor, mingling with the sweet scent of honeysuckle. You, Hero, stretch and yawn, blinking sleep from your eyes. You remember falling asleep near the Whispering Falls after a long day of exploring. But something feels…different. A strange, almost silent hum vibrates in the air. It tickles your ears. The air shimmers near the waterfall, and the sound of the falls seems… muffled.\n\nA tiny voice whispers, \"Help!\" You look around, but see no one. The voice comes again, fainter this time. \"Please…the light…it's fading…\"\n\nYou realize the voice is coming from a small, flickering firefly trapped in a spiderweb near the base of the falls. The firefly's light is dim, barely a spark. Its wings flutter weakly. You feel a surge of empathy for the tiny creature. Something magical is definitely going on here. Hero, a spark of wonder ignites within you. You take a deep breath, reminding yourself that you are brave. You can help!\n\nDo you:",
+    "created_at": "2026-02-20T19:39:12.181669",
+    "id": "70582723-2014-490f-ac1c-0e9c7c7e8ff8",
+    "image_description": "A young child, Hero, awakens near a waterfall, noticing a trapped, dim firefly in a spiderweb.",
+    "image_url": null,
+    "output_type": "CHOICE",
+    "segment_number": 1,
+    "stage_label": "Wake Up!",
+    "title": "The Firefly's Lost Spark",
+    "word_count": 189
+  },
+  "state": {
+    "additional_state": {},
+    "companion_status": "None",
+    "current_goal": "Help the firefly",
+    "current_location": "Whispering Falls",
+    "key_clues": [],
+    "time_pressure": null,
+    "updated_at": "2026-02-20T19:39:12.196894"
+  },
+  "story_id": "413b079d-b82e-4480-9ceb-ccae3183d40a",
+  "title": "The Firefly's Lost Spark"
+}

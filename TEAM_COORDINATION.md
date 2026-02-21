@@ -2,6 +2,30 @@
 
 ---
 
+## Session Update - 2026-02-21 (Button State Visual Correction: Preserve Original Art)
+
+### Problem
+- Generated button state assets looked muted and partially stripped because prior automation included background removal behavior that altered source visuals.
+
+### Scope Completed
+- Updated `optimize_buttons.sh` to remove background removal from the pipeline entirely.
+- Reworked state generation to preserve original art and only apply interaction effects:
+  - `_normal`: direct copy of original image (no visual simplification)
+  - `_hover`: brighter/more vivid variant
+  - `_pressed`: slightly darker, scaled to `94%`, offset `+4px` to simulate tactile press
+- Added safety guard to skip re-processing generated state files (`_normal`, `_hover`, `_pressed`, `_clean` suffixes).
+
+### Verification
+- Re-ran `./optimize_buttons.sh` successfully over the button source set.
+- Confirmed regenerated outputs in:
+  - `StoryWeaverImagestoShare/buttonsToOptimize/ButtonsToOptimize`
+- Confirmed additional regenerated sets for `girl_*`, `makeMagic_*`, and `robinFrame_*`.
+
+### Status
+- Visual behavior now aligned with requirement: keep original backgrounds/artwork and only apply bright/press interaction cues.
+
+---
+
 ## Session Update - 2026-02-21 (Repository Architecture Summary for Stakeholder Handoff)
 
 ### Scope Completed
