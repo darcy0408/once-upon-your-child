@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify, current_app
 
 from backend.database import db
 from backend.models.user import User
+from backend.middleware.auth import require_auth, require_owner
 
 
 def _format_timestamp(value):
@@ -19,6 +20,8 @@ def create_subscription_blueprint(limiter=None):
     subscription_routes = Blueprint('subscription_routes', __name__)
 
     @subscription_routes.route('/api/user/<user_id>/subscription', methods=['GET'])
+    @require_auth
+    @require_owner('user_id')
     @limiter.limit("60 per minute")  # Read-heavy endpoint
     def get_subscription(user_id):
         try:

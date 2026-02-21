@@ -31,10 +31,12 @@ def get_price_ids():
     }
 
 @stripe_routes.route('/create-checkout-session', methods=['POST'])
+@require_auth
 def create_checkout_session():
     data = request.get_json(silent=True) or {}
     tier = data.get('tier')
-    user_id = data.get('user_id')  # Optional user ID for tracking
+    # Always use the authenticated user ID for checkout
+    user_id = request.current_user.id
 
     PRICE_IDS = get_price_ids()
     logger.info(f"Creating checkout for tier '{tier}' with price_id: {PRICE_IDS.get(tier)}")
