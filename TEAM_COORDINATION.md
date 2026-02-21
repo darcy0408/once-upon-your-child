@@ -4256,3 +4256,33 @@ git push origin main
 
 ### Result
 - Dependency manifests are now explicit and less drift-prone across environments.
+
+## Session Update - 2026-02-21 (Flutter Test Loading/Hang Triage + Stabilization)
+
+### Scope Completed
+- Investigated repeated local `flutter test` runs appearing stuck at `loading ...` for widget/screen tests.
+- Isolated root causes:
+  - stale concurrent Flutter tool processes causing startup lock contention
+  - occasional file lock on `build/unit_test_assets` during asset copy
+  - misleading `test/widget_test.dart` behavior (heavy compile path, no active tests)
+- Added a reusable cleanup utility to reset local Flutter test locks quickly.
+
+### Changes
+- `scripts/cleanup_flutter_test_locks.ps1` (new)
+  - stops stale Flutter tool `dart.exe` processes for `test` / `analyze` / `build`
+  - optional `-ClearUnitTestAssets` flag removes `build/unit_test_assets`
+- `test/widget_test.dart`
+  - replaced commented-out harness with a lightweight smoke widget test
+  - removed `main.dart` import to avoid unnecessary full-app compile for this file
+
+### Verification
+```bash
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/cleanup_flutter_test_locks.ps1 -ClearUnitTestAssets
+flutter test test/widget_test.dart -r compact --concurrency=1
+flutter test test/screens/settings_screen_test.dart -r compact --concurrency=1
+```
+
+### Result
+- PASS: `test/widget_test.dart`
+- PASS: `test/screens/settings_screen_test.dart`
+- Local test verification flow is now reproducible when run serially after cleanup.
