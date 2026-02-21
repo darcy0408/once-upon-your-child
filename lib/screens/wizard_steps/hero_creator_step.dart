@@ -46,9 +46,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   String? _selectedArchetypeId;
   late TextEditingController _nameController;
   Character? _selectedExistingCharacter;
-  bool _isContinuePressed     = false;
+  bool _isContinuePressed = false;
   bool _isCreateAvatarPressed = false;
-  bool _isCreatingNew         = true;
+  bool _isCreatingNew = true;
   GeneratedAvatar? _generatedAvatar;
   String? _customAvatarFilePath; // local file path from CustomAvatarScreen
 
@@ -140,7 +140,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         if (character.pets != null) {
           final safePets = <Map<String, String>>[];
           for (final p in character.pets!) {
-            try { safePets.add(Map<String, String>.from(p)); } catch (_) {}
+            try {
+              safePets.add(Map<String, String>.from(p));
+            } catch (_) {}
           }
           widget.wizardData.pets = safePets;
         }
@@ -301,19 +303,19 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   }
 
   Widget _placeholderWidget() => Image.asset(
-    _placeholderAsset,
-    fit: BoxFit.cover,
-    errorBuilder: (_, __, ___) => Container(
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [Color(0xFF7B4BAA), Color(0xFF2D0A4E)],
+        _placeholderAsset,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [Color(0xFF7B4BAA), Color(0xFF2D0A4E)],
+            ),
+          ),
         ),
-      ),
-    ),
-  );
+      );
 
-  // ─── SECTION: Avatar + Age picker ───────────────────────────────────────────
+  // ─── SECTION: Avatar preview ────────────────────────────────────────────────
   Widget _buildAvatarSection() {
     return Column(
       children: [
@@ -342,9 +344,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
             child: ClipOval(child: _buildAvatarContent()),
           ),
         ),
-        const SizedBox(height: 14),
-        // +/− Hero Age picker
-        _buildAgePicker(),
       ],
     );
   }
@@ -475,8 +474,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                   ? const Color(0xFFFFD700)
                   : Colors.white.withAlpha(160),
               fontSize: 12,
-              fontWeight:
-                  isSelected ? FontWeight.bold : FontWeight.normal,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
         ],
@@ -487,21 +485,37 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   // ─── SECTION: Scroll name field ───────────────────────────────────────────────
   Widget _buildNameScrollInput() {
     return SizedBox(
-      height: 100,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Scroll background image
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/ui/magical_scroll_bg.png',
-              fit: BoxFit.fill,
-              errorBuilder: (_, __, ___) => _fallbackNameBox(),
-            ),
+      height: 128,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFFF9EEC8),
+              Color(0xFFF3DEAA),
+              Color(0xFFE8C989),
+              Color(0xFFF5E4B0),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
-          // Text input centered over the scroll's flat middle area
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 76),
+          borderRadius: BorderRadius.circular(46),
+          border: Border.all(color: const Color(0xFFFFD700), width: 2.2),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFFD700).withAlpha(90),
+              blurRadius: 18,
+              spreadRadius: 1,
+            ),
+            BoxShadow(
+              color: Colors.black.withAlpha(45),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 34),
             child: TextField(
               controller: _nameController,
               inputFormatters: [
@@ -511,14 +525,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
               textAlign: TextAlign.center,
               textAlignVertical: TextAlignVertical.center,
               style: GoogleFonts.cinzelDecorative(
-                fontSize: 17,
+                fontSize: 18,
                 color: const Color(0xFF3A1C00),
                 fontWeight: FontWeight.w700,
               ),
               decoration: InputDecoration(
                 hintText: "Write your hero's name",
                 hintStyle: GoogleFonts.cinzelDecorative(
-                  fontSize: 13,
+                  fontSize: 14,
                   color: const Color(0x993A1C00),
                 ),
                 filled: true,
@@ -526,29 +540,18 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
+                isCollapsed: true,
                 contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 4),
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 18),
               ),
               onChanged: (v) =>
                   setState(() => widget.wizardData.characterName = v.trim()),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
-
-  Widget _fallbackNameBox() => Container(
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [Color(0xFFF9EEC8), Color(0xFFEDD89A), Color(0xFFF5E4B0)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: const Color(0xFFFFD700), width: 2),
-    ),
-  );
 
   // ─── SECTION: Archetype cards ─────────────────────────────────────────────────
   Widget _buildArchetypeCards() {
@@ -613,8 +616,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                       ],
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    vertical: 10, horizontal: 8),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
@@ -758,23 +761,23 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   }
 
   Widget _cornerGem(bool bright) => Container(
-    width: 7,
-    height: 7,
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      color: bright
-          ? const Color(0xFFFFD700)
-          : const Color(0xFFFFD700).withAlpha(120),
-      boxShadow: bright
-          ? [
-              BoxShadow(
-                color: const Color(0xFFFFD700).withAlpha(200),
-                blurRadius: 6,
-              ),
-            ]
-          : null,
-    ),
-  );
+        width: 7,
+        height: 7,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: bright
+              ? const Color(0xFFFFD700)
+              : const Color(0xFFFFD700).withAlpha(120),
+          boxShadow: bright
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFFFFD700).withAlpha(200),
+                    blurRadius: 6,
+                  ),
+                ]
+              : null,
+        ),
+      );
 
   // ─── SECTION: Create Your Avatar image button ─────────────────────────────────
   Widget _buildCreateAvatarButton() {
@@ -799,27 +802,27 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 
   // Flutter-native fallback if image fails
   Widget _buildFallbackAvatarButton() => Container(
-    height: 62,
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(31),
-      gradient: const LinearGradient(
-        colors: [Color(0xFF5B1BAA), Color(0xFF9B3FD8), Color(0xFF5B1BAA)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      border: Border.all(color: const Color(0xFFFFD700), width: 2),
-    ),
-    child: Center(
-      child: Text(
-        'Create Magic Avatar',
-        style: GoogleFonts.cinzelDecorative(
-          color: const Color(0xFFFFE066),
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
+        height: 62,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(31),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF5B1BAA), Color(0xFF9B3FD8), Color(0xFF5B1BAA)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          border: Border.all(color: const Color(0xFFFFD700), width: 2),
         ),
-      ),
-    ),
-  );
+        child: Center(
+          child: Text(
+            'Create Magic Avatar',
+            style: GoogleFonts.cinzelDecorative(
+              color: const Color(0xFFFFE066),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      );
 
   // ─── SECTION: Continue button ─────────────────────────────────────────────────
   Widget _buildContinueButton() {
@@ -945,9 +948,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                     color: const Color(0xFF3A2363),
                     child: Center(
                       child: Text(
-                        char.name.isNotEmpty
-                            ? char.name[0].toUpperCase()
-                            : '?',
+                        char.name.isNotEmpty ? char.name[0].toUpperCase() : '?',
                         style: GoogleFonts.fredoka(
                           color: Colors.white,
                           fontSize: 22,
@@ -997,19 +998,23 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                 const SizedBox(height: 10),
               ],
 
-              // ── Avatar + Hero Age picker ───────────────────────────────────
+              // ── Avatar preview ─────────────────────────────────────────────
               Center(child: _buildAvatarSection()),
               const SizedBox(height: 20),
 
-              // ── Hero / Heroine gender picker ───────────────────────────────
-              _buildGenderPicker(),
-              const SizedBox(height: 20),
-
-              // ── Magical scroll name field (create-new only) ────────────────
+              // ── Magical scroll name field (create-new only) ───────────────
               if (_isCreatingNew) ...[
                 _buildNameScrollInput(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
               ],
+
+              // ── Hero / Heroine gender picker ───────────────────────────────
+              _buildGenderPicker(),
+              const SizedBox(height: 16),
+
+              // ── Hero age picker ────────────────────────────────────────────
+              _buildAgePicker(),
+              const SizedBox(height: 20),
 
               // ── Archetype cards ────────────────────────────────────────────
               _buildArchetypeCards(),
@@ -1081,7 +1086,8 @@ class _PetsSection extends StatelessWidget {
 
           return Dialog(
             backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            insetPadding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
             child: Container(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
               decoration: BoxDecoration(
@@ -1091,7 +1097,8 @@ class _PetsSection extends StatelessWidget {
                   end: Alignment.bottomCenter,
                 ),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: const Color(0xFFFFD700).withAlpha(150), width: 2),
+                border: Border.all(
+                    color: const Color(0xFFFFD700).withAlpha(150), width: 2),
                 boxShadow: [
                   BoxShadow(
                     color: const Color(0xFF9B3FD8).withAlpha(100),
@@ -1122,7 +1129,8 @@ class _PetsSection extends StatelessWidget {
                           height: 100,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFFFFD700), width: 2),
+                            border: Border.all(
+                                color: const Color(0xFFFFD700), width: 2),
                             boxShadow: [
                               BoxShadow(
                                 color: const Color(0xFFFFD700).withAlpha(100),
@@ -1177,7 +1185,8 @@ class _PetsSection extends StatelessWidget {
                       dropdownColor: const Color(0xFF2A0A4E),
                       style: const TextStyle(color: Colors.white),
                       items: ['Boy', 'Girl']
-                          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                          .map(
+                              (s) => DropdownMenuItem(value: s, child: Text(s)))
                           .toList(),
                       onChanged: (v) {
                         if (v != null) setState(() => gender = v);
@@ -1190,7 +1199,8 @@ class _PetsSection extends StatelessWidget {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+                          child: const Text('Cancel',
+                              style: TextStyle(color: Colors.white70)),
                         ),
                         const SizedBox(width: 12),
                         ElevatedButton(
@@ -1209,7 +1219,8 @@ class _PetsSection extends StatelessWidget {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF9B3FD8),
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
                           ),
                           child: const Text('Add Pet'),
                         ),
@@ -1225,7 +1236,8 @@ class _PetsSection extends StatelessWidget {
     );
   }
 
-  InputDecoration _petFieldDecoration({required String labelText, String? hintText}) {
+  InputDecoration _petFieldDecoration(
+      {required String labelText, String? hintText}) {
     return InputDecoration(
       labelText: labelText,
       hintText: hintText,
@@ -1274,12 +1286,15 @@ class _PetsSection extends StatelessWidget {
                   margin: const EdgeInsets.only(right: 12),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFFFFD700).withAlpha(150), width: 2),
+                    border: Border.all(
+                        color: const Color(0xFFFFD700).withAlpha(150),
+                        width: 2),
                     gradient: const LinearGradient(
                       colors: [Color(0xFF5B1BAA), Color(0xFF2D0A4E)],
                     ),
                   ),
-                  child: const Icon(Icons.add, color: Color(0xFFFFD700), size: 30),
+                  child:
+                      const Icon(Icons.add, color: Color(0xFFFFD700), size: 30),
                 ),
               ),
               // Current Pets
@@ -1317,9 +1332,9 @@ class _PetsSection extends StatelessWidget {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: avatar != null 
+                              color: avatar != null
                                   ? const Color(0xFFFFD700)
-                                  : const Color(0xFFFFD700).withAlpha(100), 
+                                  : const Color(0xFFFFD700).withAlpha(100),
                               width: 2,
                             ),
                             boxShadow: [
@@ -1334,7 +1349,8 @@ class _PetsSection extends StatelessWidget {
                           child: ClipOval(
                             child: avatar != null
                                 ? Image.memory(
-                                    base64Decode(avatar.imageBase64.split(',').last),
+                                    base64Decode(
+                                        avatar.imageBase64.split(',').last),
                                     fit: BoxFit.cover,
                                   )
                                 : Stack(
@@ -1353,7 +1369,8 @@ class _PetsSection extends StatelessWidget {
                                             color: Color(0xFF9B3FD8),
                                             shape: BoxShape.circle,
                                           ),
-                                          child: const Icon(Icons.auto_awesome, size: 12, color: Colors.white),
+                                          child: const Icon(Icons.auto_awesome,
+                                              size: 12, color: Colors.white),
                                         ),
                                       ),
                                     ],
@@ -1363,7 +1380,8 @@ class _PetsSection extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           name,
-                          style: const TextStyle(color: Colors.white, fontSize: 10),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 10),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
@@ -1381,14 +1399,22 @@ class _PetsSection extends StatelessWidget {
 
 String _getEmojiForSpecies(String? species) {
   switch (species) {
-    case 'Dog': return '🐕';
-    case 'Cat': return '🐱';
-    case 'Bird': return '🐦';
-    case 'Hamster': return '🐹';
-    case 'Fish': return '🐠';
-    case 'Bunny': return '🐰';
-    case 'Reptile': return '🦎';
-    default: return '🐾';
+    case 'Dog':
+      return '🐕';
+    case 'Cat':
+      return '🐱';
+    case 'Bird':
+      return '🐦';
+    case 'Hamster':
+      return '🐹';
+    case 'Fish':
+      return '🐠';
+    case 'Bunny':
+      return '🐰';
+    case 'Reptile':
+      return '🦎';
+    default:
+      return '🐾';
   }
 }
 
@@ -1458,7 +1484,12 @@ class _SafeNameFormatter extends TextInputFormatter {
   const _SafeNameFormatter();
 
   static const Set<String> _blockedWords = {
-    'damn', 'hell', 'stupid', 'idiot', 'dumb', 'hate',
+    'damn',
+    'hell',
+    'stupid',
+    'idiot',
+    'dumb',
+    'hate',
   };
 
   @override

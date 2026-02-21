@@ -94,6 +94,29 @@ python -m pytest backend/tests/unit/test_avatar_generation_service.py backend/te
 
 ---
 
+## Session Update - 2026-02-21 (Hero Creator Layout + Crystal Progress + Transparent Button Polish)
+
+### Scope Completed
+- Updated the Step 1 Hero Creator visual order to match requested UX:
+  - Avatar preview first
+  - Name scroll/input directly under avatar
+  - Hero/Heroine selector next
+  - Age controls below gender selector
+- Increased name scroll/input height and tuned text-field vertical alignment for centered entry text.
+- Replaced top wizard progress indicator style with crystal-orb visuals using clean orb assets.
+- Switched `MAKE MAGIC` button to transparent clean asset variant to remove black background artifacts.
+
+### Files Updated
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+- `lib/widgets/moon_phase_progress.dart`
+- `lib/widgets/image_make_magic_button.dart`
+
+### Status
+- **UI polish request:** ✅ Completed
+- **Team coordination log:** ✅ Updated
+
+---
+
 ## Session Update - 2026-02-21 (Repository Architecture Summary for Stakeholder Handoff)
 
 ### Scope Completed

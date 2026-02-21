@@ -1,13 +1,6 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
 
-/// MoonPhaseProgress - Visual wizard step indicator
-///
-/// Design specs:
-/// - Shows 4 steps as moon phase icons
-/// - Active step glows
-/// - No text labels (icon-only)
-/// - Accessible with screen reader support
+/// Crystal-orb wizard progress indicator.
 class MoonPhaseProgress extends StatelessWidget {
   final int currentStep; // 0-2
   final int totalSteps; // Should be 3
@@ -27,7 +20,8 @@ class MoonPhaseProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Progress: ${stepLabels[currentStep]}, step ${currentStep + 1} of $totalSteps',
+      label:
+          'Progress: ${stepLabels[currentStep]}, step ${currentStep + 1} of $totalSteps',
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(totalSteps, (index) {
@@ -35,8 +29,8 @@ class MoonPhaseProgress extends StatelessWidget {
           final isCompleted = index < currentStep;
 
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-            child: _MoonPhaseIcon(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: _CrystalStepOrb(
               isActive: isActive,
               isCompleted: isCompleted,
               label: stepLabels[index],
@@ -48,22 +42,22 @@ class MoonPhaseProgress extends StatelessWidget {
   }
 }
 
-class _MoonPhaseIcon extends StatefulWidget {
+class _CrystalStepOrb extends StatefulWidget {
   final bool isActive;
   final bool isCompleted;
   final String label;
 
-  const _MoonPhaseIcon({
+  const _CrystalStepOrb({
     required this.isActive,
     required this.isCompleted,
     required this.label,
   });
 
   @override
-  State<_MoonPhaseIcon> createState() => _MoonPhaseIconState();
+  State<_CrystalStepOrb> createState() => _CrystalStepOrbState();
 }
 
-class _MoonPhaseIconState extends State<_MoonPhaseIcon>
+class _CrystalStepOrbState extends State<_CrystalStepOrb>
     with SingleTickerProviderStateMixin {
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
@@ -94,7 +88,7 @@ class _MoonPhaseIconState extends State<_MoonPhaseIcon>
   }
 
   @override
-  void didUpdateWidget(_MoonPhaseIcon oldWidget) {
+  void didUpdateWidget(_CrystalStepOrb oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isActive && !oldWidget.isActive) {
       _glowController.repeat(reverse: true);
@@ -110,6 +104,10 @@ class _MoonPhaseIconState extends State<_MoonPhaseIcon>
     super.dispose();
   }
 
+  String get _orbAssetPath => widget.isCompleted
+      ? 'assets/images/ui/clean/progress_done_orb.png'
+      : 'assets/images/ui/clean/progress_active_orb.png';
+
   @override
   Widget build(BuildContext context) {
     return Semantics(
@@ -118,82 +116,81 @@ class _MoonPhaseIconState extends State<_MoonPhaseIcon>
       child: AnimatedBuilder(
         animation: _glowAnimation,
         builder: (context, child) {
-          return Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: widget.isActive
-                  ? [
-                      BoxShadow(
-                        color: AppColors.gold.withAlpha((255 * _glowAnimation.value).toInt()),
-                        blurRadius: 12 * _glowAnimation.value,
-                        spreadRadius: 4 * _glowAnimation.value,
+          final orbSize = 56.0;
+          final glowFactor = widget.isActive ? _glowAnimation.value : 0.42;
+
+          return SizedBox(
+            width: orbSize,
+            height: orbSize,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                if (widget.isActive)
+                  Container(
+                    width: orbSize + (orbSize * 0.30 * glowFactor),
+                    height: orbSize + (orbSize * 0.30 * glowFactor),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          const Color(0xFFB388FF)
+                              .withValues(alpha: 0.38 * glowFactor),
+                          const Color(0xFF9E6CFF)
+                              .withValues(alpha: 0.20 * glowFactor),
+                          Colors.transparent,
+                        ],
                       ),
-                    ]
-                  : null,
+                    ),
+                  ),
+                Opacity(
+                  opacity: widget.isActive || widget.isCompleted ? 1.0 : 0.45,
+                  child: ClipOval(
+                    child: Image.asset(
+                      _orbAssetPath,
+                      width: orbSize,
+                      height: orbSize,
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.high,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: orbSize,
+                        height: orbSize,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              Color(0xFFE5DAFF),
+                              Color(0xFF9E6CFF),
+                              Color(0xFF7C4DFF),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                if (widget.isCompleted)
+                  const Icon(
+                    Icons.check_rounded,
+                    size: 24,
+                    color: Color(0xFFFFD478),
+                    shadows: [
+                      Shadow(color: Color(0xCC000000), blurRadius: 4),
+                    ],
+                  )
+                else if (widget.isActive)
+                  const Icon(
+                    Icons.auto_awesome,
+                    size: 21,
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(color: Color(0xCC000000), blurRadius: 4),
+                    ],
+                  ),
+              ],
             ),
-            child: _buildMoonIcon(),
           );
         },
       ),
     );
-  }
-
-  Widget _buildMoonIcon() {
-    if (widget.isCompleted) {
-      // Completed step: Full moon (filled circle)
-      return Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.gold,
-          border: Border.all(
-            color: AppColors.primary,
-            width: 2,
-          ),
-        ),
-        child: const Icon(
-          Icons.check,
-          color: AppColors.textLight,
-          size: 24,
-        ),
-      );
-    } else if (widget.isActive) {
-      // Active step: Glowing moon
-      return Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [
-              AppColors.goldLight,
-              AppColors.gold,
-            ],
-          ),
-          border: Border.all(
-            color: AppColors.primary,
-            width: 3,
-          ),
-        ),
-        child: const Center(
-          child: Icon(
-            Icons.auto_awesome,
-            color: AppColors.textLight,
-            size: 24,
-          ),
-        ),
-      );
-    } else {
-      // Inactive step: Empty circle (new moon)
-      return Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.surface,
-          border: Border.all(
-            color: Colors.grey.shade400,
-            width: 2,
-          ),
-        ),
-      );
-    }
   }
 }

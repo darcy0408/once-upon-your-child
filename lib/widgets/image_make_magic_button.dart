@@ -121,13 +121,13 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
                     ),
                   ),
 
-                // Code-rendered magical button avoids checkerboard artifacts from legacy JPG assets.
+                // Use transparent clean asset to avoid dark background artifacts.
                 Opacity(
                   opacity: widget.isEnabled ? 1.0 : 0.45,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(44),
                     child: Image.asset(
-                      'assets/images/ui/make_magic_codex.png',
+                      'assets/images/ui/clean/make_magic_button.png',
                       width: buttonWidth,
                       height: 88,
                       fit: BoxFit.contain,
