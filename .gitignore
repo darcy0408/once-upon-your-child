@@ -157,4 +157,11 @@ test_mock_*.py
 test_coloring_*.py
 test_illustrations.py
 test_interactive_story.py
+test_avatar_endpoint.py
+test_parser.py
+debug_*.py
 tests/test_backend_*.py
+
+# Generated quality check output
+quality_check_results/
+CONTENT_QUALITY_REPORT_*.md

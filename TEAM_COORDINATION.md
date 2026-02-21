@@ -2,6 +2,45 @@
 
 ---
 
+## Session Update - 2026-02-21 (Bug Fixes: Web Upload, Story Auth, Orb Icons)
+
+### Scope Completed
+
+**1. Flutter Web — Image Upload Crash Fixed (`lib/custom_avatar_screen.dart`)**
+- Removed `dart:io` (`File`, `MultipartFile.fromPath`) which throw `UnsupportedError` on Flutter web.
+- Now uses `XFile.readAsBytes()` → `Uint8List` → `MultipartFile.fromBytes()` (works on all platforms).
+- Photo preview uses `Image.memory()` instead of `FileImage`.
+- Generated avatar stored as `data:image/png;base64,…` URI — already handled by `CustomizableAvatarWidget`.
+
+**2. Story 401 Auth Error Fixed (`lib/services/interactive_story_service.dart`, `api_service_manager.dart`)**
+- `InteractiveStoryService` was sending no `Authorization` header; all `/generate-interactive-story` and related routes use `@require_auth` and were returning 401.
+- Added `ApiServiceManager.authHeaders()` static helper that ensures anonymous token then returns `Bearer` header map.
+- Wired into all five story service request methods.
+
+**3. Mode Orb Icons — Codex Optimized Assets Deployed (`assets/images/ui/clean/`, `lib/widgets/image_mode_orb.dart`)**
+- Replaced `tales_orb.png`, `rhyme_time_orb.png`, `easy_read_orb.png`, `pick_path_orb.png` with brighter Codex-optimized PNGs.
+- Added `_pressed` variants; `ImageModeOrb` now switches to pressed image when `isActive`.
+- Changed `BoxFit.contain` → `BoxFit.cover` inside `ClipOval` — eliminates transparent edge bleed (checkerboard).
+- Replaced `make_magic_codex.png` and `continue_btn_codex.png` with Codex brightened versions + pressed variants.
+
+**4. Previously staged Codex work committed in same pass**
+- Backend: pet avatar signature refactor, token refresh, CSRF/CSP hardening.
+- Backend: `DropdownButtonFormField.value` → `initialValue` migration across 14 screens.
+- New backend unit tests: `test_achievement_service.py`, `test_avatar_generation_service.py`, `test_pet_avatar.py`, `test_usage_tracking_service.py`.
+- `.gitignore` updated to exclude generated quality check output and debug scripts.
+
+### Outstanding Issues (not fixed this session)
+- Premade archetype card backgrounds are dark/muted — Codex changed card styling; original vibrant backgrounds need restoring.
+- Magical Avatar Creator screen is form-like and doesn't match app aesthetic — future polish pass.
+
+### Status
+- **Web upload:** ✅ Fixed
+- **Story 401:** ✅ Fixed
+- **Orb icons/checkerboard:** ✅ Fixed
+- Commits: `431eeda`, `cbbdc2d`, `37b6192`
+
+---
+
 ## Session Update - 2026-02-21 (Button State Visual Correction: Preserve Original Art)
 
 ### Problem
