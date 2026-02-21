@@ -2,6 +2,35 @@
 
 ---
 
+## Session Update - 2026-02-21 (Validation Follow-up: Service Coverage + Animation QA Readiness)
+
+### Scope Completed
+- Re-validated backend service unit coverage for the requested areas:
+  - `backend/tests/unit/test_avatar_generation_service.py`
+  - `backend/tests/unit/test_achievement_service.py`
+  - `backend/tests/unit/test_usage_tracking_service.py`
+- Confirmed animation-focused UI surfaces and test targets for quick visual QA:
+  - `lib/screens/wizard_steps/magic_review_step.dart`
+  - `lib/widgets/image_progress_orb.dart`
+  - `lib/widgets/image_mode_orb.dart`
+  - `lib/widgets/image_crystal_formation.dart`
+  - `lib/widgets/image_make_magic_button.dart`
+
+### Verification
+```bash
+python -m pytest backend/tests/unit/test_avatar_generation_service.py backend/tests/unit/test_achievement_service.py backend/tests/unit/test_usage_tracking_service.py -q
+```
+
+### Result
+- PASS: `16 passed in 2.65s`
+- Visual QA remains a manual pass (human-in-the-loop) for final animation timing judgment in running app.
+
+### Status
+- **Service test coverage (Avatar/Achievement/Analytics):** ✅ Re-verified
+- **Animation visual QA:** ⏳ Ready for manual browser/device pass
+
+---
+
 ## Session Update - 2026-02-21 (Bug Fixes: Web Upload, Story Auth, Orb Icons)
 
 ### Scope Completed
