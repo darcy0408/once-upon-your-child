@@ -4237,3 +4237,22 @@ git push origin main
   - 2 deprecation infos (`DropdownButtonFormField.value` -> `initialValue`) in `hero_creator_step.dart`
   - 1 existing unused optional parameter warning in `subscription_management_screen_test.dart`
 - NOTE: PR creation via `gh` was not possible because changes were already pushed directly to `main` (`No commits between main and main`).
+
+## Session Update - 2026-02-21 (Dependency Hygiene Follow-up)
+
+### Scope Completed
+- Finalized backend Python dependency pinning for Gemini-related packages in `backend/requirements.txt`.
+- Removed stale Flutter dependency override for `meta` from `pubspec.yaml`.
+
+### Changes
+- `backend/requirements.txt`
+  - pinned `google-genai==1.3.0`
+  - pinned `google-api-core==2.25.1`
+  - pinned `google-auth==2.40.3`
+- `pubspec.yaml`
+  - removed:
+    - `dependency_overrides:`
+    - `meta: 1.15.0`
+
+### Result
+- Dependency manifests are now explicit and less drift-prone across environments.
