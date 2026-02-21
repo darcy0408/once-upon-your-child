@@ -103,6 +103,7 @@ def rate_limit_by_user_tier(free=5, premium=50, byok=None):
 
 
 @avatar_bp.route('/generate-custom-avatar', methods=['POST'])
+@require_auth
 @rate_limit_by_user_tier(free=3, premium=20, byok=None)
 def generate_custom_avatar():
     """
@@ -198,6 +199,7 @@ def generate_custom_avatar():
 
 
 @avatar_bp.route('/generate-pet-avatar', methods=['POST'])
+@require_auth
 @rate_limit_by_user_tier(free=3, premium=20, byok=None)
 def generate_pet_avatar():
     """
@@ -273,6 +275,7 @@ def generate_pet_avatar():
 
 
 @avatar_bp.route('/generate-avatar', methods=['POST'])
+@require_auth
 @rate_limit_by_user_tier(free=5, premium=50, byok=None)
 def generate_avatar():
     """
@@ -429,6 +432,7 @@ def generate_avatar():
 
 
 @avatar_bp.route('/regenerate-avatar', methods=['POST'])
+@require_auth
 @rate_limit_by_user_tier(free=3, premium=30, byok=None)
 def regenerate_avatar():
     """

@@ -1,9 +1,10 @@
 """
 Avatar Gallery Routes - Serve pre-made character avatars
 """
-from flask import Blueprint, jsonify, send_from_directory
+from flask import Blueprint, jsonify, request, send_from_directory
 import os
 import logging
+from ..middleware.auth import require_auth
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,7 @@ AVATARS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static',
 
 
 @avatar_gallery_bp.route('/list-avatars', methods=['GET'])
+@require_auth
 def list_avatars():
     """
     Get list of all available pre-made avatars.
@@ -78,6 +80,7 @@ def list_avatars():
 
 
 @avatar_gallery_bp.route('/select-avatar/<avatar_id>', methods=['POST'])
+@require_auth
 def select_avatar(avatar_id):
     """
     'Select' a pre-made avatar by ID.

@@ -91,6 +91,7 @@ def create_story_blueprint(
         )
 
     @story_bp.route("/generate-story", methods=["POST"])
+    @require_auth
     @limiter.limit(lambda: get_tier_limits() or "1000/minute")  # BYOK users get high limit
     def generate_story_endpoint():
         payload = request.get_json(silent=True) or {}
@@ -101,34 +102,8 @@ def create_story_blueprint(
             return jsonify(mode_error), 400
 
         theme = payload.get("theme") or "Adventure"
-        user_id = payload.get("user_id") or "anonymous"
-        # Sanitize user_id to match database schema (36 chars)
-        if user_id and user_id.startswith("user_"):
-            user_id = user_id.replace("user_", "")
-
-        # Ensure user exists (Lazy creation for anonymous/new users)
-        if user_id and user_id != "anonymous":
-            try:
-                user = db.session.get(User, user_id)
-                if not user:
-                    logger.info(f"Creating lazy user account for ID: {user_id}")
-                    user_hash = hashlib.sha1(user_id.encode("utf-8")).hexdigest()[:10]
-                    safe_user = re.sub(r"[^a-zA-Z0-9_]", "_", user_id).strip("_").lower() or "user"
-                    username = f"user_{safe_user[:48]}_{user_hash}"
-                    safe_email_local = re.sub(r"[^a-zA-Z0-9_.+-]", "_", user_id).strip("_").lower() or "user"
-                    email = f"{safe_email_local[:48]}_{user_hash}@storyweaver.app"
-                    # Create placeholder user
-                    new_user = User(
-                        id=user_id,
-                        username=username,
-                        email=email
-                    )
-                    new_user.set_password("anonymous_guest")
-                    db.session.add(new_user)
-                    db.session.commit()
-            except Exception as e:
-                logger.error(f"Failed to ensure user existence: {e}")
-                db.session.rollback()
+        # Enforce authenticated user ID
+        user_id = request.current_user.id
 
         if not payload.get("character_id") and not payload.get("character"):
             return jsonify({"error": "character_id or character is required"}), 400
@@ -653,6 +628,7 @@ def create_story_blueprint(
         return jsonify({"status": "reported", "message": "Thank you for your report"}), 200
 
     @story_bp.route("/generate-illustrations", methods=["POST"])
+    @require_auth
     @limiter.limit(lambda: get_tier_limits("expensive") or "100/hour")  # BYOK users get high limit
     def generate_illustrations_endpoint():
         """Generate illustrations for a story scene"""
@@ -851,6 +827,7 @@ def create_story_blueprint(
             return jsonify({"error": str(exc), "hint": "Image generation failed. Check your API key quota or try again later."}), 500
 
     @story_bp.route("/generate-coloring-pages", methods=["POST"])
+    @require_auth
     @limiter.limit("10 per hour")
     def generate_coloring_pages_endpoint():
         """Generate coloring book pages for story scene(s)"""

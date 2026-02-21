@@ -15,6 +15,7 @@ from ..database import db
 from ..models.user import User
 from ..openrouter_image_generator import OpenRouterImageGenerator
 from ..quality_service import StoryQualityService
+from ..middleware.auth import require_auth, require_admin, require_owner
 
 
 def create_utility_blueprint(logger, log_error, limiter=None):
@@ -29,6 +30,7 @@ def create_utility_blueprint(logger, log_error, limiter=None):
         return decorator
 
     @utility_bp.route('/quality/score-story', methods=['POST'])
+    @require_auth
     def score_story_quality():
         """Score a story for quality metrics"""
         try:
@@ -54,6 +56,8 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             return jsonify({'error': 'Quality scoring failed'}), 500
 
     @utility_bp.route('/debug-gemini', methods=['GET'])
+    @require_auth
+    @require_admin
     def debug_gemini():
         """Debug endpoint to test Gemini text generation"""
         api_key = os.getenv("GEMINI_API_KEY")
@@ -114,6 +118,8 @@ def create_utility_blueprint(logger, log_error, limiter=None):
         return jsonify(status)
 
     @utility_bp.route('/debug-openrouter', methods=['GET'])
+    @require_auth
+    @require_admin
     def debug_openrouter():
         """Debug endpoint to test OpenRouter configuration and generation."""
         try:
@@ -269,6 +275,8 @@ def create_utility_blueprint(logger, log_error, limiter=None):
         }), 200
 
     @utility_bp.route("/users/<string:user_id>/feature-unlocks", methods=["GET"])
+    @require_auth
+    @require_owner('user_id')
     def get_feature_unlocks(user_id: str):
         """Get feature unlock status for a user."""
         try:
@@ -300,6 +308,8 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             return jsonify({'error': 'Failed to get feature unlocks'}), 500
 
     @utility_bp.route("/users/<string:user_id>/story-created", methods=["POST"])
+    @require_auth
+    @require_owner('user_id')
     def record_story_created(user_id: str):
         """Increment the stories created count for a user."""
         try:
@@ -328,6 +338,8 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             return jsonify({'error': 'Failed to record story creation'}), 500
 
     @utility_bp.route("/usage/summary", methods=["GET"])
+    @require_auth
+    @require_admin
     def get_usage_summary():
         """
         Get API usage summary and cost estimates.
@@ -366,6 +378,8 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             return jsonify({'error': 'Failed to get usage summary', 'detail': str(e)}), 500
 
     @utility_bp.route("/usage/daily", methods=["GET"])
+    @require_auth
+    @require_admin
     def get_daily_usage():
         """
         Get daily usage breakdown.
