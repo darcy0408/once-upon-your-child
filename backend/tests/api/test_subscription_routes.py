@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+import jwt
 
 from backend.database import db
 from backend.models.user import User
@@ -11,6 +12,17 @@ def _create_user(user_id: str) -> User:
     db.session.commit()
     return user
 
+def _auth_headers(user_id: str) -> dict[str, str]:
+    token = jwt.encode(
+        {
+            "user_id": user_id,
+            "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp()),
+        },
+        "dev-secret-key",
+        algorithm="HS256",
+    )
+    return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
 
 def test_get_subscription_success_contract(client, app):
     with app.app_context():
@@ -21,7 +33,7 @@ def test_get_subscription_success_contract(client, app):
         db.session.commit()
         user_id = user.id
 
-    response = client.get(f"/api/user/{user_id}/subscription")
+    response = client.get(f"/api/user/{user_id}/subscription", headers=_auth_headers(user_id))
 
     assert response.status_code == 200
     body = response.get_json()
@@ -32,11 +44,12 @@ def test_get_subscription_success_contract(client, app):
     assert body["cancel_at_period_end"] is False
 
 
-def test_get_subscription_user_not_found_returns_404(client):
-    response = client.get("/api/user/missing-user-id/subscription")
+def test_get_subscription_user_not_found_returns_404(client, auth_token):
+    # Use valid token but for a user not in DB
+    response = client.get("/api/user/missing-user-id/subscription", headers={'Authorization': f'Bearer {auth_token}'})
 
-    assert response.status_code == 404
-    assert response.get_json()["error"] == "User not found"
+    # The require_auth decorator will return 401 if user not in DB
+    assert response.status_code == 401
 
 
 def test_get_subscription_falls_back_to_defaults_when_blank(client, app):
@@ -47,7 +60,7 @@ def test_get_subscription_falls_back_to_defaults_when_blank(client, app):
         db.session.commit()
         user_id = user.id
 
-    response = client.get(f"/api/user/{user_id}/subscription")
+    response = client.get(f"/api/user/{user_id}/subscription", headers=_auth_headers(user_id))
 
     assert response.status_code == 200
     body = response.get_json()
@@ -62,7 +75,7 @@ def test_get_subscription_formats_current_period_end_as_iso_string(client, app):
         db.session.commit()
         user_id = user.id
 
-    response = client.get(f"/api/user/{user_id}/subscription")
+    response = client.get(f"/api/user/{user_id}/subscription", headers=_auth_headers(user_id))
 
     assert response.status_code == 200
     body = response.get_json()
@@ -78,16 +91,19 @@ def test_get_subscription_returns_cancel_flag(client, app):
         db.session.commit()
         user_id = user.id
 
-    response = client.get(f"/api/user/{user_id}/subscription")
+    response = client.get(f"/api/user/{user_id}/subscription", headers=_auth_headers(user_id))
 
     assert response.status_code == 200
     assert response.get_json()["cancel_at_period_end"] is True
 
 
-def test_get_subscription_returns_500_on_unexpected_error(client, mocker):
+def test_get_subscription_returns_500_on_unexpected_error(client, mocker, app):
+    with app.app_context():
+        _create_user("sub-user-err")
+    
     mocker.patch("backend.routes.subscription_routes.db.session.get", side_effect=RuntimeError("db down"))
 
-    response = client.get("/api/user/any-user/subscription")
+    response = client.get("/api/user/sub-user-err/subscription", headers=_auth_headers("sub-user-err"))
 
     assert response.status_code == 500
     assert response.get_json()["error"] == "Internal server error"

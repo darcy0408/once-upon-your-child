@@ -27,7 +27,10 @@ def _auth_headers(user_id: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
 
-def test_create_checkout_session_success(client, mocker):
+def test_create_checkout_session_success(client, app, mocker):
+    with app.app_context():
+        _create_user("u-1")
+
     mocker.patch(
         "backend.routes.stripe_routes.get_price_ids",
         return_value={"premium": "price_premium_123", "family": "price_family_456"},
@@ -37,7 +40,11 @@ def test_create_checkout_session_success(client, mocker):
         return_value=SimpleNamespace(id="cs_test_123", url="https://checkout.stripe.com/pay/cs_test_123"),
     )
 
-    response = client.post("/api/stripe/create-checkout-session", json={"tier": "premium", "user_id": "u-1"})
+    response = client.post(
+        "/api/stripe/create-checkout-session",
+        json={"tier": "premium", "user_id": "u-1"},
+        headers=_auth_headers("u-1")
+    )
 
     assert response.status_code == 200
     body = response.get_json()
@@ -49,39 +56,63 @@ def test_create_checkout_session_success(client, mocker):
     assert kwargs["mode"] == "subscription"
 
 
-def test_create_checkout_session_invalid_tier_returns_400(client):
-    response = client.post("/api/stripe/create-checkout-session", json={"tier": "starter"})
+def test_create_checkout_session_invalid_tier_returns_400(client, app):
+    with app.app_context():
+        _create_user("u-2")
 
-    assert response.status_code == 400
-    assert response.get_json()["error"] == "Invalid subscription tier"
-
-
-def test_create_checkout_session_missing_tier_returns_400(client):
-    response = client.post("/api/stripe/create-checkout-session", json={})
-
-    assert response.status_code == 400
-    assert response.get_json()["error"] == "Invalid subscription tier"
-
-
-def test_create_checkout_session_missing_json_body_returns_400(client):
     response = client.post(
         "/api/stripe/create-checkout-session",
-        data="",
-        headers={"Content-Type": "application/json"},
+        json={"tier": "starter"},
+        headers=_auth_headers("u-2")
     )
 
     assert response.status_code == 400
     assert response.get_json()["error"] == "Invalid subscription tier"
 
 
-def test_create_checkout_session_stripe_failure_returns_403(client, mocker):
+def test_create_checkout_session_missing_tier_returns_400(client, app):
+    with app.app_context():
+        _create_user("u-3")
+
+    response = client.post(
+        "/api/stripe/create-checkout-session",
+        json={},
+        headers=_auth_headers("u-3")
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "Invalid subscription tier"
+
+
+def test_create_checkout_session_missing_json_body_returns_400(client, app):
+    with app.app_context():
+        _create_user("u-4")
+
+    response = client.post(
+        "/api/stripe/create-checkout-session",
+        data="",
+        headers={"Content-Type": "application/json", **_auth_headers("u-4")},
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "Invalid subscription tier"
+
+
+def test_create_checkout_session_stripe_failure_returns_403(client, app, mocker):
+    with app.app_context():
+        _create_user("u-5")
+
     mocker.patch("backend.routes.stripe_routes.get_price_ids", return_value={"premium": "price_premium_123"})
     mocker.patch(
         "backend.routes.stripe_routes.stripe.checkout.Session.create",
         side_effect=Exception("stripe outage"),
     )
 
-    response = client.post("/api/stripe/create-checkout-session", json={"tier": "premium"})
+    response = client.post(
+        "/api/stripe/create-checkout-session",
+        json={"tier": "premium"},
+        headers=_auth_headers("u-5")
+    )
 
     assert response.status_code == 403
     assert response.get_json()["error"] == "Failed to create checkout session. Please try again."

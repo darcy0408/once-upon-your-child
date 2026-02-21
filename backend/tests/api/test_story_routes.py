@@ -600,7 +600,7 @@ class TestCompanionCharacters:
         mocker.patch('backend.routes.story_routes.generate_story_task', mock_task)
         return mock_task
 
-    def test_story_with_pet_companions(self, client):
+    def test_story_with_pet_companions(self, client, auth_headers):
         """Test story generation with pet companions"""
         payload = {
             'character': 'Luna',
@@ -613,11 +613,12 @@ class TestCompanionCharacters:
 
         response = client.post('/generate-story',
                                 json=payload,
-                                content_type='application/json')
+                                content_type='application/json',
+                                headers=auth_headers)
 
         assert response.status_code == 200
 
-    def test_story_with_character_companions(self, client):
+    def test_story_with_character_companions(self, client, auth_headers):
         """Test story generation with character companions"""
         payload = {
             'character': 'Luna',
@@ -630,11 +631,12 @@ class TestCompanionCharacters:
 
         response = client.post('/generate-story',
                                 json=payload,
-                                content_type='application/json')
+                                content_type='application/json',
+                                headers=auth_headers)
 
         assert response.status_code == 200
 
-    def test_story_with_legacy_companion_format(self, client):
+    def test_story_with_legacy_companion_format(self, client, auth_headers):
         """Test story generation with legacy companion format"""
         payload = {
             'character': 'Luna',
@@ -644,11 +646,12 @@ class TestCompanionCharacters:
 
         response = client.post('/generate-story',
                                 json=payload,
-                                content_type='application/json')
+                                content_type='application/json',
+                                headers=auth_headers)
 
         assert response.status_code == 200
 
-    def test_story_with_companion_name_field(self, client):
+    def test_story_with_companion_name_field(self, client, auth_headers):
         """Test story generation with companion_name field"""
         payload = {
             'character': 'Luna',
@@ -658,6 +661,7 @@ class TestCompanionCharacters:
 
         response = client.post('/generate-story',
                                 json=payload,
-                                content_type='application/json')
+                                content_type='application/json',
+                                headers=auth_headers)
 
         assert response.status_code == 200

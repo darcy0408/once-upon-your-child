@@ -1,8 +1,11 @@
 // lib/story_reader_screen.dart
 import 'dart:async';
+import 'dart:typed_data';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:story_weaver_app/services/tts_api_service.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
 
 class StoryReaderScreen extends StatefulWidget {
@@ -29,6 +32,13 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
   int _currentWordIndex = -1;
   final double _speechRate = 0.52; // Default slow/comfortable pace for kids
 
+  // Neural2 (Google Cloud TTS via backend)
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _usingNeural2 = false;
+  bool _isLoadingAudio = false;
+  Duration _audioDuration = Duration.zero;
+  final List<StreamSubscription<dynamic>> _audioSubs = [];
+
   // Animation for the "active" reading state
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -44,9 +54,52 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    
+
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _setupAudioPlayerListeners();
+  }
+
+  void _setupAudioPlayerListeners() {
+    // Track audio duration so we can estimate word position
+    _audioSubs.add(
+      _audioPlayer.onDurationChanged.listen((duration) {
+        if (mounted) setState(() => _audioDuration = duration);
+      }),
+    );
+
+    // Estimate current word from playback position
+    _audioSubs.add(
+      _audioPlayer.onPositionChanged.listen((position) {
+        if (!mounted || !_usingNeural2 || _audioDuration == Duration.zero) {
+          return;
+        }
+        final progress =
+            position.inMilliseconds / _audioDuration.inMilliseconds;
+        final wordIndex =
+            (progress * _wordTokenIndices.length).floor().clamp(
+              0,
+              _wordTokenIndices.length - 1,
+            );
+        if (wordIndex != _currentWordIndex) {
+          setState(() => _currentWordIndex = wordIndex);
+        }
+      }),
+    );
+
+    // Playback complete
+    _audioSubs.add(
+      _audioPlayer.onPlayerComplete.listen((_) {
+        if (!mounted) return;
+        setState(() {
+          _isPlaying = false;
+          _usingNeural2 = false;
+          _currentWordIndex = -1;
+          _pulseController.stop();
+        });
+      }),
     );
   }
 
@@ -129,36 +182,93 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
   @override
   void dispose() {
     _tts.stop();
+    _audioPlayer.dispose();
+    for (final sub in _audioSubs) {
+      sub.cancel();
+    }
     _pulseController.dispose();
     super.dispose();
   }
 
   Future<void> _startReading() async {
-    await _tts.stop(); // Ensure clean start
-    await _tts.setSpeechRate(_speechRate);
-    setState(() {
-      _isPlaying = true;
-      _currentWordIndex = -1;
-      _pulseController.repeat(reverse: true);
-    });
-    await _tts.speak(widget.storyText);
+    // Try Neural2 via backend first
+    setState(() => _isLoadingAudio = true);
+    final Uint8List? mp3Bytes = await TtsApiService.synthesize(
+      widget.storyText,
+    );
+    if (!mounted) return;
+
+    if (mp3Bytes != null) {
+      // ── Neural2 path ────────────────────────────────────────────────
+      await _tts.stop();
+      setState(() {
+        _isLoadingAudio = false;
+        _isPlaying = true;
+        _usingNeural2 = true;
+        _currentWordIndex = -1;
+        _pulseController.repeat(reverse: true);
+      });
+      await _audioPlayer.play(BytesSource(mp3Bytes));
+    } else {
+      // ── flutter_tts fallback ────────────────────────────────────────
+      await _tts.stop();
+      await _tts.setSpeechRate(_speechRate);
+      setState(() {
+        _isLoadingAudio = false;
+        _isPlaying = true;
+        _usingNeural2 = false;
+        _currentWordIndex = -1;
+        _pulseController.repeat(reverse: true);
+      });
+      await _tts.speak(widget.storyText);
+    }
   }
 
   Future<void> _pauseReading() async {
-    final result = await _tts.pause();
-    if (result == 1) {
+    if (_usingNeural2) {
+      await _audioPlayer.pause();
+      if (!mounted) return;
       setState(() {
         _isPlaying = false;
         _pulseController.stop();
+      });
+    } else {
+      final result = await _tts.pause();
+      if (result == 1 && mounted) {
+        setState(() {
+          _isPlaying = false;
+          _pulseController.stop();
+        });
+      }
+    }
+  }
+
+  Future<void> _resumeReading() async {
+    if (_usingNeural2) {
+      await _audioPlayer.resume();
+      if (!mounted) return;
+      setState(() {
+        _isPlaying = true;
+        _pulseController.repeat(reverse: true);
+      });
+    } else {
+      await _tts.speak(widget.storyText);
+      if (!mounted) return;
+      setState(() {
+        _isPlaying = true;
+        _pulseController.repeat(reverse: true);
       });
     }
   }
 
   Future<void> _stopReading() async {
+    await _audioPlayer.stop();
     await _tts.stop();
     if (!mounted) return;
     setState(() {
       _isPlaying = false;
+      _usingNeural2 = false;
+      _isLoadingAudio = false;
       _currentWordIndex = -1;
       _pulseController.stop();
     });
@@ -319,26 +429,61 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
                                         ),
                                       ),
                                     ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        _buildControlButton(
-                                          icon: Icons.stop_rounded,
-                                          label: "Stop",
-                                          onPressed: _isPlaying || _currentWordIndex != -1 ? _stopReading : null,
-                                          isPrimary: false,
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            _buildControlButton(
+                                              icon: Icons.stop_rounded,
+                                              label: 'Stop',
+                                              onPressed: _isPlaying || _currentWordIndex != -1
+                                                  ? _stopReading
+                                                  : null,
+                                              isPrimary: false,
+                                            ),
+                                            const SizedBox(width: 16),
+                                            ScaleTransition(
+                                              scale: _pulseAnimation,
+                                              child: _isLoadingAudio
+                                                  ? _buildLoadingButton()
+                                                  : _buildControlButton(
+                                                      icon: _isPlaying
+                                                          ? Icons.pause_rounded
+                                                          : Icons.play_arrow_rounded,
+                                                      label: _isPlaying ? 'Pause' : 'Read',
+                                                      onPressed: _isPlaying
+                                                          ? _pauseReading
+                                                          : (_currentWordIndex != -1
+                                                              ? _resumeReading
+                                                              : _startReading),
+                                                      isPrimary: true,
+                                                      size: 56,
+                                                    ),
+                                            ),
+                                          ],
                                         ),
-                                        const SizedBox(width: 16),
-                                        ScaleTransition(
-                                          scale: _pulseAnimation,
-                                          child: _buildControlButton(
-                                            icon: _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                                            label: _isPlaying ? "Pause" : "Read",
-                                            onPressed: _isPlaying ? _pauseReading : _startReading,
-                                            isPrimary: true,
-                                            size: 56,
+                                        if (_usingNeural2) ...[
+                                          const SizedBox(height: 6),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(Icons.auto_awesome,
+                                                  size: 11,
+                                                  color: AppColors.gold.withValues(alpha: 0.8)),
+                                              const SizedBox(width: 3),
+                                              Text(
+                                                'Neural2 voice',
+                                                style: GoogleFonts.quicksand(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: AppColors.gold.withValues(alpha: 0.8),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ),
+                                        ],
                                       ],
                                     ),
                                   ),
@@ -374,6 +519,40 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildLoadingButton() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 56,
+          height: 56,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: AppGradients.purpleGlow,
+              shape: BoxShape.circle,
+            ),
+            child: const Padding(
+              padding: EdgeInsets.all(14),
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Loading…',
+          style: GoogleFonts.quicksand(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+          ),
+        ),
+      ],
     );
   }
 

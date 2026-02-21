@@ -4210,3 +4210,30 @@ flutter analyze lib/services/api_service_manager.dart
 ### Verification
 - Pre-commit secret scan hook passed on all commits.
 - Working tree returned to clean state after commit sequence.
+
+## Session Update - 2026-02-21 (Coverage Commits, Validation, and Push)
+
+### Scope Completed
+- Ensured backend/frontend coverage commits were present on `main`.
+- Resolved cherry-pick conflict in `custom_pet_avatar_screen.dart` by retaining compile-safe model import.
+- Pushed `main` to `origin`.
+- Re-ran targeted frontend validation commands.
+
+### Commits
+- a2ceb5a `test: verify frontend coverage and fix pet avatar model import`
+- 9cb5e34 `test: update avatar service coverage and coordination log`
+
+### Verification
+```bash
+flutter analyze lib/screens/wizard_steps/custom_pet_avatar_screen.dart lib/screens/wizard_steps/hero_creator_step.dart test/widgets/wizard_steps test/screens
+flutter test test/widgets/wizard_steps/hero_creator_step_test.dart test/widgets/wizard_steps/companion_selector_step_test.dart test/widgets/wizard_steps/magic_review_step_test.dart test/screens/settings_screen_test.dart test/screens/character_library_test.dart test/screens/story_reader_test.dart test/screens/coloring_screen_test.dart
+git push origin main
+```
+
+### Result
+- PASS: targeted frontend tests (`38` passed).
+- PASS: push to `origin/main` succeeded.
+- NOTE: analyzer reported 3 non-blocking findings:
+  - 2 deprecation infos (`DropdownButtonFormField.value` -> `initialValue`) in `hero_creator_step.dart`
+  - 1 existing unused optional parameter warning in `subscription_management_screen_test.dart`
+- NOTE: PR creation via `gh` was not possible because changes were already pushed directly to `main` (`No commits between main and main`).

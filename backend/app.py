@@ -493,6 +493,13 @@ def create_app(config_name):
     app.register_blueprint(avatar_bp, url_prefix='/avatar')
     app.register_blueprint(avatar_gallery_bp, url_prefix='/avatar/gallery')
 
+    # TTS narration (lazy — works without Google credentials, returns 503)
+    try:
+        from backend.routes.tts_routes import tts_bp
+    except ImportError:
+        from routes.tts_routes import tts_bp
+    app.register_blueprint(tts_bp)
+
     @app.errorhandler(500)
     def internal_server_error(e):
         logger.error(f"Internal Server Error: {str(e)}")
