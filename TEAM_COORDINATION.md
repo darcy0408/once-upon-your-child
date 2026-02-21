@@ -2,6 +2,26 @@
 
 ---
 
+## Session Update - 2026-02-21 (Repository Architecture Summary for Stakeholder Handoff)
+
+### Scope Completed
+- Audited active runtime architecture across frontend (`lib/`) and backend (`backend/`) code paths.
+- Produced a comprehensive stakeholder-facing summary covering:
+  - What the app is and its core purpose.
+  - What it currently does (story generation, interactive mode, illustrations/coloring, subscriptions, offline caching).
+  - How it works end-to-end (wizard flow -> API payload mapping -> Flask routes/tasks -> AI providers -> persistence/rendering).
+  - Which programs/services it uses (Flutter, Flask, Celery, Redis, Gemini/OpenRouter/Replicate, Stripe, Firebase, Sentry, Docker/Railway/Netlify/Nginx).
+- Clarified repository boundaries:
+  - Primary app/runtime: root `lib/` + `backend/`.
+  - Secondary legacy/starter projects: `story_weaver_mvp/`, `therapy_companion/`.
+- Provided a concise follow-up quick-start checklist with key local run commands and critical endpoints.
+
+### Status
+- **Documentation/Communication:** ✅ Completed.
+- **Code changes:** No production code modified in this session; coordination log updated only.
+
+---
+
 ## Session Update - 2026-02-20 (Frontend Widget Test Expansion)
 
 ### Scope Completed
