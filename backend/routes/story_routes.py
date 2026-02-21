@@ -105,7 +105,17 @@ def create_story_blueprint(
         # Enforce authenticated user ID
         user_id = request.current_user.id
 
-        if not payload.get("character_id") and not payload.get("character"):
+        # Validate character ownership
+        character_id = payload.get("character_id")
+        if character_id:
+            char = db.session.get(Character, character_id)
+            if not char:
+                return jsonify({"error": "Character not found"}), 404
+            if char.user_id and str(char.user_id) != str(user_id):
+                logger.warning(f"IDOR attempt: User {user_id} tried to generate story for character {character_id}")
+                return jsonify({"error": "Unauthorized"}), 403
+
+        if not character_id and not payload.get("character"):
             return jsonify({"error": "character_id or character is required"}), 400
 
         # Extract current_feeling and convert to feelings_prompt if provided
@@ -397,6 +407,16 @@ def create_story_blueprint(
         user_id = request.current_user.id
         
         character_id = payload.get("character_id")
+
+        # Validate character ownership
+        if character_id:
+            char = db.session.get(Character, character_id)
+            if not char:
+                return jsonify({"error": "Character not found"}), 404
+            if char.user_id and str(char.user_id) != str(user_id):
+                logger.warning(f"IDOR attempt: User {user_id} tried to generate interactive story for character {character_id}")
+                return jsonify({"error": "Unauthorized"}), 403
+
         theme = payload.get("theme", "Adventure")
         tone = payload.get("tone", "whimsical")
         length = payload.get("length", "medium")

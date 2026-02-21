@@ -405,6 +405,8 @@ def create_utility_blueprint(logger, log_error, limiter=None):
             return jsonify({'error': 'Failed to get daily usage', 'detail': str(e)}), 500
 
     @utility_bp.route("/usage/mock-mode", methods=["GET"])
+    @require_auth
+    @require_admin
     def get_mock_mode_status():
         """
         Check if mock testing mode is enabled.
