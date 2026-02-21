@@ -229,6 +229,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 isLearningToReadMode: widget.wizardData.learningToReadMode,
                 backendIllustrations: inlineIllustrations,
                 asyncIllustrations: result.asyncIllustrations,
+                companionAvatars: widget.wizardData.petAvatars,
               ),
             ),
           );

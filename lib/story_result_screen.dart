@@ -69,6 +69,7 @@ class StoryResultScreen extends StatefulWidget {
   final List<String>? adventureSteps;
   final OfflineStoryService? offlineService;
   final String? storyLengthHint;
+  final Map<String, GeneratedAvatar>? companionAvatars;
 
   const StoryResultScreen({
     super.key,
@@ -96,6 +97,7 @@ class StoryResultScreen extends StatefulWidget {
     this.adventureSteps,
     this.offlineService,
     this.storyLengthHint,
+    this.companionAvatars,
   })  : assert(!trackStoryCreation || achievementsService != null),
         assert(!trackStoryCreation || storyCreatedAt != null);
 
@@ -357,6 +359,48 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         ),
         child: ClipOval(child: content),
       ),
+    );
+  }
+
+  Widget _buildBreathingCompanionAvatars({required double size}) {
+    if (widget.companionAvatars == null || widget.companionAvatars!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: widget.companionAvatars!.entries.map((entry) {
+        final avatar = entry.value;
+        return Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: BreathingAvatar(
+            glowColor: AppColors.primaryLight,
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  width: 1.5,
+                ),
+              ),
+              child: ClipOval(
+                child: Image.memory(
+                  base64Decode(avatar.imageBase64.split(',').last),
+                  width: size,
+                  height: size,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    child: const Icon(Icons.pets, color: Colors.white, size: 18),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -1590,6 +1634,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                         const SizedBox(width: 8),
                         if (_character != null) ...[
                           _buildBreathingHeroAvatar(size: isNarrow ? 36 : 42),
+                          _buildBreathingCompanionAvatars(
+                              size: isNarrow ? 28 : 32),
                           const SizedBox(width: 8),
                         ],
                         if (widget.wisdomGem.isNotEmpty)

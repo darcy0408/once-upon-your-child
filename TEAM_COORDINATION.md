@@ -2,6 +2,27 @@
 
 ---
 
+## Session Update - 2026-02-21 (Magical Pet Companion UI & Result Integration)
+
+### Scope Completed
+**Magical Pet Avatar UI:**
+- **Frontend: Pet Photo Capture:** Added "Make Pet Magical ✨" button to the Hero Creator pet dialog.
+- **Frontend: Custom Pet Screen:** Integrated `CustomPetAvatarScreen` to handle pet photo capture and AI generation via the new backend endpoint.
+- **Wizard Data:** Added `petAvatars` map and `favoriteColor` field to `WizardData` to track generated pet imagery and coordinate accessory colors.
+- **Companion Selector:** Updated `CompanionSelectorStep` to display the AI-generated pet avatars in the selection list.
+- **Story Result:** Updated `StoryResultScreen` to accept and display companion avatars alongside the hero in the "breathing" app bar.
+
+**Verification:**
+- **UI Flow:** Verified "Hero Creator -> Add Pet -> Make Pet Magical -> Capture -> Generate -> Select" flow.
+- **Data Mapping:** Verified `WizardDataMapper` correctly includes pet avatar data in the story generation payload.
+- **Visuals:** Verified companion avatars appear in the Story Result header with breathing animation.
+
+### Status
+- **Pet Feature:** ✅ Fully complete (Backend + Frontend UI + Integration).
+- **Testing:** E2E manual verification passed.
+
+---
+
 ## Session Update - 2026-02-21 (Validation Follow-up: Service Coverage + Animation QA Readiness)
 
 ### Scope Completed

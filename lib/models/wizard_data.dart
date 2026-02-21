@@ -16,6 +16,7 @@ class WizardData {
   };
   String characterName = '';
   int characterAge = 8;
+  String favoriteColor = 'Gold'; // Default favorite color
   String selectedHairStyle = '';
   String selectedSkinTone = '';
   String selectedOutfit = '';
@@ -72,6 +73,7 @@ class WizardData {
       'personality': personalitySliders,
       'name': characterName,
       'age': characterAge,
+      'favoriteColor': favoriteColor,
       'appearance': {
         'hair': selectedHairStyle,
         'skin': selectedSkinTone,

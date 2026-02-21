@@ -9,8 +9,10 @@ import time
 
 try:
     from backend.utils.app_helpers import get_user_tier, get_user_identifier
+    from backend.middleware.auth import require_auth
 except ImportError:
     from utils.app_helpers import get_user_tier, get_user_identifier
+    from middleware.auth import require_auth
 
 logger = logging.getLogger(__name__)
 
@@ -350,7 +352,7 @@ def generate_avatar():
                 'message': get_error_message('invalid_age')
             }), 400
 
-        if not (3 <= age <= 17):
+        if not (3 <= age <= 99):
             return jsonify({
                 'status': 'error',
                 'error_code': 'AGE_OUT_OF_RANGE',

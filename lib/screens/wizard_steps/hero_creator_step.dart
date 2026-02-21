@@ -1194,6 +1194,56 @@ class _PetsSection extends StatelessWidget {
                       decoration: _petFieldDecoration(labelText: 'Gender'),
                     ),
                     const SizedBox(height: 20),
+                    // NEW: Make Pet Magical Button
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        if (nameController.text.trim().isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Please enter a pet name first.')),
+                          );
+                          return;
+                        }
+
+                        final GeneratedAvatar? result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CustomPetAvatarScreen(
+                              petName: nameController.text.trim(),
+                              species: species,
+                              breedDescription: breedController.text.trim(),
+                              ownerFavoriteColor:
+                                  wizardData.favoriteColor,
+                            ),
+                          ),
+                        );
+
+                        if (result != null) {
+                          wizardData.pets.add({
+                            'name': nameController.text.trim(),
+                            'species': species,
+                            'gender': gender,
+                            'breed': breedController.text.trim(),
+                            'is_magical': 'true',
+                          });
+                          wizardData.petAvatars[nameController.text.trim()] =
+                              result;
+                          onUpdate();
+                          if (context.mounted) Navigator.pop(context);
+                        }
+                      },
+                      icon: const Icon(Icons.auto_awesome, size: 18),
+                      label: const Text('Make Pet Magical ✨'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFFFD700),
+                        side: const BorderSide(
+                            color: Color(0xFFFFD700), width: 1.5),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
