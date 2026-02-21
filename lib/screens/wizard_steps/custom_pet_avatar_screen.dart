@@ -6,8 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
-import '../../avatar_models.dart';
-import '../../models/generated_avatar.dart';
+import '../../models.dart';
 import '../../config/environment.dart';
 import '../../theme/app_theme.dart';
 
