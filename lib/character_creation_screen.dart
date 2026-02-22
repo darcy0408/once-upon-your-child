@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'config/environment.dart';
+import 'services/api_service_manager.dart';
 
 class CharacterCreationScreen extends StatefulWidget {
   const CharacterCreationScreen({super.key});
@@ -57,9 +58,10 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
         'traits': <String>[], // keep as before
       };
 
+      final headers = await ApiServiceManager.authHeaders();
       final resp = await http.post(
         url,
-        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        headers: {...headers, 'Content-Type': 'application/json; charset=UTF-8'},
         body: json.encode(body),
       );
 

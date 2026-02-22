@@ -34,7 +34,7 @@ class TestAgeGroupStoryGeneration:
         eager_result.get.return_value = result
         self.mock_task.apply.return_value = eager_result
 
-    def test_age_4_generates_appropriate_word_count(self, client):
+    def test_age_4_generates_appropriate_word_count(self, client, auth_headers):
         """Age 4 stories should be 300-500 words (3-5 min read)."""
         # Mock response for age 4 - simple, short story
         mock_story = (
@@ -53,7 +53,7 @@ class TestAgeGroupStoryGeneration:
             'theme': 'Friendship',
             'story_length': 'short',
             'include_illustrations': False
-        })
+        }, headers=auth_headers)
 
         assert response.status_code == 200
         data = response.get_json()
@@ -63,7 +63,7 @@ class TestAgeGroupStoryGeneration:
         # Age 4 should get 200-500 words for short stories
         assert 150 <= word_count <= 700, f"Age 4 story has {word_count} words, expected 200-500"
 
-    def test_age_7_generates_appropriate_word_count(self, client):
+    def test_age_7_generates_appropriate_word_count(self, client, auth_headers):
         """Age 7 stories should be 500-800 words (5-8 min read)."""
         mock_story = (
             "In a magical forest, there lived a brave little fox named Ember. "
@@ -87,7 +87,7 @@ class TestAgeGroupStoryGeneration:
             'theme': 'Adventure',
             'story_length': 'medium',
             'include_illustrations': False
-        })
+        }, headers=auth_headers)
 
         assert response.status_code == 200
         data = response.get_json()
@@ -97,7 +97,7 @@ class TestAgeGroupStoryGeneration:
         # Age 7 should get 300-800 words for medium stories
         assert 250 <= word_count <= 900, f"Age 7 story has {word_count} words, expected 300-800"
 
-    def test_age_9_generates_appropriate_word_count(self, client):
+    def test_age_9_generates_appropriate_word_count(self, client, auth_headers):
         """Age 9 stories should be 800-1200 words (8-12 min read)."""
         # Create a more complex story for age 9
         mock_story = " ".join([
@@ -120,7 +120,7 @@ class TestAgeGroupStoryGeneration:
             'theme': 'Mystery',
             'story_length': 'medium',
             'include_illustrations': False
-        })
+        }, headers=auth_headers)
 
         assert response.status_code == 200
         data = response.get_json()
@@ -130,7 +130,7 @@ class TestAgeGroupStoryGeneration:
         # Age 9 should get 450-1200 words for medium stories
         assert 400 <= word_count <= 1300, f"Age 9 story has {word_count} words, expected 450-1200"
 
-    def test_age_12_generates_appropriate_word_count(self, client):
+    def test_age_12_generates_appropriate_word_count(self, client, auth_headers):
         """Age 12 stories should be 1200-1600 words (12-16 min read)."""
         # Create a longer, more complex story for age 12
         mock_story = " ".join([
@@ -151,7 +151,7 @@ class TestAgeGroupStoryGeneration:
             'theme': 'Science Fiction',
             'story_length': 'long',
             'include_illustrations': False
-        })
+        }, headers=auth_headers)
 
         assert response.status_code == 200
         data = response.get_json()
@@ -161,7 +161,7 @@ class TestAgeGroupStoryGeneration:
         # Age 12 should get 650-1600 words for long stories
         assert 600 <= word_count <= 1700, f"Age 12 story has {word_count} words, expected 650-1600"
 
-    def test_age_16_generates_appropriate_word_count(self, client):
+    def test_age_16_generates_appropriate_word_count(self, client, auth_headers):
         """Age 16 stories should be 1600-2000 words (16-20 min read)."""
         # Create a sophisticated story for age 16
         mock_story = " ".join([
@@ -184,7 +184,7 @@ class TestAgeGroupStoryGeneration:
             'theme': 'Dystopian',
             'story_length': 'long',
             'include_illustrations': False
-        })
+        }, headers=auth_headers)
 
         assert response.status_code == 200
         data = response.get_json()
@@ -220,7 +220,7 @@ class TestVocabularyComplexity:
         eager_result.get.return_value = result
         self.mock_task.apply.return_value = eager_result
 
-    def test_age_4_uses_simple_vocabulary(self, client):
+    def test_age_4_uses_simple_vocabulary(self, client, auth_headers):
         """Age 4 should use predominantly simple, familiar words."""
         mock_story = (
             "The little cat sat on the soft mat. The cat was happy and warm. "
@@ -235,7 +235,7 @@ class TestVocabularyComplexity:
             'theme': 'Animals',
             'story_length': 'short',
             'include_illustrations': False
-        })
+        }, headers=auth_headers)
 
         assert response.status_code == 200
         data = response.get_json()
@@ -248,7 +248,7 @@ class TestVocabularyComplexity:
 
         assert avg_sentence_length < 15, f"Age 4 sentences too long (avg {avg_sentence_length} words)"
 
-    def test_vocabulary_complexity_increases_with_age(self, client):
+    def test_vocabulary_complexity_increases_with_age(self, client, auth_headers):
         """Verify that vocabulary complexity increases with age."""
         test_cases = [
             (4, "The cat sat on the mat. " * 50),
@@ -266,7 +266,7 @@ class TestVocabularyComplexity:
                 'theme': 'Adventure',
                 'story_length': 'medium',
                 'include_illustrations': False
-            })
+            }, headers=auth_headers)
 
             assert response.status_code == 200
             data = response.get_json()
@@ -349,7 +349,7 @@ class TestConsistencyAcrossGenerations:
         eager_result.get.return_value = result
         self.mock_task.apply.return_value = eager_result
 
-    def test_age_7_consistency_across_three_generations(self, client):
+    def test_age_7_consistency_across_three_generations(self, client, auth_headers):
         """Generate 3 stories for age 7 and verify consistent word counts."""
         word_counts = []
 
@@ -363,7 +363,7 @@ class TestConsistencyAcrossGenerations:
                 'theme': 'Adventure',
                 'story_length': 'medium',
                 'include_illustrations': False
-            })
+            }, headers=auth_headers)
 
             assert response.status_code == 200
             data = response.get_json()

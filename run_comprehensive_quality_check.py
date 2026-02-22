@@ -17,15 +17,23 @@ def get_auth_token():
     try:
         resp = requests.post(f"{BASE_URL}/auth/anonymous")
         if resp.status_code == 200:
-            return resp.json().get('access_token')
+            data = resp.json()
+            token = data.get('token')
+            if token:
+                print(f"✅ Auth successful. User ID: {data.get('user_id')}")
+                return token
+        print(f"❌ Auth failed: {resp.status_code} - {resp.text}")
     except Exception as e:
         print(f"Error getting token: {e}")
     return None
 
 def generate_story(age, mode, token):
+    # Ensure age is an integer for the API
+    age_int = int(age) if isinstance(age, (int, float)) else 7
+    
     payload = {
         "character": CHARACTER_NAME,
-        "age": age,
+        "age": age_int,
         "theme": THEME,
         "rhyme_time_mode": mode == "rhyme",
         "learning_to_read_mode": mode == "learning_to_read",
@@ -37,17 +45,16 @@ def generate_story(age, mode, token):
     if mode == "interactive":
         endpoint = "/generate-interactive-story"
         payload = {
-            "user_id": "quality_tester",
             "theme": THEME,
             "tone": "adventurous",
-            "age": age,
+            "age": age_int,
             "must_include": ["glowing wings", "dark forest"]
         }
 
     print(f"Generating {mode} story for age {age}...")
     start_time = time.time()
     try:
-        resp = requests.post(f"{BASE_URL}{endpoint}", json=payload, headers=headers, timeout=180)
+        resp = requests.post(f"{BASE_URL}{endpoint}", json=payload, headers=headers, timeout=300)
         duration = time.time() - start_time
         if resp.status_code == 200:
             return resp.json(), duration

@@ -184,9 +184,12 @@ void main() {
     await tester.tap(find.textContaining('Storm Rider'));
     await tester.pump(const Duration(milliseconds: 500));
     
-    await tester.tap(find.widgetWithText(PillButton, 'Continue'));
+    final continueBtn = find.text('Continue');
+    await tester.ensureVisible(continueBtn);
+    await tester.tap(continueBtn);
     
-    // Force PageView to next page for testing reliability
+    // Avoid pumpAndSettle due to infinite animations
+    await tester.pump(const Duration(milliseconds: 500));
     final pageView = tester.widget<PageView>(find.byType(PageView));
     expect(pageView.controller, isNotNull);
     pageView.controller!.jumpToPage(1);
@@ -196,7 +199,9 @@ void main() {
     await tester.tap(find.textContaining('wise owl'));
     await tester.pump(const Duration(milliseconds: 500));
     
-    await tester.tap(find.widgetWithText(PillButton, 'Gather Party!'));
+    final gatherBtn = find.text('Gather Party!');
+    await tester.ensureVisible(gatherBtn);
+    await tester.tap(gatherBtn);
     pageView.controller!.jumpToPage(2);
     await tester.pump(const Duration(milliseconds: 100));
     await _drainIgnoredAssetExceptions(tester);
@@ -235,8 +240,11 @@ void main() {
     await tester.tap(find.textContaining('Storm Rider'));
     await tester.pump(const Duration(milliseconds: 500));
     
-    await tester.tap(find.widgetWithText(PillButton, 'Continue'));
+    final continueBtn = find.text('Continue');
+    await tester.ensureVisible(continueBtn);
+    await tester.tap(continueBtn);
     
+    await tester.pump(const Duration(milliseconds: 500));
     final pageView = tester.widget<PageView>(find.byType(PageView));
     expect(pageView.controller, isNotNull);
     pageView.controller!.jumpToPage(1);

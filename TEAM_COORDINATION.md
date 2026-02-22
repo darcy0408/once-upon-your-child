@@ -2,6 +2,55 @@
 
 ---
 
+## Session Update - 2026-02-22 (Security Hardening: Auth Header Fix Across Flutter + CI Test Suite Green)
+
+### Scope Completed
+
+**1. CI Test Suite — Fully Green (498 passed, 0 failed)**
+
+Continued from prior session. Resolved the final 30 failures introduced when `@require_auth` was added to all backend routes:
+
+- **`test_api_contracts.py`**
+  - Added `_create_admin_user()` helper for routes decorated with `@require_admin` (`/usage/summary`, `/usage/daily`).
+  - Fixed `test_generate_interactive_story_missing_user_id`: reverted to no-auth request expecting 401 (tests the auth guard contract, not the endpoint logic).
+  - Fixed `test_usage_summary_contract` and `test_usage_daily_contract`: now use an admin-role user.
+- **`test_story_routes_async.py`**
+  - Fixed `test_generate_story_enqueues_task_and_returns_poll_url`: removed `test_character` fixture dependency (in-memory SQLite session scoping issue); switched to `character: "Luna"` string instead of a DB-bound `character_id`.
+
+**Result:** `498 passed, 0 failed` (full suite).
+
+---
+
+**2. Flutter Runtime 401 — Missing Auth Headers Fixed**
+
+Root cause: Multiple Flutter screens/services were constructing HTTP headers manually as `{'Content-Type': 'application/json'}` without attaching the `Authorization: Bearer <token>`, causing every `@require_auth`-protected backend call to return 401.
+
+Fixed by replacing hardcoded headers with `await ApiServiceManager.authHeaders()` (which includes both `Content-Type` and `Authorization`) in all affected files:
+
+| File | Endpoint(s) |
+|------|-------------|
+| `lib/services/api_service_manager.dart` | `POST /generate-story` |
+| `lib/character_creation_screen.dart` | `POST /create-character` |
+| `lib/character_creation_screen_enhanced.dart` | `POST /create-character` |
+| `lib/character_creation_screen_v3.dart` | `POST /create-character` |
+| `lib/character_edit_screen_enhanced.dart` | `PATCH/GET/DELETE /characters/{id}` |
+| `lib/story_illustration_service.dart` | `POST /generate-illustrations` |
+| `lib/coloring_book_service.dart` | `POST /generate-coloring-pages` (×2) |
+| `lib/screens/subscription_management_screen.dart` | `GET /api/user/{id}/usage-stats` |
+
+**`flutter analyze`:** exit 0, no errors (11 pre-existing deprecation infos, unchanged).
+
+### Endpoints Confirmed Public (no fix needed)
+- `GET /health`, `GET /avatar/health` — no `@require_auth`
+- `GET /avatar/fallback-avatars`, `POST /avatar/generate-avatar-mock` — no `@require_auth`
+
+### Status
+- **CI test suite:** ✅ 498 passed, 0 failed
+- **Flutter auth headers:** ✅ All `@require_auth` endpoints now receive Bearer token
+- **`flutter analyze`:** ✅ Clean (exit 0)
+
+---
+
 ## Session Update - 2026-02-21 (Google Cloud TTS Credentials Setup)
 
 ### Scope Completed

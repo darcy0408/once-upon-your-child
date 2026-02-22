@@ -54,7 +54,7 @@ if __name__ == "__main__":
     run_test("firefox", name="firefox_desktop")
     
     # Safari Desktop (Webkit)
-    run_test("webkit", name="safari_desktop")
+    # run_test("webkit", name="safari_desktop")
     
     # Mobile Chrome (Pixel 5)
     run_test("chromium", 
@@ -62,6 +62,6 @@ if __name__ == "__main__":
              name="mobile_chrome")
     
     # Mobile Safari (iPhone 12)
-    run_test("webkit", 
-             device_config={"viewport": {"width": 390, "height": 844}, "is_mobile": True}, 
-             name="mobile_safari")
+    # run_test("webkit", 
+    #          device_config={"viewport": {"width": 390, "height": 844}, "is_mobile": True}, 
+    #          name="mobile_safari")

@@ -23,11 +23,17 @@ def is_production() -> bool:
 
 def get_user_identifier() -> str:
     """Get user ID from request or fall back to IP address"""
+    # 1. Check for user attached by auth middleware
+    if hasattr(request, 'current_user') and request.current_user:
+        return f"user:{request.current_user.id}"
+    
+    if hasattr(g, 'current_user_id') and g.current_user_id:
+        return f"user:{g.current_user_id}"
+
+    # 2. Check for legacy/manual header
     user_id = request.headers.get('X-User-ID')
 
-    if not user_id and hasattr(g, 'user_id'):
-        user_id = g.user_id
-
+    # 3. Check for flask-jwt-extended identity
     if not user_id:
         try:
             from flask_jwt_extended import get_jwt_identity
@@ -40,7 +46,12 @@ def get_user_identifier() -> str:
 
 def get_user_tier() -> str:
     """Get user subscription tier for rate limiting"""
-    user_id = request.headers.get('X-User-ID') or getattr(g, 'user_id', None)
+    # 1. Check for user attached by auth middleware
+    if hasattr(request, 'current_user') and request.current_user:
+        return request.current_user.subscription_tier or 'free'
+
+    # 2. Try to load user from ID in request context or headers
+    user_id = request.headers.get('X-User-ID') or getattr(g, 'current_user_id', None) or getattr(g, 'user_id', None)
 
     if user_id:
         try:

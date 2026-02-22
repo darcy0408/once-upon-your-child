@@ -23,6 +23,7 @@ void main() {
       if (url.contains('/auth/anonymous')) {
         return http.Response(jsonEncode({
           'token': 'mock_token',
+          'refresh_token': 'mock_refresh',
           'user_id': 'mock_user_123'
         }), 200);
       }

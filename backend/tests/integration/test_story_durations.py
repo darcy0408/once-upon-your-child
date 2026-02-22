@@ -127,7 +127,7 @@ class TestStoryDurationAPI:
         eager_result.get.return_value = result
         self.mock_task.apply.return_value = eager_result
 
-    def test_short_story_age_7(self, client):
+    def test_short_story_age_7(self, client, auth_headers):
         """Short story for age 7 should be 450-650 words."""
         # 5-7 band short: (450, 650)
         mock_story = "The brave fox explored the forest. " * 90  # ~540 words
@@ -139,7 +139,7 @@ class TestStoryDurationAPI:
             'theme': 'Adventure',
             'story_length': 'short',
             'include_illustrations': False
-        })
+        }, headers=auth_headers)
 
         assert response.status_code == 200
         data = response.get_json()
@@ -149,7 +149,7 @@ class TestStoryDurationAPI:
         # 5-7 band: short is (450, 650), with some tolerance
         assert 350 <= word_count <= 750, f"Age 7 short story has {word_count} words"
 
-    def test_medium_story_age_7(self, client):
+    def test_medium_story_age_7(self, client, auth_headers):
         """Medium story for age 7 should be 650-900 words."""
         mock_story = "The brave fox explored the magical forest and discovered new things. " * 70  # ~770 words
         self._setup_mock_response(mock_story, "Medium Adventure")
@@ -160,7 +160,7 @@ class TestStoryDurationAPI:
             'theme': 'Adventure',
             'story_length': 'medium',
             'include_illustrations': False
-        })
+        }, headers=auth_headers)
 
         assert response.status_code == 200
         data = response.get_json()
@@ -170,7 +170,7 @@ class TestStoryDurationAPI:
         # 5-7 band: medium is (650, 900), with tolerance
         assert 500 <= word_count <= 1050, f"Age 7 medium story has {word_count} words"
 
-    def test_long_story_age_7(self, client):
+    def test_long_story_age_7(self, client, auth_headers):
         """Long story for age 7 should be 900-1200 words."""
         mock_story = " ".join([
             "The brave fox named Ember explored the magical forest every single day.",
@@ -186,7 +186,7 @@ class TestStoryDurationAPI:
             'theme': 'Adventure',
             'story_length': 'long',
             'include_illustrations': False
-        })
+        }, headers=auth_headers)
 
         assert response.status_code == 200
         data = response.get_json()
@@ -196,7 +196,7 @@ class TestStoryDurationAPI:
         # 5-7 band: long is (900, 1200), with tolerance
         assert 750 <= word_count <= 1400, f"Age 7 long story has {word_count} words"
 
-    def test_short_length_aliases_work(self, client):
+    def test_short_length_aliases_work(self, client, auth_headers):
         """'quick' should be treated same as 'short'."""
         mock_story = "The hero went on a quick adventure. " * 15  # ~120 words
         self._setup_mock_response(mock_story, "Quick Story")
@@ -207,12 +207,12 @@ class TestStoryDurationAPI:
             'theme': 'Adventure',
             'story_length': 'quick',
             'include_illustrations': False
-        })
+        }, headers=auth_headers)
 
         # Should not fail - 'quick' is a valid alias
         assert response.status_code in [200, 202]
 
-    def test_long_length_aliases_work(self, client):
+    def test_long_length_aliases_work(self, client, auth_headers):
         """'epic' should be treated same as 'long'."""
         mock_story = " ".join(["An epic tale of adventure and discovery began one fateful day."] * 20)
         self._setup_mock_response(mock_story, "Epic Story")
@@ -223,7 +223,7 @@ class TestStoryDurationAPI:
             'theme': 'Adventure',
             'story_length': 'epic',
             'include_illustrations': False
-        })
+        }, headers=auth_headers)
 
         # Should not fail - 'epic' is a valid alias
         assert response.status_code in [200, 202]

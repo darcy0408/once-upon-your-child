@@ -883,10 +883,11 @@ class ApiServiceManager {
 
     try {
       // 1. Start the task
+      final generateHeaders = await authHeaders();
       final generateResponse = await httpClient
           .post(
             generateUri,
-            headers: {'Content-Type': 'application/json'},
+            headers: generateHeaders,
             body: jsonEncode(body),
           )
           .timeout(requestTimeout);

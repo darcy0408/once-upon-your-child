@@ -6,6 +6,7 @@ import 'emotion_models.dart';
 import 'emotion_picker_widget.dart';
 import 'enhanced_character_avatar.dart';
 import 'config/environment.dart';
+import 'services/api_service_manager.dart';
 
 class CharacterEditScreenEnhanced extends StatefulWidget {
   final Character character;
@@ -119,9 +120,10 @@ class _CharacterEditScreenEnhancedState extends State<CharacterEditScreenEnhance
         'role': widget.character.role,
       };
 
+      final headers = await ApiServiceManager.authHeaders();
       final resp = await http.patch(
         url,
-        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        headers: {...headers, 'Content-Type': 'application/json; charset=UTF-8'},
         body: json.encode(body),
       );
 
@@ -156,7 +158,8 @@ class _CharacterEditScreenEnhancedState extends State<CharacterEditScreenEnhance
   Future<void> _reloadCharacter() async {
     final url = Uri.parse('${Environment.backendUrl}/characters/${widget.character.id}');
     try {
-      final resp = await http.get(url);
+      final reloadHeaders = await ApiServiceManager.authHeaders();
+      final resp = await http.get(url, headers: reloadHeaders);
       if (resp.statusCode == 200) {
         final data = json.decode(resp.body);
         final updated = Character.fromJson(data);
@@ -204,7 +207,8 @@ class _CharacterEditScreenEnhancedState extends State<CharacterEditScreenEnhance
     final url = Uri.parse('${Environment.backendUrl}/characters/${widget.character.id}');
 
     try {
-      final resp = await http.delete(url);
+      final deleteHeaders = await ApiServiceManager.authHeaders();
+      final resp = await http.delete(url, headers: deleteHeaders);
 
       if (!mounted) return;
 

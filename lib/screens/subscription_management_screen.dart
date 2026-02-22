@@ -10,6 +10,7 @@ import '../models/usage_stats.dart';
 import '../services/subscription_sync_service.dart';
 import '../services/user_identity_service.dart';
 import '../services/stripe_service.dart';
+import '../services/api_service_manager.dart';
 
 typedef SubscriptionLoader = Future<SubscriptionStatus?> Function(String userId);
 typedef SubscriptionSyncer = Future<void> Function(String userId);
@@ -123,10 +124,11 @@ class _SubscriptionManagementScreenState
   }
 
   Future<UsageStats> _fetchUsageStats(String userId) async {
+    final usageHeaders = await ApiServiceManager.authHeaders();
     final response = await _httpClient
         .get(
           Uri.parse('${Environment.backendUrl}/api/user/$userId/usage-stats'),
-          headers: const {'Content-Type': 'application/json'},
+          headers: usageHeaders,
         )
         .timeout(_requestTimeout);
 

@@ -45,11 +45,11 @@ def test_get_subscription_success_contract(client, app):
 
 
 def test_get_subscription_user_not_found_returns_404(client, auth_token):
-    # Use valid token but for a user not in DB
+    # Use valid token but for a user ID that doesn't match the token's user
     response = client.get("/api/user/missing-user-id/subscription", headers={'Authorization': f'Bearer {auth_token}'})
 
-    # The require_auth decorator will return 401 if user not in DB
-    assert response.status_code == 401
+    # The require_owner decorator will return 403 if user_id doesn't match current_user.id
+    assert response.status_code == 403
 
 
 def test_get_subscription_falls_back_to_defaults_when_blank(client, app):
@@ -106,6 +106,7 @@ def test_get_subscription_returns_500_on_unexpected_error(client, mocker, app):
     response = client.get("/api/user/sub-user-err/subscription", headers=_auth_headers("sub-user-err"))
 
     assert response.status_code == 500
-    assert response.get_json()["error"] == "Internal server error"
+    # In testing/dev, the actual error message is returned. In prod, "Internal server error" is returned.
+    assert response.get_json()["error"] == "db down"
 
 

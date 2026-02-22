@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/pick_a_path_adventure_screen.dart';
 import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/services/interactive_story_service.dart';
+import 'package:story_weaver_app/services/api_service_manager.dart';
 import 'package:story_weaver_app/widgets/app_button.dart';
 import 'package:story_weaver_app/widgets/error_message.dart';
 import '../helpers/pick_a_path_test_helpers.dart';
@@ -23,12 +24,21 @@ void main() {
   tearDown(() {
     // Clean up test client after each test
     InteractiveStoryService.setTestClient(null);
+    ApiServiceManager.setTestClient(null);
   });
+
+  http.Response _authMock(http.Request request) {
+    if (request.url.path.contains('/auth/anonymous')) {
+      return http.Response(jsonEncode({'token': 'mock', 'user_id': 'u1'}), 200);
+    }
+    return http.Response('Not Found', 404);
+  }
 
   group('PickAPathAdventureScreen - Loading State', () {
     testWidgets('G1: Shows loading spinner when story is generating',
         (tester) async {
       final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
         // Simulate slow response
         await Future.delayed(const Duration(milliseconds: 100));
         return http.Response(
@@ -39,6 +49,7 @@ void main() {
 
       // Inject mock client
       InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
 
       final character = PickAPathTestHelpers.createTestCharacter();
       await tester.pumpWidget(
@@ -65,6 +76,7 @@ void main() {
 
     testWidgets('G1: Shows correct app bar title', (tester) async {
       final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
         return http.Response(
           jsonEncode(PickAPathTestHelpers.createStartStoryResponseJson(
               title: 'Pick-A-Path Adventure')),
@@ -73,6 +85,7 @@ void main() {
       });
 
       InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
 
       final character = PickAPathTestHelpers.createTestCharacter();
       await tester.pumpWidget(
@@ -100,10 +113,12 @@ void main() {
       );
 
       final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
         return http.Response(jsonEncode(responseJson), 200);
       });
 
       InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
 
       final character = PickAPathTestHelpers.createTestCharacter();
       await tester.pumpWidget(
@@ -139,10 +154,12 @@ void main() {
       );
 
       final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
         return http.Response(jsonEncode(responseJson), 200);
       });
 
       InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
 
       final character = PickAPathTestHelpers.createTestCharacter();
       await tester.pumpWidget(
@@ -170,10 +187,12 @@ void main() {
       );
 
       final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
         return http.Response(jsonEncode(responseJson), 200);
       });
 
       InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
 
       final character = PickAPathTestHelpers.createTestCharacter();
       await tester.pumpWidget(
@@ -201,10 +220,12 @@ void main() {
       );
 
       final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
         return http.Response(jsonEncode(responseJson), 200);
       });
 
       InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
 
       final character = PickAPathTestHelpers.createTestCharacter();
       await tester.pumpWidget(
@@ -251,6 +272,7 @@ void main() {
 
       int requestCount = 0;
       final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
         requestCount++;
         if (requestCount == 1) {
           return http.Response(jsonEncode(startResponse), 200);
@@ -260,6 +282,7 @@ void main() {
       });
 
       InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
 
       final character = PickAPathTestHelpers.createTestCharacter();
       await tester.pumpWidget(
@@ -302,10 +325,12 @@ void main() {
       );
 
       final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
         return http.Response(jsonEncode(responseJson), 200);
       });
 
       InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
 
       final character = PickAPathTestHelpers.createTestCharacter();
       await tester.pumpWidget(
@@ -354,6 +379,7 @@ void main() {
 
       int requestCount = 0;
       final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
         requestCount++;
         if (requestCount == 1) {
           return http.Response(jsonEncode(startResponse), 200);
@@ -363,6 +389,7 @@ void main() {
       });
 
       InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
 
       final character = PickAPathTestHelpers.createTestCharacter();
       await tester.pumpWidget(
@@ -401,6 +428,7 @@ void main() {
 
       int requestCount = 0;
       final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
         requestCount++;
         if (requestCount == 1) {
           return http.Response(jsonEncode(startResponse), 200);
@@ -412,6 +440,7 @@ void main() {
       });
 
       InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
 
       final character = PickAPathTestHelpers.createTestCharacter();
       await tester.pumpWidget(
@@ -453,6 +482,7 @@ void main() {
 
       int requestCount = 0;
       final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
         requestCount++;
         if (requestCount == 1) {
           return http.Response(jsonEncode(startResponse), 200);
@@ -462,6 +492,7 @@ void main() {
       });
 
       InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
 
       final character = PickAPathTestHelpers.createTestCharacter();
       await tester.pumpWidget(
@@ -506,6 +537,7 @@ void main() {
 
       int requestCount = 0;
       final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
         requestCount++;
         if (requestCount == 1) {
           return http.Response(jsonEncode(startResponse), 200);
@@ -515,6 +547,7 @@ void main() {
       });
 
       InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
 
       final character = PickAPathTestHelpers.createTestCharacter();
       await tester.pumpWidget(
@@ -550,6 +583,7 @@ void main() {
 
       int requestCount = 0;
       final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
         requestCount++;
         if (requestCount == 1) {
           return http.Response(jsonEncode(startResponse), 200);
@@ -559,6 +593,7 @@ void main() {
       });
 
       InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
 
       final character = PickAPathTestHelpers.createTestCharacter();
       await tester.pumpWidget(
@@ -588,10 +623,12 @@ void main() {
     testWidgets('I1: Shows error message on network failure during generation',
         (tester) async {
       final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
         return http.Response('Network error', 500);
       });
 
       InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
 
       final character = PickAPathTestHelpers.createTestCharacter();
       await tester.pumpWidget(
@@ -618,6 +655,7 @@ void main() {
 
       int requestCount = 0;
       final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
         requestCount++;
         if (requestCount == 1) {
           return http.Response(jsonEncode(startResponse), 200);
@@ -627,6 +665,7 @@ void main() {
       });
 
       InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
 
       final character = PickAPathTestHelpers.createTestCharacter();
       await tester.pumpWidget(
@@ -654,10 +693,12 @@ void main() {
     testWidgets('I3: Shows retry UI on timeout during initial generation',
         (tester) async {
       final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
         throw TimeoutException('Request timed out');
       });
 
       InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
 
       final character = PickAPathTestHelpers.createTestCharacter();
       await tester.pumpWidget(
@@ -684,10 +725,12 @@ void main() {
       );
 
       final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
         return http.Response(jsonEncode(responseJson), 200);
       });
 
       InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
 
       final character = PickAPathTestHelpers.createTestCharacter(age: 5);
       await tester.pumpWidget(
@@ -712,10 +755,12 @@ void main() {
       );
 
       final mockClient = MockClient((request) async {
+        if (request.url.path.contains('/auth/anonymous')) return _authMock(request);
         return http.Response(jsonEncode(responseJson), 200);
       });
 
       InteractiveStoryService.setTestClient(mockClient);
+      ApiServiceManager.setTestClient(mockClient);
 
       final character = PickAPathTestHelpers.createTestCharacter(age: 14);
       await tester.pumpWidget(

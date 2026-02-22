@@ -392,7 +392,7 @@ def create_app(config_name):
 
     # JWT setup - SECURITY: Require proper secret in production
     jwt = JWTManager(app)
-    app.config.setdefault('JWT_ACCESS_TOKEN_EXPIRES', timedelta(hours=1))
+    app.config.setdefault('JWT_ACCESS_TOKEN_EXPIRES', timedelta(hours=24))
     app.config.setdefault('JWT_REFRESH_TOKEN_EXPIRES', timedelta(days=30))
     jwt_secret = app.config.get('JWT_SECRET_KEY') or os.getenv('JWT_SECRET_KEY')
     if not jwt_secret or jwt_secret == 'dev-secret-key':

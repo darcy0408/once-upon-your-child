@@ -10,6 +10,7 @@ import 'avatar_preset_selector.dart';
 import 'character_customization_constants.dart';
 import 'emotion_avatar_widget.dart';
 import 'config/environment.dart';
+import 'services/api_service_manager.dart';
 
 class CharacterCreationScreenV3 extends StatefulWidget {
   const CharacterCreationScreenV3({super.key});
@@ -75,9 +76,10 @@ class _CharacterCreationScreenV3State extends State<CharacterCreationScreenV3> {
     setState(() => _isLoading = true);
 
     try {
+      final authHdrs = await ApiServiceManager.authHeaders();
       final response = await http.post(
         Uri.parse('${Environment.backendUrl}/create-character'),
-        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        headers: {...authHdrs, 'Content-Type': 'application/json; charset=UTF-8'},
         body: jsonEncode({
           'name': _nameController.text.trim(),
           'age': int.parse(_ageController.text.trim()),

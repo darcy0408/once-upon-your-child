@@ -23,6 +23,7 @@ import 'widgets/loading_overlay.dart';
 import 'screens/avatar_picker_screen.dart';
 import 'screens/midjourney_avatar_picker_screen.dart';
 import 'services/avatar_service.dart';
+import 'services/api_service_manager.dart';
 
 import 'services/isar_service.dart';
 import 'models/local/character_local.dart';
@@ -709,9 +710,10 @@ class _CharacterCreationScreenEnhancedState
           'dislikes': _selectedQuickDislikes.toList(),
       };
 
+      final headers = await ApiServiceManager.authHeaders();
       final resp = await http.post(
         url,
-        headers: {'Content-Type': 'application/json; charset=UTF-8'},
+        headers: {...headers, 'Content-Type': 'application/json; charset=UTF-8'},
         body: json.encode(body),
       );
 

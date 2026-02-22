@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'character_appearance.dart';
 import 'config/environment.dart';
+import 'services/api_service_manager.dart';
 
 /// Model for a coloring book page
 class ColoringPage {
@@ -107,11 +108,10 @@ class ColoringBookService {
     CharacterAppearance? characterAppearance,
     List<dynamic>? companions,
   }) async {
+    final coloringHeaders = await ApiServiceManager.authHeaders();
     final response = await http.post(
       Uri.parse('${Environment.backendUrl}/generate-coloring-pages'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: coloringHeaders,
       body: jsonEncode({
         'scene_description': sceneDescription,
         'character_name': characterName,
@@ -269,10 +269,11 @@ class GeminiColoringBookService extends ColoringBookService {
       }).toList();
 
       // Call backend to generate therapeutic coloring pages
+      final geminiColoringHeaders = await ApiServiceManager.authHeaders();
       final response = await http
           .post(
             Uri.parse('$backendUrl/generate-coloring-pages'),
-            headers: {'Content-Type': 'application/json'},
+            headers: geminiColoringHeaders,
             body: jsonEncode({
               'scenes': scenesData,
               'character_name': characterAppearance?.characterName ?? 'the character',

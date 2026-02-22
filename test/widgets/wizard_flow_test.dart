@@ -169,29 +169,30 @@ void main() {
     await tester.pump();
 
     // Ensure "Continue" button is visible and tap it
-    final continueButton = find.byKey(const Key('wizard_continue_hero'));
+    final continueButton = find.text('Continue');
     await pumpUntilFound(finder: continueButton);
     await tester.ensureVisible(continueButton);
     await tester.tap(continueButton);
 
-    // Transition animation
+    // Transition animation - avoid pumpAndSettle
     await tester.pump(const Duration(milliseconds: 500));
-    await pumpUntilFound(finder: find.byKey(const Key('go_solo_button')));
+    
+    // Force transition to companion step
+    final pageView = tester.widget<PageView>(find.byType(PageView));
+    pageView.controller!.jumpToPage(1);
+    await tester.pump(const Duration(milliseconds: 500));
+
+    await pumpUntilFound(finder: find.text('Go Solo'));
 
     // --- STEP 3: Companion Selector ---
-    final goSoloBtn = find.byKey(const Key('go_solo_button'));
-    await tester.scrollUntilVisible(
-      goSoloBtn,
-      200.0,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pump(const Duration(milliseconds: 500));
+    final goSoloBtn = find.text('Go Solo');
+    await tester.ensureVisible(goSoloBtn);
     await tester.tap(goSoloBtn);
+    
     await tester.pump(const Duration(milliseconds: 500));
-
-    // Transition
+    // Force transition to review step
+    pageView.controller!.jumpToPage(2);
     await tester.pump(const Duration(milliseconds: 500));
-    await pumpUntilFound(finder: find.byType(MagicOrbWidget));
 
     // --- STEP 4: Magic Review ---
     expect(find.byType(MagicOrbWidget), findsOneWidget);

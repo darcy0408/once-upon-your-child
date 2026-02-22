@@ -129,7 +129,7 @@ def test_feature_rhyme_time_mode_is_forwarded(client, auth_headers, mock_story_t
     assert forwarded["rhyme_time_mode"] is True
 
 
-def test_feature_illustration_generation_returns_images(client, mocker):
+def test_feature_illustration_generation_returns_images(client, auth_headers, mocker):
     mock_generator = mocker.MagicMock()
     mock_generator.generate_story_illustration.return_value = [
         {
@@ -151,6 +151,7 @@ def test_feature_illustration_generation_returns_images(client, mocker):
             "user_api_key": "test-key",
             "companion_pets": [{"name": "Milo", "species": "dog"}],
         },
+        headers=auth_headers
     )
 
     assert response.status_code == 200

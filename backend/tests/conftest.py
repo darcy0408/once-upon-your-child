@@ -61,15 +61,15 @@ def mock_gemini(mocker):
 # ============================================================================
 
 @pytest.fixture
-def auth_token():
+def auth_token(test_user):
     """Generate a test JWT token."""
     from datetime import datetime, timedelta, timezone
     import jwt
 
     payload = {
-        'user_id': 'test_user_123',
-        'sub': 'test_user_123',
-        'email': 'test@example.com',
+        'user_id': test_user.id,
+        'sub': test_user.id,
+        'email': test_user.email,
         'exp': int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
     }
     return jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
@@ -83,15 +83,36 @@ def auth_headers(auth_token):
     }
 
 @pytest.fixture
-def free_user_headers():
+def free_user(app):
+    """Create a free tier test user in the database."""
+    from backend.database import db
+    from backend.models import User
+
+    with app.app_context():
+        user = User(
+            id='free_user_456',
+            username='freeuser',
+            email='free@example.com',
+            password_hash='hashed_password',
+            subscription_tier='free',
+            role='user'
+        )
+        db.session.add(user)
+        db.session.commit()
+        yield user
+        db.session.delete(user)
+        db.session.commit()
+
+@pytest.fixture
+def free_user_headers(free_user):
     """Headers for a free tier user (for rate limiting tests)."""
     from datetime import datetime, timedelta, timezone
     import jwt
 
     payload = {
-        'user_id': 'free_user_456',
-        'sub': 'free_user_456',
-        'email': 'free@example.com',
+        'user_id': free_user.id,
+        'sub': free_user.id,
+        'email': free_user.email,
         'subscription_tier': 'free',
         'exp': int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
     }
@@ -102,15 +123,36 @@ def free_user_headers():
     }
 
 @pytest.fixture
-def premium_user_headers():
+def premium_user(app):
+    """Create a premium test user in the database."""
+    from backend.database import db
+    from backend.models import User
+
+    with app.app_context():
+        user = User(
+            id='premium_user_789',
+            username='premiumuser',
+            email='premium@example.com',
+            password_hash='hashed_password',
+            subscription_tier='premium',
+            role='user'
+        )
+        db.session.add(user)
+        db.session.commit()
+        yield user
+        db.session.delete(user)
+        db.session.commit()
+
+@pytest.fixture
+def premium_user_headers(premium_user):
     """Headers for a premium tier user."""
     from datetime import datetime, timedelta, timezone
     import jwt
 
     payload = {
-        'user_id': 'premium_user_789',
-        'sub': 'premium_user_789',
-        'email': 'premium@example.com',
+        'user_id': premium_user.id,
+        'sub': premium_user.id,
+        'email': premium_user.email,
         'subscription_tier': 'premium',
         'exp': int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
     }
@@ -282,10 +324,20 @@ def admin_token(admin_user):
     return jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
 
 @pytest.fixture
-def admin_headers(admin_token):
+def admin_headers(admin_user):
     """Headers with admin authentication token."""
+    from datetime import datetime, timedelta, timezone
+    import jwt
+
+    payload = {
+        'user_id': admin_user.id,
+        'email': admin_user.email,
+        'role': 'admin',
+        'exp': int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
+    }
+    token = jwt.encode(payload, 'dev-secret-key', algorithm='HS256')
     return {
-        'Authorization': f'Bearer {admin_token}',
+        'Authorization': f'Bearer {token}',
         'Content-Type': 'application/json'
     }
 

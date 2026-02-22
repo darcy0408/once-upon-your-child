@@ -1,7 +1,9 @@
 import pytest
 from backend.routes import story_routes
 
-def test_generate_story_enqueues_task_and_returns_poll_url(client, monkeypatch):
+def test_generate_story_enqueues_task_and_returns_poll_url(client, auth_headers, monkeypatch):
+    # Use a character name (no DB lookup) so the test is not coupled to fixture
+    # session scoping; the async-polling logic is what we're testing here.
     captured_kwargs = {}
 
     class _FakeTask:
@@ -22,7 +24,8 @@ def test_generate_story_enqueues_task_and_returns_poll_url(client, monkeypatch):
 
     response = client.post(
         "/generate-story",
-        json={"character_id": "char-1", "theme": "Courage", "user_id": "user-7"},
+        json={"character": "Luna", "age": 7, "theme": "Courage"},
+        headers=auth_headers
     )
 
     assert response.status_code == 202
@@ -30,14 +33,10 @@ def test_generate_story_enqueues_task_and_returns_poll_url(client, monkeypatch):
     assert payload["task_id"] == "task-123"
     assert payload["status"] == "processing"
     assert payload["poll_url"].endswith("task-123")
-    assert captured_kwargs["character_id"] == "char-1"
+    assert captured_kwargs["character"] == "Luna"
     assert captured_kwargs["theme"] == "Courage"
-    # Note: user_id is sanitized in route (user-7 becomes 7 if it looks like a prefix, but user-7 doesn't match user_ pattern)
-    # Actually route does: if user_id.startswith("user_"): user_id = user_id.replace("user_", "")
-    # user-7 starts with user-, not user_
-    assert captured_kwargs["user_id"] == "user-7"
 
-def test_generate_story_falls_back_when_queue_fails(client, monkeypatch):
+def test_generate_story_falls_back_when_queue_fails(client, auth_headers, monkeypatch):
     class _FakeResult:
         def __init__(self, data):
             self._data = data
@@ -67,7 +66,7 @@ def test_generate_story_falls_back_when_queue_fails(client, monkeypatch):
 
     monkeypatch.setattr(story_routes, "generate_story_task", _FailingTask())
 
-    response = client.post("/generate-story", json={"character": {"name": "Sam"}})
+    response = client.post("/generate-story", json={"character": {"name": "Sam"}}, headers=auth_headers)
 
     assert response.status_code == 200
     payload = response.get_json()
@@ -108,7 +107,7 @@ def test_task_status_maps_celery_states(client, monkeypatch, state, info, expect
     for key, value in expected.items():
         assert payload[key] == value
 
-def test_generate_story_requires_character_payload(client):
-    response = client.post("/generate-story", json={"theme": "Adventure"})
+def test_generate_story_requires_character_payload(client, auth_headers):
+    response = client.post("/generate-story", json={"theme": "Adventure"}, headers=auth_headers)
     assert response.status_code == 400
     assert "error" in response.get_json()

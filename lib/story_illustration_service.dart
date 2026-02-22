@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'config/environment.dart';
+import 'services/api_service_manager.dart';
 
 class StoryIllustration {
   final String id;
@@ -190,11 +191,10 @@ class StoryIllustrationService {
     Map<String, dynamic>? characterAppearance,  // NEW: Character appearance
     List<Map<String, String>>? companions,       // NEW: Companions/pets
   }) async {
+    final illHeaders = await ApiServiceManager.authHeaders();
     final response = await http.post(
       Uri.parse('${Environment.backendUrl}/generate-illustrations'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: illHeaders,
       body: jsonEncode({
         'scene_description': sceneDescription,
         'character_name': characterName,

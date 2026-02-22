@@ -436,7 +436,7 @@ class TestGenerateStoryMock:
 class TestStoryGenerationErrorHandling:
     """Test error handling in story generation"""
 
-    def test_quota_exceeded_error(self, client, mocker):
+    def test_quota_exceeded_error(self, client, auth_headers, mocker):
         """Test handling of quota exceeded errors"""
         # Mock task to raise quota error
         mock_task = MagicMock()
@@ -451,14 +451,15 @@ class TestStoryGenerationErrorHandling:
 
         response = client.post('/generate-story',
                                 json=payload,
-                                content_type='application/json')
+                                content_type='application/json',
+                                headers=auth_headers)
 
         assert response.status_code == 429
         data = response.get_json()
         assert 'error' in data
         assert 'QUOTA_EXCEEDED' in data.get('error', '')
 
-    def test_general_error_handling(self, client, mocker):
+    def test_general_error_handling(self, client, auth_headers, mocker):
         """Test handling of general errors"""
         # Mock task to raise general error
         mock_task = MagicMock()
@@ -474,28 +475,31 @@ class TestStoryGenerationErrorHandling:
 
         response = client.post('/generate-story',
                                 json=payload,
-                                content_type='application/json')
+                                content_type='application/json',
+                                headers=auth_headers)
 
         # Should return error (either 500 or attempt async fallback)
         assert response.status_code in [500, 502, 503]
         data = response.get_json()
         assert 'error' in data
 
-    def test_invalid_json_payload(self, client):
+    def test_invalid_json_payload(self, client, auth_headers):
         """Test handling of invalid JSON"""
         response = client.post('/generate-story',
                                 data='invalid json',
-                                content_type='application/json')
+                                content_type='application/json',
+                                headers=auth_headers)
 
         # Should handle gracefully (treats as empty payload)
         # Will fail on missing character
         assert response.status_code == 400
 
-    def test_empty_payload(self, client):
+    def test_empty_payload(self, client, auth_headers):
         """Test handling of empty payload"""
         response = client.post('/generate-story',
                                 json={},
-                                content_type='application/json')
+                                content_type='application/json',
+                                headers=auth_headers)
 
         assert response.status_code == 400
         data = response.get_json()
@@ -523,7 +527,7 @@ class TestStoryResponseFormat:
         mocker.patch('backend.routes.story_routes.generate_story_task', mock_task)
         return mock_task
 
-    def test_response_has_required_fields(self, client):
+    def test_response_has_required_fields(self, client, auth_headers):
         """Test that response has all required fields"""
         payload = {
             'character': 'Luna',
@@ -532,7 +536,8 @@ class TestStoryResponseFormat:
 
         response = client.post('/generate-story',
                                 json=payload,
-                                content_type='application/json')
+                                content_type='application/json',
+                                headers=auth_headers)
 
         assert response.status_code == 200
         data = response.get_json()
@@ -546,7 +551,7 @@ class TestStoryResponseFormat:
         assert 'title' in story
         assert 'story_text' in story
 
-    def test_response_content_type(self, client):
+    def test_response_content_type(self, client, auth_headers):
         """Test that response is JSON"""
         payload = {
             'character': 'Luna',
@@ -555,12 +560,13 @@ class TestStoryResponseFormat:
 
         response = client.post('/generate-story',
                                 json=payload,
-                                content_type='application/json')
+                                content_type='application/json',
+                                headers=auth_headers)
 
         assert response.status_code == 200
         assert 'application/json' in response.content_type
 
-    def test_story_text_is_string(self, client):
+    def test_story_text_is_string(self, client, auth_headers):
         """Test that story_text is a string"""
         payload = {
             'character': 'Luna',
@@ -569,7 +575,8 @@ class TestStoryResponseFormat:
 
         response = client.post('/generate-story',
                                 json=payload,
-                                content_type='application/json')
+                                content_type='application/json',
+                                headers=auth_headers)
 
         assert response.status_code == 200
         data = response.get_json()
