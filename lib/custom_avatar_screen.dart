@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'avatar_models.dart';
 import 'config/environment.dart';
+import 'services/api_service_manager.dart';
 import 'theme/app_theme.dart';
 
 class CustomAvatarScreen extends StatefulWidget {
@@ -95,6 +96,11 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
       final url = Uri.parse('$baseUrl/avatar/generate-custom-avatar');
 
       final request = http.MultipartRequest('POST', url);
+      final authHeaders = await ApiServiceManager.authHeaders();
+      // Only add Authorization header — Content-Type is set automatically for multipart
+      if (authHeaders.containsKey('Authorization')) {
+        request.headers['Authorization'] = authHeaders['Authorization']!;
+      }
       // fromBytes works on all platforms including web (no dart:io needed)
       request.files.add(
         http.MultipartFile.fromBytes(
