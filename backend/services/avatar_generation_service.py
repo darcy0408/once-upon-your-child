@@ -357,8 +357,8 @@ This prompt is designed for "Story Weaver," an app that transforms real-world im
         if not character_name or not character_name.strip():
             raise ValueError("Character name is required")
 
-        if not (3 <= age <= 17):
-            raise ValueError("Age must be between 3 and 17")
+        if not (3 <= age <= 99):
+            raise ValueError("Age must be between 3 and 99")
 
         if style.lower() not in ['pixar', 'watercolor', 'cartoon', 'clay']:
             raise ValueError(f"Invalid style: {style}. Must be pixar|watercolor|cartoon|clay")

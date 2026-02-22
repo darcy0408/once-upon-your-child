@@ -33,7 +33,7 @@ class TestAvatarGenerationService:
         service.prompt_service.generate_character_seed.return_value = "seed_123"
         service.prompt_service.build_avatar_prompt.return_value = "safe prompt"
         service.prompt_service.validate_prompt_safety.return_value = (True, "ok")
-        service._generate_image_with_fallback = MagicMock(return_value=b"fake_image_bytes")
+        service._generate_image_with_gemini = MagicMock(return_value=b"fake_image_bytes")
         service._verify_non_photorealistic = MagicMock(return_value=True)
 
         result = service.generate_avatar(
@@ -55,23 +55,23 @@ class TestAvatarGenerationService:
         service.prompt_service.generate_character_seed.return_value = "seed_abc"
         service.prompt_service.build_avatar_prompt.return_value = "safe prompt"
         service.prompt_service.validate_prompt_safety.return_value = (True, "ok")
-        service._generate_image_with_fallback = MagicMock(return_value=b"fake_image_bytes")
+        service._generate_image_with_gemini = MagicMock(return_value=b"fake_image_bytes")
         service._verify_non_photorealistic = MagicMock(side_effect=[False, True])
 
         result = service.generate_avatar(character_name="Kai", age=9, style="cartoon")
 
         assert result["style"] == "cartoon"
-        assert service._generate_image_with_fallback.call_count == 2
+        assert service._generate_image_with_gemini.call_count == 2
         assert service._verify_non_photorealistic.call_count == 2
 
-    def test_generate_image_with_fallback_works(self):
+    def test_generate_image_with_gemini_works(self):
         primary = MagicMock()
         primary.generate_character_avatar.side_effect = Exception("primary failed")
         fallback = MagicMock()
         fallback.generate_character_avatar.return_value = [{"image_data": "aGVsbG8="}]
         service = AvatarGenerationService(image_generator=primary, fallback_generator=fallback)
 
-        image_bytes = service._generate_image_with_fallback(
+        image_bytes = service._generate_image_with_gemini(
             prompt="draw",
             character_name="Luna",
             age=8,

@@ -65,10 +65,12 @@ def require_auth(f):
 
             user_id = data.get('user_id') or data.get('sub')
             if not user_id:
+                logger.warning(f"Auth failed: No user_id in token. Payload keys: {list(data.keys())}")
                 return jsonify({'error': 'Invalid token payload'}), 401
 
             current_user = db.session.get(User, user_id)
             if not current_user:
+                logger.warning(f"Auth failed: User {user_id} not found in DB")
                 return jsonify({'error': 'User not found'}), 401
 
             # Attach user to request context
@@ -76,9 +78,10 @@ def require_auth(f):
             g.current_user_id = current_user.id
 
         except jwt.ExpiredSignatureError:
+            logger.warning("Auth failed: Token expired")
             return jsonify({'error': 'Token expired'}), 401
         except jwt.InvalidTokenError as e:
-            logger.warning(f"Invalid JWT token: {type(e).__name__}")
+            logger.warning(f"Auth failed: Invalid JWT token: {type(e).__name__} - {str(e)}")
             return jsonify({'error': 'Invalid token'}), 401
         except ValueError as e:
             logger.error(f"JWT configuration error: {e}")

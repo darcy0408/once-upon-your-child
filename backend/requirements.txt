@@ -22,6 +22,7 @@ click==8.2.1
 Werkzeug==3.1.5
 Pillow
 cryptography==46.0.4
+bcrypt==4.2.1
 
 # Error Monitoring
 sentry-sdk[flask]==2.52.0
