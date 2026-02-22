@@ -2,6 +2,26 @@
 
 ---
 
+## Session Update - 2026-02-21 (Google Cloud TTS Credentials Setup)
+
+### Scope Completed
+- Configured Google Application Default Credentials (ADC) for Neural2 TTS on developer machine.
+- Resolved `iam.disableServiceAccountKeyCreation` org policy blocking JSON key downloads — used ADC instead.
+- Installed Google Cloud CLI on Windows.
+- Authenticated via `gcloud auth application-default login` using `blackdoggrills1@gmail.com` (account with $300 free credits).
+- Confirmed `Cloud Text-to-Speech API` is **Enabled** on project `project-c1b361ce-12ec-4a8f-aad`.
+- Set quota project: `gcloud auth application-default set-quota-project project-c1b361ce-12ec-4a8f-aad`.
+
+### No Code Changes
+- All Neural2 TTS code was committed in the previous session (`19c5ad4`).
+- No `.env` changes needed — Google Cloud Python SDK auto-discovers ADC credentials.
+
+### Result
+- Backend should now successfully initialise `TTSService` on next restart.
+- Neural2 narration active; `flutter_tts` remains as fallback if backend unavailable.
+
+---
+
 ## Session Update - 2026-02-21 (Magical Pet Companion UI & Result Integration)
 
 ### Scope Completed
