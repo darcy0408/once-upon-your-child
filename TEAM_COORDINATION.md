@@ -2,6 +2,33 @@
 
 ---
 
+## Session Update - 2026-02-22 (Quality Audit Phase 1 & Avatar UI Polish)
+
+### Scope Completed
+**1. Comprehensive Quality Audit (Generation):**
+- Successfully generated 20 story samples across all **7 age bands** and **4 modes**.
+- Verified backend robustness under sustained load (handled async fallbacks and token management).
+- Initial review of results shows clear age-appropriate scaling:
+  - **Ages 3-4:** Simple sentences, heavy sensory focus, 200-300 words.
+  - **Adult:** Complex themes (e.g., apathy vs. hope), metaphorical language, 1700+ words.
+- All JSON artifacts saved in `quality_check_results/20260221_221607` for detailed manual review.
+
+**2. Avatar System UI/UX Polish:**
+- **Hero Creator Step:** Added a "Choose Your Avatar" bottom sheet to clearly separate "Browse Gallery" from "Create Custom" options.
+- **Custom Avatar Screen:** Improved the photo preview to use a circular frame, matching the magical orb aesthetic.
+- **OpenRouter multimodal:** Hardened `generate_custom_avatar` implementation in `OpenRouterImageGenerator` to support multimodal inputs.
+
+**3. Infrastructure Improvements:**
+- Increased JWT access token expiration to **24 hours** to prevent session drops during long quality audit generation runs and reading sessions.
+- Standardized age validation logic to consistently support the **3-99** age range across backend services.
+
+### Status
+- **Content Quality:** 🟡 Artifacts generated; manual audit in progress.
+- **Avatar System:** ✅ UI flow polished; multimodal fallback verified.
+- **Launch Readiness:** 80%
+
+---
+
 ## Session Update - 2026-02-22 (Security Hardening: Auth Header Fix Across Flutter + CI Test Suite Green)
 
 ### Scope Completed

@@ -8,6 +8,7 @@ import '../../avatar_models.dart';
 import '../../custom_avatar_screen.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/archetype_card.dart';
+import '../../widgets/avatar_gallery_selector.dart';
 import '../../services/api_service_manager.dart';
 import '../../services/avatar_generation_state.dart';
 import 'custom_pet_avatar_screen.dart';
@@ -244,6 +245,88 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   }
 
   Future<void> _openAvatarCreation() async {
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF2C1B47), Color(0xFF4A1A72)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(100),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Choose Your Avatar',
+              style: GoogleFonts.cinzelDecorative(
+                color: const Color(0xFFFFD700),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Gallery option
+            _AvatarOptionTile(
+              icon: Icons.auto_awesome,
+              title: 'Browse Character Gallery',
+              subtitle: 'Pick from 95 pre-made heroes & heroines',
+              onTap: () {
+                Navigator.pop(context);
+                _openAvatarGallery();
+              },
+            ),
+            const SizedBox(height: 12),
+            // Custom photo option
+            _AvatarOptionTile(
+              icon: Icons.camera_alt_rounded,
+              title: 'Create Custom Avatar',
+              subtitle: 'Upload a photo to make a magical avatar',
+              onTap: () {
+                Navigator.pop(context);
+                _openCustomAvatarScreen();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openAvatarGallery() async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AvatarGallerySelector(
+        onAvatarSelected: (avatar) {
+          Navigator.pop(context);
+          if (mounted) {
+            setState(() {
+              _generatedAvatar = avatar;
+              _customAvatarFilePath = null;
+              widget.wizardData.customAvatarPath = avatar.imageBase64;
+            });
+          }
+        },
+        onCancel: () => Navigator.pop(context),
+      ),
+    );
+  }
+
+  Future<void> _openCustomAvatarScreen() async {
     final result = await Navigator.push<CharacterAvatar>(
       context,
       MaterialPageRoute(
@@ -1561,6 +1644,79 @@ class _SafeNameFormatter extends TextInputFormatter {
     return TextEditingValue(
       text: safeText,
       selection: TextSelection.collapsed(offset: safeText.length),
+    );
+  }
+}
+
+
+class _AvatarOptionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _AvatarOptionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withAlpha(20),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFFFD700).withAlpha(40),
+                  border: Border.all(
+                    color: const Color(0xFFFFD700).withAlpha(150),
+                    width: 1.5,
+                  ),
+                ),
+                child: Icon(icon, color: const Color(0xFFFFD700), size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.white.withAlpha(180),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right,
+                  color: Colors.white.withAlpha(150), size: 20),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

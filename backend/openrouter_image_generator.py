@@ -409,6 +409,92 @@ Style: simple black outlines only, no colors, no shading, no gray, thick bold li
 
         return images
 
+    def generate_custom_avatar(
+        self,
+        base_image_bytes: bytes,
+        prompt: str,
+        character_name: str = "the hero",
+        age: int = 8,
+        num_images: int = 1,
+        **_: dict
+    ) -> list:
+        """
+        Generate a custom avatar using a reference photo + text prompt.
+
+        Sends the uploaded photo as a base64-encoded image alongside the
+        generation prompt so the model can preserve the child's likeness.
+        """
+        images = []
+        photo_b64 = base64.b64encode(base_image_bytes).decode("utf-8")
+
+        for i in range(num_images):
+            try:
+                logger.info(f"OpenRouter custom avatar: Generating for {character_name}, age {age}")
+
+                response = requests.post(
+                    f"{self.base_url}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "HTTP-Referer": "https://story-weaver-app-production.up.railway.app",
+                        "X-Title": "Story Weaver App - Custom Avatar Generation",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": "google/gemini-2.5-flash-image",
+                        "max_tokens": 1000,
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "type": "image_url",
+                                        "image_url": {
+                                            "url": f"data:image/jpeg;base64,{photo_b64}"
+                                        },
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": prompt + "\n\nIMPORTANT: Respond ONLY with the generated image. Do not provide any text description or conversation.",
+                                    },
+                                ],
+                            }
+                        ],
+                    },
+                    timeout=120,
+                )
+
+                if response.status_code == 200:
+                    data = response.json()
+                    image_url = self._extract_image_payload(data)
+
+                    if image_url:
+                        image_data_base64 = self._normalize_image_to_base64(image_url)
+                        if image_data_base64:
+                            logger.info(f"OpenRouter custom avatar: Success. Data length: {len(image_data_base64)}")
+                            images.append({
+                                'id': f"{uuid.uuid4()}_{i}",
+                                'prompt': prompt,
+                                'image_data': image_data_base64,
+                                'format': 'png',
+                                'generated_at': datetime.now().isoformat(),
+                                'provider': 'openrouter-custom-avatar'
+                            })
+                        else:
+                            logger.warning("OpenRouter custom avatar: image payload could not be normalized")
+                    else:
+                        raw_content = str(data)[:1000]
+                        logger.warning(f"OpenRouter custom avatar: no image in response. Raw: {raw_content}")
+                else:
+                    logger.error(f"OpenRouter custom avatar API error: {response.status_code} - {response.text}")
+
+                if i < num_images - 1:
+                    time.sleep(1)
+
+            except Exception as e:
+                logger.exception(f"Error generating custom avatar image {i + 1}: {e}")
+
+        return images
+
 
 # Example usage & testing
 if __name__ == "__main__":

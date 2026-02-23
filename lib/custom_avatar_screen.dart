@@ -277,9 +277,10 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                           GestureDetector(
                             onTap: _isGenerating ? null : _pickFromGallery,
                             child: Container(
-                              height: 240,
+                              width: 200,
+                              height: 200,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
+                                shape: BoxShape.circle,
                                 border: Border.all(
                                   color: AppColors.gold.withAlpha(220),
                                   width: 2.4,
@@ -297,7 +298,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                                   ? Image.memory(
                                       _imageBytes!,
                                       fit: BoxFit.cover,
-                                      width: double.infinity,
+                                      width: 200,
+                                      height: 200,
                                     )
                                   : Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
