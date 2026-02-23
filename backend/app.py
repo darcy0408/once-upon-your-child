@@ -205,6 +205,30 @@ def create_app(config_name):
     cache = Cache(app)
 
     @app.after_request
+    def add_security_headers(response):
+        """Add security headers to all responses"""
+        # HSTS - only for production
+        if is_production():
+            response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        
+        # CSP - restrictive but allows API/static needs
+        # Adjust 'self' and origins as needed for your frontend
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: https:; "
+            "connect-src 'self' https://generativelanguage.googleapis.com https://openrouter.ai;"
+        )
+        
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=(), payment=()'
+        
+        return response
+
+    @app.after_request
     def add_rate_limit_headers(response):
         """Add rate limit headers to API responses"""
         try:

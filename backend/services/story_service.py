@@ -55,7 +55,8 @@ STRICT_OUTPUT_CONSTRAINTS = """
 STRICT OUTPUT CONSTRAINTS:
 - Do NOT include any meta-talk or introductory phrases (e.g., "Here we go!", "Sure, I can do that", "Here is your story").
 - Do NOT repeat any part of these instructions in the story text.
-- Do NOT include phrases like "MANDATORY Checklist" or "EVERY name here MUST be in the story".
+- Do NOT include technical jargon or internal storytelling terms in the prose (e.g., "consequence chain", "two-step challenge", "therapeutic specialist", "earned ending", "insight", "climax", "resolution", "manifest an abstract emotion").
+- Do NOT explicitly state the "lessons" or "insights" as a summary at the end; let them emerge naturally from the narrative.
 - ONLY return the story content itself in the requested format.
 """
 

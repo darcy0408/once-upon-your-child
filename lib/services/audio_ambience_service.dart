@@ -46,9 +46,16 @@ class AudioAmbienceService {
     
     if (_currentTheme == normalizedTheme && _isPlaying) return;
 
-    final assetPath = _themeAudioMap[normalizedTheme];
+    String? assetPath = _themeAudioMap[normalizedTheme];
+    
+    // Fallback to "Magic" if no specific theme match is found
     if (assetPath == null) {
-      debugPrint('No ambience audio for theme: $theme');
+      debugPrint('No specific ambience for theme: $theme. Falling back to Magic.');
+      assetPath = _themeAudioMap['Magic'];
+    }
+
+    if (assetPath == null) {
+      debugPrint('CRITICAL: No audio asset found even for fallback!');
       await stopAmbience();
       return;
     }
@@ -64,7 +71,7 @@ class AudioAmbienceService {
       _currentTheme = normalizedTheme;
       _isPlaying = true;
       _pendingTheme = null;
-      debugPrint('Started ambience for theme: $normalizedTheme');
+      debugPrint('Started ambience: $assetPath (Theme: $theme)');
     } catch (e) {
       debugPrint('Error playing ambience audio: $e');
       _isPlaying = false;
@@ -128,11 +135,13 @@ class AudioAmbienceService {
   }
 
   String _normalizeTheme(String theme) {
-    if (theme.contains('Adventure')) return 'Adventure';
-    if (theme.contains('Space')) return 'Space';
-    if (theme.contains('Forest')) return 'Forest';
-    if (theme.contains('Magic')) return 'Magic';
-    if (theme.contains('Ocean')) return 'Ocean';
+    final lower = theme.toLowerCase();
+    if (lower.contains('adventure')) return 'Adventure';
+    if (lower.contains('space') || lower.contains('sky') || lower.contains('stars')) return 'Space';
+    if (lower.contains('forest') || lower.contains('jungle') || lower.contains('meadow') || lower.contains('field')) return 'Forest';
+    if (lower.contains('magic') || lower.contains('crystal') || lower.contains('firefly') || lower.contains('glow')) return 'Magic';
+    if (lower.contains('ocean') || lower.contains('water') || lower.contains('waves') || lower.contains('falls')) return 'Ocean';
+    if (lower.contains('storm')) return 'Adventure'; // Wind fits storm
     return theme;
   }
 
