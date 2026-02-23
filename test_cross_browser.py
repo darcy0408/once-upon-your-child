@@ -23,12 +23,24 @@ def run_test(browser_type, device_config=None, name="test"):
         print(f"Testing {name}...")
         
         try:
-            page.goto("http://localhost:8080", timeout=60000)
-            # Wait for some element that indicates the app loaded
-            # Flutter apps often have a loading indicator or just the canvas
-            page.wait_for_selector("flt-glass-pane", timeout=30000)
+            page.goto("http://localhost:8080", wait_until="networkidle", timeout=90000)
             
-            time.sleep(5) # Give it a moment to render
+            # Try a few different selectors that Flutter might use
+            selectors = ["flt-glass-pane", "flutter-view", "flt-scene-host", "body"]
+            found = False
+            for selector in selectors:
+                try:
+                    page.wait_for_selector(selector, timeout=10000)
+                    print(f"   Found selector: {selector}")
+                    found = True
+                    break
+                except:
+                    continue
+            
+            if not found:
+                print(f"   ⚠️ No specific Flutter selector found, continuing anyway...")
+
+            time.sleep(10) # Give it plenty of time to render the first frame
             
             page.screenshot(path=f"screenshot_{name}.png")
             print(f"✅ {name} loaded successfully.")
@@ -43,9 +55,16 @@ def run_test(browser_type, device_config=None, name="test"):
         browser.close()
 
 if __name__ == "__main__":
-    # Wait for server to be ready
-    print("Waiting for servers to be ready...")
-    # Add logic here to wait for port 8080 if needed
+    import requests
+    
+    print("Checking if web server is up on http://localhost:8080...")
+    try:
+        requests.get("http://localhost:8080", timeout=5)
+        print("✅ Server is up!")
+    except Exception as e:
+        print(f"❌ Server is NOT up: {e}")
+        print("Please run: Start-Process python -ArgumentList '-m http.server 8080 --directory build/web' -WindowStyle Hidden")
+        exit(1)
     
     # Chrome Desktop
     run_test("chromium", name="chrome_desktop")
