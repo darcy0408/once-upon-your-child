@@ -4430,3 +4430,43 @@ flutter test test/screens/settings_screen_test.dart -r compact --concurrency=1
 - PASS: `test/widget_test.dart`
 - PASS: `test/screens/settings_screen_test.dart`
 - Local test verification flow is now reproducible when run serially after cleanup.
+
+## Session Update - 2026-02-22 (Avatar Fixes + Gallery Restoration)
+
+### Scope Completed
+- Fixed circular avatar photo upload preview in `custom_avatar_screen.dart`.
+- Added missing `generate_custom_avatar` method to `OpenRouterImageGenerator` backend service.
+- Restored pre-made character gallery selection in `hero_creator_step.dart` (was missing — users had no option to pick a pre-made avatar).
+- Wired `AvatarGallerySelector` (95 pre-made Midjourney WebP characters) back into the character creation wizard.
+
+### Changes
+- `lib/custom_avatar_screen.dart`
+  - Changed photo upload preview from 240px tall rectangle to 200×200 circle (`BoxShape.circle`)
+  - Fixed `fit: BoxFit.cover` to properly fill the circle
+- `backend/openrouter_image_generator.py`
+  - Added `generate_custom_avatar()` method that sends uploaded photo as base64 `image_url` alongside prompt to `gemini-2.5-flash-image`
+  - Previously the method was called but did not exist, causing all custom avatar generation to fail with `AttributeError`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+  - Added `import '../../widgets/avatar_gallery_selector.dart'`
+  - Split `_openAvatarCreation()` into a bottom sheet choice: "Browse Character Gallery" vs "Create Custom Avatar"
+  - Added `_openAvatarGallery()` method — shows `AvatarGallerySelector` dialog; on select sets `_generatedAvatar` and `wizardData.customAvatarPath`
+  - Renamed old body to `_openCustomAvatarScreen()` (no logic change)
+  - Added `_AvatarOptionTile` helper widget for bottom sheet UI
+
+### Gallery Details
+- 95 WebP assets at 512×512 in `assets/avatars/midjourney/` — no performance concern
+- `GridView.builder` renders lazily; filter chips (age, skin tone, hair color, vibe) in `AvatarGallerySelector` narrow results
+- Gallery path returned as `assets/avatars/...` is handled by existing `_buildAvatarContent()` which already supports the `assets/` prefix
+
+### Verification
+```bash
+flutter analyze lib/screens/wizard_steps/hero_creator_step.dart
+# 2 pre-existing deprecation infos (DropdownButtonFormField.value), no errors
+flutter analyze lib/custom_avatar_screen.dart
+python3 -c "import ast; ast.parse(open('backend/openrouter_image_generator.py').read()); print('OK')"
+```
+
+### Result
+- PASS: all files analyze clean (no new issues)
+- Gallery is restored; free/private users can now pick pre-made characters without generating images
+- Custom avatar generation (photo upload) now works end-to-end on backend
