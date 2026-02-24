@@ -2,8 +2,10 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'main_story.dart';
-import 'models.dart';
+import 'offline_story_cache.dart';
+import 'premium_upgrade_screen.dart';
 import 'services/api_service_manager.dart';
 import 'subscription_service.dart';
 import 'theme/app_theme.dart';
@@ -25,7 +27,6 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
   String _selectedTheme = 'Adventure'; // Matches first theme in list
   bool _isGenerating = false;
   String? _generatedStory;
-  SavedStory? _lastSavedStory;
   bool _magicPulse = false;
 
   // Theme data with images
@@ -158,7 +159,10 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // TODO: Navigate to subscription screen
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) => const PremiumUpgradeScreen()),
+              );
             },
             child: const Text('Upgrade Now'),
           ),
@@ -170,41 +174,36 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
   void _shareStory() {
     if (_generatedStory == null) return;
 
-    // TODO: Implement sharing
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Sharing feature coming soon!')),
+    final title = '$_selectedTheme with ${_characterNameController.text}';
+    SharePlus.instance.share(
+      ShareParams(
+        text: '$title\n\n$_generatedStory',
+        subject: title,
+      ),
     );
   }
 
-  void _saveStory() {
+  Future<void> _saveStory() async {
     if (_generatedStory == null) return;
 
-    _lastSavedStory = SavedStory(
-      title: '$_selectedTheme with ${_characterNameController.text}',
+    final title = '$_selectedTheme with ${_characterNameController.text}';
+
+    final cached = CachedStory(
+      id: 'quick_${DateTime.now().millisecondsSinceEpoch}',
+      title: title,
       storyText: _generatedStory!,
+      characterName: _characterNameController.text,
       theme: _selectedTheme,
-      characters: [
-        Character(
-          id: 'quick_${_characterNameController.text}',
-          name: _characterNameController.text,
-          age: int.parse(_selectedAge),
-          role: 'Explorer',
-          gender: 'neutral',
-          characterStyle: 'quick_story',
-          likes: [_selectedTheme],
-          strengths: const ['Imagination'],
-        ),
-      ],
-      createdAt: DateTime.now(),
-      isInteractive: false,
+      cachedAt: DateTime.now(),
     );
 
-    final lastTitle = _lastSavedStory!.title;
+    await OfflineStoryCache().cacheStory(cached);
 
-    // TODO: Persist _lastSavedStory to storage
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$lastTitle saved!')),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$title saved!')),
+      );
+    }
   }
 
   void _createAnotherStory() {
@@ -639,7 +638,7 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: _saveStory,
+                  onPressed: () => _saveStory(),
                   icon: const Icon(Icons.save),
                   label: const Text('Save'),
                   style: OutlinedButton.styleFrom(
