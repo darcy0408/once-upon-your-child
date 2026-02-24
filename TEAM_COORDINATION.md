@@ -2,7 +2,7 @@
 
 ---
 
-## Session Update - 2026-02-24 (CI/CD Stabilization & Test Refinement)
+## Session Update - 2026-02-24 (CI/CD Stabilization & Web Compatibility)
 
 ### Scope Completed
 
@@ -12,21 +12,31 @@
 - **Suite Expansion:** Explicitly added `tests/unit` to the backend testing job in `cicd.yml`.
 - **Action Updates:** Migrated workflows to `actions/checkout@v4` and `setup-python@v5`.
 
-**2. Backend Test Stabilization:**
+**2. Web Compatibility Improvements:**
+- **Platform-Aware Auth:** Added `kIsWeb` checks to safely handle `SocketException` and other I/O errors that differ between web and native.
+- **Web-Safe File Uploads:** Updated `CustomPetAvatarScreen` to use `XFile.readAsBytes()` and `MultipartFile.fromBytes()` for pet photo uploads, ensuring compatibility with Flutter Web.
+- **Data URI Handling:** Implemented proper base64/Data URI normalization for generated avatars on Web.
+- **UI Adjustments:** Disabled native download/share dialogs on Web, replacing them with clipboard and browser-native alternatives.
+
+**3. Backend Test Stabilization:**
 - **Avatar Service:** Fixed `test_avatar_generation_service.py` by updating age limits (3-17) and correcting internal mock method names (`_generate_image_with_gemini`).
 - **Pet Avatars:** Fixed 401 Unauthorized failures in `test_pet_avatar.py` by ensuring the `test_user` fixture is used to populate the database for authenticated routes.
 - **Local Pass:** Confirmed 135 unit tests passing locally with zero failures.
 
-**3. Frontend Compatibility:**
+**4. Frontend Compatibility:**
 - **Version Downgrade:** Replaced `withValues` with `withOpacity` in `lib/widgets/storybook_page.dart` to maintain compatibility with the Flutter 3.11 environment used in CI.
 
 ### Files Changed
-- `pubspec.yaml`
+- `pubspec.yaml` / `pubspec.lock`
 - `.github/workflows/cicd.yml`
 - `.github/workflows/main_tests.yml`
 - `backend/tests/unit/test_avatar_generation_service.py`
 - `backend/tests/unit/test_pet_avatar.py`
 - `lib/widgets/storybook_page.dart`
+- `lib/screens/wizard_steps/custom_pet_avatar_screen.dart`
+- `lib/character_creation_screen_enhanced.dart`
+- `lib/story_result_screen.dart`
+- `lib/coloring_book_library_screen.dart`
 - `TEAM_COORDINATION.md` *(this entry)*
 
 ### Status
