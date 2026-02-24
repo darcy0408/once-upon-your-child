@@ -128,7 +128,7 @@ class TestAdvancedStoryEngine:
 
         assert "Hard Complexity Targets" in prompt
         assert "40% of sentences" in prompt
-        assert "non-obvious insight" in prompt
+        assert "genuinely earned through the character's actions" in prompt
 
     # ========================================================================
     # STORY LENGTH VARIATIONS

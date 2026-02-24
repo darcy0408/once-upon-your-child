@@ -55,8 +55,9 @@ STRICT_OUTPUT_CONSTRAINTS = """
 STRICT OUTPUT CONSTRAINTS:
 - Do NOT include any meta-talk or introductory phrases (e.g., "Here we go!", "Sure, I can do that", "Here is your story").
 - Do NOT repeat any part of these instructions in the story text.
-- Do NOT include technical jargon or internal storytelling terms in the prose (e.g., "consequence chain", "two-step challenge", "therapeutic specialist", "earned ending", "insight", "climax", "resolution", "manifest an abstract emotion").
+- Do NOT include technical jargon or internal storytelling terms in the prose (e.g., "consequence chain", "two-step challenge", "therapeutic specialist", "narrative specialist", "narrative architect", "earned ending", "earned win", "insight", "climax", "resolution", "manifest an abstract emotion", "challenge arc", "tradeoff").
 - Do NOT explicitly state the "lessons" or "insights" as a summary at the end; let them emerge naturally from the narrative.
+- Do NOT repeat or closely paraphrase the opening paragraph at the end of the story.
 - ONLY return the story content itself in the requested format.
 """
 
@@ -169,15 +170,15 @@ class AdvancedStoryEngine:
         if mood_physics:
             mood_rules = f"\nWORLD PHYSICS (Mood: {mood_physics.get('mood', 'Magic')}):\n- RULE: {mood_physics.get('worldRule', '')}\n- SENSORY: {mood_physics.get('sensoryChange', '')}"
 
-        # Age-specific impossible element suggestions
+        # Age-specific impossible element suggestions - FOR INSPIRATION ONLY, DO NOT USE VERBATIM
         impossible_elements = {
-            '3-4': 'Ride on a friendly cloud, talk to a flower, jump over a moonbeam.',
-            '5-7': 'Fly on dandelion seeds, taste rainbow colors, walk through a mirror.',
-            '8-10': 'Surf on lightning bolts, rewrite the rules of gravity, talk to the stars.',
-            '11-13': 'Architect a dreamscape, command the tides, freeze time with a thought.',
-            '13-15': 'Bridge two worlds, heal a rift in space, weave light into a bridge.',
-            '15-18': 'Navigate a paradox, harmonize a chaotic dimension, transcend physical limits.',
-            'adult': 'Manifest an abstract emotion, reconcile lost timelines, find meaning in entropy.'
+            '3-4': 'riding a friendly cloud, talking to a flower, or jumping over a moonbeam.',
+            '5-7': 'flying on dandelion seeds, tasting rainbow colors, or walking through a mirror.',
+            '8-10': 'surfing on lightning bolts, shifting gravity, or talking to the stars.',
+            '11-13': 'shaping a dreamscape, commanding the tides, or freezing time.',
+            '13-15': 'bridging two worlds, healing a rift in space, or weaving light into a bridge.',
+            '15-18': 'navigating a paradox, harmonizing a chaotic dimension, or transcending physical limits.',
+            'adult': 'visualizing a complex emotion as a physical force, reconciling memories from different times, or finding order in chaos.'
         }
         age_impossible = impossible_elements.get(band, 'Something magical and physics-defying.')
 
@@ -208,7 +209,7 @@ class AdvancedStoryEngine:
         if age <= 7:
             complexity_instruction = "Short, concrete sentences. Simple vocabulary. Single-thread plot with clear cause/effect."
         elif age <= 10:
-            complexity_instruction = "Mix short and medium sentences. Introduce richer descriptive words with context clues. Two-step challenge arc."
+            complexity_instruction = "Mix short and medium sentences. Introduce richer descriptive words with context clues. Build a two-part challenge where solving the first problem opens a second, harder one."
         elif age <= 13:
             complexity_instruction = "Use varied sentence structure with occasional complex clauses. Include nuanced emotions and at least one meaningful tradeoff."
         elif age <= 18:
@@ -221,24 +222,24 @@ class AdvancedStoryEngine:
         if age >= 11 and age <= 13:
             hard_complexity_constraints = (
                 "At least 30% of sentences should be compound or complex. "
-                "Include at least one clear tradeoff where every option has a cost. "
+                "Include at least one situation where every available option has a downside. "
                 "Include at least one short internal reflection paragraph by the hero."
             )
         elif age >= 14 and age <= 18:
             hard_complexity_constraints = (
                 "At least 35% of sentences should be compound or complex. "
                 "Include at least two internal reflection moments (motivation, doubt, or reframing). "
-                "Show a 3-step consequence chain where earlier choices reshape later outcomes."
+                "Show how an early decision ripples forward to reshape the outcome — without labeling it."
             )
         elif age > 18:
             hard_complexity_constraints = (
                 "At least 40% of sentences should be compound or complex with varied rhythm. "
                 "Include at least two reflective passages with relational or existential tension. "
-                "Show a 3-step consequence chain and resolve it with an earned, non-obvious insight."
+                "Show how early decisions ripple forward to a resolution that feels genuinely earned through the character's actions, not announced."
             )
 
         return f"""
-**PERSONA**: Expert Child Narrative Architect & Therapeutic Narrative Specialist.
+**PERSONA**: Expert Children's Author & Therapeutic Storyteller.
 
 You are a MASTER STORYTELLER creating a {story_length} adventure for {character}{gender_text} (age {age}).
 
@@ -249,7 +250,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 - **HERO**: {character} (Strengths: {strengths or 'Brave and kind'}).
 - **SPECIAL ABILITY**: {special_ability} (MUST be used at the climax).
 {tool_section}
-- **IMPOSSIBLE ELEMENTS**: Examples for this age: {age_impossible}
+- **IMPOSSIBLE ELEMENTS**: (Inspiration Only - DO NOT use these exact phrases): {age_impossible}
 - **COMPANIONS**: 
 {comp_str}
 (MANDATORY: Every character/pet listed above MUST be in the story. Checklist of names to include: {mandatory_names_str})
@@ -263,8 +264,9 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 - **Complexity Calibration**: {complexity_instruction}
 - **Hard Complexity Targets**: {hard_complexity_constraints or 'N/A for this age band.'}
 - **Safety**: {SAFETY_GUARDRAILS.strip()}{safety_reinforcement}
-- **Mandatory Elements**: Must include {coping_instruction}, and a satisfying earned ending.
+- **Mandatory Elements**: Must include {coping_instruction}, and a satisfying conclusion.
 
+{STRICT_OUTPUT_CONSTRAINTS}
 **OUTPUT FORMAT**:
 Strictly return valid JSON with this structure:
 {{
@@ -471,6 +473,7 @@ Companions: {comp_str} (MANDATORY Checklist: {mandatory_names_str} - EVERY name 
 Custom Requests: {custom_elements or 'None'} (CRITICAL: You MUST use the exact words from this request at least once each, verbatim, in the story).
 If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {SAFETY_GUARDRAILS}
+{STRICT_OUTPUT_CONSTRAINTS}
 """
 
 
@@ -547,4 +550,5 @@ Companions: {comp_str} (MANDATORY Checklist: {mandatory_names_str} - EVERY name 
 Custom Requests: {custom_elements or 'None'} (CRITICAL: You MUST use the exact words from this request at least once each, verbatim, in the story).
 If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {SAFETY_GUARDRAILS}
+{STRICT_OUTPUT_CONSTRAINTS}
 """

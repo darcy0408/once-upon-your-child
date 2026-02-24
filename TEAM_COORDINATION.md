@@ -2,6 +2,70 @@
 
 ---
 
+## Session Update - 2026-02-24 (Copilot Instructions Improvements)
+
+### Scope Completed
+
+**1. Improved `.github/copilot-instructions.md`:**
+- Added **Mock Testing Mode** section (critical cost-saving rule from `PROJECT_RULEBOOK.md` that was missing): always set `$env:MOCK_TESTING_MODE = "true"` before any test run; only disable for 2-3 final pre-deploy validations.
+- Added **Gemini model recommendation**: use `gemini-2.5-flash` (stable, Tier 1 quotas), not `gemini-2.0-flash-exp` (experimental, free-tier limits). Configured in `backend/config/__init__.py` line 23.
+- Added **Session Log Convention** section: documents the expected format and commit style for updating `TEAM_COORDINATION.md` after each session so future AI sessions maintain the log automatically.
+
+### Files Changed
+- `.github/copilot-instructions.md`
+- `TEAM_COORDINATION.md` *(this entry)*
+
+### Status
+- **Copilot Instructions:** ✅ Mock mode rule, model recommendation, and session log convention added.
+- **Launch Readiness:** 97% 🚀
+
+---
+
+## Session Update - 2026-02-24 (Prompt Instruction Leakage Fix)
+
+### Scope Completed
+
+**1. Root-Cause Fix for Instruction Leakage into Story Prose (`story_service.py`, `interactive_adventure_prompt_builder.py`):**
+
+The Feb 22 content quality audit identified that technical storytelling labels used *as prompt instructions* were being echoed verbatim into generated story text (e.g., *"I was a Therapeutic Narrative Specialist today"*, *"This was a two-step challenge arc"*, *"consequence chain"*). The root cause: the exact forbidden terms were also used as instruction labels elsewhere in the same prompt, teaching the model the vocabulary.
+
+Changes in `backend/services/story_service.py`:
+- **PERSONA line**: Renamed from `"Expert Child Narrative Architect & Therapeutic Narrative Specialist"` → `"Expert Children's Author & Therapeutic Storyteller"` (removes jargon the model could parrot back as character dialogue).
+- **Ages 8-10 `complexity_instruction`**: Replaced `"Two-step challenge arc."` with a plain-English description: *"Build a two-part challenge where solving the first problem opens a second, harder one."*
+- **Ages 14-18 `hard_complexity_constraints`**: Replaced `"3-step consequence chain"` with *"Show how an early decision ripples forward to reshape the outcome — without labeling it."*
+- **Adult `hard_complexity_constraints`**: Replaced `"earned, non-obvious insight"` with *"a resolution that feels genuinely earned through the character's actions, not announced."*
+- **Ending phrase**: `"satisfying earned ending"` → `"satisfying conclusion"`.
+- **`STRICT_OUTPUT_CONSTRAINTS` placement**: Moved to appear *after* `WRITING GUIDELINES` and *immediately before* `OUTPUT FORMAT`, making it the last instruction the model reads (strongest recency effect).
+- **Forbidden terms list expanded**: Added `"narrative specialist"`, `"narrative architect"`, `"challenge arc"`, `"tradeoff"`, `"earned win"`.
+- **New anti-repetition rule**: *"Do NOT repeat or closely paraphrase the opening paragraph at the end of the story."* (fixes the teen story repeated-paragraph issue found in the audit).
+
+Changes in `backend/services/interactive_adventure_prompt_builder.py`:
+- Same PERSONA rename applied to both `build_opening_prompt` and `build_continuation_prompt`.
+- `SAFETY_GUARDRAILS` updated to include the same forbidden-label rules and anti-repetition instruction.
+
+**2. Test Updated:**
+- `backend/tests/unit/test_story_service.py` — `test_hard_complexity_targets_for_adult` updated to assert the new descriptive phrase instead of the removed `"non-obvious insight"` label.
+- Full backend suite: **453 passing, 0 failing** after fix.
+
+**3. Repo Housekeeping:**
+- Added `.github/copilot-instructions.md` — covers build/test/lint commands, architecture overview, key conventions, MCP server config, and the age-band constraint table for future AI sessions.
+- Added `.vscode/mcp.json` — configures Playwright MCP (browser automation) and SQLite MCP (local DB queries) for Copilot.
+
+### Files Changed
+- `backend/services/story_service.py`
+- `backend/services/interactive_adventure_prompt_builder.py`
+- `backend/tests/unit/test_story_service.py`
+- `.github/copilot-instructions.md` *(new)*
+- `.vscode/mcp.json` *(new)*
+
+### Status
+- **Prompt Leakage:** ✅ Fixed across both regular and Pick-a-Path story modes.
+- **Teen Repeated Paragraph:** ✅ Anti-repetition rule added to prompt.
+- **Test Suite:** ✅ 453/453 backend tests passing.
+- **Launch Readiness:** 97% 🚀
+
+---
+
 ## Session Update - 2026-02-22 (Refinements: Meta-Talk Removal, Audio Normalization & Security)
 
 ### Scope Completed
@@ -4471,3 +4535,29 @@ python3 -c "import ast; ast.parse(open('backend/openrouter_image_generator.py').
 - PASS: all files analyze clean (no new issues)
 - Gallery is restored; free/private users can now pick pre-made characters without generating images
 - Custom avatar generation (photo upload) now works end-to-end on backend
+
+## Session Update - 2026-02-24 (MCP Server Setup — Playwright + SQLite)
+
+### Scope Completed
+- Diagnosed and fixed both MCP servers failing to connect in the Copilot CLI / VS Code environment.
+
+### Problems Found
+1. **Playwright MCP** — `@playwright/mcp@latest` defaulted to Chrome at `/opt/google/chrome/chrome`, which is not installed. Chromium was available at `/snap/bin/chromium` but not in the expected location.
+2. **SQLite MCP** — DSN used a Windows path (`sqlite:///C:/dev/...`) but the MCP server process runs in the WSL/Linux environment, making the path unresolvable.
+
+### Changes
+- `.vscode/mcp.json`
+  - **Playwright**: added `"--browser", "chromium"` arg so MCP uses Playwright's bundled Chromium instead of system Chrome
+  - **SQLite**: updated DSN from `sqlite:///C:/dev/story-weaver-app/instance/app.db` to `sqlite:////mnt/c/dev/story-weaver-app/instance/app.db` (Linux/WSL path)
+- Installed Playwright's Chromium browser bundle: `npx playwright install chromium` → `chromium-1208` at `~/.cache/ms-playwright/`
+
+### Verification
+```bash
+ls ~/.cache/ms-playwright/   # chromium-1208 present
+# Reload MCP servers in VS Code / Copilot CLI to confirm connection
+```
+
+### Result
+- Both MCP servers should now connect without timeout errors
+- Playwright can automate the Flutter web UI at `http://localhost:8080`
+- SQLite MCP can query `instance/app.db` (users, characters, stories, achievements)
