@@ -2,7 +2,7 @@ import pytest
 from io import BytesIO
 from unittest.mock import MagicMock, patch
 
-def test_generate_pet_avatar_route_success(client, auth_headers):
+def test_generate_pet_avatar_route_success(client, auth_headers, test_user):
     """Test successful pet avatar generation via route."""
     # Mock the avatar service
     with patch('backend.routes.avatar_routes.get_avatar_service') as mock_get_service:
@@ -42,7 +42,7 @@ def test_generate_pet_avatar_route_success(client, auth_headers):
         assert json_data['avatar']['id'] == 'test-pet-id'
         assert 'image_base64' in json_data['avatar']
 
-def test_generate_pet_avatar_route_missing_data(client, auth_headers):
+def test_generate_pet_avatar_route_missing_data(client, auth_headers, test_user):
     """Test pet avatar generation with missing fields."""
     data = {
         'pet_name': 'Buddy'
