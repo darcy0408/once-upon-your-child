@@ -183,8 +183,10 @@ SAFETY RULES:
 - No sexual content, no graphic violence, no self-harm, no illegal wrongdoing.
 - Handle sensitive emotions gently. Safe, therapeutic tone.
 - Do NOT invent characters or family members not provided.
-- Must Include: A Moment of Wonder (age-appropriate), a coping moment in action (resilience/perspective), and a satisfying earned ending.
+- Must Include: A Moment of Wonder (age-appropriate), a coping moment in action (resilience/perspective), and a satisfying conclusion.
 - SAFETY: Ensure no scary imagery or abandonment themes for children.
+- Do NOT use internal storytelling labels in the prose (e.g., "consequence chain", "challenge arc", "earned ending", "narrative beat", "therapeutic specialist").
+- Do NOT repeat or closely paraphrase the opening paragraph at the end of the story.
 """
 
     TEEN_TONE_INSTRUCTION = """
@@ -301,15 +303,15 @@ SAFETY RULES:
             else:
                 challenge_instruction = f"- **LIFE CHALLENGE**: The story must subtly reflect the challenge of '{life_challenge}'. The hero should learn to cope with this through the adventure, but keep it metaphorical and magical, not clinical."
 
-        # Age-specific impossible element suggestions
+        # Age-specific impossible element suggestions - FOR INSPIRATION ONLY, DO NOT USE VERBATIM
         impossible_elements = {
-            '3-4': 'Ride on a friendly cloud, talk to a flower, jump over a moonbeam.',
-            '5-7': 'Fly on dandelion seeds, taste rainbow colors, walk through a mirror.',
-            '8-10': 'Surf on lightning bolts, rewrite the rules of gravity, talk to the stars.',
-            '11-13': 'Architect a dreamscape, command the tides, freeze time with a thought.',
-            '13-15': 'Bridge two worlds, heal a rift in space, weave light into a bridge.',
-            '15-18': 'Navigate a paradox, harmonize a chaotic dimension, transcend physical limits.',
-            'adult': 'Manifest an abstract emotion, reconcile lost timelines, find meaning in entropy.'
+            '3-4': 'riding a friendly cloud, talking to a flower, or jumping over a moonbeam.',
+            '5-7': 'flying on dandelion seeds, tasting rainbow colors, or walking through a mirror.',
+            '8-10': 'surfing on lightning bolts, shifting gravity, or talking to the stars.',
+            '11-13': 'shaping a dreamscape, commanding the tides, or freezing time.',
+            '13-15': 'bridging two worlds, healing a rift in space, or weaving light into a bridge.',
+            '15-18': 'navigating a paradox, harmonizing a chaotic dimension, or transcending physical limits.',
+            'adult': 'visualizing a complex emotion as a physical force, reconciling memories from different times, or finding order in chaos.'
         }
         age_impossible = impossible_elements.get(age_band, 'Something magical and physics-defying.')
 
@@ -343,7 +345,7 @@ SAFETY RULES:
         tool_line = f"- **{tool_label}**: {tool_value}"
 
         prompt = f"""
-**PERSONA**: Expert Child Narrative Architect & Pick-A-Path Specialist.
+**PERSONA**: Expert Children's Author & Pick-A-Path Storyteller.
 
 You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_name}{gender_text} (age {age}).
 
@@ -355,7 +357,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 - **HERO**: {child_name} (Special Ability: {special_ability}).
 {personality_profile}
 {tool_line}
-- **IMPOSSIBLE ELEMENTS**: Examples for this age: {age_impossible}
+- **IMPOSSIBLE ELEMENTS**: (Inspiration Only - DO NOT use these exact phrases): {age_impossible}
 - **COMPANIONS**: {companion_context} (Must affect the story).
 {mood_rules}
 
@@ -471,7 +473,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
             ending_instruction = f"\n**ENDING LOGIC**: You are at segment {next_segment_number}/{path_depth}. If appropriate for the plot, you MAY conclude the story in this segment by setting `is_ending: true`. If not, ensure the story concludes by segment {path_depth}."
 
         prompt = f"""
-**PERSONA**: Expert Child Narrative Architect & Pick-A-Path Specialist.
+**PERSONA**: Expert Children's Author & Pick-A-Path Storyteller.
 
 You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {age}).
 
