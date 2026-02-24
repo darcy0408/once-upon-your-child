@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -775,12 +776,14 @@ class _CharacterCreationScreenEnhancedState
       }
     } on http.ClientException catch (e) {
       _showErrorSnackBar('Network Error: ${e.message}');
-    } on SocketException catch (e) {
-      _showErrorSnackBar('Connection Error: ${e.message}');
     } catch (e, stackTrace) {
-      debugPrint('Character Creation Error: $e');
-      debugPrint('Stack Trace: $stackTrace');
-      _showErrorSnackBar('An unexpected error occurred: $e');
+      if (!kIsWeb && e is SocketException) {
+        _showErrorSnackBar('Connection Error: ${e.message}');
+      } else {
+        debugPrint('Character Creation Error: $e');
+        debugPrint('Stack Trace: $stackTrace');
+        _showErrorSnackBar('An unexpected error occurred: $e');
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

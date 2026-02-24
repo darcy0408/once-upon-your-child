@@ -1015,6 +1015,16 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   }
 
   Future<void> _exportStory() async {
+    if (kIsWeb) {
+      await Clipboard.setData(ClipboardData(
+        text: _formatShareText(includeMetadata: true),
+      ));
+      if (mounted) {
+        _showSnackBar('Story text copied to clipboard! 📄', backgroundColor: Colors.green);
+      }
+      _trackResultAction('share', extra: {'method': 'copy_txt_web'});
+      return;
+    }
     final directory = await getTemporaryDirectory();
     final fileName =
         widget.title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');

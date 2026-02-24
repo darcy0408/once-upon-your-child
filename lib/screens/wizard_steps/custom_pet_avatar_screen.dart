@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -29,7 +30,8 @@ class CustomPetAvatarScreen extends StatefulWidget {
 }
 
 class _CustomPetAvatarScreenState extends State<CustomPetAvatarScreen> {
-  File? _imageFile;
+  XFile? _selectedImage;
+  Uint8List? _selectedImageBytes;
   bool _isGenerating = false;
   String? _generatedImagePath;
   GeneratedAvatar? _generatedAvatarData;
@@ -42,8 +44,10 @@ class _CustomPetAvatarScreenState extends State<CustomPetAvatarScreen> {
     );
 
     if (pickedFile != null) {
+      final pickedBytes = kIsWeb ? await pickedFile.readAsBytes() : null;
       setState(() {
-        _imageFile = File(pickedFile.path);
+        _selectedImage = pickedFile;
+        _selectedImageBytes = pickedBytes;
       });
     }
   }
@@ -53,14 +57,16 @@ class _CustomPetAvatarScreenState extends State<CustomPetAvatarScreen> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
+      final pickedBytes = kIsWeb ? await pickedFile.readAsBytes() : null;
       setState(() {
-        _imageFile = File(pickedFile.path);
+        _selectedImage = pickedFile;
+        _selectedImageBytes = pickedBytes;
       });
     }
   }
 
   Future<void> _generatePetAvatar() async {
-    if (_imageFile == null) {
+    if (_selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please add a photo of your pet.')),
       );
@@ -76,7 +82,18 @@ class _CustomPetAvatarScreenState extends State<CustomPetAvatarScreen> {
       final url = Uri.parse('$baseUrl/avatar/generate-pet-avatar');
 
       var request = http.MultipartRequest('POST', url);
-      request.files.add(await http.MultipartFile.fromPath('photo', _imageFile!.path));
+      if (kIsWeb) {
+        final bytes = _selectedImageBytes ?? await _selectedImage!.readAsBytes();
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'photo',
+            bytes,
+            filename: _selectedImage!.name.isNotEmpty ? _selectedImage!.name : 'pet_photo.png',
+          ),
+        );
+      } else {
+        request.files.add(await http.MultipartFile.fromPath('photo', _selectedImage!.path));
+      }
       request.fields['pet_name'] = widget.petName;
       request.fields['species'] = widget.species;
       request.fields['breed_description'] = widget.breedDescription;
@@ -132,7 +149,15 @@ class _CustomPetAvatarScreenState extends State<CustomPetAvatarScreen> {
   }
 
   Future<String> _saveImageLocally(String base64String) async {
-    final bytes = base64Decode(base64String.split(',').last);
+    final normalizedDataUri = base64String.startsWith('data:image')
+        ? base64String
+        : 'data:image/png;base64,${base64String.split(',').last}';
+    final bytes = base64Decode(normalizedDataUri.split(',').last);
+
+    if (kIsWeb) {
+      return normalizedDataUri;
+    }
+
     final directory = await getApplicationDocumentsDirectory();
     final avatarsDir = Directory(path.join(directory.path, 'pet_avatars'));
     if (!await avatarsDir.exists()) {
@@ -143,6 +168,37 @@ class _CustomPetAvatarScreenState extends State<CustomPetAvatarScreen> {
     final file = File(path.join(avatarsDir.path, fileName));
     await file.writeAsBytes(bytes);
     return file.path;
+  }
+
+  ImageProvider<Object>? _selectedImageProvider() {
+    if (_selectedImage == null) return null;
+    if (kIsWeb) {
+      if (_selectedImageBytes != null) {
+        return MemoryImage(_selectedImageBytes!);
+      }
+      if (_selectedImage!.path.startsWith('blob:') ||
+          _selectedImage!.path.startsWith('http') ||
+          _selectedImage!.path.startsWith('data:image')) {
+        return NetworkImage(_selectedImage!.path);
+      }
+      return null;
+    }
+    return FileImage(File(_selectedImage!.path));
+  }
+
+  ImageProvider<Object>? _generatedImageProvider() {
+    final imagePath = _generatedImagePath;
+    if (imagePath == null || imagePath.isEmpty) return null;
+    if (imagePath.startsWith('data:image')) {
+      return MemoryImage(base64Decode(imagePath.split(',').last));
+    }
+    if (imagePath.startsWith('blob:') || imagePath.startsWith('http')) {
+      return NetworkImage(imagePath);
+    }
+    if (!kIsWeb) {
+      return FileImage(File(imagePath));
+    }
+    return null;
   }
 
   @override
@@ -231,14 +287,14 @@ class _CustomPetAvatarScreenState extends State<CustomPetAvatarScreen> {
                                   spreadRadius: 1,
                                 ),
                               ],
-                              image: _imageFile != null
+                              image: _selectedImage != null
                                   ? DecorationImage(
-                                      image: FileImage(_imageFile!),
+                                      image: _selectedImageProvider()!,
                                       fit: BoxFit.cover,
                                     )
-                                  : null,
-                            ),
-                            child: _imageFile == null
+                                : null,
+                          ),
+                            child: _selectedImage == null
                                 ? Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -323,7 +379,7 @@ class _CustomPetAvatarScreenState extends State<CustomPetAvatarScreen> {
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: const Color(0xFFFFD700), width: 2),
                             image: DecorationImage(
-                              image: FileImage(File(_generatedImagePath!)),
+                              image: _generatedImageProvider()!,
                               fit: BoxFit.contain,
                             ),
                           ),

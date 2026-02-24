@@ -1,6 +1,7 @@
 // lib/coloring_book_library_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'coloring_book_service.dart';
 import 'coloring_screen.dart';
@@ -117,6 +118,15 @@ class _ColoringBookLibraryScreenState extends State<ColoringBookLibraryScreen> {
   }
 
   Future<void> _downloadImage(ColoringPage page) async {
+    if (kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Downloading directly to your computer is coming soon! For now, right-click the image to save it. 🎨'),
+          backgroundColor: Colors.blue,
+        ),
+      );
+      return;
+    }
     try {
       // Show loading
       showDialog(
