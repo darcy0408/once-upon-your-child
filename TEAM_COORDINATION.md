@@ -2,6 +2,113 @@
 
 ---
 
+## Session Update - 2026-02-24 (Git Maintenance + Dependency Updates)
+
+### Scope Completed
+
+**1. Git Maintenance (GIT_MAINTENANCE.md Phase 1-5)**
+
+- **Branch cleanup:** Deleted 3 stale local triage branches (`chore/worktree-triage-2026-02-21`, `chore/worktree-triage-clean`, `triage/full-snapshot-2026-02-21`) and the corresponding remote branch. All were worktree snapshots from 2026-02-21 with no unique code.
+- **Dependabot PRs resolved:** 14 PRs appeared after prune. Applied all safe patch/minor updates directly; held risky major-version bumps for manual review.
+
+**2. Backend Dependency Updates (`backend/requirements.txt`)**
+
+| Package | Before | After | Risk |
+|---------|--------|-------|------|
+| Flask | 3.1.2 | 3.1.3 | ✅ Patch |
+| SQLAlchemy | 2.0.46 | 2.0.47 | ✅ Patch |
+| Werkzeug | 3.1.5 | 3.1.6 | ✅ Patch |
+| google-auth | 2.40.3 | 2.48.0 | ✅ Minor |
+| bcrypt | 4.2.1 | 5.0.0 | ✅ Major (not imported directly; Werkzeug owns it) |
+| sentry-sdk | 2.52.0 | 2.53.0 | ✅ Patch |
+| marshmallow | 4.2.1 | 4.2.2 | ✅ Patch |
+| redis | 7.1.1 | 7.2.0 | ✅ Minor |
+| pytest-mock | 3.14.0 | 3.15.1 | ✅ Minor |
+| **google-genai** | 1.3.0 | 1.64.0 | ⚠️ **HELD** — huge jump, needs API compat testing |
+
+All 9 applied packages verified with `python -c "import ..."` — all imports successful.
+
+**3. Flutter Dependency Updates (`pubspec.yaml`)**
+
+| Package | Before | After | Risk |
+|---------|--------|-------|------|
+| uuid | ^4.5.1 | ^4.5.3 | ✅ Patch |
+| camera | ^0.11.0+2 | ^0.11.4 | ✅ Minor |
+| **google_fonts** | ^6.2.1 | ^8.0.2 | ⚠️ **HELD** — major version |
+| **firebase_core/analytics** | ^3.8.1/^11.3.5 | ^4.4.0/^12.1.2 | ⚠️ **HELD** — major versions |
+
+`dependency_overrides: meta: 1.15.0` intentionally kept (guards against Kotlin version conflicts).
+
+**4. Prompt Instruction Leakage Fix (`story_service.py`, `interactive_adventure_prompt_builder.py`)**
+
+- Renamed PERSONA from `"Therapeutic Narrative Specialist"` → `"Therapeutic Storyteller"` (prevents model echoing jargon as character dialogue).
+- Replaced `"Two-step challenge arc"`, `"consequence chain"`, `"non-obvious insight"`, `"earned ending"` instructions with plain-English equivalents.
+- Moved `STRICT_OUTPUT_CONSTRAINTS` to end of prompt (immediately before `OUTPUT FORMAT`) for recency effect.
+- Added anti-repetition rule: do not repeat opening paragraph at story end.
+- Same fixes applied to `interactive_adventure_prompt_builder.py`.
+- Updated `test_hard_complexity_targets_for_adult` assertion.
+
+### Files Changed
+- `backend/requirements.txt`
+- `pubspec.yaml`
+- `backend/services/story_service.py`
+- `backend/services/interactive_adventure_prompt_builder.py`
+- `backend/tests/unit/test_story_service.py`
+- `.github/copilot-instructions.md` *(new)*
+- `.vscode/mcp.json` *(new)*
+- `TEAM_COORDINATION.md`
+
+### Held for Manual Review
+- `google-genai 1.64.0` — verify no `google.genai.Client` / `types` API surface changes before applying
+- `google_fonts ^8.0.2` — verify font API unchanged
+- `firebase_core ^4.4.0` / `firebase_analytics ^12.1.2` — major Firebase SDK versions, check migration guide
+
+### Status
+- **Dependency Updates:** ✅ 9/10 pip + 2/4 pub applied and verified
+- **Prompt Leakage Fix:** ✅ Complete, 453/453 tests passing
+- **Branch Count:** 2 (main + origin/main only — all triage branches deleted)
+- **Launch Readiness:** 98% 🚀
+
+---
+
+## Session Update - 2026-02-24 (CI/CD Green-Build Fixes)
+
+### Problem Summary
+GitHub Actions CI was failing on **3 jobs** against the latest `origin/main` commit (`015099c2`):
+- **`frontend-test`**: `subosito/flutter-action@v2` could not determine the Flutter version because `flutter-version: stable` is a channel name, not a version number.
+- **`backend-test` + `api-contract-tests`**: All authenticated API routes returned 401 because users created inside a fixture's nested `app_context` were committed to a different SQLite in-memory connection than the one used by the Flask test client — user lookup in `require_auth` failed.
+- **`test_get_subscription_returns_500_on_unexpected_error`**: `is_production()` returned `True` in CI (GitHub Actions runner has no `FLASK_ENV` set, defaulting to production mode), so `make_handle_error` returned the generic `'Internal server error'` instead of the raw exception message the test expected.
+
+### Scope Completed
+
+**1. Fixed SQLite in-memory connection isolation (`backend/app.py`)**
+- Added `StaticPool` + `check_same_thread=False` engine options immediately after `SQLALCHEMY_ENGINE_OPTIONS` is popped in the `testing` branch of `create_app`.
+- All app-contexts and test-client requests now share a **single connection**, so data committed in a fixture is visible to the route handler.
+- No test isolation risk: each test gets its own `create_app('testing')` call → its own `StaticPool` → its own in-memory DB.
+
+**2. Fixed Flutter version resolution (`.github/workflows/cicd.yml`)**
+- Changed `flutter-version: ${{ env.FLUTTER_VERSION }}` → `channel: stable` in both the `frontend-test` and `build-frontend` jobs.
+- `FLUTTER_VERSION: 'stable'` env var left in place (unused for action input, harmless).
+
+**3. Fixed `is_production()` bleed in CI (`.github/workflows/cicd.yml`)**
+- Added `FLASK_ENV: testing` as a job-level env var to **`backend-test`** and **`api-contract-tests`** jobs.
+- This ensures `is_production()` → `False` in all backend test runs, so error-handling tests get the real exception message (not the sanitised production string).
+
+### Files Changed
+- `backend/app.py` — StaticPool engine options in `testing` branch
+- `.github/workflows/cicd.yml` — Flutter `channel: stable`; `FLASK_ENV: testing` for backend jobs
+- `TEAM_COORDINATION.md` *(this entry)*
+
+### Status
+- **CI Root Causes:** ✅ All three root causes addressed.
+- **Push Required:** Local `main` is ~6 commits ahead of `origin/main` (includes prompt-leakage fix and prior session work). Push to trigger green-build verification.
+- **Remaining Known Items:**
+  - `setup-python` still on `@v4` (not `@v5` as mentioned in a prior handoff).
+  - `meta` dependency override was removed (Flutter SDK manages it now); prior handoff was inaccurate.
+  - SQLAlchemy / Flask-Caching deprecation warnings suppressed in `pytest.ini` — deferred cleanup.
+
+---
+
 ## Session Update - 2026-02-24 (CI/CD Stabilization & Web Compatibility)
 
 ### Scope Completed

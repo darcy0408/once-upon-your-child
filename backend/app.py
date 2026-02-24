@@ -116,6 +116,15 @@ def create_app(config_name):
         app.config.from_object(config_by_name['testing'])
         app.config['TESTING'] = True
         app.config.pop('SQLALCHEMY_ENGINE_OPTIONS', None)
+        # Use StaticPool so every app-context and test-client request shares the
+        # same in-memory SQLite connection.  Without this, users committed inside
+        # a fixture's nested app_context are on a different connection and are
+        # invisible to the test-client request handler → 401 Unauthorized.
+        from sqlalchemy.pool import StaticPool
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+            'connect_args': {'check_same_thread': False},
+            'poolclass': StaticPool,
+        }
     else:
         app.config.from_object(config_by_name[config_name])
 

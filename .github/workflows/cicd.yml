@@ -20,7 +20,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
           cache: true
 
       - name: Cache Flutter dependencies
@@ -42,6 +42,8 @@ jobs:
   # Backend Testing
   backend-test:
     runs-on: ubuntu-latest
+    env:
+      FLASK_ENV: testing
     defaults:
       run:
         working-directory: ./backend
@@ -87,6 +89,8 @@ jobs:
   # API Contract Tests
   api-contract-tests:
     runs-on: ubuntu-latest
+    env:
+      FLASK_ENV: testing
     defaults:
       run:
         working-directory: ./backend
@@ -128,7 +132,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
           cache: true
 
       - name: Cache Flutter dependencies
