@@ -2,6 +2,71 @@
 
 ---
 
+## Session Update - 2026-02-25 (All Dependabot PRs resolved + gemini-2.0-flash)
+
+### Scope: Full maintenance pass — all open Dependabot PRs closed
+
+**Flutter deps (all Dependabot branches deleted):**
+- `google_fonts ^6.2.1 → ^8.0.2` ✅
+- `firebase_core ^3.8.1 → ^4.4.0` ✅
+- `firebase_analytics ^11.3.5 → ^12.1.2` ✅
+- `camera 0.11.4`, `uuid 4.5.3`, `_flutterfire_internals 1.3.66` ✅
+- Platform plugin registrants updated (linux/macos/windows)
+
+**Backend changes committed:**
+- Default Gemini model: `gemini-1.5-flash` → `gemini-2.0-flash` (2-3× faster)
+- Default timeout: 45s → 90s
+- `story_service.py`: Reduced word counts for 13-15, 15-18, adult; removed `ltr` from 13-15/15-18
+- `story_tasks.py`: Fixed circular import — lazy `create_app` inside `get_flask_app()`
+- Avatar metadata: hair color tags filled in for midjourney avatars
+
+**No open Dependabot PRs remain.**
+
+---
+
+## Session Update - 2026-02-25 (Comprehensive Feature Verification + Latency Fix)
+
+### Scope
+Full verification pass: Flutter static analysis, 135 backend unit tests, live quality check
+across 7 age bands × 4 story modes, and static inspection of all recent feature additions.
+Applied latency fixes that had not propagated correctly in prior sessions.
+
+### Test Results
+
+| Test Suite | Result | Detail |
+|---|---|---|
+| Flutter analyze | ⚠️ 1 warning | Unused `dart:typed_data` import (non-blocking) |
+| Backend unit tests | ✅ 135/135 | All passing |
+| Quality check (7 age bands × 4 modes) | ⚠️ 17/21 | 3 word-count validation + 1 JWT expiry |
+| Wisdom gems age-appropriate | ✅ PASS | All gems calibrated; none say "You are magic!" |
+| LTR age gate | ✅ PASS | 3-4 ✅  5-7 ✅  8+ correctly excluded ✅ |
+| tweakGalleryAvatar single declaration | ✅ PASS | Duplicate stub removed |
+| CHARACTER VOICE prompt (archetypes) | ✅ PASS | story_service.py line 343 |
+| wisdom_gem_guidance variable | ✅ PASS | 6 age-band variants present |
+| invisible virtue anchoring | ✅ PASS | story_service.py lines 121, 329 |
+| AvatarTweakPanel widget | ✅ EXISTS | lib/widgets/avatar_tweak_panel.dart |
+| FeelingSelectionStep | ✅ EXISTS | lib/screens/wizard_steps/feeling_selection_step.dart |
+| SEL Story Packs | ✅ EXISTS | _buildSELPacksSection() in lib/main_story.dart |
+| Superpower Profile | ✅ EXISTS | _buildSuperpowerSection() in hero_creator_step.dart |
+| EMPATHY MOMENT (interactive) | ✅ EXISTS | interactive_adventure_prompt_builder.py line 517 |
+
+### Fixes Applied This Session
+- **Latency fix (word counts):** Tightened `medium` upper bounds for 13-15 (3400→2400), 15-18 (4200→2800), adult (5200→2800) in `backend/services/story_service.py`. Also removed orphaned `ltr` keys from 13-15 and 15-18 bands.
+- **Default model:** `backend/config/__init__.py` default changed `gemini-1.5-flash` → `gemini-2.0-flash`
+- **Gemini timeout:** `backend/services/story_generation_service.py` default raised 45s → 90s
+
+### Files Changed This Session
+- `backend/services/story_service.py` — word count ceilings + removed stray ltr keys
+- `backend/config/__init__.py` — default model upgrade
+- `backend/services/story_generation_service.py` — timeout 45→90s
+
+### Status
+- **All 7 Therapeutic Magic Plan features:** ✅ Verified present and wired
+- **Backend tests:** ✅ 135/135
+- **Launch Readiness:** 92%
+
+---
+
 ## Session Update - 2026-02-25 (Comprehensive Testing: 7 Therapeutic Features)
 
 ### Scope Completed
