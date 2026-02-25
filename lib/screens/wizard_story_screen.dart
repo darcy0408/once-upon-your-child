@@ -21,13 +21,16 @@ import '../services/api_service_manager.dart';
 class WizardStoryScreen extends StatefulWidget {
   final Character? initialCharacter;
   final List<Character> availableCharacters;
-  final int initialStep; // NEW: Allow starting at specific step
+  final int initialStep;
+  // SEL Story Packs: optional seed data to pre-fill wizard fields
+  final WizardData? initialWizardData;
 
   const WizardStoryScreen({
     super.key,
     this.initialCharacter,
     this.availableCharacters = const [],
     this.initialStep = 0,
+    this.initialWizardData,
   });
 
   @override
@@ -50,7 +53,7 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
     _currentStep = widget.initialStep; // Set initial step
     _pageController = PageController(initialPage: widget.initialStep);
     
-    _wizardData = WizardData();
+    _wizardData = widget.initialWizardData ?? WizardData();
     if (widget.initialCharacter != null) {
       _initializeFromCharacter(widget.initialCharacter!);
     }

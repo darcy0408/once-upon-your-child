@@ -929,6 +929,8 @@ class _StoryScreenState extends State<StoryScreen> {
                 _buildAchievementsOverviewCard(),
                 const SizedBox(height: 20),
               ],
+              _buildSELPacksSection(),
+              const SizedBox(height: 20),
               _buildSectionCard(
                 'Choose Main Character',
                 Column(
@@ -1684,6 +1686,138 @@ class _StoryScreenState extends State<StoryScreen> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  // SEL Story Pack data
+  static const List<Map<String, dynamic>> _selPacks = [
+    {
+      'emoji': '🤝',
+      'title': 'Making Friends',
+      'subtitle': 'Reach out & connect',
+      'lifeChallenge': 'Making New Friends',
+      'color': 0xFF7C4DFF,
+    },
+    {
+      'emoji': '😤',
+      'title': 'Unfairness',
+      'subtitle': 'When things feel wrong',
+      'lifeChallenge': 'Handling Big Feelings',
+      'color': 0xFFFF6D00,
+    },
+    {
+      'emoji': '🌱',
+      'title': 'New Beginnings',
+      'subtitle': 'Starting something new',
+      'lifeChallenge': 'Dealing with Change',
+      'color': 0xFF2E7D32,
+    },
+    {
+      'emoji': '💛',
+      'title': 'Big Feelings',
+      'subtitle': 'Name it to tame it',
+      'lifeChallenge': 'Handling Big Feelings',
+      'color': 0xFFF9A825,
+    },
+    {
+      'emoji': '🦸',
+      'title': 'Standing Up',
+      'subtitle': 'Courage & confidence',
+      'lifeChallenge': 'Building Confidence',
+      'color': 0xFF1565C0,
+    },
+    {
+      'emoji': '🏠',
+      'title': 'Family',
+      'subtitle': 'Together & apart',
+      'lifeChallenge': 'Sibling Rivalry',
+      'color': 0xFFAD1457,
+    },
+  ];
+
+  Widget _buildSELPacksSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Text(
+            '📚 Story Packs',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  shadows: [
+                    const Shadow(
+                        color: Colors.black26,
+                        blurRadius: 4,
+                        offset: Offset(0, 2))
+                  ],
+                ),
+          ),
+        ),
+        SizedBox(
+          height: 110,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            itemCount: _selPacks.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              final pack = _selPacks[index];
+              final color = Color(pack['color'] as int);
+              return GestureDetector(
+                onTap: () {
+                  final seed = WizardData()
+                    ..lifeChallenge = pack['lifeChallenge'] as String;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => WizardStoryScreen(
+                        initialWizardData: seed,
+                        availableCharacters: _characters,
+                      ),
+                    ),
+                  ).then((_) => _loadCharacters());
+                },
+                child: Container(
+                  width: 100,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.35),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(pack['emoji'] as String,
+                          style: const TextStyle(fontSize: 28)),
+                      const SizedBox(height: 6),
+                      Text(
+                        pack['title'] as String,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

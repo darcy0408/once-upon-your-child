@@ -54,6 +54,11 @@ class WizardData {
   // Guardian Mode / Therapeutic Features
   String? lifeChallenge;
 
+  // Feature 4: Story DNA (parent-authored context behind math gate)
+  String? storyDnaContext;  // "What's in their world?" chip
+  String? storyDnaOutcome;  // "What magic would help most?" chip
+  String? storyDnaAvoid;    // "Any words/topics to avoid?" free text
+
   // Feature 3: Superpower Profile (child-facing — narrative therapy externalization)
   String? heroSuperpower; // e.g. "Kindness Magic"
   String? heroQuest;      // e.g. "Making new friends" — maps silently to lifeChallenge

@@ -32,6 +32,14 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   bool _showParentalInput = false;
   final TextEditingController _parentalNoteController = TextEditingController();
   final TextEditingController _safeSpaceController = TextEditingController();
+  final TextEditingController _mathController = TextEditingController();
+  final TextEditingController _avoidController = TextEditingController();
+
+  // Math gate state
+  late int _mathA;
+  late int _mathB;
+  bool _mathGatePassed = false;
+  bool _mathWrong = false;
 
   final List<ScenarioCard> _scenarios = ScenarioData.all;
 
@@ -42,6 +50,30 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
     widget.wizardData.selectedEmotionChips = [];
     _safeSpaceController.text = widget.wizardData.customElements;
     _parentalNoteController.text = widget.wizardData.parentalNote ?? '';
+    _avoidController.text = widget.wizardData.storyDnaAvoid ?? '';
+    // Generate a fresh math challenge each time Guardian Mode opens
+    _resetMathGate();
+  }
+
+  void _resetMathGate() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    _mathA = (now % 7) + 2;  // 2–8
+    _mathB = (now % 9) + 1;  // 1–9
+    _mathController.clear();
+    _mathGatePassed = false;
+    _mathWrong = false;
+  }
+
+  void _checkMathAnswer() {
+    final answer = int.tryParse(_mathController.text.trim());
+    setState(() {
+      if (answer == _mathA + _mathB) {
+        _mathGatePassed = true;
+        _mathWrong = false;
+      } else {
+        _mathWrong = true;
+      }
+    });
   }
 
   void _selectScenario(String scenarioId) {
@@ -104,6 +136,8 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   void dispose() {
     _parentalNoteController.dispose();
     _safeSpaceController.dispose();
+    _mathController.dispose();
+    _avoidController.dispose();
     super.dispose();
   }
 
@@ -140,6 +174,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                         : AppColors.textDark.withValues(alpha: 0.5),
                   ),
                   onPressed: () {
+                    if (!_showParentalInput) _resetMathGate();
                     setState(() => _showParentalInput = !_showParentalInput);
                   },
                   tooltip: 'Guardian Mode',
@@ -434,8 +469,257 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
               widget.wizardData.parentalNote = value;
             },
           ),
+
+          const Divider(height: 32, thickness: 1.5),
+
+          // 4. Story DNA — Math Gate
+          _buildStoryDnaSection(),
         ],
       ),
+    );
+  }
+
+  Widget _buildStoryDnaSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('🧬', style: TextStyle(fontSize: 18)),
+            const SizedBox(width: 8),
+            Text(
+              'Story DNA',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Answer a quick question to unlock deeper story customisation.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.textDark.withValues(alpha: 0.55),
+                fontStyle: FontStyle.italic,
+              ),
+        ),
+        const SizedBox(height: 16),
+
+        if (!_mathGatePassed) ...[
+          // Math gate
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.4)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Quick parent check: What is $_mathA + $_mathB?',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _mathController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: 'Your answer…',
+                          hintStyle: TextStyle(
+                              color: AppColors.textDark.withValues(alpha: 0.4),
+                              fontSize: 14),
+                          filled: true,
+                          fillColor: AppColors.cream,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                            borderSide: BorderSide(
+                                color: _mathWrong
+                                    ? Colors.red
+                                    : AppColors.primary
+                                        .withValues(alpha: 0.3)),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                        ),
+                        onSubmitted: (_) => _checkMathAnswer(),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: _checkMathAnswer,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.sm)),
+                      ),
+                      child: const Text('Unlock'),
+                    ),
+                  ],
+                ),
+                if (_mathWrong) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Not quite — try again!',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: Colors.red),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ] else ...[
+          // Story DNA questions (unlocked)
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(color: AppColors.gold.withValues(alpha: 0.6)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.lock_open,
+                        size: 16, color: AppColors.gold),
+                    const SizedBox(width: 6),
+                    Text('Story DNA Unlocked ✨',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(
+                                color: AppColors.gold,
+                                fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Q1: What's on their mind?
+                Text(
+                  "What's in ${widget.wizardData.characterName.isEmpty ? 'their' : widget.wizardData.characterName}'s world right now?",
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    'First day at school',
+                    'Starting new class',
+                    'Moving house',
+                    'New sibling',
+                    'Lost something',
+                    'Feeling left out',
+                    'Friend trouble',
+                    'Big test coming',
+                  ].map((ctx) {
+                    final sel = widget.wizardData.storyDnaContext == ctx;
+                    return ChoiceChip(
+                      label: Text(ctx),
+                      selected: sel,
+                      onSelected: (v) => setState(() =>
+                          widget.wizardData.storyDnaContext = v ? ctx : null),
+                      selectedColor: AppColors.primary.withValues(alpha: 0.15),
+                      labelStyle: TextStyle(
+                          fontSize: 12,
+                          fontWeight:
+                              sel ? FontWeight.bold : FontWeight.normal),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 4),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+
+                // Q2: What magic would help?
+                Text(
+                  'What outcome would feel magical?',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    'Feel braver',
+                    'Make new friends',
+                    'Calm big feelings',
+                    'Try something new',
+                    'Feel understood',
+                    'Stand up for myself',
+                  ].map((outcome) {
+                    final sel = widget.wizardData.storyDnaOutcome == outcome;
+                    return ChoiceChip(
+                      label: Text(outcome),
+                      selected: sel,
+                      onSelected: (v) => setState(() =>
+                          widget.wizardData.storyDnaOutcome =
+                              v ? outcome : null),
+                      selectedColor: AppColors.gold.withValues(alpha: 0.3),
+                      labelStyle: TextStyle(
+                          fontSize: 12,
+                          fontWeight:
+                              sel ? FontWeight.bold : FontWeight.normal),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 4),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+
+                // Q3: Topics to avoid
+                Text(
+                  'Any words or topics to skip? (optional)',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _avoidController,
+                  decoration: InputDecoration(
+                    hintText: 'e.g., spiders, loud noises, clowns',
+                    hintStyle: TextStyle(
+                        color: AppColors.textDark.withValues(alpha: 0.4),
+                        fontSize: 13),
+                    filled: true,
+                    fillColor: AppColors.cream,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      borderSide: BorderSide(
+                          color: AppColors.primary.withValues(alpha: 0.3)),
+                    ),
+                    contentPadding: const EdgeInsets.all(10),
+                  ),
+                  maxLines: 2,
+                  onChanged: (v) => widget.wizardData.storyDnaAvoid = v,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 

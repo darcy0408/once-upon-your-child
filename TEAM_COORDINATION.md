@@ -2,6 +2,34 @@
 
 ---
 
+## Session Update - 2026-02-25 (Story DNA Math Gate + SEL Story Packs)
+
+### Scope Completed
+- **Feature 4 — Story DNA Math Gate:** Guardian Mode now includes a 3-question Story DNA section gated behind a simple math question (proves it's a parent). After unlocking: "What's in their world right now?" (8 situation chips), "What outcome would feel magical?" (6 outcome chips), and "Any words/topics to skip?" (free text). All three fields combined into `therapeutic_prompt` via the mapper.
+- **Feature 7 — SEL Story Packs Bookshelf:** Horizontally scrollable row of 6 themed story pack cards added to the main story screen: 🤝 Making Friends, 😤 Unfairness, 🌱 New Beginnings, 💛 Big Feelings, 🦸 Standing Up, 🏠 Family. Tapping a card launches the wizard with the matching `lifeChallenge` pre-filled.
+- Added `storyDnaContext`, `storyDnaOutcome`, `storyDnaAvoid` to `WizardData` model.
+- Added `initialWizardData` parameter to `WizardStoryScreen` for pack-seeded launches.
+
+### Files Changed
+- `lib/models/wizard_data.dart`
+- `lib/screens/wizard_steps/feeling_selection_step.dart`
+- `lib/screens/wizard_steps/wizard_data_mapper.dart`
+- `lib/screens/wizard_story_screen.dart`
+- `lib/main_story.dart`
+
+### Status
+- **Feature 1 (Something Else):** ✅ Done (prior session)
+- **Feature 2 (Feelings Check-In):** ✅ Done (prior session)
+- **Feature 3 (Superpower Profile):** ✅ Done (prior session)
+- **Feature 4 (Story DNA Wizard):** ✅ Done (this session)
+- **Feature 5 (Empathy Moment):** ✅ Done (prior session)
+- **Feature 6 (Virtue Anchoring):** ✅ Done (prior session)
+- **Feature 7 (SEL Story Packs):** ✅ Done (this session)
+- **Therapeutic Magic Plan:** ✅ All 7 features complete
+- **Launch Readiness:** 99%
+
+---
+
 ## Session Update - 2026-02-25 (Story Opening Diversity — Interactive Adventure)
 
 ### Scope Completed
