@@ -254,7 +254,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFF2C1B47), Color(0xFF4A1A72)],
@@ -274,7 +274,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
             Text(
               'Choose Your Avatar',
               style: GoogleFonts.cinzelDecorative(
@@ -283,7 +283,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
             // Gallery — all users
             _AvatarOptionTile(
               icon: Icons.auto_awesome,
@@ -294,7 +294,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                 _openAvatarGallery();
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             // Smart-filter gallery — quick match by age + gender
             _AvatarOptionTile(
               icon: Icons.tune_rounded,
@@ -305,7 +305,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                 _openAvatarGallery(preFilter: true);
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             // Custom photo — premium only
             _AvatarOptionTile(
               icon: Icons.camera_alt_rounded,
@@ -329,19 +329,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   Future<void> _openAvatarGallery({bool preFilter = false}) async {
     if (!mounted) return;
 
-    String? initialAgeGroup;
     String? initialGender;
 
     if (preFilter) {
-      final age = widget.wizardData.characterAge;
-      if (age <= 5) {
-        initialAgeGroup = '4-5';
-      } else if (age <= 7) {
-        initialAgeGroup = '6-7';
-      } else if (age <= 10) {
-        initialAgeGroup = '8-10';
-      }
-
       switch (widget.wizardData.characterGender) {
         case 'Boy':
           initialGender = 'male';
@@ -358,7 +348,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     await showDialog<void>(
       context: context,
       builder: (_) => AvatarGallerySelector(
-        initialAgeGroup: initialAgeGroup,
         initialGender: initialGender,
         onAvatarSelected: (avatar) {
           Navigator.pop(context);
@@ -843,7 +832,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         scale: _isCreateAvatarPressed ? 0.94 : 1.0,
         duration: const Duration(milliseconds: 110),
         child: Image.asset(
-          'assets/images/ui/create_avatar_btn.jpg',
+          'assets/images/ui/create_avatar_btn.png',
           height: 80,
           width: double.infinity,
           fit: BoxFit.contain,
