@@ -2,6 +2,67 @@
 
 ---
 
+## Session Update - 2026-02-25 (Clean Endings Fix)
+
+### Scope Completed
+- **Prompt layer:** Added rule 7 to `STRICT_OUTPUT_CONSTRAINTS` in `story_service.py` — the final sentence must be a sensory image, action, or feeling; lists forbidden lesson-summary patterns ("And so X learned...", "From that day on...", etc.).
+- **Post-processing layer:** Added `_LESSON_ENDING_PATTERNS` regex and `_strip_lesson_endings(pages)` function to `story_service.py`. Only touches the very last sentence of the last non-empty page; skips if it would leave the page empty. Wired into `_safe_extract_title_and_gem` alongside `_strip_meta_leakage`.
+- **Interactive adventure:** Added rule 5 to `IMMERSION_RULES` class constant in `interactive_adventure_prompt_builder.py` with the same clean-ending requirement (second-person variant for Pick-a-Path).
+- All 498 tests green.
+
+### Files Changed
+- `backend/services/story_service.py`
+- `backend/services/interactive_adventure_prompt_builder.py`
+
+### Status
+- **Instruction leakage fix:** ✅ Complete
+- **Opening diversity:** ✅ Complete (both regular and interactive)
+- **Clean endings:** ✅ Complete
+- **Launch Readiness:** 98%
+
+---
+
+## Session Update - 2026-02-25 (Premium avatar tweak feature: hair/eye customisation)
+
+### Scope Completed
+- **New backend endpoint** `POST /avatars/tweak-gallery-avatar` (premium-only, free=0, premium=5/hr):
+  - Accepts multipart: gallery image WebP bytes + `hair_length` + `eye_color` (at least one required)
+  - Calls `GeminiImageGenerator.tweak_gallery_avatar()` with a precise edit prompt ("keep EVERYTHING the same, ONLY change: X")
+  - Returns `{ tweaked_image_base64: "..." }` as PNG base64
+- **`GeminiImageGenerator.tweak_gallery_avatar()`** added — sends WebP bytes + text instruction to Gemini multimodal; keeps all character details intact while changing only requested features
+- **`ApiServiceManager.tweakGalleryAvatar()`** added in Flutter — loads asset via `rootBundle`, posts multipart to backend, returns `data:image/png;base64,...` string
+- **`AvatarTweakPanel` widget** created (`lib/widgets/avatar_tweak_panel.dart`):
+  - Appears after gallery avatar tap (replaces grid within the Dialog)
+  - Hair length chips: Short / Medium / Long / Curly
+  - Eye colour chips: Brown / Blue / Green / Hazel / Gray
+  - Free users: 🔒 "Premium only" button (chips visible but generate locked)
+  - Premium users: 🪄 "Generate my look" → loading → side-by-side comparison → "Keep original" / "Use this one!"
+  - "Pick another" back button returns to gallery grid
+- **`AvatarGallerySelector`** updated: added `isPremium` param, shows `AvatarTweakPanel` on tap instead of immediately firing `onAvatarSelected`
+- **`HeroCreatorStep`** updated: passes `isPremium: _isPremium` to gallery
+- **Bug fix**: `rate_limit_by_user_tier` had `IndexError` when `resolved_limit==0` and `hits` list is empty (free users on premium-gated endpoints). Fixed with guard.
+- **11 new tests** in `tests/test_tweak_avatar_endpoint.py` — all passing:
+  - Validation: missing image → 400, no changes → 400, empty strings → 400
+  - Generation: Gemini failure → 500, success → 200 with base64
+  - Hair-only / eye-only tweak params threaded correctly
+  - Free user rate-block → 429 with `limit_per_hour: 0`
+  - Unit tests: no-client guard, no-changes guard, prompt content verification
+
+### Commits
+- `2e7c9b0` — `feat: premium avatar tweak — AvatarTweakPanel widget`
+- `e1233d0` — `feat: wire up avatar tweak backend + flutter integration`
+- `bbe2c09` — `fix+test: rate-limiter IndexError on limit=0, remove unused import, 11 new endpoint tests`
+
+### Status
+- **Avatar gallery:** ✅ 150 diverse images, 12-at-a-time shuffle, hair-colour filter
+- **Avatar tweak (premium):** ✅ Backend endpoint + Flutter UI complete and tested
+- **dart analyze:** ✅ No issues on all changed Flutter files
+- **Backend test suite (tweak):** ✅ 11/11 new tests passing
+- **Pre-existing test failures:** ⚠️ `test_age_calibration.py` + some `test_backend_comprehensive.py` (prompt text assertions outdated vs current prompt format — unrelated to this session)
+- **Launch Readiness:** 99%
+
+---
+
 ## Session Update - 2026-02-25 (LTR mode — open to all ages + funny limericks for 7+)
 
 ### Scope Completed
