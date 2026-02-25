@@ -53,6 +53,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   bool _isCreatingNew = true;
   GeneratedAvatar? _generatedAvatar;
   String? _customAvatarFilePath; // local file path from CustomAvatarScreen
+  bool _isPremium = false;
 
   // ─── Lifecycle ──────────────────────────────────────────────────────────────
   @override
@@ -70,6 +71,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
       text: widget.wizardData.characterName,
     );
     AvatarGenerationState().addListener(_onAvatarStateChanged);
+    ApiServiceManager.hasPremiumAccess().then((premium) {
+      if (mounted) setState(() => _isPremium = premium);
+    });
 
     if (widget.wizardData.characterId != null &&
         widget.availableCharacters.isNotEmpty) {
@@ -280,26 +284,41 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
               ),
             ),
             const SizedBox(height: 20),
-            // Gallery option
+            // Gallery — all users
             _AvatarOptionTile(
               icon: Icons.auto_awesome,
               title: 'Browse Character Gallery',
-              subtitle: 'Pick from 95 pre-made heroes & heroines',
+              subtitle: 'Pick from 94 pre-made heroes & heroines',
               onTap: () {
                 Navigator.pop(context);
                 _openAvatarGallery();
               },
             ),
             const SizedBox(height: 12),
-            // Custom photo option
+            // Smart-filter gallery — quick match by age + gender
             _AvatarOptionTile(
-              icon: Icons.camera_alt_rounded,
-              title: 'Create Custom Avatar',
-              subtitle: 'Upload a photo to make a magical avatar',
+              icon: Icons.tune_rounded,
+              title: 'Build Your Look',
+              subtitle: 'See heroes that match your character\'s age & vibe',
               onTap: () {
                 Navigator.pop(context);
-                _openCustomAvatarScreen();
+                _openAvatarGallery(preFilter: true);
               },
+            ),
+            const SizedBox(height: 12),
+            // Custom photo — premium only
+            _AvatarOptionTile(
+              icon: Icons.camera_alt_rounded,
+              title: 'Upload Photo → AI Avatar',
+              subtitle: _isPremium
+                  ? 'Turn a photo into a magical storybook avatar'
+                  : '⭐ Premium — upgrade to unlock',
+              onTap: _isPremium
+                  ? () {
+                      Navigator.pop(context);
+                      _openCustomAvatarScreen();
+                    }
+                  : null,
             ),
           ],
         ),
@@ -307,11 +326,40 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     );
   }
 
-  Future<void> _openAvatarGallery() async {
+  Future<void> _openAvatarGallery({bool preFilter = false}) async {
     if (!mounted) return;
+
+    String? initialAgeGroup;
+    String? initialGender;
+
+    if (preFilter) {
+      final age = widget.wizardData.characterAge;
+      if (age <= 5) {
+        initialAgeGroup = '4-5';
+      } else if (age <= 7) {
+        initialAgeGroup = '6-7';
+      } else if (age <= 10) {
+        initialAgeGroup = '8-10';
+      }
+
+      switch (widget.wizardData.characterGender) {
+        case 'Boy':
+          initialGender = 'male';
+          break;
+        case 'Girl':
+          initialGender = 'female';
+          break;
+        case 'Non-Binary':
+          initialGender = 'neutral';
+          break;
+      }
+    }
+
     await showDialog<void>(
       context: context,
       builder: (_) => AvatarGallerySelector(
+        initialAgeGroup: initialAgeGroup,
+        initialGender: initialGender,
         onAvatarSelected: (avatar) {
           Navigator.pop(context);
           if (mounted) {
@@ -839,6 +887,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   // ─── SECTION: Continue button ─────────────────────────────────────────────────
   Widget _buildContinueButton() {
     return GestureDetector(
+      key: const Key('continue_button'),
       onTapDown: (_) => setState(() => _isContinuePressed = true),
       onTapUp: (_) => setState(() => _isContinuePressed = false),
       onTapCancel: () => setState(() => _isContinuePressed = false),
@@ -1578,7 +1627,7 @@ class _AvatarOptionTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _AvatarOptionTile({
     required this.icon,
@@ -1589,13 +1638,16 @@ class _AvatarOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white.withAlpha(20),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
+    final isDisabled = onTap == null;
+    return Opacity(
+      opacity: isDisabled ? 0.45 : 1.0,
+      child: Material(
+        color: Colors.white.withAlpha(20),
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
@@ -1642,6 +1694,8 @@ class _AvatarOptionTile extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }
+
