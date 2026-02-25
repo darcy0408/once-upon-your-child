@@ -64,6 +64,7 @@ STRICT_OUTPUT_CONSTRAINTS = """
 4. NEVER end with an explicit moral recap or lesson announcement — theme and growth must emerge through action and feeling, not stated conclusions.
 5. Do NOT repeat or closely paraphrase the opening paragraph at the end.
 6. Return ONLY the JSON requested below — nothing before the opening brace, nothing after the closing brace.
+7. CLEAN ENDING — the very last sentence of the entire story must be a sensory detail, an image, an action, or a feeling — NOT a lesson summary. Forbidden last-sentence patterns: "And so [name] learned...", "From that day on...", "And [name] knew that...", "[Name] had discovered the true meaning of...", "It taught [name] that...", "The moral was...", "And that is how [name] understood...". End on the world, not the lesson.
 """
 
 # Forbidden terms used by the post-processing leakage filter (see _strip_meta_leakage).
@@ -410,6 +411,51 @@ def _strip_meta_leakage(pages: list) -> list:
     return cleaned
 
 
+# Regex patterns for lesson-summary endings that break story immersion.
+# Applied only to the last sentence of the last non-empty page.
+_LESSON_ENDING_PATTERNS = re.compile(
+    r'^(and so|from that day( on)?|from then on|and (he|she|they|[a-z]+) (knew|understood|learned|realized|discovered|had learned|had discovered|had understood)|'
+    r'and that is how|and that\'s how|it taught|the moral (was|of the story)|'
+    r'[a-z]+ had discovered the (true )?meaning|[a-z]+ would (always |never )?forget that|'
+    r'it was a (valuable |important |powerful )?lesson)',
+    re.IGNORECASE,
+)
+
+
+def _strip_lesson_endings(pages: list) -> list:
+    """Remove the last sentence of the final page if it is a lesson-summary.
+
+    Only touches the very last sentence of the very last page, so it cannot
+    accidentally truncate mid-story content. If removing the sentence leaves
+    the page empty, the original page is kept unchanged.
+    """
+    if not pages:
+        return pages
+    # Find last non-empty page
+    last_idx = len(pages) - 1
+    while last_idx >= 0 and not pages[last_idx].strip():
+        last_idx -= 1
+    if last_idx < 0:
+        return pages
+
+    last_page = pages[last_idx]
+    sentences = re.split(r'(?<=[.!?])\s+', last_page.strip())
+    if len(sentences) < 2:
+        # Only one sentence — don't strip or the page becomes empty
+        return pages
+
+    last_sent = sentences[-1]
+    if _LESSON_ENDING_PATTERNS.match(last_sent.strip()):
+        logger.warning("Stripped lesson-summary ending: %r", last_sent[:120])
+        new_page = " ".join(sentences[:-1])
+        updated = list(pages)
+        updated[last_idx] = new_page
+        return updated
+
+    return pages
+
+
+
 def _safe_extract_title_and_gem(text: str, theme: str):
     """Extract title, wisdom gem, and pages from LLM JSON response."""
     clean_text = text.strip()
@@ -508,6 +554,7 @@ def _safe_extract_title_and_gem(text: str, theme: str):
          pages = [candidate_text]
 
     pages = _strip_meta_leakage(pages)
+    pages = _strip_lesson_endings(pages)
     story_body = "\n\n".join(pages)
     return title, wisdom_gem, story_body, pages, post_story
 

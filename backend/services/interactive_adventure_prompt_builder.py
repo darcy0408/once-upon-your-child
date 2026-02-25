@@ -203,7 +203,8 @@ SAFETY RULES:
 2. NEVER include AI-style preambles ("Here we go!", "Sure!", "Here is your story:") or sign-offs.
 3. NEVER expose internal storytelling mechanics inside the prose. Characters must not speak or think using craft/therapy terminology (e.g. they cannot say they were being a "therapeutic specialist", refer to a "challenge arc", or announce an "earned ending").
 4. NEVER end with an explicit moral recap or lesson announcement — growth must emerge through action and feeling, not stated conclusions.
-5. Return ONLY the JSON object above — nothing before the opening brace, nothing after the closing brace.
+5. CLEAN ENDING — the final segment's last sentence must be a sensory image, an action, or a feeling — NOT a lesson summary. Forbidden: "And so you learned...", "From that day on...", "And you knew that...", "It taught you that...", "The moral was...". End on the world, not the lesson.
+6. Return ONLY the JSON object above — nothing before the opening brace, nothing after the closing brace.
 """
 
     TEEN_TONE_INSTRUCTION = """
