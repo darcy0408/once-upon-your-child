@@ -402,6 +402,30 @@ def create_app(config_name):
     print(f"=== Creating database tables ===")
     with app.app_context():
         db.create_all()
+
+        # Auto-migrate: add columns that may be missing from databases created
+        # before these fields were introduced (avoids needing manual admin endpoint).
+        try:
+            from sqlalchemy import inspect as sa_inspect, text as sa_text
+            inspector = sa_inspect(db.engine)
+            existing_cols = {col['name'] for col in inspector.get_columns('user')}
+            pending_cols = {
+                'stories_created_count':               'INTEGER DEFAULT 0 NOT NULL',
+                'gemini_api_key_encrypted':             'TEXT',
+                'has_byok':                            'BOOLEAN DEFAULT 0 NOT NULL',
+                'stories_generated_this_month':        'INTEGER DEFAULT 0 NOT NULL',
+                'illustrations_generated_this_month':  'INTEGER DEFAULT 0 NOT NULL',
+                'usage_reset_date':                    'TIMESTAMP',
+            }
+            with db.engine.connect() as _conn:
+                for col_name, col_def in pending_cols.items():
+                    if col_name not in existing_cols:
+                        _conn.execute(sa_text(f'ALTER TABLE "user" ADD COLUMN {col_name} {col_def}'))
+                        _conn.commit()
+                        logger.info("Auto-migration: added column '%s' to user table", col_name)
+        except Exception as _mig_err:
+            logger.warning("Auto-migration check failed (non-fatal): %s", _mig_err)
+
         # Ensure anonymous user exists for story generation
         try:
             anonymous_user = db.session.get(User, 'anonymous')
