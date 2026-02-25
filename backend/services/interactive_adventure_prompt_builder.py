@@ -91,7 +91,7 @@ class InteractiveAdventurePromptBuilder:
         },
         'adult': {
             'sentence_length': 'mature, nuanced literary range',
-            'vocabulary': 'nuanced themes (stress, meaning, relationships), therapeutic tone',
+            'vocabulary': 'nuanced themes (stress, meaning, relationships), immersive and literary',
             'word_count_ranges': {
                 'short': (2000, 3000),
                 'medium': (3200, 5200),
@@ -190,7 +190,7 @@ class InteractiveAdventurePromptBuilder:
     SAFETY_GUARDRAILS = """
 SAFETY RULES:
 - No sexual content, no graphic violence, no self-harm, no illegal wrongdoing.
-- Handle sensitive emotions gently. Safe, therapeutic tone.
+- Handle sensitive emotions with care. Keep the tone warm, age-appropriate, and full of wonder.
 - Do NOT invent characters or family members not provided.
 - Must Include: A Moment of Wonder (age-appropriate), a coping moment in action (resilience/perspective), and a satisfying conclusion.
 - SAFETY: Ensure no scary imagery or abandonment themes for children.
@@ -372,11 +372,9 @@ SAFETY RULES:
         tool_line = f"- **{tool_label}**: {tool_value}"
 
         prompt = f"""
-**PERSONA**: Expert Children's Author & Pick-A-Path Storyteller.
+**PERSONA**: Master Storyteller & World-Builder. You write Pick-A-Path adventures so vivid and immersive that readers forget they're reading — they *are* the hero, living every heartbeat of the story.
 
 You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_name}{gender_text} (age {age}).
-
-**STORY SPECS**:
 - **THEME**: {theme} | **TONE**: {tone}
 - **CONFLICT**: {conflict_hook or 'A magical mystery needs solving.'}
 - **SENSORY PALETTE**: {final_sensory}
@@ -400,7 +398,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 - **WORD COUNT REQUIREMENT**: This INDIVIDUAL SEGMENT MUST be between {word_count[0]} and {word_count[1]} words.
 - **Companion Contract**: REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Companion MUST appear by name.
 - **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.
-- **Safety**: No violence/harm. Therapeutic tone.
+- **Safety**: No violence/harm. Keep the tone warm, age-appropriate, and full of wonder.
 {cls.SAFETY_GUARDRAILS}
 {cls.TEEN_TONE_INSTRUCTION if age >= 15 else ""}
 
@@ -523,7 +521,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
         )
 
         prompt = f"""
-**PERSONA**: Expert Children's Author & Pick-A-Path Storyteller.
+**PERSONA**: Master Storyteller & World-Builder. You write Pick-A-Path adventures so vivid and immersive that readers forget they're reading — they *are* the hero, living every heartbeat of the story.
 
 You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {age}).
 
@@ -552,7 +550,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 - **Companion Contract**: REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Companion MUST appear by name.
 - **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.{ending_instruction}
 {empathy_moment}
-- **Safety**: No violence/harm. Therapeutic tone.
+- **Safety**: No violence/harm. Keep the tone warm, age-appropriate, and full of wonder.
 {cls.SAFETY_GUARDRAILS}
 {cls.TEEN_TONE_INSTRUCTION if age >= 15 else ""}
 

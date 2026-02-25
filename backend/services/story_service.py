@@ -74,7 +74,7 @@ SAFETY_GUARDRAILS = f"""
 {STRICT_OUTPUT_CONSTRAINTS}
 SAFETY RULES:
 - No sexual content, no graphic violence, no self-harm, no illegal wrongdoing.
-- Handle sensitive emotions gently. Safe, therapeutic tone.
+- Handle sensitive emotions with care. Keep the tone warm, age-appropriate, and full of wonder.
 - Do NOT invent characters or family members not provided.
 - SAFETY: Ensure no scary imagery or abandonment themes for children.
 """
@@ -265,14 +265,14 @@ class AdvancedStoryEngine:
         else:
             tool_section = f"- **{tool_label}**: None"
 
-        # Therapeutic Tone Adjustment for Teens
-        coping_instruction = "a gentle magical surprise, a coping moment in action (breathing/naming feelings)"
+        # Story must feel magical and immersive — emotional growth comes through adventure, not instruction
+        coping_instruction = "a moment of genuine wonder and a scene where the hero discovers unexpected strength through action"
         safety_reinforcement = ""
         if age <= 7:
             safety_reinforcement = "\n- SAFETY: This is for a young child. Ensure NO scary imagery, NO monsters, NO abandonment."
         
         if age >= 14:
-            coping_instruction = "a clever plot twist, a moment of wonder, a moment of resilience or perspective-shifting (internal monologue)"
+            coping_instruction = "a clever plot twist, a moment of wonder, a scene where the hero's perspective shifts through experience — shown, never told"
 
         # Explicit writing calibration so models do not flatten all ages to simple prose.
         if age <= 7:
@@ -325,7 +325,7 @@ class AdvancedStoryEngine:
         virtue_instruction = _get_virtue_instruction(therapeutic_prompt, age)
 
         return f"""
-**PERSONA**: Expert Children's Author & Therapeutic Storyteller.
+**PERSONA**: Master Storyteller & World-Builder. You write adventures so vivid and immersive that readers forget they're reading — they *are* the hero, living every heartbeat of the story.
 
 You are a MASTER STORYTELLER creating a {story_length} adventure for {character}{gender_text} (age {age}).
 
