@@ -2,6 +2,30 @@
 
 ---
 
+## Session Update - 2026-02-25 (Fix: Age-Appropriate Wisdom Gems)
+
+### Scope Completed
+
+**Root cause:** The story prompt's `OUTPUT FORMAT` never asked Gemini for a `wisdom_gem` field, so the parser always fell back to the hardcoded `"You are magic!"` string.
+
+**Fix in `backend/services/story_service.py`:**
+- Added `wisdom_gem_guidance` variable with 6 age-band tiers (≤5, ≤7, ≤10, ≤13, ≤18, adult) that generates age-appropriate guidance text.
+- Added `"wisdom_gem": "A {wisdom_gem_guidance} — one sentence, no more."` to the `OUTPUT FORMAT` JSON template so Gemini now generates the gem.
+- Updated the parser in `_parse_story_data` to read `wisdom_gem` from top-level JSON first (new format), fall back to `post_story.wisdom_gem` (legacy format), then the generic default.
+
+**Verification:** 135/135 backend unit tests passing.
+
+### Files Changed
+- `backend/services/story_service.py`
+- `TEAM_COORDINATION.md` *(this entry)*
+
+### Status
+- **Wisdom Gems:** ✅ Now age-calibrated (requires real-API test run to confirm Gemini output).
+- **Remaining issues from final test pass:** `learning_to_read` failure (age 3-4), double-article title, latency.
+- **Launch Readiness:** 96%
+
+---
+
 ## Session Update - 2026-02-25 (Hero Creator UI — Scroll Name Input + Create Avatar Button)
 
 ### Scope Completed
