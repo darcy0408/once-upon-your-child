@@ -19,9 +19,9 @@ else:
     # SECURITY: Don't log API keys, even partially masked
     print(f"GEMINI_API_KEY present: {bool(os.environ.get('GEMINI_API_KEY'))}")
 
-# Use gemini-1.5-flash as default if not set in environment
+# Use gemini-2.0-flash as default if not set in environment (1.5-flash is ~2-3x slower)
 if not os.environ.get('GEMINI_MODEL'):
-    os.environ['GEMINI_MODEL'] = 'gemini-1.5-flash'
+    os.environ['GEMINI_MODEL'] = 'gemini-2.0-flash'
 print(f"DEFAULT GEMINI_MODEL = {os.environ.get('GEMINI_MODEL')}")
 
 def _get_required_secret(key_name, allow_dev_fallback=True):

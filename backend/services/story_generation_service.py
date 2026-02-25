@@ -16,7 +16,7 @@ class StoryGenerationService:
         self._client = genai.Client(api_key=api_key)
         # Use configured model from env (defaults to gemini-2.0-flash)
         self._model_name = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
-        self._request_timeout_seconds = int(os.getenv('GEMINI_REQUEST_TIMEOUT_SECONDS', '45'))
+        self._request_timeout_seconds = int(os.getenv('GEMINI_REQUEST_TIMEOUT_SECONDS', '90'))
         logger.info(f"Initializing Gemini with model: {self._model_name}")
 
     def generate_story(self, prompt: str) -> str:

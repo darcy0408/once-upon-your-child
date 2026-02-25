@@ -10,7 +10,6 @@ from celery.utils.log import get_task_logger
 os.environ.setdefault("SKIP_DEFAULT_APP_INIT", "1")
 
 from backend.celery_config import celery
-from backend.app import create_app
 from backend.database import db
 from backend.models.character import Character
 from backend.models.story import Story
@@ -31,6 +30,7 @@ def get_flask_app():
     """Lazy initialization of Flask app to avoid circular imports."""
     global _flask_app
     if _flask_app is None:
+        from backend.app import create_app  # lazy import to break circular dependency
         _config_name = os.getenv("FLASK_CONFIG") or "dev"
         if _config_name not in {"dev", "prod", "production", "testing"}:
             _config_name = "dev"
