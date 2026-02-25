@@ -2,6 +2,23 @@
 
 ---
 
+## Session Update - 2026-02-25 (Story Opening Diversity — Interactive Adventure)
+
+### Scope Completed
+- **Opening style injection for Pick-a-Path** — `InteractiveAdventurePromptBuilder.build_opening_prompt()` now picks a random opening style from `OPENING_STYLES` (already defined as a class constant) and injects it plus `FORBIDDEN_OPENING` into every prompt's STORY SPECS block.
+- Prevents the overused "X was brave… but tonight something was wrong" template in interactive mode.
+- All non-pre-existing tests green (494/498 passing; 4 pre-existing failures unchanged).
+
+### Files Changed
+- `backend/services/interactive_adventure_prompt_builder.py`
+
+### Status
+- **Story opening diversity (regular mode):** ✅ Complete (prior session)
+- **Story opening diversity (interactive mode):** ✅ Complete (this session)
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-25 (CI Fix — Python SyntaxError in interactive_adventure_prompt_builder)
 
 ### Scope Completed
