@@ -302,7 +302,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               const SizedBox(height: AppSpacing.lg),
               ElevatedButton(
                 onPressed: () {
-                  // TODO: REMOVE BEFORE PRODUCTION
                   throw Exception('Test crash for Sentry verification');
                 },
                 child: const Text('Test Crash (Dev Only)'),
