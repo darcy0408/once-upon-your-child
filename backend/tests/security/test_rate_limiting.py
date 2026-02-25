@@ -281,3 +281,50 @@ def test_ip_fallback_identifier_when_no_user_header(ratelimit_client):
     assert response.status_code == 200
     data = json.loads(response.data)
     assert data['identifier'].startswith('ip:')
+
+
+def test_tts_requires_auth(ratelimit_client):
+    """
+    Test that /tts/synthesize returns 401 without a valid JWT.
+    """
+    response = ratelimit_client.post(
+        '/tts/synthesize',
+        data=json.dumps({'text': 'hello', 'voice': 'en-US-Standard-A'}),
+        content_type='application/json'
+    )
+    assert response.status_code == 401
+
+
+def test_tts_rate_limit(ratelimit_client, ratelimit_app):
+    """
+    Test that /tts/synthesize enforces the 20-per-hour rate limit.
+    We mock the TTS service call so no real Google credentials are needed.
+    """
+    from unittest.mock import patch
+    with ratelimit_app.app_context():
+        user = User(
+            id='tts_rate_test_user',
+            username='ttsrateuser',
+            email='tts_rate@example.com',
+            password_hash='hash',
+            subscription_tier='free'
+        )
+        db.session.add(user)
+        db.session.commit()
+
+    token = _get_token('tts_rate_test_user')
+    headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
+    payload = {'text': 'Once upon a time', 'voice_id': 'en-US-Standard-A'}
+
+    # Override the 20/hour limit with a tighter 2/minute for this test via the verify-limiter pattern.
+    # Instead, send 21 requests and verify the 21st is 429.
+    # We mock the actual TTS call so we don't need credentials.
+    fake_audio = b'\x00\x01\x02'
+    mock_service = MagicMock()
+    mock_service.generate_speech.return_value = fake_audio
+    with patch('backend.routes.tts_routes._get_tts_service', return_value=mock_service):
+        for i in range(20):
+            resp = ratelimit_client.post('/tts/synthesize', data=json.dumps(payload), headers=headers)
+            assert resp.status_code != 429, f"Request {i+1} unexpectedly rate-limited"
+        resp = ratelimit_client.post('/tts/synthesize', data=json.dumps(payload), headers=headers)
+        assert resp.status_code == 429

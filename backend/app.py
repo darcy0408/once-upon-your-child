@@ -552,9 +552,12 @@ def create_app(config_name):
 
     # TTS narration (lazy — works without Google credentials, returns 503)
     try:
-        from backend.routes.tts_routes import tts_bp
+        from backend.routes.tts_routes import create_tts_blueprint
+        from backend.middleware.auth import require_auth as _require_auth
     except ImportError:
-        from routes.tts_routes import tts_bp
+        from routes.tts_routes import create_tts_blueprint
+        from middleware.auth import require_auth as _require_auth
+    tts_bp = create_tts_blueprint(limiter=limiter, require_auth=_require_auth)
     app.register_blueprint(tts_bp)
 
     @app.errorhandler(500)

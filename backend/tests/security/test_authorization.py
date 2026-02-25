@@ -292,6 +292,7 @@ def test_unauthenticated_access_prevention(client):
         ('/interactive-story/any-id/resume', 'GET'),
         ('/continue-interactive-story', 'POST'),
         ('/task-status/any-task-id', 'GET'),
+        ('/tts/synthesize', 'POST'),
         ('/api/user/any-id/usage-stats', 'GET'),
         ('/admin/run-db-optimization', 'POST')
     ]
