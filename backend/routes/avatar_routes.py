@@ -73,7 +73,7 @@ def rate_limit_by_user_tier(free=5, premium=50, byok=None):
                 hits[:] = [ts for ts in hits if ts > cutoff]
 
                 if len(hits) >= int(resolved_limit):
-                    retry_after = int(max(1, _RATE_LIMIT_WINDOW_SECONDS - (now - hits[0])))
+                    retry_after = _RATE_LIMIT_WINDOW_SECONDS if not hits else int(max(1, _RATE_LIMIT_WINDOW_SECONDS - (now - hits[0])))
                     rate_limited_response = make_response(jsonify({
                         'status': 'error',
                         'error_code': 'RATE_LIMIT_EXCEEDED',
