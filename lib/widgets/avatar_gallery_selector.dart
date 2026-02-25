@@ -39,14 +39,20 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
   }
 
   Future<void> _initializeService() async {
-    await _avatarService.initialize();
-
-    if (mounted) {
-      setState(() {
-        _filterOptions = _avatarService.getCuratedOptions();
-        _isLoading = false;
-      });
-      _refreshAvatars();
+    try {
+      await _avatarService.initialize();
+      if (mounted) {
+        setState(() {
+          _filterOptions = _avatarService.getCuratedOptions();
+          _isLoading = false;
+        });
+        _refreshAvatars();
+      }
+    } catch (e) {
+      debugPrint('AvatarGallerySelector: Failed to initialize: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

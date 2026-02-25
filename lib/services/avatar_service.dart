@@ -81,13 +81,43 @@ class AvatarService {
     _initialized = true;
   }
 
-  /// Get available options for curated avatars
+  /// Get available options for curated avatars.
+  /// Derives filter options from avatar data if no explicit 'categories' key exists.
   Map<String, List<String>> getCuratedOptions() {
     if (_localMetadata == null) return {};
 
-    final categories = _localMetadata!['categories'] as Map<String, dynamic>;
-    return categories
-        .map((key, value) => MapEntry(key, List<String>.from(value)));
+    // Use explicit categories if present
+    if (_localMetadata!.containsKey('categories')) {
+      final categories =
+          _localMetadata!['categories'] as Map<String, dynamic>;
+      return categories
+          .map((key, value) => MapEntry(key, List<String>.from(value as List)));
+    }
+
+    // Derive categories dynamically from avatar entries
+    final avatars =
+        _localMetadata!['avatars'] as Map<String, dynamic>?;
+    if (avatars == null) return {};
+
+    final ageGroups = <String>{};
+    final skinTones = <String>{};
+    final hairColors = <String>{};
+    final genders = <String>{};
+
+    for (final data in avatars.values) {
+      final d = data as Map<String, dynamic>;
+      if (d['ageGroup'] != null) ageGroups.add(d['ageGroup'] as String);
+      if (d['skinTone'] != null) skinTones.add(d['skinTone'] as String);
+      if (d['hairColor'] != null) hairColors.add(d['hairColor'] as String);
+      if (d['gender'] != null) genders.add(d['gender'] as String);
+    }
+
+    return {
+      'ageGroups': ageGroups.toList()..sort(),
+      'skinTones': skinTones.toList()..sort(),
+      'hairColors': hairColors.toList()..sort(),
+      'genders': genders.toList()..sort(),
+    };
   }
 
   /// Get curated avatars matching filters
