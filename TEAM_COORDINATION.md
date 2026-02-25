@@ -2,6 +2,56 @@
 
 ---
 
+## Session Update - 2026-02-25 (Backend Warning Cleanup)
+
+### Scope Completed
+
+**Warning Cleanup — `pytest.ini` & `TestingConfig`:**
+- Root cause found: `TestingConfig.CACHE_TYPE = 'NullCache'` used the deprecated CamelCase short-name API for Flask-Caching 2.x, triggering a DeprecationWarning on every test run.
+- Fix: Removed the `CACHE_TYPE = 'NullCache'` override from `TestingConfig`; it now inherits `CACHE_TYPE = 'simple'` from the base `Config` class (lowercase canonical name, correct Flask-Caching 2.x API).
+- Removed all `filterwarnings = ignore:...` suppression lines from both `pytest.ini` (root) and `backend/pytest.ini` — none are needed after this fix. Other warnings (SQLAlchemy FK sort, `utcnow()`, SQLAlchemy 2.0) were verified to not be actively triggered across all 399 backend tests.
+
+**Files changed:**
+- `backend/config/__init__.py` — removed `CACHE_TYPE = 'NullCache'` from `TestingConfig`
+- `pytest.ini` (root) — removed `filterwarnings` block
+- `backend/pytest.ini` — removed `filterwarnings` block
+
+---
+
+## Session Update - 2026-02-25 (Final Manual Testing Pass — All Age Bands)
+
+### Scope Completed
+
+**1. Flutter Web Build:**
+- Fixed parentheses mismatch in `lib/screens/wizard_steps/hero_creator_step.dart` (line 1641) that was blocking the build.
+- Full production Flutter web build completed successfully (`flutter build web --release`).
+
+**2. Comprehensive Quality Check (Real API — All 7 Age Bands):**
+- Generated 21 stories across all age bands (3-4, 5-7, 8-10, 11-13, 13-15, 15-18, Adult) in Standard, Rhyme, Learning-to-Read, and Interactive modes.
+- **20/21 passed (95.2%).** 1 failure: `learning_to_read` mode for age 3-4 — needs investigation.
+- Age-appropriate word counts verified: age 3-4 = 229 words ✅, age 15-18 = 2,272 words ✅.
+
+**3. Cross-Browser Smoke Tests (Playwright):**
+- Chromium Desktop ✅, Firefox Desktop ✅, Mobile Chrome (Pixel 5 simulation) ✅.
+
+### Known Issues Found
+- **`learning_to_read` mode (age 3-4):** Generation failed — likely prompt or parsing issue.
+- **Wisdom gems:** Both age 3-4 and age 15-18 returned the generic "You are magic!" fallback rather than age-tailored wisdom — investigate `story_service.py` gem extraction logic.
+- **Age 15-18 story title:** Generated as `"A The Brave Little Firefly Adventure"` (double article) — prompt may need cleanup for pre-filled themes.
+- **Story generation latency:** Older age bands (8-10+) take 50-70 seconds per story. May need user-facing loading feedback improvements.
+
+### Files Changed
+- `lib/screens/wizard_steps/hero_creator_step.dart` — parentheses fix (build blocker)
+- `build/web/` — new production Flutter web build
+- `TEAM_COORDINATION.md` *(this entry)*
+
+### Status
+- **Quality Check:** 🟡 20/21 passing; 3 issues to investigate before deploy.
+- **Cross-Browser:** ✅ Passing on Chrome, Firefox, Mobile.
+- **Launch Readiness:** 95% (slight rollback from 97% due to issues found in final testing).
+
+---
+
 ## Session Update - 2026-02-25 (Fix Avatar Gallery Crash on Missing Categories Key)
 
 ### Problem
