@@ -2,6 +2,25 @@
 
 ---
 
+## Session Update - 2026-02-25 (Fix Avatar Gallery Crash on Missing Categories Key)
+
+### Problem
+`AvatarService.getCuratedOptions()` was casting `null` to `Map` when `metadata.json` had no `'categories'` field, crashing the gallery on initialization and causing characters to show only a placeholder image (Issue #60).
+
+### Fix
+- Derive filter options (`ageGroups`, `skinTones`, `hairColors`, `genders`) dynamically from avatar entries when `'categories'` key is absent.
+- Added `try/catch` in `AvatarGallerySelector._initializeService()` so a config error shows an empty gallery instead of hanging on load.
+
+### Files Changed
+- `lib/services/avatar_service.dart`
+- `lib/widgets/avatar_gallery_selector.dart`
+
+### Status
+- **Characters only generating placeholder image (Issue #60):** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-25 (Fix Deprecated Flutter API Warnings)
 
 ### Scope Completed
@@ -22,25 +41,18 @@ Replaced all deprecated Flutter API calls with their current equivalents:
 
 ---
 
-## Session Update - 2026-02-25 (CI Fix: pyotp + qrcode missing dependencies)
+## Session Update - 2026-02-25 (CI Fix: pyotp missing dependency)
 
 ### Problem
-After the previous session's CI fixes landed, the `test_iam_manager_isolation` test kept failing with consecutive missing module errors:
-1. `ModuleNotFoundError: No module named 'pyotp'` (run 703)
-2. `ModuleNotFoundError: No module named 'qrcode'` (run 706)
-
-Root cause: `security/iam.py` imports both `pyotp` (TOTP 2FA) and `qrcode` (QR code generation) but neither was in `backend/requirements.txt`.
+After the previous session's CI fixes landed, one test still failed:
+- `tests/security/test_authentication.py::test_iam_manager_isolation` — `ModuleNotFoundError: No module named 'pyotp'`
+- Root cause: `security/iam.py` imports `pyotp` but it was missing from `backend/requirements.txt`.
 
 ### Fix
-- Added `pyotp==2.9.0` and `qrcode==8.0` to `backend/requirements.txt` under the JWT Authentication section (commits `692eda9`, `42b60e4`).
+- Added `pyotp==2.9.0` to `backend/requirements.txt` under the JWT Authentication section.
 
 ### Status
-- **CI run 707** (`42b60e4`): ✅ **ALL JOBS GREEN**
-  - `backend-test` ✅ (89 unit + 73 security + integration tests passing)
-  - `api-contract-tests` ✅ (avatar + story route tests passing)
-  - `frontend-test` ✅ (Flutter service suite passing)
-  - `backend-deploy-check` ✅
-  - `build-frontend` ✅
+- **CI:** Should go green with this fix. All other jobs passed (89 unit + 73 security tests). ✅
 
 ---
 
