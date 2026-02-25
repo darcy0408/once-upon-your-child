@@ -461,19 +461,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFFFD700).withAlpha(160),
-                  blurRadius: 32,
-                  spreadRadius: 6,
+                  color: const Color(0xFFFFD700).withAlpha(140),
+                  blurRadius: 28,
+                  spreadRadius: 0,
                 ),
                 BoxShadow(
-                  color: const Color(0xFF9B3FD8).withAlpha(120),
-                  blurRadius: 42,
-                  spreadRadius: 8,
-                ),
-                BoxShadow(
-                  color: const Color(0xFFFFD700).withAlpha(60),
-                  blurRadius: 12,
-                  spreadRadius: 2,
+                  color: const Color(0xFF9B3FD8).withAlpha(100),
+                  blurRadius: 40,
+                  spreadRadius: 0,
                 ),
               ],
             ),
@@ -626,17 +621,15 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Ornate parchment scroll background
+          // Ornate parchment scroll background (transparent PNG)
           Positioned.fill(
             child: Image.asset(
-              'assets/images/ui/magical_scroll_bg.png',
+              'assets/images/ui/scroll_name_input.png',
               fit: BoxFit.fill,
-              color: Colors.white,
-              colorBlendMode: BlendMode.screen,
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 48),
+            padding: const EdgeInsets.symmetric(horizontal: 54),
             child: TextField(
               controller: _nameController,
               inputFormatters: [
@@ -850,7 +843,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         scale: _isCreateAvatarPressed ? 0.94 : 1.0,
         duration: const Duration(milliseconds: 110),
         child: Image.asset(
-          'assets/images/ui/create_avatar_btn.jpg',
+          'assets/images/ui/create_avatar_btn.png',
           height: 80,
           width: double.infinity,
           fit: BoxFit.contain,
