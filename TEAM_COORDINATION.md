@@ -2,6 +2,22 @@
 
 ---
 
+## Session Update - 2026-02-25 (Story Tone — Magical/Immersive First, Therapeutic Invisible)
+
+### Scope Completed
+- **Shifted story persona**: `"Therapeutic Storyteller"` → `"Master Storyteller & World-Builder"` with explicit immersion framing. Affects every story generated.
+- **Removed therapy-speak from mandatory elements**: `"coping moment in action (breathing/naming feelings)"` → `"discovers unexpected strength through action"`. Stops clinical language bleeding into prose.
+- **Rewrote safety tone**: `"therapeutic tone"` → `"full of wonder"` in all 4 prompt locations.
+- Therapeutic benefit now 100% invisible — delivered via story mechanics and metaphor, never named.
+- Committed `cd64b0c`, pushed.
+
+### Status
+- **Story tone:** ✅ Magical/immersive first. Therapeutic is invisible infrastructure.
+- **CI:** ✅ Green
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-25 (Story DNA Math Gate + SEL Story Packs)
 
 ### Scope Completed
