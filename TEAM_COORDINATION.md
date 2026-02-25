@@ -2,6 +2,23 @@
 
 ---
 
+## Session Update - 2026-02-25 (Security: TTS rate limiting + auth)
+
+### Scope Completed
+- Converted `tts_routes.py` to factory pattern (`create_tts_blueprint(limiter, require_auth)`) — was the only blueprint NOT using the factory pattern.
+- Added `@require_auth` to `/tts/synthesize` — unauthenticated calls now get 401 instead of calling Google Cloud TTS for free.
+- Added `@limiter.limit("20 per hour")` per-user key — prevents TTS cost abuse.
+- Updated `app.py` to use the new factory, importing `require_auth` from middleware.
+- Added `/tts/synthesize` to authorization test unauthenticated endpoints list.
+- Added `test_tts_requires_auth` and `test_tts_rate_limit` tests (78/78 security tests green).
+
+### Status
+- **TTS security gap:** ✅ Closed — auth + rate limit enforced
+- **All security tests:** ✅ 78/78 passing
+- **Launch readiness:** ~99%
+
+---
+
 ## Session Update - 2026-02-25 (UI Interaction Bug Fix: Magic Scroll Input)
 
 ### Problem
