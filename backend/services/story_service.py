@@ -27,27 +27,32 @@ AGE_CONSTRAINTS = {
     '8-10': {
         'regular': {'short': (900, 1200), 'medium': (1200, 1800), 'long': (1800, 2400)},
         'rhyme': {'short': (400, 500), 'medium': (500, 650), 'long': (650, 800)},
+        'ltr': {'short': 8, 'medium': 10, 'long': 12},
         'notes': 'Richer detail, humor, clear cause-effect, stronger plot arcs.'
     },
     '11-13': {
         'regular': {'short': (1300, 1700), 'medium': (1800, 2600), 'long': (2600, 3400)},
         'rhyme': {'short': (450, 550), 'medium': (550, 700), 'long': (700, 800)},
+        'ltr': {'short': 8, 'medium': 10, 'long': 12},
         'notes': 'More nuanced emotions, deeper motivation, still clean and age-appropriate.'
     },
     '13-15': {
         'regular': {'short': (1600, 2200), 'medium': (2400, 3400), 'long': (3400, 4500)},
         'rhyme': {'short': (500, 600), 'medium': (600, 750), 'long': (750, 850)},
+        'ltr': {'short': 8, 'medium': 10, 'long': 12},
         'notes': 'Identity/friendship themes, respectful humor, no babyish tone.'
     },
     '15-18': {
         'regular': {'short': (2000, 2800), 'medium': (3000, 4200), 'long': (4200, 6000)},
         'rhyme': {'short': (500, 650), 'medium': (650, 800), 'long': (800, 900)},
+        'ltr': {'short': 8, 'medium': 10, 'long': 12},
         'notes': 'Complex stakes and introspection; mature but clean.'
     },
     'adult': {
         'regular': {'short': (2000, 3000), 'medium': (3200, 5200), 'long': (5200, 7800)},
         'rhyme': {'short': (500, 700), 'medium': (700, 850), 'long': (850, 1000)},
-        'notes': 'Nuanced themes (stress, meaning, relationships) with therapeutic tone.'
+        'ltr': {'short': 8, 'medium': 10, 'long': 12},
+        'notes': 'Nuanced themes (stress, meaning, relationships) with immersive and literary tone.'
     }
 }
 
@@ -511,8 +516,6 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
     """Build prompt for Learning to Read mode stories with graduated vocabulary."""
     band = _get_age_band(age)
     config = AGE_CONSTRAINTS[band]
-    if 'ltr' not in config:
-        raise ValueError(f"Learning to Read mode is not available for age {age}. Supported ages: 3–7.")
 
     length_key = 'medium'
     if story_length == 'short' or story_length == 'quick':
@@ -523,16 +526,20 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
         length_key = 'medium'
     num_pages = config['ltr'][length_key]
 
-    # Graduate vocabulary based on age
+    # Graduate vocabulary and format based on age
     if age <= 5:
         vocab_instruction = "CVC words (cat, hop, sun) and simple sight words only. No blends or silent letters."
         format_instruction = "Each page 1 short sentence."
-    elif age <= 7:
+        use_limericks = False
+    elif age <= 6:
         vocab_instruction = "Simple sight words plus basic blends (st, fl, br) and digraphs (ch, sh, th). Occasional 2-syllable words."
         format_instruction = "Each page 1-2 sentences."
+        use_limericks = False
     else:
-        vocab_instruction = "Early chapter book level. Fluent sentences with varied vocabulary. Still accessible but engaging for a fluent reader."
-        format_instruction = "Each page 2-3 sentences."
+        # Older reluctant readers: funny connected limericks
+        vocab_instruction = "Short, phonics-friendly words with fun bouncy sounds. Simple enough to decode, funny enough to want to."
+        format_instruction = "Each page = one complete limerick (5 lines, AABBA rhyme scheme)."
+        use_limericks = True
 
     # Build companion context
     companion_sections = []
@@ -593,12 +600,49 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
     comp_str = ", ".join(companion_sections) if companion_sections else "None"
     mandatory_names_str = ", ".join(all_companion_names) if all_companion_names else "None"
 
-    return f"""
+    if use_limericks:
+        return f"""
+Create a series of {num_pages} funny, connected limericks that tell a complete adventure story for {character_name} (age {age}).
+
+Theme: {theme}
+Companions: {comp_str} (MANDATORY Checklist: {mandatory_names_str} — every name here MUST appear in at least one limerick).
+Custom Requests: {custom_elements or 'None'} (CRITICAL: include these verbatim somewhere in the limericks).
+
+**LIMERICK RULES**:
+- Every limerick MUST follow AABBA rhyme scheme (lines 1, 2, 5 rhyme; lines 3, 4 rhyme).
+- The limericks connect to tell one story arc: a beginning, a funny problem, and a satisfying ending.
+- Humor: silly physical comedy and clever wordplay — think Captain Underpants energy. Kid-appropriate only.
+- Use short, phonics-friendly words. Fun to say out loud. Easy to sound out.
+- NEVER use crude humor, bodily functions jokes, or mean-spirited laughs.
+- Each limerick must feel complete on its own AND connect to the one before and after.
+
+**Example limerick format**:
+There once was a girl named {character_name},         (A)
+Who set off to find a lost plane,                      (A)
+   She tumbled down steep,                            (B)
+   But landed in a heap,                              (B)
+Of cookies — she'd do it again!                       (A)
+
+{SAFETY_GUARDRAILS}
+**OUTPUT FORMAT**: Strictly return valid JSON:
+{{
+  "title": "Story Title",
+  "wisdom_gem": "A short, fun, rhyming encouragement — one line (e.g. 'When things go wrong, just sing a song!').",
+  "pages": [
+    {{"text": "Limerick 1 — 5 lines, AABBA rhyme..."}},
+    {{"text": "Limerick 2..."}},
+    ...
+  ]
+}}
+Each page is exactly one limerick. Return {num_pages} pages total.
+"""
+    else:
+        return f"""
 Create a LEARN TO READ story for {character_name} (age {age}).
 Theme: {theme}
 Format: {num_pages} pages. {format_instruction}
 Vocabulary: {vocab_instruction}
-Requirements: Repeating frames, comforting rhythm, 1 coping moment.
+Requirements: Repeating frames, comforting rhythm, 1 moment where the hero discovers their own strength.
 Companions: {comp_str} (MANDATORY Checklist: {mandatory_names_str} - EVERY name here MUST be in the story).
 Custom Requests: {custom_elements or 'None'} (CRITICAL: You MUST use the exact words from this request at least once each, verbatim, in the story).
 If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.

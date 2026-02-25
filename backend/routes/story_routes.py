@@ -147,13 +147,6 @@ def create_story_blueprint(
         if resolved_age is None:
             resolved_age = 5
 
-        # Learning-to-Read is only supported for ages 3–7 (requires 'ltr' config key)
-        if payload.get("learning_to_read_mode") and int(resolved_age) > 7:
-            return jsonify({
-                "error": "mode_not_available",
-                "message": "Learning to Read mode is only available for ages 3–7.",
-                "hint": "Use standard or rhyme mode for older readers."
-            }), 400
 
         task_kwargs = {
             "character_id": payload.get("character_id"),
