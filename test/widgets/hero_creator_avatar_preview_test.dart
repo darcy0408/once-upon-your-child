@@ -60,9 +60,8 @@ void main() {
 
     // The avatar preview is inside a ClipOval inside a 148x148 Container
     expect(find.byType(ClipOval), findsAtLeast(1));
-    // Verify name text is in the TextField
-    expect(find.byType(TextField), findsOneWidget);
-    expect(tester.widget<TextField>(find.byType(TextField)).controller?.text, 'Luna');
+    // Verify the character name was loaded into wizardData (name field is hidden in existing-char mode)
+    expect(wizardData.characterName, 'Luna');
   });
 
   testWidgets('HeroCreatorStep updates preview after tapping a saved character',
@@ -104,8 +103,8 @@ void main() {
     await pumpFor(tester, const Duration(seconds: 1));
 
     // Tap the existing character bubble (Milo). 
-    // It should be found by text 'M' (initials) inside the ListView
-    final miloBubble = find.text('M');
+    // ClipOval index 0 = Milo's character thumbnail (first in character row).
+    final miloBubble = find.byType(ClipOval).first;
     await tester.ensureVisible(miloBubble);
     await tester.tap(miloBubble);
     await pumpFor(tester, const Duration(milliseconds: 500));

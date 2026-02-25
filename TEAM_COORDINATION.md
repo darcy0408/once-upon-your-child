@@ -2,6 +2,39 @@
 
 ---
 
+## Session Update - 2026-02-25 (Flutter Widget Test Fixes)
+
+### Problem
+11 Flutter widget/integration tests were failing. Root causes identified:
+1. **Continue button not found**: `_buildContinueButton()` uses `Image.asset('continue_btn.png')` — in tests the image loads successfully (file exists), so `errorBuilder` never fires and `find.text('Continue')` found 0 widgets.
+2. **`pumpAndSettle` timeout** in `subscription_management_screen_test.dart` and golden test: `ApiServiceManager.authHeaders()` internally used a real `http.Client()` to call `/auth/anonymous` (no mock set up), which blocked the async chain.
+3. **Avatar preview test**: `find.byType(TextField)` found 0 widgets when existing character loaded (name TextField is hidden in existing-char mode). Also `find.text('M')` fallback was fragile — image placeholder loaded, no text shown.
+4. **`find.text('Go Solo')` mismatch**: Actual button text is `'Go Solo (Be Brave!)'`.
+
+### Fix
+- Added `key: const Key('continue_button')` to `_buildContinueButton()` GestureDetector in `hero_creator_step.dart`
+- Updated all tests (`hero_creator_step_test.dart`, `wizard_flow_test.dart`, `full_hero_journey_test.dart`) to use `find.byKey(const Key('continue_button'))`
+- Added `SharedPreferences.setMockInitialValues({})` + `ApiServiceManager.setTestClient(...)` setUp/tearDown in `subscription_management_screen_test.dart` and `goldens/key_screens_golden_test.dart`
+- Added `/auth/anonymous` mock handler to both mock clients
+- Fixed `hero_creator_avatar_preview_test.dart`: check `wizardData.characterName` directly; use `find.byType(ClipOval).first` to tap character bubble
+- Fixed `wizard_flow_test.dart`: `'Go Solo'` → `'Go Solo (Be Brave!)'`
+
+### Files Changed
+- `lib/screens/wizard_steps/hero_creator_step.dart` (key added to Continue button)
+- `test/widgets/wizard_steps/hero_creator_step_test.dart`
+- `test/widgets/wizard_flow_test.dart`
+- `test/integration/full_hero_journey_test.dart`
+- `test/screens/subscription_management_screen_test.dart`
+- `test/goldens/key_screens_golden_test.dart`
+- `test/widgets/hero_creator_avatar_preview_test.dart`
+
+### Status
+- **Before:** 175 passing, 11 failing
+- **After:** 182 passing, 4 failing → 0 failing (all 11 fixed)
+- Full suite: all tests green ✅
+
+---
+
 ## Session Update - 2026-02-25 (Auto-migrate missing User columns at startup)
 
 ### Problem

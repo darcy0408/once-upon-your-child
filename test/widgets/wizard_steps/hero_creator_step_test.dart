@@ -52,7 +52,7 @@ void main() {
     await tester.tap(find.text('The Storm Rider'));
     await pumpFor(tester, const Duration(milliseconds: 300));
 
-    expect(find.text('Continue'), findsOneWidget);
+    expect(find.byKey(const Key('continue_button')), findsOneWidget);
   });
 
   testWidgets('loads existing character and continues', (tester) async {
@@ -93,8 +93,8 @@ void main() {
     }
     
     await pumpFor(tester, const Duration(milliseconds: 300));
-    await tester.ensureVisible(find.text('Continue'));
-    await tester.tap(find.text('Continue'));
+    await tester.ensureVisible(find.byKey(const Key('continue_button')));
+    await tester.tap(find.byKey(const Key('continue_button')));
     await pumpFor(tester, const Duration(milliseconds: 500));
 
     expect(didContinue, isTrue);

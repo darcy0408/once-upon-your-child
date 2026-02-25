@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/feelings_wheel_screen.dart';
 import 'package:story_weaver_app/models/subscription_status.dart';
 import 'package:story_weaver_app/screens/age_gate_screen.dart';
 import 'package:story_weaver_app/screens/subscription_management_screen.dart';
 import 'package:story_weaver_app/screens/subscription_success_screen.dart';
+import 'package:story_weaver_app/services/api_service_manager.dart';
 import 'package:story_weaver_app/services/parental_consent_service.dart';
 import 'package:story_weaver_app/services/stripe_service.dart';
 
@@ -52,6 +54,13 @@ class _StubStripeService extends StripeService {
 
 MockClient _buildClient() {
   return MockClient((request) async {
+    if (request.method == 'POST' &&
+        request.url.path.contains('/auth/anonymous')) {
+      return http.Response(
+        jsonEncode({'token': 'mock_token', 'user_id': 'user-123'}),
+        200,
+      );
+    }
     if (request.method == 'GET' && request.url.path.contains('/usage-stats')) {
       return http.Response(
         jsonEncode({
@@ -100,6 +109,15 @@ Widget _buildSubscriptionManagementScreen() {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    ApiServiceManager.setTestClient(_buildClient());
+  });
+
+  tearDown(() {
+    ApiServiceManager.setTestClient(null);
+  });
 
   testWidgets('Age gate screen', (tester) async {
     await pumpGoldenApp(

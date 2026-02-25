@@ -196,7 +196,33 @@ This prompt is designed for "Story Weaver," an app that transforms real-world im
                 raise Exception("No image generated for custom avatar")
 
         except Exception as e:
-            logger.error(f"Custom avatar generation failed: {e}")
+            logger.error(f"Custom avatar generation failed with primary generator: {e}")
+            # Try OpenRouter fallback (handles photos that Gemini safety policies reject)
+            if self.fallback_generator is not None:
+                try:
+                    logger.info("Retrying custom avatar with OpenRouter fallback")
+                    results = self.fallback_generator.generate_custom_avatar(
+                        base_image_bytes=photo_bytes,
+                        prompt=prompt,
+                        character_name=character_name,
+                        age=age,
+                    )
+                    if results and len(results) > 0:
+                        result = results[0]
+                        image_base64 = result.get('image_data') or result.get('image_base64', '')
+                        if image_base64 and "," in image_base64:
+                            image_base64 = image_base64.split(",", 1)[1]
+                        avatar_id = str(uuid.uuid4())
+                        return {
+                            'id': avatar_id,
+                            'image_base64': f"data:image/png;base64,{image_base64}",
+                            'style': 'pixar-custom',
+                            'attributes': {'character_name': character_name, 'age': age, 'gender': gender},
+                            'generated_at': datetime.now().isoformat(),
+                            'version': 3,
+                        }
+                except Exception as fallback_err:
+                    logger.error(f"OpenRouter fallback also failed: {fallback_err}")
             raise Exception(f"Custom avatar generation failed: {str(e)}")
 
     def generate_pet_avatar(

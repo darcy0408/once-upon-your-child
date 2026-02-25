@@ -184,7 +184,7 @@ void main() {
     await tester.tap(find.textContaining('Storm Rider'));
     await tester.pump(const Duration(milliseconds: 500));
     
-    final continueBtn = find.text('Continue');
+    final continueBtn = find.byKey(const Key('continue_button'));
     await tester.ensureVisible(continueBtn);
     await tester.tap(continueBtn);
     
@@ -240,7 +240,7 @@ void main() {
     await tester.tap(find.textContaining('Storm Rider'));
     await tester.pump(const Duration(milliseconds: 500));
     
-    final continueBtn = find.text('Continue');
+    final continueBtn = find.byKey(const Key('continue_button'));
     await tester.ensureVisible(continueBtn);
     await tester.tap(continueBtn);
     

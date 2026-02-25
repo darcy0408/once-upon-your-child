@@ -238,6 +238,20 @@ class AdvancedStoryEngine:
                 "Show how early decisions ripple forward to a resolution that feels genuinely earned through the character's actions, not announced."
             )
 
+        # Age-appropriate wisdom gem guidance for the prompt
+        if age <= 5:
+            wisdom_gem_guidance = "simple, warm encouragement a toddler can understand (e.g. 'Being kind makes magic happen')"
+        elif age <= 7:
+            wisdom_gem_guidance = "simple lesson a young child can repeat to themselves (e.g. 'Asking for help is brave')"
+        elif age <= 10:
+            wisdom_gem_guidance = "clear takeaway about the feeling or challenge in the story (e.g. 'When you feel scared, taking one small step helps')"
+        elif age <= 13:
+            wisdom_gem_guidance = "thoughtful insight connecting the hero's growth to real life (e.g. 'Choosing kindness when it's hard is what makes it matter')"
+        elif age <= 18:
+            wisdom_gem_guidance = "honest, non-preachy reflection on the theme — speak to a teenager as an equal"
+        else:
+            wisdom_gem_guidance = "a resonant, adult insight distilled from the story's theme — concise and genuine"
+
         return f"""
 **PERSONA**: Expert Children's Author & Therapeutic Storyteller.
 
@@ -271,6 +285,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 Strictly return valid JSON with this structure:
 {{
   "title": "Story Title",
+  "wisdom_gem": "A {wisdom_gem_guidance} — one sentence, no more.",
   "pages": [
     {{
       "text": "Page text (approx 100-150 words)...",
@@ -309,7 +324,8 @@ def _safe_extract_title_and_gem(text: str, theme: str):
         title = data.get("title", f"A {theme} Adventure")
         pages_input = data.get("pages", [])
         post_story = data.get("post_story", {})
-        wisdom_gem = post_story.get("wisdom_gem") or "You are magic!"
+        # Read from top-level first (new prompt format), fall back to post_story (legacy), then generic default
+        wisdom_gem = data.get("wisdom_gem") or post_story.get("wisdom_gem") or "You are magic!"
 
         pages = []
         if isinstance(pages_input, str):

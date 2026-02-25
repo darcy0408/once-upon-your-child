@@ -169,7 +169,7 @@ void main() {
     await tester.pump();
 
     // Ensure "Continue" button is visible and tap it
-    final continueButton = find.text('Continue');
+    final continueButton = find.byKey(const Key('continue_button'));
     await pumpUntilFound(finder: continueButton);
     await tester.ensureVisible(continueButton);
     await tester.tap(continueButton);
@@ -182,10 +182,10 @@ void main() {
     pageView.controller!.jumpToPage(1);
     await tester.pump(const Duration(milliseconds: 500));
 
-    await pumpUntilFound(finder: find.text('Go Solo'));
+    await pumpUntilFound(finder: find.text('Go Solo (Be Brave!)'));
 
     // --- STEP 3: Companion Selector ---
-    final goSoloBtn = find.text('Go Solo');
+    final goSoloBtn = find.text('Go Solo (Be Brave!)');
     await tester.ensureVisible(goSoloBtn);
     await tester.tap(goSoloBtn);
     
