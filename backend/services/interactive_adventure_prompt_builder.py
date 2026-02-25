@@ -514,6 +514,14 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
         if is_near_end:
             ending_instruction = f"\n**ENDING LOGIC**: You are at segment {next_segment_number}/{path_depth}. If appropriate for the plot, you MAY conclude the story in this segment by setting `is_ending: true`. If not, ensure the story concludes by segment {path_depth}."
 
+        empathy_moment = (
+            f"- **EMPATHY MOMENT**: In this segment, introduce a secondary character who is experiencing a challenge"
+            f" related to '{life_challenge_ctx}'. Frame it as: '[Friend's name] looks sad and says: [their problem in"
+            f" simple, relatable words].' Then give {child_name} choices about how to help this friend. This lets the"
+            f" reader practice compassion safely \u2014 they help a friend, not themselves."
+            if life_challenge_ctx and not is_near_end and next_segment_number == 3 else ""
+        )
+
         prompt = f"""
 **PERSONA**: Expert Children's Author & Pick-A-Path Storyteller.
 
@@ -543,7 +551,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 - **WORD COUNT REQUIREMENT**: This INDIVIDUAL SEGMENT MUST be between {word_count[0]} and {word_count[1]} words.
 - **Companion Contract**: REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Companion MUST appear by name.
 - **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.{ending_instruction}
-{f"""- **EMPATHY MOMENT**: In this segment, introduce a secondary character who is experiencing a challenge related to '{life_challenge_ctx}'. Frame it as: '[Friend's name] looks sad and says: [their problem in simple, relatable words].' Then give {child_name} choices about how to help this friend. This lets the reader practice compassion safely — they help a friend, not themselves.""" if life_challenge_ctx and not is_near_end and next_segment_number == 3 else ""}
+{empathy_moment}
 - **Safety**: No violence/harm. Therapeutic tone.
 {cls.SAFETY_GUARDRAILS}
 {cls.TEEN_TONE_INSTRUCTION if age >= 15 else ""}
