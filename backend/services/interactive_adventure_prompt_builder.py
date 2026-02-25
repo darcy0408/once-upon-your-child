@@ -185,8 +185,16 @@ SAFETY RULES:
 - Do NOT invent characters or family members not provided.
 - Must Include: A Moment of Wonder (age-appropriate), a coping moment in action (resilience/perspective), and a satisfying conclusion.
 - SAFETY: Ensure no scary imagery or abandonment themes for children.
-- Do NOT use internal storytelling labels in the prose (e.g., "consequence chain", "challenge arc", "earned ending", "narrative beat", "therapeutic specialist").
 - Do NOT repeat or closely paraphrase the opening paragraph at the end of the story.
+"""
+
+    IMMERSION_RULES = """
+⚠️ CRITICAL IMMERSION RULES — these override all other instructions:
+1. The story must read as a seamless in-world narrative. Characters have ZERO awareness they are in a generated story or therapeutic exercise.
+2. NEVER include AI-style preambles ("Here we go!", "Sure!", "Here is your story:") or sign-offs.
+3. NEVER expose internal storytelling mechanics inside the prose. Characters must not speak or think using craft/therapy terminology (e.g. they cannot say they were being a "therapeutic specialist", refer to a "challenge arc", or announce an "earned ending").
+4. NEVER end with an explicit moral recap or lesson announcement — growth must emerge through action and feeling, not stated conclusions.
+5. Return ONLY the JSON object above — nothing before the opening brace, nothing after the closing brace.
 """
 
     TEEN_TONE_INSTRUCTION = """
@@ -407,7 +415,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
   "is_ending": false
 }}
 ```
-"""
+{cls.IMMERSION_RULES}"""
         return prompt
 
     @classmethod
@@ -529,7 +537,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
   "is_ending": false
 }}
 ```
-"""
+{cls.IMMERSION_RULES}"""
         return prompt
 
     @staticmethod

@@ -843,7 +843,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         scale: _isCreateAvatarPressed ? 0.94 : 1.0,
         duration: const Duration(milliseconds: 110),
         child: Image.asset(
-          'assets/images/ui/create_avatar_btn.png',
+          'assets/images/ui/create_avatar_btn.jpg',
           height: 80,
           width: double.infinity,
           fit: BoxFit.contain,

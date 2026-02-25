@@ -330,7 +330,14 @@ def _strip_meta_leakage(pages: list) -> list:
                 logger.warning("Stripped meta-leakage (short declarative): %r", sent[:120])
                 continue
             kept.append(sent)
-        cleaned.append(" ".join(kept))
+        page_clean = " ".join(kept)
+        if page_clean.strip():  # skip pages that became fully empty after stripping
+            cleaned.append(page_clean)
+        elif kept != sentences:
+            logger.warning("Page became empty after meta-leakage stripping; retaining original.")
+            cleaned.append(page)
+        else:
+            cleaned.append(page_clean)
     return cleaned
 
 
