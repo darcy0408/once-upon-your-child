@@ -2,6 +2,7 @@
 // Simple logging service for production-ready debugging
 
 import 'package:flutter/foundation.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 enum LogLevel {
   debug,
@@ -56,9 +57,20 @@ class LoggerService {
       }
     }
 
-    // TODO: In production, you could send errors to a service like Sentry or Firebase Crashlytics
-    // if (level == LogLevel.error && error != null) {
-    //   FirebaseCrashlytics.instance.recordError(error, stackTrace);
-    // }
+    // Forward errors to Sentry in production
+    if (!kDebugMode) {
+      if (level == LogLevel.error && error != null) {
+        Sentry.captureException(error, stackTrace: stackTrace,
+            withScope: (scope) {
+          scope.setTag('log_message', message);
+        });
+      } else if (level == LogLevel.warning) {
+        Sentry.addBreadcrumb(Breadcrumb(
+          message: message,
+          level: SentryLevel.warning,
+          timestamp: DateTime.now(),
+        ));
+      }
+    }
   }
 }

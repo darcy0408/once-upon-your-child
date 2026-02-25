@@ -38,6 +38,21 @@
 
 ---
 
+## Session Update - 2026-02-25 (Sentry — Wire into LoggerService)
+
+### Problem
+`SentryFlutter.init` only catches unhandled crashes automatically. Soft errors logged via `LoggerService.error()` (API failures, save errors, etc.) were silently dropped — never reached Sentry.
+
+### Fix
+- `LoggerService.error()` now calls `Sentry.captureException()` in production, tagged with the log message for context
+- `LoggerService.warning()` now adds a Sentry breadcrumb in production — warnings appear as trail-of-breadcrumbs context on crash reports, not as separate events
+- Both gated on `!kDebugMode` so local dev stays clean
+
+### Files Changed
+- `lib/services/logger_service.dart` — added Sentry calls for error/warning levels
+
+---
+
 ## Session Update - 2026-02-25 (Coloring Book — Wire User API Key)
 
 ### Problem
