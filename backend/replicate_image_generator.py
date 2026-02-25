@@ -249,3 +249,115 @@ class ReplicateImageGenerator:
             character_appearance=character_appearance,
             companions=companions
         )
+
+    def generate_custom_avatar(
+        self,
+        base_image_bytes: bytes,
+        prompt: str,
+        character_name: str = "the hero",
+        age: int = 8,
+        num_images: int = 1,
+        **_,
+    ) -> list:
+        """
+        Generate a Pixar-style cartoon avatar from a reference photo.
+
+        Uses PhotoMaker-Style (tencentarc/photomaker-style) — purpose-built for
+        photo → animated character style transfer. ~$0.015–0.035/image.
+        No child-photo safety policy restrictions unlike Gemini.
+        """
+        self._ensure_api_key()
+
+        photo_b64 = base64.b64encode(base_image_bytes).decode("utf-8")
+        photo_data_url = f"data:image/jpeg;base64,{photo_b64}"
+
+        # PhotoMaker-Style requires the trigger word "img" in the prompt
+        # to anchor the face reference from the uploaded photo
+        if "img" not in prompt:
+            anchored_prompt = f"a storybook character img, {prompt.strip()}"
+        else:
+            anchored_prompt = prompt
+
+        payload = {
+            "version": "tencentarc/photomaker-style",
+            "input": {
+                "input_image": photo_data_url,
+                "prompt": anchored_prompt,
+                "negative_prompt": (
+                    "nsfw, ugly, deformed, photorealistic, photograph, realistic, "
+                    "blurry, low quality, watermark, text, logo"
+                ),
+                "style_name": "Pixar/Disney Character",
+                "num_outputs": max(1, min(num_images, 4)),
+                "style_strength_ratio": 35,
+                "num_inference_steps": 50,
+                "guidance_scale": 5,
+            },
+        }
+
+        logger.info(f"Replicate PhotoMaker: generating avatar for {character_name}")
+
+        # Use latest-version endpoint (no hash required)
+        create_url = "https://api.replicate.com/v1/models/tencentarc/photomaker-style/predictions"
+        headers = {
+            "Authorization": f"Token {self.api_key}",
+            "Content-Type": "application/json",
+            "Prefer": "wait",
+        }
+
+        resp = requests.post(create_url, headers=headers, json={"input": payload["input"]}, timeout=70)
+        resp.raise_for_status()
+        prediction = resp.json()
+
+        # Poll if not immediately completed
+        if prediction.get("status") != "succeeded":
+            pred_id = prediction.get("id")
+            deadline = datetime.now().timestamp() + 90
+            poll_headers = {"Authorization": f"Token {self.api_key}"}
+            while datetime.now().timestamp() < deadline:
+                import time
+                time.sleep(3)
+                poll_resp = requests.get(
+                    f"https://api.replicate.com/v1/predictions/{pred_id}",
+                    headers=poll_headers,
+                    timeout=30,
+                )
+                poll_resp.raise_for_status()
+                prediction = poll_resp.json()
+                status = prediction.get("status")
+                if status == "succeeded":
+                    break
+                if status in ("failed", "canceled"):
+                    raise RuntimeError(f"Replicate prediction {status}: {prediction.get('error')}")
+            else:
+                raise TimeoutError(f"Replicate prediction {pred_id} timed out")
+
+        output_urls = prediction.get("output") or []
+        if not output_urls:
+            raise RuntimeError("Replicate PhotoMaker returned no output images")
+
+        results = []
+        for i, image_url in enumerate(output_urls[:num_images]):
+            try:
+                if isinstance(image_url, str) and image_url.startswith("http"):
+                    dl = requests.get(image_url, timeout=30)
+                    dl.raise_for_status()
+                    image_b64 = base64.b64encode(dl.content).decode("utf-8")
+                elif isinstance(image_url, str):
+                    image_b64 = image_url.split(",", 1)[-1] if "," in image_url else image_url
+                else:
+                    continue
+
+                results.append({
+                    "id": f"{uuid.uuid4()}_{i}",
+                    "prompt": prompt,
+                    "image_data": image_b64,
+                    "format": "png",
+                    "generated_at": datetime.now().isoformat(),
+                    "provider": "replicate-photomaker-style",
+                })
+            except Exception as e:
+                logger.error(f"Replicate: failed to process output image {i}: {e}")
+
+        logger.info(f"Replicate PhotoMaker: generated {len(results)} avatar(s) for {character_name}")
+        return results

@@ -2,7 +2,23 @@
 
 ---
 
-## Session Update - 2026-02-25 (Fix learning_to_read mode for age 3-4)
+## Session Update - 2026-02-25 (Fix wisdom gem fallback and double article titles)
+
+### Problems
+1. **Wisdom gem "You are magic!" fallback** — `_build_rhyme_time_prompt` had no `**OUTPUT FORMAT**` block (same gap as the LTR prompt fixed in the previous session). Gemini returned plain prose, JSON parsing fell back, and `wisdom_gem` defaulted to "You are magic!".
+
+2. **Double article title** — Themes like `"The Brave Little Firefly"` could produce titles like `"A The Brave Little Firefly Adventure"` when Gemini prefixed "A" without checking for an existing article.
+
+### Fix
+- Added `**OUTPUT FORMAT**` JSON spec to `_build_rhyme_time_prompt` (`title`, `wisdom_gem`, `pages[]`), matching the regular and LTR prompt formats.
+- Added double-article cleanup regex in `_safe_extract_title_and_gem`: `re.sub(r'^(A|An)\s+(The|A|An)\s+', r'\2 ', title)` — e.g. "A The Brave..." → "The Brave...".
+
+### Files Changed
+- `backend/services/story_service.py` — rhyme prompt JSON spec + title cleanup
+
+---
+
+
 
 ### Problem
 `learning_to_read` mode was failing for age 3-4 (1/21 in the quality pass).

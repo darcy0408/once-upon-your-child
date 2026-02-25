@@ -53,23 +53,43 @@ class AvatarGenerationService:
         elif self.image_generator is None and disable_gemini:
             logger.info("Gemini image generation disabled via DISABLE_GEMINI_IMAGE=1")
 
-        # If no fallback generator provided, try to import and create OpenRouter
+        # Fallback for photo→avatar: prefer Replicate (PhotoMaker-Style) over OpenRouter
+        # because OpenRouter's Gemini model has the same child-photo safety restrictions
         if self.fallback_generator is None:
-            try:
-                from backend.openrouter_image_generator import OpenRouterImageGenerator
-                self.fallback_generator = OpenRouterImageGenerator()
-                logger.info("AvatarGenerationService initialized with OpenRouter fallback")
-            except ImportError:
+            replicate_token = os.getenv("REPLICATE_API_TOKEN")
+            if replicate_token:
                 try:
-                    from openrouter_image_generator import OpenRouterImageGenerator
+                    from backend.replicate_image_generator import ReplicateImageGenerator
+                    self.fallback_generator = ReplicateImageGenerator(api_key=replicate_token)
+                    logger.info("AvatarGenerationService initialized with Replicate PhotoMaker fallback")
+                except ImportError:
+                    try:
+                        from replicate_image_generator import ReplicateImageGenerator
+                        self.fallback_generator = ReplicateImageGenerator(api_key=replicate_token)
+                        logger.info("AvatarGenerationService initialized with Replicate fallback (direct import)")
+                    except Exception as e:
+                        logger.warning(f"Failed to initialize Replicate fallback: {e}")
+                        self.fallback_generator = None
+                except Exception as e:
+                    logger.warning(f"Failed to initialize Replicate fallback: {e}")
+                    self.fallback_generator = None
+            else:
+                # Fall back to OpenRouter if no Replicate token
+                try:
+                    from backend.openrouter_image_generator import OpenRouterImageGenerator
                     self.fallback_generator = OpenRouterImageGenerator()
-                    logger.info("AvatarGenerationService initialized with OpenRouter fallback (direct import)")
+                    logger.info("AvatarGenerationService initialized with OpenRouter fallback")
+                except ImportError:
+                    try:
+                        from openrouter_image_generator import OpenRouterImageGenerator
+                        self.fallback_generator = OpenRouterImageGenerator()
+                        logger.info("AvatarGenerationService initialized with OpenRouter fallback (direct import)")
+                    except Exception as e:
+                        logger.warning(f"Failed to initialize OpenRouter fallback: {e}")
+                        self.fallback_generator = None
                 except Exception as e:
                     logger.warning(f"Failed to initialize OpenRouter fallback: {e}")
                     self.fallback_generator = None
-            except Exception as e:
-                logger.warning(f"Failed to initialize OpenRouter fallback: {e}")
-                self.fallback_generator = None
 
     def generate_custom_avatar(
         self,

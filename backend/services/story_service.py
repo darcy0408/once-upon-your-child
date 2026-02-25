@@ -289,7 +289,6 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 - **Safety**: {SAFETY_GUARDRAILS.strip()}{safety_reinforcement}
 - **Mandatory Elements**: Must include {coping_instruction}, and a satisfying conclusion.
 
-{STRICT_OUTPUT_CONSTRAINTS}
 **OUTPUT FORMAT**:
 Strictly return valid JSON with this structure:
 {{
@@ -302,9 +301,39 @@ Strictly return valid JSON with this structure:
     }}
   ]
 }}
-"""
+{STRICT_OUTPUT_CONSTRAINTS}"""
 
 # Helper functions for story_tasks.py
+
+def _strip_meta_leakage(pages: list) -> list:
+    """Remove sentences that contain leaked storytelling jargon from page text.
+
+    Checks each sentence in every page. If a sentence contains two or more
+    terms from _META_LEAK_TERMS it is almost certainly meta-commentary that
+    slipped through the prompt guard, so we drop it and log a warning.
+    A single-term match is only removed when the sentence is very short
+    (≤12 words) and starts with a declarative opener like "This was" / "It was".
+    """
+    cleaned = []
+    for page in pages:
+        sentences = re.split(r'(?<=[.!?])\s+', page.strip())
+        kept = []
+        for sent in sentences:
+            lower = sent.lower()
+            hits = sum(1 for term in _META_LEAK_TERMS if term in lower)
+            words = sent.split()
+            # Drop if 2+ leaked terms, OR single term in short declarative sentence
+            if hits >= 2:
+                logger.warning("Stripped meta-leakage (multi-term): %r", sent[:120])
+                continue
+            if hits == 1 and len(words) <= 12 and re.match(r'^(it was|this was|that was|in the end,?)\b', lower):
+                logger.warning("Stripped meta-leakage (short declarative): %r", sent[:120])
+                continue
+            kept.append(sent)
+        cleaned.append(" ".join(kept))
+    return cleaned
+
+
 def _safe_extract_title_and_gem(text: str, theme: str):
     """Extract title, wisdom gem, and pages from LLM JSON response."""
     clean_text = text.strip()
@@ -330,7 +359,9 @@ def _safe_extract_title_and_gem(text: str, theme: str):
 
     def _parse_story_data(json_str):
         data = json.loads(json_str)
-        title = data.get("title", f"A {theme} Adventure")
+        raw_title = data.get("title", f"A {theme} Adventure")
+        # Strip double articles: "A The X" → "The X", "An A X" → "A X", etc.
+        title = re.sub(r'^(A|An)\s+(The|A|An)\s+', r'\2 ', raw_title, flags=re.IGNORECASE)
         pages_input = data.get("pages", [])
         post_story = data.get("post_story", {})
         # Read from top-level first (new prompt format), fall back to post_story (legacy), then generic default
@@ -398,6 +429,7 @@ def _safe_extract_title_and_gem(text: str, theme: str):
          # Use candidate text as fallback
          pages = [candidate_text]
 
+    pages = _strip_meta_leakage(pages)
     story_body = "\n\n".join(pages)
     return title, wisdom_gem, story_body, pages, post_story
 
@@ -498,7 +530,6 @@ Companions: {comp_str} (MANDATORY Checklist: {mandatory_names_str} - EVERY name 
 Custom Requests: {custom_elements or 'None'} (CRITICAL: You MUST use the exact words from this request at least once each, verbatim, in the story).
 If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {SAFETY_GUARDRAILS}
-{STRICT_OUTPUT_CONSTRAINTS}
 **OUTPUT FORMAT**: Strictly return valid JSON with this structure:
 {{
   "title": "Story Title",
@@ -510,7 +541,7 @@ If a custom request implies an action or relationship (e.g., "ride a dragon", "m
   ]
 }}
 Return EXACTLY {num_pages} page objects. No extra keys. No prose outside the JSON.
-"""
+{STRICT_OUTPUT_CONSTRAINTS}"""
 
 
 def _build_rhyme_time_prompt(character_name, theme, age, character_details, companion_pets=None, companion_characters=None, extra_characters=None, story_length="standard", custom_elements=""):
@@ -587,4 +618,15 @@ Custom Requests: {custom_elements or 'None'} (CRITICAL: You MUST use the exact w
 If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {SAFETY_GUARDRAILS}
 {STRICT_OUTPUT_CONSTRAINTS}
+**OUTPUT FORMAT**: Strictly return valid JSON with this structure:
+{{
+  "title": "Story Title",
+  "wisdom_gem": "One short rhyming or lyrical phrase the child can carry with them.",
+  "pages": [
+    {{"text": "Rhyming stanza or couplet..."}},
+    {{"text": "Rhyming stanza or couplet..."}},
+    ...
+  ]
+}}
+No prose outside the JSON.
 """
