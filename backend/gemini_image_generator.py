@@ -20,7 +20,7 @@ class GeminiImageGenerator:
         """Initialize with Gemini API key"""
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         self._client = None
-        self._model_name = "gemini-2.0-flash"
+        self._model_name = "gemini-2.0-flash-preview-image-generation"
         self._request_timeout_seconds = int(os.getenv("GEMINI_IMAGE_REQUEST_TIMEOUT_SECONDS", "120"))
         if self.api_key:
             from google import genai
@@ -72,11 +72,14 @@ class GeminiImageGenerator:
         return images
 
     def _generate_content_with_timeout(self, prompt: str):
+        from google.genai import types
+        config = types.GenerateContentConfig(response_modalities=["IMAGE"])
         executor = ThreadPoolExecutor(max_workers=1)
         future = executor.submit(
             self._client.models.generate_content,
             model=self._model_name,
             contents=prompt,
+            config=config,
         )
         try:
             return future.result(timeout=self._request_timeout_seconds)
@@ -224,6 +227,7 @@ Style: {style}, optimized for {age_descriptor}
             response = self._client.models.generate_content(
                 model=self._model_name,
                 contents=contents,
+                config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
             )
             images = self._process_image_response(response, prompt)
             candidate_count = len(getattr(response, "candidates", []) or [])
@@ -395,6 +399,7 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
             response = self._client.models.generate_content(
                 model=self._model_name,
                 contents=contents,
+                config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
             )
             images = self._process_image_response(response, prompt)
             candidate_count = len(getattr(response, "candidates", []) or [])
@@ -441,9 +446,6 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
             logger.info(f"Generating custom avatar for {character_name} using reference photo")
             
             # Create the content parts: prompt + image
-            # Note: The new SDK might handle this differently depending on the model.
-            # For gemini-2.0-flash (image-to-image/inpainting/etc), we use content parts.
-            
             contents = [
                 prompt,
                 types.Part.from_bytes(data=base_image_bytes, mime_type="image/jpeg")
@@ -453,6 +455,7 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
             response = self._client.models.generate_content(
                 model=self._model_name,
                 contents=contents,
+                config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
             )
 
             # Process response and extract images
@@ -596,6 +599,7 @@ MANDATORY REQUIREMENTS:
             response = self._client.models.generate_content(
                 model=self._model_name,
                 contents=contents,
+                config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
             )
 
             # Process response and extract images

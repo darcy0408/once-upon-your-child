@@ -7,11 +7,15 @@ import '../ui/widgets/magical_avatar.dart';
 class AvatarGallerySelector extends StatefulWidget {
   final Function(GeneratedAvatar) onAvatarSelected;
   final VoidCallback onCancel;
+  final String? initialAgeGroup;
+  final String? initialGender;
 
   const AvatarGallerySelector({
     super.key,
     required this.onAvatarSelected,
     required this.onCancel,
+    this.initialAgeGroup,
+    this.initialGender,
   });
 
   @override
@@ -35,6 +39,8 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
   @override
   void initState() {
     super.initState();
+    _selectedAgeGroup = widget.initialAgeGroup;
+    _selectedGender = widget.initialGender;
     _initializeService();
   }
 
