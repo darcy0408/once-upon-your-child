@@ -2,6 +2,25 @@
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Scroll Name Input + Create Avatar Button)
+
+### Scope Completed
+- **scroll_name_input.png** — Replaced with new ornate gold scroll image. Black background removed via Pillow (323k pixels made transparent), revealing the scroll artwork cleanly on the app's purple background.
+- **create_avatar_btn.jpg** — Replaced with new "Create Your Avatar" glass button image (dark purple background blends naturally with app theme). Added to git with `git add -f` to bypass `*.jpg` gitignore rule.
+- **hero_creator_step.dart** — Fixed `_buildCreateAvatarButton()` to reference `.jpg` instead of `.png` (was silently falling back to Flutter-drawn fallback widget).
+
+### Files Changed
+- `assets/images/ui/scroll_name_input.png`
+- `assets/images/ui/create_avatar_btn.jpg`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Hero Creator name input scroll:** ✅ Replaced yellow bar with ornate scroll
+- **Create Your Avatar button:** ✅ Now shows proper image asset
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-25 (Fix instruction leakage in story prompts)
 
 ### Problem
