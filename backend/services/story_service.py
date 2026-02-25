@@ -128,6 +128,7 @@ class AdvancedStoryEngine:
         char_details = character_details or {}
         special_ability = char_details.get('specialAbility', 'None specified')
         strengths = ", ".join(char_details.get('strengths', []))
+        interests = ", ".join(char_details.get('interests', []))
         gender = char_details.get('gender', 'not specified')
         pronouns = char_details.get('pronouns', '')
         gender_text = f" (Gender: {gender}{', Pronouns: ' + pronouns if pronouns else ''})"
@@ -270,8 +271,9 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 - **THEME**: {theme}
 - **CONFLICT**: {conflict_hook or 'A magical mystery needs solving.'}
 - **SENSORY PALETTE**: {sensory_palette or 'Bright colors, soft sounds, sweet smells.'}
-- **HERO**: {character} (Strengths: {strengths or 'Brave and kind'}).
+- **HERO**: {character} (Strengths: {strengths or 'Brave and kind'}{(', Passions: ' + interests) if interests else ''}).
 - **SPECIAL ABILITY**: {special_ability} (MUST be used at the climax).
+- **CHARACTER VOICE**: {character} approaches problems using their strengths ({strengths or 'bravery and kindness'}). Let this shape how they think, speak, and act throughout — not just at the climax. A problem-solver notices clues; a healer checks on others first; an adventurer rushes in then reflects.
 {tool_section}
 - **IMPOSSIBLE ELEMENTS**: (Inspiration Only - DO NOT use these exact phrases): {age_impossible}
 - **COMPANIONS**: 
@@ -446,7 +448,7 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
     band = _get_age_band(age)
     config = AGE_CONSTRAINTS[band]
     if 'ltr' not in config:
-        return "Mode unavailable for this age."
+        raise ValueError(f"Learning to Read mode is not available for age {age}. Supported ages: 3–7.")
 
     length_key = 'medium'
     if story_length == 'short' or story_length == 'quick':

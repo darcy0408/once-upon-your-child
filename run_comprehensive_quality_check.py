@@ -78,7 +78,7 @@ def main():
         print(f"\n--- Testing Age Band: {label} ({age}) ---")
         for mode in modes:
             # Skip modes not applicable to age
-            if mode == "learning_to_read" and age > 9:
+            if mode == "learning_to_read" and age > 7:
                 continue
                 
             result_data, duration = generate_story(age, mode, token)
