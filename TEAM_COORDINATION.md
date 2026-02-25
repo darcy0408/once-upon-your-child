@@ -2,6 +2,25 @@
 
 ---
 
+## Session Update - 2026-02-25 (Maintenance: branch cleanup + google-genai upgrade)
+
+### Scope: Notable items from git maintenance
+
+**gemini/backend-tests branch resolved:**
+- Cherry-picked `fix: replace hardcoded localhost:5000 with Environment.backendUrl` (3 illustration/coloring service files)
+- All other commits superseded by main; `origin/gemini/backend-tests` deleted ✅
+
+**google-genai 1.3.0 → 1.64.0 upgraded:**
+- API surface verified compatible: `genai.Client`, `types.Content/Part`, `client.models.generate_content` all unchanged
+- 113 backend tests → 112/113 pass (1 pre-existing mock fixed: `custom_text=None` in `test_continue_story_success`)
+- `backend/requirements.txt` updated, Dependabot branch deleted ✅
+
+**Still held:**
+- `dependabot/pub/google_fonts-8.0.2` — Flutter major bump (6.2.1→8.0.2)
+- `dependabot/pub/multi-68084ecde4` — Firebase Analytics + Core major bump
+
+---
+
 ## Session Update - 2026-02-25 (Security + Crash Reporting)
 
 ### Scope Completed
