@@ -344,6 +344,7 @@ def create_story_blueprint(
 
 
     @story_bp.route("/task-status/<task_id>", methods=["GET"])
+    @require_auth
     def get_task_status(task_id):
         task = celery.AsyncResult(task_id)
 
@@ -360,9 +361,15 @@ def create_story_blueprint(
                 "message": status_message or "Generating story...",
             }
         elif task.state == "SUCCESS":
+            result = task.result or {}
+            # Ownership check: verify the task belongs to the requesting user
+            task_user_id = result.get("user_id")
+            if task_user_id and str(task_user_id) != str(request.current_user.id):
+                logger.warning(f"IDOR attempt: User {request.current_user.id} tried to access task {task_id} owned by {task_user_id}")
+                return jsonify({"error": "Access denied"}), 403
             response = {
                 "status": "complete",
-                "result": task.result,
+                "result": result,
             }
         elif task.state == "FAILURE":
             response = {

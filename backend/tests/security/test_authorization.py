@@ -291,6 +291,7 @@ def test_unauthenticated_access_prevention(client):
         ('/interactive-story/any-id', 'GET'),
         ('/interactive-story/any-id/resume', 'GET'),
         ('/continue-interactive-story', 'POST'),
+        ('/task-status/any-task-id', 'GET'),
         ('/api/user/any-id/usage-stats', 'GET'),
         ('/admin/run-db-optimization', 'POST')
     ]
@@ -313,3 +314,33 @@ def test_unauthenticated_access_prevention(client):
             response = client.patch(url)
             
         assert response.status_code == 401, f"Endpoint {url} with method {method} should be protected"
+
+def test_task_status_requires_auth(client):
+    """
+    Test that /task-status/<id> returns 401 without authentication.
+    Previously this endpoint had no @require_auth decorator.
+    """
+    response = client.get('/task-status/some-random-task-id')
+    assert response.status_code == 401
+
+def test_task_status_ownership_check(client, auth_headers, other_auth_headers, monkeypatch):
+    """
+    Test that User B cannot retrieve the result of User A's completed task.
+    """
+    from backend.tasks import story_tasks
+
+    # Simulate a completed task result belonging to user_a (test_user's id)
+    class FakeTask:
+        state = "SUCCESS"
+        result = {
+            "status": "complete",
+            "user_id": "test_user_123",  # matches test_user fixture id
+            "story": {"title": "Secret Story"},
+        }
+        info = result
+
+    monkeypatch.setattr("backend.routes.story_routes.celery.AsyncResult", lambda tid: FakeTask())
+
+    # User B (other_auth_headers) tries to read User A's task result
+    response = client.get('/task-status/fake-task-id', headers=other_auth_headers)
+    assert response.status_code == 403

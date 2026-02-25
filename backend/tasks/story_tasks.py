@@ -498,6 +498,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     "story_duration": story_duration,
                     "adventure_report": post_story.get("adventure_report", {}),
                 },
+                "user_id": str(user_id),
             }
 
         except Exception as exc:
