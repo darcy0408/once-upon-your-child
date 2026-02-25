@@ -2,6 +2,28 @@
 
 ---
 
+## Session Update - 2026-02-25 (UI Interaction Bug Fix: Magic Scroll Input)
+
+### Problem
+Users were unable to click inside the "Magical Scroll" to type their character name. 
+
+### Root Cause
+1. **Blocking Sparkles**: The `MagicStarCursor` widget was generating animated sparkles exactly at the cursor position. These sparkles lacked `IgnorePointer`, so they were intercepting all click events before they could reach the `TextField` underneath.
+2. **Hit Test Padding**: The parchment scroll image was using `Positioned.fill` but lacked `IgnorePointer`, and the `TextField` had large horizontal padding (54px), making the clickable area for focus much smaller than the visible scroll.
+
+### Fix
+- **`magic_star_cursor.dart`**: Wrapped the sparkle trail in `IgnorePointer` to ensure they never block user interactions.
+- **`hero_creator_step.dart`**: 
+    - Wrapped the entire scroll area in a `GestureDetector` that requests focus for the name field when any part of the scroll is tapped.
+    - Wrapped the parchment image in `IgnorePointer`.
+    - Added a explicit `FocusNode` to the name `TextField` for better programmatic control.
+
+### Status
+- **Interaction Bug:** ✅ Resolved. The scroll is now fully clickable and focusable.
+- **Sparkle Cursor:** ✅ Still visible but no longer blocks clicks.
+
+---
+
 ## Session Update - 2026-02-25 (Clean Endings Fix)
 
 ### Scope Completed
