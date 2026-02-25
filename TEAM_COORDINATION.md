@@ -2,6 +2,42 @@
 
 ---
 
+## Session Update - 2026-02-25 (Auto-migrate missing User columns at startup)
+
+### Problem
+Bug #C3 — `no such column: user.stories_created_count` (and 5 other columns) on any DB created before those fields were added to the model. The fix was gated behind a manual admin endpoint `/admin/add-missing-columns`, so it was never called automatically.
+
+### Fix
+Added an auto-migration block in `backend/app.py` after `db.create_all()`. Uses `sqlalchemy.inspect` to check which of the 6 new columns are missing and issues `ALTER TABLE "user" ADD COLUMN …` for each absent one. Wrapped in `try/except` so it is non-fatal (won't crash startup on read-only or in-memory test DBs).
+
+### Files Changed
+- `backend/app.py`
+
+### Status
+- **Bug #C3 (stories_created_count):** ✅ Fixed (auto-migrates at startup)
+- Covers all 6 columns: `stories_created_count`, `gemini_api_key_encrypted`, `has_byok`, `stories_generated_this_month`, `illustrations_generated_this_month`, `usage_reset_date`
+
+---
+
+## Session Update - 2026-02-25 (Backend Warning Cleanup — Corrected)
+
+### Scope Completed
+
+**Warning Cleanup — `pytest.ini` & `TestingConfig` (revised):**
+- First attempt incorrectly removed `CACHE_TYPE = 'NullCache'` from `TestingConfig`. This caused a real runtime bug: `SimpleCache` calls `cachelib.serializers` which has an `UnboundLocalError` when serializing Flask `Response` objects (a known `cachelib` bug). Three `TestGetStoryThemes` tests failed with 500.
+- Reverted `CACHE_TYPE = 'NullCache'` — it is required to prevent the cachelib serialization crash.
+- The two Flask-Caching DeprecationWarnings are from the library's own `__init__.py` internals, not application code. They are correctly suppressed.
+- Cleaned up 4 stale filters that were not actively triggered (verified across 399 tests): `datetime.utcnow()`, FK sort/DROP, SQLAlchemy 2.0, and catch-all Flask-Caching.
+
+**Net result:** `pytest.ini` / `backend/pytest.ini` go from 6 suppressed warnings to 2, with each remaining suppression documented and justified.
+
+**Files changed:**
+- `backend/config/__init__.py` — restored `CACHE_TYPE = 'NullCache'` with explanatory comment
+- `pytest.ini` (root) — 2 targeted filters with explanatory comment block
+- `backend/pytest.ini` — 2 targeted filters with explanatory comment block
+
+---
+
 ## Session Update - 2026-02-25 (Backend Warning Cleanup)
 
 ### Scope Completed
@@ -17,6 +53,7 @@
 - `backend/pytest.ini` — removed `filterwarnings` block
 
 ---
+
 
 ## Session Update - 2026-02-25 (Final Manual Testing Pass — All Age Bands)
 

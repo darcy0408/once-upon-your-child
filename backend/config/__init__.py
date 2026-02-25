@@ -191,6 +191,9 @@ class TestingConfig(Config):
     RATELIMIT_ENABLED = False
     # Match conftest.py
     JWT_SECRET_KEY = 'dev-secret-key'
+    # Use NullCache in tests to avoid Flask-Caching/cachelib serialization bugs
+    # (SimpleCache calls cachelib.serializers which fails on Flask Response objects)
+    CACHE_TYPE = 'NullCache'
     # Ensure Celery is eager in tests
     CELERY_TASK_ALWAYS_EAGER = True
     CELERY_TASK_EAGER_PROPAGATES = True
