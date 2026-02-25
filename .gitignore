@@ -116,6 +116,10 @@ HowDoYouFeelToday.jpg
 SellItPowerpoint images/
 StoryWeaverImagestoShare/
 
+# Avatar working files (local only - large binaries, not needed in repo)
+avatarImages/Avatar_Final/
+avatarImages/avatar_review.html
+
 # Old/archived assets
 assets/mood_lanterns/old/
 
