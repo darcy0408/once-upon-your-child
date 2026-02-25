@@ -644,6 +644,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
             ),
           ),
         ],
+        ),
       ),
     );
   }
