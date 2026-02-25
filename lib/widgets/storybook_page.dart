@@ -32,17 +32,17 @@ class StoryBookPage extends StatelessWidget {
         color: backgroundColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.gold.withOpacity(0.3),
+          color: AppColors.gold.withValues(alpha: 0.3),
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: AppColors.gold.withOpacity(0.1),
+            color: AppColors.gold.withValues(alpha: 0.1),
             blurRadius: 0,
             spreadRadius: 4,
             offset: const Offset(0, 0),
@@ -64,7 +64,7 @@ class StoryBookPage extends StatelessWidget {
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                   colors: [
-                    Colors.black.withOpacity(0.1),
+                    Colors.black.withValues(alpha: 0.1),
                     Colors.transparent,
                   ],
                 ),
@@ -85,7 +85,7 @@ class StoryBookPage extends StatelessWidget {
                   end: Alignment.centerRight,
                   colors: [
                     Colors.transparent,
-                    Colors.white.withOpacity(0.2),
+                    Colors.white.withValues(alpha: 0.2),
                   ],
                 ),
               ),
@@ -186,7 +186,7 @@ class PaperTexturePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.black.withOpacity(opacity)
+      ..color = Colors.black.withValues(alpha: opacity)
       ..strokeWidth = 1;
 
     // Deterministic speckle pattern (no randomness) to keep goldens stable.

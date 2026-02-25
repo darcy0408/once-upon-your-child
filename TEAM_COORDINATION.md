@@ -2,6 +2,26 @@
 
 ---
 
+## Session Update - 2026-02-25 (Fix Deprecated Flutter API Warnings)
+
+### Scope Completed
+Replaced all deprecated Flutter API calls with their current equivalents:
+- `Color.withOpacity(x)` → `Color.withValues(alpha: x)` — 6 instances in `storybook_page.dart`
+- `DropdownButtonFormField(value:)` → `(initialValue:)` — 2 instances in `hero_creator_step.dart`
+- `Switch(activeColor:)` → `(activeThumbColor:)` — 1 instance in `story_result_screen.dart`
+- `Color.value.toRadixString(16)` → `Color.toARGB32().toRadixString(16)` — 1 instance in `coloring_screen.dart`
+
+### Files Changed
+- `lib/widgets/storybook_page.dart`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+- `lib/story_result_screen.dart`
+- `lib/coloring_screen.dart`
+
+### Status
+- **Deprecated API warnings:** ✅ All 10 instances resolved across 4 files
+
+---
+
 ## Session Update - 2026-02-25 (CI Fix: pyotp missing dependency)
 
 ### Problem

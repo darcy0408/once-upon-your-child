@@ -1164,7 +1164,7 @@ class _PetsSection extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: species,
+                      initialValue: species,
                       dropdownColor: const Color(0xFF2A0A4E),
                       style: const TextStyle(color: Colors.white),
                       items: _speciesOptions
@@ -1188,7 +1188,7 @@ class _PetsSection extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: gender,
+                      initialValue: gender,
                       dropdownColor: const Color(0xFF2A0A4E),
                       style: const TextStyle(color: Colors.white),
                       items: ['Boy', 'Girl']

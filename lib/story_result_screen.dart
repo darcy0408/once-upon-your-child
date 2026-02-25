@@ -1437,7 +1437,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
               secondary: const Icon(Icons.contrast, color: Colors.black54),
               value: _highContrastMode,
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
               onChanged: (value) => setState(() {
                 _highContrastMode = value;
               }),
