@@ -82,11 +82,13 @@ class _MagicStarCursorState extends State<MagicStarCursor> {
             return Positioned(
               left: s.position.dx - s.size / 2,
               top: s.position.dy - s.size / 2,
-              child: Opacity(
-                opacity: opacity,
-                child: Transform.rotate(
-                  angle: s.angle,
-                  child: _StarShape(size: s.size, color: s.color),
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: opacity,
+                  child: Transform.rotate(
+                    angle: s.angle,
+                    child: _StarShape(size: s.size, color: s.color),
+                  ),
                 ),
               ),
             );

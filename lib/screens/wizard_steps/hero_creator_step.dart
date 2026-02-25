@@ -47,6 +47,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   // ─── State ──────────────────────────────────────────────────────────────────
   String? _selectedArchetypeId;
   late TextEditingController _nameController;
+  final FocusNode _nameFocusNode = FocusNode();
   Character? _selectedExistingCharacter;
   bool _isContinuePressed = false;
   bool _isCreateAvatarPressed = false;
@@ -105,6 +106,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   @override
   void dispose() {
     _nameController.dispose();
+    _nameFocusNode.dispose();
     AvatarGenerationState().removeListener(_onAvatarStateChanged);
     super.dispose();
   }
@@ -589,26 +591,32 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 
   // ─── SECTION: Scroll name field ───────────────────────────────────────────────
   Widget _buildNameScrollInput() {
-    return SizedBox(
-      height: 128,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Ornate parchment scroll background (transparent PNG)
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/ui/scroll_name_input.png',
-              fit: BoxFit.fill,
+    return GestureDetector(
+      onTap: () => _nameFocusNode.requestFocus(),
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        height: 128,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Ornate parchment scroll background (transparent PNG)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Image.asset(
+                  'assets/images/ui/scroll_name_input.png',
+                  fit: BoxFit.fill,
+                ),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 54),
-            child: TextField(
-              controller: _nameController,
-              inputFormatters: [
-                LengthLimitingTextInputFormatter(24),
-                _SafeNameFormatter(),
-              ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 54),
+              child: TextField(
+                controller: _nameController,
+                focusNode: _nameFocusNode,
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(24),
+                  _SafeNameFormatter(),
+                ],
               textAlign: TextAlign.center,
               textAlignVertical: TextAlignVertical.center,
               style: GoogleFonts.cinzelDecorative(
