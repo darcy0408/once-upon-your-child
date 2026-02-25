@@ -1,7 +1,10 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/generated_avatar.dart';
 import '../services/avatar_service.dart';
 import '../ui/widgets/magical_avatar.dart';
+
+const int _kBatchSize = 12;
 
 /// Avatar Gallery Selector - Shows pre-made curated avatar options
 class AvatarGallerySelector extends StatefulWidget {
@@ -20,12 +23,17 @@ class AvatarGallerySelector extends StatefulWidget {
 
 class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
   final AvatarService _avatarService = AvatarService();
-  List<String> _avatars = [];
+  final _rng = Random();
+
+  /// Full filtered pool
+  List<String> _pool = [];
+  /// Current displayed batch
+  List<String> _batch = [];
+  /// Tracks which pool indices have been shown this round
+  List<int> _remaining = [];
+
   Map<String, List<String>> _filterOptions = {};
-
-  // Active filters
   String? _selectedHairColor;
-
   bool _isLoading = true;
   String? _selectedAvatarPath;
 
@@ -43,57 +51,57 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
           _filterOptions = _avatarService.getCuratedOptions();
           _isLoading = false;
         });
-        _refreshAvatars();
+        _refreshPool();
       }
     } catch (e) {
       debugPrint('AvatarGallerySelector: Failed to initialize: $e');
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _refreshAvatars() {
+  void _refreshPool() {
+    _pool = _avatarService.getCuratedAvatars(hairColor: _selectedHairColor);
+    _remaining = List.generate(_pool.length, (i) => i);
+    _remaining.shuffle(_rng);
+    _nextBatch();
+  }
+
+  void _nextBatch() {
+    if (_remaining.isEmpty) {
+      // Seen everything — reshuffle for another round
+      _remaining = List.generate(_pool.length, (i) => i);
+      _remaining.shuffle(_rng);
+    }
+    final take = _remaining.length < _kBatchSize ? _remaining.length : _kBatchSize;
+    final indices = _remaining.sublist(0, take);
+    _remaining = _remaining.sublist(take);
     setState(() {
-      _avatars = _avatarService.getCuratedAvatars(
-        hairColor: _selectedHairColor,
-      );
+      _batch = indices.map((i) => _pool[i]).toList();
     });
   }
 
   void _selectAvatar(String assetPath) {
-    setState(() {
-      _selectedAvatarPath = assetPath;
-    });
-
+    setState(() => _selectedAvatarPath = assetPath);
     final avatarId = assetPath.split('/').last.split('.').first;
-    final avatar = GeneratedAvatar(
+    widget.onAvatarSelected(GeneratedAvatar(
       id: avatarId,
       imageBase64: assetPath,
       seed: avatarId,
       style: 'pixar',
       attributes: const {},
       generatedAt: DateTime.now(),
-    );
-
-    widget.onAvatarSelected(avatar);
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
-    final hasActiveFilters = _selectedHairColor != null;
-
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
         constraints: const BoxConstraints(maxWidth: 900, maxHeight: 800),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [
-              Color(0xFF2C1B47),
-              Color(0xFF5C3A84),
-              Color(0xFF4A2F72),
-            ],
+            colors: [Color(0xFF2C1B47), Color(0xFF5C3A84), Color(0xFF4A2F72)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -108,242 +116,239 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
         ),
         child: Column(
           children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFFFFC44D), Color(0xFFFF9F43)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.auto_awesome,
-                      color: Color(0xFF3B2363), size: 28),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      'Choose Your Look',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF3B2363),
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: widget.onCancel,
-                    icon: const Icon(Icons.close, color: Color(0xFF3B2363)),
-                  ),
-                ],
-              ),
-            ),
-
-            // Chip filters (no dropdowns)
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(237),
-                border: Border(
-                  bottom: BorderSide(color: Colors.white.withAlpha(120)),
-                ),
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildFilterSection(
-                      title: 'Hair Color',
-                      icon: Icons.brush_outlined,
-                      options: _filterOptions['hairColors'] ?? const [],
-                      selectedValue: _selectedHairColor,
-                      onChanged: (value) {
-                        setState(() => _selectedHairColor = value);
-                        _refreshAvatars();
-                      },
-                    ),
-                    if (hasActiveFilters) ...[
-                      const SizedBox(height: 10),
-                      TextButton.icon(
-                        onPressed: () {
-                          setState(() => _selectedHairColor = null);
-                          _refreshAvatars();
-                        },
-                        icon: const Icon(Icons.clear, size: 16),
-                        label: const Text('Show all looks'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xFF5C3A84),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-
-            // Gallery Grid
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _avatars.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.person_off,
-                                size: 64,
-                                color: Colors.white.withAlpha(204),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No heroes match this combo yet.\nTry a different vibe!',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white.withAlpha(230),
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : Container(
-                          decoration: const BoxDecoration(
-                            gradient: RadialGradient(
-                              colors: [Color(0x447E57C2), Color(0x002C1B47)],
-                              radius: 1.2,
-                              center: Alignment(-0.2, -0.8),
-                            ),
-                          ),
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              final maxWidth = constraints.maxWidth;
-                              final crossAxisCount = maxWidth >= 820
-                                  ? 4
-                                  : maxWidth >= 560
-                                      ? 3
-                                      : 2;
-
-                              return GridView.builder(
-                                padding: const EdgeInsets.all(20),
-                                gridDelegate:
-                                    SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: crossAxisCount,
-                                  crossAxisSpacing: 16,
-                                  mainAxisSpacing: 16,
-                                  childAspectRatio: 1.0,
-                                ),
-                                itemCount: _avatars.length,
-                                itemBuilder: (context, index) {
-                                  final assetPath = _avatars[index];
-                                  final isSelected =
-                                      _selectedAvatarPath == assetPath;
-
-                                  return GestureDetector(
-                                    onTap: () => _selectAvatar(assetPath),
-                                    child: MagicalAvatar(
-                                      assetPath: assetPath,
-                                      size: 150,
-                                      borderWidth: isSelected ? 4 : 0,
-                                      glowColor: isSelected
-                                          ? const Color(0xFFFFC44D)
-                                          : Colors.transparent,
-                                      enableParticles: isSelected,
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                        ),
-            ),
+            _buildHeader(),
+            _buildFilterBar(),
+            _buildGrid(),
+            _buildShuffleFooter(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildFilterSection({
-    required String title,
-    required IconData icon,
-    required List<String> options,
-    required String? selectedValue,
-    required ValueChanged<String?> onChanged,
-  }) {
-    if (options.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 16, color: const Color(0xFF4A2F72)),
-            const SizedBox(width: 6),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF4A2F72),
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFFFC44D), Color(0xFFFF9F43)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.auto_awesome, color: Color(0xFF3B2363), size: 28),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'Choose Your Look',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF3B2363),
               ),
             ),
-          ],
+          ),
+          IconButton(
+            onPressed: widget.onCancel,
+            icon: const Icon(Icons.close, color: Color(0xFF3B2363)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterBar() {
+    final hairColors = _filterOptions['hairColors'] ?? const [];
+    if (hairColors.isEmpty && _selectedHairColor == null) {
+      return const SizedBox.shrink();
+    }
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(237),
+        border: Border(bottom: BorderSide(color: Colors.white.withAlpha(120))),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.brush_outlined, size: 16, color: Color(0xFF4A2F72)),
+          const SizedBox(width: 6),
+          const Text(
+            'Hair:',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF4A2F72),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  ...hairColors.map((color) {
+                    final isSelected = _selectedHairColor == color;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: ChoiceChip(
+                        label: Text(
+                          _friendlyLabelFor(color),
+                          style: TextStyle(
+                            color: isSelected
+                                ? const Color(0xFF3B2363)
+                                : const Color(0xFF4A2F72),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: const Color(0xFFFFD98A),
+                        backgroundColor: const Color(0xFFF4ECFF),
+                        side: BorderSide(
+                          color: isSelected
+                              ? const Color(0xFFFFB347)
+                              : const Color(0xFFD9C6F0),
+                        ),
+                        onSelected: (_) {
+                          setState(() {
+                            _selectedHairColor = isSelected ? null : color;
+                          });
+                          _refreshPool();
+                        },
+                      ),
+                    );
+                  }),
+                  if (_selectedHairColor != null)
+                    TextButton.icon(
+                      onPressed: () {
+                        setState(() => _selectedHairColor = null);
+                        _refreshPool();
+                      },
+                      icon: const Icon(Icons.clear, size: 14),
+                      label: const Text('All'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF5C3A84),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGrid() {
+    if (_isLoading) {
+      return const Expanded(
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_pool.isEmpty) {
+      return Expanded(
+        child: Center(
+          child: Text(
+            'No heroes here yet.\nTry a different hair color!',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white.withAlpha(230), fontSize: 16),
+          ),
         ),
-        const SizedBox(height: 6),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: options.map((option) {
-            final isSelected = selectedValue == option;
-            return ChoiceChip(
-              label: Text(
-                _friendlyLabelFor(option),
-                style: TextStyle(
-                  color: isSelected
-                      ? const Color(0xFF3B2363)
-                      : const Color(0xFF4A2F72),
-                  fontWeight: FontWeight.w600,
+      );
+    }
+    return Expanded(
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            colors: [Color(0x447E57C2), Color(0x002C1B47)],
+            radius: 1.2,
+            center: Alignment(-0.2, -0.8),
+          ),
+        ),
+        child: LayoutBuilder(builder: (context, constraints) {
+          final cols = constraints.maxWidth >= 820
+              ? 4
+              : constraints.maxWidth >= 560
+                  ? 3
+                  : 2;
+          return GridView.builder(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: cols,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.0,
+            ),
+            itemCount: _batch.length,
+            itemBuilder: (context, index) {
+              final assetPath = _batch[index];
+              final isSelected = _selectedAvatarPath == assetPath;
+              return GestureDetector(
+                onTap: () => _selectAvatar(assetPath),
+                child: MagicalAvatar(
+                  assetPath: assetPath,
+                  size: 150,
+                  borderWidth: isSelected ? 4 : 0,
+                  glowColor:
+                      isSelected ? const Color(0xFFFFC44D) : Colors.transparent,
+                  enableParticles: isSelected,
                 ),
+              );
+            },
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildShuffleFooter() {
+    if (_isLoading || _pool.isEmpty) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            '${_pool.length} characters to discover',
+            style: TextStyle(
+              color: Colors.white.withAlpha(153),
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(width: 16),
+          ElevatedButton.icon(
+            onPressed: _nextBatch,
+            icon: const Text('🎲', style: TextStyle(fontSize: 18)),
+            label: const Text(
+              'Show me different ones!',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7E57C2),
+              foregroundColor: Colors.white,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
               ),
-              selected: isSelected,
-              selectedColor: const Color(0xFFFFD98A),
-              backgroundColor: const Color(0xFFF4ECFF),
-              side: BorderSide(
-                color: isSelected
-                    ? const Color(0xFFFFB347)
-                    : const Color(0xFFD9C6F0),
-              ),
-              onSelected: (_) {
-                onChanged(isSelected ? null : option);
-              },
-            );
-          }).toList(),
-        ),
-      ],
+              elevation: 4,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   String _friendlyLabelFor(String value) {
-    switch (value) {
-      case 'masculine':
-        return 'Boyish';
-      case 'feminine':
-        return 'Girlish';
-      case 'androgynous':
-        return 'Mixed';
-      default:
-        return value
-            .split('-')
-            .map((segment) => segment.isEmpty
-                ? segment
-                : '${segment[0].toUpperCase()}${segment.substring(1)}')
-            .join(' ');
-    }
+    return value
+        .split('-')
+        .map((s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}')
+        .join(' ');
   }
 }
