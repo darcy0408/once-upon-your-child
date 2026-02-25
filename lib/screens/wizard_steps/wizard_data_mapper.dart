@@ -100,6 +100,15 @@ class WizardDataMapper {
       moodPhysics = _mapMoodToPhysics(data.selectedEmotionChips.first);
     }
 
+    // 6. Merge hero superpower into character strengths (Feature 3)
+    if (data.heroSuperpower != null) {
+      final strengths = List<String>.from(characterDetails['strengths'] as List);
+      if (!strengths.contains(data.heroSuperpower!)) {
+        strengths.insert(0, data.heroSuperpower!);
+      }
+      characterDetails['strengths'] = strengths;
+    }
+
     return {
       'character': data.characterName.isNotEmpty ? data.characterName : 'Hero',
       'age': age,
@@ -119,7 +128,10 @@ class WizardDataMapper {
       'rhymeTimeMode': data.rhymeTimeMode,
       'learningToReadMode': data.learningToReadMode,
       'interactiveMode': data.interactiveMode,
-      'includeIllustrations': data.includeIllustrations
+      'includeIllustrations': data.includeIllustrations,
+      // Resolved lifeChallenge: Guardian Mode takes priority over Superpower Quest
+      'lifeChallenge': data.lifeChallenge ??
+          (data.heroQuest != null ? _questToLifeChallenge(data.heroQuest!) : null),
     };
   }
 
@@ -273,5 +285,18 @@ class WizardDataMapper {
       debugPrint('Error mapping mood physics: $e');
     }
     return null;
+  }
+
+  /// Maps child-facing Superpower Quest labels to backend lifeChallenge strings.
+  static String _questToLifeChallenge(String quest) {
+    const map = <String, String>{
+      'Making new friends': 'Making New Friends',
+      'Taming big feelings': 'Big Feelings',
+      'Being brave when scared': 'Anxiety & Fears',
+      'Sharing and taking turns': 'Sharing & Cooperation',
+      'Trying something new': 'Trying New Things',
+      "Standing up for what's right": 'Standing Up for Yourself',
+    };
+    return map[quest] ?? quest;
   }
 }

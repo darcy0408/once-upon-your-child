@@ -7,6 +7,7 @@ import 'package:story_weaver_app/services/achievement_service.dart';
 import 'package:story_weaver_app/story_result_screen.dart';
 import 'package:story_weaver_app/story_illustration_service.dart';
 import 'package:story_weaver_app/pick_a_path_adventure_screen.dart';
+import 'package:story_weaver_app/pre_story_feelings_dialog.dart';
 import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
 import 'package:story_weaver_app/widgets/magic_orb.dart';
@@ -104,6 +105,19 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       return;
     }
 
+    // Optional feelings check-in — shown before loading overlay so the dialog
+    // is visible. Returns null if the user taps "Skip Check-In".
+    CurrentFeeling? currentFeeling;
+    if (widget.wizardData.characterName.isNotEmpty) {
+      if (!mounted) return;
+      currentFeeling = await PreStoryFeelingsDialog.show(
+        context: context,
+        characterName: widget.wizardData.characterName,
+        childAge: widget.wizardData.characterAge,
+      );
+    }
+    if (!mounted) return;
+
     setState(() => _isGenerating = true);
     // Give Flutter a frame to paint the loading UI before starting network work.
     await Future<void>.delayed(const Duration(milliseconds: 80));
@@ -115,6 +129,11 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
 
       // Prepared payload using the mapper
       final requestData = WizardDataMapper.mapToStoryRequest(widget.wizardData);
+
+      // Override currentFeeling with the live feelings check-in result
+      if (currentFeeling != null) {
+        requestData['currentFeeling'] = currentFeeling.toJson();
+      }
 
       // 2. CHECK MODE: If Pick-A-Path, skip standard generation
       if (widget.wizardData.interactiveMode) {

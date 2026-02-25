@@ -849,6 +849,125 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         ),
       );
 
+  // ─── SECTION: Superpower Profile ─────────────────────────────────────────────
+  static const _superpowers = [
+    ('⚡ Brave Heart', 'Brave Heart'),
+    ('💛 Kindness Magic', 'Kindness Magic'),
+    ('🧠 Problem-Solver Brain', 'Problem-Solver Brain'),
+    ('🤝 Helping Hands', 'Helping Hands'),
+    ('🌟 Creative Spark', 'Creative Spark'),
+    ('👂 Super Listener', 'Super Listener'),
+  ];
+
+  static const _quests = [
+    ('🤝 Making new friends', 'Making new friends'),
+    ('🌊 Taming big feelings', 'Taming big feelings'),
+    ('🦁 Being brave when scared', 'Being brave when scared'),
+    ('🎁 Sharing and taking turns', 'Sharing and taking turns'),
+    ('🌱 Trying something new', 'Trying something new'),
+    ("🦸 Standing up for what's right", "Standing up for what's right"),
+  ];
+
+  Widget _buildSuperpowerSection() {
+    final name = widget.wizardData.characterName.isNotEmpty
+        ? widget.wizardData.characterName
+        : 'your hero';
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _superpowerLabel('⚡ Every hero has a superpower! What is $name\'s?'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _superpowers.map((entry) {
+              final (label, value) = entry;
+              final selected = widget.wizardData.heroSuperpower == value;
+              return _chipButton(
+                label: label,
+                selected: selected,
+                onTap: () => setState(
+                    () => widget.wizardData.heroSuperpower = selected ? null : value),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 18),
+          _superpowerLabel('🗺️ Every hero has a quest! What does $name need to conquer?'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _quests.map((entry) {
+              final (label, value) = entry;
+              final selected = widget.wizardData.heroQuest == value;
+              return _chipButton(
+                label: label,
+                selected: selected,
+                onTap: () => setState(
+                    () => widget.wizardData.heroQuest = selected ? null : value),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '✨ Optional — your answers make the adventure more personal!',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.white.withValues(alpha: 0.55),
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _superpowerLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+        color: Colors.white,
+        shadows: [Shadow(color: Color(0xFFFFD700), blurRadius: 6)],
+      ),
+    );
+  }
+
+  Widget _chipButton({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected
+              ? const Color(0xFFFFD700).withValues(alpha: 0.25)
+              : Colors.white.withValues(alpha: 0.08),
+          border: Border.all(
+            color: selected ? const Color(0xFFFFD700) : Colors.white.withValues(alpha: 0.2),
+            width: selected ? 1.5 : 1.0,
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            color: selected ? const Color(0xFFFFD700) : Colors.white.withValues(alpha: 0.85),
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+          ),
+        ),
+      ),
+    );
+  }
+
   // ─── SECTION: Continue button ─────────────────────────────────────────────────
   Widget _buildContinueButton() {
     return GestureDetector(
@@ -1046,6 +1165,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                   wizardData: widget.wizardData,
                   onUpdate: () => setState(() {}),
                 ),
+                const SizedBox(height: 20),
+              ],
+
+              // ── Superpower Profile (Feature 3) ───────────────────────────────
+              if (_canContinue) ...[
+                _buildSuperpowerSection(),
                 const SizedBox(height: 20),
               ],
 

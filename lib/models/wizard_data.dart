@@ -54,6 +54,10 @@ class WizardData {
   // Guardian Mode / Therapeutic Features
   String? lifeChallenge;
 
+  // Feature 3: Superpower Profile (child-facing — narrative therapy externalization)
+  String? heroSuperpower; // e.g. "Kindness Magic"
+  String? heroQuest;      // e.g. "Making new friends" — maps silently to lifeChallenge
+
   // Helper methods
   bool get isStep1Complete =>
       selectedArchetypeId != null && characterName.isNotEmpty;

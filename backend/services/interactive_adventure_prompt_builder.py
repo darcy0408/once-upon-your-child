@@ -543,6 +543,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 - **WORD COUNT REQUIREMENT**: This INDIVIDUAL SEGMENT MUST be between {word_count[0]} and {word_count[1]} words.
 - **Companion Contract**: REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Companion MUST appear by name.
 - **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.{ending_instruction}
+{f"""- **EMPATHY MOMENT**: In this segment, introduce a secondary character who is experiencing a challenge related to '{life_challenge_ctx}'. Frame it as: '[Friend's name] looks sad and says: [their problem in simple, relatable words].' Then give {child_name} choices about how to help this friend. This lets the reader practice compassion safely — they help a friend, not themselves.""" if life_challenge_ctx and not is_near_end and next_segment_number == 3 else ""}
 - **Safety**: No violence/harm. Therapeutic tone.
 {cls.SAFETY_GUARDRAILS}
 {cls.TEEN_TONE_INSTRUCTION if age >= 15 else ""}

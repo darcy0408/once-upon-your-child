@@ -2,6 +2,60 @@
 
 ---
 
+## Session Update - 2026-02-26 (Therapeutic Features: Feelings Check-In + Superpower Profile + Empathy Moment)
+
+### Scope: Phase 2 of Therapeutic Magic Plan
+
+Three more features from the Therapeutic Magic plan shipped:
+
+**Feature 2: Feelings Check-In woven into wizard flow**
+- `magic_review_step.dart`: Added optional `PreStoryFeelingsDialog.show()` call before launching story generation (before loading overlay, so dialog is visible)
+- Returns `CurrentFeeling?` — nullable, child can skip with no friction
+- Dialog shown for both standard AND interactive story launches
+- Result overwrites `currentFeeling` in the story request payload
+- Import added: `pre_story_feelings_dialog.dart`
+- Zero friction — skippable, magical, optional
+
+**Feature 3: Superpower Profile (child-facing character creation)**
+- `WizardData` model: Added `heroSuperpower` (String?) and `heroQuest` (String?) fields
+- `hero_creator_step.dart`: Added `_buildSuperpowerSection()` — two Wrap rows of chip buttons
+  - "Every hero has a superpower!" → 6 options (Brave Heart, Kindness Magic, Problem-Solver Brain, Helping Hands, Creative Spark, Super Listener)
+  - "Every hero has a quest!" → 6 options (Making new friends, Taming big feelings, etc.)
+  - Appears after archetype/pets when `_canContinue` is true; completely optional
+  - Styled: dark bg, gold borders when selected, animated container, sparkle sub-label
+- `wizard_data_mapper.dart`: 
+  - `heroSuperpower` inserted into `characterDetails['strengths']` (first slot)
+  - `heroQuest` mapped to `lifeChallenge` via `_questToLifeChallenge()` — only if Guardian Mode hasn't already set a `lifeChallenge`
+  - Added `lifeChallenge` key to the story request payload (was missing!)
+  - `_questToLifeChallenge()` helper maps child-facing labels to backend strings
+
+**Feature 5: "I Know Someone Who..." Empathy Moment (prompt engineering only)**
+- `interactive_adventure_prompt_builder.py`: Added `EMPATHY MOMENT` CRITICAL RULE to `build_continuation_prompt()`
+- Fires at segment 3 when `life_challenge_ctx` is set and story is not near the end
+- Instruction: "Introduce a secondary character experiencing a challenge related to '[life_challenge]'. Give the protagonist choices to help. The reader practices compassion safely — they help a friend, not themselves."
+- This is the narrative therapy "I Know Someone Who..." projection technique
+- Zero UI changes — purely prompt engineering, works automatically
+
+### Files Changed This Session
+- `lib/screens/wizard_steps/magic_review_step.dart` — Feature 2: feelings dialog before story launch
+- `lib/models/wizard_data.dart` — Feature 3: heroSuperpower + heroQuest fields
+- `lib/screens/wizard_steps/hero_creator_step.dart` — Feature 3: _buildSuperpowerSection() UI
+- `lib/screens/wizard_steps/wizard_data_mapper.dart` — Feature 3: superpower/quest → strengths/lifeChallenge mapping + lifeChallenge in payload
+- `backend/services/interactive_adventure_prompt_builder.py` — Feature 5: EMPATHY MOMENT rule at segment 3
+
+### Status
+- **Feelings Check-In:** ✅ Wired into wizard; optional, skippable
+- **Superpower Profile:** ✅ UI live in Step 1; mapping complete; 135/135 backend tests pass
+- **Empathy Moment:** ✅ Prompt instruction active at segment 3 when life challenge set
+- **Backend Tests:** ✅ 135/135 passing
+- **Flutter Analyze:** ✅ Clean (no issues in changed files)
+
+### Remaining Features
+- Feature 4: Story DNA Parent Wizard (math gate behind Guardian Mode in feeling_selection_step.dart)
+- Feature 7: Themed Story Packs / SEL Bookshelf (new screen)
+
+---
+
 ## Session Update - 2026-02-25 (Therapeutic Feature Plan + Virtue Anchoring + Free-Text Choice)
 
 ### Scope: Phase 1 of Therapeutic Magic Plan
