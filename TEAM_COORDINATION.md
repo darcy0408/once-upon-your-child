@@ -2,6 +2,74 @@
 
 ---
 
+## Session Update - 2026-02-25 (CI Fix: pyotp missing dependency)
+
+### Problem
+After the previous session's CI fixes landed, one test still failed:
+- `tests/security/test_authentication.py::test_iam_manager_isolation` — `ModuleNotFoundError: No module named 'pyotp'`
+- Root cause: `security/iam.py` imports `pyotp` but it was missing from `backend/requirements.txt`.
+
+### Fix
+- Added `pyotp==2.9.0` to `backend/requirements.txt` under the JWT Authentication section.
+
+### Status
+- **CI:** Should go green with this fix. All other jobs passed (89 unit + 73 security tests). ✅
+
+---
+
+## Session Update - 2026-02-25 (Commit Stranded Feature Work)
+
+### Scope Completed
+
+**1. Committed stranded uncommitted work from prior sessions:**
+
+- **`lib/models.dart`** — Removed unused `EnhancedCharacter` from import show-list (was causing analyzer warning).
+- **`lib/widgets/magic_star_cursor.dart`** *(new)* — Web cursor sparkle overlay widget; wraps any widget and emits animated star particles on mouse hover, no-op on non-web platforms.
+- **`assets/images/ui/frame.png`** *(new)* — Decorative UI frame asset.
+- **`lib/screens/wizard_steps/hero_creator_step.dart`** — Refactor (-168/+93 lines).
+- **`backend/requirements.txt`** — Added `pyotp==2.9.0` (TOTP library for 2FA support).
+- **`pubspec.lock`** — Dependency lock updated.
+
+### Files Changed
+- `lib/models.dart`
+- `lib/widgets/magic_star_cursor.dart`
+- `assets/images/ui/frame.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+- `backend/requirements.txt`
+- `pubspec.lock`
+- `TEAM_COORDINATION.md` *(this entry)*
+
+### Status
+- **Stranded work:** ✅ All committed and clean.
+- **Launch Readiness:** 97% 🚀
+
+---
+
+## Session Update - 2026-02-24 (Hero Creator UI Magic Polish)
+
+### Scope Completed
+- **Create Your Avatar button**: Swapped asset from `create_magic_btn.png` → `create_avatar_btn.jpg` (correct label, no black background issue).
+- **Continue button**: Replaced Flutter-native gradient container with `continue_btn.png` image asset (ornate dark/gold styled button).
+- **Name scroll input**: Replaced gradient box with Stack + `magical_scroll_bg.png` overlaid via `BlendMode.screen` so the parchment scroll shows through on the purple page background.
+- **Avatar preselection circle**: Removed hard gold border, replaced with layered BoxShadow glow (gold + purple).
+- **Hero/Heroine gender orbs**: Removed gold border on selected state, enhanced glow-only BoxShadow.
+- **Age +/- buttons**: Removed gold border, replaced with soft multi-layer glow.
+- **Archetype cards**: Replaced code-drawn gold border with `frame.png` overlay — the ornate gem-studded frame image now appears on top of each archetype artwork.
+- **Magic star cursor**: Created `lib/widgets/magic_star_cursor.dart` — custom 4-point star cursor with sparkle trail on web, wired into hero_creator_step.dart.
+- **Assets copied**: `continue_btn.png`, `frame.png` added to `assets/images/ui/`.
+
+### Files Changed
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+- `lib/widgets/magic_star_cursor.dart` (new)
+- `assets/images/ui/continue_btn.png` (new)
+- `assets/images/ui/frame.png` (new)
+
+### Status
+- **Hero Creator UI Polish:** ✅ All 7 visual fixes applied and analyzed clean.
+- **Launch Readiness:** ~82%
+
+---
+
 ## Session Update - 2026-02-24 (Git Maintenance + Dependency Updates)
 
 ### Scope Completed

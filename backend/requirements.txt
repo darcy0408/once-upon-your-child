@@ -32,6 +32,7 @@ stripe==14.3.0
 
 # JWT Authentication
 Flask-JWT-Extended==4.7.1
+pyotp==2.9.0
 
 # Rate Limiting
 Flask-Limiter==4.1.1

@@ -2,7 +2,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'avatar_models.dart' show CharacterAvatar, EnhancedCharacter;
+import 'avatar_models.dart' show CharacterAvatar;
 import 'services/avatar_service.dart';
 import 'models/generated_avatar.dart';
 export 'models/generated_avatar.dart';

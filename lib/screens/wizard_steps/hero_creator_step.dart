@@ -8,6 +8,7 @@ import '../../avatar_models.dart';
 import '../../custom_avatar_screen.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/archetype_card.dart';
+import '../../widgets/magic_star_cursor.dart';
 import '../../widgets/avatar_gallery_selector.dart';
 import '../../services/api_service_manager.dart';
 import '../../services/avatar_generation_state.dart';
@@ -410,17 +411,21 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
             height: 148,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFFFD700), width: 3),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFFFD700).withAlpha(120),
-                  blurRadius: 22,
-                  spreadRadius: 2,
+                  color: const Color(0xFFFFD700).withAlpha(160),
+                  blurRadius: 32,
+                  spreadRadius: 6,
                 ),
                 BoxShadow(
-                  color: const Color(0xFF9B3FD8).withAlpha(80),
-                  blurRadius: 30,
-                  spreadRadius: 4,
+                  color: const Color(0xFF9B3FD8).withAlpha(120),
+                  blurRadius: 42,
+                  spreadRadius: 8,
+                ),
+                BoxShadow(
+                  color: const Color(0xFFFFD700).withAlpha(60),
+                  blurRadius: 12,
+                  spreadRadius: 2,
                 ),
               ],
             ),
@@ -518,15 +523,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFFD700).withAlpha(180),
-                        blurRadius: 22,
-                        spreadRadius: 4,
+                        color: const Color(0xFFFFD700).withAlpha(200),
+                        blurRadius: 32,
+                        spreadRadius: 6,
+                      ),
+                      BoxShadow(
+                        color: const Color(0xFFFFD700).withAlpha(80),
+                        blurRadius: 10,
+                        spreadRadius: 2,
                       ),
                     ],
-                    border: Border.all(
-                      color: const Color(0xFFFFD700),
-                      width: 3,
-                    ),
                   )
                 : BoxDecoration(
                     shape: BoxShape.circle,
@@ -569,36 +575,20 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   Widget _buildNameScrollInput() {
     return SizedBox(
       height: 128,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [
-              Color(0xFFF9EEC8),
-              Color(0xFFF3DEAA),
-              Color(0xFFE8C989),
-              Color(0xFFF5E4B0),
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Ornate parchment scroll background
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/ui/magical_scroll_bg.png',
+              fit: BoxFit.fill,
+              color: Colors.white,
+              colorBlendMode: BlendMode.screen,
+            ),
           ),
-          borderRadius: BorderRadius.circular(46),
-          border: Border.all(color: const Color(0xFFFFD700), width: 2.2),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFFFD700).withAlpha(90),
-              blurRadius: 18,
-              spreadRadius: 1,
-            ),
-            BoxShadow(
-              color: Colors.black.withAlpha(45),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 34),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 48),
             child: TextField(
               controller: _nameController,
               inputFormatters: [
@@ -631,7 +621,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                   setState(() => widget.wizardData.characterName = v.trim()),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -765,102 +755,41 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
       );
     }
 
-    // Decorative gold frame around the image
-    return Container(
+    // Archetype image with ornate frame.png overlaid on top
+    return SizedBox(
       width: imgSize,
       height: imgSize,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isSelected
-              ? const Color(0xFFFFD700)
-              : const Color(0xFFFFD700).withAlpha(120),
-          width: isSelected ? 2.5 : 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isSelected
-                ? const Color(0xFFFFD700).withAlpha(160)
-                : const Color(0xFFFFD700).withAlpha(60),
-            blurRadius: isSelected ? 16 : 8,
-            spreadRadius: isSelected ? 2 : 0,
-          ),
-          BoxShadow(
-            color: Colors.black.withAlpha(80),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
       child: Stack(
         fit: StackFit.expand,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: imageWidget,
+          // Character artwork fills the area
+          imageWidget,
+          // Ornate frame overlaid on top (frame.png has transparent interior)
+          Image.asset(
+            'assets/images/ui/frame.png',
+            fit: BoxFit.fill,
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
           ),
-          // Inner golden shimmer overlay on selection
+          // Golden selection glow ring underneath frame
           if (isSelected)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
+            Positioned.fill(
+              child: DecoratedBox(
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFFFFD700).withAlpha(50),
-                      Colors.transparent,
-                      const Color(0xFF9B3FD8).withAlpha(30),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFFD700).withAlpha(160),
+                      blurRadius: 20,
+                      spreadRadius: 4,
+                    ),
+                  ],
+                  shape: BoxShape.rectangle,
                 ),
               ),
             ),
-          // Corner sparkle accents
-          Positioned(
-            top: 3,
-            left: 3,
-            child: _cornerGem(isSelected),
-          ),
-          Positioned(
-            top: 3,
-            right: 3,
-            child: _cornerGem(isSelected),
-          ),
-          Positioned(
-            bottom: 3,
-            left: 3,
-            child: _cornerGem(isSelected),
-          ),
-          Positioned(
-            bottom: 3,
-            right: 3,
-            child: _cornerGem(isSelected),
-          ),
         ],
       ),
     );
   }
-
-  Widget _cornerGem(bool bright) => Container(
-        width: 7,
-        height: 7,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: bright
-              ? const Color(0xFFFFD700)
-              : const Color(0xFFFFD700).withAlpha(120),
-          boxShadow: bright
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFFFFD700).withAlpha(200),
-                    blurRadius: 6,
-                  ),
-                ]
-              : null,
-        ),
-      );
 
   // ─── SECTION: Create Your Avatar image button ─────────────────────────────────
   Widget _buildCreateAvatarButton() {
@@ -873,7 +802,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         scale: _isCreateAvatarPressed ? 0.94 : 1.0,
         duration: const Duration(milliseconds: 110),
         child: Image.asset(
-          'assets/images/ui/create_magic_btn.png',
+          'assets/images/ui/create_avatar_btn.jpg',
           height: 80,
           width: double.infinity,
           fit: BoxFit.contain,
@@ -917,43 +846,36 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
       child: AnimatedScale(
         scale: _isContinuePressed ? 0.94 : 1.0,
         duration: const Duration(milliseconds: 110),
-        child: Container(
-          height: 62,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(31),
-            gradient: const LinearGradient(
-              colors: [
-                Color(0xFF5B1BAA),
-                Color(0xFF9B3FD8),
-                Color(0xFF5B1BAA),
+        child: Image.asset(
+          'assets/images/ui/continue_btn.png',
+          height: 80,
+          width: double.infinity,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => Container(
+            height: 62,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(31),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF5B1BAA), Color(0xFF9B3FD8), Color(0xFF5B1BAA)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFFD700).withAlpha(100),
+                  blurRadius: 16,
+                  spreadRadius: 2,
+                ),
               ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
             ),
-            border: Border.all(color: const Color(0xFFFFD700), width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFFD700).withAlpha(100),
-                blurRadius: 16,
-                spreadRadius: 2,
-              ),
-              BoxShadow(
-                color: const Color(0xFF9B3FD8).withAlpha(80),
-                blurRadius: 24,
-              ),
-            ],
-          ),
-          child: Center(
-            child: Text(
-              'Continue',
-              style: GoogleFonts.cinzelDecorative(
-                color: const Color(0xFFFFE066),
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-                shadows: const [
-                  Shadow(color: Colors.black54, blurRadius: 6),
-                ],
+            child: Center(
+              child: Text(
+                'Continue',
+                style: GoogleFonts.cinzelDecorative(
+                  color: const Color(0xFFFFE066),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -1054,7 +976,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     final w = MediaQuery.of(context).size.width;
     final hPad = w < 760 ? 16.0 : 28.0;
 
-    return Container(
+    return MagicStarCursor(
+      child: Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -1124,6 +1047,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
           ),
         ),
       ),
+    )
     );
   }
 }
@@ -1589,14 +1513,15 @@ class _AgeStepButtonState extends State<_AgeStepButton> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            border: Border.all(
-              color: const Color(0xFFFFD700),
-              width: 2,
-            ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFFFD700).withAlpha(100),
-                blurRadius: 12,
+                color: const Color(0xFFFFD700).withAlpha(180),
+                blurRadius: 22,
+                spreadRadius: 4,
+              ),
+              BoxShadow(
+                color: const Color(0xFFFFD700).withAlpha(60),
+                blurRadius: 8,
                 spreadRadius: 1,
               ),
             ],
