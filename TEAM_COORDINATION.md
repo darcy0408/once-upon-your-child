@@ -2,6 +2,29 @@
 
 ---
 
+## Session Update - Git Maintenance Run
+
+### Scope: Repository maintenance & housekeeping
+
+**Completed:**
+- Pushed 4 local commits to `origin/main` (3 feature + 1 maintenance):
+  - `936b4af` feat: invisible virtue anchoring to all story prompt builders
+  - `53f2553` feat: 'Something Else' free-text choice in Pick-a-Path adventures
+  - `59a83a9` feat(therapeutic): Feelings check-in, Superpower Profile, Empathy Moment
+  - `f24629e` chore: ignore avatarImages/Avatar_Final/ from git tracking
+- Pruned ~12 closed Dependabot remote refs (bcrypt, flask, google-auth, marshmallow, pytest-mock, redis, sentry-sdk, sqlalchemy, werkzeug, camera, uuid)
+- Updated `.gitignore`: added `avatarImages/Avatar_Final/` + `avatarImages/avatar_review.html`
+
+**Held (not merged yet):**
+- `dependabot/pip/backend/google-genai-1.64.0` — 1.3.0→1.64.0 major jump; needs API compat check
+- `dependabot/pub/google_fonts-8.0.2` — 6.2.1→8.0.2 major bump; needs Flutter compat test
+- `dependabot/pub/multi-68084ecde4` — Firebase Analytics + Core bump; needs major-version test
+
+**Do not delete:**
+- `origin/gemini/backend-tests` — 5 unique commits: Riverpod state management, async story gen with DB task queue, backend fixes. Needs review before merge/discard.
+
+---
+
 ## Session Update - 2026-02-26 (Therapeutic Features: Feelings Check-In + Superpower Profile + Empathy Moment)
 
 ### Scope: Phase 2 of Therapeutic Magic Plan
