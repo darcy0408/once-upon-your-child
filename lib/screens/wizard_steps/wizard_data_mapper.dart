@@ -109,22 +109,39 @@ class WizardDataMapper {
       characterDetails['strengths'] = strengths;
     }
 
+    // Combine parentalNote + Story DNA into therapeutic_prompt for the backend
+    final List<String> therapeuticParts = [];
+    if (data.parentalNote != null && data.parentalNote!.trim().isNotEmpty) {
+      therapeuticParts.add('Parent note: ${data.parentalNote!.trim()}');
+    }
+    if (data.storyDnaContext != null) {
+      therapeuticParts.add('Current situation: ${data.storyDnaContext}');
+    }
+    if (data.storyDnaOutcome != null) {
+      therapeuticParts.add('Desired outcome: ${data.storyDnaOutcome}');
+    }
+    if (data.storyDnaAvoid != null && data.storyDnaAvoid!.trim().isNotEmpty) {
+      therapeuticParts.add('Avoid: ${data.storyDnaAvoid!.trim()}');
+    }
+    final String? therapeuticPrompt =
+        therapeuticParts.isNotEmpty ? therapeuticParts.join(' | ') : null;
+
     return {
       'character': data.characterName.isNotEmpty ? data.characterName : 'Hero',
       'age': age,
       'theme': theme,
-      'conflictHook': conflictHook, // NEW
-      'sensoryPalette': sensoryPalette, // NEW
+      'conflictHook': conflictHook,
+      'sensoryPalette': sensoryPalette,
       // Send structured companion data
-      'companion_pets': companionsPets, // Pets with species info
-      'companion_characters': companionsOther, // Now a list of detailed maps
-      'additionalCharacters': data.additionalCharacters, 
+      'companion_pets': companionsPets,
+      'companion_characters': companionsOther,
+      'additionalCharacters': data.additionalCharacters,
       'characterDetails': characterDetails,
       'currentFeeling': currentFeeling,
-      'moodPhysics': moodPhysics, // NEW: Mood Physics
-      'customElements': data.customElements, // NEW: Free-form custom story requests
+      'moodPhysics': moodPhysics,
+      'customElements': data.customElements,
       // Story mode settings from wizard
-      'storyLength': data.storyLength, // quick, standard, or epic
+      'storyLength': data.storyLength,
       'rhymeTimeMode': data.rhymeTimeMode,
       'learningToReadMode': data.learningToReadMode,
       'interactiveMode': data.interactiveMode,
@@ -132,6 +149,8 @@ class WizardDataMapper {
       // Resolved lifeChallenge: Guardian Mode takes priority over Superpower Quest
       'lifeChallenge': data.lifeChallenge ??
           (data.heroQuest != null ? _questToLifeChallenge(data.heroQuest!) : null),
+      // Story DNA: parent-authored therapeutic context (Feature 4)
+      if (therapeuticPrompt != null) 'therapeutic_prompt': therapeuticPrompt,
     };
   }
 
