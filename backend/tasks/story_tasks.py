@@ -356,28 +356,30 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     validation_error = f"Missing characters: {', '.join(missing_names)}"
 
                 # Length Validation with dynamic thresholds
+                # LTR mode is measured in pages (not words), so skip word-count check.
                 is_long_enough = True
-                total_words = sum(len(p.split()) for p in pages)
-                
-                # Determine minimum words based on age and mode
-                min_words_threshold = 0
-                is_long_mode = (story_duration == '10_minutes' or story_length == 'epic')
-                is_standard_mode = (story_length == 'standard')
+                if not learning_to_read_mode:
+                    total_words = sum(len(p.split()) for p in pages)
 
-                if age <= 5:
-                    min_words_threshold = 250 if is_standard_mode else 100
-                elif age <= 7:
-                    min_words_threshold = 500 if is_standard_mode else 300
-                elif age == 8:
-                    min_words_threshold = 1300 if is_long_mode else 700
-                elif age <= 12:
-                    min_words_threshold = 1700 if is_long_mode else 1100
-                else: # 13+
-                    min_words_threshold = 2400 if is_long_mode else 1700
+                    # Determine minimum words based on age and mode
+                    min_words_threshold = 0
+                    is_long_mode = (story_duration == '10_minutes' or story_length == 'epic')
+                    is_standard_mode = (story_length == 'standard')
 
-                if total_words < min_words_threshold:
-                    is_long_enough = False
-                    validation_error = f"Story too short ({total_words} words, needed {min_words_threshold})"
+                    if age <= 5:
+                        min_words_threshold = 250 if is_standard_mode else 100
+                    elif age <= 7:
+                        min_words_threshold = 500 if is_standard_mode else 300
+                    elif age == 8:
+                        min_words_threshold = 1300 if is_long_mode else 700
+                    elif age <= 12:
+                        min_words_threshold = 1700 if is_long_mode else 1100
+                    else: # 13+
+                        min_words_threshold = 2400 if is_long_mode else 1700
+
+                    if total_words < min_words_threshold:
+                        is_long_enough = False
+                        validation_error = f"Story too short ({total_words} words, needed {min_words_threshold})"
                 
                 if is_clean and is_long_enough:
                     logger.info("Story passed validation.")

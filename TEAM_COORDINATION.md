@@ -2,6 +2,29 @@
 
 ---
 
+## Session Update - 2026-02-25 (Fix learning_to_read mode for age 3-4)
+
+### Problem
+`learning_to_read` mode was failing for age 3-4 (1/21 in the quality pass).
+Two root causes:
+
+1. **Missing JSON output format** — `_build_learning_to_read_prompt` in `story_service.py` had `STRICT_OUTPUT_CONSTRAINTS` but no `**OUTPUT FORMAT**` block. Gemini returned plain prose instead of structured JSON, causing the parser to fall back and return the whole text as a single page with the generic "You are magic!" wisdom gem.
+
+2. **Wrong validation gate** — The word-count validator in `story_tasks.py` required ≥250 words for age ≤5 and triggered a retry with "Please expand to 250 words." LTR stories are intentionally short (8 pages × 1 sentence ≈ 40 words). After 3 retries Gemini abandoned the LTR page format entirely to hit the word target.
+
+### Fix
+- Added explicit `**OUTPUT FORMAT**` JSON spec to `_build_learning_to_read_prompt` (title, wisdom_gem, pages array), matching the format the regular prompt uses.
+- Added `if not learning_to_read_mode:` guard around the word-count validation block in `story_tasks.py`. LTR page count is already enforced by the prompt.
+
+### Files Changed
+- `backend/services/story_service.py` — LTR prompt: added JSON output format
+- `backend/tasks/story_tasks.py` — skip word-count validation for LTR mode
+
+### Status
+- **`learning_to_read` age 3-4:** ✅ Fixed
+
+---
+
 ## Session Update - 2026-02-25 (Flutter Widget Test Fixes)
 
 ### Problem

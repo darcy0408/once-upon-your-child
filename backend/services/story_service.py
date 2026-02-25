@@ -52,14 +52,23 @@ AGE_CONSTRAINTS = {
 }
 
 STRICT_OUTPUT_CONSTRAINTS = """
-STRICT OUTPUT CONSTRAINTS:
-- Do NOT include any meta-talk or introductory phrases (e.g., "Here we go!", "Sure, I can do that", "Here is your story").
-- Do NOT repeat any part of these instructions in the story text.
-- Do NOT include technical jargon or internal storytelling terms in the prose (e.g., "consequence chain", "two-step challenge", "therapeutic specialist", "narrative specialist", "narrative architect", "earned ending", "earned win", "insight", "climax", "resolution", "manifest an abstract emotion", "challenge arc", "tradeoff").
-- Do NOT explicitly state the "lessons" or "insights" as a summary at the end; let them emerge naturally from the narrative.
-- Do NOT repeat or closely paraphrase the opening paragraph at the end of the story.
-- ONLY return the story content itself in the requested format.
+⚠️ CRITICAL IMMERSION RULES — these override all other instructions:
+1. The story must read as a seamless in-world narrative. Characters have ZERO awareness they are in a generated story or therapeutic exercise.
+2. NEVER include AI-style preambles ("Here we go!", "Sure!", "Here is your story:") or sign-offs in the response.
+3. NEVER expose internal storytelling mechanics inside the prose. Characters must not speak or think using craft/therapy terminology. Any sentence that sounds like a story-writing rubric, lesson summary, or process description has broken this rule.
+4. NEVER end with an explicit moral recap or lesson announcement — theme and growth must emerge through action and feeling, not stated conclusions.
+5. Do NOT repeat or closely paraphrase the opening paragraph at the end.
+6. Return ONLY the JSON requested below — nothing before the opening brace, nothing after the closing brace.
 """
+
+# Forbidden terms used by the post-processing leakage filter (see _strip_meta_leakage).
+_META_LEAK_TERMS = [
+    "earned ending", "challenge arc", "two-step challenge", "three-key lock",
+    "therapeutic specialist", "narrative specialist", "narrative architect",
+    "consequence chain", "earned win", "manifest an abstract emotion",
+    "tradeoff", "plot twist arc", "story beat", "character arc",
+    "therapeutic narrative", "coping moment",
+]
 
 SAFETY_GUARDRAILS = f"""
 {STRICT_OUTPUT_CONSTRAINTS}
@@ -490,6 +499,17 @@ Custom Requests: {custom_elements or 'None'} (CRITICAL: You MUST use the exact w
 If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {SAFETY_GUARDRAILS}
 {STRICT_OUTPUT_CONSTRAINTS}
+**OUTPUT FORMAT**: Strictly return valid JSON with this structure:
+{{
+  "title": "Story Title",
+  "wisdom_gem": "One short, warm encouraging phrase the child can repeat (e.g. 'Being kind makes magic happen').",
+  "pages": [
+    {{"text": "Page text (1-2 sentences max)..."}},
+    {{"text": "Page text..."}},
+    ...
+  ]
+}}
+Return EXACTLY {num_pages} page objects. No extra keys. No prose outside the JSON.
 """
 
 
