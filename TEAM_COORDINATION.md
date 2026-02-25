@@ -2,6 +2,24 @@
 
 ---
 
+## Session Update - 2026-02-25 (Security + Crash Reporting)
+
+### Scope Completed
+- **Real secure storage**: Replaced `SecureStorageService` stub (XOR obfuscation over SharedPreferences) with `flutter_secure_storage` — uses Android Keystore / iOS Keychain. API keys are now hardware-encrypted on device. Includes migration path for existing users.
+- **Sentry crash reporting**: Re-enabled `sentry_flutter` (was commented out due to old Kotlin conflict, now resolves cleanly with Kotlin 2.1.0). Initialized in `main()` wrapping `runApp`. Captures all unhandled exceptions with device/OS/screen context. Environment tagged as `production` vs `development` automatically.
+
+### Files Changed
+- `pubspec.yaml` — re-enabled `flutter_secure_storage: ^9.2.2` and `sentry_flutter: ^8.14.0`
+- `lib/services/secure_storage_service.dart` — replaced stub with real `FlutterSecureStorage` implementation + migration helper
+- `lib/main.dart` — `SentryFlutter.init` wrapping `runApp`, environment auto-detected via `kReleaseMode`
+
+### Status
+- **API key security:** ✅ Hardware-encrypted (Android Keystore / iOS Keychain)
+- **Crash reporting:** ✅ Sentry active — dashboard at sentry.io
+- **Launch Readiness:** 99% → billing store setup is the remaining blocker
+
+---
+
 ## Session Update - 2026-02-25 (Story Tone — Magical/Immersive First, Therapeutic Invisible)
 
 ### Scope Completed
