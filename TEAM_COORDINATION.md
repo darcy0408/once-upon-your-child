@@ -2,6 +2,31 @@
 
 ---
 
+## Session Update - 2026-02-25 (Fix instruction leakage in story prompts)
+
+### Problem
+The Gemini model was including internal storytelling terminology in the generated story prose (Content Quality Audit, Feb 22):
+- Ages 3-4: "It was a satisfying earned ending to the night."
+- Ages 8-10: "This was a two-step challenge arc…"
+- Ages 11-13: "I was a Therapeutic Narrative Specialist today…"
+- Adult: explicitly stating "consequence chain" and "insight" as a recap
+
+### Fix — Two-layer approach
+**Prompt layer (`story_service.py`):** Rewrote `STRICT_OUTPUT_CONSTRAINTS` as numbered immersion rules; moved it to **after** the JSON OUTPUT FORMAT block so it is the last thing the LLM reads before generating.
+
+**Post-processing layer:** Added `_strip_meta_leakage(pages)` — scans sentences for 2+ leaked terms (or short declarative single-term matches) and removes them, logging a warning. Wired into `_safe_extract_title_and_gem()`.
+
+**Interactive adventure:** Added `IMMERSION_RULES` class constant; appended to end of both prompt builders.
+
+### Files Changed
+- `backend/services/story_service.py`
+- `backend/services/interactive_adventure_prompt_builder.py`
+
+### Status
+- **Instruction leakage:** ✅ Dual-layer fix applied (498 tests green)
+
+---
+
 ## Session Update - 2026-02-25 (Fix wisdom gem fallback and double article titles)
 
 ### Problems
