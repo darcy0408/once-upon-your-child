@@ -329,26 +329,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   Future<void> _openAvatarGallery({bool preFilter = false}) async {
     if (!mounted) return;
 
-    String? initialGender;
-
-    if (preFilter) {
-      switch (widget.wizardData.characterGender) {
-        case 'Boy':
-          initialGender = 'male';
-          break;
-        case 'Girl':
-          initialGender = 'female';
-          break;
-        case 'Non-Binary':
-          initialGender = 'neutral';
-          break;
-      }
-    }
-
     await showDialog<void>(
       context: context,
       builder: (_) => AvatarGallerySelector(
-        initialGender: initialGender,
         onAvatarSelected: (avatar) {
           Navigator.pop(context);
           if (mounted) {

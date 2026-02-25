@@ -7,15 +7,11 @@ import '../ui/widgets/magical_avatar.dart';
 class AvatarGallerySelector extends StatefulWidget {
   final Function(GeneratedAvatar) onAvatarSelected;
   final VoidCallback onCancel;
-  final String? initialAgeGroup;
-  final String? initialGender;
 
   const AvatarGallerySelector({
     super.key,
     required this.onAvatarSelected,
     required this.onCancel,
-    this.initialAgeGroup,
-    this.initialGender,
   });
 
   @override
@@ -28,9 +24,6 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
   Map<String, List<String>> _filterOptions = {};
 
   // Active filters
-  String? _selectedAgeGroup;
-  String? _selectedSkinTone;
-  String? _selectedGender;
   String? _selectedHairColor;
 
   bool _isLoading = true;
@@ -39,8 +32,6 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
   @override
   void initState() {
     super.initState();
-    _selectedAgeGroup = widget.initialAgeGroup;
-    _selectedGender = widget.initialGender;
     _initializeService();
   }
 
@@ -65,9 +56,6 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
   void _refreshAvatars() {
     setState(() {
       _avatars = _avatarService.getCuratedAvatars(
-        ageGroup: _selectedAgeGroup,
-        skinTone: _selectedSkinTone,
-        gender: _selectedGender,
         hairColor: _selectedHairColor,
       );
     });
@@ -84,10 +72,7 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
       imageBase64: assetPath,
       seed: avatarId,
       style: 'pixar',
-      attributes: {
-        'ageGroup': _selectedAgeGroup ?? 'all',
-        'skinTone': _selectedSkinTone ?? 'all',
-      },
+      attributes: const {},
       generatedAt: DateTime.now(),
     );
 
@@ -96,10 +81,7 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
 
   @override
   Widget build(BuildContext context) {
-    final hasActiveFilters = _selectedAgeGroup != null ||
-        _selectedSkinTone != null ||
-        _selectedHairColor != null ||
-        _selectedGender != null;
+    final hasActiveFilters = _selectedHairColor != null;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -177,28 +159,6 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildFilterSection(
-                      title: 'Age',
-                      icon: Icons.cake_outlined,
-                      options: _filterOptions['ageGroups'] ?? const [],
-                      selectedValue: _selectedAgeGroup,
-                      onChanged: (value) {
-                        setState(() => _selectedAgeGroup = value);
-                        _refreshAvatars();
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    _buildFilterSection(
-                      title: 'Skin Tone',
-                      icon: Icons.palette_outlined,
-                      options: _filterOptions['skinTones'] ?? const [],
-                      selectedValue: _selectedSkinTone,
-                      onChanged: (value) {
-                        setState(() => _selectedSkinTone = value);
-                        _refreshAvatars();
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    _buildFilterSection(
                       title: 'Hair Color',
                       icon: Icons.brush_outlined,
                       options: _filterOptions['hairColors'] ?? const [],
@@ -208,27 +168,11 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
                         _refreshAvatars();
                       },
                     ),
-                    const SizedBox(height: 10),
-                    _buildFilterSection(
-                      title: 'Vibe',
-                      icon: Icons.auto_awesome_outlined,
-                      options: _filterOptions['genders'] ?? const [],
-                      selectedValue: _selectedGender,
-                      onChanged: (value) {
-                        setState(() => _selectedGender = value);
-                        _refreshAvatars();
-                      },
-                    ),
                     if (hasActiveFilters) ...[
                       const SizedBox(height: 10),
                       TextButton.icon(
                         onPressed: () {
-                          setState(() {
-                            _selectedAgeGroup = null;
-                            _selectedSkinTone = null;
-                            _selectedHairColor = null;
-                            _selectedGender = null;
-                          });
+                          setState(() => _selectedHairColor = null);
                           _refreshAvatars();
                         },
                         icon: const Icon(Icons.clear, size: 16),
