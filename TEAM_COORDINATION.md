@@ -21,6 +21,19 @@
 
 ---
 
+## Session Update - 2026-02-25 (Coloring Book — Wire User API Key)
+
+### Problem
+`GeminiColoringBookService` called the backend `/generate-coloring-pages` endpoint but never passed the user's Gemini API key. The backend only generates images if it has a server-side key configured (`OPENROUTER_API_KEY` or `GEMINI_API_KEY` env var). Without it, coloring pages silently returned empty — the feature appeared broken for all BYOK users.
+
+### Fix
+Added `user_api_key` to the coloring page request body (same pattern already used in story generation). When the user has a Gemini key saved in secure storage, it's forwarded to the backend which uses it for image generation.
+
+### Files Changed
+- `lib/coloring_book_service.dart` — `GeminiColoringBookService.generateColoringPagesFromStory()` now reads `ApiServiceManager.getUserApiKey()` and includes it in the backend request
+
+---
+
 ## Session Update - 2026-02-25 (Security + Crash Reporting)
 
 ### Scope Completed
