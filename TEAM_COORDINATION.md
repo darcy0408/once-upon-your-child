@@ -2,6 +2,23 @@
 
 ---
 
+## Session Update - 2026-02-25 (LTR mode — open to all ages + funny limericks for 7+)
+
+### Scope Completed
+- **Removed age>7 hard rejection** from `story_routes.py` — learning-to-read is now available to any age (reading delays don't stop at 7).
+- **Added `ltr` config to all age bands** (8-10 through adult) in `AGE_CONSTRAINTS`.
+- **Funny limericks for ages 7+**: AABBA scheme, Captain Underpants energy, phonics-friendly short words. Connects into a full story arc across `num_pages` limericks. wisdom_gem is a rhyming one-liner.
+- **Ages 3–6** keep the classic short-sentence picture-book format with repetition scaffolding.
+- Design rationale: a 7-year-old who refuses to open a "baby book" learns nothing; a kid laughing at a limerick reads it twice. Engagement > scaffolding purity.
+- Committed `21d48df`, pushed.
+
+### Status
+- **LTR mode:** ✅ All ages. Limericks for 7+. Picture-book for 3–6.
+- **CI:** 🔄 Running on `21d48df`
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-25 (Maintenance: branch cleanup + google-genai upgrade)
 
 ### Scope: Notable items from git maintenance
