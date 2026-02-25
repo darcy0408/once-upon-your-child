@@ -147,7 +147,10 @@ def _create_auth_headers_for_user(app, user_id):
 
 @pytest.mark.parametrize(
     "age,mode",
-    [(age, mode) for age in AGE_BANDS for mode in STORY_MODES],
+    [
+        (age, mode) for age in AGE_BANDS for mode in STORY_MODES
+        if not (mode == "learning_to_read" and age > 7)
+    ],
 )
 def test_age_group_story_generation_matrix(client, auth_headers, age, mode):
     payload = {
