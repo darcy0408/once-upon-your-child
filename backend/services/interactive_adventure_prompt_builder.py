@@ -134,47 +134,56 @@ class InteractiveAdventurePromptBuilder:
     }
 
     # Structured Life Challenges for therapeutic integration
-    # Maps challenge name to (metaphor, coping_strategy, growth_outcome)
+    # Maps challenge name to (metaphor, coping_strategy, growth_outcome, virtue)
+    # virtue = (name, how_to_show_it) — NEVER name the virtue in story prose.
     LIFE_CHALLENGES = {
         'Making New Friends': {
             'metaphor': 'A bridge between two floating islands that needs careful building.',
             'coping_strategy': 'Asking a kind question, noticing a shared interest, offering a small token of help.',
-            'growth_outcome': 'The hero feels the warmth of connection and realizes others feel nervous too.'
+            'growth_outcome': 'The hero feels the warmth of connection and realizes others feel nervous too.',
+            'virtue': ('inclusion', 'The protagonist notices someone alone and takes one small, concrete action to include them — the action costs them something (courage, comfort, time).'),
         },
         'Starting School': {
             'metaphor': 'Entering a vast library where every book is a new adventure waiting to be read.',
             'coping_strategy': 'Finding a "safe anchor" (a familiar object/thought), deep belly breaths, observing before jumping in.',
-            'growth_outcome': 'Uncertainty turns into curiosity; the hero finds their rhythm in the new routine.'
+            'growth_outcome': 'Uncertainty turns into curiosity; the hero finds their rhythm in the new routine.',
+            'virtue': ('courage', 'The protagonist tries the scary thing with the fear fully present — show the physical sensation and the decision to act through it anyway.'),
         },
         'Sibling Rivalry': {
             'metaphor': 'Two different stars trying to shine in the same patch of night sky.',
             'coping_strategy': 'Taking turns, finding a way to combine their different "lights", expressing needs with words instead of pushes.',
-            'growth_outcome': 'Realizing that together they make the sky brighter; finding the "team" in the family.'
+            'growth_outcome': 'Realizing that together they make the sky brighter; finding the "team" in the family.',
+            'virtue': ('generosity', 'The protagonist voluntarily gives something up and the story lingers on the warmth that follows — not the sacrifice.'),
         },
         'Handling Big Feelings': {
             'metaphor': 'A stormy weather system inside a magical crystal bottle.',
             'coping_strategy': 'Naming the "storm", watching it pass without being swept away, finding the "calm center".',
-            'growth_outcome': 'The hero learns that feelings are like weather—they change, and you can stay safe through them.'
+            'growth_outcome': 'The hero learns that feelings are like weather—they change, and you can stay safe through them.',
+            'virtue': ('self-awareness', 'The protagonist names their feeling aloud or in thought before reacting — slowing the impulse loop by one breath.'),
         },
         'Trying New Foods': {
             'metaphor': 'Exploring a planet with strange but wonderful textures and "flavor-fields".',
             'coping_strategy': 'The "One-Bite Discovery", describing the sensation objectively, pairing the new with the familiar.',
-            'growth_outcome': 'Bravery in small tastes; discovering that the "unknown" can be delicious.'
+            'growth_outcome': 'Bravery in small tastes; discovering that the "unknown" can be delicious.',
+            'virtue': ('adaptability', 'The protagonist encounters something unfamiliar, resists briefly, then engages — and the story shows one specific payoff.'),
         },
         'Sharing Toys': {
             'metaphor': 'A magical fountain that only flows when the water is allowed to move between basins.',
             'coping_strategy': 'Setting a timer, noticing the joy on the other person\'s face, finding a game that uses two toys together.',
-            'growth_outcome': 'The discovery that "joy shared is joy doubled".'
+            'growth_outcome': 'The discovery that "joy shared is joy doubled".',
+            'virtue': ('generosity', 'The protagonist gives something up voluntarily and the story lingers on the warmth that follows — not the sacrifice.'),
         },
         'Being Brave at Night': {
             'metaphor': 'The Night-Glow garden where flowers only bloom in the quiet dark.',
             'coping_strategy': 'Checking the "security perimeter", using a "bravery mantra", visualizing a protective light shield.',
-            'growth_outcome': 'The hero realizes they are the keeper of their own safety; shadows become just shapes.'
+            'growth_outcome': 'The hero realizes they are the keeper of their own safety; shadows become just shapes.',
+            'virtue': ('courage', 'The protagonist tries the scary thing with the fear fully present — show the physical sensation and the decision to act through it anyway.'),
         },
         'Patience & Waiting': {
             'metaphor': 'Watching a slow-growing moon-flower that only opens when it\'s perfectly ready.',
             'coping_strategy': 'The "Waiting Game" (observing details), focusing on the "now" instead of the "next", deep slow breathing.',
-            'growth_outcome': 'Finding magic in the stillness; realizing that the best things are worth the time.'
+            'growth_outcome': 'Finding magic in the stillness; realizing that the best things are worth the time.',
+            'virtue': ('patience', 'The protagonist pauses at their moment of highest frustration, chooses the slower path, and the story shows the downstream payoff of that pause.'),
         }
     }
 
@@ -297,8 +306,9 @@ SAFETY RULES:
                     traits.append(trait)
             personality_profile = f"- **PERSONALITY PROFILE**: {', '.join(traits)}"
 
-        # Life Challenge (Therapeutic Integration)
+        # Life Challenge (Therapeutic Integration) + virtue anchoring
         challenge_instruction = ""
+        virtue_instruction = ""
         if life_challenge:
             challenge_data = cls.LIFE_CHALLENGES.get(life_challenge)
             if challenge_data:
@@ -308,6 +318,15 @@ SAFETY RULES:
 - **COPING STRATEGY TO TEACH**: {challenge_data['coping_strategy']}
 - **GROWTH OUTCOME**: {challenge_data['growth_outcome']}
 - **INSTRUCTION**: Use the metaphor provided to frame the adventure. Ensure the hero uses the coping strategy at a key decision point to achieve the growth outcome. Keep it magical and age-appropriate."""
+                virtue_name, virtue_show = challenge_data.get('virtue', ('', ''))
+                if virtue_name:
+                    age_caveat = " Keep it simple and concrete — no internal monologue, just visible action." if age <= 7 else (" For this age, lean into internal monologue and the cost of the choice." if age >= 14 else "")
+                    virtue_instruction = (
+                        f"\n**INVISIBLE VIRTUE — {virtue_name.upper()}** (NEVER name this virtue in the story):\n"
+                        f"{virtue_show}{age_caveat}\n"
+                        "Model the virtue through one specific scene or choice. "
+                        "The child lives it vicariously — no character announces the lesson.\n"
+                    )
             else:
                 challenge_instruction = f"- **LIFE CHALLENGE**: The story must subtly reflect the challenge of '{life_challenge}'. The hero should learn to cope with this through the adventure, but keep it metaphorical and magical, not clinical."
 
@@ -362,6 +381,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 - **CONFLICT**: {conflict_hook or 'A magical mystery needs solving.'}
 - **SENSORY PALETTE**: {final_sensory}
 {challenge_instruction}
+{virtue_instruction}
 - **HERO**: {child_name} (Special Ability: {special_ability}).
 {personality_profile}
 {tool_line}
@@ -466,6 +486,20 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
         }
         final_sensory = story_context.get('sensory_palette') or default_sensories.get(age_band, 'Bright colors, soft sounds.')
 
+        # Carry virtue instruction forward from story_context if life_challenge was set
+        continuation_virtue = ""
+        life_challenge_ctx = story_context.get('life_challenge') or story_context.get('lifeChallenge', '')
+        if life_challenge_ctx:
+            challenge_data = cls.LIFE_CHALLENGES.get(life_challenge_ctx, {})
+            virtue_name, virtue_show = challenge_data.get('virtue', ('', ''))
+            if virtue_name:
+                age_caveat = " Keep it simple and concrete — visible action only." if age <= 7 else (" Use internal monologue and the cost of the choice." if age >= 14 else "")
+                continuation_virtue = (
+                    f"\n**INVISIBLE VIRTUE — {virtue_name.upper()}** (NEVER name this — show it):\n"
+                    f"{virtue_show}{age_caveat}\n"
+                    "Model the virtue through action. The reader feels it, no character states it.\n"
+                )
+
         choice_templates = [
             '    {"id": "choice_1", "text": "First choice option (Action-oriented)"}',
             '    {"id": "choice_2", "text": "Second choice option (Action-oriented)"}'
@@ -495,6 +529,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 - **INVENTORY**: {", ".join(inventory) if inventory else "None"}
 - **STATE**: location={story_state.get('location', 'Unknown')}, goal={story_state.get('goal', 'Unknown')}
 - **SENSORY PALETTE**: {final_sensory}
+{continuation_virtue}
 
 **STORY SO FAR (summary)**:
 {story_so_far or "No summary available."}

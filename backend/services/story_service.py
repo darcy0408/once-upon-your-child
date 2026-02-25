@@ -79,6 +79,65 @@ SAFETY RULES:
 - SAFETY: Ensure no scary imagery or abandonment themes for children.
 """
 
+# Maps therapeutic keywords → (virtue_name, how_to_show_it_in_prose)
+# NEVER name the virtue in the story — the character lives it, the reader feels it.
+VIRTUE_MAP = {
+    'friendship':          ('inclusion',          'The protagonist notices someone alone or left out and takes one small, concrete action to include them.'),
+    'social':              ('inclusion',          'The protagonist notices someone alone or left out and takes one small, concrete action to include them.'),
+    'making friends':      ('kindness',           'The protagonist initiates a genuine connection without being asked, and the moment costs them something (courage, comfort, time).'),
+    'emotion':             ('self-awareness',     'The protagonist names their feeling aloud or in thought before reacting — slowing the impulse loop by one breath.'),
+    'feeling':             ('self-awareness',     'The protagonist names their feeling aloud or in thought before reacting — slowing the impulse loop by one breath.'),
+    'regulation':          ('patience',           'The protagonist pauses at the moment of highest frustration, chooses a slower path, and the story shows the downstream payoff of that pause.'),
+    'anger':               ('patience',           'The protagonist pauses at the moment of highest frustration, chooses a slower path, and the story shows the downstream payoff of that pause.'),
+    'anxiety':             ('courage',            'The protagonist tries the scary thing anyway — not fearlessly, but with the fear fully present. Show the physical sensation and the decision to act through it.'),
+    'fear':                ('courage',            'The protagonist tries the scary thing anyway — not fearlessly, but with the fear fully present. Show the physical sensation and the decision to act through it.'),
+    'scared':              ('courage',            'The protagonist tries the scary thing anyway — not fearlessly, but with the fear fully present. Show the physical sensation and the decision to act through it.'),
+    'confidence':          ('voice',              'The protagonist speaks their truth once, clearly, in a moment where staying silent would have been easier. No lecture — just the act.'),
+    'self-esteem':         ('voice',              'The protagonist speaks their truth once, clearly, in a moment where staying silent would have been easier. No lecture — just the act.'),
+    'resilience':          ('perseverance',       'The protagonist fails at least once before succeeding. The failure is specific, the recovery is effortful, and the final success is earned — not given.'),
+    'try':                 ('perseverance',       'The protagonist fails at least once before succeeding. The failure is specific, the recovery is effortful, and the final success is earned — not given.'),
+    'empathy':             ('compassion',         'The protagonist makes a decision that costs them something personally in order to help or understand another character. Show their internal reasoning.'),
+    'bullying':            ('integrity',          'The protagonist chooses the right action in a moment when no adult is watching and the wrong choice would go unpunished. Show the internal moment of choice.'),
+    'pressure':            ('integrity',          'The protagonist chooses the right action in a moment when no adult is watching and the wrong choice would go unpunished. Show the internal moment of choice.'),
+    'fairness':            ('justice',            'The protagonist encounters something unfair, names it internally, and chooses one of: speaking up, finding an alternative path, or accepting gracefully with perspective. No lecturing.'),
+    'unfair':              ('justice',            'The protagonist encounters something unfair, names it internally, and chooses one of: speaking up, finding an alternative path, or accepting gracefully with perspective. No lecturing.'),
+    'jealous':             ('gratitude',          'The protagonist feels the hot sting of jealousy — named honestly, not glossed over — then shifts their gaze to something they genuinely value. The shift is earned, not instant.'),
+    'sharing':             ('generosity',         'The protagonist gives something up voluntarily and the story lingers on the warmth that follows — not the sacrifice.'),
+    'transition':          ('adaptability',       'The protagonist encounters something that has irrevocably changed. They grieve it briefly, then find one new thing to anchor to. Change becomes survivable.'),
+    'change':              ('adaptability',       'The protagonist encounters something that has irrevocably changed. They grieve it briefly, then find one new thing to anchor to. Change becomes survivable.'),
+    'rules':               ('trust',              'The protagonist chooses to follow a rule whose purpose they don\'t yet understand, and the story — without moralizing — later reveals why the rule existed.'),
+    'authority':           ('trust',              'The protagonist chooses to follow a rule whose purpose they don\'t yet understand, and the story — without moralizing — later reveals why the rule existed.'),
+    'focus':               ('mindfulness',        'The protagonist\'s attention wanders at a key moment, they catch it, and returning to the present task makes all the difference. Show the noticing, not just the task.'),
+    'problem':             ('resourcefulness',    'The protagonist solves the central challenge using something they already had — an overlooked skill, an ignored object, or an underestimated relationship.'),
+}
+
+
+def _get_virtue_instruction(therapeutic_prompt: str, age: int) -> str:
+    """Return an invisible virtue anchoring instruction based on the therapeutic_prompt string.
+
+    Scans for known keywords and returns the matching virtue instruction.
+    If no match, returns a default resilience instruction.
+    The instruction is injected into the prompt but must NEVER be stated in the story prose.
+    """
+    if not therapeutic_prompt:
+        return ""
+    prompt_lower = therapeutic_prompt.lower()
+    for keyword, (virtue, instruction) in VIRTUE_MAP.items():
+        if keyword in prompt_lower:
+            age_caveat = ""
+            if age <= 7:
+                age_caveat = " Keep it simple and concrete — no internal monologue, just visible action."
+            elif age >= 14:
+                age_caveat = " For this age, lean into internal monologue and the cost of the choice."
+            return (
+                f"\n**INVISIBLE VIRTUE — {virtue.upper()}** (NEVER name this virtue in the story):\n"
+                f"{instruction}{age_caveat}\n"
+                "Rule: Model the virtue through one specific scene or choice. "
+                "The child lives it vicariously — no character announces the lesson.\n"
+            )
+    return ""
+
+
 def _get_age_band(age: int) -> str:
     if age <= 4: return '3-4'
     if age <= 7: return '5-7'
@@ -262,6 +321,9 @@ class AdvancedStoryEngine:
         else:
             wisdom_gem_guidance = "a resonant, adult insight distilled from the story's theme — concise and genuine"
 
+        # Derive invisible virtue instruction from therapeutic_prompt
+        virtue_instruction = _get_virtue_instruction(therapeutic_prompt, age)
+
         return f"""
 **PERSONA**: Expert Children's Author & Therapeutic Storyteller.
 
@@ -282,7 +344,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 - **CUSTOM REQUESTS**: {custom_elements or 'None'} (CRITICAL: You MUST use the exact words from this request at least once each, verbatim, in the story).
   If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {mood_rules}
-
+{virtue_instruction}
 **WRITING GUIDELINES**:
 - **Tone**: {config['notes']}
 - **Word Count**: Approximately {word_range[0]}-{word_range[1]} words total.
@@ -427,10 +489,12 @@ def _safe_extract_title_and_gem(text: str, theme: str):
             # Use candidate_text (stripped of markdown) as the story
             # Log the parsing error for debugging but don't fail
             logger.warning(f"Failed to parse story JSON: {e}. Falling back to raw text.")
-            return f"A {theme} Adventure", "You are magic!", candidate_text, [candidate_text], {}
+            fallback_title = re.sub(r'^(A|An)\s+(The|A|An)\s+', r'\2 ', f"A {theme} Adventure", flags=re.IGNORECASE)
+            return fallback_title, "You are magic!", candidate_text, [candidate_text], {}
     except Exception as e:
         logger.warning(f"Unexpected error parsing story: {e}. Falling back to raw text.")
-        return f"A {theme} Adventure", "You are magic!", candidate_text, [candidate_text], {}
+        fallback_title = re.sub(r'^(A|An)\s+(The|A|An)\s+', r'\2 ', f"A {theme} Adventure", flags=re.IGNORECASE)
+        return fallback_title, "You are magic!", candidate_text, [candidate_text], {}
 
     # If we parsed successfully but got no pages, verify content length
     if not pages:
