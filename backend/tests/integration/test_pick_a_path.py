@@ -286,7 +286,7 @@ class TestContinueInteractiveStoryAPI:
         assert data["is_completed"] is False
 
         mock_interactive_service.continue_story.assert_called_once_with(
-            story_id=story_in_db.id, choice_id="choice-1"
+            story_id=story_in_db.id, choice_id="choice-1", custom_text=None
         )
 
     def test_continue_story_completion(
