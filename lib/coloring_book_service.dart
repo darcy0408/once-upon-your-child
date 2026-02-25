@@ -246,8 +246,9 @@ class GeminiColoringBookService extends ColoringBookService {
   final String backendUrl;
 
   GeminiColoringBookService({
-    this.backendUrl = 'http://localhost:5000',
-  }) : super(openAiApiKey: null);
+    String? backendUrl,
+  })  : backendUrl = backendUrl ?? Environment.backendUrl,
+        super(openAiApiKey: null);
 
   @override
   Future<List<ColoringPage>> generateColoringPagesFromStory({

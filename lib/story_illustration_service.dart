@@ -395,8 +395,9 @@ class GeminiIllustrationService extends StoryIllustrationService {
   final String backendUrl;
 
   GeminiIllustrationService({
-    this.backendUrl = 'http://localhost:5000',
-  }) : super(openAiApiKey: null);
+    String? backendUrl,
+  })  : backendUrl = backendUrl ?? Environment.backendUrl,
+        super(openAiApiKey: null);
 
   @override
   Future<List<StoryIllustration>> generateIllustrations({

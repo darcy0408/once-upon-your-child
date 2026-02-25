@@ -7,13 +7,16 @@ import 'package:http/http.dart' as http;
 import 'story_illustration_service.dart';
 import 'services/logger_service.dart';
 
+import 'config/environment.dart';
+
 /// Improved Mock Service that uses actual story content via backend
 class StoryBasedIllustrationService extends StoryIllustrationService {
   final String backendUrl;
 
   StoryBasedIllustrationService({
-    this.backendUrl = 'http://localhost:5000',
-  }) : super(openAiApiKey: 'story-based');
+    String? backendUrl,
+  })  : backendUrl = backendUrl ?? Environment.backendUrl,
+        super(openAiApiKey: 'story-based');
 
   @override
   Future<List<StoryIllustration>> generateIllustrations({
