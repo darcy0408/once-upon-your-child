@@ -1,5 +1,4 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SecureStorageService {
   static const _storage = FlutterSecureStorage(
@@ -31,21 +30,5 @@ class SecureStorageService {
   // Delete all secure data (logout)
   static Future<void> deleteAll() async {
     await _storage.deleteAll();
-  }
-
-  // Migrate any previously obfuscated values from SharedPreferences
-  static Future<void> migrateFromSharedPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (prefs.getBool('secure_storage_migrated') == true) return;
-
-    for (final key in ['api_key_gemini', 'api_key_openai', 'user_token']) {
-      final old = prefs.getString(key);
-      if (old != null && old.isNotEmpty) {
-        // Write to real secure storage and remove from SharedPreferences
-        await _storage.write(key: key, value: old);
-        await prefs.remove(key);
-      }
-    }
-    await prefs.setBool('secure_storage_migrated', true);
   }
 }
