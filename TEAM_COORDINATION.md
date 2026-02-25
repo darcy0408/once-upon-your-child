@@ -2,6 +2,34 @@
 
 ---
 
+## Session Update - 2026-02-25 (Archetype Voice + LTR Age Gate Fixes)
+
+### Scope Completed
+
+**1. Archetype Impact Fix (`backend/services/story_service.py`):**
+- Root cause: Character `strengths` and `interests` (derived from archetype selection) were extracted from the request but **never injected into the Gemini prompt**. Only the `specialAbility` climax constraint was used.
+- Fix: Added `interests` extraction alongside `strengths`. Added new **CHARACTER VOICE** line to the prompt instructing Gemini to have the hero approach problems using their archetype's strengths throughout the story — not just at the climax. A Heart Healer now checks on others first; a Quiz Whiz notices clues; a Storm Rider rushes in then reflects.
+
+**2. Learning-to-Read Age Gate Fix (`story_service.py`, `story_routes.py`, `run_comprehensive_quality_check.py`):**
+- Root cause 1: `_build_learning_to_read_prompt` returned a plain string `"Mode unavailable for this age."` for unsupported ages (8-10+) instead of raising an exception. Gemini received this string as the prompt and hallucinated a story — the Feb-23 age 8-10 LTR "success" was bogus.
+- Root cause 2: Route had no age validation for LTR mode, causing silent failures for ages 3-7 when the error string bubbled up through the task layer.
+- Fix: Raise `ValueError` instead of returning error string. Added 400 route guard: LTR requests for age > 7 get a clear error response. Fixed quality check skip condition: `age > 7` (was incorrectly `age > 9`).
+
+### Files Changed
+- `backend/services/story_service.py`
+- `backend/routes/story_routes.py`
+- `run_comprehensive_quality_check.py`
+- `TEAM_COORDINATION.md` *(this entry)*
+
+### Status
+- **Archetype Impact:** ✅ Strengths and interests now shape full story voice, not just climax.
+- **Learning-to-Read (3-7):** ✅ Age gate enforced; route returns clean 400 for unsupported ages.
+- **Backend Tests:** ✅ 135/135 passing.
+- **Remaining open issues:** Double-article title bug in rhyme mode; story generation latency 50-70s for older ages.
+- **Launch Readiness:** 97% 🚀
+
+---
+
 ## Session Update - 2026-02-25 (Fix: Age-Appropriate Wisdom Gems)
 
 ### Scope Completed
