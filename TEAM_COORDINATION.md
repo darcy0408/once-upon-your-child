@@ -2,6 +2,46 @@
 
 ---
 
+## Session Update - 2026-02-25 (Therapeutic Feature Plan + Virtue Anchoring + Free-Text Choice)
+
+### Scope: Phase 1 of Therapeutic Magic Plan
+
+Full therapeutic feature brainstorm and Six Hats analysis completed. Plan saved to session. Implementation of first two features:
+
+**Feature 6: Invisible Virtue Anchoring (backend, prompt engineering only)**
+- Added `VIRTUE_MAP` (24 therapeutic keywords → virtue + prose instruction) to `story_service.py`
+- Added `_get_virtue_instruction(therapeutic_prompt, age)` helper — returns age-calibrated virtue instruction when a therapeutic keyword is present
+- `generate_enhanced_prompt()` now injects the virtue instruction when `therapeutic_prompt` is set
+- `InteractiveAdventurePromptBuilder.LIFE_CHALLENGES` — added `virtue` field to each of 8 entries
+- `build_opening_prompt()` and `build_continuation_prompt()` both inject virtue instruction when `life_challenge` is set
+- Rule: The virtue is NEVER named in the story. Characters demonstrate it through action. Gemini is told "model the virtue through one specific scene — the child lives it vicariously, no character announces the lesson."
+
+**Feature 1: "Something Else" Free-Text Choice in Pick-a-Path**
+- Backend (`story_routes.py`): `continue-interactive-story` endpoint now accepts optional `custom_text` param; validates it when `choice_id == "custom"`
+- Backend (`interactive_adventure_service.py`): `continue_story()` gains optional `custom_text` param; custom text is used directly as `selected_choice_text` (no DB record created)
+- Frontend (`interactive_story_service.dart`): `continueInteractiveStory()` gains optional `customText` param; sends it in request body when `choice_id == 'custom'`
+- Frontend (`pick_a_path_adventure_screen.dart`): Added `_showCustomInput` state, `_customChoiceController`, `_handleCustomChoice()` method, and animated expandable input UI below choice buttons. Styled with sparkle icon + deep purple magical theme, 200-char limit, Cancel + "Let's go!" buttons.
+
+### Feelings Wheel Deep Analysis
+Completed analysis of all 6 feelings-related widget implementations. Recommendation: **kill standalone screens, embed feelings IN the adventure.** The data layer (feelings_wheel_data.dart: 8 core → 40+ secondary → 150+ tertiary) is excellent. Solution: use mood_lantern_selector-style floating orbs for a 2-tap pre-story check-in + in-story "feeling moment" nodes in Pick-a-Path.
+
+### Files Changed
+- `backend/services/story_service.py` — VIRTUE_MAP, _get_virtue_instruction, prompt injection
+- `backend/services/interactive_adventure_prompt_builder.py` — virtue field in LIFE_CHALLENGES, prompt injections in opening + continuation
+- `backend/routes/story_routes.py` — custom_text param in continue endpoint
+- `backend/services/interactive_adventure_service.py` — custom_text in continue_story()
+- `lib/services/interactive_story_service.dart` — customText param
+- `lib/pick_a_path_adventure_screen.dart` — "Something Else" UI + handler
+- `TEAM_COORDINATION.md` *(this entry)*
+
+### Status
+- **Virtue Anchoring:** ✅ Active in all story modes (regular, LTR, rhyme, interactive) when therapeutic goal is set
+- **Free-Text Choice:** ✅ Backend + frontend complete; clean Flutter analyze
+- **Backend Tests:** ✅ 135/135 passing
+- **Next:** Feature 2 (Feelings Check-In — re-wire existing pre_story_feelings_dialog into wizard flow)
+
+---
+
 ## Session Update - 2026-02-25 (Archetype Voice + LTR Age Gate Fixes)
 
 ### Scope Completed

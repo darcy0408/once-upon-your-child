@@ -73,6 +73,10 @@ class _PickAPathAdventureScreenState
   String? _errorMessage;
   Future<void> Function()? _retryAction;
 
+  // "Something Else" free-text choice state
+  bool _showCustomInput = false;
+  final TextEditingController _customChoiceController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -86,6 +90,7 @@ class _PickAPathAdventureScreenState
   @override
   void dispose() {
     _scrollController.dispose();
+    _customChoiceController.dispose();
     super.dispose();
   }
 
@@ -208,6 +213,7 @@ class _PickAPathAdventureScreenState
       _isContinuing = true;
       _errorMessage = null;
       _retryAction = null;
+      _showCustomInput = false;
     });
 
     try {
@@ -243,6 +249,55 @@ class _PickAPathAdventureScreenState
     } catch (e) {
       _handleError('Unable to continue story: $e',
           () => _handleChoiceSelected(choice));
+    }
+  }
+
+  Future<void> _handleCustomChoice() async {
+    final text = _customChoiceController.text.trim();
+    if (text.isEmpty || _isContinuing || _isCompleted || _storyId == null) return;
+
+    HapticFeedback.selectionClick();
+    setState(() {
+      _isContinuing = true;
+      _errorMessage = null;
+      _retryAction = null;
+      _showCustomInput = false;
+    });
+    _customChoiceController.clear();
+
+    try {
+      final response = await _storyService.continueInteractiveStory(
+        storyId: _storyId!,
+        choiceId: 'custom',
+        customText: text,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _currentSegment = response.segment;
+        _inventory = response.inventory;
+        _state = response.state;
+        _isCompleted = response.isCompleted;
+        _isContinuing = false;
+      });
+
+      _scrollToBottom();
+
+      if (_isCompleted) {
+        unawaited(
+          InteractiveStoryAnalytics.trackStorySaved(
+            characterId: widget.character.id,
+            theme: widget.theme,
+            choiceCount: _currentSegment?.segmentNumber ?? 0,
+            segmentCount: _currentSegment?.segmentNumber ?? 0,
+            wordCount: _currentSegment?.content.split(' ').length ?? 0,
+          ),
+        );
+      }
+    } on InteractiveStoryException catch (e) {
+      _handleError(e.message, () => _handleCustomChoice());
+    } catch (e) {
+      _handleError('Unable to continue story: $e', () => _handleCustomChoice());
     }
   }
 
@@ -641,6 +696,88 @@ class _PickAPathAdventureScreenState
             ),
           );
         }),
+        // "Something Else" free-text option
+        const SizedBox(height: 4),
+        if (!_showCustomInput)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4.0),
+            child: TextButton.icon(
+              onPressed: _isContinuing
+                  ? null
+                  : () => setState(() => _showCustomInput = true),
+              icon: const Icon(Icons.auto_awesome, size: 16),
+              label: const Text('✨ Do something else...'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.deepPurple,
+              ),
+            ),
+          )
+        else
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.deepPurple.withValues(alpha: 0.4)),
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.deepPurple.withValues(alpha: 0.05),
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'What would YOU do?',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.deepPurple.shade700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _customChoiceController,
+                  maxLength: 200,
+                  maxLines: 2,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: 'Type your own idea...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    counterStyle: const TextStyle(fontSize: 11),
+                  ),
+                  onSubmitted: (_) => _handleCustomChoice(),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => setState(() {
+                        _showCustomInput = false;
+                        _customChoiceController.clear();
+                      }),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: _isContinuing ? null : _handleCustomChoice,
+                      icon: const Icon(Icons.arrow_forward, size: 16),
+                      label: const Text('Let\'s go!'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }

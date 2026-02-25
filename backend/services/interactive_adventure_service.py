@@ -253,13 +253,14 @@ class InteractiveAdventureService:
             'is_completed': story.is_completed
         }
 
-    def continue_story(self, story_id: str, choice_id: str) -> Dict[str, Any]:
+    def continue_story(self, story_id: str, choice_id: str, custom_text: str | None = None) -> Dict[str, Any]:
         """
         Continue story based on user's choice selection.
 
         Args:
             story_id: ID of the interactive story
-            choice_id: ID of the choice user selected
+            choice_id: ID of the choice user selected, or "custom" for free-text input
+            custom_text: Free-text input when choice_id is "custom" (max 200 chars)
 
         Returns:
             Dict with new segment data, updated inventory, and state
@@ -278,6 +279,11 @@ class InteractiveAdventureService:
         if choice_id == "continue":
             logger.info("Processing CONTINUE segment (no choice required)")
             selected_choice_text = "Continue the adventure"
+            parent_choice_id = None
+        elif choice_id == "custom" and custom_text:
+            # Free-text "Something Else" choice — no DB record, use the text directly
+            logger.info(f"Processing custom choice: {custom_text[:50]!r}")
+            selected_choice_text = custom_text
             parent_choice_id = None
         else:
             # Load choice and mark as selected

@@ -143,17 +143,22 @@ class InteractiveStoryService {
   Future<ContinueStoryResponse> continueInteractiveStory({
     required String storyId,
     required String choiceId,
+    String? customText,
   }) async {
     final headers = await ApiServiceManager.authHeaders();
     final uri = Uri.parse('$_baseUrl/continue-interactive-story');
+    final body = <String, dynamic>{
+      'story_id': storyId,
+      'choice_id': choiceId,
+    };
+    if (choiceId == 'custom' && customText != null) {
+      body['custom_text'] = customText;
+    }
     final response = await _httpClient
         .post(
           uri,
           headers: headers,
-          body: jsonEncode({
-            'story_id': storyId,
-            'choice_id': choiceId,
-          }),
+          body: jsonEncode(body),
         )
         .timeout(const Duration(seconds: 30));
 

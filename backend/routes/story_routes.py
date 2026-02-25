@@ -492,17 +492,22 @@ def create_story_blueprint(
         Continue interactive story based on choice selection.
         Request body:
             - story_id: str (required)
-            - choice_id: str (required)
+            - choice_id: str (required) — use "custom" to submit free-text input
+            - custom_text: str (optional) — required when choice_id is "custom"; max 200 chars
         """
         logger.info("POST /continue-interactive-story called")
         payload = request.get_json(silent=True) or {}
 
         story_id = payload.get("story_id")
         choice_id = payload.get("choice_id")
+        custom_text = (payload.get("custom_text") or "").strip()[:200]
 
         # Validate required fields
         if not story_id or not choice_id:
             return jsonify({"error": "story_id and choice_id are required"}), 400
+
+        if choice_id == "custom" and not custom_text:
+            return jsonify({"error": "custom_text is required when choice_id is 'custom'"}), 400
 
         try:
             from backend.models import InteractiveStory
@@ -519,10 +524,11 @@ def create_story_blueprint(
             # Initialize service
             service = InteractiveAdventureService(gemini_api_key=api_key)
 
-            # Continue story
+            # Continue story — pass custom_text so the service can use it
             result = service.continue_story(
                 story_id=story_id,
-                choice_id=choice_id
+                choice_id=choice_id,
+                custom_text=custom_text or None
             )
 
             # Filter content
@@ -548,6 +554,7 @@ def create_story_blueprint(
                 details={
                     "story_id": story_id,
                     "choice_id": choice_id,
+                    "is_custom_choice": choice_id == "custom",
                     "error_class": e.__class__.__name__,
                 },
             )
