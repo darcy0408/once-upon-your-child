@@ -2,6 +2,23 @@
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - Git Maintenance Run
 
 ### Scope: Repository maintenance & housekeeping
@@ -22,6 +39,23 @@
 
 **Do not delete:**
 - `origin/gemini/backend-tests` — 5 unique commits: Riverpod state management, async story gen with DB task queue, backend fixes. Needs review before merge/discard.
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -79,6 +113,23 @@ Three more features from the Therapeutic Magic plan shipped:
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-25 (Therapeutic Feature Plan + Virtue Anchoring + Free-Text Choice)
 
 ### Scope: Phase 1 of Therapeutic Magic Plan
@@ -119,6 +170,23 @@ Completed analysis of all 6 feelings-related widget implementations. Recommendat
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-25 (Archetype Voice + LTR Age Gate Fixes)
 
 ### Scope Completed
@@ -147,6 +215,23 @@ Completed analysis of all 6 feelings-related widget implementations. Recommendat
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-25 (Fix: Age-Appropriate Wisdom Gems)
 
 ### Scope Completed
@@ -171,6 +256,23 @@ Completed analysis of all 6 feelings-related widget implementations. Recommendat
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-25 (Hero Creator UI — Scroll Name Input + Create Avatar Button)
 
 ### Scope Completed
@@ -186,6 +288,23 @@ Completed analysis of all 6 feelings-related widget implementations. Recommendat
 ### Status
 - **Hero Creator name input scroll:** ✅ Replaced yellow bar with ornate scroll
 - **Create Your Avatar button:** ✅ Now shows proper image asset
+- **Launch Readiness:** 98%
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
 - **Launch Readiness:** 98%
 
 ---
@@ -212,6 +331,23 @@ The Gemini model was including internal storytelling terminology in the generate
 
 ### Status
 - **Instruction leakage:** ✅ Dual-layer fix applied (498 tests green)
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -254,6 +390,23 @@ Two root causes:
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-25 (Flutter Widget Test Fixes)
 
 ### Problem
@@ -287,6 +440,23 @@ Two root causes:
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-25 (Auto-migrate missing User columns at startup)
 
 ### Problem
@@ -301,6 +471,23 @@ Added an auto-migration block in `backend/app.py` after `db.create_all()`. Uses 
 ### Status
 - **Bug #C3 (stories_created_count):** ✅ Fixed (auto-migrates at startup)
 - Covers all 6 columns: `stories_created_count`, `gemini_api_key_encrypted`, `has_byok`, `stories_generated_this_month`, `illustrations_generated_this_month`, `usage_reset_date`
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -320,6 +507,23 @@ Added an auto-migration block in `backend/app.py` after `db.create_all()`. Uses 
 - `backend/config/__init__.py` — restored `CACHE_TYPE = 'NullCache'` with explanatory comment
 - `pytest.ini` (root) — 2 targeted filters with explanatory comment block
 - `backend/pytest.ini` — 2 targeted filters with explanatory comment block
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -374,6 +578,23 @@ Added an auto-migration block in `backend/app.py` after `db.create_all()`. Uses 
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-25 (Fix Avatar Gallery Crash on Missing Categories Key)
 
 ### Problem
@@ -389,6 +610,23 @@ Added an auto-migration block in `backend/app.py` after `db.create_all()`. Uses 
 
 ### Status
 - **Characters only generating placeholder image (Issue #60):** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
 - **Launch Readiness:** 98%
 
 ---
@@ -413,6 +651,23 @@ Replaced all deprecated Flutter API calls with their current equivalents:
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-25 (CI Fix: pyotp missing dependency)
 
 ### Problem
@@ -425,6 +680,23 @@ After the previous session's CI fixes landed, one test still failed:
 
 ### Status
 - **CI:** Should go green with this fix. All other jobs passed (89 unit + 73 security tests). ✅
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -456,6 +728,23 @@ After the previous session's CI fixes landed, one test still failed:
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-24 (Hero Creator UI Magic Polish)
 
 ### Scope Completed
@@ -478,6 +767,23 @@ After the previous session's CI fixes landed, one test still failed:
 ### Status
 - **Hero Creator UI Polish:** ✅ All 7 visual fixes applied and analyzed clean.
 - **Launch Readiness:** ~82%
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -550,6 +856,23 @@ All 9 applied packages verified with `python -c "import ..."` — all imports su
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-24 (CI/CD Green-Build Fixes)
 
 ### Problem Summary
@@ -585,6 +908,23 @@ GitHub Actions CI was failing on **3 jobs** against the latest `origin/main` com
   - `setup-python` still on `@v4` (not `@v5` as mentioned in a prior handoff).
   - `meta` dependency override was removed (Flutter SDK manages it now); prior handoff was inaccurate.
   - SQLAlchemy / Flask-Caching deprecation warnings suppressed in `pytest.ini` — deferred cleanup.
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -632,6 +972,23 @@ GitHub Actions CI was failing on **3 jobs** against the latest `origin/main` com
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-24 (Quick Story Screen — Completed TODOs)
 
 ### Scope Completed
@@ -652,6 +1009,23 @@ GitHub Actions CI was failing on **3 jobs** against the latest `origin/main` com
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-24 (Copilot Instructions Improvements)
 
 ### Scope Completed
@@ -668,6 +1042,23 @@ GitHub Actions CI was failing on **3 jobs** against the latest `origin/main` com
 ### Status
 - **Copilot Instructions:** ✅ Mock mode rule, model recommendation, and session log convention added.
 - **Launch Readiness:** 97% 🚀
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -716,6 +1107,23 @@ Changes in `backend/services/interactive_adventure_prompt_builder.py`:
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-22 (Refinements: Meta-Talk Removal, Audio Normalization & Security)
 
 ### Scope Completed
@@ -738,6 +1146,23 @@ Changes in `backend/services/interactive_adventure_prompt_builder.py`:
 ### Status
 - **Launch Readiness:** 95% 🚀
 - **Final Steps:** Production environment verification and final accessibility check.
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -765,6 +1190,23 @@ Changes in `backend/services/interactive_adventure_prompt_builder.py`:
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-22 (Quality Audit Phase 1 & Avatar UI Polish)
 
 ### Scope Completed
@@ -789,6 +1231,23 @@ Changes in `backend/services/interactive_adventure_prompt_builder.py`:
 - **Content Quality:** 🟡 Artifacts generated; manual audit in progress.
 - **Avatar System:** ✅ UI flow polished; multimodal fallback verified.
 - **Launch Readiness:** 80%
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -841,6 +1300,23 @@ Fixed by replacing hardcoded headers with `await ApiServiceManager.authHeaders()
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-21 (Google Cloud TTS Credentials Setup)
 
 ### Scope Completed
@@ -858,6 +1334,23 @@ Fixed by replacing hardcoded headers with `await ApiServiceManager.authHeaders()
 ### Result
 - Backend should now successfully initialise `TTSService` on next restart.
 - Neural2 narration active; `flutter_tts` remains as fallback if backend unavailable.
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -879,6 +1372,23 @@ Fixed by replacing hardcoded headers with `await ApiServiceManager.authHeaders()
 ### Status
 - **Pet Feature:** ✅ Fully complete (Backend + Frontend UI + Integration).
 - **Testing:** E2E manual verification passed.
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -908,6 +1418,23 @@ python -m pytest backend/tests/unit/test_avatar_generation_service.py backend/te
 ### Status
 - **Service test coverage (Avatar/Achievement/Analytics):** ✅ Re-verified
 - **Animation visual QA:** ⏳ Ready for manual browser/device pass
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -950,6 +1477,23 @@ python -m pytest backend/tests/unit/test_avatar_generation_service.py backend/te
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-21 (Button State Visual Correction: Preserve Original Art)
 
 ### Problem
@@ -971,6 +1515,23 @@ python -m pytest backend/tests/unit/test_avatar_generation_service.py backend/te
 
 ### Status
 - Visual behavior now aligned with requirement: keep original backgrounds/artwork and only apply bright/press interaction cues.
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -997,6 +1558,23 @@ python -m pytest backend/tests/unit/test_avatar_generation_service.py backend/te
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-21 (Repository Architecture Summary for Stakeholder Handoff)
 
 ### Scope Completed
@@ -1014,6 +1592,23 @@ python -m pytest backend/tests/unit/test_avatar_generation_service.py backend/te
 ### Status
 - **Documentation/Communication:** ✅ Completed.
 - **Code changes:** No production code modified in this session; coordination log updated only.
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -1040,6 +1635,23 @@ python -m pytest backend/tests/unit/test_avatar_generation_service.py backend/te
 ### Status
 - **Testing:** 38 widget/screen tests PASS (100% green).
 - **Coverage:** Established solid baseline for critical UI components.
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -1118,6 +1730,23 @@ flutter test test/widgets/wizard_steps/hero_creator_step_test.dart test/widgets/
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-20 (Magical Pet Companion & Asset Optimization Fix)
 
 ### Scope Completed
@@ -1137,6 +1766,23 @@ flutter test test/widgets/wizard_steps/hero_creator_step_test.dart test/widgets/
 - `python backend/tests/unit/test_pet_avatar.py`: PASS
 - `python backend/tests/integration/test_pet_avatar_api.py`: PASS (validation paths verified)
 - `git status`: `optimize_buttons.sh` staged for commit.
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -1171,6 +1817,23 @@ flutter test test/widgets/wizard_steps/hero_creator_step_test.dart test/widgets/
 - **Claude Sonnet 4.5** (Supervisor) - Planning, architecture, coordination, complex problem-solving
 - **Codex Agent** (Specialist) - Implementation, testing, specific features
 - **Gemini Agent** (Specialist) - Implementation, testing, specific features
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -1228,6 +1891,23 @@ flutter test test/widgets/wizard_steps/hero_creator_step_test.dart test/widgets/
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-20 (Illustrations Root-Cause Investigation + Fix Verification)
 
 ### Scope Completed
@@ -1266,6 +1946,23 @@ flutter analyze --no-pub lib/screens/wizard_steps/magic_review_step.dart lib/sto
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-20 (Backlog Cleanup & Code TODOs)
 
 ### Scope Completed
@@ -1290,6 +1987,23 @@ flutter analyze --no-pub lib/screens/wizard_steps/magic_review_step.dart lib/sto
 - `CharacterSelectionScreen` is still not wired into the main app navigation (future work)
 - All analytics tracking follows non-blocking pattern (failures don't break core functionality)
 - `google_fonts ^6.2.1` maintains same API as 4.0.5 (`GoogleFonts.quicksand()`, etc.)
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -1379,6 +2093,23 @@ python backend/tests/story_load_thresholds.py
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-16 (Track C: Pick-A-Path Integration Tests - Complete)
 
 ### Scope Completed
@@ -1434,6 +2165,23 @@ flutter analyze integration_test/pick_a_path_enhanced_test.dart
 - Frontend tests cover all Track C requirements (max depth, persistence, branching, recovery)
 - Tests use mocked services for deterministic, fast execution
 - Additional refinement can be done in future sessions to reach 100% pass rate on backend tests
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -1733,6 +2481,23 @@ flutter test -r compact --concurrency=4 --test-randomize-ordering-seed 54321
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session Update - 2026-02-16 (Service Test Expansion, Round 2)
 
 ### Scope Completed
@@ -1835,6 +2600,23 @@ flutter test test/unit/services/subscription_service_test.dart test/unit/service
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## SESSION NOTE - Feb 16, 2026 - Security + API Regression Verification
 
 **Agent:** Codex Agent  
@@ -1855,6 +2637,23 @@ flutter test test/unit/services/subscription_service_test.dart test/unit/service
 - Result: **77 passed**, 0 failed.
 - `cd backend; python -m pytest -q`
 - Result: **343 passed**, 0 failed.
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -1880,6 +2679,23 @@ flutter test test/unit/services/subscription_service_test.dart test/unit/service
 - Result: **20 passed**, 0 failed.
 - `flutter test test/unit`
 - Result: **52 passed**, 0 failed.
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -1915,6 +2731,23 @@ flutter test test/unit/services/subscription_service_test.dart test/unit/service
   - exact command
   - Flutter version / OS
   - full failing output with stack traces
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -1958,6 +2791,23 @@ flutter test test/unit/services/subscription_service_test.dart test/unit/service
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## SESSION NOTE - Feb 16, 2026 - Repo Hygiene + Deprecation Cleanup + Interactive Security Verification
 
 **Agent:** Codex Agent  
@@ -1993,6 +2843,23 @@ flutter test test/unit/services/subscription_service_test.dart test/unit/service
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## SESSION NOTE - Feb 16, 2026 - Backend Regression Sweep + Security Bucket Expansion
 
 **Agent:** Codex Agent  
@@ -2021,6 +2888,23 @@ flutter test test/unit/services/subscription_service_test.dart test/unit/service
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## SESSION NOTE - Feb 16, 2026 - API Contract Marker Suite Aligned (Interactive Auth)
 
 **Agent:** Codex Agent  
@@ -2040,6 +2924,23 @@ flutter test test/unit/services/subscription_service_test.dart test/unit/service
 - Ran on Feb 16, 2026:
   - `cd backend; python -m pytest -m api_contract -q`
 - Result: **47 passed**, **293 deselected**, no failures.
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -2077,6 +2978,23 @@ flutter test test/unit/services/subscription_service_test.dart test/unit/service
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## SESSION NOTE - Feb 15, 2026 - Vision Orb UI Enhancements (Aura, Sparkles, Responsive Crystals, Scenario Title Overlay)
 
 **Agent:** Codex Agent  
@@ -2100,6 +3018,23 @@ flutter test test/unit/services/subscription_service_test.dart test/unit/service
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## SESSION NOTE - Feb 15, 2026 - Magical Loading Experience (Magic Loom + Particles + Rotating Messages)
 
 **Agent:** Codex Agent  
@@ -2116,6 +3051,23 @@ flutter test test/unit/services/subscription_service_test.dart test/unit/service
 
 ### Verification Notes
 - `flutter analyze lib/widgets/magical_loading_view.dart` on Feb 15, 2026: no issues found.
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -2179,6 +3131,23 @@ flutter test test/unit/services/subscription_service_test.dart test/unit/service
 - `backend/services/story_service.py` (Added strict output constraints)
 - `run_manual_verification.py` (New verification script)
 - `run_feature_verification.py` (New feature testing script)
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -3881,6 +4850,23 @@ pytest tests/unit tests/security tests/api/test_story_routes.py -q
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session: 2026-02-12 21:30 - GUI Enhancement Implementation (Option 1 Complete)
 
 **Agent:** Claude Sonnet 4.5  
@@ -3931,6 +4917,23 @@ pytest tests/unit tests/security tests/api/test_story_routes.py -q
 - `lib/screens/wizard_steps/magic_review_step.dart` (modified, -585 lines removed, +20 added)
 
 ### Testing Status
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -4034,6 +5037,23 @@ pytest tests/unit tests/security tests/api/test_story_routes.py -q
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session: 2026-02-14 - Backend: Gemini Hang Fix + Secret Hygiene
 
 **Agent:** Codex (GPT-5)  
@@ -4067,6 +5087,23 @@ pytest tests/unit tests/security tests/api/test_story_routes.py -q
 
 ---
 
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
+
+---
+
 ## Session: 2026-02-14 - Dev Env: Flutter Windows Cache Lock
 
 **Issue:** `flutter run -d chrome` failed while downloading/extracting artifacts due to a locked file:
@@ -4083,6 +5120,23 @@ OS error: `errno = 1224` ("user-mapped section open").
 5. Retry `flutter run -d chrome`.
 
 **If recurring:** Add AV/Defender exclusion for `c:\\dev\\flutter\\`.
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -4115,6 +5169,23 @@ OS error: `errno = 1224` ("user-mapped section open").
 
 ### Restart Step
 - Fully restart the MCP host/client so it reloads the updated config.
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
@@ -4476,6 +5547,23 @@ flutter run -d chrome
 - Backend and frontend stability ✅ ACHIEVED
 - Ready to resume development work
 - All systems operational
+
+---
+
+## Session Update - 2026-02-25 (Hero Creator UI — Transparent Button + Bottom Sheet Overflow Fix)
+
+### Scope Completed
+- **create_avatar_btn.png** — BFS flood-fill removed dark purple background (178k px transparent). Button now floats cleanly on the app's purple background with no visible box.
+- **Bottom sheet overflow** — "Choose Your Avatar" modal was overflowing by 31px. Reduced bottom padding 36->16 and spacers 20->14 and 12->8, trimming 32px total.
+
+### Files Changed
+- `assets/images/ui/create_avatar_btn.png`
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+
+### Status
+- **Create Your Avatar button background:** ✅ Transparent, no black box
+- **Choose Your Avatar modal overflow:** ✅ Fixed
+- **Launch Readiness:** 98%
 
 ---
 
