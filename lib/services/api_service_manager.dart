@@ -524,6 +524,19 @@ class ApiServiceManager {
     return byokPremium || paidPremium;
   }
 
+  /// Tweak a gallery avatar's hair length and/or eye colour using AI (premium).
+  ///
+  /// Returns a `data:image/png;base64,...` string on success, or null on failure.
+  /// TODO: wire up to backend `/avatar/tweak` endpoint when implemented.
+  static Future<String?> tweakGalleryAvatar({
+    required String assetPath,
+    String? hairLength,
+    String? eyeColor,
+  }) async {
+    // Backend endpoint not yet implemented — premium feature coming soon.
+    return null;
+  }
+
   /// Generate a story using appropriate method (backend or direct API)
   static Future<StoryGenerationResult> generateStory({
     required String characterName,
