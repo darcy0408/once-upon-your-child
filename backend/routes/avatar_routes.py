@@ -577,6 +577,68 @@ def health_check():
         }), 500
 
 
+@avatar_bp.route('/tweak-gallery-avatar', methods=['POST'])
+@require_auth
+@rate_limit_by_user_tier(free=0, premium=5, byok=None)
+def tweak_gallery_avatar():
+    """
+    Edit a curated gallery avatar (premium-only).
+    Multipart form: image (WebP bytes), hair_length (opt), eye_color (opt).
+    """
+    try:
+        if 'image' not in request.files:
+            return jsonify({
+                'status': 'error',
+                'error_code': 'MISSING_IMAGE',
+                'message': 'Avatar image is required'
+            }), 400
+
+        image_bytes = request.files['image'].read()
+        hair_length = request.form.get('hair_length') or None
+        eye_color = request.form.get('eye_color') or None
+
+        if not hair_length and not eye_color:
+            return jsonify({
+                'status': 'error',
+                'error_code': 'NO_CHANGES',
+                'message': 'Please choose at least one thing to change (hair length or eye color)'
+            }), 400
+
+        logger.info(f"Gallery avatar tweak: hair_length={hair_length}, eye_color={eye_color}")
+
+        try:
+            from backend.gemini_image_generator import GeminiImageGenerator
+        except ImportError:
+            from gemini_image_generator import GeminiImageGenerator
+
+        generator = GeminiImageGenerator()
+        images = generator.tweak_gallery_avatar(
+            image_bytes=image_bytes,
+            hair_length=hair_length,
+            eye_color=eye_color,
+        )
+
+        if not images:
+            return jsonify({
+                'status': 'error',
+                'error_code': 'GENERATION_FAILED',
+                'message': get_error_message('generation_failed')
+            }), 500
+
+        return jsonify({
+            'status': 'success',
+            'tweaked_image_base64': images[0]['image_data']
+        }), 200
+
+    except Exception as e:
+        logger.exception(f"Unexpected error in tweak_gallery_avatar: {e}")
+        return jsonify({
+            'status': 'error',
+            'error_code': 'INTERNAL_ERROR',
+            'message': "Something magical went wrong! Let's try again! ✨"
+        }), 500
+
+
 # Error messages
 ERROR_MESSAGES = {
     'generation_failed': "Oops! Our magic paintbrush needs a moment. Let's try a different magic spell! ✨",

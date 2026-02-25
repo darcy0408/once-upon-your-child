@@ -470,6 +470,67 @@ Design style: Clean line art coloring page, therapeutic and story-based, full of
             logger.exception(f"Error generating custom avatar with Gemini: {e}")
             return []
 
+    def tweak_gallery_avatar(
+        self,
+        image_bytes: bytes,
+        hair_length: str | None = None,
+        eye_color: str | None = None,
+    ) -> list:
+        """
+        Edit a curated gallery avatar by changing specific features.
+
+        Sends the WebP image bytes to Gemini along with a precise edit instruction
+        that asks the model to change only the requested attributes and keep
+        everything else identical.
+        """
+        if not self._client:
+            logger.warning("Gemini image generator unavailable; skipping gallery avatar tweak")
+            return []
+
+        changes = []
+        if hair_length:
+            changes.append(f"hair style to {hair_length}")
+        if eye_color:
+            changes.append(f"eye color to {eye_color}")
+
+        if not changes:
+            logger.warning("tweak_gallery_avatar called with no changes requested")
+            return []
+
+        changes_text = " and ".join(changes)
+        prompt = (
+            "This is a Pixar-style storybook character illustration. "
+            "Keep EVERYTHING exactly the same — face shape, skin tone, facial features, "
+            "clothing, background, art style, pose, and all other details. "
+            f"ONLY change: {changes_text}. "
+            "Do not alter anything else whatsoever. "
+            "Output the full character with only those specific changes applied."
+        )
+
+        try:
+            from google.genai import types
+
+            logger.info(f"Tweaking gallery avatar: {changes_text}")
+
+            contents = [
+                types.Part.from_bytes(data=image_bytes, mime_type="image/webp"),
+                prompt,
+            ]
+
+            response = self._client.models.generate_content(
+                model=self._model_name,
+                contents=contents,
+                config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
+            )
+
+            images = self._process_image_response(response, prompt)
+            logger.info(f"Gallery avatar tweak returned {len(images)} image(s)")
+            return images
+
+        except Exception as e:
+            logger.exception(f"Error tweaking gallery avatar with Gemini: {e}")
+            return []
+
     def generate_character_avatar(
         self,
         prompt: str,

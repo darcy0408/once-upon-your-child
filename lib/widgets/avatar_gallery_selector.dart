@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/generated_avatar.dart';
 import '../services/avatar_service.dart';
 import '../ui/widgets/magical_avatar.dart';
+import 'avatar_tweak_panel.dart';
 
 const int _kBatchSize = 12;
 
@@ -11,10 +12,14 @@ class AvatarGallerySelector extends StatefulWidget {
   final Function(GeneratedAvatar) onAvatarSelected;
   final VoidCallback onCancel;
 
+  /// Whether the current user has premium access (enables hair/eye tweak).
+  final bool isPremium;
+
   const AvatarGallerySelector({
     super.key,
     required this.onAvatarSelected,
     required this.onCancel,
+    this.isPremium = false,
   });
 
   @override
@@ -81,11 +86,17 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
   }
 
   void _selectAvatar(String assetPath) {
+    // Show the AvatarTweakPanel; don't fire onAvatarSelected yet.
     setState(() => _selectedAvatarPath = assetPath);
-    final avatarId = assetPath.split('/').last.split('.').first;
+  }
+
+  void _confirmAvatar(String imageData) {
+    final avatarId = imageData.startsWith('assets/')
+        ? imageData.split('/').last.split('.').first
+        : 'tweaked_${DateTime.now().millisecondsSinceEpoch}';
     widget.onAvatarSelected(GeneratedAvatar(
       id: avatarId,
-      imageBase64: assetPath,
+      imageBase64: imageData,
       seed: avatarId,
       style: 'pixar',
       attributes: const {},
@@ -95,6 +106,20 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
 
   @override
   Widget build(BuildContext context) {
+    if (_selectedAvatarPath != null) {
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        child: AvatarTweakPanel(
+          assetPath: _selectedAvatarPath!,
+          isPremium: widget.isPremium,
+          onConfirm: (imageData) {
+            Navigator.pop(context);
+            _confirmAvatar(imageData);
+          },
+          onBack: () => setState(() => _selectedAvatarPath = null),
+        ),
+      );
+    }
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(

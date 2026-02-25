@@ -332,6 +332,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     await showDialog<void>(
       context: context,
       builder: (_) => AvatarGallerySelector(
+        isPremium: _isPremium,
         onAvatarSelected: (avatar) {
           Navigator.pop(context);
           if (mounted) {

@@ -3,6 +3,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:flutter/services.dart' show rootBundle;
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -1867,6 +1870,57 @@ Do NOT wrap JSON in backticks.
     } else {
       throw Exception(
           'Failed to continue interactive story: ${response.statusCode}');
+    }
+  }
+
+  /// Tweak a curated gallery avatar by changing hair length or eye colour.
+  ///
+  /// Loads the Flutter asset at [assetPath], posts it multipart to the backend,
+  /// and returns a `data:image/png;base64,...` string (or null on failure).
+  static Future<String?> tweakGalleryAvatar({
+    required String assetPath,
+    String? hairLength,
+    String? eyeColor,
+  }) async {
+    try {
+      final byteData = await rootBundle.load(assetPath);
+      final imageBytes = byteData.buffer.asUint8List();
+
+      final uri = Uri.parse('$_localBackendUrl/avatars/tweak-gallery-avatar');
+      final headers = await authHeaders();
+
+      final request = http.MultipartRequest('POST', uri)
+        ..headers.addAll(headers)
+        ..files.add(http.MultipartFile.fromBytes(
+          'image',
+          imageBytes,
+          filename: assetPath.split('/').last,
+        ));
+
+      if (hairLength != null && hairLength.isNotEmpty) {
+        request.fields['hair_length'] = hairLength;
+      }
+      if (eyeColor != null && eyeColor.isNotEmpty) {
+        request.fields['eye_color'] = eyeColor;
+      }
+
+      final streamed =
+          await request.send().timeout(const Duration(seconds: 120));
+      final body = await streamed.stream.bytesToString();
+
+      if (streamed.statusCode == 200) {
+        final data = jsonDecode(body) as Map<String, dynamic>;
+        final b64 = data['tweaked_image_base64'] as String?;
+        if (b64 != null && b64.isNotEmpty) {
+          return 'data:image/png;base64,$b64';
+        }
+      }
+      debugPrint(
+          'tweakGalleryAvatar failed: ${streamed.statusCode} $body');
+      return null;
+    } catch (e) {
+      debugPrint('tweakGalleryAvatar error: $e');
+      return null;
     }
   }
 
