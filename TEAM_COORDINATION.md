@@ -2,6 +2,19 @@
 
 ---
 
+## Session Update - 2026-02-26 (UI fixes: avatar circle + RenderFlex overflow)
+
+### Scope Completed
+- **Avatar circle smoothed** — `_buildAvatarSection()` in `hero_creator_step.dart`: replaced `Clip.antiAlias` with `Clip.antiAliasWithSaveLayer` on `ClipOval`, added explicit `SizedBox(148×148)` to guarantee square clip, and overlaid a thin `BoxShape.circle` border to mask any sub-pixel edge irregularities. Commit `351ce46`.
+- **RenderFlex overflow fixed** — `_buildShuffleFooter()` in `avatar_gallery_selector.dart`: the "X characters to discover" `Text` was unconstrained next to a wide `ElevatedButton.icon` in a centered `Row`, overflowing ~24px on narrow phones. Wrapped in `Flexible` with `overflow: TextOverflow.ellipsis`. Commit `966ba13`.
+
+### Status
+- **Avatar circle edge:** ✅ Smooth (antiAliasWithSaveLayer + border overlay)
+- **RenderFlex overflow:** ✅ Fixed (avatar gallery shuffle footer)
+- **All deps / branches:** ✅ Clean (no open Dependabot PRs, only origin/main remote branch)
+
+---
+
 ## Session Update - 2026-02-26 (Security: task-status IDOR fix + Flutter build fix)
 
 ### Scope Completed

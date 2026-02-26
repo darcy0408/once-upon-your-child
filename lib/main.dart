@@ -12,32 +12,34 @@ import 'services/subscription_service.dart';
 import 'services/storage_migration.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  await IsarService.getInstance();
-  await StorageMigration.migrateFromSharedPreferences();
-
-  // Initialize Firebase with graceful degradation
-  // Skip Firebase on web debug builds to avoid window.dart assertion warnings
-  if (!kIsWeb || kReleaseMode) {
-    try {
-      await FirebaseAnalyticsService.initialize();
-    } catch (e) {
-      // Firebase initialization failed - continue without analytics
-    }
-  }
-
   await SentryFlutter.init(
     (options) {
       options.dsn = 'https://56313041925cdc0d25e6f83dd9f5529b@o4510948068491264.ingest.us.sentry.io/4510948091559936';
       options.tracesSampleRate = 0.2;
       options.environment = kReleaseMode ? 'production' : 'development';
     },
-    appRunner: () => runApp(
-      const ProviderScope(
-        child: StoryWeaverApp(),
-      ),
-    ),
+    appRunner: () async {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      await IsarService.getInstance();
+      await StorageMigration.migrateFromSharedPreferences();
+
+      // Initialize Firebase with graceful degradation
+      // Skip Firebase on web debug builds to avoid window.dart assertion warnings
+      if (!kIsWeb || kReleaseMode) {
+        try {
+          await FirebaseAnalyticsService.initialize();
+        } catch (e) {
+          // Firebase initialization failed - continue without analytics
+        }
+      }
+
+      runApp(
+        const ProviderScope(
+          child: StoryWeaverApp(),
+        ),
+      );
+    },
   );
 }
 

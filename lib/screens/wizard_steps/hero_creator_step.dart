@@ -336,7 +336,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
       builder: (_) => AvatarGallerySelector(
         isPremium: _isPremium,
         onAvatarSelected: (avatar) {
-          Navigator.pop(context);
+          // Note: dialog is already closed by AvatarTweakPanel's onConfirm.
           if (mounted) {
             setState(() {
               _generatedAvatar = avatar;
