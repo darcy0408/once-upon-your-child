@@ -447,7 +447,30 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                 ),
               ],
             ),
-            child: ClipOval(child: _buildAvatarContent()),
+            child: Stack(
+              children: [
+                ClipOval(
+                  clipBehavior: Clip.antiAliasWithSaveLayer,
+                  child: SizedBox(
+                    width: 148,
+                    height: 148,
+                    child: _buildAvatarContent(),
+                  ),
+                ),
+                // Perfect circle border overlay to ensure a clean, smooth edge
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFF9B3FD8).withAlpha(160),
+                        width: 2.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
