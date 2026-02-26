@@ -614,25 +614,33 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 
   // ─── SECTION: Scroll name field ───────────────────────────────────────────────
   Widget _buildNameScrollInput() {
-    return GestureDetector(
-      onTap: () => _nameFocusNode.requestFocus(),
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        height: 128,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Ornate parchment scroll background (transparent PNG)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: Image.asset(
-                  'assets/images/ui/scroll_name_input.png',
-                  fit: BoxFit.fill,
-                ),
+    return SizedBox(
+      height: 120,
+      child: Stack(
+        children: [
+          // 1. Ornate parchment scroll background (bottom layer)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Image.asset(
+                'assets/images/ui/scroll_name_input.png',
+                fit: BoxFit.fill,
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 54),
+          ),
+
+          // 2. Full-area tap catcher (middle layer)
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () => _nameFocusNode.requestFocus(),
+              behavior: HitTestBehavior.opaque,
+              child: const SizedBox.expand(),
+            ),
+          ),
+
+          // 3. The interactive text field (top layer)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 42),
               child: TextField(
                 controller: _nameController,
                 focusNode: _nameFocusNode,
@@ -640,34 +648,35 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
                   LengthLimitingTextInputFormatter(24),
                   _SafeNameFormatter(),
                 ],
-              textAlign: TextAlign.center,
-              textAlignVertical: TextAlignVertical.center,
-              style: GoogleFonts.cinzelDecorative(
-                fontSize: 18,
-                color: const Color(0xFF3A1C00),
-                fontWeight: FontWeight.w700,
-              ),
-              decoration: InputDecoration(
-                hintText: "Write your hero's name",
-                hintStyle: GoogleFonts.cinzelDecorative(
-                  fontSize: 14,
-                  color: const Color(0x993A1C00),
+                textAlign: TextAlign.center,
+                textAlignVertical: TextAlignVertical.center,
+                style: GoogleFonts.cinzelDecorative(
+                  fontSize: 20,
+                  color: const Color(0xFF3A1C00),
+                  fontWeight: FontWeight.w700,
                 ),
-                filled: true,
-                fillColor: Colors.transparent,
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                isCollapsed: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 18),
+                cursorColor: const Color(0xFF3A1C00),
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(
+                  hintText: "Write your hero's name",
+                  hintStyle: GoogleFonts.cinzelDecorative(
+                    fontSize: 15,
+                    color: const Color(0x993A1C00),
+                  ),
+                  filled: true,
+                  fillColor: Colors.transparent,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 20),
+                ),
+                onChanged: (v) =>
+                    setState(() => widget.wizardData.characterName = v.trim()),
               ),
-              onChanged: (v) =>
-                  setState(() => widget.wizardData.characterName = v.trim()),
             ),
           ),
         ],
-        ),
       ),
     );
   }
