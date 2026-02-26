@@ -2,6 +2,21 @@
 
 ---
 
+## Session Update - 2026-02-26 (Security: task-status IDOR fix + Flutter build fix)
+
+### Scope Completed
+- **Security: `/task-status` IDOR closed** — endpoint had no `@require_auth`; unauthenticated users could retrieve full generated story content by guessing a task UUID. Added `@require_auth` (401 for anonymous) and user ownership check (403 for cross-user access) in SUCCESS state. Added `user_id` to task result dict in `story_tasks.py` to enable the ownership check. Added `test_task_status_requires_auth` and `test_task_status_ownership_check` security tests.
+- **Flutter build fix** — `_buildNameScrollInput()` in `hero_creator_step.dart` was missing a closing `),` for the `SizedBox` widget wrapping the `Stack`. Caused `Expected to find ')'` compile error. One line inserted; `flutter build web --release` now succeeds.
+
+### Status
+- **Security: `/task-status` IDOR:** ✅ Closed
+- **Security: `/tts/synthesize` auth + rate limit:** ✅ Closed (separate entry below)
+- **Flutter web build:** ✅ Clean (`build/web` ready for Netlify deploy)
+- **All security tests:** ✅ 78/78 passing
+- **Launch Readiness:** 100%
+
+---
+
 ## Session Update - 2026-02-26 (Fixed 13 pre-existing test failures)
 
 ### Scope Completed
