@@ -342,13 +342,8 @@ class _AvatarCreatorOverlayState extends State<AvatarCreatorOverlay> {
           ),
           const SizedBox(height: 10),
           const Text(
-            'This may take 1-2 minutes',
+            'Almost ready!',
             style: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-          const SizedBox(height: 5),
-          const Text(
-            'The AI is painting every detail!',
-            style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
           ),
         ],
       ),

@@ -1,90 +1,55 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import '../models/generated_avatar.dart';
-import '../config/environment.dart';
 
-/// Service for generating AI-powered avatars using the backend API
+/// Service for generating avatars using DiceBear (https://dicebear.com)
+/// No API key required — avatars are generated deterministically from a seed URL.
 class AvatarGenerationService {
-  final String baseUrl;
+  AvatarGenerationService({String? baseUrl}); // baseUrl kept for API compatibility
 
-  AvatarGenerationService({String? baseUrl})
-      : baseUrl = baseUrl ?? Environment.backendUrl;
+  // Maps app style names to DiceBear collection names
+  static const _styleMap = {
+    'pixar': 'adventurer',
+    'watercolor': 'lorelei',
+    'cartoon': 'avataaars',
+    'clay': 'micah',
+  };
 
-  /// Generate a new avatar
-  ///
-  /// Returns the generated avatar or throws an exception on failure
+  // Maps skin tone labels to DiceBear skinColor hex values (no #)
+  static const _skinToneMap = {
+    'Very Light': 'ffdbb4',
+    'Light': 'edb98a',
+    'Medium Light': 'd08b5b',
+    'Medium Tan': 'ae5d29',
+    'Tan': 'ae5d29',
+    'Brown': '614335',
+    'Dark Brown': '4a312c',
+    'Very Dark': '3b2219',
+  };
+
+  /// Generate a new avatar using DiceBear.
+  /// Returns instantly — the image URL is loaded lazily by the widget.
   Future<GeneratedAvatar> generateAvatar({
     required String characterName,
     required int age,
-    required String style, // pixar, watercolor, cartoon, clay
+    required String style,
     Map<String, String>? features,
     Map<String, dynamic>? emotionData,
-    String? seed, // For regeneration
+    String? seed,
   }) async {
-    // TEMPORARY: Using mock endpoint until real image generation is configured
-    // Real AI generation is blocked by child safety policies on Gemini & OpenRouter
-    // TODO: Implement DiceBear avatar picker as the primary avatar creation method
-    final url = Uri.parse('$baseUrl/avatar/generate-avatar-mock');
+    final effectiveSeed = seed ?? '${characterName}_${DateTime.now().millisecondsSinceEpoch}';
+    final imageUrl = _buildDiceBearUrl(style, effectiveSeed, features);
 
-    final payload = {
-      'character_name': characterName,
-      'age': age,
-      'style': style,
-      if (features != null) 'features': features,
-      if (emotionData != null) 'emotion_data': emotionData,
-      if (seed != null) 'seed': seed,
-    };
+    debugPrint('🎨 Avatar URL: $imageUrl');
 
-    try {
-      debugPrint('📡 Sending avatar generation request to $url');
-      debugPrint('   Payload: ${json.encode(payload)}');
-
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(payload),
-      ).timeout(
-        const Duration(seconds: 150), // Increased to 2.5 minutes - Gemini image generation is slow
-        onTimeout: () {
-          throw TimeoutException('Avatar generation timed out after 2.5 minutes');
-        },
-      );
-
-      debugPrint('📡 Backend responded with status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body) as Map<String, dynamic>;
-
-        if (data['status'] == 'success') {
-          debugPrint('✅ Avatar generated successfully!');
-          return GeneratedAvatar.fromJson(data['avatar'] as Map<String, dynamic>);
-        } else {
-          throw AvatarGenerationException(
-            data['message'] as String? ?? 'Avatar generation failed',
-            errorCode: data['error_code'] as String?,
-          );
-        }
-      } else if (response.statusCode == 400) {
-        final data = json.decode(response.body) as Map<String, dynamic>;
-        throw AvatarValidationException(
-          data['message'] as String? ?? 'Invalid avatar parameters',
-        );
-      } else {
-        throw AvatarGenerationException(
-          'Server error: ${response.statusCode}',
-        );
-      }
-    } on TimeoutException {
-      debugPrint('⏱️ Avatar generation timed out');
-      rethrow;
-    } catch (e) {
-      debugPrint('❌ Avatar generation error: $e');
-      if (e is AvatarGenerationException || e is AvatarValidationException) {
-        rethrow;
-      }
-      throw AvatarGenerationException('Failed to generate avatar: $e');
-    }
+    return GeneratedAvatar(
+      id: 'dicebear_${DateTime.now().millisecondsSinceEpoch}',
+      imageBase64: imageUrl, // Widget handles both URLs and base64
+      seed: effectiveSeed,
+      style: style,
+      attributes: features ?? {},
+      emotionData: emotionData,
+      generatedAt: DateTime.now(),
+    );
   }
 
   /// Regenerate an avatar (for "re-roll" functionality)
@@ -95,59 +60,41 @@ class AvatarGenerationService {
     required Map<String, String> features,
     Map<String, dynamic>? emotionData,
   }) async {
-    // Generate with same params but no seed for variation
+    // No seed = new variation via timestamp
     return generateAvatar(
       characterName: characterName,
       age: age,
       style: style,
       features: features,
       emotionData: emotionData,
-      seed: null, // No seed = new variation
+      seed: null,
     );
   }
 
-  /// Get fallback preset avatars (if generation fails)
+  /// Get fallback preset avatars using DiceBear seeds
   Future<List<Map<String, String>>> getFallbackAvatars({String? style}) async {
-    final url = Uri.parse('$baseUrl/avatar/fallback-avatars${style != null ? '?style=$style' : ''}');
-
-    try {
-      final response = await http.get(url).timeout(
-        const Duration(seconds: 10),
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body) as Map<String, dynamic>;
-        final avatars = data['fallback_avatars'] as List<dynamic>;
-        return avatars
-            .map((a) => Map<String, String>.from(a as Map))
-            .toList();
-      } else {
-        return [];
-      }
-    } catch (e) {
-      debugPrint('Failed to get fallback avatars: $e');
-      return [];
-    }
+    final diceBearStyle = _styleMap[style] ?? 'adventurer';
+    final seeds = ['Aria', 'Leo', 'Mia', 'Sam', 'Zoe', 'Kai'];
+    return seeds.map((seed) => {
+      'name': seed,
+      'image_url': 'https://api.dicebear.com/9.x/$diceBearStyle/png?seed=$seed&size=150',
+    }).toList();
   }
 
-  /// Check if avatar service is healthy
-  Future<bool> checkHealth() async {
-    final url = Uri.parse('$baseUrl/avatar/health');
+  /// Always healthy — no backend dependency
+  Future<bool> checkHealth() async => true;
 
-    try {
-      final response = await http.get(url).timeout(
-        const Duration(seconds: 5),
-      );
+  String _buildDiceBearUrl(String style, String seed, Map<String, String>? features) {
+    final diceBearStyle = _styleMap[style] ?? 'adventurer';
+    final encodedSeed = Uri.encodeComponent(seed);
+    final params = StringBuffer('seed=$encodedSeed&size=300&radius=10');
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body) as Map<String, dynamic>;
-        return data['status'] == 'healthy';
-      }
-      return false;
-    } catch (e) {
-      debugPrint('Avatar health check failed: $e');
-      return false;
+    if (features != null) {
+      final skinColor = _skinToneMap[features['skin_tone']];
+      if (skinColor != null) params.write('&skinColor=$skinColor');
     }
+
+    return 'https://api.dicebear.com/9.x/$diceBearStyle/png?$params';
   }
 }
 
@@ -170,14 +117,4 @@ class AvatarValidationException implements Exception {
 
   @override
   String toString() => 'AvatarValidationException: $message';
-}
-
-/// Exception thrown on timeout
-class TimeoutException implements Exception {
-  final String message;
-
-  TimeoutException(this.message);
-
-  @override
-  String toString() => 'TimeoutException: $message';
 }
