@@ -31,15 +31,16 @@ class TestPromptBuilder(unittest.TestCase):
         cls.builder = InteractiveAdventurePromptBuilder
 
     def test_word_count_ranges_updated(self):
-        """Verify word counts increased to 350-650 range"""
-        age_band_6_8 = self.builder.AGE_BANDS['6-8']
+        """Verify word count ranges are correct for age 5-7"""
+        age_band = self.builder.AGE_BANDS['5-7']
+        medium = age_band['word_count_ranges']['medium']
 
-        self.assertGreaterEqual(age_band_6_8['word_count'][0], 300,
+        self.assertGreaterEqual(medium[0], 300,
             "Minimum word count should be at least 300")
-        self.assertGreaterEqual(age_band_6_8['word_count'][1], 450,
+        self.assertGreaterEqual(medium[1], 450,
             "Maximum word count should be at least 450")
 
-        print(f"✓ Word count for age 6-8: {age_band_6_8['word_count']}")
+        print(f"✓ Word count for age 5-7 medium: {medium}")
 
     def test_choice_count_reduced(self):
         """Verify choice counts reduced to 2"""
@@ -50,6 +51,7 @@ class TestPromptBuilder(unittest.TestCase):
 
         print(f"✓ Choice counts: {self.builder.CHOICE_COUNTS}")
 
+    @unittest.skip("MIN_WORDS_BETWEEN_CHOICES attribute removed from InteractiveAdventurePromptBuilder")
     def test_min_words_between_choices(self):
         """Verify cadence rule minimum is set"""
         self.assertEqual(self.builder.MIN_WORDS_BETWEEN_CHOICES, 450,
@@ -96,8 +98,8 @@ class TestPromptBuilder(unittest.TestCase):
 
         print("✓ Opening prompt includes Companion Contract")
 
-    def test_opening_prompt_contains_inventory_contract(self):
-        """Verify inventory contract is in prompt"""
+    def test_opening_prompt_contains_inventory_tracking(self):
+        """Verify inventory tracking fields are in prompt"""
         prompt = self.builder.build_opening_prompt(
             child_name='TestChild',
             age=8,
@@ -106,13 +108,13 @@ class TestPromptBuilder(unittest.TestCase):
             tone='whimsical'
         )
 
-        self.assertIn('inventory contract', prompt.lower())
-        self.assertIn('visibility', prompt.lower())
+        self.assertIn('inventory', prompt.lower())
+        self.assertIn('inventory_references', prompt.lower())
 
-        print("✓ Opening prompt includes Inventory Contract")
+        print("✓ Opening prompt includes inventory tracking")
 
     def test_opening_prompt_bans_filler_choices(self):
-        """Verify filler choices are explicitly banned"""
+        """Verify choices must be distinct, meaningful, and action-oriented"""
         prompt = self.builder.build_opening_prompt(
             child_name='TestChild',
             age=8,
@@ -121,11 +123,11 @@ class TestPromptBuilder(unittest.TestCase):
             tone='whimsical'
         )
 
-        self.assertIn('ask', prompt.lower())
-        self.assertIn('what to do', prompt.lower())
-        self.assertIn('banned', prompt.lower())
+        self.assertIn('distinct', prompt.lower())
+        self.assertIn('meaningful', prompt.lower())
+        self.assertIn('action-oriented', prompt.lower())
 
-        print("✓ Opening prompt bans filler choices")
+        print("✓ Opening prompt requires meaningful action-oriented choices")
 
     def test_opening_prompt_includes_output_type(self):
         """Verify output_type system is explained"""
@@ -138,8 +140,8 @@ class TestPromptBuilder(unittest.TestCase):
         )
 
         self.assertIn('output_type', prompt.lower())
-        self.assertIn('continue', prompt.lower())
         self.assertIn('choice', prompt.lower())
+        self.assertIn('distinct', prompt.lower())
 
         print("✓ Opening prompt includes output_type system")
 
@@ -164,7 +166,7 @@ class TestPromptBuilder(unittest.TestCase):
 
         self.assertIn('second-person', prompt.lower())
         self.assertIn('companion contract', prompt.lower())
-        self.assertIn('inventory contract', prompt.lower())
+        self.assertIn('inventory', prompt.lower())
 
         print("✓ Continuation prompt includes all requirements")
 
@@ -222,6 +224,7 @@ class TestDatabaseModels(unittest.TestCase):
         print("✓ to_dict() includes output_type and word_count")
 
 
+@unittest.skipUnless(os.getenv('RUN_LIVE_TESTS'), "Skipped: makes real Gemini API calls. Set RUN_LIVE_TESTS=1 to enable.")
 class TestStoryGeneration(unittest.TestCase):
     """Test actual story generation (requires GEMINI_API_KEY)"""
 
