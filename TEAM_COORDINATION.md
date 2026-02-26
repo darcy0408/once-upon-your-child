@@ -2,7 +2,21 @@
 
 ---
 
-## Session Update - 2026-02-26 (Hair color filter enabled for avatar gallery)
+## Session Update - 2026-02-26 (Fixed 13 pre-existing test failures)
+
+### Scope Completed
+- Fixed all 13 pre-existing test failures in `test_age_calibration.py` and `test_backend_comprehensive.py`
+- `test_age_calibration.py`: Replaced removed `DENSITY CHECKLIST` assertions and outdated word-count strings with current prompt content (age-band word ranges, `two-part`, `cause-effect`, etc.)
+- `test_backend_comprehensive.py`: Fixed AGE_BANDS key (`'6-8'` → `'5-7'`), updated inventory/choice assertions, skipped `MIN_WORDS_BETWEEN_CHOICES` (removed attribute), skipped `TestStoryGeneration` class behind `RUN_LIVE_TESTS=1` env var (makes real API calls)
+- Result: **19 passed, 7 skipped (intentional), 0 failures**
+
+### Status
+- **Test suite (age calibration + comprehensive):** ✅ 19 passed, 0 failures
+- **Avatar gallery hair filter:** ✅ All 150 avatars tagged
+- **Avatar tweak feature (premium):** ✅ Complete
+- **Launch Readiness:** 100%
+
+
 
 ### Scope Completed
 - Tagged `hairColor` for all 150 curated avatars in `assets/avatars/midjourney/metadata.json` using Gemini Vision (`gemini-2.0-flash`)
