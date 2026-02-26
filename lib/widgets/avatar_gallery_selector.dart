@@ -339,11 +339,14 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            '${_pool.length} characters to discover',
-            style: TextStyle(
-              color: Colors.white.withAlpha(153),
-              fontSize: 12,
+          Flexible(
+            child: Text(
+              '${_pool.length} characters to discover',
+              style: TextStyle(
+                color: Colors.white.withAlpha(153),
+                fontSize: 12,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(width: 16),
