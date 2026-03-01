@@ -354,7 +354,7 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
             onPressed: _nextBatch,
             icon: const Text('🎲', style: TextStyle(fontSize: 18)),
             label: const Text(
-              'Show me different ones!',
+              'Shuffle!',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(

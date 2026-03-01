@@ -2,6 +2,27 @@
 
 ---
 
+## Session Update - 2026-02-28 (Sentry: RenderFlex overflow — complete fix)
+
+### Problem
+Sentry event `9bff11afb0564ee19da768fdcfcc34f4` (Feb 26, 4:12 AM UTC): `FlutterError: A RenderFlex overflowed by 24 pixels on the right` in `_buildShuffleFooter()` of `avatar_gallery_selector.dart`.
+
+### Root Cause
+The footer `Row` contained two non-flexible children: a `Text` ("X characters to discover") and an `ElevatedButton.icon` with label "Show me different ones!". The button alone measured ~250px (icon 22px + gap 8px + label ~180px + horizontal padding 40px). On a ≤360px browser window the dialog content area is only ~240px wide, producing the exact 24px overflow.
+
+Commit `966ba13` (the same day) was a **partial fix** — it wrapped the `Text` in `Flexible` so it could ellipsize, but left the button as an unconstrained non-flexible child. Since Flutter measures non-flexible children first, the button still overflowed on narrow viewports even after that commit.
+
+### Fix
+Shortened the `ElevatedButton.icon` label from `'Show me different ones!'` (~180px) to `'Shuffle!'` (~45px), reducing the button width to ~115px — well within the budget on all supported screen widths.
+
+### Files Changed
+- `lib/widgets/avatar_gallery_selector.dart` — button label shortened in `_buildShuffleFooter()`
+
+### Status
+- **Sentry overflow (avatar gallery footer):** ✅ Fully resolved
+
+---
+
 ## Session Update - 2026-02-26 (Zero test failures — 96 passing)
 
 ### Scope Completed
