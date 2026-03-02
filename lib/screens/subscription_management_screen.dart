@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 import '../config/environment.dart';
 import '../models/subscription_status.dart';
@@ -193,6 +194,23 @@ class _SubscriptionManagementScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Unable to restore purchases right now.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _openBillingPortal() async {
+    try {
+      final portalUrl = await _stripeService.createPortalSession();
+      final uri = Uri.parse(portalUrl);
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        throw Exception('Could not open billing portal');
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to open billing portal right now. Please try again.'),
         ),
       );
     }
@@ -402,6 +420,19 @@ class _SubscriptionManagementScreenState
     );
   }
 
+  Widget _buildManageBillingButton() {
+    final hasActiveSubscription =
+        _subscriptionStatus?.tier != SubscriptionTier.free &&
+        _subscriptionStatus?.status != 'canceled';
+    if (!hasActiveSubscription) return const SizedBox.shrink();
+
+    return OutlinedButton.icon(
+      onPressed: _openBillingPortal,
+      icon: const Icon(Icons.open_in_new, size: 16),
+      label: const Text('Manage Billing'),
+    );
+  }
+
   Widget _buildCancelButton() {
     return OutlinedButton(
       onPressed: _canCancelSubscription ? _showCancelDialog : null,
@@ -506,6 +537,7 @@ class _SubscriptionManagementScreenState
                       runSpacing: 12,
                       children: [
                         _buildUpgradeButton(),
+                        _buildManageBillingButton(),
                         _buildCancelButton(),
                       ],
                     ),

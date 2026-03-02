@@ -93,6 +93,10 @@ class Config:
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
     GEMINI_MODEL = os.environ.get('GEMINI_MODEL') or 'gemini-2.0-flash'
 
+    # Stripe
+    STRIPE_API_KEY = os.environ.get('STRIPE_SECRET_KEY')
+    STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
+
     # Celery Configuration (Celery 5.x+)
     # Prefer explicit CELERY_* vars, then REDIS_URL, then local in-memory fallback.
     CELERY_BROKER_URL = (

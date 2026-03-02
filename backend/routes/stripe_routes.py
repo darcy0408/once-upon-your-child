@@ -30,6 +30,15 @@ def get_price_ids():
         'family': os.getenv('STRIPE_PRICE_ID_FAMILY', 'price_PLACEHOLDER_FAMILY'),
     }
 
+def get_trial_days():
+    """Return trial period in days, or None to disable trial."""
+    raw = os.getenv('STRIPE_TRIAL_DAYS', '14')
+    try:
+        days = int(raw)
+        return days if days > 0 else None
+    except ValueError:
+        return None
+
 @stripe_routes.route('/create-checkout-session', methods=['POST'])
 @require_auth
 def create_checkout_session():
@@ -45,18 +54,19 @@ def create_checkout_session():
         return jsonify({'error': 'Invalid subscription tier'}), 400
 
     try:
-        checkout_session = stripe.checkout.Session.create(
+        trial_days = get_trial_days()
+        session_params = dict(
             payment_method_types=['card'],
-            line_items=[
-                {
-                    'price': PRICE_IDS[tier],
-                    'quantity': 1,
-                },
-            ],
+            line_items=[{'price': PRICE_IDS[tier], 'quantity': 1}],
             mode='subscription',
-            success_url='https://grand-light-production-68d9.up.railway.app/#/subscription-success', # Production success URL
-            cancel_url='https://grand-light-production-68d9.up.railway.app/#/subscription-canceled', # Production cancel URL
+            success_url='https://grand-light-production-68d9.up.railway.app/#/subscription-success',
+            cancel_url='https://grand-light-production-68d9.up.railway.app/#/subscription-canceled',
         )
+        if trial_days:
+            session_params['subscription_data'] = {'trial_period_days': trial_days}
+            logger.info(f"Trial enabled: {trial_days} days for tier '{tier}'")
+
+        checkout_session = stripe.checkout.Session.create(**session_params)
         return jsonify({
             'id': checkout_session.id,
             'checkout_url': checkout_session.url
@@ -64,6 +74,29 @@ def create_checkout_session():
     except Exception as e:
         logger.exception("Failed to create checkout session")
         return jsonify(error="Failed to create checkout session. Please try again."), 403
+
+@stripe_routes.route('/create-portal-session', methods=['POST'])
+@require_auth
+def create_portal_session():
+    """
+    Create a Stripe Billing Portal session so the user can manage their
+    subscription (update payment method, cancel, view invoices).
+    """
+    user = request.current_user
+
+    if not user.stripe_customer_id:
+        return jsonify({'error': 'No billing account found for this user'}), 404
+
+    try:
+        portal_session = stripe.billing_portal.Session.create(
+            customer=user.stripe_customer_id,
+            return_url='https://grand-light-production-68d9.up.railway.app/#/settings',
+        )
+        return jsonify({'portal_url': portal_session.url})
+    except Exception as e:
+        logger.exception("Failed to create portal session")
+        return jsonify({'error': 'Failed to open billing portal. Please try again.'}), 500
+
 
 @stripe_routes.route('/subscription-status/<user_id>', methods=['GET'])
 @require_auth

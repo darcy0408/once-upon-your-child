@@ -43,6 +43,7 @@ import 'subscription_service.dart';
 import 'therapeutic_models.dart';
 import 'widgets/app_bottom_navigation.dart';
 import 'settings_screen.dart' deferred as settings_screen;
+import 'character_selection_screen.dart';
 import 'screens/wizard_story_screen.dart';
 
 class StoryCreatorApp extends StatelessWidget {
@@ -62,7 +63,7 @@ class StoryCreatorApp extends StatelessWidget {
         ),
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const WizardStoryScreen(), // Go directly to wizard
+      home: const WizardStoryScreen(),
       routes: {
         '/subscription-success': (context) => const SubscriptionSuccessScreen(),
         '/story-home': (context) =>

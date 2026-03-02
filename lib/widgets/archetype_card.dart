@@ -111,17 +111,14 @@ class ArchetypeCard extends StatelessWidget {
                     children: [
                       // Image or Icon/Emoji fallback
                       if (imagePath != null)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                          child: Image.asset(
-                            imagePath!,
-                            width: 120,
-                            height: 90,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Text(
-                              icon ?? '✨',
-                              style: const TextStyle(fontSize: 64),
-                            ),
+                        Image.asset(
+                          imagePath!,
+                          width: 116,
+                          height: 116,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) => Text(
+                            icon ?? '✨',
+                            style: const TextStyle(fontSize: 64),
                           ),
                         )
                       else

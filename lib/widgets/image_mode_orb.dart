@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'magical_float.dart';
 
 /// Image-backed mode orb using cleaned transparent assets.
 class ImageModeOrb extends StatefulWidget {
@@ -76,100 +77,105 @@ class _ImageModeOrbState extends State<ImageModeOrb>
   Widget build(BuildContext context) {
     final glowColor = widget.primaryColor;
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: SizedBox(
-        width: 104,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 88,
-              height: 88,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  if (widget.isActive)
-                    AnimatedBuilder(
-                      animation: _pulseController,
-                      builder: (context, child) {
-                        final t = _pulseController.value;
-                        return Container(
-                          width: 96 + (12 * t),
-                          height: 96 + (12 * t),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: RadialGradient(
-                              colors: [
-                                glowColor.withValues(
-                                    alpha: 0.45 * (1 - t * 0.3)),
-                                glowColor.withValues(
-                                    alpha: 0.16 * (1 - t * 0.3)),
-                                Colors.transparent,
-                              ],
+    return MagicalFloat(
+      distance: 4.0,
+      duration: const Duration(seconds: 4),
+      delay: (widget.modeType.length * 100).toDouble(), // Pseudo-random offset
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: SizedBox(
+          width: 104,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 88,
+                height: 88,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    if (widget.isActive)
+                      AnimatedBuilder(
+                        animation: _pulseController,
+                        builder: (context, child) {
+                          final t = _pulseController.value;
+                          return Container(
+                            width: 96 + (12 * t),
+                            height: 96 + (12 * t),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  glowColor.withValues(
+                                      alpha: 0.45 * (1 - t * 0.3)),
+                                  glowColor.withValues(
+                                      alpha: 0.16 * (1 - t * 0.3)),
+                                  Colors.transparent,
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
-                  AnimatedScale(
-                    duration: const Duration(milliseconds: 180),
-                    scale: widget.isActive ? 1.03 : 1.0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: glowColor.withValues(
-                              alpha: widget.isActive ? 0.75 : 0.45,
-                            ),
-                            blurRadius: widget.isActive ? 20 : 14,
-                            spreadRadius: widget.isActive ? 5 : 2,
-                          ),
-                        ],
+                          );
+                        },
                       ),
-                      child: ClipOval(
-                        child: Image.asset(
-                          _getAssetPath(),
-                          width: 84,
-                          height: 84,
-                          fit: BoxFit.cover,
-                          filterQuality: FilterQuality.high,
+                    AnimatedScale(
+                      duration: const Duration(milliseconds: 180),
+                      scale: widget.isActive ? 1.03 : 1.0,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: glowColor.withValues(
+                                alpha: widget.isActive ? 0.75 : 0.45,
+                              ),
+                              blurRadius: widget.isActive ? 20 : 14,
+                              spreadRadius: widget.isActive ? 5 : 2,
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            _getAssetPath(),
+                            width: 84,
+                            height: 84,
+                            fit: BoxFit.cover,
+                            filterQuality: FilterQuality.high,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 34,
-              child: Center(
-                child: Text(
-                  widget.label,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: const Color(0xFF2F2748),
-                    fontWeight:
-                        widget.isActive ? FontWeight.w800 : FontWeight.w600,
-                    fontSize: 13,
-                    height: 1.2,
-                    shadows: widget.isActive
-                        ? [
-                            Shadow(
-                              color: glowColor.withValues(alpha: 0.55),
-                              blurRadius: 8,
-                            ),
-                          ]
-                        : null,
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 34,
+                child: Center(
+                  child: Text(
+                    widget.label,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: const Color(0xFF2F2748),
+                      fontWeight:
+                          widget.isActive ? FontWeight.w800 : FontWeight.w600,
+                      fontSize: 13,
+                      height: 1.2,
+                      shadows: widget.isActive
+                          ? [
+                              Shadow(
+                                color: glowColor.withValues(alpha: 0.55),
+                                blurRadius: 8,
+                              ),
+                            ]
+                          : null,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

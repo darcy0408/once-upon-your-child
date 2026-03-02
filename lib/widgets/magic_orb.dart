@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import 'magical_float.dart';
 
 /// A magical orb widget that displays a scenario image with pulsing glow and sparkles.
 /// 
@@ -87,273 +88,277 @@ class _MagicOrbWidgetState extends State<MagicOrbWidget>
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: widget.size * 1.5,
-      height: widget.size * 1.5,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // 1. Magical Aura (3-layer gradient halo)
-          AnimatedBuilder(
-            animation: _pulseAnimation,
-            builder: (context, child) {
-              final t = _pulseAnimation.value; // 0.8..1.2
-              final glow = widget.glowColor;
-              final soft = Color.lerp(glow, Colors.white, 0.55)!;
-              final deep = Color.lerp(glow, Colors.black, 0.15)!;
+    return MagicalFloat(
+      distance: 8.0,
+      duration: const Duration(seconds: 5),
+      child: SizedBox(
+        width: widget.size * 1.5,
+        height: widget.size * 1.5,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // 1. Magical Aura (3-layer gradient halo)
+            AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) {
+                final t = _pulseAnimation.value; // 0.8..1.2
+                final glow = widget.glowColor;
+                final soft = Color.lerp(glow, Colors.white, 0.55)!;
+                final deep = Color.lerp(glow, Colors.black, 0.15)!;
 
-              return SizedBox(
-                width: widget.size * 1.35,
-                height: widget.size * 1.35,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Layer 1 (outer, soft)
-                    Transform.rotate(
-                      angle: _sparkleController.value * 2 * math.pi * 0.03,
-                      child: Container(
-                        width: widget.size * (1.32 * t),
-                        height: widget.size * (1.32 * t),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              soft.withValues(alpha: 0.0),
-                              glow.withValues(alpha: 0.18 * t),
-                              deep.withValues(alpha: 0.08 * t),
-                              Colors.transparent,
-                            ],
-                            stops: const [0.0, 0.45, 0.75, 1.0],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Layer 2 (mid, bright)
-                    Transform.rotate(
-                      angle: -_sparkleController.value * 2 * math.pi * 0.05,
-                      child: Container(
-                        width: widget.size * (1.18 * (0.95 + 0.1 * t)),
-                        height: widget.size * (1.18 * (0.95 + 0.1 * t)),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              Colors.white.withValues(alpha: 0.22 * t),
-                              glow.withValues(alpha: 0.22 * t),
-                              Colors.transparent,
-                            ],
-                            stops: const [0.0, 0.55, 1.0],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Layer 3 (inner, tight energy ring)
-                    Container(
-                      width: widget.size * (1.06 * (1.0 + 0.04 * t)),
-                      height: widget.size * (1.06 * (1.0 + 0.04 * t)),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            glow.withValues(alpha: 0.28 * t),
-                            Colors.white.withValues(alpha: 0.10 * t),
-                            Colors.transparent,
-                          ],
-                          stops: const [0.0, 0.65, 1.0],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-
-          // 2. Swirling Sparkles (twinkle + drift)
-          AnimatedBuilder(
-            animation: _sparkleController,
-            builder: (context, child) {
-              return CustomPaint(
-                size: Size(widget.size * 1.5, widget.size * 1.5),
-                painter: _SparklePainter(
-                  sparkles: _sparkles,
-                  color: widget.glowColor,
-                  rotation: _sparkleController.value * 2 * math.pi,
-                ),
-              );
-            },
-          ),
-
-          // 3. The Orb Body
-          Container(
-            width: widget.size,
-            height: widget.size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              // Removed white border for cleaner look
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-                BoxShadow(
-                  color: widget.glowColor.withValues(alpha: 0.3),
-                  blurRadius: 15,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Scenario Background (Only if path provided)
-                  if (widget.imagePath.isNotEmpty)
-                    Image.asset(
-                      widget.imagePath,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: AppColors.primary.withValues(alpha: 0.3),
-                        child: const Icon(Icons.auto_awesome, color: Colors.white, size: 64),
-                      ),
-                    )
-                  else if (widget.child == null)
-                    Container(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                      child: const Icon(Icons.auto_awesome, color: Colors.white, size: 64),
-                    ),
-                  
-                  // Atmosphere Tint
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: RadialGradient(
-                        colors: [
-                          Colors.transparent,
-                          widget.glowColor.withValues(alpha: 0.15),
-                          Colors.black.withValues(alpha: 0.35),
-                        ],
-                        stops: const [0.6, 0.85, 1.0],
-                      ),
-                    ),
-                  ),
-
-                  // Optional Overlay Content (e.g., Hero Avatar)
-                  if (widget.child != null)
-                    Center(
-                      child: FractionallySizedBox(
-                        widthFactor: widget.childScale.clamp(0.25, 1.0),
-                        heightFactor: widget.childScale.clamp(0.25, 1.0),
-                        child: ClipOval(child: widget.child!),
-                      ),
-                    ),
-
-                  // Optional Label Overlay
-                  if (widget.label != null)
-                    Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.8),
-                            ],
-                          ),
-                        ),
-                        child: Text(
-                          widget.label!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Quicksand',
-                            shadows: [Shadow(color: Colors.black, blurRadius: 4)],
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-
-                  // Optional Top Title Overlay
-                  if (widget.topLabel != null)
-                    Align(
-                      alignment: Alignment.topCenter,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 10),
+                return SizedBox(
+                  width: widget.size * 1.35,
+                  height: widget.size * 1.35,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Layer 1 (outer, soft)
+                      Transform.rotate(
+                        angle: _sparkleController.value * 2 * math.pi * 0.03,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          width: widget.size * (1.32 * t),
+                          height: widget.size * (1.32 * t),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.55),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.22),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            widget.topLabel!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.2,
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                soft.withValues(alpha: 0.0),
+                                glow.withValues(alpha: 0.18 * t),
+                                deep.withValues(alpha: 0.08 * t),
+                                Colors.transparent,
+                              ],
+                              stops: const [0.0, 0.45, 0.75, 1.0],
                             ),
                           ),
                         ),
                       ),
-                    ),
-                ],
-              ),
+                      // Layer 2 (mid, bright)
+                      Transform.rotate(
+                        angle: -_sparkleController.value * 2 * math.pi * 0.05,
+                        child: Container(
+                          width: widget.size * (1.18 * (0.95 + 0.1 * t)),
+                          height: widget.size * (1.18 * (0.95 + 0.1 * t)),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                Colors.white.withValues(alpha: 0.22 * t),
+                                glow.withValues(alpha: 0.22 * t),
+                                Colors.transparent,
+                              ],
+                              stops: const [0.0, 0.55, 1.0],
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Layer 3 (inner, tight energy ring)
+                      Container(
+                        width: widget.size * (1.06 * (1.0 + 0.04 * t)),
+                        height: widget.size * (1.06 * (1.0 + 0.04 * t)),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              glow.withValues(alpha: 0.28 * t),
+                              Colors.white.withValues(alpha: 0.10 * t),
+                              Colors.transparent,
+                            ],
+                            stops: const [0.0, 0.65, 1.0],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
-          ),
-          
-          // 4. Glass Reflection & Gloss
-          IgnorePointer(
-            child: Container(
+
+            // 2. Swirling Sparkles (twinkle + drift)
+            AnimatedBuilder(
+              animation: _sparkleController,
+              builder: (context, child) {
+                return CustomPaint(
+                  size: Size(widget.size * 1.5, widget.size * 1.5),
+                  painter: _SparklePainter(
+                    sparkles: _sparkles,
+                    color: widget.glowColor,
+                    rotation: _sparkleController.value * 2 * math.pi,
+                  ),
+                );
+              },
+            ),
+
+            // 3. The Orb Body
+            Container(
               width: widget.size,
               height: widget.size,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.white.withValues(alpha: 0.4),
-                    Colors.white.withValues(alpha: 0.0),
-                    Colors.black.withValues(alpha: 0.1),
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
-                ),
+                // Removed white border for cleaner look
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                  BoxShadow(
+                    color: widget.glowColor.withValues(alpha: 0.3),
+                    blurRadius: 15,
+                    spreadRadius: 2,
+                  ),
+                ],
               ),
-            ),
-          ),
+              child: ClipOval(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Scenario Background (Only if path provided)
+                    if (widget.imagePath.isNotEmpty)
+                      Image.asset(
+                        widget.imagePath,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          child: const Icon(Icons.auto_awesome, color: Colors.white, size: 64),
+                        ),
+                      )
+                    else if (widget.child == null)
+                      Container(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                        child: const Icon(Icons.auto_awesome, color: Colors.white, size: 64),
+                      ),
+                    
+                    // Atmosphere Tint
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          colors: [
+                            Colors.transparent,
+                            widget.glowColor.withValues(alpha: 0.15),
+                            Colors.black.withValues(alpha: 0.35),
+                          ],
+                          stops: const [0.6, 0.85, 1.0],
+                        ),
+                      ),
+                    ),
 
-          // High-light highlight
-          Positioned(
-            top: widget.size * 0.1,
-            left: widget.size * 0.2,
-            child: Container(
-              width: widget.size * 0.3,
-              height: widget.size * 0.15,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    Colors.white.withValues(alpha: 0.6),
-                    Colors.white.withValues(alpha: 0.0),
+                    // Optional Overlay Content (e.g., Hero Avatar)
+                    if (widget.child != null)
+                      Center(
+                        child: FractionallySizedBox(
+                          widthFactor: widget.childScale.clamp(0.25, 1.0),
+                          heightFactor: widget.childScale.clamp(0.25, 1.0),
+                          child: ClipOval(child: widget.child!),
+                        ),
+                      ),
+
+                    // Optional Label Overlay
+                    if (widget.label != null)
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withValues(alpha: 0.8),
+                              ],
+                            ),
+                          ),
+                          child: Text(
+                            widget.label!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Quicksand',
+                              shadows: [Shadow(color: Colors.black, blurRadius: 4)],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+
+                    // Optional Top Title Overlay
+                    if (widget.topLabel != null)
+                      Align(
+                        alignment: Alignment.topCenter,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.55),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.22),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              widget.topLabel!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
             ),
-          ),
-        ],
+            
+            // 4. Glass Reflection & Gloss
+            IgnorePointer(
+              child: Container(
+                width: widget.size,
+                height: widget.size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.4),
+                      Colors.white.withValues(alpha: 0.0),
+                      Colors.black.withValues(alpha: 0.1),
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
+                  ),
+                ),
+              ),
+            ),
+
+            // High-light highlight
+            Positioned(
+              top: widget.size * 0.1,
+              left: widget.size * 0.2,
+              child: Container(
+                width: widget.size * 0.3,
+                height: widget.size * 0.15,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      Colors.white.withValues(alpha: 0.6),
+                      Colors.white.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

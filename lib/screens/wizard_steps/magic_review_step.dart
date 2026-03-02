@@ -12,12 +12,12 @@ import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
 import 'package:story_weaver_app/widgets/magic_orb.dart';
 import 'package:story_weaver_app/widgets/magical_loading_view.dart';
-import 'package:story_weaver_app/widgets/image_progress_orb.dart';
 import 'package:story_weaver_app/widgets/image_mode_orb.dart';
 import 'package:story_weaver_app/widgets/image_crystal_formation.dart';
 import 'package:story_weaver_app/widgets/image_make_magic_button.dart';
 import 'package:story_weaver_app/data/scenario_data.dart';
 import 'package:story_weaver_app/data/companion_data.dart';
+import 'package:story_weaver_app/widgets/magical_float.dart';
 import 'wizard_data_mapper.dart';
 
 /// Step 4: Magic Review & Launch (Vision Orb Edition)
@@ -41,9 +41,22 @@ class MagicReviewStep extends StatefulWidget {
 
 class _MagicReviewStepState extends State<MagicReviewStep> {
   bool _isGenerating = false;
-  String _loadingStatus = 'Creating your story...';
+  late String _loadingStatus;
   final StoryIllustrationService _illustrationService =
       StoryIllustrationService();
+
+  @override
+  void initState() {
+    super.initState();
+    // Age-appropriate initial loading message
+    if (widget.wizardData.characterAge >= 10) {
+      _loadingStatus = 'Architecting your Epic Story...';
+    } else if (widget.wizardData.characterAge >= 7) {
+      _loadingStatus = 'Weaving a grand adventure...';
+    } else {
+      _loadingStatus = 'Creating your story...';
+    }
+  }
 
   // Helper to get scenario image
   String get _scenarioImage {
@@ -381,21 +394,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
         child: Column(
           children: [
-            // 1. Image-based crystal ball progress indicators (3 steps now)
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  ImageProgressOrb(icon: Icons.check_rounded, showStand: false),
-                  SizedBox(width: 12),
-                  ImageProgressOrb(icon: Icons.check_rounded, showStand: false),
-                  SizedBox(width: 12),
-                  ImageProgressOrb(icon: Icons.auto_awesome, showStand: false),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
 
             // 2. Vision Orb + circular side avatars
             SizedBox(
@@ -449,8 +448,10 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        _FloatingBubble(
-                          delay: 0,
+                        MagicalFloat(
+                          distance: 6.0,
+                          duration: const Duration(seconds: 4),
+                          delay: 100,
                           child: _AuraCircle(
                             size: 84, // Slightly smaller side bubbles
                             auraColor: const Color(0xFFFFD9A6),
@@ -494,8 +495,10 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          _FloatingBubble(
-                            delay: 1.4,
+                          MagicalFloat(
+                            distance: 6.0,
+                            duration: const Duration(seconds: 4),
+                            delay: 500,
                             child: _AuraCircle(
                               size: 84,
                               auraColor: const Color(0xFFF3AEFF),
@@ -686,59 +689,6 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
 }
 
 // --- Helper Widgets ---
-
-class _FloatingBubble extends StatefulWidget {
-  final Widget child;
-  final double delay;
-
-  const _FloatingBubble({required this.child, this.delay = 0});
-
-  @override
-  State<_FloatingBubble> createState() => _FloatingBubbleState();
-}
-
-class _FloatingBubbleState extends State<_FloatingBubble>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 4), // Slower float
-      vsync: this,
-    );
-
-    // Offset each avatar on the animation curve so both bubbles don't move in lockstep.
-    final phaseOffset = ((widget.delay * 1000).toInt() % 4000) / 4000.0;
-    _controller.value = phaseOffset;
-    _controller.repeat(reverse: true);
-
-    _animation = Tween<double>(begin: -10.0, end: 10.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, _animation.value),
-          child: widget.child,
-        );
-      },
-    );
-  }
-}
 
 class _AuraCircle extends StatelessWidget {
   final double size;

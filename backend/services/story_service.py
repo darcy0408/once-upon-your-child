@@ -71,7 +71,8 @@ _META_LEAK_TERMS = [
     "therapeutic specialist", "narrative specialist", "narrative architect",
     "consequence chain", "earned win", "manifest an abstract emotion",
     "tradeoff", "plot twist arc", "story beat", "character arc",
-    "therapeutic narrative", "coping moment",
+    "therapeutic narrative", "coping moment", "using their strengths",
+    "option had a downside", "approached problems using",
 ]
 
 SAFETY_GUARDRAILS = f"""

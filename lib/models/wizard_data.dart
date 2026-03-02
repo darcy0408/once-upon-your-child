@@ -30,7 +30,8 @@ class WizardData {
 
   // Custom Pets & Additional Characters
   List<Map<String, String>> pets = [];
-  Map<String, GeneratedAvatar> petAvatars = {}; // NEW: Map of pet name to generated avatar
+  Map<String, GeneratedAvatar> petAvatars = {}; // AI-generated magical pet avatars
+  Map<String, String> petPhotos = {};           // Real pet photos: name → base64 jpeg
   List<String> additionalCharacters = [];
 
   // Step 2: Feeling Selection

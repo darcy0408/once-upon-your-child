@@ -50,13 +50,17 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
   @override
   void initState() {
     super.initState();
-    _currentStep = widget.initialStep; // Set initial step
-    _pageController = PageController(initialPage: widget.initialStep);
     
     _wizardData = widget.initialWizardData ?? WizardData();
     if (widget.initialCharacter != null) {
       _initializeFromCharacter(widget.initialCharacter!);
+      // If we have an initial character, skip Step 1 (Creation)
+      _currentStep = (widget.initialStep == 0) ? 1 : widget.initialStep;
+    } else {
+      _currentStep = widget.initialStep;
     }
+    _pageController = PageController(initialPage: _currentStep);
+    
     _loadSavedCharacters();
   }
 

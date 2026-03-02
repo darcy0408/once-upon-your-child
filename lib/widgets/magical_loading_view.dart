@@ -35,7 +35,12 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
     'Spinning stardust into story cloth...',
     'Tuning crystal harmonics...',
     'Gathering brave thoughts and gentle feelings...',
+    'Architecting a complex world of wonder...',
     'Stitching surprises into the next scene...',
+    'Weaving themes of resilience and hope...',
+    'Crafting deep character motivations...',
+    'Polishing the prose for maximum magic...',
+    'Building a satisfying emotional journey...',
     'Warming the ending with a soft glow...',
   ];
 

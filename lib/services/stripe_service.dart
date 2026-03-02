@@ -84,6 +84,30 @@ class StripeService {
     }
   }
 
+  /// Create a Stripe Billing Portal session. Returns the portal URL string.
+  Future<String> createPortalSession() async {
+    try {
+      final response = await _httpClient
+          .post(
+            Uri.parse('$_baseUrl/api/stripe/create-portal-session'),
+            headers: await _buildAuthHeaders(),
+            body: jsonEncode({}),
+          )
+          .timeout(_defaultTimeout);
+
+      if (response.statusCode == 200) {
+        final data = _decodeBody(response.body);
+        final url = data['portal_url'] as String?;
+        if (url != null && url.isNotEmpty) return url;
+        throw Exception('Portal URL missing from response');
+      }
+
+      throw Exception('Failed to create portal session: ${response.body}');
+    } catch (error) {
+      throw Exception('Network error creating portal session: $error');
+    }
+  }
+
   /// Cancel a user's subscription (at period end). Returns true on success.
   Future<bool> cancelSubscription(String userId) async {
     try {
