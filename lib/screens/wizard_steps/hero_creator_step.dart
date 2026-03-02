@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:speech_to_text/speech_to_text.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import '../../models.dart';
 import '../../avatar_models.dart';
 import '../../custom_avatar_screen.dart';
@@ -15,15 +19,7 @@ import '../../services/avatar_generation_state.dart';
 import 'custom_pet_avatar_screen.dart';
 
 /// Hero Creator — Step 1 of the story wizard.
-///
-/// Screen layout (top → bottom):
-///   1. Existing-character thumbnails (only when saved characters exist)
-///   2. Circular avatar preview + +/− Hero Age picker
-///   3. Hero / Heroine gender orbs
-///   4. Magical parchment scroll name-entry
-///   5. Horizontal archetype selection cards
-///   6. "Create Your Avatar" image button
-///   7. "Continue" button (visible once name + archetype chosen)
+/// Restructured as a guided multi-page wizard (progressive disclosure).
 class HeroCreatorStep extends StatefulWidget {
   final WizardData wizardData;
   final VoidCallback onNext;
@@ -40,37 +36,97 @@ class HeroCreatorStep extends StatefulWidget {
   State<HeroCreatorStep> createState() => _HeroCreatorStepState();
 }
 
-class _HeroCreatorStepState extends State<HeroCreatorStep> {
+class _HeroCreatorStepState extends State<HeroCreatorStep>
+    with TickerProviderStateMixin {
   // ─── Assets ─────────────────────────────────────────────────────────────────
-  static const _placeholderAsset = 'assets/images/character_placeholder.png';
+  static const _placeholderAsset = 'assets/images/hero_placeholder.jpg';
 
   // ─── State ──────────────────────────────────────────────────────────────────
+  late PageController _heroPageController;
+  int _heroPage = 0;
   String? _selectedArchetypeId;
   late TextEditingController _nameController;
   final FocusNode _nameFocusNode = FocusNode();
   Character? _selectedExistingCharacter;
   bool _isContinuePressed = false;
+  bool _isContinueHovered = false;
   bool _isCreateAvatarPressed = false;
   bool _isCreatingNew = true;
   GeneratedAvatar? _generatedAvatar;
-  String? _customAvatarFilePath; // local file path from CustomAvatarScreen
+  String? _customAvatarFilePath;
   bool _isPremium = false;
+
+  // ─── Animation ──────────────────────────────────────────────────────────────
+  late AnimationController _floatCtrl;
+  late AnimationController _glowCtrl;
+  late AnimationController _sparkleCtrl;
+  late Animation<double> _floatAnim;
+  late Animation<double> _glowAnim;
+  late Animation<double> _sparkleAnim;
+
+  // ─── Voice & Audio ───────────────────────────────────────────────────────────
+  final SpeechToText _speech = SpeechToText();
+  bool _speechAvailable = false;
+  String _listeningFor = '';
+  late TextEditingController _superpowerController;
+  late TextEditingController _questController;
+  late FlutterTts _tts;
 
   // ─── Lifecycle ──────────────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
+    
+    // Determine initial page
+    if (widget.availableCharacters.isNotEmpty) {
+      _heroPage = 0;
+    } else {
+      _heroPage = 1;
+    }
+    _heroPageController = PageController(initialPage: _heroPage);
+
     if (widget.wizardData.characterAge < 3 ||
         widget.wizardData.characterAge > 99) {
       widget.wizardData.characterAge = 7;
     }
-    // Default gender if empty
     if (widget.wizardData.characterGender.isEmpty) {
       widget.wizardData.characterGender = 'Girl';
     }
     _nameController = TextEditingController(
       text: widget.wizardData.characterName,
     );
+    _superpowerController = TextEditingController(
+      text: widget.wizardData.heroSuperpower ?? '',
+    );
+    _questController = TextEditingController(
+      text: widget.wizardData.heroQuest ?? '',
+    );
+
+    // ── Animation controllers ──────────────────────────────────────────────────
+    _floatCtrl = AnimationController(
+        vsync: this, duration: const Duration(seconds: 3))
+      ..repeat(reverse: true);
+    _floatAnim = Tween<double>(begin: -5.0, end: 5.0).animate(
+        CurvedAnimation(parent: _floatCtrl, curve: Curves.easeInOut));
+
+    _glowCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1800))
+      ..repeat(reverse: true);
+    _glowAnim = Tween<double>(begin: 0.55, end: 1.0).animate(
+        CurvedAnimation(parent: _glowCtrl, curve: Curves.easeInOut));
+
+    _sparkleCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1600));
+    _sparkleAnim =
+        CurvedAnimation(parent: _sparkleCtrl, curve: Curves.easeOut);
+
+    // ── Speech & TTS ──────────────────────────────────────────────────────────
+    _speech.initialize().then((available) {
+      if (mounted) setState(() => _speechAvailable = available);
+    });
+    _tts = FlutterTts();
+    _initTts();
+
     AvatarGenerationState().addListener(_onAvatarStateChanged);
     ApiServiceManager.hasPremiumAccess().then((premium) {
       if (mounted) setState(() => _isPremium = premium);
@@ -86,27 +142,27 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         _isCreatingNew = false;
         _loadExistingCharacter(_selectedExistingCharacter!);
       }
-    } else if (widget.availableCharacters.isNotEmpty) {
-      _isCreatingNew = false;
     }
   }
 
-  @override
-  void didUpdateWidget(HeroCreatorStep oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.availableCharacters.isNotEmpty &&
-        oldWidget.availableCharacters.isEmpty &&
-        _isCreatingNew &&
-        widget.wizardData.characterId == null &&
-        _nameController.text.isEmpty) {
-      setState(() => _isCreatingNew = false);
-    }
+  Future<void> _initTts() async {
+    await _tts.setLanguage("en-US");
+    await _tts.setPitch(1.0);
+    await _tts.setSpeechRate(0.5);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _nameFocusNode.dispose();
+    _superpowerController.dispose();
+    _questController.dispose();
+    _floatCtrl.dispose();
+    _glowCtrl.dispose();
+    _sparkleCtrl.dispose();
+    _speech.stop();
+    _tts.stop();
+    _heroPageController.dispose();
     AvatarGenerationState().removeListener(_onAvatarStateChanged);
     super.dispose();
   }
@@ -120,6 +176,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
           _generatedAvatar = state.completedAvatar;
           widget.wizardData.generatedAvatar = state.completedAvatar;
         });
+        _sparkleCtrl.forward(from: 0);
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('✨ Your avatar is ready!'),
           backgroundColor: Color(0xFF4CAF50),
@@ -127,6 +184,27 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         ));
       }
       state.consumeAvatar();
+    }
+  }
+
+  // ─── Navigation Helpers ──────────────────────────────────────────────────────
+  void _heroNextPage() {
+    if (_heroPage < 3) {
+      _heroPageController.nextPage(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+      setState(() => _heroPage++);
+    }
+  }
+
+  void _heroPrevPage() {
+    if (_heroPage > 0) {
+      _heroPageController.previousPage(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+      setState(() => _heroPage--);
     }
   }
 
@@ -186,14 +264,22 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
       _nameController.clear();
       widget.wizardData.pets = [];
       widget.wizardData.additionalCharacters = [];
+      // Reset personality to defaults
+      widget.wizardData.personalitySliders = {
+        'energy': 50,
+        'sociability': 50,
+        'creativity': 50,
+        'confidence': 50,
+        'empathy': 50,
+        'adventurousness': 50,
+      };
     });
+    _heroNextPage();
   }
 
   void _selectArchetype(ArchetypeData archetype) {
     setState(() {
       _selectedArchetypeId = archetype.name;
-      _generatedAvatar = null;
-      widget.wizardData.generatedAvatar = null;
       widget.wizardData.selectedArchetypeId = archetype.name;
       widget.wizardData.personalitySliders =
           Map<String, int>.from(archetype.attributes);
@@ -204,7 +290,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
   }
 
   Future<bool> _saveCharacterDraft() async {
-    if (!_isCreatingNew || !_canContinue) return true;
+    if (!_isCreatingNew) return true;
     try {
       final body = {
         'name': widget.wizardData.characterName,
@@ -216,6 +302,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         'pets': widget.wizardData.pets,
         'friends': widget.wizardData.additionalCharacters,
         'avatar': {'hairColor': 'Brown', 'skinTone': 'Light'},
+        'personality_sliders': widget.wizardData.personalitySliders,
         if (widget.wizardData.generatedAvatar != null)
           'avatar_data': widget.wizardData.generatedAvatar!.toJson(),
       };
@@ -250,6 +337,285 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     final ok = await _saveCharacterDraft();
     if (ok) widget.onNext();
   }
+
+  // ─── TTS Helper ─────────────────────────────────────────────────────────────
+  Widget _audioPrompt(String text) {
+    return IconButton(
+      icon: const Icon(Icons.volume_up_rounded, color: Color(0xFFFFD700), size: 32),
+      onPressed: () => _tts.speak(text),
+    );
+  }
+
+  // ─── Page Builders ──────────────────────────────────────────────────────────
+
+  // Page 0: Welcome / Returning User Choice
+  Widget _buildPage0() {
+    return Column(
+      children: [
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _audioPrompt("Welcome back!"),
+            const SizedBox(width: 8),
+            Text(
+              "Welcome back!",
+              style: GoogleFonts.cinzelDecorative(
+                color: const Color(0xFFFFD700),
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 30),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            itemCount: widget.availableCharacters.length,
+            itemBuilder: (context, index) {
+              final char = widget.availableCharacters[index];
+              return _CharacterChoiceCard(
+                character: char,
+                onTap: () {
+                  _loadExistingCharacter(char);
+                  _handleContinue();
+                },
+              );
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: _buildCreateNewHeroButton(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCreateNewHeroButton() {
+    return ElevatedButton(
+      onPressed: _switchToNewCharacter,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF9B3FD8),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 32),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+        elevation: 8,
+        shadowColor: const Color(0xFFFFD700).withAlpha(100),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.add_circle_outline, size: 24),
+          const SizedBox(width: 12),
+          Text(
+            "Create a New Hero",
+            style: GoogleFonts.cinzelDecorative(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Page 1: "Who is your hero?"
+  Widget _buildPage1() {
+    final nameNotEmpty = _nameController.text.trim().isNotEmpty;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _audioPrompt("Who is your hero?"),
+              const SizedBox(width: 8),
+              Text(
+                "Who is your hero?",
+                style: GoogleFonts.cinzelDecorative(
+                  color: const Color(0xFFFFD700),
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildNameScrollInput(),
+          const SizedBox(height: 24),
+          _buildGenderPicker(),
+          const SizedBox(height: 24),
+          _buildAgePicker(),
+          const SizedBox(height: 40),
+          _buildNextArrowButton(enabled: nameNotEmpty, onTap: _heroNextPage),
+        ],
+      ),
+    );
+  }
+
+  // Page 2: "What does your hero look like?"
+  Widget _buildPage2() {
+    final canGoNext = _selectedArchetypeId != null || _hasAvatar;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _audioPrompt("What does your hero look like?"),
+              const SizedBox(width: 8),
+              Text(
+                "What does your hero look like?",
+                style: GoogleFonts.cinzelDecorative(
+                  color: const Color(0xFFFFD700),
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildAvatarSection(),
+          const SizedBox(height: 10),
+          if (_hasAvatar) _buildEditAvatarButton() else _buildCreateAvatarButton(),
+          const SizedBox(height: 24),
+          _buildArchetypeCards(),
+          const SizedBox(height: 24),
+          _PetsSection(
+            wizardData: widget.wizardData,
+            onUpdate: () => setState(() {}),
+          ),
+          const SizedBox(height: 40),
+          _buildNextArrowButton(enabled: canGoNext, onTap: _heroNextPage),
+        ],
+      ),
+    );
+  }
+
+  // Page 3: "What makes your hero special?"
+  Widget _buildPage3() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _audioPrompt("What makes your hero special?"),
+              const SizedBox(width: 8),
+              Text(
+                "What makes your hero special?",
+                style: GoogleFonts.cinzelDecorative(
+                  color: const Color(0xFFFFD700),
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildPersonalityPairs(),
+          const SizedBox(height: 30),
+          _buildSuperpowerSection(),
+          const SizedBox(height: 40),
+          _buildContinueButton(),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNextArrowButton({required bool enabled, required VoidCallback onTap}) {
+    return Opacity(
+      opacity: enabled ? 1.0 : 0.4,
+      child: GestureDetector(
+        onTap: enabled ? onTap : null,
+        child: Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              colors: [Color(0xFF9B3FD8), Color(0xFF5B1BAA)],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFFD700).withAlpha(100),
+                blurRadius: 20,
+              ),
+            ],
+          ),
+          child: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 40),
+        ),
+      ),
+    );
+  }
+
+  // ─── Personality Pairs ──────────────────────────────────────────────────────
+  Widget _buildPersonalityPairs() {
+    return Column(
+      children: [
+        _PersonalityPair(
+          leftLabel: "Brave",
+          leftIcon: Icons.pets, // Lion-like
+          rightLabel: "Careful",
+          rightIcon: Icons.visibility, // Cat-like
+          sliderKey: "confidence",
+          currentValue: widget.wizardData.personalitySliders['confidence'] ?? 50,
+          onChanged: (val) => setState(() => widget.wizardData.personalitySliders['confidence'] = val),
+        ),
+        const SizedBox(height: 12),
+        _PersonalityPair(
+          leftLabel: "Loud and Silly",
+          leftIcon: Icons.campaign,
+          rightLabel: "Quiet and Thoughtful",
+          rightIcon: Icons.menu_book,
+          sliderKey: "energy",
+          currentValue: widget.wizardData.personalitySliders['energy'] ?? 50,
+          onChanged: (val) => setState(() => widget.wizardData.personalitySliders['energy'] = val),
+        ),
+        const SizedBox(height: 12),
+        _PersonalityPair(
+          leftLabel: "Team Player",
+          leftIcon: Icons.groups,
+          rightLabel: "Solo Explorer",
+          rightIcon: Icons.explore,
+          sliderKey: "sociability",
+          currentValue: widget.wizardData.personalitySliders['sociability'] ?? 50,
+          onChanged: (val) => setState(() => widget.wizardData.personalitySliders['sociability'] = val),
+        ),
+        const SizedBox(height: 12),
+        _PersonalityPair(
+          leftLabel: "Creative Dreamer",
+          leftIcon: Icons.brush,
+          rightLabel: "Practical Thinker",
+          rightIcon: Icons.build,
+          sliderKey: "creativity",
+          currentValue: widget.wizardData.personalitySliders['creativity'] ?? 50,
+          onChanged: (val) => setState(() => widget.wizardData.personalitySliders['creativity'] = val),
+        ),
+        const SizedBox(height: 12),
+        _PersonalityPair(
+          leftLabel: "Homebody",
+          leftIcon: Icons.home,
+          rightLabel: "Adventurer",
+          rightIcon: Icons.rocket_launch,
+          sliderKey: "adventurousness",
+          currentValue: widget.wizardData.personalitySliders['adventurousness'] ?? 50,
+          onChanged: (val) => setState(() => widget.wizardData.personalitySliders['adventurousness'] = val),
+        ),
+      ],
+    );
+  }
+
+  // ─── Avatar, Age, Gender, Name, Archetype, Superpower, Continue logic ──────────
 
   Future<void> _openAvatarCreation() async {
     await showModalBottomSheet(
@@ -286,7 +652,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
               ),
             ),
             const SizedBox(height: 14),
-            // Gallery — all users
             _AvatarOptionTile(
               icon: Icons.auto_awesome,
               title: 'Browse Character Gallery',
@@ -297,7 +662,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
               },
             ),
             const SizedBox(height: 8),
-            // Smart-filter gallery — quick match by age + gender
             _AvatarOptionTile(
               icon: Icons.tune_rounded,
               title: 'Build Your Look',
@@ -308,7 +672,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
               },
             ),
             const SizedBox(height: 8),
-            // Custom photo — premium only
             _AvatarOptionTile(
               icon: Icons.camera_alt_rounded,
               title: 'Upload Photo → AI Avatar',
@@ -330,19 +693,19 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
 
   Future<void> _openAvatarGallery({bool preFilter = false}) async {
     if (!mounted) return;
-
     await showDialog<void>(
       context: context,
       builder: (_) => AvatarGallerySelector(
         isPremium: _isPremium,
         onAvatarSelected: (avatar) {
-          // Note: dialog is already closed by AvatarTweakPanel's onConfirm.
           if (mounted) {
             setState(() {
               _generatedAvatar = avatar;
               _customAvatarFilePath = null;
+              widget.wizardData.generatedAvatar = avatar;
               widget.wizardData.customAvatarPath = avatar.imageBase64;
             });
+            _sparkleCtrl.forward(from: 0);
           }
         },
         onCancel: () => Navigator.pop(context),
@@ -378,11 +741,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     }
   }
 
-  bool get _canContinue =>
-      _selectedArchetypeId != null &&
-      widget.wizardData.characterName.trim().isNotEmpty;
+  bool get _hasAvatar =>
+      _generatedAvatar != null || _customAvatarFilePath != null;
 
-  // ─── Avatar image content ────────────────────────────────────────────────────
   Widget _buildAvatarContent() {
     if (_customAvatarFilePath != null) {
       return Image.file(
@@ -393,17 +754,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     }
     if (_generatedAvatar != null) {
       final data = _generatedAvatar!.imageBase64;
-      if (data.startsWith('assets/')) {
-        return Image.asset(data, fit: BoxFit.cover);
-      }
-      if (data.startsWith('http')) {
-        return Image.network(data, fit: BoxFit.cover);
-      }
+      if (data.startsWith('assets/')) return Image.asset(data, fit: BoxFit.cover);
+      if (data.startsWith('http')) return Image.network(data, fit: BoxFit.cover);
       try {
-        return Image.memory(
-          base64Decode(data.split(',').last),
-          fit: BoxFit.cover,
-        );
+        return Image.memory(base64Decode(data.split(',').last), fit: BoxFit.cover);
       } catch (_) {}
     }
     return _placeholderWidget();
@@ -415,141 +769,191 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
         errorBuilder: (_, __, ___) => Container(
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [Color(0xFF7B4BAA), Color(0xFF2D0A4E)],
-            ),
+            gradient: RadialGradient(colors: [Color(0xFF7B4BAA), Color(0xFF2D0A4E)]),
           ),
         ),
       );
 
-  // ─── SECTION: Avatar preview ────────────────────────────────────────────────
   Widget _buildAvatarSection() {
-    return Column(
-      children: [
-        // Avatar circle with a golden glow ring
-        GestureDetector(
-          onTap: _openAvatarCreation,
-          child: Container(
-            width: 148,
-            height: 148,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFFD700).withAlpha(140),
-                  blurRadius: 28,
-                  spreadRadius: 0,
-                ),
-                BoxShadow(
-                  color: const Color(0xFF9B3FD8).withAlpha(100),
-                  blurRadius: 40,
-                  spreadRadius: 0,
-                ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                ClipOval(
-                  clipBehavior: Clip.antiAliasWithSaveLayer,
-                  child: SizedBox(
-                    width: 148,
-                    height: 148,
-                    child: _buildAvatarContent(),
-                  ),
-                ),
-                // Perfect circle border overlay to ensure a clean, smooth edge
-                Positioned.fill(
-                  child: Container(
+    return AnimatedBuilder(
+      animation: _floatCtrl,
+      builder: (ctx, child) => Transform.translate(
+        offset: Offset(0, _floatAnim.value),
+        child: child,
+      ),
+      child: AnimatedBuilder(
+        animation: _glowCtrl,
+        builder: (ctx, child) {
+          final g = _glowAnim.value;
+          return GestureDetector(
+            onTap: _openAvatarCreation,
+            child: SizedBox(
+              width: 172,
+              height: 172,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 172,
+                    height: 172,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFF9B3FD8).withAlpha(160),
-                        width: 2.5,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color.fromARGB((g * 160).round(), 0xFF, 0xD7, 0x00),
+                          blurRadius: 28 + g * 18,
+                          spreadRadius: g * 6,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 148,
+                    height: 148,
+                    decoration: const BoxDecoration(shape: BoxShape.circle),
+                    child: Stack(
+                      children: [
+                        ClipOval(
+                          child: SizedBox(width: 148, height: 148, child: _buildAvatarContent()),
+                        ),
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Color.fromARGB((g * 200).round(), 0xD4, 0xA0, 0xFF),
+                                width: 2.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _buildSparkleOverlay(),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSparkleOverlay() {
+    const radius = 86.0;
+    const count = 8;
+    final sparkleChars = ['✦', '★', '✧', '✦', '★', '✧', '✦', '★'];
+    return AnimatedBuilder(
+      animation: _sparkleAnim,
+      builder: (ctx, _) {
+        final t = _sparkleAnim.value;
+        if (t == 0) return const SizedBox.shrink();
+        return SizedBox(
+          width: 172,
+          height: 172,
+          child: Stack(
+            alignment: Alignment.center,
+            children: List.generate(count, (i) {
+              final angle = (i / count) * math.pi * 2;
+              final delay = i / count;
+              final progress = ((t - delay) / (1 - delay)).clamp(0.0, 1.0);
+              final dist = progress * radius;
+              final opacity = progress < 0.6 ? progress / 0.6 : (1.0 - progress) / 0.4;
+              final scale = 0.4 + progress * 1.0;
+              final x = 86 + math.cos(angle) * dist;
+              final y = 86 + math.sin(angle) * dist;
+              return Positioned(
+                left: x - 10,
+                top: y - 10,
+                child: Opacity(
+                  opacity: opacity.clamp(0.0, 1.0),
+                  child: Transform.scale(
+                    scale: scale,
+                    child: Text(
+                      sparkleChars[i],
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: i.isEven ? const Color(0xFFFFD700) : const Color(0xFFD4A0FF),
+                        shadows: const [Shadow(color: Color(0xFFFFD700), blurRadius: 8)],
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
+              );
+            }),
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 
   Widget _buildAgePicker() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
       children: [
-        _AgeStepButton(
-          icon: Icons.remove_rounded,
-          onTap: () => setState(() {
-            widget.wizardData.characterAge =
-                (widget.wizardData.characterAge - 1).clamp(3, 99);
-          }),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            children: [
-              Text(
-                '${widget.wizardData.characterAge}',
-                style: GoogleFonts.cinzelDecorative(
-                  color: const Color(0xFFFFD700),
-                  fontSize: 34,
-                  fontWeight: FontWeight.bold,
-                  shadows: const [
-                    Shadow(color: Color(0xFFFFD700), blurRadius: 12),
-                  ],
-                ),
-              ),
-              Text(
-                'Hero Age',
-                style: GoogleFonts.cinzelDecorative(
-                  color: Colors.white.withAlpha(200),
-                  fontSize: 11,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
+        Text(
+          '${widget.wizardData.characterAge}',
+          style: GoogleFonts.cinzelDecorative(
+            color: const Color(0xFFFFD700),
+            fontSize: 34,
+            fontWeight: FontWeight.bold,
+            shadows: const [Shadow(color: Color(0xFFFFD700), blurRadius: 16)],
           ),
         ),
-        _AgeStepButton(
-          icon: Icons.add_rounded,
-          onTap: () => setState(() {
-            widget.wizardData.characterAge =
-                (widget.wizardData.characterAge + 1).clamp(3, 99);
-          }),
+        Text(
+          'Hero Age',
+          style: GoogleFonts.cinzelDecorative(
+            color: Colors.white.withAlpha(200),
+            fontSize: 11,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            _AgeStepButton(
+              icon: Icons.remove_rounded,
+              size: 40,
+              onTap: () => setState(() => widget.wizardData.characterAge = (widget.wizardData.characterAge - 1).clamp(3, 99)),
+            ),
+            Expanded(
+              child: SliderTheme(
+                data: SliderThemeData(
+                  activeTrackColor: const Color(0xFFB060F0),
+                  thumbColor: const Color(0xFFFFD700),
+                  trackHeight: 6,
+                ),
+                child: Slider(
+                  value: widget.wizardData.characterAge.toDouble(),
+                  min: 3,
+                  max: 99,
+                  divisions: 96,
+                  onChanged: (v) => setState(() => widget.wizardData.characterAge = v.round()),
+                ),
+              ),
+            ),
+            _AgeStepButton(
+              icon: Icons.add_rounded,
+              size: 40,
+              onTap: () => setState(() => widget.wizardData.characterAge = (widget.wizardData.characterAge + 1).clamp(3, 99)),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  // ─── SECTION: Gender picker orbs ─────────────────────────────────────────────
   Widget _buildGenderPicker() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildGenderOrb(
-          imagePath: 'assets/images/ui/hero_icon.png',
-          label: 'Hero',
-          gender: 'Boy',
-        ),
+        _buildGenderOrb(imagePath: 'assets/images/ui/hero_icon.png', label: 'Hero', gender: 'Boy'),
         const SizedBox(width: 32),
-        _buildGenderOrb(
-          imagePath: 'assets/images/ui/heroine_icon.png',
-          label: 'Heroine',
-          gender: 'Girl',
-        ),
+        _buildGenderOrb(imagePath: 'assets/images/ui/heroine_icon.png', label: 'Heroine', gender: 'Girl'),
       ],
     );
   }
 
-  Widget _buildGenderOrb({
-    required String imagePath,
-    required String label,
-    required String gender,
-  }) {
+  Widget _buildGenderOrb({required String imagePath, required String label, required String gender}) {
     final isSelected = widget.wizardData.characterGender == gender;
     return GestureDetector(
       onTap: () => setState(() => widget.wizardData.characterGender = gender),
@@ -559,120 +963,36 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
             duration: const Duration(milliseconds: 200),
             width: 92,
             height: 92,
-            decoration: isSelected
-                ? BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFFFD700).withAlpha(200),
-                        blurRadius: 32,
-                        spreadRadius: 6,
-                      ),
-                      BoxShadow(
-                        color: const Color(0xFFFFD700).withAlpha(80),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  )
-                : BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(60),
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-            child: ClipOval(
-              child: Image.asset(
-                imagePath,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Icon(
-                  Icons.person,
-                  color: Colors.white,
-                  size: 48,
-                ),
-              ),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: isSelected ? const Color(0xFFD4A0FF) : Colors.white24, width: 3),
+              boxShadow: isSelected ? [BoxShadow(color: const Color(0xFFFFD700).withAlpha(200), blurRadius: 32)] : null,
             ),
+            child: ClipOval(child: Image.asset(imagePath, fit: BoxFit.cover)),
           ),
           const SizedBox(height: 6),
-          Text(
-            label,
-            style: GoogleFonts.cinzelDecorative(
-              color: isSelected
-                  ? const Color(0xFFFFD700)
-                  : Colors.white.withAlpha(160),
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
+          Text(label, style: GoogleFonts.cinzelDecorative(color: isSelected ? const Color(0xFFFFD700) : Colors.white60, fontSize: 12)),
         ],
       ),
     );
   }
 
-  // ─── SECTION: Scroll name field ───────────────────────────────────────────────
   Widget _buildNameScrollInput() {
     return SizedBox(
-      height: 120,
+      height: 100,
       child: Stack(
         children: [
-          // 1. Ornate parchment scroll background (bottom layer)
-          Positioned.fill(
-            child: IgnorePointer(
-              child: Image.asset(
-                'assets/images/ui/scroll_name_input.png',
-                fit: BoxFit.fill,
-              ),
-            ),
-          ),
-
-          // 2. Full-area tap catcher (middle layer)
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: () => _nameFocusNode.requestFocus(),
-              behavior: HitTestBehavior.opaque,
-              child: const SizedBox.expand(),
-            ),
-          ),
-
-          // 3. The interactive text field (top layer)
+          Positioned.fill(child: Image.asset('assets/images/ui/scroll_name_input.png', fit: BoxFit.fill)),
           Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 42),
               child: TextField(
                 controller: _nameController,
                 focusNode: _nameFocusNode,
-                inputFormatters: [
-                  LengthLimitingTextInputFormatter(24),
-                  _SafeNameFormatter(),
-                ],
                 textAlign: TextAlign.center,
-                textAlignVertical: TextAlignVertical.center,
-                style: GoogleFonts.cinzelDecorative(
-                  fontSize: 20,
-                  color: const Color(0xFF3A1C00),
-                  fontWeight: FontWeight.w700,
-                ),
-                cursorColor: const Color(0xFF3A1C00),
-                textInputAction: TextInputAction.next,
-                decoration: InputDecoration(
-                  hintText: "Write your hero's name",
-                  hintStyle: GoogleFonts.cinzelDecorative(
-                    fontSize: 15,
-                    color: const Color(0x993A1C00),
-                  ),
-                  filled: true,
-                  fillColor: Colors.transparent,
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 20),
-                ),
-                onChanged: (v) =>
-                    setState(() => widget.wizardData.characterName = v.trim()),
+                style: GoogleFonts.cinzelDecorative(fontSize: 20, color: const Color(0xFF3A1C00), fontWeight: FontWeight.w700),
+                decoration: const InputDecoration(hintText: "Hero's Name", border: InputBorder.none),
+                onChanged: (v) => setState(() => widget.wizardData.characterName = v.trim()),
               ),
             ),
           ),
@@ -681,14 +1001,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     );
   }
 
-  // ─── SECTION: Archetype cards ─────────────────────────────────────────────────
   Widget _buildArchetypeCards() {
     final archetypes = CharacterArchetypes.all;
     return SizedBox(
-      height: 230,
+      height: 200,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
         itemCount: archetypes.length,
         itemBuilder: (context, index) {
           final a = archetypes[index];
@@ -697,89 +1015,20 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
             onTap: () => _selectArchetype(a),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),
-              width: isSelected ? 155 : 128,
-              margin: EdgeInsets.symmetric(
-                horizontal: 5,
-                vertical: isSelected ? 0 : 10,
-              ),
+              width: 130,
+              margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
-                gradient: LinearGradient(
-                  colors: isSelected
-                      ? [
-                          const Color(0xFF9B3FD8).withAlpha(190),
-                          const Color(0xFFFFD700).withAlpha(65),
-                        ]
-                      : [
-                          Colors.white.withAlpha(20),
-                          const Color(0xFF9B3FD8).withAlpha(50),
-                        ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                border: Border.all(
-                  color: isSelected
-                      ? const Color(0xFFFFD700)
-                      : const Color(0xFFFFD700).withAlpha(80),
-                  width: isSelected ? 2.5 : 1,
-                ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: const Color(0xFFFFD700).withAlpha(130),
-                          blurRadius: 22,
-                          spreadRadius: 3,
-                        ),
-                        BoxShadow(
-                          color: const Color(0xFF9B3FD8).withAlpha(100),
-                          blurRadius: 16,
-                        ),
-                      ]
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(60),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
+                gradient: LinearGradient(colors: isSelected ? [const Color(0xFF9B3FD8), const Color(0xFFFFD700).withAlpha(60)] : [Colors.white10, Colors.white10]),
+                border: Border.all(color: isSelected ? const Color(0xFFFFD700) : Colors.white24, width: 2),
               ),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    // Elaborately framed archetype image
-                    _buildArchetypeImage(a, isSelected),
-                    const SizedBox(height: 7),
-                    Text(
-                      a.name,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.fredoka(
-                        color: Colors.white,
-                        fontSize: isSelected ? 13 : 11,
-                        fontWeight: FontWeight.w700,
-                        shadows: const [
-                          Shadow(color: Colors.black54, blurRadius: 4),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      a.description,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.comicNeue(
-                        color: Colors.white.withAlpha(190),
-                        fontSize: 9,
-                        height: 1.2,
-                      ),
-                    ),
-                  ],
-                ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (a.imagePath != null) Image.asset(a.imagePath!, height: 80, fit: BoxFit.contain) else Text(a.icon ?? '✨', style: const TextStyle(fontSize: 40)),
+                  const SizedBox(height: 6),
+                  Text(a.name, textAlign: TextAlign.center, style: GoogleFonts.fredoka(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                ],
               ),
             ),
           );
@@ -788,111 +1037,265 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     );
   }
 
-  Widget _buildArchetypeImage(ArchetypeData a, bool isSelected) {
-    final imgSize = isSelected ? 110.0 : 90.0;
-    Widget imageWidget;
-
-    if (a.imagePath != null) {
-      imageWidget = Image.asset(
-        a.imagePath!,
-        width: imgSize,
-        height: imgSize,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Text(
-          a.icon ?? '✨',
-          style: TextStyle(fontSize: isSelected ? 52 : 42),
-        ),
-      );
-    } else {
-      imageWidget = Text(
-        a.icon ?? '✨',
-        style: TextStyle(fontSize: isSelected ? 52 : 42),
-      );
-    }
-
-    // Archetype image with ornate frame.png overlaid on top
-    return SizedBox(
-      width: imgSize,
-      height: imgSize,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Character artwork fills the area
-          imageWidget,
-          // Ornate frame overlaid on top (frame.png has transparent interior)
-          Image.asset(
-            'assets/images/ui/frame.png',
-            fit: BoxFit.fill,
-            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-          ),
-          // Golden selection glow ring underneath frame
-          if (isSelected)
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFFD700).withAlpha(160),
-                      blurRadius: 20,
-                      spreadRadius: 4,
-                    ),
-                  ],
-                  shape: BoxShape.rectangle,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  // ─── SECTION: Create Your Avatar image button ─────────────────────────────────
   Widget _buildCreateAvatarButton() {
     return GestureDetector(
-      onTapDown: (_) => setState(() => _isCreateAvatarPressed = true),
-      onTapUp: (_) => setState(() => _isCreateAvatarPressed = false),
-      onTapCancel: () => setState(() => _isCreateAvatarPressed = false),
       onTap: _openAvatarCreation,
-      child: AnimatedScale(
-        scale: _isCreateAvatarPressed ? 0.94 : 1.0,
-        duration: const Duration(milliseconds: 110),
-        child: Image.asset(
-          'assets/images/ui/create_avatar_btn.png',
-          height: 80,
-          width: double.infinity,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => _buildFallbackAvatarButton(),
+      child: Image.asset('assets/images/ui/create_avatar_btn.png', height: 70, fit: BoxFit.contain),
+    );
+  }
+
+  Widget _buildEditAvatarButton() => TextButton.icon(
+        onPressed: _openAvatarCreation,
+        icon: const Icon(Icons.edit_rounded, size: 16, color: Color(0xFFD4A0FF)),
+        label: Text('Change Avatar', style: GoogleFonts.cinzelDecorative(color: const Color(0xFFD4A0FF), fontSize: 12)),
+      );
+
+  void _toggleListening(String field) async {
+    if (!_speechAvailable) return;
+    if (_listeningFor == field) {
+      await _speech.stop();
+      setState(() => _listeningFor = '');
+      return;
+    }
+    setState(() => _listeningFor = field);
+    await _speech.listen(onResult: (result) {
+      if (!mounted) return;
+      setState(() {
+        if (field == 'superpower') {
+          _superpowerController.text = result.recognizedWords;
+          widget.wizardData.heroSuperpower = result.recognizedWords.isEmpty ? null : result.recognizedWords;
+        } else {
+          _questController.text = result.recognizedWords;
+          widget.wizardData.heroQuest = result.recognizedWords.isEmpty ? null : result.recognizedWords;
+        }
+        if (result.finalResult) _listeningFor = '';
+      });
+    });
+  }
+
+  Widget _buildSuperpowerSection() {
+    final name = widget.wizardData.characterName.isNotEmpty ? widget.wizardData.characterName : 'your hero';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _superpowerLabel('⚡ What is $name\'s superpower?'),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8, runSpacing: 8,
+          children: HeroCreatorStepData.superpowers.map((entry) {
+            final (label, value) = entry;
+            final selected = widget.wizardData.heroSuperpower == value;
+            return _chipButton(label: label, selected: selected, onTap: () => setState(() {
+              widget.wizardData.heroSuperpower = selected ? null : value;
+              _superpowerController.text = selected ? '' : value;
+            }));
+          }).toList(),
+        ),
+        const SizedBox(height: 10),
+        _buildVoiceInput(controller: _superpowerController, hint: 'Speak your own…', field: 'superpower', onChanged: (v) => widget.wizardData.heroSuperpower = v.trim().isEmpty ? null : v.trim()),
+        const SizedBox(height: 20),
+        _superpowerLabel('🗺️ What is $name\'s quest?'),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8, runSpacing: 8,
+          children: HeroCreatorStepData.quests.map((entry) {
+            final (label, value) = entry;
+            final selected = widget.wizardData.heroQuest == value;
+            return _chipButton(label: label, selected: selected, onTap: () => setState(() {
+              widget.wizardData.heroQuest = selected ? null : value;
+              _questController.text = selected ? '' : value;
+            }));
+          }).toList(),
+        ),
+        const SizedBox(height: 10),
+        _buildVoiceInput(controller: _questController, hint: 'Speak your own…', field: 'quest', onChanged: (v) => widget.wizardData.heroQuest = v.trim().isEmpty ? null : v.trim()),
+      ],
+    );
+  }
+
+  Widget _superpowerLabel(String text) => Text(text, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(color: Color(0xFFFFD700), blurRadius: 6)]));
+
+  Widget _chipButton({required String label, required bool selected, required VoidCallback onTap}) => GestureDetector(
+    onTap: onTap,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(color: selected ? const Color(0xFFFFD700).withAlpha(60) : Colors.white10, border: Border.all(color: selected ? const Color(0xFFFFD700) : Colors.white24), borderRadius: BorderRadius.circular(20)),
+      child: Text(label, style: TextStyle(fontSize: 13, color: selected ? const Color(0xFFFFD700) : Colors.white)),
+    ),
+  );
+
+  Widget _buildVoiceInput({required TextEditingController controller, required String hint, required String field, required void Function(String) onChanged}) {
+    final isListening = _listeningFor == field;
+    return Row(
+      children: [
+        Expanded(child: TextField(controller: controller, style: const TextStyle(color: Colors.white, fontSize: 13), decoration: InputDecoration(hintText: hint, hintStyle: const TextStyle(color: Colors.white38), filled: true, fillColor: Colors.white10, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))), onChanged: onChanged)),
+        const SizedBox(width: 8),
+        IconButton(icon: Icon(isListening ? Icons.mic : Icons.mic_none, color: isListening ? Colors.yellow : Colors.white), onPressed: () => _toggleListening(field)),
+      ],
+    );
+  }
+
+  Widget _buildContinueButton() => GestureDetector(
+        onTapDown: (_) => setState(() => _isContinuePressed = true),
+        onTapUp: (_) => setState(() => _isContinuePressed = false),
+        onTap: _handleContinue,
+        child: AnimatedScale(
+          scale: _isContinuePressed ? 0.94 : 1.0,
+          duration: const Duration(milliseconds: 110),
+          child: Image.asset('assets/images/ui/continue_btn.png', height: 70, width: double.infinity, fit: BoxFit.contain),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return MagicStarCursor(
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF120226), Color(0xFF3D1166), Color(0xFF120226)],
+            begin: Alignment.topCenter, end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              PageView(
+                controller: _heroPageController,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _buildPage0(),
+                  _buildPage1(),
+                  _buildPage2(),
+                  _buildPage3(),
+                ],
+              ),
+              if (_heroPage > 0)
+                Positioned(
+                  top: 10, left: 10,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+                    onPressed: _heroPrevPage,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  // Flutter-native fallback if image fails
-  Widget _buildFallbackAvatarButton() => Container(
-        height: 62,
+// ─── Support Widgets ──────────────────────────────────────────────────────────
+
+class _CharacterChoiceCard extends StatelessWidget {
+  final Character character;
+  final VoidCallback onTap;
+
+  const _CharacterChoiceCard({required this.character, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(31),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF5B1BAA), Color(0xFF9B3FD8), Color(0xFF5B1BAA)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          border: Border.all(color: const Color(0xFFFFD700), width: 2),
+          color: Colors.white.withAlpha(15),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFD4A0FF).withAlpha(100)),
         ),
-        child: Center(
-          child: Text(
-            'Create Magic Avatar',
-            style: GoogleFonts.cinzelDecorative(
-              color: const Color(0xFFFFE066),
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 35,
+              backgroundColor: const Color(0xFF3A2363),
+              backgroundImage: character.generatedAvatar != null
+                ? NetworkImage(character.generatedAvatar!.imageBase64) as ImageProvider
+                : const AssetImage('assets/images/hero_placeholder.jpg'),
             ),
-          ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(character.name, style: GoogleFonts.cinzelDecorative(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text("${character.age} years old • ${character.role}", style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                ],
+              ),
+            ),
+            const Icon(Icons.play_circle_fill_rounded, color: Color(0xFFFFD700), size: 40),
+          ],
         ),
-      );
+      ),
+    );
+  }
+}
 
-  // ─── SECTION: Superpower Profile ─────────────────────────────────────────────
-  static const _superpowers = [
+class _PersonalityPair extends StatelessWidget {
+  final String leftLabel;
+  final IconData leftIcon;
+  final String rightLabel;
+  final IconData rightIcon;
+  final String sliderKey;
+  final int currentValue;
+  final ValueChanged<int> onChanged;
+
+  const _PersonalityPair({
+    required this.leftLabel,
+    required this.leftIcon,
+    required this.rightLabel,
+    required this.rightIcon,
+    required this.sliderKey,
+    required this.currentValue,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isLeft = currentValue < 50;
+    final bool isRight = currentValue > 50;
+
+    return Row(
+      children: [
+        Expanded(child: _buildChoice(label: leftLabel, icon: leftIcon, isSelected: isLeft, value: 25)),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 10),
+          child: Text("or", style: TextStyle(color: Colors.white54, fontStyle: FontStyle.italic)),
+        ),
+        Expanded(child: _buildChoice(label: rightLabel, icon: rightIcon, isSelected: isRight, value: 75)),
+      ],
+    );
+  }
+
+  Widget _buildChoice({required String label, required IconData icon, required bool isSelected, required int value}) {
+    return GestureDetector(
+      onTap: () => onChanged(isSelected ? 50 : value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFFD700).withAlpha(40) : Colors.white.withAlpha(10),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: isSelected ? const Color(0xFFFFD700) : Colors.white24, width: 2),
+          boxShadow: isSelected ? [BoxShadow(color: const Color(0xFFFFD700).withAlpha(60), blurRadius: 10)] : null,
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: isSelected ? const Color(0xFFFFD700) : Colors.white70, size: 28),
+            const SizedBox(height: 4),
+            Text(label, textAlign: TextAlign.center, style: TextStyle(color: isSelected ? const Color(0xFFFFD700) : Colors.white, fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Section Classes (Move static data here) ──────────────────────────────────
+class HeroCreatorStepData {
+  static const superpowers = [
     ('⚡ Brave Heart', 'Brave Heart'),
     ('💛 Kindness Magic', 'Kindness Magic'),
     ('🧠 Problem-Solver Brain', 'Problem-Solver Brain'),
@@ -900,8 +1303,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     ('🌟 Creative Spark', 'Creative Spark'),
     ('👂 Super Listener', 'Super Listener'),
   ];
-
-  static const _quests = [
+  static const quests = [
     ('🤝 Making new friends', 'Making new friends'),
     ('🌊 Taming big feelings', 'Taming big feelings'),
     ('🦁 Being brave when scared', 'Being brave when scared'),
@@ -909,561 +1311,128 @@ class _HeroCreatorStepState extends State<HeroCreatorStep> {
     ('🌱 Trying something new', 'Trying something new'),
     ("🦸 Standing up for what's right", "Standing up for what's right"),
   ];
+}
 
-  Widget _buildSuperpowerSection() {
-    final name = widget.wizardData.characterName.isNotEmpty
-        ? widget.wizardData.characterName
-        : 'your hero';
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _superpowerLabel('⚡ Every hero has a superpower! What is $name\'s?'),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _superpowers.map((entry) {
-              final (label, value) = entry;
-              final selected = widget.wizardData.heroSuperpower == value;
-              return _chipButton(
-                label: label,
-                selected: selected,
-                onTap: () => setState(
-                    () => widget.wizardData.heroSuperpower = selected ? null : value),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 18),
-          _superpowerLabel('🗺️ Every hero has a quest! What does $name need to conquer?'),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _quests.map((entry) {
-              final (label, value) = entry;
-              final selected = widget.wizardData.heroQuest == value;
-              return _chipButton(
-                label: label,
-                selected: selected,
-                onTap: () => setState(
-                    () => widget.wizardData.heroQuest = selected ? null : value),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '✨ Optional — your answers make the adventure more personal!',
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.white.withValues(alpha: 0.55),
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _superpowerLabel(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w700,
-        color: Colors.white,
-        shadows: [Shadow(color: Color(0xFFFFD700), blurRadius: 6)],
-      ),
-    );
-  }
-
-  Widget _chipButton({
-    required String label,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
+class _AgeStepButton extends StatefulWidget {
+  final IconData icon; final VoidCallback onTap; final double size;
+  const _AgeStepButton({required this.icon, required this.onTap, this.size = 52});
+  @override State<_AgeStepButton> createState() => _AgeStepButtonState();
+}
+class _AgeStepButtonState extends State<_AgeStepButton> {
+  bool _pressed = false;
+  @override Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected
-              ? const Color(0xFFFFD700).withValues(alpha: 0.25)
-              : Colors.white.withValues(alpha: 0.08),
-          border: Border.all(
-            color: selected ? const Color(0xFFFFD700) : Colors.white.withValues(alpha: 0.2),
-            width: selected ? 1.5 : 1.0,
-          ),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            color: selected ? const Color(0xFFFFD700) : Colors.white.withValues(alpha: 0.85),
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ─── SECTION: Continue button ─────────────────────────────────────────────────
-  Widget _buildContinueButton() {
-    return GestureDetector(
-      key: const Key('continue_button'),
-      onTapDown: (_) => setState(() => _isContinuePressed = true),
-      onTapUp: (_) => setState(() => _isContinuePressed = false),
-      onTapCancel: () => setState(() => _isContinuePressed = false),
-      onTap: _handleContinue,
-      child: AnimatedScale(
-        scale: _isContinuePressed ? 0.94 : 1.0,
-        duration: const Duration(milliseconds: 110),
-        child: Image.asset(
-          'assets/images/ui/continue_btn.png',
-          height: 80,
-          width: double.infinity,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => Container(
-            height: 62,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(31),
-              gradient: const LinearGradient(
-                colors: [Color(0xFF5B1BAA), Color(0xFF9B3FD8), Color(0xFF5B1BAA)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFFD700).withAlpha(100),
-                  blurRadius: 16,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: Center(
-              child: Text(
-                'Continue',
-                style: GoogleFonts.cinzelDecorative(
-                  color: const Color(0xFFFFE066),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ─── Existing character row ────────────────────────────────────────────────────
-  Widget _buildExistingCharactersRow() {
-    return SizedBox(
-      height: 86,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: widget.availableCharacters.length + 1,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (context, index) {
-          if (index == widget.availableCharacters.length) {
-            return GestureDetector(
-              onTap: _switchToNewCharacter,
-              child: Container(
-                width: 62,
-                height: 62,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF3A2363),
-                  border: Border.all(
-                    color: _isCreatingNew
-                        ? const Color(0xFFF8D27E)
-                        : Colors.white54,
-                    width: _isCreatingNew ? 3 : 1.5,
-                  ),
-                  boxShadow: _isCreatingNew
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFFFFD700).withAlpha(80),
-                            blurRadius: 10,
-                          ),
-                        ]
-                      : null,
-                ),
-                child: const Icon(Icons.add, color: Colors.white),
-              ),
-            );
-          }
-          final char = widget.availableCharacters[index];
-          final sel =
-              _selectedExistingCharacter?.id == char.id && !_isCreatingNew;
-          return GestureDetector(
-            onTap: () => _loadExistingCharacter(char),
-            child: Container(
-              width: 62,
-              height: 62,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: sel ? const Color(0xFFF8D27E) : Colors.white54,
-                  width: sel ? 3 : 1.5,
-                ),
-                boxShadow: sel
-                    ? [
-                        BoxShadow(
-                          color: const Color(0xFFFFD700).withAlpha(128),
-                          blurRadius: 8,
-                          spreadRadius: 2,
-                        ),
-                      ]
-                    : null,
-              ),
-              child: ClipOval(
-                child: Image.asset(
-                  _placeholderAsset,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: const Color(0xFF3A2363),
-                    child: Center(
-                      child: Text(
-                        char.name.isNotEmpty ? char.name[0].toUpperCase() : '?',
-                        style: GoogleFonts.fredoka(
-                          color: Colors.white,
-                          fontSize: 22,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // ─── Build ─────────────────────────────────────────────────────────────────────
-  @override
-  Widget build(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-    final hPad = w < 760 ? 16.0 : 28.0;
-
-    return MagicStarCursor(
-      child: Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color(0xFF120226),
-            Color(0xFF3D1166),
-            Color(0xFF4A1A72),
-            Color(0xFF2A0A4E),
-            Color(0xFF120226),
-          ],
-          stops: [0.0, 0.25, 0.5, 0.75, 1.0],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(hPad, 12, hPad, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Existing characters row (only when characters are saved)
-              if (widget.availableCharacters.isNotEmpty) ...[
-                _buildExistingCharactersRow(),
-                const SizedBox(height: 10),
-              ],
-
-              // ── Avatar preview ─────────────────────────────────────────────
-              Center(child: _buildAvatarSection()),
-              const SizedBox(height: 20),
-
-              // ── Magical scroll name field (create-new only) ───────────────
-              if (_isCreatingNew) ...[
-                _buildNameScrollInput(),
-                const SizedBox(height: 18),
-              ],
-
-              // ── Hero / Heroine gender picker ───────────────────────────────
-              _buildGenderPicker(),
-              const SizedBox(height: 16),
-
-              // ── Hero age picker ────────────────────────────────────────────
-              _buildAgePicker(),
-              const SizedBox(height: 20),
-
-              // ── Archetype cards ────────────────────────────────────────────
-              _buildArchetypeCards(),
-              const SizedBox(height: 20),
-
-              // ── Pets Section ───────────────────────────────────────────────
-              if (_isCreatingNew && _canContinue) ...[
-                _PetsSection(
-                  wizardData: widget.wizardData,
-                  onUpdate: () => setState(() {}),
-                ),
-                const SizedBox(height: 20),
-              ],
-
-              // ── Superpower Profile (Feature 3) ───────────────────────────────
-              if (_canContinue) ...[
-                _buildSuperpowerSection(),
-                const SizedBox(height: 20),
-              ],
-
-              // ── Create Your Avatar button (image) ─────────────────────────
-              _buildCreateAvatarButton(),
-              const SizedBox(height: 14),
-
-              // ── Continue (gated until name + archetype chosen) ─────────────
-              if (_canContinue ||
-                  (!_isCreatingNew && _selectedExistingCharacter != null))
-                _buildContinueButton(),
-            ],
-          ),
-        ),
-      ),
-    )
+      onTapDown: (_) => setState(() => _pressed = true), onTapUp: (_) { setState(() => _pressed = false); widget.onTap(); }, onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(scale: _pressed ? 0.88 : 1.0, duration: const Duration(milliseconds: 100), child: Container(width: widget.size, height: widget.size, decoration: BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: [const Color(0xFF5B1BAA), const Color(0xFF9B3FD8)]), boxShadow: [BoxShadow(color: const Color(0xFFFFD700).withAlpha(180), blurRadius: 22)]), child: Icon(widget.icon, color: const Color(0xFFFFE066), size: widget.size * 0.5))),
     );
   }
 }
 
+class _AvatarOptionTile extends StatelessWidget {
+  final IconData icon; final String title; final String subtitle; final VoidCallback? onTap;
+  const _AvatarOptionTile({required this.icon, required this.title, required this.subtitle, this.onTap});
+  @override Widget build(BuildContext context) {
+    final isDisabled = onTap == null;
+    return Opacity(opacity: isDisabled ? 0.45 : 1.0, child: Material(color: Colors.white.withAlpha(20), borderRadius: BorderRadius.circular(16), child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(16), child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), child: Row(children: [Container(width: 48, height: 48, decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFFFD700).withAlpha(40), border: Border.all(color: const Color(0xFFFFD700).withAlpha(150), width: 1.5)), child: Icon(icon, color: const Color(0xFFFFD700), size: 24)), const SizedBox(width: 16), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)), const SizedBox(height: 2), Text(subtitle, style: TextStyle(color: Colors.white.withAlpha(180), fontSize: 13))])), const Icon(Icons.chevron_right, color: Colors.white54, size: 20)])))));
+  }
+}
+
 class _PetsSection extends StatelessWidget {
-  final WizardData wizardData;
-  final VoidCallback onUpdate;
+  final WizardData wizardData; final VoidCallback onUpdate;
+  const _PetsSection({required this.wizardData, required this.onUpdate});
 
-  static const List<String> _speciesOptions = [
-    'Dog',
-    'Cat',
-    'Bird',
-    'Hamster',
-    'Fish',
-    'Bunny',
-    'Reptile',
-    'Other',
-  ];
+  @override Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Your Adventure Team', style: GoogleFonts.cinzelDecorative(color: const Color(0xFFFFD700), fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        SizedBox(height: 80, child: ListView(scrollDirection: Axis.horizontal, children: [
+          GestureDetector(onTap: () => _showAddPetDialog(context), child: Container(width: 70, margin: const EdgeInsets.only(right: 12), decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFFFFD700).withAlpha(150), width: 2), gradient: const LinearGradient(colors: [Color(0xFF5B1BAA), Color(0xFF2D0A4E)])), child: const Icon(Icons.add, color: Color(0xFFFFD700), size: 30))),
+          ...wizardData.pets.map((pet) => _buildPetCircle(context, pet)),
+        ])),
+      ],
+    );
+  }
 
-  static const Map<String, String> _speciesImageAssets = {
-    'Fish': 'assets/images/companions/fish.png',
-    'Bunny': 'assets/images/companions/bunny.png',
-    'Hamster': 'assets/images/companions/hamster.png',
-    'Reptile': 'assets/images/companions/reptile.png',
-  };
-
-  const _PetsSection({
-    required this.wizardData,
-    required this.onUpdate,
-  });
+  Widget _buildPetCircle(BuildContext context, Map<String, String> pet) {
+    final name = pet['name'] ?? '';
+    final avatar = wizardData.petAvatars[name];
+    return Container(width: 70, margin: const EdgeInsets.only(right: 12), child: Column(children: [Container(width: 60, height: 60, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFFFFD700), width: 2)), child: ClipOval(child: avatar != null ? Image.memory(base64Decode(avatar.imageBase64.split(',').last), fit: BoxFit.cover) : Center(child: Text(_getEmojiForSpecies(pet['species']), style: const TextStyle(fontSize: 30))))), const SizedBox(height: 4), Text(name, style: const TextStyle(color: Colors.white, fontSize: 10), overflow: TextOverflow.ellipsis)]));
+  }
 
   void _showAddPetDialog(BuildContext context) {
     final nameController = TextEditingController();
     final breedController = TextEditingController();
     String species = 'Dog';
-    String gender = 'Boy';
+    String? pickedPhotoBase64;
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
-          final selectedPreviewImage = _speciesImageAssets[species];
+          final selectedPreviewImage = _PetsSection._speciesImageAssets[species];
+
+          Future<void> pickPhoto() async {
+            final picker = ImagePicker();
+            final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+            if (picked != null) {
+              final bytes = await picked.readAsBytes();
+              setState(() => pickedPhotoBase64 = base64Encode(bytes));
+            }
+          }
 
           return Dialog(
             backgroundColor: Colors.transparent,
-            insetPadding:
-                const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
             child: Container(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF120226), Color(0xFF3D1166)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
+                gradient: const LinearGradient(colors: [Color(0xFF120226), Color(0xFF3D1166)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                    color: const Color(0xFFFFD700).withAlpha(150), width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF9B3FD8).withAlpha(100),
-                    blurRadius: 26,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
+                border: Border.all(color: const Color(0xFFFFD700).withAlpha(150), width: 2),
               ),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'Summon a Magical Pet',
-                      style: GoogleFonts.cinzelDecorative(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFFFFD700),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+                    Text('Summon a Magical Pet', style: GoogleFonts.cinzelDecorative(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFFFFD700)), textAlign: TextAlign.center),
                     const SizedBox(height: 16),
-                    if (selectedPreviewImage != null)
-                      Center(
-                        child: Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                                color: const Color(0xFFFFD700), width: 2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFFFD700).withAlpha(100),
-                                blurRadius: 12,
-                              ),
-                            ],
-                          ),
-                          child: ClipOval(
-                            child: Image.asset(
-                              selectedPreviewImage,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      ),
+                    Center(child: GestureDetector(onTap: pickPhoto, child: Container(width: 110, height: 110, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: pickedPhotoBase64 != null ? const Color(0xFFD4A0FF) : const Color(0xFFFFD700), width: 2.5)), child: ClipOval(child: pickedPhotoBase64 != null ? Image.memory(base64Decode(pickedPhotoBase64!), fit: BoxFit.cover) : selectedPreviewImage != null ? Image.asset(selectedPreviewImage, fit: BoxFit.cover) : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_a_photo_rounded, color: const Color(0xFFD4A0FF), size: 30), Text('Add Photo', style: TextStyle(color: const Color(0xFFD4A0FF), fontSize: 10))]))))),
                     const SizedBox(height: 16),
-                    TextField(
-                      controller: nameController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _petFieldDecoration(
-                        labelText: 'Pet Name',
-                        hintText: 'e.g. Luna',
-                      ),
-                    ),
+                    TextField(controller: nameController, style: const TextStyle(color: Colors.white), decoration: _petFieldDecoration(labelText: 'Pet Name', hintText: 'e.g. Luna')),
                     const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: species,
-                      dropdownColor: const Color(0xFF2A0A4E),
-                      style: const TextStyle(color: Colors.white),
-                      items: _speciesOptions
-                          .map((s) => DropdownMenuItem(
-                              value: s,
-                              child: Text('${_getEmojiForSpecies(s)} $s')))
-                          .toList(),
-                      onChanged: (v) {
-                        if (v != null) setState(() => species = v);
-                      },
-                      decoration: _petFieldDecoration(labelText: 'Species'),
-                    ),
+                    DropdownButtonFormField<String>(value: species, dropdownColor: const Color(0xFF2A0A4E), style: const TextStyle(color: Colors.white), items: _speciesOptions.map((s) => DropdownMenuItem(value: s, child: Text('${_getEmojiForSpecies(s)} $s'))).toList(), onChanged: (v) { if (v != null) setState(() => species = v); }, decoration: _petFieldDecoration(labelText: 'Species')),
                     const SizedBox(height: 12),
-                    TextField(
-                      controller: breedController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _petFieldDecoration(
-                        labelText: 'Breed / Appearance',
-                        hintText: 'e.g. Golden Retriever, fluffy white cat',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: gender,
-                      dropdownColor: const Color(0xFF2A0A4E),
-                      style: const TextStyle(color: Colors.white),
-                      items: ['Boy', 'Girl']
-                          .map(
-                              (s) => DropdownMenuItem(value: s, child: Text(s)))
-                          .toList(),
-                      onChanged: (v) {
-                        if (v != null) setState(() => gender = v);
-                      },
-                      decoration: _petFieldDecoration(labelText: 'Gender'),
-                    ),
+                    TextField(controller: breedController, style: const TextStyle(color: Colors.white), decoration: _petFieldDecoration(labelText: 'Breed / Appearance', hintText: 'e.g. Golden Retriever')),
                     const SizedBox(height: 20),
-                    // NEW: Make Pet Magical Button
                     OutlinedButton.icon(
                       onPressed: () async {
-                        if (nameController.text.trim().isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Please enter a pet name first.')),
-                          );
-                          return;
-                        }
-
-                        final GeneratedAvatar? result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => CustomPetAvatarScreen(
-                              petName: nameController.text.trim(),
-                              species: species,
-                              breedDescription: breedController.text.trim(),
-                              ownerFavoriteColor:
-                                  wizardData.favoriteColor,
-                            ),
-                          ),
-                        );
-
+                        if (nameController.text.trim().isEmpty) return;
+                        final result = await Navigator.push<GeneratedAvatar>(context, MaterialPageRoute(builder: (_) => CustomPetAvatarScreen(petName: nameController.text.trim(), species: species, breedDescription: breedController.text.trim(), ownerFavoriteColor: wizardData.favoriteColor)));
                         if (result != null) {
-                          wizardData.pets.add({
-                            'name': nameController.text.trim(),
-                            'species': species,
-                            'gender': gender,
-                            'breed': breedController.text.trim(),
-                            'is_magical': 'true',
-                          });
-                          wizardData.petAvatars[nameController.text.trim()] =
-                              result;
-                          onUpdate();
-                          if (context.mounted) Navigator.pop(context);
+                          wizardData.pets.add({'name': nameController.text.trim(), 'species': species, 'breed': breedController.text.trim()});
+                          wizardData.petAvatars[nameController.text.trim()] = result;
+                          onUpdate(); if (context.mounted) Navigator.pop(context);
                         }
                       },
                       icon: const Icon(Icons.auto_awesome, size: 18),
                       label: const Text('Make Pet Magical ✨'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFFFD700),
-                        side: const BorderSide(
-                            color: Color(0xFFFFD700), width: 1.5),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
+                      style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFFFFD700), side: const BorderSide(color: Color(0xFFFFD700))),
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel',
-                              style: TextStyle(color: Colors.white70)),
-                        ),
-                        const SizedBox(width: 12),
-                        ElevatedButton(
-                          onPressed: () {
-                            if (nameController.text.trim().isNotEmpty) {
-                              wizardData.pets.add({
-                                'name': nameController.text.trim(),
-                                'species': species,
-                                'gender': gender,
-                                'breed': breedController.text.trim(),
-                              });
-                              onUpdate();
-                              Navigator.pop(context);
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF9B3FD8),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: const Text('Add Pet'),
-                        ),
-                      ],
-                    ),
+                    Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                      TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel', style: TextStyle(color: Colors.white70))),
+                      ElevatedButton(onPressed: () {
+                        if (nameController.text.trim().isNotEmpty) {
+                          final petName = nameController.text.trim();
+                          wizardData.pets.add({'name': petName, 'species': species, 'breed': breedController.text.trim()});
+                          if (pickedPhotoBase64 != null) wizardData.petPhotos[petName] = pickedPhotoBase64!;
+                          onUpdate(); Navigator.pop(context);
+                        }
+                      }, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF9B3FD8), foregroundColor: Colors.white), child: const Text('Add Pet'))
+                    ]),
                   ],
                 ),
               ),
@@ -1474,360 +1443,23 @@ class _PetsSection extends StatelessWidget {
     );
   }
 
-  InputDecoration _petFieldDecoration(
-      {required String labelText, String? hintText}) {
+  InputDecoration _petFieldDecoration({required String labelText, String? hintText}) {
     return InputDecoration(
-      labelText: labelText,
-      hintText: hintText,
-      labelStyle: const TextStyle(color: Color(0xFFFFD700)),
-      hintStyle: const TextStyle(color: Colors.white38),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: const Color(0xFFFFD700).withAlpha(100)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
-      ),
-      filled: true,
-      fillColor: Colors.white.withAlpha(10),
+      labelText: labelText, hintText: hintText, labelStyle: const TextStyle(color: Color(0xFFFFD700)), hintStyle: const TextStyle(color: Colors.white38),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: const Color(0xFFFFD700).withAlpha(100))),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2)),
+      filled: true, fillColor: Colors.white10,
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Text(
-            'Your Adventure Team',
-            style: GoogleFonts.cinzelDecorative(
-              color: const Color(0xFFFFD700),
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 80,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [
-              // Add Pet Button
-              GestureDetector(
-                onTap: () => _showAddPetDialog(context),
-                child: Container(
-                  width: 70,
-                  margin: const EdgeInsets.only(right: 12),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                        color: const Color(0xFFFFD700).withAlpha(150),
-                        width: 2),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF5B1BAA), Color(0xFF2D0A4E)],
-                    ),
-                  ),
-                  child:
-                      const Icon(Icons.add, color: Color(0xFFFFD700), size: 30),
-                ),
-              ),
-              // Current Pets
-              ...wizardData.pets.map((pet) {
-                final name = pet['name'] ?? '';
-                final species = pet['species'] ?? 'Other';
-                final avatar = wizardData.petAvatars[name];
-
-                return GestureDetector(
-                  onTap: () async {
-                    final result = await Navigator.push<GeneratedAvatar>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CustomPetAvatarScreen(
-                          petName: name,
-                          species: species,
-                          breedDescription: pet['breed'] ?? species,
-                          ownerFavoriteColor: 'Blue', // Default for now
-                        ),
-                      ),
-                    );
-                    if (result != null) {
-                      wizardData.petAvatars[name] = result;
-                      onUpdate();
-                    }
-                  },
-                  child: Container(
-                    width: 70,
-                    margin: const EdgeInsets.only(right: 12),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: avatar != null
-                                  ? const Color(0xFFFFD700)
-                                  : const Color(0xFFFFD700).withAlpha(100),
-                              width: 2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: avatar != null
-                                    ? const Color(0xFFFFD700).withAlpha(150)
-                                    : const Color(0xFF9B3FD8).withAlpha(80),
-                                blurRadius: avatar != null ? 12 : 8,
-                              ),
-                            ],
-                          ),
-                          child: ClipOval(
-                            child: avatar != null
-                                ? Image.memory(
-                                    base64Decode(
-                                        avatar.imageBase64.split(',').last),
-                                    fit: BoxFit.cover,
-                                  )
-                                : Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Text(
-                                        _getEmojiForSpecies(species),
-                                        style: const TextStyle(fontSize: 30),
-                                      ),
-                                      Positioned(
-                                        bottom: 0,
-                                        right: 0,
-                                        child: Container(
-                                          padding: const EdgeInsets.all(2),
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFF9B3FD8),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(Icons.auto_awesome,
-                                              size: 12, color: Colors.white),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          name,
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 10),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-String _getEmojiForSpecies(String? species) {
-  switch (species) {
-    case 'Dog':
-      return '🐕';
-    case 'Cat':
-      return '🐱';
-    case 'Bird':
-      return '🐦';
-    case 'Hamster':
-      return '🐹';
-    case 'Fish':
-      return '🐠';
-    case 'Bunny':
-      return '🐰';
-    case 'Reptile':
-      return '🦎';
-    default:
-      return '🐾';
-  }
-}
-
-// ─── Age step button ──────────────────────────────────────────────────────────
-class _AgeStepButton extends StatefulWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _AgeStepButton({required this.icon, required this.onTap});
-
-  @override
-  State<_AgeStepButton> createState() => _AgeStepButtonState();
-}
-
-class _AgeStepButtonState extends State<_AgeStepButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.88 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        child: Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: _pressed
-                  ? [const Color(0xFF3A0A7A), const Color(0xFF6B2BAA)]
-                  : [const Color(0xFF5B1BAA), const Color(0xFF9B3FD8)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFFD700).withAlpha(180),
-                blurRadius: 22,
-                spreadRadius: 4,
-              ),
-              BoxShadow(
-                color: const Color(0xFFFFD700).withAlpha(60),
-                blurRadius: 8,
-                spreadRadius: 1,
-              ),
-            ],
-          ),
-          child: Icon(
-            widget.icon,
-            color: const Color(0xFFFFE066),
-            size: 26,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Name input formatter ──────────────────────────────────────────────────────
-class _SafeNameFormatter extends TextInputFormatter {
-  const _SafeNameFormatter();
-
-  static const Set<String> _blockedWords = {
-    'damn',
-    'hell',
-    'stupid',
-    'idiot',
-    'dumb',
-    'hate',
+  static const List<String> _speciesOptions = ['Dog', 'Cat', 'Bird', 'Hamster', 'Fish', 'Bunny', 'Reptile', 'Other'];
+  static const Map<String, String> _speciesImageAssets = {
+    'Fish': 'assets/images/companions/fish.png', 'Bunny': 'assets/images/companions/bunny.png', 'Hamster': 'assets/images/companions/hamster.png', 'Reptile': 'assets/images/companions/reptile.png',
   };
 
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final cleaned = newValue.text
-        .replaceAll(RegExp(r"[^a-zA-Z0-9 '\\-]"), '')
-        .replaceAll(RegExp(r'\s{2,}'), ' ')
-        .trimLeft();
-    if (cleaned.isEmpty) return const TextEditingValue();
-
-    final safeWords = cleaned
-        .split(' ')
-        .where((w) => !_blockedWords.contains(w.toLowerCase()))
-        .toList();
-    final safeText = safeWords.join(' ');
-    return TextEditingValue(
-      text: safeText,
-      selection: TextSelection.collapsed(offset: safeText.length),
-    );
+  String _getEmojiForSpecies(String? species) {
+    switch (species) {
+      case 'Dog': return '🐕'; case 'Cat': return '🐱'; case 'Bird': return '🐦'; case 'Hamster': return '🐹'; case 'Fish': return '🐠'; case 'Bunny': return '🐰'; case 'Reptile': return '🦎'; default: return '🐾';
+    }
   }
 }
-
-
-class _AvatarOptionTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback? onTap;
-
-  const _AvatarOptionTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDisabled = onTap == null;
-    return Opacity(
-      opacity: isDisabled ? 0.45 : 1.0,
-      child: Material(
-        color: Colors.white.withAlpha(20),
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFFFFD700).withAlpha(40),
-                  border: Border.all(
-                    color: const Color(0xFFFFD700).withAlpha(150),
-                    width: 1.5,
-                  ),
-                ),
-                child: Icon(icon, color: const Color(0xFFFFD700), size: 24),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: Colors.white.withAlpha(180),
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right,
-                  color: Colors.white.withAlpha(150), size: 20),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-  }
-}
-
