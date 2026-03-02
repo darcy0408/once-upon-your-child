@@ -16,6 +16,7 @@ import '../../widgets/magic_star_cursor.dart';
 import '../../widgets/avatar_gallery_selector.dart';
 import '../../services/api_service_manager.dart';
 import '../../services/avatar_generation_state.dart';
+import '../../services/firebase_analytics_service.dart';
 import 'custom_pet_avatar_screen.dart';
 
 /// Hero Creator — Step 1 of the story wizard.
@@ -72,6 +73,17 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   late TextEditingController _questController;
   late FlutterTts _tts;
 
+  // ─── Analytics Helpers ──────────────────────────────────────────────────────
+  void _logPageView(int pageIndex) {
+    FirebaseAnalyticsService.logEvent('hero_creator_page_view', {
+      'page_number': pageIndex,
+      'is_creating_new': _isCreatingNew,
+      'character_name_length': widget.wizardData.characterName.length,
+      'has_archetype': _selectedArchetypeId != null,
+      'has_avatar': _hasAvatar,
+    });
+  }
+
   // ─── Lifecycle ──────────────────────────────────────────────────────────────
   @override
   void initState() {
@@ -84,6 +96,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       _heroPage = 1;
     }
     _heroPageController = PageController(initialPage: _heroPage);
+    _logPageView(_heroPage);
 
     if (widget.wizardData.characterAge < 3 ||
         widget.wizardData.characterAge > 99) {
@@ -195,6 +208,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         curve: Curves.easeInOut,
       );
       setState(() => _heroPage++);
+      _logPageView(_heroPage);
     }
   }
 
@@ -205,12 +219,18 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         curve: Curves.easeInOut,
       );
       setState(() => _heroPage--);
+      _logPageView(_heroPage);
     }
   }
 
   // ─── Character helpers ────────────────────────────────────────────────────────
   void _loadExistingCharacter(Character character) {
     try {
+      FirebaseAnalyticsService.logEvent('hero_creator_select_character', {
+        'character_id': character.id,
+        'character_role': character.role,
+        'character_age': character.age,
+      });
       setState(() {
         _isCreatingNew = false;
         _selectedExistingCharacter = character;
@@ -252,6 +272,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   void _switchToNewCharacter() {
+    FirebaseAnalyticsService.logEvent('hero_creator_create_new', {});
     setState(() {
       _isCreatingNew = true;
       _selectedExistingCharacter = null;
@@ -335,7 +356,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   Future<void> _handleContinue() async {
     final ok = await _saveCharacterDraft();
-    if (ok) widget.onNext();
+    if (ok) {
+      FirebaseAnalyticsService.logEvent('hero_creator_complete', {
+        'is_creating_new': _isCreatingNew,
+        'has_avatar': _hasAvatar,
+        'archetype': _selectedArchetypeId,
+      });
+      widget.onNext();
+    }
   }
 
   // ─── TTS Helper ─────────────────────────────────────────────────────────────
@@ -1194,8 +1222,24 @@ class _CharacterChoiceCard extends StatelessWidget {
 
   const _CharacterChoiceCard({required this.character, required this.onTap});
 
+  Widget _buildAvatarContent(String imageBase64) {
+    if (imageBase64.startsWith('assets/')) {
+      return AssetImage(imageBase64) as ImageProvider;
+    }
+    if (imageBase64.startsWith('http')) {
+      return NetworkImage(imageBase64) as ImageProvider;
+    }
+    try {
+      final normalized = imageBase64.contains(',') ? imageBase64.split(',').last : imageBase64;
+      return MemoryImage(base64Decode(normalized)) as ImageProvider;
+    } catch (_) {
+      return const AssetImage('assets/images/hero_placeholder.jpg') as ImageProvider;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final avatarData = character.generatedAvatar?.imageBase64;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1211,8 +1255,8 @@ class _CharacterChoiceCard extends StatelessWidget {
             CircleAvatar(
               radius: 35,
               backgroundColor: const Color(0xFF3A2363),
-              backgroundImage: character.generatedAvatar != null
-                ? NetworkImage(character.generatedAvatar!.imageBase64) as ImageProvider
+              backgroundImage: avatarData != null
+                ? _buildAvatarContent(avatarData)
                 : const AssetImage('assets/images/hero_placeholder.jpg'),
             ),
             const SizedBox(width: 16),
