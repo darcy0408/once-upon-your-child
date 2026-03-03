@@ -3,6 +3,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'package:story_weaver_app/services/feelings_ambient_service.dart';
 import 'package:story_weaver_app/services/api_service_manager.dart';
 import 'package:story_weaver_app/services/achievement_service.dart';
 import 'package:story_weaver_app/story_result_screen.dart';
@@ -94,9 +95,12 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
     setState(() => _isGenerating = true);
     await Future<void>.delayed(const Duration(milliseconds: 80));
     if (!mounted) return;
+    // Silently check for a recent feelings journal entry (last 24 h)
+    final currentFeeling = await FeelingsAmbientService.getRecentFeeling();
     try {
       await _saveCharacterIfNeeded();
       final requestData = WizardDataMapper.mapToStoryRequest(widget.wizardData);
+      if (currentFeeling != null) requestData['currentFeeling'] = currentFeeling.toJson();
       if (widget.wizardData.interactiveMode) {
         if (mounted) {
           final character = Character(id: widget.wizardData.characterId ?? 'temp-${DateTime.now().millisecondsSinceEpoch}', name: widget.wizardData.characterName, age: widget.wizardData.characterAge, role: widget.wizardData.selectedArchetypeId ?? 'Adventurer', gender: widget.wizardData.characterGender, personalitySliders: widget.wizardData.personalitySliders);

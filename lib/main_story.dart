@@ -35,6 +35,7 @@ import 'premium_upgrade_screen.dart';
 import 'screens/subscription_success_screen.dart';
 import 'services/achievement_service.dart';
 import 'services/api_service_manager.dart';
+import 'services/feelings_ambient_service.dart';
 import 'services/grace_period_service.dart';
 import 'services/grace_period_analytics.dart';
 import 'services/progression_service.dart';
@@ -469,8 +470,9 @@ class _StoryScreenState extends State<StoryScreen> {
       );
     }
 
-    // currentFeeling is null here; will be populated by ambient feelings (future)
-    CurrentFeeling? currentFeeling;
+    // Silently check for a recent feelings journal entry (last 24 h)
+    final CurrentFeeling? currentFeeling =
+        await FeelingsAmbientService.getRecentFeeling();
 
     // Start loading state
     _startProgress();
