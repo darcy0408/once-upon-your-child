@@ -2,6 +2,39 @@
 
 ---
 
+## Session Update - 2026-03-03 (Wizard Simplification — Tasks A–E Complete)
+
+### Scope Completed
+- **Task A — Merge Archetype + Superpower:**
+  - `_selectArchetype()` now auto-sets `wizardData.heroSuperpower` from `archetype.specialAbility`
+  - Removed `_PetsSection` from Page 2 (moved to Page 3)
+  - Replaced Page 3 (personality pairs / superpower chips / quests) with an Adventure Team companion grid
+  - Added `_buildAdventureTeamPage`, `_buildArchetypePowerBadge`, `_buildCompanionGrid`, `_QuickCompanion` data class
+- **Task C — Scene Selection Page (Page 4):**
+  - New Page 4: "Where will your adventure happen?" with 5 curated scenes for Sprout/Explorer bands; all 11 for Adventurer/Creator
+  - Age-adaptive text via `ScenarioCard.titleForAge()` / `descriptionForAge()`
+  - Single-select, always optional. Old Page 4 (story style) promoted to Page 5.
+- **Task B — 3→2 Outer Steps:**
+  - Removed `CompanionSelectorStep` from outer wizard `PageView`
+  - `MoonPhaseProgress` updated to `totalSteps: 2` with updated labels
+  - `_nextStep` cap reduced from 2→1
+- **Task D — Wish Field on Page 5:**
+  - `_wishController` added and wired to `wizardData.customElements`
+  - Text field + mic (speech-to-text) below story length crystals on Page 5
+- **Task E — Magic Review Cleanup:**
+  - Removed `ImageModeOrb`, `ImageCrystalFormation`, wish `TextField` from review screen
+  - Replaced with read-only `_SummaryRow` chips: story type, length, wish, companions
+  - Removed `SpeechToText`, `_wishController`, and `_toggleWishListening` from review
+
+### Status
+- **Wizard Simplification (Tasks A–E):** ✅ All complete, pushed to main
+- **Age-Band Theme System:** ✅ Phase 1 complete (data structures, provider, MaterialApp wiring, ThemeExtension)
+- **Quick Story Home / Post-Story Actions:** 🟡 Pending (next workstream)
+- **Feelings Garden:** 🟡 Pending
+- **Launch Readiness:** ~35%
+
+---
+
 ## Session Update - 2026-03-03 (Age-Band Theme System — Phases 1 & 2)
 
 ### Scope Completed
