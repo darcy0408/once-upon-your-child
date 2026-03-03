@@ -20,6 +20,7 @@ import '../../services/avatar_generation_state.dart';
 import '../../services/firebase_analytics_service.dart';
 import '../../widgets/image_mode_orb.dart';
 import '../../widgets/image_crystal_formation.dart';
+import '../../data/scenario_data.dart';
 import 'custom_pet_avatar_screen.dart';
 
 /// Hero Creator — Step 1 of the story wizard.
@@ -205,7 +206,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   // ─── Navigation Helpers ──────────────────────────────────────────────────────
   void _heroNextPage() {
-    if (_heroPage < 4) {
+    if (_heroPage < 5) {
       _heroPageController.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
@@ -772,8 +773,121 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       ];
 
 
-  // Page 4: "What kind of story?"
+  // Page 4: "Where will your adventure happen?" (Scene selection)
+  static const List<String> _curatedSceneIds = [
+    'volcano_dragons',
+    'crystal_cavern',
+    'vanishing_colors',
+    'big_feelings_quest',
+    'safe_space',
+  ];
+
   Widget _buildPage4() {
+    final age = widget.wizardData.characterAge;
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+
+    // Sprout/Explorer bands get 5 curated scenes; Adventurer/Creator get all
+    final showAll = band.band == AgeBand.adventurer || band.band == AgeBand.creator;
+    final scenes = showAll
+        ? ScenarioData.all
+        : ScenarioData.all.where((s) => _curatedSceneIds.contains(s.id)).toList();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _audioPrompt("Where will your adventure happen?"),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  "Where to adventure?",
+                  style: GoogleFonts.cinzelDecorative(
+                    color: const Color(0xFFFFD700),
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            "Pick a world — or skip and let the magic decide!",
+            style: GoogleFonts.fredoka(color: Colors.white70, fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ...scenes.map((scene) {
+            final isSelected = widget.wizardData.selectedScenario == scene.id;
+            return GestureDetector(
+              onTap: () => setState(() {
+                widget.wizardData.selectedScenario =
+                    isSelected ? null : scene.id;
+              }),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? const Color(0xFF6B3FA0).withAlpha(220)
+                      : Colors.white.withAlpha(15),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected
+                        ? const Color(0xFFFFD700)
+                        : const Color(0xFFD4A0FF).withAlpha(80),
+                    width: isSelected ? 2.0 : 1.0,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Text(scene.emoji, style: const TextStyle(fontSize: 30)),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            scene.titleForAge(age),
+                            style: GoogleFonts.fredoka(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            scene.descriptionForAge(age),
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 12),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (isSelected)
+                      const Icon(Icons.check_circle_rounded,
+                          color: Color(0xFFFFD700), size: 22),
+                  ],
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 16),
+          _buildNextArrowButton(enabled: true, onTap: _heroNextPage),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  // Page 5: "What kind of story?"
+  Widget _buildPage5() {
     final data = widget.wizardData;
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -1550,6 +1664,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   _buildPage2(),
                   _buildPage3(),
                   _buildPage4(),
+                  _buildPage5(),
                 ],
               ),
               if (_heroPage > 0)
