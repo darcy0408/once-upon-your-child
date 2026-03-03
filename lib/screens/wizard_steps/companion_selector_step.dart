@@ -1,18 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import '../../models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pill_button.dart';
 
 /// Step 3: The Adventure Team Selector
-///
-/// Layout:
-/// - Shows saved characters (friends/family) at top
-/// - Grid of magical creature companions below
-/// - Multi-select: can choose characters + magical companions
-/// - Each companion has animation on tap
-/// - Selected companions get gold glowing aura
-/// - Continue button
+/// Updated with audio prompts and consistent typography for young children.
 class CompanionSelectorStep extends StatefulWidget {
   final WizardData wizardData;
   final VoidCallback onNext;
@@ -30,26 +25,42 @@ class CompanionSelectorStep extends StatefulWidget {
 }
 
 class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
-  // Use a Set for multi-selection
   final Set<String> _selectedCompanions = {};
-  final bool _isLoading = false; // Added state variable
+  final bool _isLoading = false;
+  late FlutterTts _tts;
+
+  @override
+  void initState() {
+    super.initState();
+    _tts = FlutterTts();
+    _initTts();
+    
+    // Sync with existing wizard data
+    _selectedCompanions.addAll(widget.wizardData.selectedCompanions);
+  }
+
+  Future<void> _initTts() async {
+    await _tts.setLanguage("en-US");
+    await _tts.setPitch(1.0);
+    await _tts.setSpeechRate(0.5);
+  }
+
+  @override
+  void dispose() {
+    _tts.stop();
+    super.dispose();
+  }
 
   List<Companion> get _savedCharacterCompanions {
-    // Convert saved characters to companions (friends/family)
     return widget.savedCharacters.where((char) {
-      // Don't include the main character as a companion
       return char.name != widget.wizardData.characterName;
     }).map((char) {
-      // Show personalized description based on character's actual data
       String description = '${char.age} years old';
-
-      // Only show data that was actually entered by the user
       if (char.role.isNotEmpty && char.role != 'Hero') {
         description = char.role;
       } else if (char.personalityTraits?.isNotEmpty == true) {
         description = char.personalityTraits!.join(', ');
       } else {
-        // Just show age if no other data was entered
         description = 'Age ${char.age}';
       }
 
@@ -60,7 +71,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
         color: AppColors.gold,
         greeting: 'Let\'s have an adventure!',
         description: description,
-        character: char, // Attach the character object here
+        character: char,
       );
     }).toList();
   }
@@ -173,16 +184,10 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
     setState(() {
       if (_selectedCompanions.contains(companion.id)) {
         _selectedCompanions.remove(companion.id);
-        
-        // Remove from wizardData
         widget.wizardData.selectedCompanions.remove(companion.id);
-        if (widget.wizardData.companionNames.contains(companion.name)) {
-             widget.wizardData.companionNames.remove(companion.name);
-        }
+        widget.wizardData.companionNames.remove(companion.name);
       } else {
         _selectedCompanions.add(companion.id);
-        
-        // Add to wizardData
         if (!widget.wizardData.selectedCompanions.contains(companion.id)) {
             widget.wizardData.selectedCompanions.add(companion.id);
             widget.wizardData.companionNames.add(companion.name);
@@ -191,42 +196,46 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
     });
   }
 
+  Widget _audioPrompt(String text) {
+    return IconButton(
+      icon: const Icon(Icons.volume_up_rounded, color: Color(0xFFFFD700), size: 32),
+      onPressed: () => _tts.speak(text),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Debug logging for missing companions
-    if (_savedCharacterCompanions.isEmpty && widget.savedCharacters.isNotEmpty) {
-      debugPrint('🔍 CompanionSelectorStep: Received ${widget.savedCharacters.length} saved characters');
-      debugPrint('🔍 CompanionSelectorStep: Showing ${_savedCharacterCompanions.length} companions after filtering');
-      debugPrint('⚠️ WARNING: Characters hidden by filter! Current Hero: ${widget.wizardData.characterName}');
-      for(var c in widget.savedCharacters) {
-         debugPrint('   - Hidden Candidate: ${c.name}, ID: ${c.id}');
-      }
-    } else if (widget.savedCharacters.isNotEmpty) {
-       debugPrint('✅ CompanionSelectorStep: Showing ${_savedCharacterCompanions.length}/${widget.savedCharacters.length} characters.');
-    }
-
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Title
-            Text(
-              'Choose a Travel Buddy',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppColors.textDark,
+            // Title Section
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _audioPrompt("Choose a travel buddy"),
+                const SizedBox(width: 8),
+                Text(
+                  'Choose a Travel Buddy',
+                  style: GoogleFonts.cinzelDecorative(
+                    color: const Color(0xFFFFD700),
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'Outfit',
                   ),
-              textAlign: TextAlign.center,
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               'Who will join you on this adventure?',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textDark.withValues(alpha: 0.7),
-                  ),
+              style: GoogleFonts.quicksand(
+                color: Colors.white.withAlpha(200),
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -237,22 +246,21 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             else if (_savedCharacterCompanions.isNotEmpty) ...[ 
               Text(
                 'Your Friends',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: GoogleFonts.fredoka(
+                  color: const Color(0xFFD4A0FF),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
               ListView.separated(
                 physics: const NeverScrollableScrollPhysics(),
                 shrinkWrap: true,
                 itemCount: _savedCharacterCompanions.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: AppSpacing.md),
+                separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.md),
                 itemBuilder: (context, index) {
                   final companion = _savedCharacterCompanions[index];
-                  final isSelected =
-                      _selectedCompanions.contains(companion.id); // Fixed: set contains check
+                  final isSelected = _selectedCompanions.contains(companion.id);
                   return _CompanionCard(
                     companion: companion,
                     isSelected: isSelected,
@@ -263,18 +271,18 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
               const SizedBox(height: AppSpacing.xl),
             ],
 
-            // 2. Magical Creatures (Presets)
+            // 2. Magical Creatures
             Text(
               'Magical Creatures',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: GoogleFonts.fredoka(
+                color: const Color(0xFFD4A0FF),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
             ..._magicalCompanions.map((creature) {
-              final isSelected =
-                  _selectedCompanions.contains(creature.id); // Fixed: set contains check
+              final isSelected = _selectedCompanions.contains(creature.id);
               return Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.md),
                 child: _CompanionCard(
@@ -302,13 +310,13 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             else
               Center(
                 child: TextButton(
-                  key: const Key('go_solo_button'),
                   onPressed: widget.onNext,
                   child: Text(
                     'Go Solo (Be Brave!)',
-                    style: TextStyle(
-                      color: AppColors.textDark.withValues(alpha: 0.6),
+                    style: GoogleFonts.quicksand(
+                      color: Colors.white.withAlpha(150),
                       fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
@@ -329,19 +337,12 @@ class Companion {
   final String greeting;
   final String description;
   final String? imagePath;
-  final Character? character; // Optional reference to a full character object
-  final GeneratedAvatar? generatedAvatar; // NEW: AI-generated avatar for pet
+  final Character? character;
+  final GeneratedAvatar? generatedAvatar;
 
   Companion({
-    required this.id,
-    required this.emoji,
-    required this.name,
-    required this.color,
-    required this.greeting,
-    this.description = '',
-    this.imagePath,
-    this.character,
-    this.generatedAvatar,
+    required this.id, required this.emoji, required this.name, required this.color,
+    required this.greeting, this.description = '', this.imagePath, this.character, this.generatedAvatar,
   });
 }
 
@@ -351,316 +352,57 @@ class _CompanionCard extends StatelessWidget {
   final VoidCallback onTap;
   final bool isMagical;
 
-  const _CompanionCard({
-    required this.companion,
-    required this.isSelected,
-    required this.onTap,
-    this.isMagical = false,
-  });
+  const _CompanionCard({required this.companion, required this.isSelected, required this.onTap, this.isMagical = false});
 
   @override
   Widget build(BuildContext context) {
-    final isGlowing = isSelected || isMagical;
-    
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: 'Select ${companion.name}',
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          decoration: BoxDecoration(
-            color: isSelected
-                ? Colors.white.withValues(alpha: 0.9)
-                : Colors.white.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            border: Border.all(
-              color: isSelected ? AppColors.gold : Colors.white.withValues(alpha: 0.6),
-              width: isSelected ? 3 : 1.5,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: AppColors.gold.withValues(alpha: 0.4),
-                      blurRadius: 22,
-                      spreadRadius: 3,
-                      offset: const Offset(0, 4),
-                    )
-                  ]
-                : [
-                    BoxShadow(
-                      color: isGlowing
-                          ? AppColors.primary.withValues(alpha: 0.18)
-                          : AppColors.primary.withValues(alpha: 0.1),
-                      blurRadius: isGlowing ? 14 : 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.xl - 2),
-            child: Stack(
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white.withAlpha(20) : Colors.white.withAlpha(10),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: isSelected ? const Color(0xFFFFD700) : const Color(0xFFD4A0FF).withAlpha(80), width: isSelected ? 3 : 1.5),
+          boxShadow: isSelected ? [BoxShadow(color: const Color(0xFFFFD700).withAlpha(80), blurRadius: 20)] : null,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Background image or gradient
-                _buildCompanionBackground(context),
-                
-                if (isMagical)
-                  Positioned.fill(
-                    child: Opacity(
-                      opacity: isSelected ? 0.28 : 0.18,
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          gradient: RadialGradient(
-                            colors: [
-                              AppColors.goldLight,
-                              Colors.transparent,
-                            ],
-                            radius: 1.2,
-                            center: Alignment(-0.6, -0.8),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // Gradient overlay for text readability
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.7),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          companion.name,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                shadows: [
-                                  const Shadow(
-                                    blurRadius: 4,
-                                    color: Colors.black54,
-                                  ),
-                                ],
-                              ),
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            if (isMagical)
-                              const Icon(Icons.auto_awesome, size: 12, color: AppColors.gold),
-                            if (isMagical) const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                companion.description,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Colors.white.withValues(alpha: 0.9),
-                                    ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                _buildBackground(),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(companion.name, style: GoogleFonts.fredoka(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(companion.description, style: GoogleFonts.quicksand(color: Colors.white.withAlpha(180), fontSize: 13, fontWeight: FontWeight.w500)),
+                    ],
                   ),
                 ),
-
-                // Selection indicator overlay
-                if (isSelected)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppColors.gold,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.check, color: Colors.white, size: 18),
-                    ),
-                  ),
-                if (isSelected)
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Icon(
-                      Icons.auto_awesome,
-                      size: 16,
-                      color: AppColors.gold.withValues(alpha: 0.9),
-                    ),
-                  ),
               ],
             ),
-          ),
+            if (isSelected) Positioned(top: 12, right: 12, child: Container(padding: const EdgeInsets.all(4), decoration: const BoxDecoration(color: Color(0xFFFFD700), shape: BoxShape.circle), child: const Icon(Icons.check, color: Color(0xFF3B2363), size: 20))),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildCompanionBackground(BuildContext context) {
-    // 1. If it has a generated avatar (new pet flow)
+  Widget _buildBackground() {
     if (companion.generatedAvatar != null) {
-      final avatar = companion.generatedAvatar!;
-      return SizedBox(
-        height: 140,
-        width: double.infinity,
-        child: Image.memory(
-          base64Decode(avatar.imageBase64.split(',').last),
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildEmojiFallback(),
-        ),
-      );
+      return Image.memory(base64Decode(companion.generatedAvatar!.imageBase64.split(',').last), height: 120, fit: BoxFit.cover);
     }
-
-    // 2. If companion is a Character object, try to show their avatar
-    if (companion.character != null) {
-      final char = companion.character!;
-      final generated = char.generatedAvatar;
-
-      // Debug logging
-      debugPrint('🎭 Companion ${char.name}: generatedAvatar = ${generated != null ? "present" : "null"}');
-      if (generated != null) {
-        debugPrint('   - imageBase64 length: ${generated.imageBase64.length}');
-        debugPrint('   - Starts with: ${generated.imageBase64.substring(0, generated.imageBase64.length < 50 ? generated.imageBase64.length : 50)}');
-      }
-
-      // Try generated avatar first
-      if (generated != null && generated.imageBase64.isNotEmpty) {
-        final data = generated.imageBase64;
-        final isUrl = data.startsWith('http://') || data.startsWith('https://');
-        final isAsset = data.startsWith('assets/');
-
-        debugPrint('   - Display mode: ${isUrl ? "URL" : isAsset ? "Asset" : "Base64"}');
-
-        return SizedBox(
-          height: 140,
-          width: double.infinity,
-          child: isAsset
-              ? Image.asset(data, fit: BoxFit.cover, errorBuilder: (_, __, ___) {
-                  debugPrint('   ⚠️ Asset image failed to load: $data');
-                  return _buildCharacterFallback(char);
-                })
-              : isUrl
-                  ? Image.network(data, fit: BoxFit.cover, errorBuilder: (_, __, ___) {
-                      debugPrint('   ⚠️ Network image failed to load: $data');
-                      return _buildCharacterFallback(char);
-                    })
-                  : Image.memory(
-                      base64Decode(data.split(',').last),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) {
-                        debugPrint('   ⚠️ Base64 image failed to decode');
-                        return _buildCharacterFallback(char);
-                      },
-                    ),
-        );
-      }
-
-      // Fallback: Show character's DiceBear avatar in a nice container
-      debugPrint('   - Using DiceBear fallback avatar');
-      return _buildCharacterFallback(char);
+    if (companion.character?.generatedAvatar != null) {
+      final b64 = companion.character!.generatedAvatar!.imageBase64;
+      if (b64.startsWith('assets/')) return Image.asset(b64, height: 120, fit: BoxFit.cover);
+      return Image.memory(base64Decode(b64.split(',').last), height: 120, fit: BoxFit.cover);
     }
-
-    // 2. If it has a direct image path (magical companions)
-    if (companion.imagePath != null) {
-      return SizedBox(
-        height: 140,
-        width: double.infinity,
-        child: Image.asset(
-          companion.imagePath!,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return _buildEmojiFallback();
-          },
-        ),
-      );
-    }
-
-    // 3. Fallback: Emoji with gradient
-    return _buildEmojiFallback();
-  }
-
-  Widget _buildCharacterFallback(Character char) {
-    // Show the character's DiceBear avatar prominently
-    return Container(
-      height: 140,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary.withValues(alpha: 0.25),
-            AppColors.primaryLight.withValues(alpha: 0.15),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: Center(
-        child: Container(
-          width: 110,
-          height: 110,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white.withValues(alpha: 0.9),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.2),
-                blurRadius: 15,
-                spreadRadius: 3,
-              ),
-            ],
-          ),
-          child: ClipOval(
-            child: char.buildAvatar(size: 110),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmojiFallback() {
-    return Container(
-      height: 140,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.gold.withValues(alpha: 0.35),
-            companion.color.withValues(alpha: 0.25),
-            AppColors.primaryLight.withValues(alpha: 0.2),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: Center(
-        child: Text(
-          companion.emoji,
-          style: const TextStyle(fontSize: 48),
-        ),
-      ),
-    );
+    if (companion.imagePath != null) return Image.asset(companion.imagePath!, height: 120, fit: BoxFit.cover);
+    return Container(height: 120, color: Colors.white.withAlpha(10), child: Center(child: Text(companion.emoji, style: const TextStyle(fontSize: 50))));
   }
 }
