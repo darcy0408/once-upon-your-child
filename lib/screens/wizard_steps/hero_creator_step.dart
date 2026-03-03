@@ -307,6 +307,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       widget.wizardData.selectedArchetypeId = archetype.name;
       widget.wizardData.personalitySliders =
           Map<String, int>.from(archetype.attributes);
+      // Auto-set superpower from archetype's special ability
+      widget.wizardData.heroSuperpower = archetype.specialAbility;
       if (widget.wizardData.characterAge < 1) {
         widget.wizardData.characterAge = 5;
       }
@@ -539,11 +541,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           if (_hasAvatar) _buildEditAvatarButton() else _buildCreateAvatarButton(),
           const SizedBox(height: 24),
           _buildArchetypeCards(),
-          const SizedBox(height: 24),
-          _PetsSection(
-            wizardData: widget.wizardData,
-            onUpdate: () => setState(() {}),
-          ),
           const SizedBox(height: 40),
           _buildNextArrowButton(enabled: canGoNext, onTap: _heroNextPage),
         ],
@@ -551,8 +548,15 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
-  // Page 3: "What makes your hero special?"
+  // Page 3: "Who's coming with you?" (Adventure Team — companions + pets)
+  // NOTE: This page is built in _buildCompanionPage() — see Task B.
+  // Placeholder until companion grid is implemented.
   Widget _buildPage3() {
+    return _buildAdventureTeamPage();
+  }
+
+  /// Temporary adventure team placeholder — replaced when companion grid is built.
+  Widget _buildAdventureTeamPage() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -561,11 +565,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _audioPrompt("What makes your hero special?"),
+              _audioPrompt("Who's coming with you?"),
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  "What makes your hero special?",
+                  "Who's Coming With You?",
                   style: GoogleFonts.cinzelDecorative(
                     color: const Color(0xFFFFD700),
                     fontSize: 22,
@@ -575,10 +579,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          _buildPersonalityPairs(),
-          const SizedBox(height: 30),
-          _buildSuperpowerSection(),
+          const SizedBox(height: 24),
+          // Show archetype power confirmation if selected
+          if (_selectedArchetypeId != null) _buildArchetypePowerBadge(),
+          const SizedBox(height: 24),
+          // Companion grid will go here (Task B)
+          _buildCompanionGrid(),
           const SizedBox(height: 40),
           _buildNextArrowButton(enabled: true, onTap: _heroNextPage),
           const SizedBox(height: 20),
@@ -586,6 +592,185 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       ),
     );
   }
+
+  /// Shows a confirmation badge for the selected archetype's special ability.
+  Widget _buildArchetypePowerBadge() {
+    final archetype = CharacterArchetypes.all
+        .where((a) => a.name == _selectedArchetypeId)
+        .firstOrNull;
+    if (archetype == null) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFFFD700).withAlpha(30),
+            const Color(0xFF9E6CFF).withAlpha(20),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFD700).withAlpha(80)),
+      ),
+      child: Row(
+        children: [
+          const Text('⚡', style: TextStyle(fontSize: 28)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  archetype.name,
+                  style: const TextStyle(
+                    color: Color(0xFFFFD700),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  archetype.specialAbility,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Companion selection grid — 7 magical creatures + pet management.
+  /// Full implementation comes with Task B (merge pets + companions).
+  Widget _buildCompanionGrid() {
+    final companions = _getDefaultCompanions();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Pick your adventure team:',
+          style: TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        const SizedBox(height: 12),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.85,
+          ),
+          itemCount: companions.length,
+          itemBuilder: (context, i) {
+            final c = companions[i];
+            final isSelected = widget.wizardData.companionNames.contains(c.name);
+            return GestureDetector(
+              onTap: () => setState(() {
+                if (isSelected) {
+                  widget.wizardData.companionNames.remove(c.name);
+                  widget.wizardData.selectedCompanions.remove(c.id);
+                } else {
+                  widget.wizardData.companionNames.add(c.name);
+                  widget.wizardData.selectedCompanions.add(c.id);
+                }
+              }),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? const Color(0xFFFFD700).withAlpha(25)
+                      : Colors.white10,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected
+                        ? const Color(0xFFFFD700)
+                        : Colors.white24,
+                    width: isSelected ? 2 : 1,
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(c.emoji, style: const TextStyle(fontSize: 32)),
+                    const SizedBox(height: 6),
+                    Text(
+                      c.name,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isSelected
+                            ? const Color(0xFFFFD700)
+                            : Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        // Pets from character profile
+        if (widget.wizardData.pets.isNotEmpty) ...[
+          const Text(
+            'Your pets:',
+            style: TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: widget.wizardData.pets.map((pet) {
+              final petName = pet['name'] ?? 'Pet';
+              final isSelected =
+                  widget.wizardData.companionNames.contains(petName);
+              return _chipButton(
+                label: '🐾 $petName',
+                selected: isSelected,
+                onTap: () => setState(() {
+                  if (isSelected) {
+                    widget.wizardData.companionNames.remove(petName);
+                  } else {
+                    widget.wizardData.companionNames.add(petName);
+                  }
+                }),
+              );
+            }).toList(),
+          ),
+        ],
+        const SizedBox(height: 12),
+        // Go Solo option
+        TextButton.icon(
+          onPressed: () => setState(() {
+            widget.wizardData.companionNames.clear();
+            widget.wizardData.selectedCompanions.clear();
+          }),
+          icon: const Icon(Icons.person, color: Colors.white54, size: 18),
+          label: const Text(
+            'Go Solo — no companions',
+            style: TextStyle(color: Colors.white54, fontSize: 13),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// The 7 default magical companions (mirrors CompanionSelectorStep data).
+  List<_QuickCompanion> _getDefaultCompanions() => const [
+        _QuickCompanion(id: 'dragon', emoji: '🐉', name: 'Dragon'),
+        _QuickCompanion(id: 'owl', emoji: '🦉', name: 'Wise Owl'),
+        _QuickCompanion(id: 'cat', emoji: '🐱', name: 'Shadow Cat'),
+        _QuickCompanion(id: 'dog', emoji: '🐕', name: 'Star Dog'),
+        _QuickCompanion(id: 'unicorn', emoji: '🦄', name: 'Unicorn'),
+        _QuickCompanion(id: 'fox', emoji: '🦊', name: 'Clever Fox'),
+        _QuickCompanion(id: 'robin', emoji: '🐦', name: 'Robin'),
+      ];
+
 
   // Page 4: "What kind of story?"
   Widget _buildPage4() {
@@ -1684,4 +1869,17 @@ class _PetsSection extends StatelessWidget {
       case 'Dog': return '🐕'; case 'Cat': return '🐱'; case 'Bird': return '🐦'; case 'Hamster': return '🐹'; case 'Fish': return '🐠'; case 'Bunny': return '🐰'; case 'Reptile': return '🦎'; default: return '🐾';
     }
   }
+}
+
+/// Lightweight companion descriptor used for the adventure team grid on Page 3.
+class _QuickCompanion {
+  final String id;
+  final String emoji;
+  final String name;
+
+  const _QuickCompanion({
+    required this.id,
+    required this.emoji,
+    required this.name,
+  });
 }
