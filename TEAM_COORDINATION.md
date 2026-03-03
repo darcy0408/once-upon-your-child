@@ -2,6 +2,26 @@
 
 ---
 
+## Session Update - 2026-03-03 (Age-Band Theme System — Phase 1)
+
+### Scope Completed
+- Created `lib/theme/age_band_theme.dart` — full age-band theme system with 4 visual bands:
+  - **Sprout (3-5):** Warm orange palette, Nunito font, 88px touch targets, bubbly rounded shapes
+  - **Explorer (6-8):** Current magical purple (preserved as baseline), Quicksand font, full sparkles
+  - **Adventurer (9-12):** Deep cosmic indigo, Bitter slab-serif, subtle glints, "cool" factor
+  - **Creator (13+):** Near-black editorial, Source Sans, zero sparkles, dark mode default
+- Created `lib/providers/age_band_provider.dart` — Riverpod notifier that reads user age from SharedPreferences, resolves the visual band, and supports parent override to move a child up/down a band.
+- Fixed heading overflow in `hero_creator_step.dart` — 3 gold CinzelDecorative headings were missing `Flexible` wrapping, causing text truncation on narrow viewports (pages 1 "Welcome back!", 2 "Who is your hero?", 3 "What does your hero look like?").
+
+### Status
+- **Age-Band Theme Data:** ✅ Complete — 4 bands with colors, fonts, spacing, labels, animation flags
+- **Age-Band Provider:** ✅ Complete — age-derived + parent override, persisted via SharedPreferences
+- **Heading Truncation Fix:** ✅ Fixed (3 headings wrapped in Flexible)
+- **Theme Integration (AppTheme refactor):** 🟡 Next — wire AgeBandThemeData into AppTheme.light()/dark()
+- **Launch Readiness:** 60%
+
+---
+
 ## Session Update - 2026-02-28 (Sentry: RenderFlex overflow — complete fix)
 
 ### Problem

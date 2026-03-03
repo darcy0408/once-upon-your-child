@@ -17,6 +17,8 @@ import '../../widgets/avatar_gallery_selector.dart';
 import '../../services/api_service_manager.dart';
 import '../../services/avatar_generation_state.dart';
 import '../../services/firebase_analytics_service.dart';
+import '../../widgets/image_mode_orb.dart';
+import '../../widgets/image_crystal_formation.dart';
 import 'custom_pet_avatar_screen.dart';
 
 /// Hero Creator — Step 1 of the story wizard.
@@ -202,7 +204,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   // ─── Navigation Helpers ──────────────────────────────────────────────────────
   void _heroNextPage() {
-    if (_heroPage < 3) {
+    if (_heroPage < 4) {
       _heroPageController.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
@@ -386,12 +388,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           children: [
             _audioPrompt("Welcome back!"),
             const SizedBox(width: 8),
-            Text(
-              "Welcome back!",
-              style: GoogleFonts.cinzelDecorative(
-                color: const Color(0xFFFFD700),
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
+            Flexible(
+              child: Text(
+                "Welcome back!",
+                style: GoogleFonts.cinzelDecorative(
+                  color: const Color(0xFFFFD700),
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -462,12 +466,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             children: [
               _audioPrompt("Who is your hero?"),
               const SizedBox(width: 8),
-              Text(
-                "Who is your hero?",
-                style: GoogleFonts.cinzelDecorative(
-                  color: const Color(0xFFFFD700),
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+              Flexible(
+                child: Text(
+                  "Who is your hero?",
+                  style: GoogleFonts.cinzelDecorative(
+                    color: const Color(0xFFFFD700),
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -498,12 +504,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             children: [
               _audioPrompt("What does your hero look like?"),
               const SizedBox(width: 8),
-              Text(
-                "What does your hero look like?",
-                style: GoogleFonts.cinzelDecorative(
-                  color: const Color(0xFFFFD700),
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+              Flexible(
+                child: Text(
+                  "What does your hero look like?",
+                  style: GoogleFonts.cinzelDecorative(
+                    color: const Color(0xFFFFD700),
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -538,12 +546,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             children: [
               _audioPrompt("What makes your hero special?"),
               const SizedBox(width: 8),
-              Text(
-                "What makes your hero special?",
-                style: GoogleFonts.cinzelDecorative(
-                  color: const Color(0xFFFFD700),
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+              Flexible(
+                child: Text(
+                  "What makes your hero special?",
+                  style: GoogleFonts.cinzelDecorative(
+                    color: const Color(0xFFFFD700),
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -552,6 +562,147 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           _buildPersonalityPairs(),
           const SizedBox(height: 30),
           _buildSuperpowerSection(),
+          const SizedBox(height: 40),
+          _buildNextArrowButton(enabled: true, onTap: _heroNextPage),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  // Page 4: "What kind of story?"
+  Widget _buildPage4() {
+    final data = widget.wizardData;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _audioPrompt("What kind of story do you want?"),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  "What kind of story?",
+                  style: GoogleFonts.cinzelDecorative(
+                    color: const Color(0xFFFFD700),
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          // Story mode selection
+          Text(
+            "Pick your story style",
+            style: GoogleFonts.fredoka(
+              color: Colors.white.withAlpha(200),
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 10,
+            runSpacing: 12,
+            children: [
+              ImageModeOrb(
+                modeType: 'tales',
+                label: 'Tales',
+                isActive: data.includeIllustrations,
+                onTap: () => setState(() => data.includeIllustrations = !data.includeIllustrations),
+                primaryColor: const Color(0xFFAA88FF),
+                secondaryColor: const Color(0xFFE28EFF),
+              ),
+              ImageModeOrb(
+                modeType: 'rhyme',
+                label: 'Rhyme Time',
+                isActive: data.rhymeTimeMode,
+                onTap: () => setState(() {
+                  data.rhymeTimeMode = !data.rhymeTimeMode;
+                  if (data.rhymeTimeMode) {
+                    data.learningToReadMode = false;
+                    data.interactiveMode = false;
+                  }
+                }),
+                primaryColor: const Color(0xFF00D4DD),
+                secondaryColor: const Color(0xFF7FDDFF),
+              ),
+              ImageModeOrb(
+                modeType: 'reading',
+                label: 'Learn to Read',
+                isActive: data.learningToReadMode,
+                onTap: () => setState(() {
+                  data.learningToReadMode = !data.learningToReadMode;
+                  if (data.learningToReadMode) {
+                    data.rhymeTimeMode = false;
+                    data.interactiveMode = false;
+                  }
+                }),
+                primaryColor: const Color(0xFFB88AFF),
+                secondaryColor: const Color(0xFFFF9ECC),
+              ),
+              ImageModeOrb(
+                modeType: 'pickpath',
+                label: 'Pick a Path',
+                isActive: data.interactiveMode,
+                onTap: () => setState(() {
+                  data.interactiveMode = !data.interactiveMode;
+                  if (data.interactiveMode) {
+                    data.rhymeTimeMode = false;
+                    data.learningToReadMode = false;
+                  }
+                }),
+                primaryColor: const Color(0xFF9E6CFF),
+                secondaryColor: const Color(0xFFFFB3E6),
+              ),
+            ],
+          ),
+          const SizedBox(height: 36),
+          // Story length selection
+          Text(
+            "How long should it be?",
+            style: GoogleFonts.fredoka(
+              color: Colors.white.withAlpha(200),
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: ImageCrystalFormation(
+                  type: 'quick',
+                  label: 'Quick',
+                  isSelected: data.storyLength == 'quick',
+                  onTap: () => setState(() => data.storyLength = 'quick'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: ImageCrystalFormation(
+                  type: 'classic',
+                  label: 'Classic',
+                  isSelected: data.storyLength == 'standard',
+                  onTap: () => setState(() => data.storyLength = 'standard'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: ImageCrystalFormation(
+                  type: 'epic',
+                  label: 'Epic',
+                  isSelected: data.storyLength == 'epic',
+                  onTap: () => setState(() => data.storyLength = 'epic'),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 40),
           _buildContinueButton(),
           const SizedBox(height: 20),
@@ -1196,6 +1347,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   _buildPage1(),
                   _buildPage2(),
                   _buildPage3(),
+                  _buildPage4(),
                 ],
               ),
               if (_heroPage > 0)
@@ -1402,7 +1554,16 @@ class _PetsSection extends StatelessWidget {
   Widget _buildPetCircle(BuildContext context, Map<String, String> pet) {
     final name = pet['name'] ?? '';
     final avatar = wizardData.petAvatars[name];
-    return Container(width: 70, margin: const EdgeInsets.only(right: 12), child: Column(children: [Container(width: 60, height: 60, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFFFFD700), width: 2)), child: ClipOval(child: avatar != null ? Image.memory(base64Decode(avatar.imageBase64.split(',').last), fit: BoxFit.cover) : Center(child: Text(_getEmojiForSpecies(pet['species']), style: const TextStyle(fontSize: 30))))), const SizedBox(height: 4), Text(name, style: const TextStyle(color: Colors.white, fontSize: 10), overflow: TextOverflow.ellipsis)]));
+    final photo = wizardData.petPhotos[name];
+    Widget petImage;
+    if (avatar != null) {
+      petImage = Image.memory(base64Decode(avatar.imageBase64.split(',').last), fit: BoxFit.cover);
+    } else if (photo != null) {
+      petImage = Image.memory(base64Decode(photo), fit: BoxFit.cover);
+    } else {
+      petImage = Center(child: Text(_getEmojiForSpecies(pet['species']), style: const TextStyle(fontSize: 30)));
+    }
+    return Container(width: 70, margin: const EdgeInsets.only(right: 12), child: Column(children: [Container(width: 60, height: 60, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFFFFD700), width: 2)), child: ClipOval(child: petImage)), const SizedBox(height: 4), Text(name, style: const TextStyle(color: Colors.white, fontSize: 10), overflow: TextOverflow.ellipsis)]));
   }
 
   void _showAddPetDialog(BuildContext context) {
@@ -1441,7 +1602,7 @@ class _PetsSection extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('Summon a Magical Pet', style: GoogleFonts.cinzelDecorative(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFFFFD700)), textAlign: TextAlign.center),
+                    Text('Add a Magical Pet', style: GoogleFonts.cinzelDecorative(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFFFFD700)), textAlign: TextAlign.center),
                     const SizedBox(height: 16),
                     Center(child: GestureDetector(onTap: pickPhoto, child: Container(width: 110, height: 110, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: pickedPhotoBase64 != null ? const Color(0xFFD4A0FF) : const Color(0xFFFFD700), width: 2.5)), child: ClipOval(child: pickedPhotoBase64 != null ? Image.memory(base64Decode(pickedPhotoBase64!), fit: BoxFit.cover) : selectedPreviewImage != null ? Image.asset(selectedPreviewImage, fit: BoxFit.cover) : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_a_photo_rounded, color: const Color(0xFFD4A0FF), size: 30), Text('Add Photo', style: TextStyle(color: const Color(0xFFD4A0FF), fontSize: 10))]))))),
                     const SizedBox(height: 16),
