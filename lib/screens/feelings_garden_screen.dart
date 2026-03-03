@@ -12,7 +12,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../feelings_wheel_data.dart';
 import '../theme/age_band_theme.dart';
-import '../theme/app_theme.dart';
 
 class FeelingsGardenScreen extends StatefulWidget {
   final int childAge;

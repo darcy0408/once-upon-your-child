@@ -416,31 +416,33 @@ class TestVirtueInAllModes:
 # Feature 2: Feelings Check-In wiring
 # ---------------------------------------------------------------------------
 class TestFeelingsCheckIn:
-    """F2: PreStoryFeelingsDialog is wired into magic_review_step before story launch."""
+    """F2: Ambient feelings service is wired into magic_review_step before story launch."""
 
-    def test_magic_review_imports_feelings_dialog(self):
+    def test_magic_review_imports_feelings_service(self):
+        """magic_review_step imports the ambient feelings service (replaces forced dialog)."""
         dart_path = os.path.join(
             os.path.dirname(__file__), '..', 'lib', 'screens', 'wizard_steps', 'magic_review_step.dart'
         )
         with open(dart_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        assert 'PreStoryFeelingsDialog' in content or 'pre_story_feelings_dialog' in content
+        # New approach: ambient service silently reads recent feelings (no dialog)
+        assert 'feelings_ambient_service' in content or 'FeelingsAmbientService' in content
 
-    def test_feelings_dialog_called_before_generate(self):
-        """PreStoryFeelingsDialog.show() is called before _isGenerating is set."""
+    def test_feelings_ambient_called_before_generate(self):
+        """FeelingsAmbientService.getRecentFeeling() is called before story generation."""
         dart_path = os.path.join(
             os.path.dirname(__file__), '..', 'lib', 'screens', 'wizard_steps', 'magic_review_step.dart'
         )
         with open(dart_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        # Both must exist
-        assert 'PreStoryFeelingsDialog' in content
-        # The dialog call should appear before the isGenerating flag
-        dialog_pos = content.index('PreStoryFeelingsDialog')
+        # Ambient service must be called
+        assert 'getRecentFeeling' in content or 'FeelingsAmbientService' in content
+        # The feeling call should appear before isGenerating is set
+        feeling_pos = content.index('getRecentFeeling') if 'getRecentFeeling' in content else content.index('FeelingsAmbientService')
         generating_pos = content.index('_isGenerating = true') if '_isGenerating = true' in content else -1
         if generating_pos > 0:
-            assert dialog_pos < generating_pos, \
-                "PreStoryFeelingsDialog should be called BEFORE _isGenerating = true"
+            assert feeling_pos < generating_pos, \
+                "FeelingsAmbientService should be called BEFORE _isGenerating = true"
 
 
 # ---------------------------------------------------------------------------
@@ -697,13 +699,14 @@ class TestFrontendWiring:
         content = self._read('services/interactive_story_service.dart')
         assert 'customText' in content or 'custom_text' in content
 
-    def test_f2_magic_review_imports_feelings_dialog(self):
+    def test_f2_magic_review_imports_feelings_service(self):
+        """magic_review_step uses ambient feelings service (forced dialog retired)."""
         content = self._read('screens/wizard_steps/magic_review_step.dart')
-        assert 'pre_story_feelings_dialog' in content or 'PreStoryFeelingsDialog' in content
+        assert 'feelings_ambient_service' in content or 'FeelingsAmbientService' in content
 
-    def test_f2_feelings_dialog_called_before_generation(self):
+    def test_f2_feelings_ambient_called_before_generation(self):
         content = self._read('screens/wizard_steps/magic_review_step.dart')
-        assert 'PreStoryFeelingsDialog' in content
+        assert 'getRecentFeeling' in content or 'FeelingsAmbientService' in content
 
     def test_f3_wizard_data_has_superpower_fields(self):
         content = self._read('models/wizard_data.dart')

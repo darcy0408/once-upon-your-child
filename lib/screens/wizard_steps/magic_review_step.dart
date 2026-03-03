@@ -92,11 +92,11 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       return;
     }
     if (!mounted) return;
+    // Silently check for a recent feelings journal entry (last 24 h) BEFORE showing the loader
+    final currentFeeling = await FeelingsAmbientService.getRecentFeeling();
     setState(() => _isGenerating = true);
     await Future<void>.delayed(const Duration(milliseconds: 80));
     if (!mounted) return;
-    // Silently check for a recent feelings journal entry (last 24 h)
-    final currentFeeling = await FeelingsAmbientService.getRecentFeeling();
     try {
       await _saveCharacterIfNeeded();
       final requestData = WizardDataMapper.mapToStoryRequest(widget.wizardData);
