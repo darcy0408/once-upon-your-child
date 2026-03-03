@@ -2,6 +2,35 @@
 
 ---
 
+## Session Update - 2026-03-03 (Age-Band Theme System — Phases 1 & 2)
+
+### Scope Completed
+- **Phase 1 — Data structures & provider:**
+  - Created `lib/theme/age_band_theme.dart` — 4 visual bands (Sprout/Explorer/Adventurer/Creator) with full parameters: colors, fonts, spacing, touch targets, sparkle intensity, and age-adaptive labels
+  - Created `lib/providers/age_band_provider.dart` — Riverpod notifier reading user age from SharedPreferences, supporting parent band override
+  - Fixed heading overflow in `hero_creator_step.dart` — 3 gold CinzelDecorative headings wrapped in `Flexible`
+
+- **Phase 2 — Theme integration:**
+  - Refactored `AppTheme.light()` to accept `AgeBandThemeData` parameter — all colors, fonts, spacing, radii, and touch targets derived from band data
+  - Wired `AgeBandNotifier` into `MaterialApp` — `StoryCreatorApp` now uses `ConsumerWidget` to read the age band and apply theme
+  - Made `AgeBandThemeData` a `ThemeExtension` — accessible from any widget via `Theme.of(context).extension<AgeBandThemeData>()`
+  - Added visible step labels to `MoonPhaseProgress` widget
+  - Wired age-adaptive labels into wizard: headings ("Who is your hero?" → "Who is your character?"), progress steps, and magic review orb
+
+### Status
+- **Age-Band Theme Data:** ✅ Complete
+- **Age-Band Provider:** ✅ Complete
+- **AppTheme Refactor:** ✅ Complete
+- **MaterialApp Wiring:** ✅ Complete
+- **Age-Adaptive Labels:** ✅ Wizard + review screen
+- **Heading Truncation Fix:** ✅ Fixed
+- **Progress Step Labels:** ✅ Visible + adaptive
+- **Feelings Garden:** 🟡 Next phase
+- **Quick Story / Story Lifecycle:** 🟡 Pending
+- **Launch Readiness:** 65%
+
+---
+
 ## Session Update - 2026-03-03 (Age-Band Theme System — Phase 1)
 
 ### Scope Completed
