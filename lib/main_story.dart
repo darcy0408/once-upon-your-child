@@ -3,8 +3,11 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/config/environment.dart';
+import 'package:story_weaver_app/providers/age_band_provider.dart';
+import 'package:story_weaver_app/theme/app_theme.dart';
 import 'package:story_weaver_app/widgets/story_generation_progress.dart';
 import 'package:story_weaver_app/widgets/user_friendly_error_dialog.dart';
 
@@ -46,23 +49,18 @@ import 'settings_screen.dart' deferred as settings_screen;
 import 'character_selection_screen.dart';
 import 'screens/wizard_story_screen.dart';
 
-class StoryCreatorApp extends StatelessWidget {
+class StoryCreatorApp extends ConsumerWidget {
   const StoryCreatorApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Read the current age band — drives the entire visual theme.
+    final ageBandTheme = ref.watch(ageBandNotifierProvider);
+
     return MaterialApp(
       title: Environment.appName,
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        primaryColor: Environment.primaryColor,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Environment.primaryColor,
-          primary: Environment.primaryColor,
-          secondary: const Color(0xFF81C784),
-        ),
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
+      theme: AppTheme.light(ageBand: ageBandTheme),
+      darkTheme: ageBandTheme.preferDarkMode ? AppTheme.light(ageBand: ageBandTheme) : null,
       home: const WizardStoryScreen(),
       routes: {
         '/subscription-success': (context) => const SubscriptionSuccessScreen(),

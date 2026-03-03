@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
 /// Crystal-orb wizard progress indicator.
+///
+/// Shows step orbs with optional visible labels beneath each orb.
 class MoonPhaseProgress extends StatelessWidget {
   final int currentStep; // 0-2
   final int totalSteps; // Should be 3
-  final List<String> stepLabels; // For screen readers
+  final List<String> stepLabels; // For screen readers & visible display
+  final bool showLabels; // Whether to show text labels beneath orbs
 
   const MoonPhaseProgress({
     super.key,
@@ -15,10 +18,16 @@ class MoonPhaseProgress extends StatelessWidget {
       'Step 2: Pick a companion',
       'Step 3: Make magic',
     ],
+    this.showLabels = true,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Short labels for the visible text beneath each orb.
+    final shortLabels = stepLabels
+        .map((l) => l.replaceFirst(RegExp(r'^Step \d+:\s*'), ''))
+        .toList();
+
     return Semantics(
       label:
           'Progress: ${stepLabels[currentStep]}, step ${currentStep + 1} of $totalSteps',
@@ -30,10 +39,35 @@ class MoonPhaseProgress extends StatelessWidget {
 
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: _CrystalStepOrb(
-              isActive: isActive,
-              isCompleted: isCompleted,
-              label: stepLabels[index],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _CrystalStepOrb(
+                  isActive: isActive,
+                  isCompleted: isCompleted,
+                  label: stepLabels[index],
+                ),
+                if (showLabels) ...[
+                  const SizedBox(height: 4),
+                  SizedBox(
+                    width: 64,
+                    child: Text(
+                      shortLabels[index],
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight:
+                            isActive ? FontWeight.bold : FontWeight.normal,
+                        color: isActive || isCompleted
+                            ? Colors.white
+                            : Colors.white38,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           );
         }),
@@ -65,23 +99,13 @@ class _CrystalStepOrbState extends State<_CrystalStepOrb>
   @override
   void initState() {
     super.initState();
-    _setupGlowAnimation();
-  }
-
-  void _setupGlowAnimation() {
     _glowController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-
-    _glowAnimation = Tween<double>(
-      begin: 0.5,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _glowController,
-      curve: Curves.easeInOut,
-    ));
-
+    _glowAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+    );
     if (widget.isActive) {
       _glowController.repeat(reverse: true);
     }
@@ -110,21 +134,23 @@ class _CrystalStepOrbState extends State<_CrystalStepOrb>
 
   @override
   Widget build(BuildContext context) {
+    const orbSize = 56.0;
+
     return Semantics(
       label: widget.label,
       excludeSemantics: true,
       child: AnimatedBuilder(
         animation: _glowAnimation,
         builder: (context, child) {
-          final orbSize = 56.0;
-          final glowFactor = widget.isActive ? _glowAnimation.value : 0.42;
+          final glowFactor = widget.isActive ? _glowAnimation.value : 0.0;
 
           return SizedBox(
-            width: orbSize,
-            height: orbSize,
+            width: orbSize + 8,
+            height: orbSize + 8,
             child: Stack(
               alignment: Alignment.center,
               children: [
+                // Pulsing glow behind active orb
                 if (widget.isActive)
                   Container(
                     width: orbSize + (orbSize * 0.30 * glowFactor),
@@ -142,50 +168,31 @@ class _CrystalStepOrbState extends State<_CrystalStepOrb>
                       ),
                     ),
                   ),
+                // Crystal ball image — no ClipOval so the stand is visible
                 Opacity(
-                  opacity: widget.isActive || widget.isCompleted ? 1.0 : 0.45,
-                  child: ClipOval(
-                    child: Image.asset(
-                      _orbAssetPath,
+                  opacity: widget.isActive || widget.isCompleted ? 1.0 : 0.35,
+                  child: Image.asset(
+                    _orbAssetPath,
+                    width: orbSize,
+                    height: orbSize,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
+                    errorBuilder: (_, __, ___) => Container(
                       width: orbSize,
                       height: orbSize,
-                      fit: BoxFit.contain,
-                      filterQuality: FilterQuality.high,
-                      errorBuilder: (_, __, ___) => Container(
-                        width: orbSize,
-                        height: orbSize,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              Color(0xFFE5DAFF),
-                              Color(0xFF9E6CFF),
-                              Color(0xFF7C4DFF),
-                            ],
-                          ),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            Color(0xFFE5DAFF),
+                            Color(0xFF9E6CFF),
+                            Color(0xFF7C4DFF),
+                          ],
                         ),
                       ),
                     ),
                   ),
                 ),
-                if (widget.isCompleted)
-                  const Icon(
-                    Icons.check_rounded,
-                    size: 24,
-                    color: Color(0xFFFFD478),
-                    shadows: [
-                      Shadow(color: Color(0xCC000000), blurRadius: 4),
-                    ],
-                  )
-                else if (widget.isActive)
-                  const Icon(
-                    Icons.auto_awesome,
-                    size: 21,
-                    color: Colors.white,
-                    shadows: [
-                      Shadow(color: Color(0xCC000000), blurRadius: 4),
-                    ],
-                  ),
               ],
             ),
           );
