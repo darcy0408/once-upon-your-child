@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'age_band_theme.dart';
 
 class AppColors {
   // 🎨 Magical Purple Theme - Emotion First Design
@@ -8,10 +9,10 @@ class AppColors {
   static const primaryLight = Color(0xFF9C4DCC); // Lighter purple for hover
   static const primaryDark = Color(0xFF4A148C); // Darker purple for depth
 
-  // Gradient background colors (lavender to teal)
-  static const gradientStart = Color(0xFFE1BEE7); // Soft lavender
-  static const gradientMid = Color(0xFFCE93D8); // Medium lavender
-  static const gradientEnd = Color(0xFF80CBC4); // Soft teal
+  // Gradient background colors (deep purple — darker, more magical)
+  static const gradientStart = Color(0xFF120226); // Deep midnight purple
+  static const gradientMid = Color(0xFF2A0A4E); // Dark purple
+  static const gradientEnd = Color(0xFF1A1040); // Deep indigo
 
   // Accent colors
   static const gold = Color(0xFFFFD54F); // Gold for selections/highlights
@@ -149,15 +150,25 @@ class AppTextStyles {
 }
 
 class AppTheme {
-  static ThemeData light({Color? primaryColor, Color? accentColor}) {
-    final effectivePrimary = primaryColor ?? AppColors.primary;
-    final effectiveAccent = accentColor ?? AppColors.accent;
-    final surface = AppColors.surface;
+  /// Build the light theme, optionally adapted for an age band.
+  ///
+  /// When [ageBand] is provided, colors, fonts, spacing, and radii are
+  /// derived from the band data. When omitted, the Explorer band (current
+  /// default look) is used, preserving full backward compatibility.
+  static ThemeData light({
+    Color? primaryColor,
+    Color? accentColor,
+    AgeBandThemeData? ageBand,
+  }) {
+    final band = ageBand ?? explorerTheme;
+    final effectivePrimary = primaryColor ?? band.primary;
+    final effectiveAccent = accentColor ?? band.accent;
+    final surface = band.surface;
     final error = AppColors.error;
 
     final base = ThemeData.light();
     return base.copyWith(
-      scaffoldBackgroundColor: AppColors.gradientStart, // Use lavender instead of white
+      scaffoldBackgroundColor: band.gradientStart,
       colorScheme: ColorScheme.fromSeed(
         seedColor: effectiveAccent,
         primary: effectivePrimary,
@@ -165,132 +176,75 @@ class AppTheme {
         surface: surface,
         error: error,
       ),
-      textTheme: _textTheme(base.textTheme),
+      textTheme: band.buildUITextTheme(base.textTheme),
       cardTheme: CardThemeData(
-        color: surface, // Use theme surface color
+        color: surface,
         elevation: 4,
         margin: const EdgeInsets.all(16),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(20)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(band.cardRadiusBase)),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: effectivePrimary,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.sm,
+          padding: EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg * band.spacingScale,
+            vertical: AppSpacing.sm * band.spacingScale,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(band.buttonRadiusBase),
           ),
-          textStyle: const TextStyle(
-            fontSize: 16,
+          minimumSize: Size(0, band.touchTargetMin),
+          textStyle: TextStyle(
+            fontSize: 16 * band.bodyScale,
             fontWeight: FontWeight.w600,
           ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: effectivePrimary,
           textStyle: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: surface, // Use theme surface color instead of white
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
+        fillColor: surface,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.md * band.spacingScale,
+          vertical: AppSpacing.sm * band.spacingScale,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: AppColors.primary.withAlpha(77)),
+          borderRadius: BorderRadius.circular(band.buttonRadiusBase),
+          borderSide: BorderSide(color: effectivePrimary.withAlpha(77)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(band.buttonRadiusBase),
           borderSide: BorderSide(color: effectivePrimary, width: 2),
         ),
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         elevation: 0,
-        backgroundColor: AppColors.primary, // Use primary purple instead of white
-        foregroundColor: AppColors.textLight, // White text on purple
+        backgroundColor: effectivePrimary,
+        foregroundColor: band.textOnDark,
         titleTextStyle: TextStyle(
-          fontSize: 20,
+          fontSize: 20 * band.headingScale,
           fontWeight: FontWeight.bold,
-          color: AppColors.textLight, // White text for visibility
+          color: band.textOnDark,
         ),
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: effectivePrimary,
-        contentTextStyle: const TextStyle(color: Colors.white),
+        contentTextStyle: TextStyle(color: band.textOnDark),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(band.buttonRadiusBase),
         ),
       ),
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: effectivePrimary,
-      ),
-    );
-  }
-
-  static TextTheme _textTheme(TextTheme base) {
-    // Using Quicksand font for rounded, soft, kid-friendly typography
-    // All fonts use weight 500+ for clarity
-    // Google Fonts package handles font loading automatically
-    return GoogleFonts.quicksandTextTheme(base).copyWith(
-      // Headings - 24pt+ for important titles
-      headlineLarge: GoogleFonts.quicksand(
-        fontSize: 32,
-        fontWeight: FontWeight.bold, // 700
-        color: AppColors.textDark,
-        height: 1.2,
-      ),
-      headlineMedium: GoogleFonts.quicksand(
-        fontSize: 28,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textDark,
-        height: 1.2,
-      ),
-      // Titles - 18-24pt for section headers
-      titleLarge: GoogleFonts.quicksand(
-        fontSize: 24,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textDark,
-        height: 1.3,
-      ),
-      titleMedium: GoogleFonts.quicksand(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textDark,
-        height: 1.3,
-      ),
-      // Body text - 18pt for readability (if text is needed)
-      bodyLarge: GoogleFonts.quicksand(
-        fontSize: 18,
-        fontWeight: FontWeight.w500,
-        height: 1.5,
-        color: AppColors.textDark,
-      ),
-      bodyMedium: GoogleFonts.quicksand(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-        color: AppColors.textDark,
-        height: 1.5,
-      ),
-      // Labels for buttons
-      labelLarge: GoogleFonts.quicksand(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textDark,
-      ),
-      labelMedium: GoogleFonts.quicksand(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textDark,
       ),
     );
   }
