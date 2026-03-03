@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:speech_to_text/speech_to_text.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:story_weaver_app/services/api_service_manager.dart';
@@ -15,8 +14,6 @@ import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
 import 'package:story_weaver_app/widgets/magic_orb.dart';
 import 'package:story_weaver_app/widgets/magical_loading_view.dart';
-import 'package:story_weaver_app/widgets/image_mode_orb.dart';
-import 'package:story_weaver_app/widgets/image_crystal_formation.dart';
 import 'package:story_weaver_app/widgets/image_make_magic_button.dart';
 import 'package:story_weaver_app/data/scenario_data.dart';
 import 'package:story_weaver_app/data/companion_data.dart';
@@ -37,20 +34,12 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
   late String _loadingStatus;
   final StoryIllustrationService _illustrationService = StoryIllustrationService();
   late FlutterTts _tts;
-  final SpeechToText _speech = SpeechToText();
-  bool _speechAvailable = false;
-  bool _isListeningWish = false;
-  late TextEditingController _wishController;
 
   @override
   void initState() {
     super.initState();
     _tts = FlutterTts();
     _initTts();
-    _wishController = TextEditingController(text: widget.wizardData.customElements);
-    _speech.initialize().then((available) {
-      if (mounted) setState(() => _speechAvailable = available);
-    });
     if (widget.wizardData.characterAge >= 10) {
       _loadingStatus = 'Architecting your Epic Story...';
     } else if (widget.wizardData.characterAge >= 7) {
@@ -69,27 +58,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
   @override
   void dispose() {
     _tts.stop();
-    _speech.stop();
-    _wishController.dispose();
     super.dispose();
-  }
-
-  void _toggleWishListening() async {
-    if (!_speechAvailable) return;
-    if (_isListeningWish) {
-      await _speech.stop();
-      if (mounted) setState(() => _isListeningWish = false);
-      return;
-    }
-    setState(() => _isListeningWish = true);
-    await _speech.listen(onResult: (result) {
-      if (!mounted) return;
-      setState(() {
-        _wishController.text = result.recognizedWords;
-        widget.wizardData.customElements = result.recognizedWords;
-        if (result.finalResult) _isListeningWish = false;
-      });
-    });
   }
 
   String get _scenarioImage {
@@ -199,6 +168,22 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
 
   String _mapStoryLength(String wizardLength) => wizardLength == 'quick' ? 'short' : (wizardLength == 'epic' ? 'long' : 'medium');
 
+  String _storyTypeLabel(WizardData data) {
+    if (data.interactiveMode) return 'Pick a Path adventure';
+    if (data.rhymeTimeMode) return 'Rhyme Time story';
+    if (data.learningToReadMode) return 'Learn to Read story';
+    if (data.includeIllustrations) return 'Illustrated tale';
+    return 'Magical story';
+  }
+
+  String _storyLengthLabel(String length) {
+    switch (length) {
+      case 'quick': return 'Quick read';
+      case 'epic': return 'Epic adventure';
+      default: return 'Classic length';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final data = widget.wizardData;
@@ -220,52 +205,18 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
               , if (data.selectedCompanions.isNotEmpty) Positioned(right: 5, bottom: 10, child: Column(mainAxisSize: MainAxisSize.min, children: [MagicalFloat(distance: 6.0, duration: const Duration(seconds: 4), delay: 500, child: _AuraCircle(size: 84, auraColor: const Color(0xFFF3AEFF), child: _CompanionAvatar(companionImage: _companionImage))), const SizedBox(height: 6), Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(12)), child: const Text('Companion', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)))]))
             ])),
             const SizedBox(height: 24),
-            Wrap(alignment: WrapAlignment.center, spacing: 10, runSpacing: 12, children: [
-              ImageModeOrb(modeType: 'tales', label: 'Tales', isActive: data.includeIllustrations, onTap: () => setState(() => data.includeIllustrations = !data.includeIllustrations), primaryColor: const Color(0xFFAA88FF), secondaryColor: const Color(0xFFE28EFF)),
-              ImageModeOrb(modeType: 'rhyme', label: 'Rhyme', isActive: data.rhymeTimeMode, onTap: () => setState(() { data.rhymeTimeMode = !data.rhymeTimeMode; if (data.rhymeTimeMode) { data.learningToReadMode = false; data.interactiveMode = false; } }), primaryColor: const Color(0xFF00D4DD), secondaryColor: const Color(0xFF7FDDFF)),
-              ImageModeOrb(modeType: 'reading', label: 'Read-Along', isActive: data.learningToReadMode, onTap: () => setState(() { data.learningToReadMode = !data.learningToReadMode; if (data.learningToReadMode) { data.rhymeTimeMode = false; data.interactiveMode = false; } }), primaryColor: const Color(0xFFB88AFF), secondaryColor: const Color(0xFFFF9ECC)),
-              ImageModeOrb(modeType: 'pickpath', label: 'Pick Your Path', isActive: data.interactiveMode, onTap: () => setState(() { data.interactiveMode = !data.interactiveMode; if (data.interactiveMode) { data.rhymeTimeMode = false; data.learningToReadMode = false; } }), primaryColor: const Color(0xFF9E6CFF), secondaryColor: const Color(0xFFFFB3E6)),
-            ]),
-            const SizedBox(height: AppSpacing.xl),
-            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Flexible(child: ImageCrystalFormation(type: 'quick', label: 'Quick', isSelected: data.storyLength == 'quick', onTap: () => setState(() => data.storyLength = 'quick'))),
-              const SizedBox(width: 12),
-              Flexible(child: ImageCrystalFormation(type: 'classic', label: 'Classic', isSelected: data.storyLength == 'standard', onTap: () => setState(() => data.storyLength = 'standard'))),
-              const SizedBox(width: 12),
-              Flexible(child: ImageCrystalFormation(type: 'epic', label: 'Epic', isSelected: data.storyLength == 'epic', onTap: () => setState(() => data.storyLength = 'epic'))),
-            ]),
-            const SizedBox(height: AppSpacing.xl),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _wishController,
-                    maxLines: 3,
-                    onChanged: (value) => setState(() => data.customElements = value),
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: 'Whisper a special wish for your story...',
-                      hintStyle: TextStyle(color: Colors.white.withAlpha(80), fontStyle: FontStyle.italic),
-                      filled: true,
-                      fillColor: Colors.white.withAlpha(10),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
-                      contentPadding: const EdgeInsets.all(20),
-                      suffixIcon: const Icon(Icons.auto_awesome, color: AppColors.gold, size: 20),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: Icon(
-                    _isListeningWish ? Icons.mic : Icons.mic_none,
-                    color: _isListeningWish ? Colors.yellow : Colors.white,
-                    size: 28,
-                  ),
-                  onPressed: _toggleWishListening,
-                ),
-              ],
-            ),
+            // ── Read-only story summary ──────────────────────────────────────
+            _SummaryRow(icon: Icons.auto_stories, label: _storyTypeLabel(data)),
+            const SizedBox(height: 8),
+            _SummaryRow(icon: Icons.timer, label: _storyLengthLabel(data.storyLength)),
+            if (data.customElements.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              _SummaryRow(icon: Icons.auto_awesome, label: '"${data.customElements}"'),
+            ],
+            if (data.companionNames.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              _SummaryRow(icon: Icons.favorite, label: data.companionNames.join(', ')),
+            ],
             const SizedBox(height: AppSpacing.xxl),
             Center(child: _isGenerating ? MagicalLoadingView(status: _loadingStatus, onCancel: () => setState(() => _isGenerating = false)) : _PulsingCastSpellFrame(isReady: !_isGenerating && data.isComplete, child: ImageMakeMagicButton(onTap: _launchStoryCreation, isEnabled: !_isGenerating && data.isComplete, label: 'MAKE MAGIC'))),
             const SizedBox(height: AppSpacing.xl),
@@ -341,5 +292,38 @@ class _PulsingCastSpellFrameState extends State<_PulsingCastSpellFrame> with Sin
   @override dispose() { _ctrl.dispose(); super.dispose(); }
   @override Widget build(BuildContext context) {
     return AnimatedBuilder(animation: _ctrl, builder: (ctx, child) => Padding(padding: const EdgeInsets.all(8), child: child), child: widget.child);
+  }
+}
+
+
+class _SummaryRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _SummaryRow({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFD4A0FF).withAlpha(60)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFFFFD700), size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

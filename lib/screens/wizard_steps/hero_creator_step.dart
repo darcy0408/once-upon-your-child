@@ -75,6 +75,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   String _listeningFor = '';
   late TextEditingController _superpowerController;
   late TextEditingController _questController;
+  late TextEditingController _wishController;
   late FlutterTts _tts;
 
   // ─── Analytics Helpers ──────────────────────────────────────────────────────
@@ -117,6 +118,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
     _questController = TextEditingController(
       text: widget.wizardData.heroQuest ?? '',
+    );
+    _wishController = TextEditingController(
+      text: widget.wizardData.customElements,
     );
 
     // ── Animation controllers ──────────────────────────────────────────────────
@@ -174,6 +178,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     _nameFocusNode.dispose();
     _superpowerController.dispose();
     _questController.dispose();
+    _wishController.dispose();
     _floatCtrl.dispose();
     _glowCtrl.dispose();
     _sparkleCtrl.dispose();
@@ -1019,6 +1024,68 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               ),
             ],
           ),
+          const SizedBox(height: 28),
+          // Wish field — "Anything special you want in your story?"
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _audioPrompt("Anything special you want in your story?"),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        "Anything special you want?",
+                        style: GoogleFonts.fredoka(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _wishController,
+                        style: const TextStyle(color: Colors.white),
+                        maxLines: 2,
+                        decoration: InputDecoration(
+                          hintText: 'I want to ride a magic carpet…',
+                          hintStyle: const TextStyle(color: Colors.white38),
+                          filled: true,
+                          fillColor: Colors.white.withAlpha(20),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                        ),
+                        onChanged: (v) =>
+                            widget.wizardData.customElements = v,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: Icon(
+                        _listeningFor == 'wish' ? Icons.mic : Icons.mic_none,
+                        color: _listeningFor == 'wish'
+                            ? Colors.yellow
+                            : Colors.white,
+                      ),
+                      onPressed: () => _toggleListening('wish'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 40),
           _buildContinueButton(),
           const SizedBox(height: 20),
@@ -1559,6 +1626,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         if (field == 'superpower') {
           _superpowerController.text = result.recognizedWords;
           widget.wizardData.heroSuperpower = result.recognizedWords.isEmpty ? null : result.recognizedWords;
+        } else if (field == 'wish') {
+          _wishController.text = result.recognizedWords;
+          widget.wizardData.customElements = result.recognizedWords;
         } else {
           _questController.text = result.recognizedWords;
           widget.wizardData.heroQuest = result.recognizedWords.isEmpty ? null : result.recognizedWords;
