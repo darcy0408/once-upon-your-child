@@ -2,6 +2,78 @@
 
 ---
 
+## Session Update - 2026-03-03 (Age-Band Gradients + Post-Story Action Bar)
+
+### Scope Completed
+
+- **Age-Band Gradient Applied to Key Screens:**
+  - `lib/main_story.dart` — home screen body now uses `band.gradientStart/Mid/End` via `Builder` wrapping the body `Container`. Import added for `age_band_theme.dart`.
+  - `lib/screens/wizard_story_screen.dart` — wizard background swapped from `AppGradients.magicalBackground` to band-adaptive `LinearGradient`. `explorerTheme` fallback used if extension not present.
+  - `lib/story_result_screen.dart` — story result screen background now uses band gradient.
+  - Commits: `8a92d33`
+
+- **Post-Story Action Bar (Tell Me Another + Save/Share/Reread/Color):**
+  - Replaced old Read/Color/More bar in `story_result_screen.dart` `bottomNavigationBar` with a 2-row sticky action bar.
+  - Row 1: Full-width **"🪄 Tell Me Another!"** primary button using `band.primary` color — calls `_createAnotherStory()` which pops back to home.
+  - Row 2: compact icon+label chips — **Re-read** (opens `StoryReaderScreen`), **Save** (dims + shows "Saved ✓" after saving), **Share** (calls `_shareStory()`), **Color** (calls `_generateColoringPages()`).
+  - Added `_isSaved` bool state; `_saveStory()` now sets `setState(() => _isSaved = true)` on success.
+  - Bar background uses `band.gradientEnd` to blend with themed screen.
+  - New private widgets: `_PostStoryActionBar`, `_ActionChip` (at bottom of `story_result_screen.dart`).
+  - Commit: `0cc36fb`
+
+### Micro-Celebrations — Where the Code Lives
+For any agent working on micro-celebrations, the full implementation is already in:
+- `lib/screens/wizard_steps/hero_creator_step.dart` lines ~216–243 (`_triggerPageCelebration`, `_showStarBurst`)
+- `lib/screens/wizard_steps/hero_creator_step.dart` lines ~2093–2176 (`_StarBurstOverlay`, `_StarBurstOverlayState`, `_StarParticle`)
+- `lib/services/audio_ambience_service.dart` — `playSfx()` method
+- `assets/sounds/magical_shimmer.mp3` — chime asset (declared in `pubspec.yaml` line 110)
+- It fires automatically on every wizard inner-page `Next` tap. No further work needed.
+
+### Remaining Work (5 todos)
+| Todo | Description |
+|------|-------------|
+| `feelings-garden` | Build optional `FeelingsGardenScreen` with 3 age-adaptive zones |
+| `feelings-nav` | Add Feelings Garden entry point to bottom navigation |
+| `feelings-ambient` | Gentle feelings check-in that feeds into story mood/theme |
+| `retire-old-feelings` | Remove forced feelings dialogs and old feelings wheel code |
+| `library-enhance` | Polish the Library tab (sort, filter, re-read, delete) |
+
+### Status
+- **Age-Band Gradients (home + wizard + story result):** ✅ Complete
+- **Post-Story Action Bar:** ✅ Complete — Tell Me Another, Re-read, Save, Share, Color
+- **Micro-Celebrations:** ✅ Complete (was done in prior session — see entry below)
+- **Feelings Garden:** 🟡 Next up
+- **Launch Readiness:** 72%
+
+---
+
+## Session Update - 2026-03-03 (Micro-Celebrations — Particle Burst + Chime ✅)
+
+### Scope Completed
+- **Verified full implementation** of micro-celebrations (plan item #3) — the entire feature was already stubbed and completed:
+  - `_triggerPageCelebration()` — fires on every inner-page `Next` tap inside `HeroCreatorStep`; calls both sound and visual burst in one call
+  - `AudioAmbienceService().playSfx('sounds/magical_shimmer.mp3')` — shimmer chime via `audioplayers`; fails gracefully on web (skipped silently via `kIsWeb` guard) and all other platforms
+  - `_showStarBurst()` — inserts a self-removing `OverlayEntry` so the burst floats above all other UI
+  - `_StarBurstOverlay` / `_StarBurstOverlayState` — 22 particles (`⭐ ✨ 🌟 💫 🔮 🪄 💜 ⚡`), variable size, random angle 360°, 650ms easeOut animation, `IgnorePointer` wrapped so it never blocks interaction
+  - `assets/sounds/magical_shimmer.mp3` — file exists; `assets/sounds/` declared in `pubspec.yaml` line 110
+- **Flutter analyze** — zero issues in celebration code; pre-existing errors confined to `integration_test/` and `lib/achievements_screen.dart` (unrelated, pre-existing)
+
+### Files Involved (no changes needed — already complete)
+- `lib/screens/wizard_steps/hero_creator_step.dart` — `_triggerPageCelebration`, `_showStarBurst`, `_StarBurstOverlay`, `_StarParticle` (lines 226–243, 2093–2176)
+- `lib/services/audio_ambience_service.dart` — `playSfx()` (line 27)
+- `assets/sounds/magical_shimmer.mp3` — shimmer chime asset
+- `pubspec.yaml` — `assets/sounds/` declared (line 110)
+
+### Status
+- **Micro-Celebrations (particle burst + chime):** ✅ Complete — fires on every wizard page advance
+- **Sound on web:** ℹ️ Skipped (browser autoplay restriction; visual burst still fires on web)
+- **Analyze:** ✅ No issues in celebration code
+- **Launch Readiness:** 65%
+
+---
+
+
+
 ## Session Update - 2026-03-03 (Wizard Simplification — Tasks A–E Complete)
 
 ### Scope Completed
