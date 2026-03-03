@@ -118,6 +118,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   final TextEditingController _feedbackController = TextEditingController();
   bool _isFavorite = false;
   bool _isLoading = true;
+  bool _isSaved = false; // tracks whether story has been saved to library
   List<StoryIllustration>? _cachedIllustrations;
   List<ColoringPage>? _cachedColoringPages;
   int? _characterAge;
@@ -972,6 +973,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
         final storyLocal = StoryLocal.fromSavedStory(newStory);
         await _offlineService.saveStory(storyLocal);
+        if (mounted) setState(() => _isSaved = true);
 
         debugPrint(
             '✅ Story saved locally with Rhyme: ${widget.isRhyming}, Learn: ${widget.isLearningToReadMode}');
@@ -2008,111 +2010,167 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         // cover the story footer controls on smaller viewports.
         bottomNavigationBar: _isLoading
             ? null
-            : SafeArea(
-                top: false,
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    border: Border(
-                      top: BorderSide(
-                          color: Colors.black.withValues(alpha: 0.08)),
+            : _PostStoryActionBar(
+                isSaved: _isSaved,
+                onTellMeAnother: _createAnotherStory,
+                onReread: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => StoryReaderScreen(
+                      storyText: widget.storyText,
+                      title: widget.title,
                     ),
                   ),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isNarrow = constraints.maxWidth < 420;
-
-                      final readButton = ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => StoryReaderScreen(
-                                storyText: widget.storyText,
-                                title: widget.title,
-                              ),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.record_voice_over_rounded),
-                        label: const Text('Read'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 18, vertical: 14),
-                          shape: const StadiumBorder(),
-                        ),
-                      );
-
-                      final colorButton = ElevatedButton.icon(
-                        onPressed: _generateColoringPages,
-                        icon: const Icon(Icons.palette_rounded),
-                        label: const Text('Color'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.secondary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 18, vertical: 14),
-                          shape: const StadiumBorder(),
-                        ),
-                      );
-
-                      final moreButton = IconButton(
-                        onPressed: () => showModalBottomSheet(
-                          context: context,
-                          backgroundColor: Colors.transparent,
-                          builder: (context) => _buildShareActions(),
-                        ),
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: AppColors.primary,
-                          padding: const EdgeInsets.all(12),
-                          shape: const CircleBorder(),
-                          side: BorderSide(
-                              color: Colors.black.withValues(alpha: 0.08)),
-                        ),
-                        icon: const Icon(Icons.more_vert_rounded),
-                        tooltip: 'More actions',
-                      );
-
-                      if (isNarrow) {
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(child: readButton),
-                                const SizedBox(width: 12),
-                                Expanded(child: colorButton),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            Align(
-                                alignment: Alignment.centerRight,
-                                child: moreButton),
-                          ],
-                        );
-                      }
-
-                      return Row(
-                        children: [
-                          Expanded(child: readButton),
-                          const SizedBox(width: 12),
-                          Expanded(child: colorButton),
-                          const SizedBox(width: 12),
-                          moreButton,
-                        ],
-                      );
-                    },
-                  ),
                 ),
+                onSave: _isSaved ? null : _saveStory,
+                onShare: _shareStory,
+                onColor: _generateColoringPages,
               ),
       ),
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Post-story action bar
+// ---------------------------------------------------------------------------
+
+/// Sticky bottom bar shown after story generation completes.
+/// Primary CTA: "Tell Me Another" (magic wand, full width).
+/// Secondary row: Re-read · Save · Share · Color.
+class _PostStoryActionBar extends StatelessWidget {
+  final bool isSaved;
+  final VoidCallback onTellMeAnother;
+  final VoidCallback onReread;
+  final VoidCallback? onSave; // null when already saved
+  final VoidCallback onShare;
+  final VoidCallback onColor;
+
+  const _PostStoryActionBar({
+    required this.isSaved,
+    required this.onTellMeAnother,
+    required this.onReread,
+    required this.onSave,
+    required this.onShare,
+    required this.onColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+        decoration: BoxDecoration(
+          color: band.gradientEnd.withValues(alpha: 0.95),
+          border: Border(
+            top: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Primary CTA
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: onTellMeAnother,
+                icon: const Text('🪄', style: TextStyle(fontSize: 18)),
+                label: Text(
+                  'Tell Me Another!',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: band.uiFontFamily,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: band.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: const StadiumBorder(),
+                  elevation: 4,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Secondary action row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _ActionChip(
+                  icon: Icons.record_voice_over_rounded,
+                  label: 'Re-read',
+                  onTap: onReread,
+                  color: Colors.white,
+                ),
+                _ActionChip(
+                  icon: isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
+                  label: isSaved ? 'Saved ✓' : 'Save',
+                  onTap: onSave,
+                  color: isSaved ? AppColors.gold : Colors.white,
+                ),
+                _ActionChip(
+                  icon: Icons.share_rounded,
+                  label: 'Share',
+                  onTap: onShare,
+                  color: Colors.white,
+                ),
+                _ActionChip(
+                  icon: Icons.palette_rounded,
+                  label: 'Color',
+                  onTap: onColor,
+                  color: Colors.white,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final Color color;
+
+  const _ActionChip({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDisabled = onTap == null;
+    final effectiveColor = isDisabled ? color.withValues(alpha: 0.45) : color;
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: effectiveColor, size: 24),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            style: TextStyle(
+              color: effectiveColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 
 class ColoringSettingsDialog extends StatefulWidget {
   final int initialPageCount;
