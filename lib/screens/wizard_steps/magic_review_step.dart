@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:story_weaver_app/services/api_service_manager.dart';
@@ -10,6 +11,7 @@ import 'package:story_weaver_app/story_illustration_service.dart';
 import 'package:story_weaver_app/pick_a_path_adventure_screen.dart';
 import 'package:story_weaver_app/pre_story_feelings_dialog.dart';
 import 'package:story_weaver_app/models.dart';
+import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
 import 'package:story_weaver_app/widgets/magic_orb.dart';
 import 'package:story_weaver_app/widgets/magical_loading_view.dart';
@@ -35,12 +37,20 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
   late String _loadingStatus;
   final StoryIllustrationService _illustrationService = StoryIllustrationService();
   late FlutterTts _tts;
+  final SpeechToText _speech = SpeechToText();
+  bool _speechAvailable = false;
+  bool _isListeningWish = false;
+  late TextEditingController _wishController;
 
   @override
   void initState() {
     super.initState();
     _tts = FlutterTts();
     _initTts();
+    _wishController = TextEditingController(text: widget.wizardData.customElements);
+    _speech.initialize().then((available) {
+      if (mounted) setState(() => _speechAvailable = available);
+    });
     if (widget.wizardData.characterAge >= 10) {
       _loadingStatus = 'Architecting your Epic Story...';
     } else if (widget.wizardData.characterAge >= 7) {
@@ -59,7 +69,27 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
   @override
   void dispose() {
     _tts.stop();
+    _speech.stop();
+    _wishController.dispose();
     super.dispose();
+  }
+
+  void _toggleWishListening() async {
+    if (!_speechAvailable) return;
+    if (_isListeningWish) {
+      await _speech.stop();
+      if (mounted) setState(() => _isListeningWish = false);
+      return;
+    }
+    setState(() => _isListeningWish = true);
+    await _speech.listen(onResult: (result) {
+      if (!mounted) return;
+      setState(() {
+        _wishController.text = result.recognizedWords;
+        widget.wizardData.customElements = result.recognizedWords;
+        if (result.finalResult) _isListeningWish = false;
+      });
+    });
   }
 
   String get _scenarioImage {
@@ -174,6 +204,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
     final data = widget.wizardData;
     final screenWidth = MediaQuery.of(context).size.width;
     final orbSize = (screenWidth - 64).clamp(180.0, 250.0);
+    final ageBand = Theme.of(context).extension<AgeBandThemeData>();
+    final heroFallback = ageBand?.heroLabel ?? 'Your Hero';
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
@@ -183,7 +215,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             const SizedBox(height: 24),
             SizedBox(height: 340, child: Stack(alignment: Alignment.center, clipBehavior: Clip.none, children: [
               Container(width: orbSize + 50, height: orbSize + 50, decoration: BoxDecoration(shape: BoxShape.circle, gradient: RadialGradient(colors: [const Color(0xFFFFEEA8).withValues(alpha: 0.4), const Color(0xFFE985FF).withValues(alpha: 0.3), const Color(0xFFB5F7FF).withValues(alpha: 0.2), Colors.transparent], stops: const [0.0, 0.4, 0.7, 1.0]))),
-              MagicOrbWidget(imagePath: _scenarioImage, size: orbSize * 0.95, glowColor: AppColors.gold, topLabel: _scenarioLabel, label: data.characterName.isNotEmpty ? data.characterName : 'Your Hero', childScale: 0.92, child: _HeroAvatar(generatedAvatar: data.generatedAvatar, characterName: data.characterName, role: data.selectedArchetypeId)),
+              MagicOrbWidget(imagePath: _scenarioImage, size: orbSize * 0.95, glowColor: AppColors.gold, topLabel: _scenarioLabel, label: data.characterName.isNotEmpty ? data.characterName : heroFallback, childScale: 0.92, child: _HeroAvatar(generatedAvatar: data.generatedAvatar, characterName: data.characterName, role: data.selectedArchetypeId)),
               Positioned(left: 5, bottom: 10, child: Column(mainAxisSize: MainAxisSize.min, children: [MagicalFloat(distance: 6.0, duration: const Duration(seconds: 4), delay: 100, child: _AuraCircle(size: 84, auraColor: const Color(0xFFFFD9A6), child: ClipOval(child: Image.asset(_scenarioImage, fit: BoxFit.cover)))), const SizedBox(height: 6), Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1)), child: Text(_scenarioLabel, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)))]))
               , if (data.selectedCompanions.isNotEmpty) Positioned(right: 5, bottom: 10, child: Column(mainAxisSize: MainAxisSize.min, children: [MagicalFloat(distance: 6.0, duration: const Duration(seconds: 4), delay: 500, child: _AuraCircle(size: 84, auraColor: const Color(0xFFF3AEFF), child: _CompanionAvatar(companionImage: _companionImage))), const SizedBox(height: 6), Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(12)), child: const Text('Companion', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)))]))
             ])),
@@ -203,10 +235,37 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
               Flexible(child: ImageCrystalFormation(type: 'epic', label: 'Epic', isSelected: data.storyLength == 'epic', onTap: () => setState(() => data.storyLength = 'epic'))),
             ]),
             const SizedBox(height: AppSpacing.xl),
-            Stack(children: [
-              TextField(maxLines: 3, onChanged: (value) => setState(() => data.customElements = value), style: const TextStyle(color: Colors.white), decoration: InputDecoration(hintText: 'Whisper a special wish for your story...', hintStyle: TextStyle(color: Colors.white.withAlpha(80), fontStyle: FontStyle.italic), filled: true, fillColor: Colors.white.withAlpha(10), border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none), contentPadding: const EdgeInsets.all(20))),
-              const Positioned(right: 12, bottom: 12, child: Icon(Icons.auto_awesome, color: AppColors.gold, size: 20)),
-            ]),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _wishController,
+                    maxLines: 3,
+                    onChanged: (value) => setState(() => data.customElements = value),
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Whisper a special wish for your story...',
+                      hintStyle: TextStyle(color: Colors.white.withAlpha(80), fontStyle: FontStyle.italic),
+                      filled: true,
+                      fillColor: Colors.white.withAlpha(10),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.all(20),
+                      suffixIcon: const Icon(Icons.auto_awesome, color: AppColors.gold, size: 20),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: Icon(
+                    _isListeningWish ? Icons.mic : Icons.mic_none,
+                    color: _isListeningWish ? Colors.yellow : Colors.white,
+                    size: 28,
+                  ),
+                  onPressed: _toggleWishListening,
+                ),
+              ],
+            ),
             const SizedBox(height: AppSpacing.xxl),
             Center(child: _isGenerating ? MagicalLoadingView(status: _loadingStatus, onCancel: () => setState(() => _isGenerating = false)) : _PulsingCastSpellFrame(isReady: !_isGenerating && data.isComplete, child: ImageMakeMagicButton(onTap: _launchStoryCreation, isEnabled: !_isGenerating && data.isComplete, label: 'MAKE MAGIC'))),
             const SizedBox(height: AppSpacing.xl),
@@ -281,6 +340,6 @@ class _PulsingCastSpellFrameState extends State<_PulsingCastSpellFrame> with Sin
   @override didUpdateWidget(old) { super.didUpdateWidget(old); if (widget.isReady != old.isReady) { if (widget.isReady) _ctrl.repeat(reverse: true); else _ctrl.stop(); } }
   @override dispose() { _ctrl.dispose(); super.dispose(); }
   @override Widget build(BuildContext context) {
-    return AnimatedBuilder(animation: _ctrl, builder: (ctx, child) => Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(borderRadius: BorderRadius.circular(32), boxShadow: widget.isReady ? [BoxShadow(color: const Color(0xFF9E6CFF).withAlpha((_ctrl.value * 100).toInt()), blurRadius: 28)] : null), child: child), child: widget.child);
+    return AnimatedBuilder(animation: _ctrl, builder: (ctx, child) => Padding(padding: const EdgeInsets.all(8), child: child), child: widget.child);
   }
 }

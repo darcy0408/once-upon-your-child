@@ -10,6 +10,7 @@ import 'dart:math' as math;
 import '../../models.dart';
 import '../../avatar_models.dart';
 import '../../custom_avatar_screen.dart';
+import '../../theme/age_band_theme.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/archetype_card.dart';
 import '../../widgets/magic_star_cursor.dart';
@@ -467,13 +468,21 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               _audioPrompt("Who is your hero?"),
               const SizedBox(width: 8),
               Flexible(
-                child: Text(
-                  "Who is your hero?",
-                  style: GoogleFonts.cinzelDecorative(
-                    color: const Color(0xFFFFD700),
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Builder(
+                  builder: (context) {
+                    final band = Theme.of(context).extension<AgeBandThemeData>();
+                    final label = band != null && band.band != AgeBand.explorer
+                        ? 'Who is your ${band.heroLabel.toLowerCase()}?'
+                        : 'Who is your hero?';
+                    return Text(
+                      label,
+                      style: GoogleFonts.cinzelDecorative(
+                        color: const Color(0xFFFFD700),
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
@@ -505,13 +514,21 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               _audioPrompt("What does your hero look like?"),
               const SizedBox(width: 8),
               Flexible(
-                child: Text(
-                  "What does your hero look like?",
-                  style: GoogleFonts.cinzelDecorative(
-                    color: const Color(0xFFFFD700),
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Builder(
+                  builder: (context) {
+                    final band = Theme.of(context).extension<AgeBandThemeData>();
+                    final label = band != null && band.band != AgeBand.explorer
+                        ? 'What does your ${band.heroLabel.toLowerCase()} look like?'
+                        : 'What does your hero look like?';
+                    return Text(
+                      label,
+                      style: GoogleFonts.cinzelDecorative(
+                        color: const Color(0xFFFFD700),
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    );
+                  },
                 ),
               ),
             ],

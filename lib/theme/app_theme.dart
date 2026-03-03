@@ -246,6 +246,7 @@ class AppTheme {
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: effectivePrimary,
       ),
+      extensions: [band],
     );
   }
 }

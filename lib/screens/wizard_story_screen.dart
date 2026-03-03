@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models.dart'; // Import Character model
+import '../theme/age_band_theme.dart';
 import '../theme/app_theme.dart';
 import '../widgets/moon_phase_progress.dart';
 import '../widgets/avatar_generation_banner.dart';
@@ -183,14 +184,21 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
                       child: Center(
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
-                          child: MoonPhaseProgress(
-                            currentStep: _currentStep,
-                            totalSteps: 3,
-                            stepLabels: const [
-                              'Step 1: Create your hero',
-                              'Step 2: Pick a companion',
-                              'Step 3: Make magic',
-                            ],
+                          child: Builder(
+                            builder: (context) {
+                              final band = Theme.of(context).extension<AgeBandThemeData>();
+                              final hero = band?.heroLabel.toLowerCase() ?? 'hero';
+                              final companion = band?.companionLabel.toLowerCase() ?? 'companion';
+                              return MoonPhaseProgress(
+                                currentStep: _currentStep,
+                                totalSteps: 3,
+                                stepLabels: [
+                                  'Step 1: Create your $hero',
+                                  'Step 2: Pick a $companion',
+                                  'Step 3: Make magic',
+                                ],
+                              );
+                            },
                           ),
                         ),
                       ),

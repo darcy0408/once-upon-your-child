@@ -31,7 +31,12 @@ AgeBand ageBandFromAge(int age) {
 ///
 /// Every screen reads from this instead of hard-coded constants, so
 /// the entire app adapts automatically when the user's age band changes.
-class AgeBandThemeData {
+///
+/// Accessible from any widget via:
+/// ```dart
+/// final ageBand = Theme.of(context).extension<AgeBandThemeData>()!;
+/// ```
+class AgeBandThemeData extends ThemeExtension<AgeBandThemeData> {
   final AgeBand band;
 
   // --- Colors ---
@@ -204,6 +209,21 @@ class AgeBandThemeData {
       fontWeight: FontWeight.bold,
       height: 1.3,
     );
+  }
+
+  // --- ThemeExtension overrides ---
+
+  @override
+  AgeBandThemeData copyWith({AgeBand? band}) {
+    // Age band themes are immutable presets; copyWith returns self.
+    return this;
+  }
+
+  @override
+  AgeBandThemeData lerp(AgeBandThemeData? other, double t) {
+    // Discrete switch — no interpolation between age bands.
+    if (t < 0.5) return this;
+    return other ?? this;
   }
 }
 
