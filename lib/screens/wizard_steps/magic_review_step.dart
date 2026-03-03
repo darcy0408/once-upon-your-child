@@ -8,7 +8,6 @@ import 'package:story_weaver_app/services/achievement_service.dart';
 import 'package:story_weaver_app/story_result_screen.dart';
 import 'package:story_weaver_app/story_illustration_service.dart';
 import 'package:story_weaver_app/pick_a_path_adventure_screen.dart';
-import 'package:story_weaver_app/pre_story_feelings_dialog.dart';
 import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
@@ -91,11 +90,6 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please complete all steps first!'), backgroundColor: AppColors.warning));
       return;
     }
-    CurrentFeeling? currentFeeling;
-    if (widget.wizardData.characterName.isNotEmpty) {
-      if (!mounted) return;
-      currentFeeling = await PreStoryFeelingsDialog.show(context: context, characterName: widget.wizardData.characterName, childAge: widget.wizardData.characterAge);
-    }
     if (!mounted) return;
     setState(() => _isGenerating = true);
     await Future<void>.delayed(const Duration(milliseconds: 80));
@@ -103,7 +97,6 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
     try {
       await _saveCharacterIfNeeded();
       final requestData = WizardDataMapper.mapToStoryRequest(widget.wizardData);
-      if (currentFeeling != null) requestData['currentFeeling'] = currentFeeling.toJson();
       if (widget.wizardData.interactiveMode) {
         if (mounted) {
           final character = Character(id: widget.wizardData.characterId ?? 'temp-${DateTime.now().millisecondsSinceEpoch}', name: widget.wizardData.characterName, age: widget.wizardData.characterAge, role: widget.wizardData.selectedArchetypeId ?? 'Adventurer', gender: widget.wizardData.characterGender, personalitySliders: widget.wizardData.personalitySliders);

@@ -405,7 +405,7 @@ class _StoryScreenState extends State<StoryScreen> {
     return true;
   }
 
-  Future<void> _createStory({bool guidedByFeeling = false}) async {
+  Future<void> _createStory() async {
     final allowed = await _validateStoryCreationPreconditions();
     if (!allowed) return;
 
@@ -459,15 +459,8 @@ class _StoryScreenState extends State<StoryScreen> {
       );
     }
 
+    // currentFeeling is null here; will be populated by ambient feelings (future)
     CurrentFeeling? currentFeeling;
-    if (guidedByFeeling && _selectedCharacter != null) {
-      if (!mounted) return;
-      currentFeeling = await PreStoryFeelingsDialog.show(
-        context: context,
-        characterName: _selectedCharacter!.name,
-        childAge: _selectedCharacter!.age,
-      );
-    }
 
     // Start loading state
     _startProgress();
@@ -997,27 +990,6 @@ class _StoryScreenState extends State<StoryScreen> {
                         : 'Make Magic'),
                   ),
                 ),
-                if (!_interactiveMode) ...[
-                  const SizedBox(height: 12),
-                  OutlinedButton(
-                    onPressed:
-                        (_gracePeriodStatus?.shouldShowHardLimit ?? false)
-                            ? null
-                            : () async {
-                                await _createStory(guidedByFeeling: true);
-                              },
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: const BorderSide(color: Colors.deepPurple),
-                      foregroundColor: Colors.deepPurple,
-                      textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    child: const Text('Create Story About a Feeling'),
-                  ),
-                ],
               ],
             ],
           ),
