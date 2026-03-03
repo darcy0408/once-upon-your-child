@@ -1222,18 +1222,18 @@ class _CharacterChoiceCard extends StatelessWidget {
 
   const _CharacterChoiceCard({required this.character, required this.onTap});
 
-  Widget _buildAvatarContent(String imageBase64) {
+  ImageProvider<Object> _getAvatarProvider(String imageBase64) {
     if (imageBase64.startsWith('assets/')) {
-      return AssetImage(imageBase64) as ImageProvider;
+      return AssetImage(imageBase64);
     }
     if (imageBase64.startsWith('http')) {
-      return NetworkImage(imageBase64) as ImageProvider;
+      return NetworkImage(imageBase64);
     }
     try {
       final normalized = imageBase64.contains(',') ? imageBase64.split(',').last : imageBase64;
-      return MemoryImage(base64Decode(normalized)) as ImageProvider;
+      return MemoryImage(base64Decode(normalized));
     } catch (_) {
-      return const AssetImage('assets/images/hero_placeholder.jpg') as ImageProvider;
+      return const AssetImage('assets/images/hero_placeholder.jpg');
     }
   }
 
@@ -1256,8 +1256,8 @@ class _CharacterChoiceCard extends StatelessWidget {
               radius: 35,
               backgroundColor: const Color(0xFF3A2363),
               backgroundImage: avatarData != null
-                ? _buildAvatarContent(avatarData)
-                : const AssetImage('assets/images/hero_placeholder.jpg'),
+                ? _getAvatarProvider(avatarData)
+                : const AssetImage('assets/images/hero_placeholder.jpg') as ImageProvider,
             ),
             const SizedBox(width: 16),
             Expanded(
