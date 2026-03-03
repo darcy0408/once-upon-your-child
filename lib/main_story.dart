@@ -31,7 +31,6 @@ import 'offline_stories_screen.dart';
 import 'paywall_dialog.dart';
 import 'pre_story_feelings_dialog.dart';
 import 'premium_upgrade_screen.dart';
-import 'screens/character_library_screen.dart';
 import 'screens/subscription_success_screen.dart';
 import 'services/achievement_service.dart';
 import 'services/api_service_manager.dart';
@@ -39,14 +38,12 @@ import 'services/grace_period_service.dart';
 import 'services/grace_period_analytics.dart';
 import 'services/progression_service.dart';
 import 'services/story_complexity_service.dart';
-import 'story_intent_card.dart';
 import 'story_result_screen.dart';
 import 'subscription_models.dart';
 import 'subscription_service.dart';
 import 'therapeutic_models.dart';
 import 'widgets/app_bottom_navigation.dart';
 import 'settings_screen.dart' deferred as settings_screen;
-import 'character_selection_screen.dart';
 import 'screens/wizard_story_screen.dart';
 
 class StoryCreatorApp extends ConsumerWidget {
@@ -125,9 +122,6 @@ class _StoryScreenState extends State<StoryScreen> {
   final _random = Random();
   GracePeriodStatus? _gracePeriodStatus;
   bool _loggedGraceBanner = false;
-
-  // Story intent (merged theme + therapeutic customization)
-  StoryIntentData? _storyIntent;
 
   int _currentPhase = 0;
   final int _totalPhases = 3;
@@ -930,293 +924,7 @@ class _StoryScreenState extends State<StoryScreen> {
               ],
               _buildSELPacksSection(),
               const SizedBox(height: 20),
-              _buildSectionCard(
-                'Choose Main Character',
-                Column(
-                  children: [
-                    // "Create New" Path
-                    InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const WizardStoryScreen(
-                              initialStep: 0, // Start at creation
-                            ),
-                          ),
-                        ).then((_) => _loadCharacters());
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        height: 180,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          image: const DecorationImage(
-                            image: AssetImage(
-                                'assets/images/create_character_card.jpg'),
-                            fit: BoxFit.cover,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            gradient: LinearGradient(
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
-                              colors: [
-                                Colors.black.withValues(alpha: 0.8),
-                                Colors.transparent,
-                              ],
-                            ),
-                          ),
-                          padding: const EdgeInsets.all(16),
-                          alignment: Alignment.bottomLeft,
-                          child: const Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Create a New Hero',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                'Design your perfect adventurer',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // "Select Existing" Path
-                    if (_characters.isNotEmpty)
-                      InkWell(
-                        onTap: () {
-                          // Go to Library to pick, then launch Wizard
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => CharacterLibraryScreen(),
-                            ),
-                          ).then((_) => _loadCharacters());
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 16, horizontal: 20),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border:
-                                Border.all(color: Colors.deepPurple.shade100),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.deepPurple.shade50,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.people,
-                                    color: Colors.deepPurple),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Pick an Existing Hero',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.deepPurple,
-                                      ),
-                                    ),
-                                    Text(
-                                      '${_characters.length} characters ready for adventure',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Icon(Icons.arrow_forward_ios,
-                                  size: 16, color: Colors.grey),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              if (_selectedCharacter != null)
-                _buildSectionCard('Add Friends/Siblings (Optional)',
-                    _buildAdditionalCharactersSelector()),
-              if (_selectedCharacter != null &&
-                  _additionalCharacterIds.isNotEmpty)
-                const SizedBox(height: 20),
-              StoryIntentCard(
-                initialData: _storyIntent,
-                onIntentChanged: (intent) {
-                  setState(() {
-                    _storyIntent = intent;
-
-                    if (intent.supportFocuses.isNotEmpty ||
-                        intent.situation != null ||
-                        intent.storyElements.isNotEmpty ||
-                        intent.message != null) {
-                      final wishes = intent.storyElements
-                          .map((e) => StoryWish(
-                                description: 'Include $e',
-                                type: WishType.other,
-                              ))
-                          .toList();
-
-                      TherapeuticGoal? primaryGoal;
-                      for (final goal in TherapeuticGoal.values) {
-                        if (intent.supportFocuses.contains(goal.displayName)) {
-                          primaryGoal = goal;
-                          break;
-                        }
-                      }
-
-                      _therapeuticCustomization = TherapeuticStoryCustomization(
-                        primaryGoal: primaryGoal,
-                        wishes: wishes,
-                        specificSituation: intent.situation,
-                        copingStrategiesToHighlight: intent.supportFocuses,
-                        desiredLesson: intent.message,
-                      );
-                    } else {
-                      _therapeuticCustomization = null;
-                    }
-                  });
-                },
-              ),
-              const SizedBox(height: 20),
-              Card(
-                child: SwitchListTile(
-                  title: const Text(
-                    'Pick-A-Path Adventure',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: const Text(
-                    'Make choices that change the story!',
-                  ),
-                  value: _interactiveMode,
-                  thumbColor: WidgetStateProperty.all<Color>(Colors.purple),
-                  secondary: const Icon(Icons.alt_route, color: Colors.purple),
-                  onChanged: (value) {
-                    setState(() => _interactiveMode = value);
-                  },
-                ),
-              ),
-              const SizedBox(height: 12),
-              Card(
-                child: SwitchListTile(
-                  title: const Text(
-                    'Easy Readers: Learn to Read Mode',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(_canUseLearningToReadMode
-                      ? '50-100 word rhyming story for early readers (all ages)'
-                      : 'Select a character to enable this mode'),
-                  value:
-                      _canUseLearningToReadMode ? _learningToReadMode : false,
-                  thumbColor: WidgetStateProperty.all<Color>(Colors.blue),
-                  secondary: const Icon(Icons.menu_book, color: Colors.blue),
-                  onChanged: _canUseLearningToReadMode
-                      ? (value) {
-                          setState(() {
-                            _learningToReadMode = value;
-                            if (value) {
-                              _rhymeTimeMode = false;
-                              _includeIllustrations = true;
-                            }
-                          });
-                        }
-                      : null,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Card(
-                child: SwitchListTile(
-                  title: const Text(
-                    'Include Illustrations',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    _learningToReadMode
-                        ? 'Enabled automatically for Learn to Read stories'
-                        : 'Generate colorful images with your story',
-                  ),
-                  value: _learningToReadMode ? true : _includeIllustrations,
-                  thumbColor: WidgetStateProperty.all<Color>(Colors.teal),
-                  secondary: const Icon(Icons.brush, color: Colors.teal),
-                  onChanged: _learningToReadMode
-                      ? null
-                      : (value) {
-                          setState(() {
-                            _includeIllustrations = value;
-                          });
-                        },
-                ),
-              ),
-              const SizedBox(height: 12),
-              Card(
-                child: SwitchListTile(
-                  title: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Flexible(
-                        child: Text(
-                          'Rhyme Time Mode',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (!_hasRhymeTime) ...[
-                        const SizedBox(width: 8),
-                        const Icon(Icons.lock, size: 18, color: Colors.orange),
-                      ],
-                    ],
-                  ),
-                  subtitle: Text(_hasRhymeTime
-                      ? 'Silly rhyming stories with playful verses!'
-                      : 'Unlock after creating 1 story! ($_storiesCreated/1)'),
-                  value: _rhymeTimeMode && _hasRhymeTime,
-                  thumbColor: WidgetStateProperty.all<Color>(Colors.orange),
-                  secondary: const Icon(Icons.music_note, color: Colors.orange),
-                  onChanged: _hasRhymeTime
-                      ? (value) {
-                          setState(() => _rhymeTimeMode = value);
-                        }
-                      : null,
-                ),
-              ),
-              const SizedBox(height: 20),
-              _buildSectionCard(
-                  'Choose a Companion (Optional)', _buildCompanionSelector()),
+              _buildCharacterPortraitRow(),
               const SizedBox(height: 40),
               if ((_gracePeriodStatus?.shouldShowHardLimit ?? false))
                 Padding(
@@ -1312,6 +1020,68 @@ class _StoryScreenState extends State<StoryScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Renders character portrait cards horizontally.Tapping a card opens the
+  /// wizard with that character pre-loaded for a one-tap story.
+  Widget _buildCharacterPortraitRow() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          child: Text(
+            _characters.isEmpty ? 'Create your first hero!' : 'Choose your hero',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              shadows: [Shadow(color: Colors.black38, blurRadius: 4)],
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 200,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            children: [
+              // Existing character cards
+              ..._characters.map((character) => _CharacterPortraitCard(
+                character: character,
+                isSelected: _selectedCharacter?.id == character.id,
+                onTap: () {
+                  setState(() => _selectedCharacter = character);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => WizardStoryScreen(
+                        initialCharacter: character,
+                        availableCharacters: _characters,
+                      ),
+                    ),
+                  ).then((_) {
+                    _loadCharacters();
+                    _loadSubscriptionInfo();
+                  });
+                },
+              )),
+              // "New Hero" card at the end
+              _NewHeroCard(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const WizardStoryScreen(initialStep: 0),
+                    ),
+                  ).then((_) => _loadCharacters());
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -2047,5 +1817,196 @@ class _StoryScreenState extends State<StoryScreen> {
         debugPrint('Error updating character evolution: $e');
       }
     }
+  }
+}
+
+// ── Character Portrait Card ────────────────────────────────────────────────
+
+class _CharacterPortraitCard extends StatelessWidget {
+  final Character character;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _CharacterPortraitCard({
+    required this.character,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 130,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF6B3FA0), Color(0xFF3D1166)],
+          ),
+          border: Border.all(
+            color: isSelected ? const Color(0xFFFFD700) : Colors.white24,
+            width: isSelected ? 2.5 : 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isSelected
+                  ? const Color(0xFFFFD700).withAlpha(80)
+                  : Colors.black.withAlpha(60),
+              blurRadius: isSelected ? 12 : 6,
+              spreadRadius: isSelected ? 2 : 0,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(height: 12),
+            // Avatar circle
+            Container(
+              width: 74,
+              height: 74,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? const Color(0xFFFFD700) : Colors.white30,
+                  width: 2,
+                ),
+              ),
+              child: ClipOval(child: _AvatarImage(character: character)),
+            ),
+            const SizedBox(height: 10),
+            // Name
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                character.name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(height: 2),
+            // Age / role badge
+            Text(
+              'Age ${character.age}${character.role != null ? ' · ${character.role}' : ''}',
+              style: const TextStyle(color: Colors.white60, fontSize: 11),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 10),
+            // CTA
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color(0xFFFFD700)
+                    : Colors.white.withAlpha(30),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '✨ Adventure',
+                style: TextStyle(
+                  color: isSelected ? Colors.black87 : Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AvatarImage extends StatelessWidget {
+  final Character character;
+  const _AvatarImage({required this.character});
+
+  @override
+  Widget build(BuildContext context) {
+    final generated = character.generatedAvatar;
+    if (generated != null && generated.imageBase64.isNotEmpty) {
+      final data = generated.imageBase64;
+      if (data.startsWith('assets/')) return Image.asset(data, fit: BoxFit.cover);
+      if (data.startsWith('http')) return Image.network(data, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder());
+      try {
+        return Image.memory(base64Decode(data.split(',').last), fit: BoxFit.cover);
+      } catch (_) {}
+    }
+    if (character.avatar != null) {
+      return Image.network(
+        character.avatar!.toAvataaarsUrl(),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _placeholder(),
+      );
+    }
+    return _placeholder();
+  }
+
+  Widget _placeholder() {
+    final initials = character.name.isNotEmpty
+        ? character.name[0].toUpperCase()
+        : '?';
+    return Container(
+      color: const Color(0xFF3D1166),
+      child: Center(
+        child: Text(
+          initials,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 30,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NewHeroCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _NewHeroCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 110,
+        margin: const EdgeInsets.only(right: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: Colors.white.withAlpha(20),
+          border: Border.all(color: Colors.white38, width: 1.5),
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add_circle_outline, color: Colors.white70, size: 40),
+            SizedBox(height: 10),
+            Text(
+              'New Hero',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
