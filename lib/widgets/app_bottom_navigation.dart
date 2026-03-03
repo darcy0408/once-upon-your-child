@@ -6,16 +6,19 @@ class AppBottomNavigationBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
   final String? userId;
+  final int childAge;
 
   const AppBottomNavigationBar({
     super.key,
     required this.currentIndex,
     required this.onTap,
     this.userId,
+    this.childAge = 8,
   });
 
   @override
   Widget build(BuildContext context) {
+    final feelingsLabel = childAge <= 5 ? 'Feelings' : childAge <= 8 ? 'My Garden' : 'Feelings';
     return BottomNavigationBar(
       currentIndex: currentIndex,
       onTap: onTap,
@@ -27,6 +30,10 @@ class AppBottomNavigationBar extends StatelessWidget {
         const BottomNavigationBarItem(
           icon: _NavIcon(icon: Icons.auto_stories),
           label: 'Stories',
+        ),
+        BottomNavigationBarItem(
+          icon: const _NavIcon(icon: Icons.favorite_rounded),
+          label: feelingsLabel,
         ),
         BottomNavigationBarItem(
           icon: FeatureUnlockTooltip(

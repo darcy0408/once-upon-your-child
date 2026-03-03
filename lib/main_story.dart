@@ -45,6 +45,7 @@ import 'subscription_service.dart';
 import 'therapeutic_models.dart';
 import 'widgets/app_bottom_navigation.dart';
 import 'settings_screen.dart' deferred as settings_screen;
+import 'screens/feelings_garden_screen.dart';
 import 'screens/wizard_story_screen.dart';
 
 class StoryCreatorApp extends ConsumerWidget {
@@ -149,14 +150,23 @@ class _StoryScreenState extends State<StoryScreen> {
     switch (index) {
       case 0: // Stories - already on this screen
         break;
-      case 1: // Characters
+      case 1: // Feelings Garden
+        Navigator.of(context)
+            .push(MaterialPageRoute(
+              builder: (_) => FeelingsGardenScreen(
+                childAge: _selectedCharacter?.age ?? 8,
+              ),
+            ))
+            .then((_) => setState(() => _selectedTabIndex = 0));
+        break;
+      case 2: // Library
         Navigator.of(context)
             .push(
               MaterialPageRoute(builder: (_) => const SavedStoriesScreen()),
             )
             .then((_) => setState(() => _selectedTabIndex = 0));
         break;
-      case 2: // Settings
+      case 3: // Settings
         settings_screen.loadLibrary().then((_) {
           if (mounted) {
             Navigator.of(context)
@@ -854,6 +864,7 @@ class _StoryScreenState extends State<StoryScreen> {
         currentIndex: _selectedTabIndex,
         onTap: _onTabTapped,
         userId: _userId,
+        childAge: _selectedCharacter?.age ?? 8,
       ),
       body: Builder(
         builder: (context) {
