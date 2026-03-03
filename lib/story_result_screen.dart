@@ -30,6 +30,7 @@ import 'services/story_feedback_service.dart';
 import 'services/story_analytics.dart';
 import 'services/therapeutic_analytics.dart';
 import 'subscription_models.dart';
+import 'theme/age_band_theme.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_button.dart';
 import 'widgets/app_card.dart';
@@ -1611,12 +1612,17 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     return ErrorBoundary(
       onRetry: _retryLoadData,
       child: Scaffold(
         body: Container(
-          decoration: const BoxDecoration(
-            gradient: AppGradients.magicalBackground,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [band.gradientStart, band.gradientMid, band.gradientEnd],
+            ),
           ),
           child: SafeArea(
             child: Column(

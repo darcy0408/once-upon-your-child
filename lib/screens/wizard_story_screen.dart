@@ -147,10 +147,15 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppGradients.magicalBackground,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [band.gradientStart, band.gradientMid, band.gradientEnd],
+          ),
         ),
         child: SafeArea(
           child: Column(

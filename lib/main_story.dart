@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/config/environment.dart';
 import 'package:story_weaver_app/providers/age_band_provider.dart';
+import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
 import 'package:story_weaver_app/widgets/story_generation_progress.dart';
 import 'package:story_weaver_app/widgets/user_friendly_error_dialog.dart';
@@ -861,16 +862,18 @@ class _StoryScreenState extends State<StoryScreen> {
         onTap: _onTabTapped,
         userId: _userId,
       ),
-      body: Container(
+      body: Builder(
+        builder: (context) {
+          final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+          return Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              const Color(0xFF81C784), // Light green
-              const Color(0xFF66BB6A), // Medium green
-              const Color(0xFF4CAF50), // Vibrant green
-              const Color(0xFFAED581), // Light lime green
+              band.gradientStart,
+              band.gradientMid,
+              band.gradientEnd,
             ],
           ),
         ),
@@ -1019,6 +1022,8 @@ class _StoryScreenState extends State<StoryScreen> {
             ],
           ),
         ),
+      );
+        },
       ),
     );
   }
