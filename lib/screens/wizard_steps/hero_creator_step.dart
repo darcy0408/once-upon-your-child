@@ -1200,7 +1200,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => Container(
+      builder: (ctx) => SafeArea(
+        child: Container(
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -1265,6 +1266,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   : null,
             ),
           ],
+        ),
         ),
       ),
     );
