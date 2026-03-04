@@ -214,7 +214,17 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   // ─── Navigation Helpers ──────────────────────────────────────────────────────
   void _notifySubStep() {
-    widget.onSubStepChange?.call(_heroPage < 3 ? 0 : 1);
+    final int step;
+    if (_heroPage < 3) {
+      step = 0; // Create Hero
+    } else if (_heroPage == 3) {
+      step = 1; // Pick Team
+    } else if (_heroPage == 4) {
+      step = 2; // Pick Place
+    } else {
+      step = 3; // Make Magic
+    }
+    widget.onSubStepChange?.call(step);
   }
 
   void _heroNextPage() {

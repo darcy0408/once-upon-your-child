@@ -194,10 +194,11 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
                             builder: (context) {
                               return MoonPhaseProgress(
                                 currentStep: _progressStep,
-                                totalSteps: 3,
+                                totalSteps: 4,
                                 stepLabels: const [
                                   'Create Hero',
                                   'Pick Team',
+                                  'Pick Place',
                                   'Make Magic',
                                 ],
                               );
@@ -252,7 +253,7 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
                   onPageChanged: (index) {
                     setState(() {
                       _currentStep = index;
-                      if (index == 1) _progressStep = 2;
+                      if (index == 1) _progressStep = 3;
                     });
                   },
                   children: [
