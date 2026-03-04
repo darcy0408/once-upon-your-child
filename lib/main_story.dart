@@ -67,21 +67,10 @@ class StoryCreatorApp extends ConsumerWidget {
         '/story-home': (context) =>
             const StoryScreen(), // Keep old screen accessible
       },
-      debugShowCheckedModeBanner: !Environment.isProduction,
+      debugShowCheckedModeBanner: false,
       builder: (context, child) {
-        if (child == null || !Environment.showFlavorBanner) {
-          return child ?? const SizedBox.shrink();
-        }
-        return Banner(
-          message: Environment.bannerLabel,
-          location: BannerLocation.topStart,
-          color: Environment.bannerColor,
-          textStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
-          child: child,
-        );
+        // Flavor banner disabled — not useful for daily development
+        return child ?? const SizedBox.shrink();
       },
     );
   }

@@ -499,12 +499,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               Flexible(
                 child: Builder(
                   builder: (context) {
-                    final band = Theme.of(context).extension<AgeBandThemeData>();
-                    final label = band != null && band.band != AgeBand.explorer
-                        ? 'Who is your ${band.heroLabel.toLowerCase()}?'
-                        : 'Who is your hero?';
                     return Text(
-                      label,
+                      'Create Your Hero',
                       style: GoogleFonts.cinzelDecorative(
                         color: const Color(0xFFFFD700),
                         fontSize: 24,
@@ -1474,50 +1470,99 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   Widget _buildAgePicker() {
     return Column(
       children: [
-        Text(
-          '${widget.wizardData.characterAge}',
-          style: GoogleFonts.cinzelDecorative(
-            color: const Color(0xFFFFD700),
-            fontSize: 34,
-            fontWeight: FontWeight.bold,
-            shadows: const [Shadow(color: Color(0xFFFFD700), blurRadius: 16)],
-          ),
-        ),
-        Text(
-          'Hero Age',
-          style: GoogleFonts.cinzelDecorative(
-            color: Colors.white.withAlpha(200),
-            fontSize: 11,
+        // Tap-to-type age input — tapping the number opens keyboard
+        GestureDetector(
+          onTap: () {
+            showDialog<void>(
+              context: context,
+              builder: (ctx) {
+                final ctrl = TextEditingController(text: '${widget.wizardData.characterAge}');
+                return AlertDialog(
+                  backgroundColor: const Color(0xFF2A1060),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  title: Text('How old is your hero?',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.cinzelDecorative(color: const Color(0xFFFFD700), fontSize: 16)),
+                  content: TextField(
+                    controller: ctrl,
+                    autofocus: true,
+                    textAlign: TextAlign.center,
+                    keyboardType: TextInputType.number,
+                    style: GoogleFonts.cinzelDecorative(
+                        color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+                    decoration: InputDecoration(
+                      hintText: '7',
+                      hintStyle: const TextStyle(color: Colors.white38),
+                      filled: true,
+                      fillColor: Colors.white10,
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none),
+                    ),
+                    onSubmitted: (v) {
+                      final n = int.tryParse(v);
+                      if (n != null) {
+                        setState(() => widget.wizardData.characterAge = n.clamp(3, 99));
+                      }
+                      Navigator.pop(ctx);
+                    },
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        final n = int.tryParse(ctrl.text);
+                        if (n != null) {
+                          setState(() => widget.wizardData.characterAge = n.clamp(3, 99));
+                        }
+                        Navigator.pop(ctx);
+                      },
+                      child: Text('Done',
+                          style: GoogleFonts.fredoka(color: const Color(0xFFFFD700), fontSize: 18)),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+          child: Column(
+            children: [
+              Text(
+                '${widget.wizardData.characterAge}',
+                style: GoogleFonts.cinzelDecorative(
+                  color: const Color(0xFFFFD700),
+                  fontSize: 34,
+                  fontWeight: FontWeight.bold,
+                  shadows: const [Shadow(color: Color(0xFFFFD700), blurRadius: 16)],
+                ),
+              ),
+              Text(
+                'Tap to change age',
+                style: GoogleFonts.cinzelDecorative(
+                  color: Colors.white.withAlpha(160),
+                  fontSize: 10,
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 10),
         Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _AgeStepButton(
               icon: Icons.remove_rounded,
               size: 40,
-              onTap: () => setState(() => widget.wizardData.characterAge = (widget.wizardData.characterAge - 1).clamp(3, 99)),
+              onTap: () => setState(() =>
+                  widget.wizardData.characterAge =
+                      (widget.wizardData.characterAge - 1).clamp(3, 99)),
             ),
-            Expanded(
-              child: SliderTheme(
-                data: SliderThemeData(
-                  activeTrackColor: const Color(0xFFB060F0),
-                  thumbColor: const Color(0xFFFFD700),
-                  trackHeight: 6,
-                ),
-                child: Slider(
-                  value: widget.wizardData.characterAge.toDouble(),
-                  min: 3,
-                  max: 99,
-                  divisions: 96,
-                  onChanged: (v) => setState(() => widget.wizardData.characterAge = v.round()),
-                ),
-              ),
-            ),
+            const SizedBox(width: 24),
             _AgeStepButton(
               icon: Icons.add_rounded,
               size: 40,
-              onTap: () => setState(() => widget.wizardData.characterAge = (widget.wizardData.characterAge + 1).clamp(3, 99)),
+              onTap: () => setState(() =>
+                  widget.wizardData.characterAge =
+                      (widget.wizardData.characterAge + 1).clamp(3, 99)),
             ),
           ],
         ),
@@ -1529,34 +1574,40 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildGenderOrb(imagePath: 'assets/images/ui/hero_icon.png', label: 'Hero', gender: 'Boy'),
-        const SizedBox(width: 32),
-        _buildGenderOrb(imagePath: 'assets/images/ui/heroine_icon.png', label: 'Heroine', gender: 'Girl'),
+        _buildGenderImageButton(
+          normalImage: 'assets/images/ui/boy_normal.png',
+          hoverImage: 'assets/images/ui/boy_hover.png',
+          pressedImage: 'assets/images/ui/boy_pressed.png',
+          label: 'Boy',
+          gender: 'Boy',
+        ),
+        const SizedBox(width: 40),
+        _buildGenderImageButton(
+          normalImage: 'assets/images/ui/girl_normal.png',
+          hoverImage: 'assets/images/ui/girl_hover.png',
+          pressedImage: 'assets/images/ui/girl_pressed.png',
+          label: 'Girl',
+          gender: 'Girl',
+        ),
       ],
     );
   }
 
-  Widget _buildGenderOrb({required String imagePath, required String label, required String gender}) {
+  Widget _buildGenderImageButton({
+    required String normalImage,
+    required String hoverImage,
+    required String pressedImage,
+    required String label,
+    required String gender,
+  }) {
     final isSelected = widget.wizardData.characterGender == gender;
-    return GestureDetector(
+    return _GenderImageButton(
+      normalImage: normalImage,
+      hoverImage: hoverImage,
+      pressedImage: pressedImage,
+      label: label,
+      isSelected: isSelected,
       onTap: () => setState(() => widget.wizardData.characterGender = gender),
-      child: Column(
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 92,
-            height: 92,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: isSelected ? const Color(0xFFD4A0FF) : Colors.white24, width: 3),
-              boxShadow: isSelected ? [BoxShadow(color: const Color(0xFFFFD700).withAlpha(200), blurRadius: 32)] : null,
-            ),
-            child: ClipOval(child: Image.asset(imagePath, fit: BoxFit.cover)),
-          ),
-          const SizedBox(height: 6),
-          Text(label, style: GoogleFonts.cinzelDecorative(color: isSelected ? const Color(0xFFFFD700) : Colors.white60, fontSize: 12)),
-        ],
-      ),
     );
   }
 
@@ -1574,7 +1625,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 focusNode: _nameFocusNode,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.cinzelDecorative(fontSize: 20, color: const Color(0xFF3A1C00), fontWeight: FontWeight.w700),
-                decoration: const InputDecoration(hintText: "Hero's Name", border: InputBorder.none),
+                decoration: const InputDecoration(
+                  hintText: "Hero's Name",
+                  border: InputBorder.none,
+                  filled: false,
+                ),
                 onChanged: (v) => setState(() => widget.wizardData.characterName = v.trim()),
               ),
             ),
@@ -2172,4 +2227,96 @@ class _StarParticle {
         dy = (rng.nextDouble() * 2 - 1),
         size = rng.nextDouble() * 8,
         emoji = _emojis[rng.nextInt(_emojis.length)];
+}
+
+// ---------------------------------------------------------------------------
+// Gender image button — normal / hover / pressed states + selection glow
+// ---------------------------------------------------------------------------
+class _GenderImageButton extends StatefulWidget {
+  const _GenderImageButton({
+    required this.normalImage,
+    required this.hoverImage,
+    required this.pressedImage,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String normalImage;
+  final String hoverImage;
+  final String pressedImage;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  State<_GenderImageButton> createState() => _GenderImageButtonState();
+}
+
+class _GenderImageButtonState extends State<_GenderImageButton> {
+  bool _hovered = false;
+  bool _pressed = false;
+
+  String get _imagePath {
+    if (_pressed || widget.isSelected) return widget.pressedImage;
+    if (_hovered) return widget.hoverImage;
+    return widget.normalImage;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: widget.isSelected
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFFFFD700).withAlpha(180),
+                      blurRadius: 28,
+                      spreadRadius: 4,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedScale(
+                scale: _pressed ? 0.92 : (_hovered ? 1.05 : 1.0),
+                duration: const Duration(milliseconds: 120),
+                child: Image.asset(
+                  _imagePath,
+                  width: 108,
+                  height: 108,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                widget.label,
+                style: GoogleFonts.cinzelDecorative(
+                  color: widget.isSelected
+                      ? const Color(0xFFFFD700)
+                      : Colors.white60,
+                  fontSize: 13,
+                  fontWeight: widget.isSelected
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

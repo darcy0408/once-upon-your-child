@@ -5,6 +5,7 @@ import '../theme/app_theme.dart';
 import '../widgets/moon_phase_progress.dart';
 import '../widgets/avatar_generation_banner.dart';
 import 'character_library_screen.dart';
+import 'feelings_garden_screen.dart';
 import 'wizard_steps/hero_creator_step.dart';
 import 'wizard_steps/magic_review_step.dart';
 import '../services/api_service_manager.dart';
@@ -190,20 +191,31 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
                           fit: BoxFit.scaleDown,
                           child: Builder(
                             builder: (context) {
-                              final band = Theme.of(context).extension<AgeBandThemeData>();
-                              final hero = band?.heroLabel.toLowerCase() ?? 'hero';
                               return MoonPhaseProgress(
                                 currentStep: _currentStep,
                                 totalSteps: 2,
-                                stepLabels: [
-                                  'Step 1: Create your $hero',
-                                  'Step 2: Make magic',
-                                ],
                               );
                             },
                           ),
                         ),
                       ),
+                    ),
+                    // Feelings Garden button
+                    IconButton(
+                      icon: const Icon(
+                        Icons.favorite,
+                        color: AppColors.textDark,
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => FeelingsGardenScreen(
+                              childAge: _wizardData.characterAge <= 0 ? 8 : _wizardData.characterAge,
+                            ),
+                          ),
+                        );
+                      },
+                      tooltip: 'Feelings Garden',
                     ),
                     // Character Library button
                     IconButton(
