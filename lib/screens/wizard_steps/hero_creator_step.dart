@@ -30,12 +30,14 @@ class HeroCreatorStep extends StatefulWidget {
   final WizardData wizardData;
   final VoidCallback onNext;
   final List<Character> availableCharacters;
+  final void Function(int subStep)? onSubStepChange;
 
   const HeroCreatorStep({
     super.key,
     required this.wizardData,
     required this.onNext,
     this.availableCharacters = const [],
+    this.onSubStepChange,
   });
 
   @override
@@ -211,6 +213,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   // ─── Navigation Helpers ──────────────────────────────────────────────────────
+  void _notifySubStep() {
+    widget.onSubStepChange?.call(_heroPage < 3 ? 0 : 1);
+  }
+
   void _heroNextPage() {
     if (_heroPage < 5) {
       _triggerPageCelebration();
@@ -220,6 +226,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       );
       setState(() => _heroPage++);
       _logPageView(_heroPage);
+      _notifySubStep();
     }
   }
 
@@ -250,6 +257,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       );
       setState(() => _heroPage--);
       _logPageView(_heroPage);
+      _notifySubStep();
     }
   }
 
@@ -634,43 +642,64 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFFFD700).withAlpha(80)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('⚡', style: TextStyle(fontSize: 28)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  archetype.name,
-                  style: const TextStyle(
-                    color: Color(0xFFFFD700),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+          const Text(
+            'Your Hero Type:',
+            style: TextStyle(color: Colors.white60, fontSize: 11),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              if (archetype.imagePath != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    archetype.imagePath!,
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        const Text('⚡', style: TextStyle(fontSize: 28)),
                   ),
+                )
+              else
+                const Text('⚡', style: TextStyle(fontSize: 28)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      archetype.name,
+                      style: const TextStyle(
+                        color: Color(0xFFFFD700),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      archetype.specialAbility,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  archetype.specialAbility,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  /// Companion selection grid — 7 magical creatures + pet management.
-  /// Full implementation comes with Task B (merge pets + companions).
+  /// Companion selection grid — 7 magical creatures + saved friends + pet management.
   Widget _buildCompanionGrid() {
-    final companions = _getDefaultCompanions();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -679,65 +708,50 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           style: TextStyle(color: Colors.white70, fontSize: 14),
         ),
         const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.85,
+        // ── Saved characters as friends ──────────────────────────────────────
+        if (widget.availableCharacters.isNotEmpty) ...[
+          const Text(
+            'Your Friends:',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-          itemCount: companions.length,
-          itemBuilder: (context, i) {
-            final c = companions[i];
-            final isSelected = widget.wizardData.companionNames.contains(c.name);
-            return GestureDetector(
-              onTap: () => setState(() {
-                if (isSelected) {
-                  widget.wizardData.companionNames.remove(c.name);
-                  widget.wizardData.selectedCompanions.remove(c.id);
-                } else {
-                  widget.wizardData.companionNames.add(c.name);
-                  widget.wizardData.selectedCompanions.add(c.id);
-                }
-              }),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFFFFD700).withAlpha(25)
-                      : Colors.white10,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected
-                        ? const Color(0xFFFFD700)
-                        : Colors.white24,
-                    width: isSelected ? 2 : 1,
-                  ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(c.emoji, style: const TextStyle(fontSize: 32)),
-                    const SizedBox(height: 6),
-                    Text(
-                      c.name,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: isSelected
-                            ? const Color(0xFFFFD700)
-                            : Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: widget.availableCharacters
+                .where((c) => c.name != widget.wizardData.characterName)
+                .map((c) {
+              final isSelected =
+                  widget.wizardData.companionNames.contains(c.name);
+              return _FriendChipButton(
+                character: c,
+                isSelected: isSelected,
+                onTap: () => setState(() {
+                  if (isSelected) {
+                    widget.wizardData.companionNames.remove(c.name);
+                    widget.wizardData.selectedCompanions.remove(c.name);
+                  } else {
+                    widget.wizardData.companionNames.add(c.name);
+                    widget.wizardData.selectedCompanions.add(c.name);
+                  }
+                }),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+        ],
+        // ── Image-based companion grid ────────────────────────────────────────
+        _CompanionImageGrid(
+          wizardData: widget.wizardData,
+          onChanged: () => setState(() {}),
         ),
+        const SizedBox(height: 12),
+        // ── Add pet photo button ──────────────────────────────────────────────
+        _AddPetPhotoButton(onTap: _pickPetPhoto),
         const SizedBox(height: 12),
         // Pets from character profile
         if (widget.wizardData.pets.isNotEmpty) ...[
@@ -783,17 +797,56 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
-  /// The 7 default magical companions (mirrors CompanionSelectorStep data).
-  List<_QuickCompanion> _getDefaultCompanions() => const [
-        _QuickCompanion(id: 'dragon', emoji: '🐉', name: 'Dragon'),
-        _QuickCompanion(id: 'owl', emoji: '🦉', name: 'Wise Owl'),
-        _QuickCompanion(id: 'cat', emoji: '🐱', name: 'Shadow Cat'),
-        _QuickCompanion(id: 'dog', emoji: '🐕', name: 'Star Dog'),
-        _QuickCompanion(id: 'unicorn', emoji: '🦄', name: 'Unicorn'),
-        _QuickCompanion(id: 'fox', emoji: '🦊', name: 'Clever Fox'),
-        _QuickCompanion(id: 'robin', emoji: '🐦', name: 'Robin'),
-      ];
+  Future<void> _pickPetPhoto() async {
+    final source = await _showPhotoSourceDialog();
+    if (source == null || !mounted) return;
+    final picker = ImagePicker();
+    final XFile? file =
+        await picker.pickImage(source: source, maxWidth: 800, imageQuality: 75);
+    if (file == null || !mounted) return;
+    final bytes = await file.readAsBytes();
+    final b64 = base64Encode(bytes);
+    setState(() {
+      widget.wizardData.pets
+          .add({'name': 'My Pet', 'species': 'Pet', 'personality': ''});
+      widget.wizardData.petAvatars['My Pet'] = GeneratedAvatar(
+        id: 'pet_photo_${DateTime.now().millisecondsSinceEpoch}',
+        imageBase64: 'data:image/jpeg;base64,$b64',
+        seed: 'photo',
+        style: 'photo',
+        attributes: const {},
+        generatedAt: DateTime.now(),
+      );
+      widget.wizardData.companionNames.add('My Pet');
+    });
+  }
 
+  Future<ImageSource?> _showPhotoSourceDialog() async {
+    return showDialog<ImageSource>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF2C1B47),
+        title: const Text('Add Your Pet',
+            style: TextStyle(color: Color(0xFFFFD700))),
+        content: const Text('How would you like to add your pet?',
+            style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton.icon(
+            onPressed: () => Navigator.pop(context, ImageSource.camera),
+            icon: const Icon(Icons.camera_alt, color: Color(0xFFD4A0FF)),
+            label: const Text('Take Photo',
+                style: TextStyle(color: Color(0xFFD4A0FF))),
+          ),
+          TextButton.icon(
+            onPressed: () => Navigator.pop(context, ImageSource.gallery),
+            icon: const Icon(Icons.photo_library, color: Color(0xFFD4A0FF)),
+            label: const Text('Choose from Gallery',
+                style: TextStyle(color: Color(0xFFD4A0FF))),
+          ),
+        ],
+      ),
+    );
+  }
 
   // Page 4: "Where will your adventure happen?" (Scene selection)
   static const List<String> _curatedSceneIds = [
@@ -2131,7 +2184,318 @@ class _QuickCompanion {
   });
 }
 
-// ── Star Burst Celebration Overlay ──────────────────────────────────────────
+// ── Companion Image Grid ─────────────────────────────────────────────────────
+
+const _companions = [
+  (id: 'dragon', name: 'Dragon'),
+  (id: 'owl', name: 'Wise Owl'),
+  (id: 'cat', name: 'Shadow Cat'),
+  (id: 'dog', name: 'Star Dog'),
+  (id: 'unicorn', name: 'Unicorn'),
+  (id: 'fox', name: 'Clever Fox'),
+  (id: 'robin', name: 'Rockin\' Robin'),
+];
+
+class _CompanionImageGrid extends StatelessWidget {
+  final WizardData wizardData;
+  final VoidCallback onChanged;
+
+  const _CompanionImageGrid({required this.wizardData, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: _companions.map((c) {
+        final isSelected = wizardData.companionNames.contains(c.name);
+        return _CompanionImageButton(
+          id: c.id,
+          name: c.name,
+          isSelected: isSelected,
+          onTap: () {
+            if (isSelected) {
+              wizardData.companionNames.remove(c.name);
+              wizardData.selectedCompanions.remove(c.id);
+            } else {
+              wizardData.companionNames.add(c.name);
+              wizardData.selectedCompanions.add(c.id);
+            }
+            onChanged();
+          },
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _CompanionImageButton extends StatefulWidget {
+  final String id;
+  final String name;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _CompanionImageButton({
+    required this.id,
+    required this.name,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  State<_CompanionImageButton> createState() => _CompanionImageButtonState();
+}
+
+class _CompanionImageButtonState extends State<_CompanionImageButton> {
+  bool _pressed = false;
+
+  String get _normalImage =>
+      'assets/images/companions/${widget.id}_normal.jpg';
+  String get _pressedImage =>
+      'assets/images/companions/${widget.id}_pressed.jpg';
+
+  @override
+  Widget build(BuildContext context) {
+    const double size = 100;
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.90 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: widget.isSelected
+                      ? const Color(0xFFFFD700)
+                      : Colors.white24,
+                  width: widget.isSelected ? 3 : 1.5,
+                ),
+                boxShadow: widget.isSelected
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFFFFD700).withAlpha(120),
+                          blurRadius: 16,
+                          spreadRadius: 2,
+                        )
+                      ]
+                    : [],
+              ),
+              child: Stack(
+                children: [
+                  ClipOval(
+                    child: Image.asset(
+                      _pressed ? _pressedImage : _normalImage,
+                      width: size,
+                      height: size,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: size,
+                        height: size,
+                        color: const Color(0xFF3A2363),
+                        child: const Icon(Icons.pets,
+                            color: Colors.white54, size: 40),
+                      ),
+                    ),
+                  ),
+                  if (widget.isSelected)
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: Container(
+                        width: 22,
+                        height: 22,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xFFFFD700),
+                        ),
+                        child: const Icon(Icons.check,
+                            color: Colors.black, size: 14),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              widget.name,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: widget.isSelected
+                    ? const Color(0xFFFFD700)
+                    : Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Add Pet Photo Button ─────────────────────────────────────────────────────
+
+class _AddPetPhotoButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _AddPetPhotoButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFFD4A0FF).withAlpha(150),
+            width: 1.5,
+            // dashed effect approximated via low opacity + style
+          ),
+          color: Colors.white.withAlpha(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFD4A0FF).withAlpha(40),
+              ),
+              child: const Icon(Icons.camera_alt_rounded,
+                  color: Color(0xFFD4A0FF), size: 22),
+            ),
+            const SizedBox(width: 12),
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Add Your Pet',
+                  style: TextStyle(
+                    color: Color(0xFFD4A0FF),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  '(tap to snap or pick photo)',
+                  style: TextStyle(color: Colors.white54, fontSize: 11),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Friend Chip Button ────────────────────────────────────────────────────────
+
+class _FriendChipButton extends StatefulWidget {
+  final Character character;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _FriendChipButton({
+    required this.character,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  State<_FriendChipButton> createState() => _FriendChipButtonState();
+}
+
+class _FriendChipButtonState extends State<_FriendChipButton> {
+  ImageProvider<Object>? _getAvatarProvider() {
+    final img = widget.character.generatedAvatar?.imageBase64;
+    if (img == null) return null;
+    if (img.startsWith('assets/')) return AssetImage(img);
+    if (img.startsWith('http')) return NetworkImage(img);
+    try {
+      final normalized = img.contains(',') ? img.split(',').last : img;
+      return MemoryImage(base64Decode(normalized));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final avatarProvider = _getAvatarProvider();
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: widget.isSelected
+                ? const Color(0xFFFFD700)
+                : Colors.white30,
+            width: widget.isSelected ? 2 : 1,
+          ),
+          color: widget.isSelected
+              ? const Color(0xFFFFD700).withAlpha(20)
+              : Colors.white10,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: const Color(0xFF3A2363),
+              backgroundImage: avatarProvider,
+              child: avatarProvider == null
+                  ? Text(
+                      widget.character.name.isNotEmpty
+                          ? widget.character.name[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                        color: Color(0xFFFFD700),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              widget.character.name,
+              style: TextStyle(
+                color: widget.isSelected
+                    ? const Color(0xFFFFD700)
+                    : Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
 
 class _StarBurstOverlay extends StatefulWidget {
   final VoidCallback onComplete;

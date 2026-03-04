@@ -41,6 +41,7 @@ class WizardStoryScreen extends StatefulWidget {
 class _WizardStoryScreenState extends State<WizardStoryScreen> {
   late final PageController _pageController; // Late init
   int _currentStep = 0;
+  int _progressStep = 0;
 
   // Wizard data collected across steps
   late final WizardData _wizardData;
@@ -192,8 +193,13 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
                           child: Builder(
                             builder: (context) {
                               return MoonPhaseProgress(
-                                currentStep: _currentStep,
-                                totalSteps: 2,
+                                currentStep: _progressStep,
+                                totalSteps: 3,
+                                stepLabels: const [
+                                  'Create Hero',
+                                  'Pick Team',
+                                  'Make Magic',
+                                ],
                               );
                             },
                           ),
@@ -244,7 +250,10 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
                   controller: _pageController,
                   physics: const NeverScrollableScrollPhysics(), // Disable swipe
                   onPageChanged: (index) {
-                    setState(() => _currentStep = index);
+                    setState(() {
+                      _currentStep = index;
+                      if (index == 1) _progressStep = 2;
+                    });
                   },
                   children: [
                     // Step 1: Hero Creator (includes companions + scene selection)
@@ -252,6 +261,7 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
                       wizardData: _wizardData,
                       onNext: _nextStep,
                       availableCharacters: _savedCharacters,
+                      onSubStepChange: (s) => setState(() => _progressStep = s),
                     ),
                     // Step 2: Review & Launch
                     MagicReviewStep(
