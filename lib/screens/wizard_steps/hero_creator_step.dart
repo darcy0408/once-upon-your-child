@@ -997,7 +997,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             ],
           ),
           const SizedBox(height: 24),
-          // Story mode selection
+          // Story mode selection — 2×2 grid
           Text(
             "Pick your story style",
             style: GoogleFonts.fredoka(
@@ -1006,60 +1006,70 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             ),
           ),
           const SizedBox(height: 16),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 10,
-            runSpacing: 12,
+          Column(
             children: [
-              ImageModeOrb(
-                modeType: 'tales',
-                label: 'Tales',
-                isActive: data.includeIllustrations,
-                onTap: () => setState(() => data.includeIllustrations = !data.includeIllustrations),
-                primaryColor: const Color(0xFFAA88FF),
-                secondaryColor: const Color(0xFFE28EFF),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ImageModeOrb(
+                    modeType: 'tales',
+                    label: 'Story Quest',
+                    isActive: data.includeIllustrations,
+                    onTap: () => setState(() => data.includeIllustrations = !data.includeIllustrations),
+                    primaryColor: const Color(0xFFAA88FF),
+                    secondaryColor: const Color(0xFFE28EFF),
+                  ),
+                  const SizedBox(width: 24),
+                  ImageModeOrb(
+                    modeType: 'rhyme',
+                    label: 'Rhyme Time',
+                    isActive: data.rhymeTimeMode,
+                    onTap: () => setState(() {
+                      data.rhymeTimeMode = !data.rhymeTimeMode;
+                      if (data.rhymeTimeMode) {
+                        data.learningToReadMode = false;
+                        data.interactiveMode = false;
+                      }
+                    }),
+                    primaryColor: const Color(0xFF00D4DD),
+                    secondaryColor: const Color(0xFF7FDDFF),
+                  ),
+                ],
               ),
-              ImageModeOrb(
-                modeType: 'rhyme',
-                label: 'Rhyme Time',
-                isActive: data.rhymeTimeMode,
-                onTap: () => setState(() {
-                  data.rhymeTimeMode = !data.rhymeTimeMode;
-                  if (data.rhymeTimeMode) {
-                    data.learningToReadMode = false;
-                    data.interactiveMode = false;
-                  }
-                }),
-                primaryColor: const Color(0xFF00D4DD),
-                secondaryColor: const Color(0xFF7FDDFF),
-              ),
-              ImageModeOrb(
-                modeType: 'reading',
-                label: 'Learn to Read',
-                isActive: data.learningToReadMode,
-                onTap: () => setState(() {
-                  data.learningToReadMode = !data.learningToReadMode;
-                  if (data.learningToReadMode) {
-                    data.rhymeTimeMode = false;
-                    data.interactiveMode = false;
-                  }
-                }),
-                primaryColor: const Color(0xFFB88AFF),
-                secondaryColor: const Color(0xFFFF9ECC),
-              ),
-              ImageModeOrb(
-                modeType: 'pickpath',
-                label: 'Pick a Path',
-                isActive: data.interactiveMode,
-                onTap: () => setState(() {
-                  data.interactiveMode = !data.interactiveMode;
-                  if (data.interactiveMode) {
-                    data.rhymeTimeMode = false;
-                    data.learningToReadMode = false;
-                  }
-                }),
-                primaryColor: const Color(0xFF9E6CFF),
-                secondaryColor: const Color(0xFFFFB3E6),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ImageModeOrb(
+                    modeType: 'reading',
+                    label: 'First Reader',
+                    isActive: data.learningToReadMode,
+                    onTap: () => setState(() {
+                      data.learningToReadMode = !data.learningToReadMode;
+                      if (data.learningToReadMode) {
+                        data.rhymeTimeMode = false;
+                        data.interactiveMode = false;
+                      }
+                    }),
+                    primaryColor: const Color(0xFFB88AFF),
+                    secondaryColor: const Color(0xFFFF9ECC),
+                  ),
+                  const SizedBox(width: 24),
+                  ImageModeOrb(
+                    modeType: 'pickpath',
+                    label: 'Pick a Path',
+                    isActive: data.interactiveMode,
+                    onTap: () => setState(() {
+                      data.interactiveMode = !data.interactiveMode;
+                      if (data.interactiveMode) {
+                        data.rhymeTimeMode = false;
+                        data.learningToReadMode = false;
+                      }
+                    }),
+                    primaryColor: const Color(0xFF9E6CFF),
+                    secondaryColor: const Color(0xFFFFB3E6),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1166,8 +1176,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               ],
             ),
           ),
-          const SizedBox(height: 40),
-          _buildContinueButton(),
+          const SizedBox(height: 32),
+          _buildNextArrowButton(enabled: true, onTap: _heroNextPage),
           const SizedBox(height: 20),
         ],
       ),
