@@ -1112,29 +1112,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Widget _buildNextArrowButton({required bool enabled, required VoidCallback onTap}) {
-    return Opacity(
-      opacity: enabled ? 1.0 : 0.4,
-      child: GestureDetector(
-        onTap: enabled ? onTap : null,
-        child: Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF9B3FD8), Color(0xFF5B1BAA)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFFD700).withAlpha(100),
-                blurRadius: 20,
-              ),
-            ],
-          ),
-          child: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 40),
-        ),
-      ),
-    );
+    return _PressableArrowButton(enabled: enabled, onTap: onTap);
   }
 
   // ─── Personality Pairs ──────────────────────────────────────────────────────
@@ -1644,7 +1622,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   Widget _buildArchetypeCards() {
     final archetypes = CharacterArchetypes.all;
     return SizedBox(
-      height: 200,
+      height: 260,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: archetypes.length,
@@ -1655,7 +1633,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             onTap: () => _selectArchetype(a),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),
-              width: 130,
+              width: 160,
               margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
@@ -1665,9 +1643,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (a.imagePath != null) Image.asset(a.imagePath!, height: 80, fit: BoxFit.contain) else Text(a.icon ?? '✨', style: const TextStyle(fontSize: 40)),
-                  const SizedBox(height: 6),
-                  Text(a.name, textAlign: TextAlign.center, style: GoogleFonts.fredoka(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                  if (a.imagePath != null) Image.asset(a.imagePath!, height: 120, fit: BoxFit.contain) else Text(a.icon ?? '✨', style: const TextStyle(fontSize: 56)),
+                  const SizedBox(height: 8),
+                  Text(a.name, textAlign: TextAlign.center, style: GoogleFonts.fredoka(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -1782,11 +1760,17 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   Widget _buildContinueButton() => GestureDetector(
         onTapDown: (_) => setState(() => _isContinuePressed = true),
         onTapUp: (_) => setState(() => _isContinuePressed = false),
+        onTapCancel: () => setState(() => _isContinuePressed = false),
         onTap: _handleContinue,
         child: AnimatedScale(
-          scale: _isContinuePressed ? 0.94 : 1.0,
-          duration: const Duration(milliseconds: 110),
-          child: Image.asset('assets/images/ui/continue_btn.png', height: 70, width: double.infinity, fit: BoxFit.contain),
+          scale: _isContinuePressed ? 0.92 : 1.0,
+          duration: const Duration(milliseconds: 90),
+          child: Image.asset(
+            _isContinuePressed
+                ? 'assets/images/ui/continue_btn_pressed.png'
+                : 'assets/images/ui/continue_normal.png',
+            height: 70, width: double.infinity, fit: BoxFit.contain,
+          ),
         ),
       );
 
@@ -2316,6 +2300,59 @@ class _GenderImageButtonState extends State<_GenderImageButton> {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A stateful arrow button with clear press feedback:
+/// shrinks to 86% + brightens gradient + amplifies glow on tap-down.
+class _PressableArrowButton extends StatefulWidget {
+  const _PressableArrowButton({required this.enabled, required this.onTap});
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  State<_PressableArrowButton> createState() => _PressableArrowButtonState();
+}
+
+class _PressableArrowButtonState extends State<_PressableArrowButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: widget.enabled ? 1.0 : 0.4,
+      child: GestureDetector(
+        onTapDown: widget.enabled ? (_) => setState(() => _pressed = true) : null,
+        onTapUp: widget.enabled ? (_) => setState(() => _pressed = false) : null,
+        onTapCancel: () => setState(() => _pressed = false),
+        onTap: widget.enabled ? widget.onTap : null,
+        child: AnimatedScale(
+          scale: _pressed ? 0.86 : 1.0,
+          duration: const Duration(milliseconds: 80),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 80),
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: _pressed
+                    ? [const Color(0xFFD070FF), const Color(0xFF8B4FD8)]
+                    : [const Color(0xFF9B3FD8), const Color(0xFF5B1BAA)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFFD700).withAlpha(_pressed ? 200 : 100),
+                  blurRadius: _pressed ? 32 : 20,
+                  spreadRadius: _pressed ? 4 : 0,
+                ),
+              ],
+            ),
+            child: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 40),
           ),
         ),
       ),
