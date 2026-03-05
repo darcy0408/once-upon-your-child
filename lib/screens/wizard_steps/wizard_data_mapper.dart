@@ -139,7 +139,10 @@ class WizardDataMapper {
       'characterDetails': characterDetails,
       'currentFeeling': currentFeeling,
       'moodPhysics': moodPhysics,
-      'customElements': data.customElements,
+      'customElements': [
+        if (data.selectedGenre != null) 'Genre: ${data.selectedGenre}',
+        if (data.customElements.isNotEmpty) data.customElements,
+      ].join(' | '),
       // Story mode settings from wizard
       'storyLength': data.storyLength,
       'rhymeTimeMode': data.rhymeTimeMode,

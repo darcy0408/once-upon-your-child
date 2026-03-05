@@ -50,6 +50,7 @@ class WizardData {
   bool includeIllustrations = true; // Default to true
   String storyLength = 'standard'; // Options: 'quick', 'standard', 'epic'
   String customElements = ''; // Free-form text: "What do you want in your story?"
+  String? selectedGenre; // e.g. 'mystery', 'comedy', null = no genre
   String? selectedSparkTool;
   
   // Guardian Mode / Therapeutic Features
@@ -107,6 +108,7 @@ class WizardData {
       'includeIllustrations': includeIllustrations,
       'storyLength': storyLength,
       'customElements': customElements,
+      'selectedGenre': selectedGenre,
       'lifeChallenge': lifeChallenge,
     };
   }

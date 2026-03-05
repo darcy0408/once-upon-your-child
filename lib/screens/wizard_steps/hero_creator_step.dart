@@ -193,6 +193,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     _imagineItController.dispose();
     _personalityDescCtrl.dispose();
 
+    _floatCtrl.dispose(); // was missing — caused "disposed with active Ticker"
     _glowCtrl.dispose();
     _sparkleCtrl.dispose();
     _speech.stop();
@@ -2675,16 +2676,20 @@ class _CompanionImageGrid extends StatelessWidget {
     for (int i = 0; i < buttons.length; i += perRow) {
       final rowItems = buttons.sublist(
           i, (i + perRow) > buttons.length ? buttons.length : i + perRow);
+      final isFull = rowItems.length == perRow;
       rows.add(Row(
-        mainAxisAlignment: rowItems.length == perRow
-            ? MainAxisAlignment.spaceBetween
-            : MainAxisAlignment.center,
-        children: rowItems
-            .map((b) => Padding(
+        mainAxisAlignment:
+            isFull ? MainAxisAlignment.spaceEvenly : MainAxisAlignment.center,
+        children: rowItems.map((b) {
+          // Full rows: each item gets an equal flex slot so they never overflow.
+          // Partial rows: natural sizing, centred.
+          return isFull
+              ? Expanded(child: Center(child: b))
+              : Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: b,
-                ))
-            .toList(),
+                );
+        }).toList(),
       ));
       if (i + perRow < buttons.length) rows.add(const SizedBox(height: 12));
     }
