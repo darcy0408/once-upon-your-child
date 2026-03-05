@@ -157,19 +157,22 @@ class _ImageModeOrbState extends State<ImageModeOrb>
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: const Color(0xFF2F2748),
+                      color: Colors.white,
                       fontWeight:
                           widget.isActive ? FontWeight.w800 : FontWeight.w600,
-                      fontSize: 13,
+                      fontSize: 14,
                       height: 1.2,
-                      shadows: widget.isActive
-                          ? [
-                              Shadow(
-                                color: glowColor.withValues(alpha: 0.55),
-                                blurRadius: 8,
-                              ),
-                            ]
-                          : null,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.7),
+                          blurRadius: 4,
+                        ),
+                        if (widget.isActive)
+                          Shadow(
+                            color: glowColor.withValues(alpha: 0.55),
+                            blurRadius: 8,
+                          ),
+                      ],
                     ),
                   ),
                 ),

@@ -85,6 +85,15 @@ class StoryScreen extends StatefulWidget {
 }
 
 class _StoryScreenState extends State<StoryScreen> {
+  static const _quickThemes = [
+    {'id': 'vanishing_colors', 'emoji': '🌈', 'label': 'Rainbow Land'},
+    {'id': 'crystal_cavern', 'emoji': '💎', 'label': 'Crystal Cave'},
+    {'id': 'big_feelings_quest', 'emoji': '❤️', 'label': 'Big Feelings'},
+    {'id': 'doorway_seasons', 'emoji': '🚪', 'label': 'Magic Door'},
+    {'id': 'starship_engineers', 'emoji': '🚀', 'label': 'Space Quest'},
+    {'id': 'safe_space', 'emoji': '✨', 'label': 'Surprise Me'},
+  ];
+
   List<Character> _characters = [];
   Character? _selectedCharacter;
   final Set<String> _additionalCharacterIds = {};
@@ -1081,6 +1090,7 @@ class _StoryScreenState extends State<StoryScreen> {
                     _loadSubscriptionInfo();
                   });
                 },
+                onQuickPlay: () => _showQuickStartSheet(character),
               )),
               // "New Hero" card at the end
               _NewHeroCard(
@@ -1833,6 +1843,126 @@ class _StoryScreenState extends State<StoryScreen> {
       }
     }
   }
+
+  void _showQuickStartSheet(Character character) {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [band.gradientStart, band.gradientEnd],
+          ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white30,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '✨ Quick Adventure for ${character.name}!',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                fontFamily: band.uiFontFamily,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Pick a world and go!',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+                fontFamily: band.uiFontFamily,
+              ),
+            ),
+            const SizedBox(height: 20),
+            GridView.count(
+              crossAxisCount: 3,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.0,
+              children: _quickThemes.map((theme) {
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _launchQuickStory(character, theme['id']!);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(band.buttonRadiusBase),
+                      border: Border.all(color: Colors.white30),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(theme['emoji']!, style: const TextStyle(fontSize: 32)),
+                        const SizedBox(height: 4),
+                        Text(
+                          theme['label']!,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: band.uiFontFamily,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _launchQuickStory(Character character, String scenarioId) {
+    final data = WizardData()
+      ..characterId = character.id
+      ..characterName = character.name
+      ..characterGender = character.gender ?? 'Hero'
+      ..characterAge = character.age
+      ..selectedScenario = scenarioId
+      ..storyLength = 'standard'
+      ..includeIllustrations = true;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => WizardStoryScreen(
+          initialCharacter: character,
+          initialWizardData: data,
+          initialStep: 1,
+          availableCharacters: _characters,
+        ),
+      ),
+    ).then((_) {
+      _loadCharacters();
+      _loadSubscriptionInfo();
+    });
+  }
 }
 
 // ── Character Portrait Card ────────────────────────────────────────────────
@@ -1841,18 +1971,22 @@ class _CharacterPortraitCard extends StatelessWidget {
   final Character character;
   final bool isSelected;
   final VoidCallback onTap;
+  final VoidCallback? onQuickPlay;
 
   const _CharacterPortraitCard({
     required this.character,
     required this.isSelected,
     required this.onTap,
+    this.onQuickPlay,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
+      child: Stack(
+        children: [
+          AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: 130,
         margin: const EdgeInsets.only(right: 12),
@@ -1940,6 +2074,26 @@ class _CharacterPortraitCard extends StatelessWidget {
             const SizedBox(height: 12),
           ],
         ),
+      ),
+          // ⚡ Quick Play button overlay
+          if (onQuickPlay != null)
+            Positioned(
+              bottom: 8,
+              right: 20,
+              child: GestureDetector(
+                onTap: onQuickPlay,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF7C3AED),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.bolt, color: Colors.white, size: 18),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -247,7 +247,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
               const Text('🤫', style: TextStyle(fontSize: 20)),
               const SizedBox(width: 8),
               Text(
-                'The Whisperer is Listening...',
+                'Let your imagination go wild...',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.primary,
@@ -257,7 +257,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Whisper a secret, a worry, or anything you\'re thinking about. We\'ll turn it into a magical adventure!',
+            'Picture any place you can imagine — a world, a feeling, an adventure. Tell us and we\'ll make a story just for you!',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AppColors.textDark.withValues(alpha: 0.6),
                   fontStyle: FontStyle.italic,
@@ -269,7 +269,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             maxLines: 3,
             decoration: InputDecoration(
               hintText:
-                  'e.g., I\'m a little nervous about my first day of school...',
+                  'e.g., A enchanted forest, outer space, under the ocean...',
               hintStyle: TextStyle(
                 color: AppColors.textDark.withValues(alpha: 0.4),
                 fontSize: 14,
@@ -886,7 +886,9 @@ class _ScenarioCardWidget extends StatelessWidget {
                       title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textDark,
+                            color: isSelected
+                                ? AppColors.textDark
+                                : Colors.white,
                           ),
                       textAlign: TextAlign.center,
                       maxLines: 2,
@@ -899,7 +901,9 @@ class _ScenarioCardWidget extends StatelessWidget {
               Text(
                 description,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textDark.withValues(alpha: 0.7),
+                      color: isSelected
+                          ? AppColors.textDark.withValues(alpha: 0.7)
+                          : Colors.white.withValues(alpha: 0.8),
                     ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
