@@ -2,6 +2,18 @@
 
 ---
 
+## Session Update - 2026-03-05 (Parental consent screen overflow fix)
+
+### Scope Completed
+- **Layout overflow fix (`parental_consent_screen.dart`):** Column at line 56 overflowed by 44 px on small/landscape viewports. Wrapped `Padding+Column` in `SingleChildScrollView`; removed incompatible `Spacer` (replaced with `SizedBox(height: AppSpacing.md)`).
+
+### Status
+- **Parental consent screen overflow:** ✅ Fixed — `lib/screens/parental_consent_screen.dart`
+- **Flutter analyze:** ✅ No issues
+- **Launch Readiness:** ~90%
+
+---
+
 ## Session Update - 2026-03-05 (P3 Growth Features Complete — Full Audit Plan Done)
 
 ### Scope Completed
