@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/motion_utils.dart';
 
 /// A reusable widget that adds a "breathing" / "alive" floating animation.
 /// Moves the child up and down smoothly.
@@ -56,6 +57,9 @@ class _MagicalFloatState extends State<MagicalFloat>
 
   @override
   Widget build(BuildContext context) {
+    if (MotionPrefs.reduceMotion(context)) {
+      return widget.child;
+    }
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {

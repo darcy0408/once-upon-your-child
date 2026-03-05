@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import '../utils/motion_utils.dart';
 
 /// A magical loading view with a central weaving "loom" animation,
 /// orbiting sparkles, rotating flavor messages, and layered aura glows.
@@ -103,6 +104,10 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
     final screenWidth = MediaQuery.of(context).size.width;
     final stageSize = (screenWidth * 0.42).clamp(150.0, 210.0);
     final panelWidth = screenWidth.clamp(280.0, 460.0);
+    final reduced = MotionPrefs.reduceMotion(context);
+    final particles = MotionPrefs.showParticles(context);
+    final intensity = MotionPrefs.sparkleIntensity(context);
+    final particleCount = (22 * intensity).round();
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: panelWidth),
@@ -139,6 +144,29 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (reduced) ...[
+              // Static fallback for reduced-motion users
+              SizedBox(
+                height: stageSize,
+                width: stageSize,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Icon(
+                        Icons.auto_awesome,
+                        size: 36,
+                        color: AppColors.primary.withValues(alpha: 0.6),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ] else ...[
             SizedBox(
               height: stageSize,
               width: stageSize,
@@ -241,17 +269,19 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                     },
                   ),
 
-                  // Orbiting sparkles
-                  ..._sparkles.map((sparkle) {
-                    return _AnimatedSparkle(
-                      controller: _rotationController,
-                      twinkleController: _weaveController,
-                      sparkle: sparkle,
-                    );
-                  }),
+                  // Orbiting sparkles (respects particle prefs + intensity)
+                  if (particles)
+                    ..._sparkles.take(particleCount).map((sparkle) {
+                      return _AnimatedSparkle(
+                        controller: _rotationController,
+                        twinkleController: _weaveController,
+                        sparkle: sparkle,
+                      );
+                    }),
                 ],
               ),
             ),
+            ],
             const SizedBox(height: AppSpacing.lg),
             Text(
               widget.status,

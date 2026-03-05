@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../utils/motion_utils.dart';
 import 'magical_float.dart';
 
 /// A magical orb widget that displays a scenario image with pulsing glow and sparkles.
@@ -88,6 +89,11 @@ class _MagicOrbWidgetState extends State<MagicOrbWidget>
 
   @override
   Widget build(BuildContext context) {
+    final reduced = MotionPrefs.reduceMotion(context);
+    final particles = MotionPrefs.showParticles(context);
+    final intensity = MotionPrefs.sparkleIntensity(context);
+    final sparkleCount = (22 * intensity).round();
+
     return MagicalFloat(
       distance: 8.0,
       duration: const Duration(seconds: 5),
@@ -97,7 +103,8 @@ class _MagicOrbWidgetState extends State<MagicOrbWidget>
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // 1. Magical Aura (3-layer gradient halo)
+            // 1. Magical Aura (3-layer gradient halo) — skip when reduced
+            if (!reduced)
             AnimatedBuilder(
               animation: _pulseAnimation,
               builder: (context, child) {
@@ -173,14 +180,15 @@ class _MagicOrbWidgetState extends State<MagicOrbWidget>
               },
             ),
 
-            // 2. Swirling Sparkles (twinkle + drift)
+            // 2. Swirling Sparkles (respects particle prefs + intensity)
+            if (particles)
             AnimatedBuilder(
               animation: _sparkleController,
               builder: (context, child) {
                 return CustomPaint(
                   size: Size(widget.size * 1.5, widget.size * 1.5),
                   painter: _SparklePainter(
-                    sparkles: _sparkles,
+                    sparkles: _sparkles.take(sparkleCount).toList(),
                     color: widget.glowColor,
                     rotation: _sparkleController.value * 2 * math.pi,
                   ),
