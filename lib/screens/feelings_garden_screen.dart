@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../feelings_wheel_data.dart';
 import '../theme/age_band_theme.dart';
+import '../widgets/feelings_cloud_picker.dart';
 
 class FeelingsGardenScreen extends StatefulWidget {
   final int childAge;
@@ -135,25 +136,18 @@ class _FeelingsGardenScreenState extends State<FeelingsGardenScreen>
                             onIntensityChanged: (v) =>
                                 setState(() => _intensity = v),
                           ),
-                          _ExplorerZone(
+                          // Zone 2: cloud picker (replaces pill-chip explorer)
+                          _GardenExplorerZone(
                             band: band,
                             childAge: widget.childAge,
                             selectedCore: _selectedCore,
                             selectedSecondary: _selectedSecondary,
                             selectedTertiary: _selectedTertiary,
-                            onCoreSelected: (c) =>
-                                setState(() {
-                                  _selectedCore = c;
-                                  _selectedSecondary = null;
-                                  _selectedTertiary = null;
-                                }),
-                            onSecondarySelected: (s) =>
-                                setState(() {
-                                  _selectedSecondary = s;
-                                  _selectedTertiary = null;
-                                }),
-                            onTertiarySelected: (t) =>
-                                setState(() => _selectedTertiary = t),
+                            onSelected: (sel) => setState(() {
+                              _selectedCore = sel.core;
+                              _selectedSecondary = sel.secondary;
+                              _selectedTertiary = sel.tertiary;
+                            }),
                           ),
                           if (tabCount == 3)
                             _JournalZone(
@@ -520,190 +514,58 @@ class _IntensitySlider extends StatelessWidget {
   }
 }
 
-// ── Zone 2: Feelings Explorer ────────────────────────────────────────────────
+// ── Zone 2: Feelings Explorer (wraps FeelingsCloudPicker) ────────────────────
 
-class _ExplorerZone extends StatelessWidget {
+class _GardenExplorerZone extends StatefulWidget {
   final AgeBandThemeData band;
   final int childAge;
   final CoreEmotion? selectedCore;
   final SecondaryFeeling? selectedSecondary;
   final String? selectedTertiary;
-  final ValueChanged<CoreEmotion> onCoreSelected;
-  final ValueChanged<SecondaryFeeling> onSecondarySelected;
-  final ValueChanged<String> onTertiarySelected;
+  final ValueChanged<FeelingSelection> onSelected;
 
-  const _ExplorerZone({
+  const _GardenExplorerZone({
     required this.band,
     required this.childAge,
     required this.selectedCore,
     required this.selectedSecondary,
     required this.selectedTertiary,
-    required this.onCoreSelected,
-    required this.onSecondarySelected,
-    required this.onTertiarySelected,
+    required this.onSelected,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _ZoneHeading(band: band, text: 'Let\'s name your feeling exactly'),
-          const SizedBox(height: 6),
-          Text(
-            'Start with the big feeling, then zoom in.',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.75),
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Step 1: Core
-          _ExplorerStep(
-            band: band,
-            stepNum: 1,
-            title: 'Big feeling',
-            isComplete: selectedCore != null,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: FeelingsWheelData.coreEmotions.map((core) {
-                final isSelected = selectedCore?.id == core.id;
-                return _PillChip(
-                  label: '${core.emoji} ${core.name}',
-                  selected: isSelected,
-                  color: core.color ?? band.primary,
-                  band: band,
-                  onTap: () => onCoreSelected(core),
-                );
-              }).toList(),
-            ),
-          ),
-          if (selectedCore != null) ...[
-            const SizedBox(height: 16),
-            // Step 2: Secondary
-            _ExplorerStep(
-              band: band,
-              stepNum: 2,
-              title: 'More specific…',
-              isComplete: selectedSecondary != null,
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: selectedCore!.secondary.map((sec) {
-                  final isSelected = selectedSecondary?.id == sec.id;
-                  return _PillChip(
-                    label: '${sec.emoji} ${sec.name}',
-                    selected: isSelected,
-                    color: selectedCore!.color ?? band.primary,
-                    band: band,
-                    onTap: () => onSecondarySelected(sec),
-                  );
-                }).toList(),
-              ),
-            ),
-          ],
-          if (selectedSecondary != null &&
-              selectedSecondary!.tertiary.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            // Step 3: Tertiary
-            _ExplorerStep(
-              band: band,
-              stepNum: 3,
-              title: 'Even more specific…',
-              isComplete: selectedTertiary != null,
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: selectedSecondary!.tertiary.map((t) {
-                  final emoji = FeelingsEmojiLookup.emojiFor(t) ?? '💬';
-                  final isSelected = selectedTertiary == t;
-                  return _PillChip(
-                    label: '$emoji $t',
-                    selected: isSelected,
-                    color: selectedCore!.color ?? band.primary,
-                    band: band,
-                    onTap: () => onTertiarySelected(t),
-                  );
-                }).toList(),
-              ),
-            ),
-            if (selectedTertiary != null) ...[
-              const SizedBox(height: 20),
-              _CopingCard(
-                band: band,
-                childAge: childAge,
-                coreName: selectedCore!.name,
-                secondaryName: selectedSecondary!.name,
-                tertiaryName: selectedTertiary!,
-              ),
-            ],
-          ],
-        ],
-      ),
-    );
-  }
+  State<_GardenExplorerZone> createState() => _GardenExplorerZoneState();
 }
 
-class _ExplorerStep extends StatelessWidget {
-  final AgeBandThemeData band;
-  final int stepNum;
-  final String title;
-  final bool isComplete;
-  final Widget child;
-
-  const _ExplorerStep({
-    required this.band,
-    required this.stepNum,
-    required this.title,
-    required this.isComplete,
-    required this.child,
-  });
+class _GardenExplorerZoneState extends State<_GardenExplorerZone> {
+  FeelingSelection? _lastSelection;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(band.cardRadiusBase),
-        border: Border.all(
-          color: isComplete
-              ? band.primary.withValues(alpha: 0.6)
-              : Colors.white.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 11,
-                backgroundColor: isComplete ? band.primary : Colors.white.withValues(alpha: 0.2),
-                child: Text(
-                  isComplete ? '✓' : '$stepNum',
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontFamily: band.uiFontFamily,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: FeelingsCloudPicker(
+            childAge: widget.childAge,
+            onSelected: (sel) {
+              setState(() => _lastSelection = sel);
+              widget.onSelected(sel);
+            },
           ),
-          const SizedBox(height: 10),
-          child,
-        ],
-      ),
+        ),
+        if (_lastSelection != null && _lastSelection!.tertiary != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: _CopingCard(
+              band: widget.band,
+              childAge: widget.childAge,
+              coreName: _lastSelection!.core.name,
+              secondaryName: _lastSelection!.secondary?.name ?? '',
+              tertiaryName: _lastSelection!.tertiary!,
+            ),
+          ),
+      ],
     );
   }
 }
@@ -729,7 +591,7 @@ class _CopingCard extends StatelessWidget {
     final detail = FeelingDetails.forFeeling(SelectedFeeling(
       core: coreName,
       secondary: secondaryName,
-      tertiary: tertiaryName ?? '',
+      tertiary: tertiaryName,
       emoji: '',
       eyeType: 'Happy',
       mouthType: 'Smile',
@@ -922,50 +784,6 @@ class _ZoneHeading extends StatelessWidget {
         fontSize: band.headingScale * 16,
         fontWeight: FontWeight.bold,
         color: Colors.white,
-      ),
-    );
-  }
-}
-
-class _PillChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final Color color;
-  final AgeBandThemeData band;
-  final VoidCallback onTap;
-
-  const _PillChip({
-    required this.label,
-    required this.selected,
-    required this.color,
-    required this.band,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? color : Colors.white.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: selected ? Colors.white : Colors.white.withValues(alpha: 0.3),
-            width: selected ? 2 : 1,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: Colors.white,
-            fontFamily: band.uiFontFamily,
-            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-            fontSize: 13,
-          ),
-        ),
       ),
     );
   }
