@@ -144,6 +144,11 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   Map<String, dynamic>? _qualityData;
   bool _isLoadingQuality = false;
 
+  bool get _isYoungUser {
+    final band = Theme.of(context).extension<AgeBandThemeData>();
+    return band != null && (band.band == AgeBand.sprout || band.band == AgeBand.explorer);
+  }
+
   String get _analyticsStoryId =>
       widget.storyId ?? widget.title.hashCode.toString();
 
@@ -1866,6 +1871,32 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                                       ),
                                                     ),
                                                   ),
+                                                // Left arrow (previous page)
+                                                if (_currentPageIndex > 0)
+                                                  Positioned(
+                                                    left: 0,
+                                                    top: 0,
+                                                    bottom: 0,
+                                                    width: 56,
+                                                    child: _PageArrowOverlay(
+                                                      direction: _PageArrowDirection.left,
+                                                      onTap: _goToPreviousStoryPage,
+                                                      alwaysVisible: _isYoungUser,
+                                                    ),
+                                                  ),
+                                                // Right arrow (next page)
+                                                if (_currentPageIndex < _storyPages.length - 1)
+                                                  Positioned(
+                                                    right: 0,
+                                                    top: 0,
+                                                    bottom: 0,
+                                                    width: 56,
+                                                    child: _PageArrowOverlay(
+                                                      direction: _PageArrowDirection.right,
+                                                      onTap: _goToNextStoryPage,
+                                                      alwaysVisible: _isYoungUser,
+                                                    ),
+                                                  ),
                                               ],
                                             ),
                                           ),
@@ -2339,6 +2370,82 @@ class ColoringGenerationDialog extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+enum _PageArrowDirection { left, right }
+
+class _PageArrowOverlay extends StatefulWidget {
+  final _PageArrowDirection direction;
+  final VoidCallback onTap;
+  final bool alwaysVisible;
+
+  const _PageArrowOverlay({
+    required this.direction,
+    required this.onTap,
+    this.alwaysVisible = false,
+  });
+
+  @override
+  State<_PageArrowOverlay> createState() => _PageArrowOverlayState();
+}
+
+class _PageArrowOverlayState extends State<_PageArrowOverlay>
+    with SingleTickerProviderStateMixin {
+  double _opacity = 1.0;
+  bool _hasInteracted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.alwaysVisible) {
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted && !_hasInteracted) {
+          setState(() => _opacity = 0.0);
+        }
+      });
+    }
+  }
+
+  void _handleTap() {
+    setState(() {
+      _hasInteracted = true;
+      _opacity = 1.0;
+    });
+    widget.onTap();
+    if (!widget.alwaysVisible) {
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) setState(() => _opacity = 0.0);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isLeft = widget.direction == _PageArrowDirection.left;
+    return GestureDetector(
+      onTap: _handleTap,
+      behavior: HitTestBehavior.translucent,
+      child: AnimatedOpacity(
+        opacity: widget.alwaysVisible ? 0.7 : _opacity * 0.6,
+        duration: const Duration(milliseconds: 500),
+        child: Center(
+          child: Container(
+            width: widget.alwaysVisible ? 48 : 40,
+            height: widget.alwaysVisible ? 48 : 40,
+            decoration: BoxDecoration(
+              color: Colors.black.withAlpha(40),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isLeft ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
+              color: Colors.white,
+              size: widget.alwaysVisible ? 32 : 28,
+            ),
+          ),
+        ),
       ),
     );
   }
