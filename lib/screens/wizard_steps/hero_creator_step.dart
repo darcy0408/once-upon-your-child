@@ -64,6 +64,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   String? _customAvatarFilePath;
   bool _isPremium = false;
 
+  // ─── Progressive-Disclosure State ───────────────────────────────────────────
+  final List<String> _selectedPersonalityChips = [];
+  late TextEditingController _personalityDescCtrl;
+
   // ─── Animation ──────────────────────────────────────────────────────────────
   late AnimationController _floatCtrl;
   late AnimationController _glowCtrl;
@@ -130,6 +134,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     _imagineItController = TextEditingController(
       text: widget.wizardData.customElements,
     );
+    _personalityDescCtrl = TextEditingController();
 
     // ── Animation controllers ──────────────────────────────────────────────────
     _floatCtrl = AnimationController(
@@ -188,7 +193,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     _questController.dispose();
     _wishController.dispose();
     _imagineItController.dispose();
-    _floatCtrl.dispose();
+    _personalityDescCtrl.dispose();
+
     _glowCtrl.dispose();
     _sparkleCtrl.dispose();
     _speech.stop();
@@ -532,6 +538,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   // Page 1: "Who is your hero?"
   Widget _buildPage1() {
     final nameNotEmpty = _nameController.text.trim().isNotEmpty;
+    final ageBand = ageBandFromAge(widget.wizardData.characterAge);
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -555,13 +562,42 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               ),
             ],
           ),
+          // Sprout: big colourful prompt to reinforce what to do
+          if (ageBand == AgeBand.sprout) ...[
+            const SizedBox(height: 8),
+            Text(
+              "What is your hero's name?",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.fredoka(
+                fontSize: 28,
+                color: const Color(0xFFFFD700),
+                fontWeight: FontWeight.bold,
+                shadows: const [Shadow(color: Color(0xFFFF6B35), blurRadius: 12)],
+              ),
+            ),
+          ],
           const SizedBox(height: 20),
           _buildNameScrollInput(),
           const SizedBox(height: 24),
           _buildGenderPicker(),
           const SizedBox(height: 24),
-          _buildAgePicker(),
-          const SizedBox(height: 40),
+          // Age picker: hidden for sprout (parent set it at gate),
+          // simplified chip buttons for explorer, full dial for older bands.
+          if (ageBand == AgeBand.explorer)
+            _buildSimpleAgePicker()
+          else if (ageBand == AgeBand.adventurer || ageBand == AgeBand.creator)
+            _buildAgePicker(),
+          if (ageBand != AgeBand.sprout) const SizedBox(height: 24),
+          // Adventurer: personality word chips (pick up to 3)
+          if (ageBand == AgeBand.adventurer) ...[
+            _buildPersonalityChips(),
+            const SizedBox(height: 24),
+          ],
+          // Creator: free-text personality description
+          if (ageBand == AgeBand.creator) ...[
+            _buildPersonalityTextField(),
+            const SizedBox(height: 24),
+          ],
           _buildNextArrowButton(enabled: nameNotEmpty, onTap: _heroNextPage),
         ],
       ),
@@ -589,7 +625,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                         ? 'Character type'
                         : band.band == AgeBand.adventurer
                             ? 'Choose your character type'
-                            : 'What does your hero look like?';
+                            : band.band == AgeBand.sprout
+                                ? 'What kind of hero are you?'
+                                : 'Choose your hero type';
                     return Text(label, style: _bandTitleStyle(band, baseFontSize: 22));
                   },
                 ),
@@ -1819,8 +1857,70 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   Widget _buildArchetypeCards() {
     final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    final cardHeight = 260 * band.spacingScale;
-    final archetypes = CharacterArchetypes.all;
+    final ageBand = ageBandFromAge(widget.wizardData.characterAge);
+    // Sprout sees only the 4 most visually striking archetypes.
+    final archetypes = ageBand == AgeBand.sprout
+        ? CharacterArchetypes.all.take(4).toList()
+        : CharacterArchetypes.all;
+
+    // Sprout & Explorer: 2-column grid — bigger cards, no scrolling.
+    if (ageBand == AgeBand.sprout || ageBand == AgeBand.explorer) {
+      return GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.82,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemCount: archetypes.length,
+        itemBuilder: (context, index) {
+          final a = archetypes[index];
+          final isSelected = _selectedArchetypeId == a.name;
+          return GestureDetector(
+            onTap: () => _selectArchetype(a),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                gradient: LinearGradient(
+                  colors: isSelected
+                      ? [const Color(0xFF9B3FD8), const Color(0xFFFFD700).withAlpha(60)]
+                      : [Colors.white10, Colors.white10],
+                ),
+                border: Border.all(
+                  color: isSelected ? const Color(0xFFFFD700) : Colors.white24,
+                  width: 2,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (a.imagePath != null)
+                    Image.asset(a.imagePath!, height: 90, fit: BoxFit.contain)
+                  else
+                    Text(a.icon ?? '✨', style: const TextStyle(fontSize: 48)),
+                  const SizedBox(height: 8),
+                  Text(
+                    a.name,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.fredoka(
+                        color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    // Adventurer & Creator: horizontal list with short description under name.
+    final showDescriptions =
+        ageBand == AgeBand.adventurer || ageBand == AgeBand.creator;
+    final cardWidth = ageBand == AgeBand.creator ? 140.0 : 160.0;
+    final cardHeight = (showDescriptions ? 290.0 : 260.0) * band.spacingScale;
     return SizedBox(
       height: cardHeight,
       child: ListView.builder(
@@ -1833,19 +1933,47 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             onTap: () => _selectArchetype(a),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),
-              width: 160,
+              width: cardWidth,
               margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
-                gradient: LinearGradient(colors: isSelected ? [const Color(0xFF9B3FD8), const Color(0xFFFFD700).withAlpha(60)] : [Colors.white10, Colors.white10]),
-                border: Border.all(color: isSelected ? const Color(0xFFFFD700) : Colors.white24, width: 2),
+                gradient: LinearGradient(
+                  colors: isSelected
+                      ? [const Color(0xFF9B3FD8), const Color(0xFFFFD700).withAlpha(60)]
+                      : [Colors.white10, Colors.white10],
+                ),
+                border: Border.all(
+                  color: isSelected ? const Color(0xFFFFD700) : Colors.white24,
+                  width: 2,
+                ),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (a.imagePath != null) Image.asset(a.imagePath!, height: 120, fit: BoxFit.contain) else Text(a.icon ?? '✨', style: const TextStyle(fontSize: 56)),
+                  if (a.imagePath != null)
+                    Image.asset(a.imagePath!, height: 100, fit: BoxFit.contain)
+                  else
+                    Text(a.icon ?? '✨', style: const TextStyle(fontSize: 56)),
                   const SizedBox(height: 8),
-                  Text(a.name, textAlign: TextAlign.center, style: GoogleFonts.fredoka(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                  Text(
+                    a.name,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.fredoka(
+                        color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                  if (showDescriptions) ...[
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        a.description,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white54, fontSize: 10),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -1859,6 +1987,141 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     return GestureDetector(
       onTap: _openAvatarCreation,
       child: Image.asset('assets/images/ui/create_avatar_btn.png', height: 70, fit: BoxFit.contain),
+    );
+  }
+
+  // ─── Progressive-Disclosure Helpers ─────────────────────────────────────────
+
+  /// Explorer band (6-8): tappable "I'm X" chips instead of the full age dial.
+  Widget _buildSimpleAgePicker() {
+    return Column(
+      children: [
+        Text(
+          'How old are you?',
+          style: GoogleFonts.fredoka(color: Colors.white70, fontSize: 16),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          children: List.generate(3, (i) {
+            final age = 6 + i;
+            final isSelected = widget.wizardData.characterAge == age;
+            return GestureDetector(
+              onTap: () => setState(() => widget.wizardData.characterAge = age),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF7C4DFF) : Colors.white10,
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(
+                    color: isSelected ? const Color(0xFFFFD700) : Colors.white24,
+                    width: 2,
+                  ),
+                ),
+                child: Text(
+                  "I'm $age",
+                  style: GoogleFonts.fredoka(
+                    color: isSelected ? const Color(0xFFFFD700) : Colors.white70,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  /// Adventurer band (9-12): 6 word chips, pick up to 3.
+  Widget _buildPersonalityChips() {
+    const options = ['Brave', 'Curious', 'Kind', 'Funny', 'Creative', 'Shy'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Pick up to 3 words that describe you:',
+          style: GoogleFonts.fredoka(color: Colors.white70, fontSize: 15),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options.map((word) {
+            final isSelected = _selectedPersonalityChips.contains(word);
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  if (isSelected) {
+                    _selectedPersonalityChips.remove(word);
+                  } else if (_selectedPersonalityChips.length < 3) {
+                    _selectedPersonalityChips.add(word);
+                  }
+                  widget.wizardData.strengths = List.from(_selectedPersonalityChips);
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF7C4DFF) : Colors.white10,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected ? const Color(0xFFFFD700) : Colors.white24,
+                    width: 1.5,
+                  ),
+                ),
+                child: Text(
+                  word,
+                  style: GoogleFonts.fredoka(
+                    color: isSelected ? const Color(0xFFFFD700) : Colors.white70,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  /// Creator band (13+): free-text personality description field.
+  Widget _buildPersonalityTextField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Describe your character's personality:",
+          style: GoogleFonts.sourceSans3(color: Colors.white60, fontSize: 14),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _personalityDescCtrl,
+          maxLines: 3,
+          style: GoogleFonts.sourceSans3(color: Colors.white70, fontSize: 14),
+          decoration: InputDecoration(
+            hintText: 'e.g. introverted but fiercely loyal, sarcastic wit…',
+            hintStyle: const TextStyle(color: Colors.white24),
+            filled: true,
+            fillColor: Colors.white.withAlpha(10),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.white24),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF7C4DFF)),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+          onChanged: (v) {
+            widget.wizardData.strengths = v.trim().isEmpty ? [] : [v.trim()];
+          },
+        ),
+      ],
     );
   }
 
@@ -2350,45 +2613,45 @@ class _CompanionData {
 const _companions = [
   _CompanionData(
     id: 'dragon',
-    name: 'Ember',
-    tagline: 'Sneezes sparks when excited',
-    personality: 'Ember the dragon is enthusiastic and a little clumsy, always sneezing sparks at the worst moment but never giving up. Fiercely loyal and secretly loves lullabies.',
+    name: 'Dragon',
+    tagline: 'Big courage. Bigger heart.',
+    personality: 'Dragon (Brave Protector) stands between you and danger, voice steady and brave. She turns fear into a plan and protects you without making you feel small. Gets extra polite right before getting fierce. Hoards tiny treasures like pebbles and buttons as if they\'re priceless. Catchphrases: "Behind me." / "We\'ve got this."',
   ),
   _CompanionData(
     id: 'owl',
-    name: 'Professor Hoot',
-    tagline: 'Knows every fact except social cues',
-    personality: 'Professor Hoot the wise owl is brilliant but hilariously overthinks everything, quoting obscure facts at random. Has a soft spot for riddles and terrible puns.',
+    name: 'Wise Owl',
+    tagline: 'Quiet mind, clear sight.',
+    personality: 'Wise Owl (Pattern Seer) watches silently, then names what matters. She spots patterns others miss and offers one clear, calm next step. Speaks in short verdicts — "Noted." "Risky." "Better." Will not be rushed; slows the scene down when emotions spike. Catchphrases: "Look again." / "Follow the pattern."',
   ),
   _CompanionData(
     id: 'cat',
-    name: 'Midnight',
-    tagline: 'Cool, mysterious, secretly a softie',
-    personality: 'Midnight the shadow cat acts indifferent and aloof but always shows up exactly when needed. Purrs at starlight and pretends not to care about hugs — but secretly loves them.',
+    name: 'Shadow Cat',
+    tagline: 'Soft paws. Strong boundaries.',
+    personality: 'Shadow Cat (Boundary Guardian) keeps you calm and untangled. She helps you say no, spot pressure, and choose the cleanest way out. Appears exactly when someone is being manipulative. Purrs like a reset button — breathing steadies when she purrs. Disappears mid-drama, then reappears with the perfect exit route. Catchphrases: "No is complete." / "We leave—now."',
   ),
   _CompanionData(
     id: 'dog',
-    name: 'Cosmo',
-    tagline: 'Bravest tail-wagger in the galaxy',
-    personality: 'Cosmo the star dog is endlessly optimistic and zoomy, convinced every new place is the greatest place ever. Loves high-fives, gets distracted by interesting smells, and never backs down from a challenge.',
+    name: 'Star Dog',
+    tagline: 'Light up. Keep going.',
+    personality: 'Star Dog (Hope Engine) stays close and lifts your mood fast. He guides you with sparkle-trails and helps you take the next step even when you\'re scared. Sniffs out the most trustworthy person in a room and stands by them. If you freeze, he does something goofy to break the spell of fear. Catchphrases: "One more step!" / "I\'m right here!"',
   ),
   _CompanionData(
     id: 'unicorn',
-    name: 'Stardust',
-    tagline: 'Leaves glitter trails everywhere',
-    personality: 'Stardust the unicorn is dreamy and kind, turning problems into rainbows wherever possible. Speaks in gentle riddles and occasionally trips on her own sparkles.',
+    name: 'Unicorn',
+    tagline: 'Kindness that makes you stronger.',
+    personality: 'Unicorn (Gentle Healer) brings calm, warmth, and healing. She helps you breathe, name feelings gently, and rebuild confidence without pressure. Horn glow tunes to emotion — soft light for sadness, bright for courage. Refuses shame stories and rewrites self-talk in simple words. Catchphrases: "You are safe." / "You are not broken."',
   ),
   _CompanionData(
     id: 'fox',
-    name: 'Remy',
-    tagline: 'Has a plan for everything (almost)',
-    personality: 'Remy the clever fox is quick-witted and resourceful, always three steps ahead — except when emotions are involved, where he\'s completely lost. Secretly collects shiny objects.',
+    name: 'Clever Fox',
+    tagline: 'Smart paths, sneaky wins.',
+    personality: 'Clever Fox (Strategic Trickster) finds the loophole, the shortcut, the trick that stays fair. He turns obstacles into puzzles and makes you feel capable. Treats problems like games and always offers two clever options. Loves codes, riddles, hidden doors, and rules-lawyering bad guys. Catchphrases: "Watch this." / "Rules didn\'t say I can\'t."',
   ),
   _CompanionData(
     id: 'robin',
     name: 'Rockin\' Robin',
-    tagline: 'Sings solutions to every problem',
-    personality: 'Rockin\' Robin bursts into song at dramatic moments, turning every challenge into a musical number. Tiny but fierce, and deeply believes that the right song can fix anything.',
+    tagline: 'Always watching, always guiding you forward.',
+    personality: 'Rockin\' Robin (Scout) darts overhead, chirping warning trills. She swoops low to show the way like a living arrow. If she dive-bombs someone, it\'s because they\'re a threat — even if they look harmless. Acts like a tiny bodyguard with zero chill; won\'t just point — must swoop the route herself. Catchphrases: "Move. Now-now-now." / "Trust me. Wings don\'t lie."',
   ),
 ];
 
