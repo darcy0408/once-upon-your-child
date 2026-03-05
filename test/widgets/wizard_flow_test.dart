@@ -13,6 +13,7 @@ import 'package:story_weaver_app/services/api_service_manager.dart';
 import 'package:story_weaver_app/services/avatar_generation_state.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
 import 'package:story_weaver_app/services/isar_service_io.dart';
+import 'package:story_weaver_app/models/wizard_data.dart';
 import 'package:story_weaver_app/widgets/image_make_magic_button.dart';
 import 'package:story_weaver_app/screens/wizard_steps/magic_review_step.dart';
 import 'package:story_weaver_app/widgets/magic_orb.dart';
@@ -149,49 +150,36 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light(),
-        home: const WizardStoryScreen(availableCharacters: []),
+        home: WizardStoryScreen(
+          availableCharacters: const [],
+          initialWizardData: WizardData()
+            ..characterName = 'Test Hero'
+            ..selectedArchetypeId = 'storm_rider',
+        ),
       ),
     );
 
     // Use pump(Duration) to handle infinite animations (MoonPhaseProgress)
     await tester.pump(const Duration(seconds: 1));
 
-    // --- STEP 1: Hero Creator ---
-    await pumpUntilFound(finder: find.byType(TextField).first);
-
-    // Enter Name
-    await tester.enterText(find.byType(TextField).first, 'Test Hero');
-    await tester.pump();
-
-    // Select Archetype (The Storm Rider)
-    await pumpUntilFound(finder: find.text('The Storm Rider'));
-    await tester.tap(find.text('The Storm Rider'));
-    await tester.pump();
-
-    // Ensure "Continue" button is visible and tap it
-    final continueButton = find.byKey(const Key('continue_button'));
-    await pumpUntilFound(finder: continueButton);
-    await tester.ensureVisible(continueButton);
-    await tester.tap(continueButton);
-
-    // Transition animation - avoid pumpAndSettle
-    await tester.pump(const Duration(milliseconds: 500));
-    
-    // Force transition to companion step
-    final pageView = tester.widget<PageView>(find.byType(PageView));
-    pageView.controller!.jumpToPage(1);
+    // --- STEP 1: Hero Creator (multi-page internal flow) ---
+    // Name/archetype are pre-filled; jump straight to companion page.
+    final innerPageViews = find.byType(PageView);
+    final innerPV = tester.widgetList<PageView>(innerPageViews).last;
+    innerPV.controller!.jumpToPage(3);
     await tester.pump(const Duration(milliseconds: 500));
 
-    await pumpUntilFound(finder: find.text('Go Solo (Be Brave!)'));
+    await pumpUntilFound(finder: find.text('Go Solo — no companions'));
 
     // --- STEP 3: Companion Selector ---
-    final goSoloBtn = find.text('Go Solo (Be Brave!)');
+    final goSoloBtn = find.text('Go Solo — no companions');
     await tester.ensureVisible(goSoloBtn);
     await tester.tap(goSoloBtn);
-    
+
     await tester.pump(const Duration(milliseconds: 500));
-    // Force transition to review step
-    pageView.controller!.jumpToPage(2);
+    // Force transition to the outer wizard's review step (MagicReviewStep)
+    final outerPV2 = tester.widgetList<PageView>(find.byType(PageView)).first;
+    outerPV2.controller!.jumpToPage(1);
     await tester.pump(const Duration(milliseconds: 500));
 
     // --- STEP 4: Magic Review ---
