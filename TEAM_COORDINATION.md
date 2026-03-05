@@ -2,6 +2,59 @@
 
 ---
 
+## Session Update - 2026-03-04 (Comprehensive Test Suite Audit & Fixes)
+
+### Scope Completed
+
+- **Production bug fix — `_floatCtrl` AnimationController leak:**
+  - `lib/screens/wizard_steps/hero_creator_step.dart` — `_floatCtrl.dispose()` was missing from the `dispose()` method. The controller was created with `.repeat(reverse: true)` but never cleaned up, causing `Ticker was not disposed` exceptions in every test that mounted `HeroCreatorStep`.
+  - Added `_floatCtrl.dispose()` before `_glowCtrl.dispose()`.
+
+- **Deleted stale Python backend test files:**
+  - `backend/tests/test_models.py` — imported `from app import app, db, Character` (classes no longer exist)
+  - `backend/tests/test_services.py` — imported `from app import StoryStructures, CompanionDynamics, WisdomGems` (classes no longer exist)
+  - Both caused `pytest` collection errors; deleted since they tested removed code.
+
+- **Flutter test audit (172 passed, 28 failed → diagnosed all 28):**
+  - **`flutter_test_config.dart`** — needs `flutter_secure_storage` MethodChannel mock. `SecureStorageService` calls `FlutterSecureStorage` which throws `MissingPluginException` without mock. Affects 6 `story_creation_flow_test` failures + `settings_screen_test` timeouts.
+  - **`hero_creator_step_test.dart`** (4 failures) — HeroCreatorStep now has multi-page internal PageView (pages 0-5). Tests assumed single page. Gender labels changed from 'Hero'/'Heroine' to 'Boy'/'Girl'. Age picker for Explorer band uses chips "I'm 6"/"I'm 7"/"I'm 8". `Key('continue_button')` removed (now image-based button).
+  - **`magic_review_step_test.dart`** (3 failures) — MagicReviewStep is now read-only summary (no more Rhyme/Read-Along toggles, Epic selector, or TextField). Tests must verify display labels instead of interactive controls.
+  - **`companion_selector_step_test.dart`** — `Key('go_solo_button')` removed. Must use `find.text('Go Solo (Be Brave!)')`.
+  - **`settings_screen_test.dart`** (6 failures) — `pumpAndSettle` timeouts due to infinite animations. Must replace with timed pumps.
+  - **`saved_stories_screen_test.dart`** — Empty state text changed to 'No stories saved yet!'. Favorites filter uses `find.byTooltip('Show favorites only')`.
+  - **`wizard_flow_test.dart`** & **`full_hero_journey_test.dart`** — Must navigate inner HeroCreatorStep PageView (jump to page 2 for archetype) and outer wizard PageView separately.
+  - **`hero_creator_avatar_preview_test.dart`** — Must use `CircleAvatar` instead of `ClipOval` for character cards.
+
+- **Golden tests regenerated** with `--update-goldens`. Age gate screen golden still fails (pre-existing Google Fonts issue).
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Added missing `_floatCtrl.dispose()` — production bug fix |
+| `backend/tests/test_models.py` | Deleted (stale imports) |
+| `backend/tests/test_services.py` | Deleted (stale imports) |
+
+### Test Files Needing Updates (documented, not yet applied)
+| File | Root Cause |
+|------|------------|
+| `test/flutter_test_config.dart` | Missing `flutter_secure_storage` MethodChannel mock |
+| `test/widgets/wizard_steps/hero_creator_step_test.dart` | Multi-page PageView, changed labels/widgets |
+| `test/widgets/wizard_steps/magic_review_step_test.dart` | Now read-only summary, no interactive controls |
+| `test/widgets/wizard_steps/companion_selector_step_test.dart` | `go_solo_button` Key removed |
+| `test/screens/settings_screen_test.dart` | `pumpAndSettle` timeouts with infinite animations |
+| `test/widgets/wizard_flow_test.dart` | Inner/outer PageView navigation |
+| `test/integration/full_hero_journey_test.dart` | Inner/outer PageView navigation |
+| `test/widgets/hero_creator_avatar_preview_test.dart` | CircleAvatar vs ClipOval |
+
+### Status
+- **Production bug (`_floatCtrl` leak):** ✅ Fixed
+- **Stale Python tests:** ✅ Deleted
+- **Flutter test failures:** 🟡 All 28 root causes diagnosed; fixes documented above
+- **Golden tests:** ✅ Regenerated (age gate pre-existing Google Fonts issue)
+- **Backend Python tests:** ✅ Clean (stale files removed)
+
+---
+
 ## Session Update - 2026-03-05 (Scene buttons, companion cards, pet photo, dead code cleanup)
 
 ### Scope Completed
