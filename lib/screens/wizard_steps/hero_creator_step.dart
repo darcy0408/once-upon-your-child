@@ -669,6 +669,17 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         .where((c) => widget.wizardData.companionNames.contains(c.name))
         .toList();
 
+    // Collect selected saved-character friends (not magic companions, not pets)
+    final magicAndPetNames = {
+      ..._companions.map((c) => c.name),
+      ...widget.wizardData.pets.map((p) => (p['name'] ?? '') as String),
+    };
+    final selectedFriends = widget.availableCharacters
+        .where((c) =>
+            widget.wizardData.companionNames.contains(c.name) &&
+            !magicAndPetNames.contains(c.name))
+        .toList();
+
     // Collect selected pet (if any)
     final petEntry =
         widget.wizardData.pets.isNotEmpty ? widget.wizardData.pets.first : null;
@@ -679,12 +690,19 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         ? widget.wizardData.petPhotos[petName]
         : null;
 
-    // Build slot list: filled companions first, then pet, then empty placeholders
+    // Build slot list: magic companions, then saved friends, then pet, then empty
     final slots = <_ShowcaseSlot>[];
     for (final c in selectedNamed) {
       slots.add(_ShowcaseSlot(
         imagePath: 'assets/images/companions/${c.id}_normal.jpg',
         name: c.name,
+      ));
+    }
+    for (final friend in selectedFriends) {
+      slots.add(_ShowcaseSlot(
+        photoBase64: friend.generatedAvatar?.imageBase64,
+        name: friend.name,
+        isFriend: true,
       ));
     }
     if (petSelected) {
@@ -709,15 +727,20 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               _GlowingCompanionOrb(
                 slot: slots[i],
                 onTap: () => setState(() {
+                  final slotName = slots[i].name;
+                  // Magic companion?
                   final matched = selectedNamed
-                      .where((c) => c.name == slots[i].name)
+                      .where((c) => c.name == slotName)
                       .firstOrNull;
                   if (matched != null) {
                     widget.wizardData.companionNames.remove(matched.name);
                     widget.wizardData.selectedCompanions.remove(matched.id);
+                  } else if (slots[i].isFriend) {
+                    // Saved-character friend — just remove from companionNames
+                    widget.wizardData.companionNames.remove(slotName);
                   } else {
-                    // It's the pet
-                    widget.wizardData.companionNames.remove(slots[i].name);
+                    // Pet
+                    widget.wizardData.companionNames.remove(slotName);
                   }
                 }),
               ),
@@ -2486,7 +2509,13 @@ class _ShowcaseSlot {
   final String? imagePath;
   final String? photoBase64;
   final String name;
-  const _ShowcaseSlot({this.imagePath, this.photoBase64, required this.name});
+  final bool isFriend; // true = saved character (not a magic companion or pet)
+  const _ShowcaseSlot({
+    this.imagePath,
+    this.photoBase64,
+    required this.name,
+    this.isFriend = false,
+  });
 }
 
 /// A large glowing circle that shows a companion portrait (or empty placeholder).
@@ -2506,10 +2535,14 @@ class _GlowingCompanionOrb extends StatelessWidget {
     if (!filled) {
       inner = const Icon(Icons.add_rounded, color: Colors.white24, size: 32);
     } else if (slot!.photoBase64 != null && slot!.photoBase64!.isNotEmpty) {
-      final bytes = base64Decode(
-          slot!.photoBase64!.replaceFirst(RegExp(r'data:[^,]+,'), ''));
+      // Pet photo or friend avatar (base64)
+      final raw = slot!.photoBase64!;
+      final bytes = base64Decode(raw.contains(',') ? raw.split(',').last : raw);
       inner = Image.memory(bytes,
           width: _size, height: _size, fit: BoxFit.cover);
+    } else if (slot!.isFriend) {
+      // Saved character with no avatar image yet — use a person placeholder
+      inner = const Icon(Icons.person_rounded, color: Colors.white70, size: 44);
     } else {
       inner = Image.asset(
         slot!.imagePath ?? '',
