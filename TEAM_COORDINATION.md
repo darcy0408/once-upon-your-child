@@ -2,6 +2,24 @@
 
 ---
 
+## Session Update - 2026-03-05 (Welcome screen UX overhaul)
+
+### Scope Completed
+- **Title rebrand**: Changed "Welcome to Story Weaver!" → "Once Upon YOUR Child" (`YOUR` in larger white, rest in gold `CinzelDecorative`).
+- **Animated step flow**: Screen now fades through 3 sequential steps — (0) title splash (auto-advances after 2.5 s or tap), (1) name input with centered field + "That's me!" button, (2) age picker + "Let's Go!".
+- **Centered layout**: Child's name `TextField` is center-aligned; "How old are you?" and "What's your name?" headings are centered.
+- **Readability fix**: "Parents: please select your child's age" text changed from `Colors.white38` (nearly invisible) to `Colors.white70`.
+- **Let's Go button**: Brightens to a gold/amber gradient with glow when age is selected; after 3 s of inactivity it bounces up and down to invite a tap.
+- **Tactile button press**: All interactive elements (age circles, "That's me!", "Let's Go!") scale down on press via a new `_PressableButton` wrapper and updated `_AgeCircle` `StatefulWidget`.
+- **`_AgeCircle`** converted from `StatelessWidget` to `StatefulWidget` to support press-down detection.
+
+### Status
+- **Welcome screen UX:** ✅ Complete — `lib/screens/welcome_screen.dart`
+- **Flutter analyze:** ✅ No issues
+- **Launch Readiness:** 80%
+
+---
+
 ## Session Update - 2026-03-06 (Fix 17 failing Flutter tests)
 
 ### Scope Completed
