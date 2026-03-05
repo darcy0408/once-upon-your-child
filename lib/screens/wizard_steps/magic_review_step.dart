@@ -193,14 +193,95 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
         child: Column(
           children: [
-            Row(mainAxisAlignment: MainAxisAlignment.center, children: [_audioPrompt("Gaze into the future"), const SizedBox(width: 8), Text("Gaze into the Future", style: GoogleFonts.cinzelDecorative(color: const Color(0xFFFFD700), fontSize: 24, fontWeight: FontWeight.bold))]),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [_audioPrompt("Your adventure awaits!"), const SizedBox(width: 8), Text("Your Adventure Awaits!", style: GoogleFonts.cinzelDecorative(color: const Color(0xFFFFD700), fontSize: 22, fontWeight: FontWeight.bold))]),
             const SizedBox(height: 24),
-            SizedBox(height: 340, child: Stack(alignment: Alignment.center, clipBehavior: Clip.none, children: [
-              Container(width: orbSize + 50, height: orbSize + 50, decoration: BoxDecoration(shape: BoxShape.circle, gradient: RadialGradient(colors: [const Color(0xFFFFEEA8).withValues(alpha: 0.4), const Color(0xFFE985FF).withValues(alpha: 0.3), const Color(0xFFB5F7FF).withValues(alpha: 0.2), Colors.transparent], stops: const [0.0, 0.4, 0.7, 1.0]))),
-              MagicOrbWidget(imagePath: _scenarioImage, size: orbSize * 0.95, glowColor: AppColors.gold, topLabel: _scenarioLabel, label: data.characterName.isNotEmpty ? data.characterName : heroFallback, childScale: 0.92, child: _HeroAvatar(generatedAvatar: data.generatedAvatar, characterName: data.characterName, role: data.selectedArchetypeId)),
-              Positioned(left: 5, bottom: 10, child: Column(mainAxisSize: MainAxisSize.min, children: [MagicalFloat(distance: 6.0, duration: const Duration(seconds: 4), delay: 100, child: _AuraCircle(size: 84, auraColor: const Color(0xFFFFD9A6), child: ClipOval(child: Image.asset(_scenarioImage, fit: BoxFit.cover)))), const SizedBox(height: 6), Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1)), child: Text(_scenarioLabel, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)))]))
-              , if (data.selectedCompanions.isNotEmpty) Positioned(right: 5, bottom: 10, child: Column(mainAxisSize: MainAxisSize.min, children: [MagicalFloat(distance: 6.0, duration: const Duration(seconds: 4), delay: 500, child: _AuraCircle(size: 84, auraColor: const Color(0xFFF3AEFF), child: _CompanionAvatar(companionImage: _companionImage))), const SizedBox(height: 6), Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(12)), child: const Text('Companion', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)))]))
-            ])),
+            // ── Hero orb (avatar only, no overlapping circles) ───────────────
+            SizedBox(
+              height: orbSize + 50,
+              child: Stack(alignment: Alignment.center, children: [
+                Container(
+                  width: orbSize + 50,
+                  height: orbSize + 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(colors: [
+                      const Color(0xFFFFEEA8).withValues(alpha: 0.45),
+                      const Color(0xFFE985FF).withValues(alpha: 0.3),
+                      const Color(0xFFB5F7FF).withValues(alpha: 0.2),
+                      Colors.transparent,
+                    ], stops: const [0.0, 0.4, 0.7, 1.0]),
+                  ),
+                ),
+                MagicOrbWidget(
+                  imagePath: _scenarioImage,
+                  size: orbSize * 0.95,
+                  glowColor: AppColors.gold,
+                  topLabel: _scenarioLabel,
+                  label: data.characterName.isNotEmpty ? data.characterName : heroFallback,
+                  childScale: 0.92,
+                  child: _HeroAvatar(
+                    generatedAvatar: data.generatedAvatar,
+                    characterName: data.characterName,
+                    role: data.selectedArchetypeId,
+                  ),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 16),
+            // ── Setting + companion — below the orb so nothing overlaps ──────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Setting
+                Column(mainAxisSize: MainAxisSize.min, children: [
+                  MagicalFloat(
+                    distance: 6.0,
+                    duration: const Duration(seconds: 4),
+                    delay: 100,
+                    child: _AuraCircle(
+                      size: 72,
+                      auraColor: const Color(0xFFFFD9A6),
+                      child: ClipOval(child: Image.asset(_scenarioImage, fit: BoxFit.cover)),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
+                    ),
+                    child: Text(_scenarioLabel, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
+                ]),
+                // Companion (only if selected)
+                if (data.selectedCompanions.isNotEmpty) ...[
+                  const SizedBox(width: 32),
+                  Column(mainAxisSize: MainAxisSize.min, children: [
+                    MagicalFloat(
+                      distance: 6.0,
+                      duration: const Duration(seconds: 4),
+                      delay: 500,
+                      child: _AuraCircle(
+                        size: 72,
+                        auraColor: const Color(0xFFF3AEFF),
+                        child: _CompanionAvatar(companionImage: _companionImage),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text('Companion', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                  ]),
+                ],
+              ],
+            ),
             const SizedBox(height: 24),
             // ── Read-only story summary ──────────────────────────────────────
             _SummaryRow(icon: Icons.auto_stories, label: _storyTypeLabel(data)),
@@ -242,9 +323,46 @@ class _HeroAvatar extends StatelessWidget {
   @override Widget build(BuildContext context) {
     if (generatedAvatar == null) return _GradientSphereFallback(child: _HeroFallbackIdentity(name: characterName, role: role));
     final data = generatedAvatar!.imageBase64;
-    if (data.startsWith('assets/')) return ClipOval(child: Image.asset(data, fit: BoxFit.cover));
-    if (data.startsWith('http')) return ClipOval(child: Image.network(data, fit: BoxFit.cover));
-    try { return ClipOval(child: Image.memory(base64Decode(data.split(',').last), fit: BoxFit.cover)); } catch (_) { return _GradientSphereFallback(child: _HeroFallbackIdentity(name: characterName, role: role)); }
+    Widget img;
+    if (data.startsWith('assets/')) {
+      img = Image.asset(data, fit: BoxFit.cover);
+    } else if (data.startsWith('http')) {
+      img = Image.network(data, fit: BoxFit.cover);
+    } else {
+      try {
+        img = Image.memory(base64Decode(data.split(',').last), fit: BoxFit.cover);
+      } catch (_) {
+        return _GradientSphereFallback(child: _HeroFallbackIdentity(name: characterName, role: role));
+      }
+    }
+    // Crystal-ball glow: brighten the image + add a white radial highlight
+    return ClipOval(
+      child: Stack(fit: StackFit.expand, children: [
+        ColorFiltered(
+          colorFilter: const ColorFilter.matrix([
+            1.15, 0,    0,    0, 15,
+            0,    1.15, 0,    0, 15,
+            0,    0,    1.15, 0, 15,
+            0,    0,    0,    1, 0,
+          ]),
+          child: img,
+        ),
+        // Radial white glow from the centre — like light through a crystal
+        DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [
+                Colors.white.withAlpha(55),
+                Colors.white.withAlpha(20),
+                Colors.transparent,
+              ],
+              stops: const [0.0, 0.45, 0.9],
+            ),
+          ),
+        ),
+      ]),
+    );
   }
 }
 
