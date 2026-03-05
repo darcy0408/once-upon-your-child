@@ -7,6 +7,7 @@ import 'character_edit_screen.dart';
 import 'subscription_service.dart';
 import 'paywall_dialog.dart';
 import 'services/api_service_manager.dart';
+import 'utils/paywall_gate.dart';
 
 class CharacterManagementScreen extends StatefulWidget {
   const CharacterManagementScreen({super.key});
@@ -69,9 +70,12 @@ class _CharacterManagementScreenState extends State<CharacterManagementScreen> {
           if (!canCreate) {
             final maxChars = await _subscriptionService.getMaxCharacters();
             if (!context.mounted) return;
-            await PaywallDialog.showCharacterLimitDialog(
-              context,
-              maxCharacters: maxChars,
+            await showPaywallGated(
+              context: context,
+              showActualPaywall: () => PaywallDialog.showCharacterLimitDialog(
+                context,
+                maxCharacters: maxChars,
+              ),
             );
             return;
           }

@@ -31,6 +31,7 @@ import 'multi_character_screen.dart';
 import 'offline_stories_screen.dart';
 import 'paywall_dialog.dart';
 import 'pre_story_feelings_dialog.dart';
+import 'utils/paywall_gate.dart';
 import 'premium_upgrade_screen.dart';
 import 'screens/subscription_success_screen.dart';
 import 'services/achievement_service.dart';
@@ -351,11 +352,14 @@ class _StoryScreenState extends State<StoryScreen> {
           await _subscriptionService.getRemainingStoriesThisMonth();
       if (!mounted) return false;
 
-      final upgraded = await PaywallDialog.showStoryLimitDialog(
-        context,
-        remainingToday: remaining,
-        remainingMonth: remainingMonth,
-      );
+      final upgraded = await showPaywallGated<bool>(
+        context: context,
+        showActualPaywall: () => PaywallDialog.showStoryLimitDialog(
+          context,
+          remainingToday: remaining,
+          remainingMonth: remainingMonth,
+        ),
+      ) ?? false;
       if (upgraded) {
         await _loadSubscriptionInfo();
       }
@@ -367,10 +371,13 @@ class _StoryScreenState extends State<StoryScreen> {
           await _subscriptionService.hasFeature('multi_character_stories');
       if (!hasMultiChar) {
         if (!mounted) return false;
-        await PaywallDialog.showFeatureLockedDialog(
-          context,
-          featureName: 'Multi-Character Stories',
-          description: 'Include siblings and friends in stories together!',
+        await showPaywallGated(
+          context: context,
+          showActualPaywall: () => PaywallDialog.showFeatureLockedDialog(
+            context,
+            featureName: 'Multi-Character Stories',
+            description: 'Include siblings and friends in stories together!',
+          ),
         );
         return false;
       }
@@ -380,10 +387,13 @@ class _StoryScreenState extends State<StoryScreen> {
         await _subscriptionService.isThemeAvailable(_selectedTheme);
     if (!themeAvailable) {
       if (!mounted) return false;
-      await PaywallDialog.showContentLockedDialog(
-        context,
-        contentType: 'Theme',
-        contentName: _selectedTheme,
+      await showPaywallGated(
+        context: context,
+        showActualPaywall: () => PaywallDialog.showContentLockedDialog(
+          context,
+          contentType: 'Theme',
+          contentName: _selectedTheme,
+        ),
       );
       return false;
     }
@@ -393,10 +403,13 @@ class _StoryScreenState extends State<StoryScreen> {
           await _subscriptionService.isCompanionAvailable(_selectedCompanion);
       if (!companionAvailable) {
         if (!mounted) return false;
-        await PaywallDialog.showContentLockedDialog(
-          context,
-          contentType: 'Companion',
-          contentName: _selectedCompanion,
+        await showPaywallGated(
+          context: context,
+          showActualPaywall: () => PaywallDialog.showContentLockedDialog(
+            context,
+            contentType: 'Companion',
+            contentName: _selectedCompanion,
+          ),
         );
         return false;
       }
@@ -425,13 +438,16 @@ class _StoryScreenState extends State<StoryScreen> {
         limit: gracePeriodStatus.storiesLimit,
         accountAgeDays: gracePeriodStatus.accountAgeDays,
       );
-      await showDialog(
+      await showPaywallGated(
         context: context,
-        builder: (context) => UpgradePromptDialog(
-          isSoftPrompt: false,
-          storiesUsed: gracePeriodStatus.storiesUsed,
-          storiesLimit: gracePeriodStatus.storiesLimit,
-          accountAgeDays: gracePeriodStatus.accountAgeDays,
+        showActualPaywall: () => showDialog(
+          context: context,
+          builder: (context) => UpgradePromptDialog(
+            isSoftPrompt: false,
+            storiesUsed: gracePeriodStatus.storiesUsed,
+            storiesLimit: gracePeriodStatus.storiesLimit,
+            accountAgeDays: gracePeriodStatus.accountAgeDays,
+          ),
         ),
       );
       return;
@@ -445,15 +461,18 @@ class _StoryScreenState extends State<StoryScreen> {
         accountAgeDays: gracePeriodStatus.accountAgeDays,
       );
       unawaited(
-        showDialog(
+        showPaywallGated(
           context: context,
-          builder: (context) => UpgradePromptDialog(
-            isSoftPrompt: true,
-            storiesUsed: gracePeriodStatus.storiesUsed,
-            storiesLimit: gracePeriodStatus.storiesLimit,
-            accountAgeDays: gracePeriodStatus.accountAgeDays,
-            daysRemainingInGracePeriod:
-                gracePeriodStatus.daysRemainingInGracePeriod,
+          showActualPaywall: () => showDialog(
+            context: context,
+            builder: (context) => UpgradePromptDialog(
+              isSoftPrompt: true,
+              storiesUsed: gracePeriodStatus.storiesUsed,
+              storiesLimit: gracePeriodStatus.storiesLimit,
+              accountAgeDays: gracePeriodStatus.accountAgeDays,
+              daysRemainingInGracePeriod:
+                  gracePeriodStatus.daysRemainingInGracePeriod,
+            ),
           ),
         ),
       );
@@ -757,9 +776,17 @@ class _StoryScreenState extends State<StoryScreen> {
               tooltip: 'Upgrade to Premium',
               icon: const Icon(Icons.star, color: Colors.amber),
               onPressed: () async {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(
-                      builder: (_) => const PremiumUpgradeScreen()),
+                await showPaywallGated(
+                  context: context,
+                  showActualPaywall: () async {
+                    if (context.mounted) {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => const PremiumUpgradeScreen()),
+                      );
+                    }
+                    return null;
+                  },
                 );
                 await _loadSubscriptionInfo();
               },
@@ -934,11 +961,20 @@ class _StoryScreenState extends State<StoryScreen> {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const PremiumUpgradeScreen(),
-                          ),
+                        showPaywallGated(
+                          context: context,
+                          showActualPaywall: () async {
+                            if (context.mounted) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const PremiumUpgradeScreen(),
+                                ),
+                              );
+                            }
+                            return null;
+                          },
                         );
                       },
                       child: ListTile(

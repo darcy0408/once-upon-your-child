@@ -9,6 +9,7 @@ import 'premium_upgrade_screen.dart';
 import 'services/api_service_manager.dart';
 import 'subscription_service.dart';
 import 'theme/app_theme.dart';
+import 'utils/paywall_gate.dart';
 import 'widgets/storybook_page.dart';
 
 class QuickStoryScreen extends StatefulWidget {
@@ -144,29 +145,32 @@ class _QuickStoryScreenState extends State<QuickStoryScreen>
   }
 
   void _showUpgradeDialog() {
-    showDialog(
+    showPaywallGated(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Unlock Unlimited Stories'),
-        content: const Text(
-          'Create unlimited magical stories with premium features like character evolution and therapeutic activities.',
+      showActualPaywall: () => showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Unlock Unlimited Stories'),
+          content: const Text(
+            'Create unlimited magical stories with premium features like character evolution and therapeutic activities.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Maybe Later'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (_) => const PremiumUpgradeScreen()),
+                );
+              },
+              child: const Text('Upgrade Now'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Maybe Later'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                    builder: (_) => const PremiumUpgradeScreen()),
-              );
-            },
-            child: const Text('Upgrade Now'),
-          ),
-        ],
       ),
     );
   }
