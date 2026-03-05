@@ -72,6 +72,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   late Animation<double> _glowAnim;
   late Animation<double> _sparkleAnim;
 
+  late TextEditingController _imagineItController;
+
   // ─── Voice & Audio ───────────────────────────────────────────────────────────
   final SpeechToText _speech = SpeechToText();
   bool _speechAvailable = false;
@@ -123,6 +125,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       text: widget.wizardData.heroQuest ?? '',
     );
     _wishController = TextEditingController(
+      text: widget.wizardData.customElements,
+    );
+    _imagineItController = TextEditingController(
       text: widget.wizardData.customElements,
     );
 
@@ -182,6 +187,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     _superpowerController.dispose();
     _questController.dispose();
     _wishController.dispose();
+    _imagineItController.dispose();
     _floatCtrl.dispose();
     _glowCtrl.dispose();
     _sparkleCtrl.dispose();
@@ -424,6 +430,28 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
+  // ─── Age-Band Title Style ────────────────────────────────────────────────────
+  TextStyle _bandTitleStyle(AgeBandThemeData band, {double baseFontSize = 24}) {
+    if (band.band == AgeBand.creator) {
+      return GoogleFonts.sourceSans3(
+        color: const Color(0xFFFFD700),
+        fontSize: baseFontSize * band.headingScale,
+        fontWeight: FontWeight.bold,
+      );
+    } else if (band.band == AgeBand.adventurer) {
+      return GoogleFonts.bitter(
+        color: const Color(0xFFFFD700),
+        fontSize: baseFontSize * band.headingScale,
+        fontWeight: FontWeight.bold,
+      );
+    }
+    return GoogleFonts.cinzelDecorative(
+      color: const Color(0xFFFFD700),
+      fontSize: baseFontSize,
+      fontWeight: FontWeight.bold,
+    );
+  }
+
   // ─── Page Builders ──────────────────────────────────────────────────────────
 
   // Page 0: Welcome / Returning User Choice
@@ -517,13 +545,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               Flexible(
                 child: Builder(
                   builder: (context) {
+                    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
                     return Text(
-                      'Create Your Hero',
-                      style: GoogleFonts.cinzelDecorative(
-                        color: const Color(0xFFFFD700),
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      band.createCharacterLabel,
+                      style: _bandTitleStyle(band, baseFontSize: 24),
                     );
                   },
                 ),
@@ -559,18 +584,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               Flexible(
                 child: Builder(
                   builder: (context) {
-                    final band = Theme.of(context).extension<AgeBandThemeData>();
-                    final label = band != null && band.band != AgeBand.explorer
-                        ? 'What does your ${band.heroLabel.toLowerCase()} look like?'
-                        : 'What does your hero look like?';
-                    return Text(
-                      label,
-                      style: GoogleFonts.cinzelDecorative(
-                        color: const Color(0xFFFFD700),
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    );
+                    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+                    final label = band.band == AgeBand.creator
+                        ? 'Character type'
+                        : band.band == AgeBand.adventurer
+                            ? 'Choose your character type'
+                            : 'What does your hero look like?';
+                    return Text(label, style: _bandTitleStyle(band, baseFontSize: 22));
                   },
                 ),
               ),
@@ -598,6 +618,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   /// Temporary adventure team placeholder — replaced when companion grid is built.
   Widget _buildAdventureTeamPage() {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final companionTitle = band.band == AgeBand.sprout
+        ? 'Pick your buddies!'
+        : band.band == AgeBand.adventurer
+            ? 'Choose your companions'
+            : band.band == AgeBand.creator
+                ? 'Choose companions'
+                : "Who's coming with you?";
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -610,12 +638,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  "Who's Coming With You?",
-                  style: GoogleFonts.cinzelDecorative(
-                    color: const Color(0xFFFFD700),
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  companionTitle,
+                  style: _bandTitleStyle(band, baseFontSize: 22),
                 ),
               ),
             ],
@@ -760,36 +784,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           onChanged: () => setState(() {}),
         ),
         const SizedBox(height: 12),
-        // ── Add pet photo button ──────────────────────────────────────────────
-        _AddPetPhotoButton(onTap: _pickPetPhoto),
-        const SizedBox(height: 12),
-        // Pets from character profile
-        if (widget.wizardData.pets.isNotEmpty) ...[
-          const Text(
-            'Your pets:',
-            style: TextStyle(color: Colors.white70, fontSize: 13),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: widget.wizardData.pets.map((pet) {
-              final petName = pet['name'] ?? 'Pet';
-              final isSelected =
-                  widget.wizardData.companionNames.contains(petName);
-              return _chipButton(
-                label: '🐾 $petName',
-                selected: isSelected,
-                onTap: () => setState(() {
-                  if (isSelected) {
-                    widget.wizardData.companionNames.remove(petName);
-                  } else {
-                    widget.wizardData.companionNames.add(petName);
-                  }
-                }),
-              );
-            }).toList(),
-          ),
-        ],
+        // ── Pet card (photo + name/species/color) ──────────────────────────────
+        _PetCard(
+          wizardData: widget.wizardData,
+          onPickPhoto: _pickPetPhoto,
+          onChanged: () => setState(() {}),
+        ),
         const SizedBox(height: 12),
         // Go Solo option
         TextButton.icon(
@@ -815,19 +815,26 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         await picker.pickImage(source: source, maxWidth: 800, imageQuality: 75);
     if (file == null || !mounted) return;
     final bytes = await file.readAsBytes();
-    final b64 = base64Encode(bytes);
+    final b64 = 'data:image/jpeg;base64,${base64Encode(bytes)}';
     setState(() {
-      widget.wizardData.pets
-          .add({'name': 'My Pet', 'species': 'Pet', 'personality': ''});
-      widget.wizardData.petAvatars['My Pet'] = GeneratedAvatar(
-        id: 'pet_photo_${DateTime.now().millisecondsSinceEpoch}',
-        imageBase64: 'data:image/jpeg;base64,$b64',
-        seed: 'photo',
-        style: 'photo',
-        attributes: const {},
-        generatedAt: DateTime.now(),
-      );
-      widget.wizardData.companionNames.add('My Pet');
+      // Preserve existing pet name if already set, otherwise default
+      final existingName = widget.wizardData.pets.isNotEmpty
+          ? (widget.wizardData.pets.first['name'] ?? 'My Pet')
+          : 'My Pet';
+      if (widget.wizardData.pets.isEmpty) {
+        widget.wizardData.pets.add({
+          'name': existingName,
+          'species': 'Dog',
+          'color': '',
+          'personality': '',
+        });
+      }
+      // Store photo keyed by name in petPhotos (not petAvatars)
+      widget.wizardData.petPhotos[existingName] = b64;
+      // Auto-select the pet as a companion
+      if (!widget.wizardData.companionNames.contains(existingName)) {
+        widget.wizardData.companionNames.add(existingName);
+      }
     });
   }
 
@@ -859,26 +866,64 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   // Page 4: "Where will your adventure happen?" (Scene selection)
-  static const List<String> _curatedSceneIds = [
-    'volcano_dragons',
-    'crystal_cavern',
-    'vanishing_colors',
-    'big_feelings_quest',
-    'safe_space',
-  ];
 
   Widget _buildPage4() {
     final age = widget.wizardData.characterAge;
     final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final placeTitle = band.band == AgeBand.creator
+        ? 'Setting'
+        : band.band == AgeBand.adventurer
+            ? 'Choose your setting'
+            : 'Where to adventure?';
+    final isImagineItSelected =
+        widget.wizardData.selectedScenario == 'safe_space';
 
-    // Sprout/Explorer bands get 5 curated scenes; Adventurer/Creator get all
-    final showAll = band.band == AgeBand.adventurer || band.band == AgeBand.creator;
-    final scenes = showAll
-        ? ScenarioData.all
-        : ScenarioData.all.where((s) => _curatedSceneIds.contains(s.id)).toList();
+    // The 5 featured scene buttons with their image assets
+    final featuredButtons = [
+      _SceneButtonData(
+        id: 'vanishing_colors',
+        label: ScenarioData.all
+            .firstWhere((s) => s.id == 'vanishing_colors')
+            .titleForAge(age),
+        normalAsset:
+            'assets/images/scenarios/rainbow_land_btn.png',
+        pressedAsset:
+            'assets/images/scenarios/rainbow_land_btn_pressed.png',
+      ),
+      _SceneButtonData(
+        id: 'crystal_cavern',
+        label: ScenarioData.all
+            .firstWhere((s) => s.id == 'crystal_cavern')
+            .titleForAge(age),
+        normalAsset:
+            'assets/images/scenarios/crystal_cave_btn.png',
+        pressedAsset:
+            'assets/images/scenarios/crystal_cave_btn_pressed.png',
+      ),
+      _SceneButtonData(
+        id: 'volcano_dragons',
+        label: ScenarioData.all
+            .firstWhere((s) => s.id == 'volcano_dragons')
+            .titleForAge(age),
+        normalAsset:
+            'assets/images/scenarios/dragon_friends_btn.png',
+        pressedAsset:
+            'assets/images/scenarios/dragon_friends_btn_pressed.png',
+      ),
+      _SceneButtonData(
+        id: 'big_feelings_quest',
+        label: ScenarioData.all
+            .firstWhere((s) => s.id == 'big_feelings_quest')
+            .titleForAge(age),
+        normalAsset:
+            'assets/images/scenarios/my_big_feelings_btn.png',
+        pressedAsset:
+            'assets/images/scenarios/my_big_feelings_btn_pressed.png',
+      ),
+    ];
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
           const SizedBox(height: 10),
@@ -889,12 +934,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  "Where to adventure?",
-                  style: GoogleFonts.cinzelDecorative(
-                    color: const Color(0xFFFFD700),
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  placeTitle,
+                  style: _bandTitleStyle(band, baseFontSize: 22),
                 ),
               ),
             ],
@@ -906,64 +947,108 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          ...scenes.map((scene) {
-            final isSelected = widget.wizardData.selectedScenario == scene.id;
-            return GestureDetector(
-              onTap: () => setState(() {
-                widget.wizardData.selectedScenario =
-                    isSelected ? null : scene.id;
-              }),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF6B3FA0).withAlpha(220)
-                      : Colors.white.withAlpha(15),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected
-                        ? const Color(0xFFFFD700)
-                        : const Color(0xFFD4A0FF).withAlpha(80),
-                    width: isSelected ? 2.0 : 1.0,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Text(scene.emoji, style: const TextStyle(fontSize: 30)),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            scene.titleForAge(age),
-                            style: GoogleFonts.fredoka(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            scene.descriptionForAge(age),
-                            style: const TextStyle(
-                                color: Colors.white70, fontSize: 12),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (isSelected)
-                      const Icon(Icons.check_circle_rounded,
-                          color: Color(0xFFFFD700), size: 22),
-                  ],
-                ),
+
+          // 2-column grid of featured image buttons
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.5,
+            children: featuredButtons
+                .map((btn) => _SceneImageButton(
+                      data: btn,
+                      isSelected:
+                          widget.wizardData.selectedScenario == btn.id,
+                      onTap: () => setState(() {
+                        widget.wizardData.selectedScenario =
+                            widget.wizardData.selectedScenario == btn.id
+                                ? null
+                                : btn.id;
+                      }),
+                    ))
+                .toList(),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Full-width "Imagine It" button
+          _SceneImageButton(
+            data: _SceneButtonData(
+              id: 'safe_space',
+              label: 'Imagine It',
+              normalAsset:
+                  'assets/images/scenarios/imagine_it_btn.png',
+              pressedAsset:
+                  'assets/images/scenarios/imagine_it_btn_pressed.png',
+            ),
+            isSelected: isImagineItSelected,
+            fullWidth: true,
+            onTap: () => setState(() {
+              widget.wizardData.selectedScenario =
+                  isImagineItSelected ? null : 'safe_space';
+            }),
+          ),
+
+          // "Imagine It" text input — shown when selected
+          if (isImagineItSelected) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(20),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                    color: const Color(0xFFFFD700), width: 2),
               ),
-            );
-          }),
-          const SizedBox(height: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '✨ Where do you want your adventure to take place?',
+                    style: GoogleFonts.fredoka(
+                      color: const Color(0xFFFFD700),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _imagineItController,
+                    maxLines: 3,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText:
+                          'e.g., An enchanted forest, outer space, under the ocean...',
+                      hintStyle: TextStyle(
+                          color: Colors.white.withAlpha(100),
+                          fontSize: 13,
+                          fontStyle: FontStyle.italic),
+                      filled: true,
+                      fillColor: Colors.white.withAlpha(15),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                            color: const Color(0xFFD4A0FF).withAlpha(80)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                            color: Color(0xFFFFD700), width: 2),
+                      ),
+                      contentPadding: const EdgeInsets.all(12),
+                    ),
+                    onChanged: (value) {
+                      widget.wizardData.customElements = value;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 20),
           _buildNextArrowButton(enabled: true, onTap: _heroNextPage),
           const SizedBox(height: 24),
         ],
@@ -974,6 +1059,15 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   // Page 5: "What kind of story?"
   Widget _buildPage5() {
     final data = widget.wizardData;
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final isCreator = band.band == AgeBand.creator;
+    final storyTitle = band.band == AgeBand.sprout
+        ? 'What story do you want?'
+        : band.band == AgeBand.adventurer
+            ? 'Choose your story type'
+            : isCreator
+                ? 'Story type'
+                : 'What kind of story?';
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -986,12 +1080,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  "What kind of story?",
-                  style: GoogleFonts.cinzelDecorative(
-                    color: const Color(0xFFFFD700),
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  storyTitle,
+                  style: _bandTitleStyle(band, baseFontSize: 24),
                 ),
               ),
             ],
@@ -1013,7 +1103,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 children: [
                   ImageModeOrb(
                     modeType: 'tales',
-                    label: 'Story Quest',
+                    label: isCreator ? 'Story' : 'Story Quest',
                     isActive: data.includeIllustrations,
                     onTap: () => setState(() => data.includeIllustrations = !data.includeIllustrations),
                     primaryColor: const Color(0xFFAA88FF),
@@ -1022,7 +1112,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   const SizedBox(width: 24),
                   ImageModeOrb(
                     modeType: 'rhyme',
-                    label: 'Rhyme Time',
+                    label: isCreator ? 'Poetry' : 'Rhyme Time',
                     isActive: data.rhymeTimeMode,
                     onTap: () => setState(() {
                       data.rhymeTimeMode = !data.rhymeTimeMode;
@@ -1042,7 +1132,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 children: [
                   ImageModeOrb(
                     modeType: 'reading',
-                    label: 'First Reader',
+                    label: isCreator ? 'First Chapter' : 'First Reader',
                     isActive: data.learningToReadMode,
                     onTap: () => setState(() {
                       data.learningToReadMode = !data.learningToReadMode;
@@ -1057,7 +1147,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   const SizedBox(width: 24),
                   ImageModeOrb(
                     modeType: 'pickpath',
-                    label: 'Pick a Path',
+                    label: isCreator ? 'Choose Your Path' : 'Pick a Path',
                     isActive: data.interactiveMode,
                     onTap: () => setState(() {
                       data.interactiveMode = !data.interactiveMode;
@@ -1262,61 +1352,63 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           ),
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(100),
-                borderRadius: BorderRadius.circular(2),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(100),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'Choose Your Avatar',
-              style: GoogleFonts.cinzelDecorative(
-                color: const Color(0xFFFFD700),
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 14),
+              Text(
+                'Choose Your Avatar',
+                style: GoogleFonts.cinzelDecorative(
+                  color: const Color(0xFFFFD700),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 14),
-            _AvatarOptionTile(
-              icon: Icons.auto_awesome,
-              title: 'Browse Character Gallery',
-              subtitle: 'Pick from 94 pre-made heroes & heroines',
-              onTap: () {
-                Navigator.pop(context);
-                _openAvatarGallery();
-              },
-            ),
-            const SizedBox(height: 8),
-            _AvatarOptionTile(
-              icon: Icons.tune_rounded,
-              title: 'Build Your Look',
-              subtitle: 'See heroes that match your character\'s age & vibe',
-              onTap: () {
-                Navigator.pop(context);
-                _openAvatarGallery(preFilter: true);
-              },
-            ),
-            const SizedBox(height: 8),
-            _AvatarOptionTile(
-              icon: Icons.camera_alt_rounded,
-              title: 'Upload Photo → AI Avatar',
-              subtitle: _isPremium
-                  ? 'Turn a photo into a magical storybook avatar'
-                  : '⭐ Premium — upgrade to unlock',
-              onTap: _isPremium
-                  ? () {
-                      Navigator.pop(context);
-                      _openCustomAvatarScreen();
-                    }
-                  : null,
-            ),
-          ],
+              const SizedBox(height: 14),
+              _AvatarOptionTile(
+                icon: Icons.auto_awesome,
+                title: 'Browse Character Gallery',
+                subtitle: 'Pick from 94 pre-made heroes & heroines',
+                onTap: () {
+                  Navigator.pop(context);
+                  _openAvatarGallery();
+                },
+              ),
+              const SizedBox(height: 8),
+              _AvatarOptionTile(
+                icon: Icons.tune_rounded,
+                title: 'Build Your Look',
+                subtitle: 'See heroes that match your character\'s age & vibe',
+                onTap: () {
+                  Navigator.pop(context);
+                  _openAvatarGallery(preFilter: true);
+                },
+              ),
+              const SizedBox(height: 8),
+              _AvatarOptionTile(
+                icon: Icons.camera_alt_rounded,
+                title: 'Upload Photo → AI Avatar',
+                subtitle: _isPremium
+                    ? 'Turn a photo into a magical storybook avatar'
+                    : '⭐ Premium — upgrade to unlock',
+                onTap: _isPremium
+                    ? () {
+                        Navigator.pop(context);
+                        _openCustomAvatarScreen();
+                      }
+                    : null,
+              ),
+            ],
+          ),
         ),
         ),
       ),
@@ -1665,8 +1757,41 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Widget _buildNameScrollInput() {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final fieldHeight = (band.spacingScale * 100).roundToDouble();
+    final nameFontSize = band.headingScale * 20;
+
+    if (band.band == AgeBand.creator) {
+      return TextField(
+        controller: _nameController,
+        focusNode: _nameFocusNode,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.sourceSans3(
+          fontSize: nameFontSize,
+          color: Colors.white70,
+          fontWeight: FontWeight.w600,
+        ),
+        decoration: InputDecoration(
+          hintText: 'Character name',
+          hintStyle: const TextStyle(color: Colors.white30),
+          filled: true,
+          fillColor: Colors.white.withAlpha(10),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(band.buttonRadiusBase),
+            borderSide: const BorderSide(color: Colors.white24),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(band.buttonRadiusBase),
+            borderSide: const BorderSide(color: Color(0xFF7C4DFF)),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+        onChanged: (v) => setState(() => widget.wizardData.characterName = v.trim()),
+      );
+    }
+
     return SizedBox(
-      height: 100,
+      height: fieldHeight,
       child: Stack(
         children: [
           Positioned.fill(child: Image.asset('assets/images/ui/scroll_name_input.png', fit: BoxFit.fill)),
@@ -1677,7 +1802,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 controller: _nameController,
                 focusNode: _nameFocusNode,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.cinzelDecorative(fontSize: 20, color: const Color(0xFF3A1C00), fontWeight: FontWeight.w700),
+                style: GoogleFonts.cinzelDecorative(fontSize: nameFontSize, color: const Color(0xFF3A1C00), fontWeight: FontWeight.w700),
                 decoration: const InputDecoration(
                   hintText: "Hero's Name",
                   border: InputBorder.none,
@@ -1693,9 +1818,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Widget _buildArchetypeCards() {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final cardHeight = 260 * band.spacingScale;
     final archetypes = CharacterArchetypes.all;
     return SizedBox(
-      height: 260,
+      height: cardHeight,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: archetypes.length,
@@ -2206,14 +2333,63 @@ class _QuickCompanion {
 
 // ── Companion Image Grid ─────────────────────────────────────────────────────
 
+// Each companion has a fixed personality that stays consistent across stories.
+class _CompanionData {
+  final String id;
+  final String name;
+  final String tagline;
+  final String personality; // Sent to AI prompt so quirks stay consistent
+  const _CompanionData({
+    required this.id,
+    required this.name,
+    required this.tagline,
+    required this.personality,
+  });
+}
+
 const _companions = [
-  (id: 'dragon', name: 'Dragon'),
-  (id: 'owl', name: 'Wise Owl'),
-  (id: 'cat', name: 'Shadow Cat'),
-  (id: 'dog', name: 'Star Dog'),
-  (id: 'unicorn', name: 'Unicorn'),
-  (id: 'fox', name: 'Clever Fox'),
-  (id: 'robin', name: 'Rockin\' Robin'),
+  _CompanionData(
+    id: 'dragon',
+    name: 'Ember',
+    tagline: 'Sneezes sparks when excited',
+    personality: 'Ember the dragon is enthusiastic and a little clumsy, always sneezing sparks at the worst moment but never giving up. Fiercely loyal and secretly loves lullabies.',
+  ),
+  _CompanionData(
+    id: 'owl',
+    name: 'Professor Hoot',
+    tagline: 'Knows every fact except social cues',
+    personality: 'Professor Hoot the wise owl is brilliant but hilariously overthinks everything, quoting obscure facts at random. Has a soft spot for riddles and terrible puns.',
+  ),
+  _CompanionData(
+    id: 'cat',
+    name: 'Midnight',
+    tagline: 'Cool, mysterious, secretly a softie',
+    personality: 'Midnight the shadow cat acts indifferent and aloof but always shows up exactly when needed. Purrs at starlight and pretends not to care about hugs — but secretly loves them.',
+  ),
+  _CompanionData(
+    id: 'dog',
+    name: 'Cosmo',
+    tagline: 'Bravest tail-wagger in the galaxy',
+    personality: 'Cosmo the star dog is endlessly optimistic and zoomy, convinced every new place is the greatest place ever. Loves high-fives, gets distracted by interesting smells, and never backs down from a challenge.',
+  ),
+  _CompanionData(
+    id: 'unicorn',
+    name: 'Stardust',
+    tagline: 'Leaves glitter trails everywhere',
+    personality: 'Stardust the unicorn is dreamy and kind, turning problems into rainbows wherever possible. Speaks in gentle riddles and occasionally trips on her own sparkles.',
+  ),
+  _CompanionData(
+    id: 'fox',
+    name: 'Remy',
+    tagline: 'Has a plan for everything (almost)',
+    personality: 'Remy the clever fox is quick-witted and resourceful, always three steps ahead — except when emotions are involved, where he\'s completely lost. Secretly collects shiny objects.',
+  ),
+  _CompanionData(
+    id: 'robin',
+    name: 'Rockin\' Robin',
+    tagline: 'Sings solutions to every problem',
+    personality: 'Rockin\' Robin bursts into song at dramatic moments, turning every challenge into a musical number. Tiny but fierce, and deeply believes that the right song can fix anything.',
+  ),
 ];
 
 class _CompanionImageGrid extends StatelessWidget {
@@ -2224,42 +2400,91 @@ class _CompanionImageGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: _companions.map((c) {
-        final isSelected = wizardData.companionNames.contains(c.name);
-        return _CompanionImageButton(
-          id: c.id,
-          name: c.name,
-          isSelected: isSelected,
-          onTap: () {
-            if (isSelected) {
-              wizardData.companionNames.remove(c.name);
-              wizardData.selectedCompanions.remove(c.id);
-            } else {
-              wizardData.companionNames.add(c.name);
-              wizardData.selectedCompanions.add(c.id);
-            }
-            onChanged();
-          },
-        );
-      }).toList(),
-    );
+    // Build companion buttons list
+    final List<Widget> buttons = _companions.map((c) {
+      final isSelected = wizardData.companionNames.contains(c.name);
+      return _CompanionImageButton(
+        id: c.id,
+        name: c.name,
+        tagline: c.tagline,
+        isSelected: isSelected,
+        onTap: () {
+          if (isSelected) {
+            wizardData.companionNames.remove(c.name);
+            wizardData.selectedCompanions.remove(c.id);
+          } else {
+            wizardData.companionNames.add(c.name);
+            wizardData.selectedCompanions.add(c.id);
+          }
+          onChanged();
+        },
+      );
+    }).toList();
+
+    // If a pet photo exists, slot it in as the 8th button (filling the pyramid)
+    final petEntry = wizardData.pets.isNotEmpty ? wizardData.pets.first : null;
+    final petPhoto = petEntry != null
+        ? wizardData.petPhotos[petEntry['name'] ?? 'My Pet']
+        : null;
+    if (petEntry != null) {
+      final petName = petEntry['name'] ?? 'My Pet';
+      final isSelected = wizardData.companionNames.contains(petName);
+      buttons.add(_CompanionImageButton(
+        id: 'my_pet',
+        name: petName,
+        tagline: '${petEntry['color'] ?? ''} ${petEntry['species'] ?? 'pet'}'.trim(),
+        isSelected: isSelected,
+        photoBase64: petPhoto,
+        onTap: () {
+          if (isSelected) {
+            wizardData.companionNames.remove(petName);
+          } else {
+            wizardData.companionNames.add(petName);
+          }
+          onChanged();
+        },
+      ));
+    }
+
+    // Pyramid layout: rows of 4, then remainder centered
+    final rows = <Widget>[];
+    const perRow = 4;
+    for (int i = 0; i < buttons.length; i += perRow) {
+      final rowItems = buttons.sublist(
+          i, (i + perRow) > buttons.length ? buttons.length : i + perRow);
+      rows.add(Row(
+        mainAxisAlignment: rowItems.length == perRow
+            ? MainAxisAlignment.spaceBetween
+            : MainAxisAlignment.center,
+        children: rowItems
+            .map((b) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: b,
+                ))
+            .toList(),
+      ));
+      if (i + perRow < buttons.length) rows.add(const SizedBox(height: 12));
+    }
+
+    return Column(children: rows);
   }
 }
 
 class _CompanionImageButton extends StatefulWidget {
   final String id;
   final String name;
+  final String tagline;
   final bool isSelected;
   final VoidCallback onTap;
+  final String? photoBase64; // Real pet photo (base64 data URI)
 
   const _CompanionImageButton({
     required this.id,
     required this.name,
+    required this.tagline,
     required this.isSelected,
     required this.onTap,
+    this.photoBase64,
   });
 
   @override
@@ -2276,7 +2501,31 @@ class _CompanionImageButtonState extends State<_CompanionImageButton> {
 
   @override
   Widget build(BuildContext context) {
-    const double size = 100;
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final size = (band.touchTargetMin / 64.0 * 100).roundToDouble();
+
+    Widget imageWidget;
+    if (widget.photoBase64 != null && widget.photoBase64!.isNotEmpty) {
+      // Real pet photo
+      final bytes = base64Decode(
+          widget.photoBase64!.replaceFirst(RegExp(r'data:[^,]+,'), ''));
+      imageWidget = Image.memory(bytes,
+          width: size, height: size, fit: BoxFit.cover);
+    } else {
+      imageWidget = Image.asset(
+        _pressed ? _pressedImage : _normalImage,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          width: size,
+          height: size,
+          color: const Color(0xFF3A2363),
+          child: const Icon(Icons.pets, color: Colors.white54, size: 40),
+        ),
+      );
+    }
+
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) {
@@ -2287,79 +2536,83 @@ class _CompanionImageButtonState extends State<_CompanionImageButton> {
       child: AnimatedScale(
         scale: _pressed ? 0.90 : 1.0,
         duration: const Duration(milliseconds: 100),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
+        child: SizedBox(
+          width: size + 8,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: widget.isSelected
+                        ? const Color(0xFFFFD700)
+                        : Colors.white24,
+                    width: widget.isSelected ? 3 : 1.5,
+                  ),
+                  boxShadow: widget.isSelected
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFFFFD700).withAlpha(120),
+                            blurRadius: 16,
+                            spreadRadius: 2,
+                          )
+                        ]
+                      : [],
+                ),
+                child: Stack(
+                  children: [
+                    ClipOval(child: imageWidget),
+                    if (widget.isSelected)
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Container(
+                          width: 22,
+                          height: 22,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(0xFFFFD700),
+                          ),
+                          child: const Icon(Icons.check,
+                              color: Colors.black, size: 14),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                widget.name,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
                   color: widget.isSelected
                       ? const Color(0xFFFFD700)
-                      : Colors.white24,
-                  width: widget.isSelected ? 3 : 1.5,
+                      : Colors.white,
                 ),
-                boxShadow: widget.isSelected
-                    ? [
-                        BoxShadow(
-                          color: const Color(0xFFFFD700).withAlpha(120),
-                          blurRadius: 16,
-                          spreadRadius: 2,
-                        )
-                      ]
-                    : [],
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              child: Stack(
-                children: [
-                  ClipOval(
-                    child: Image.asset(
-                      _pressed ? _pressedImage : _normalImage,
-                      width: size,
-                      height: size,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        width: size,
-                        height: size,
-                        color: const Color(0xFF3A2363),
-                        child: const Icon(Icons.pets,
-                            color: Colors.white54, size: 40),
-                      ),
-                    ),
-                  ),
-                  if (widget.isSelected)
-                    Positioned(
-                      top: 4,
-                      right: 4,
-                      child: Container(
-                        width: 22,
-                        height: 22,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xFFFFD700),
-                        ),
-                        child: const Icon(Icons.check,
-                            color: Colors.black, size: 14),
-                      ),
-                    ),
-                ],
+              Text(
+                widget.tagline,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 9,
+                  color: widget.isSelected
+                      ? const Color(0xFFFFD700).withAlpha(200)
+                      : Colors.white54,
+                  fontStyle: FontStyle.italic,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              widget.name,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: widget.isSelected
-                    ? const Color(0xFFFFD700)
-                    : Colors.white,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -2368,62 +2621,262 @@ class _CompanionImageButtonState extends State<_CompanionImageButton> {
 
 // ── Add Pet Photo Button ─────────────────────────────────────────────────────
 
-class _AddPetPhotoButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _AddPetPhotoButton({required this.onTap});
+/// Full pet card — shows "Add Your Pet" prompt when no pet added,
+/// or shows the photo + editable name/species/color fields once added.
+class _PetCard extends StatefulWidget {
+  final WizardData wizardData;
+  final VoidCallback onPickPhoto;
+  final VoidCallback onChanged;
+
+  const _PetCard({
+    required this.wizardData,
+    required this.onPickPhoto,
+    required this.onChanged,
+  });
+
+  @override
+  State<_PetCard> createState() => _PetCardState();
+}
+
+class _PetCardState extends State<_PetCard> {
+  late TextEditingController _nameCtrl;
+  late TextEditingController _colorCtrl;
+  String _species = 'Dog';
+
+  static const _speciesOptions = [
+    'Dog', 'Cat', 'Bird', 'Rabbit', 'Hamster', 'Fish',
+    'Turtle', 'Snake', 'Horse', 'Guinea Pig', 'Other',
+  ];
+
+  Map<String, String>? get _pet =>
+      widget.wizardData.pets.isNotEmpty ? widget.wizardData.pets.first : null;
+
+  String? get _photo {
+    final name = _pet?['name'] ?? 'My Pet';
+    return widget.wizardData.petPhotos[name];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _nameCtrl = TextEditingController(text: _pet?['name'] ?? '');
+    _colorCtrl = TextEditingController(text: _pet?['color'] ?? '');
+    _species = _pet?['species'] ?? 'Dog';
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _colorCtrl.dispose();
+    super.dispose();
+  }
+
+  void _updatePet() {
+    final oldName = _pet?['name'] ?? 'My Pet';
+    final newName = _nameCtrl.text.trim().isEmpty ? 'My Pet' : _nameCtrl.text.trim();
+    final photo = widget.wizardData.petPhotos[oldName];
+    if (widget.wizardData.pets.isEmpty) {
+      widget.wizardData.pets.add({});
+    }
+    widget.wizardData.pets[0] = {
+      'name': newName,
+      'species': _species,
+      'color': _colorCtrl.text.trim(),
+      'personality': '',
+    };
+    // Rename photo key if name changed
+    if (photo != null && oldName != newName) {
+      widget.wizardData.petPhotos.remove(oldName);
+      widget.wizardData.petPhotos[newName] = photo;
+    }
+    // Keep companionNames in sync
+    if (widget.wizardData.companionNames.contains(oldName) && oldName != newName) {
+      widget.wizardData.companionNames.remove(oldName);
+      widget.wizardData.companionNames.add(newName);
+    }
+    widget.onChanged();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: const Color(0xFFD4A0FF).withAlpha(150),
-            width: 1.5,
-            // dashed effect approximated via low opacity + style
+    final hasPet = _pet != null;
+    final photo = _photo;
+
+    if (!hasPet) {
+      // "Add Your Pet" prompt
+      return GestureDetector(
+        onTap: widget.onPickPhoto,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFFD4A0FF).withAlpha(150),
+              width: 1.5,
+            ),
+            color: Colors.white.withAlpha(8),
           ),
-          color: Colors.white.withAlpha(8),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFD4A0FF).withAlpha(40),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFD4A0FF).withAlpha(40),
+                ),
+                child: const Icon(Icons.add_a_photo_rounded,
+                    color: Color(0xFFD4A0FF), size: 26),
               ),
-              child: const Icon(Icons.camera_alt_rounded,
-                  color: Color(0xFFD4A0FF), size: 22),
-            ),
-            const SizedBox(width: 12),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Add Your Pet',
-                  style: TextStyle(
-                    color: Color(0xFFD4A0FF),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Bring Your Pet!',
+                        style: TextStyle(
+                          color: Color(0xFFD4A0FF),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        )),
+                    SizedBox(height: 3),
+                    Text(
+                      'Add a photo and we\'ll put them in the story',
+                      style: TextStyle(color: Colors.white54, fontSize: 12),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 2),
-                Text(
-                  '(tap to snap or pick photo)',
-                  style: TextStyle(color: Colors.white54, fontSize: 11),
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
+      );
+    }
+
+    // Pet card with photo + detail fields
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFD4A0FF).withAlpha(150), width: 1.5),
+        color: Colors.white.withAlpha(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // Photo circle (tap to change)
+              GestureDetector(
+                onTap: widget.onPickPhoto,
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFFD4A0FF), width: 2),
+                        color: const Color(0xFF3A2363),
+                      ),
+                      child: ClipOval(
+                        child: photo != null && photo.isNotEmpty
+                            ? Image.memory(
+                                base64Decode(photo.replaceFirst(RegExp(r'data:[^,]+,'), '')),
+                                fit: BoxFit.cover,
+                              )
+                            : const Icon(Icons.pets, color: Colors.white54, size: 36),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xFFD4A0FF),
+                        ),
+                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  children: [
+                    // Name field
+                    TextField(
+                      controller: _nameCtrl,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      decoration: _petFieldDecoration('Pet\'s name (e.g. Spot)'),
+                      onChanged: (_) => _updatePet(),
+                    ),
+                    const SizedBox(height: 8),
+                    // Color field
+                    TextField(
+                      controller: _colorCtrl,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      decoration: _petFieldDecoration('Color (e.g. golden, black & white)'),
+                      onChanged: (_) => _updatePet(),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Species dropdown
+          DropdownButtonFormField<String>(
+            value: _species,
+            dropdownColor: const Color(0xFF2C1B47),
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+            decoration: _petFieldDecoration('Type of animal'),
+            items: _speciesOptions
+                .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                .toList(),
+            onChanged: (v) {
+              if (v != null) {
+                setState(() => _species = v);
+                _updatePet();
+              }
+            },
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'The AI will always use the right name, color, and species!',
+            style: TextStyle(
+                color: Colors.white.withAlpha(100),
+                fontSize: 10,
+                fontStyle: FontStyle.italic),
+          ),
+        ],
       ),
     );
   }
+
+  InputDecoration _petFieldDecoration(String hint) => InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: Colors.white.withAlpha(80), fontSize: 12),
+        filled: true,
+        fillColor: Colors.white.withAlpha(15),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: const Color(0xFFD4A0FF).withAlpha(80)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFFD4A0FF), width: 1.5),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: const Color(0xFFD4A0FF).withAlpha(60)),
+        ),
+      );
 }
 
 // ── Friend Chip Button ────────────────────────────────────────────────────────
@@ -2635,6 +3088,8 @@ class _GenderImageButtonState extends State<_GenderImageButton> {
 
   @override
   Widget build(BuildContext context) {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final imageSize = (band.touchTargetMin / 64.0 * 100).roundToDouble();
     return GestureDetector(
       onTap: widget.onTap,
       onTapDown: (_) => setState(() => _pressed = true),
@@ -2665,8 +3120,8 @@ class _GenderImageButtonState extends State<_GenderImageButton> {
                 duration: const Duration(milliseconds: 120),
                 child: Image.asset(
                   _imagePath,
-                  width: 108,
-                  height: 108,
+                  width: imageSize,
+                  height: imageSize,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -2707,6 +3162,8 @@ class _PressableArrowButtonState extends State<_PressableArrowButton> {
 
   @override
   Widget build(BuildContext context) {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final btnSize = (band.touchTargetMin / 64.0 * 80).roundToDouble();
     return Opacity(
       opacity: widget.enabled ? 1.0 : 0.4,
       child: GestureDetector(
@@ -2719,8 +3176,8 @@ class _PressableArrowButtonState extends State<_PressableArrowButton> {
           duration: const Duration(milliseconds: 80),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 80),
-            width: 80,
-            height: 80,
+            width: btnSize,
+            height: btnSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
@@ -2736,7 +3193,164 @@ class _PressableArrowButtonState extends State<_PressableArrowButton> {
                 ),
               ],
             ),
-            child: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 40),
+            child: Icon(Icons.arrow_forward_rounded, color: Colors.white, size: btnSize * 0.5),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Scene Image Button helpers ──────────────────────────────────────────────
+
+class _SceneButtonData {
+  final String id;
+  final String label;
+  final String normalAsset;
+  final String pressedAsset;
+
+  const _SceneButtonData({
+    required this.id,
+    required this.label,
+    required this.normalAsset,
+    required this.pressedAsset,
+  });
+}
+
+class _SceneImageButton extends StatefulWidget {
+  final _SceneButtonData data;
+  final bool isSelected;
+  final bool fullWidth;
+  final VoidCallback onTap;
+
+  const _SceneImageButton({
+    required this.data,
+    required this.isSelected,
+    required this.onTap,
+    this.fullWidth = false,
+  });
+
+  @override
+  State<_SceneImageButton> createState() => _SceneImageButtonState();
+}
+
+class _SceneImageButtonState extends State<_SceneImageButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final asset =
+        _pressed ? widget.data.pressedAsset : widget.data.normalAsset;
+
+    return Semantics(
+      button: true,
+      selected: widget.isSelected,
+      label: widget.data.label,
+      child: GestureDetector(
+        onTapDown: (_) {
+          HapticFeedback.lightImpact();
+          setState(() => _pressed = true);
+        },
+        onTapUp: (_) {
+          setState(() => _pressed = false);
+          widget.onTap();
+        },
+        onTapCancel: () => setState(() => _pressed = false),
+        child: AnimatedScale(
+          scale: _pressed ? 0.93 : 1.0,
+          duration: const Duration(milliseconds: 80),
+          child: Container(
+            width: widget.fullWidth ? double.infinity : null,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: widget.isSelected
+                    ? const Color(0xFFFFD700)
+                    : Colors.transparent,
+                width: widget.isSelected ? 3 : 0,
+              ),
+              boxShadow: widget.isSelected
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFFFFD700).withAlpha(120),
+                        blurRadius: 16,
+                        spreadRadius: 2,
+                      )
+                    ]
+                  : null,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Stack(
+                children: [
+                  // Image
+                  Image.asset(
+                    asset,
+                    width: widget.fullWidth ? double.infinity : null,
+                    height: widget.fullWidth ? 110 : null,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: widget.fullWidth ? 110 : 80,
+                      color: const Color(0xFF3A1070),
+                      child: Center(
+                        child: Text(widget.data.label,
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 14)),
+                      ),
+                    ),
+                  ),
+                  // Label overlay at bottom
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 6),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.transparent, Color(0xCC1A0040)],
+                        ),
+                      ),
+                      child: Text(
+                        widget.data.label,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                                color: Colors.black,
+                                blurRadius: 4,
+                                offset: Offset(0, 1))
+                          ],
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  // Checkmark overlay when selected
+                  if (widget.isSelected)
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFFD700),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.check,
+                            color: Colors.black, size: 14),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

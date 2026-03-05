@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../theme/age_band_theme.dart';
 
 /// Crystal-orb wizard progress indicator.
 ///
@@ -23,6 +25,7 @@ class MoonPhaseProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final band = Theme.of(context).extension<AgeBandThemeData>();
     // Short labels for the visible text beneath each orb.
     final shortLabels = stepLabels
         .map((l) => l.replaceFirst(RegExp(r'^Step \d+:\s*'), ''))
@@ -56,13 +59,10 @@ class MoonPhaseProgress extends StatelessWidget {
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight:
-                            isActive ? FontWeight.bold : FontWeight.normal,
-                        color: isActive || isCompleted
-                            ? Colors.white
-                            : Colors.white38,
+                      style: _moonLabelStyle(
+                        band,
+                        isActive: isActive,
+                        isCompleted: isCompleted,
                       ),
                     ),
                   ),
@@ -73,6 +73,26 @@ class MoonPhaseProgress extends StatelessWidget {
         }),
       ),
     );
+  }
+}
+
+TextStyle _moonLabelStyle(
+  AgeBandThemeData? band, {
+  required bool isActive,
+  required bool isCompleted,
+}) {
+  final color = (isActive || isCompleted) ? Colors.white : Colors.white38;
+  final weight = isActive ? FontWeight.bold : FontWeight.normal;
+  const size = 10.0;
+  switch (band?.uiFontFamily) {
+    case 'Nunito':
+      return GoogleFonts.nunito(fontSize: size, fontWeight: weight, color: color);
+    case 'Bitter':
+      return GoogleFonts.bitter(fontSize: size, fontWeight: weight, color: color);
+    case 'SourceSansPro':
+      return GoogleFonts.sourceSans3(fontSize: size, fontWeight: weight, color: color);
+    default:
+      return GoogleFonts.quicksand(fontSize: size, fontWeight: weight, color: color);
   }
 }
 

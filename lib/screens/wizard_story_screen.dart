@@ -192,15 +192,20 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
                           fit: BoxFit.scaleDown,
                           child: Builder(
                             builder: (context) {
-                              return MoonPhaseProgress(
-                                currentStep: _progressStep,
-                                totalSteps: 4,
-                                stepLabels: const [
-                                  'Create Hero',
-                                  'Pick Team',
-                                  'Pick Place',
-                                  'Make Magic',
-                                ],
+                              final stepLabels = band.band == AgeBand.sprout
+                                  ? const ['My Hero!', 'My Buddies!', 'My World!', 'Make Magic!']
+                                  : band.band == AgeBand.adventurer
+                                      ? const ['My Character', 'My Companions', 'Setting', 'Begin']
+                                      : band.band == AgeBand.creator
+                                          ? const ['Character', 'Companions', 'Setting', 'Begin']
+                                          : const ['Create Hero', 'Pick Team', 'Pick Place', 'Make Magic'];
+                              return Transform.scale(
+                                scale: band.spacingScale,
+                                child: MoonPhaseProgress(
+                                  currentStep: _progressStep,
+                                  totalSteps: 4,
+                                  stepLabels: stepLabels,
+                                ),
                               );
                             },
                           ),
