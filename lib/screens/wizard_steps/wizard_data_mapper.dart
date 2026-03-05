@@ -50,9 +50,19 @@ class WizardDataMapper {
     if (data.generatedAvatar != null) {
       final avatarJson = data.generatedAvatar!.toJson();
       characterDetails['generatedAvatar'] = avatarJson;
-      characterDetails['avatar'] = avatarJson; // illustration backend key
-      // Extract simple string fields from attributes (override only if not already set)
+
+      // Flatten attributes so backend can read avatar['hairColor'] etc. directly.
+      // GeneratedAvatar.toJson() nests them under 'attributes' with snake_case keys;
+      // the backend gemini_image_generator reads camelCase at the avatar root level.
       final attrs = data.generatedAvatar!.attributes;
+      final flatAvatar = Map<String, dynamic>.from(avatarJson)
+        ..['hairColor']  = attrs['hair_color'] ?? attrs['hairColor'] ?? ''
+        ..['hairStyle']  = attrs['hair_style'] ?? attrs['hairStyle'] ?? ''
+        ..['skinColor']  = attrs['skin_tone']  ?? attrs['skinTone']  ?? ''
+        ..['topType']    = attrs['outfit']      ?? attrs['topType']   ?? '';
+      characterDetails['avatar'] = flatAvatar; // illustration backend key
+
+      // Promote hair/skin to top-level if not already set by manual picks
       if (characterDetails['hair'] == null) {
         final h = attrs['hair_color'] ?? attrs['hairColor'];
         if (h != null && h.isNotEmpty) characterDetails['hair'] = h;

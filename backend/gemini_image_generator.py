@@ -86,6 +86,26 @@ class GeminiImageGenerator:
         finally:
             executor.shutdown(wait=False, cancel_futures=True)
 
+    def _read_avatar_details(self, avatar: dict) -> list:
+        """Extract appearance strings from avatar dict.
+        Supports both flat camelCase keys (Flutter mapper output) and nested
+        'attributes' dict (raw GeneratedAvatar.toJson() format)."""
+        details = []
+        attrs = avatar.get('attributes') or {}
+        hair_style = avatar.get('hairStyle') or attrs.get('hair_style') or attrs.get('hairStyle')
+        hair_color = avatar.get('hairColor') or attrs.get('hair_color') or attrs.get('hairColor')
+        skin_color = avatar.get('skinColor') or attrs.get('skin_tone')  or attrs.get('skinTone')
+        top_type   = avatar.get('topType')   or attrs.get('outfit')     or attrs.get('topType')
+        if hair_style:
+            details.append(f"hairstyle: {hair_style}")
+        if hair_color:
+            details.append(f"hair color: {hair_color}")
+        if skin_color:
+            details.append(f"skin: {skin_color}")
+        if top_type:
+            details.append(f"clothing: {top_type}")
+        return details
+
     def generate_story_illustration(
         self,
         scene_description: str,
@@ -152,15 +172,7 @@ class GeminiImageGenerator:
 
             # Add avatar details if available
             if character_appearance.get('avatar'):
-                avatar = character_appearance['avatar']
-                if avatar.get('hairStyle'):
-                    appearance_details.append(f"hairstyle: {avatar['hairStyle']}")
-                if avatar.get('hairColor'):
-                    appearance_details.append(f"hair color: {avatar['hairColor']}")
-                if avatar.get('skinColor'):
-                    appearance_details.append(f"skin: {avatar['skinColor']}")
-                if avatar.get('topType'):
-                    appearance_details.append(f"clothing: {avatar['topType']}")
+                appearance_details.extend(self._read_avatar_details(character_appearance['avatar']))
 
             if appearance_details:
                 character_description += f" ({', '.join(appearance_details)})"
@@ -320,15 +332,7 @@ Style: {style}, optimized for {age_descriptor}
 
             # Add avatar details if available
             if character_appearance.get('avatar'):
-                avatar = character_appearance['avatar']
-                if avatar.get('hairStyle'):
-                    appearance_details.append(f"hairstyle: {avatar['hairStyle']}")
-                if avatar.get('hairColor'):
-                    appearance_details.append(f"hair color: {avatar['hairColor']}")
-                if avatar.get('skinColor'):
-                    appearance_details.append(f"skin: {avatar['skinColor']}")
-                if avatar.get('topType'):
-                    appearance_details.append(f"clothing: {avatar['topType']}")
+                appearance_details.extend(self._read_avatar_details(character_appearance['avatar']))
 
             if appearance_details:
                 character_description += f" ({', '.join(appearance_details)})"

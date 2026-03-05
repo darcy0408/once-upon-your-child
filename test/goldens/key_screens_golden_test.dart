@@ -120,9 +120,6 @@ void main() {
     ApiServiceManager.setTestClient(null);
   });
 
-  // CinzelDecorative-Bold is not bundled in test assets and cannot be fetched
-  // at runtime (TestWidgetsFlutterBinding blocks all HTTP). Bundle the font
-  // in pubspec.yaml assets to re-enable this golden.
   testWidgets('Age gate screen', (tester) async {
     await pumpGoldenApp(
       tester,
@@ -136,7 +133,7 @@ void main() {
       find.byType(Scaffold),
       matchesGoldenFile('age_gate_screen.png'),
     );
-  }, skip: true);
+  });
 
   testWidgets('Subscription management screen', (tester) async {
     await pumpGoldenApp(tester, _buildSubscriptionManagementScreen());
