@@ -9,6 +9,7 @@ import '../providers/age_band_provider.dart';
 import '../services/parental_consent_service.dart';
 import '../theme/app_theme.dart';
 import 'parental_consent_screen.dart';
+import 'parent_controls_screen.dart';
 
 const _kUserNameKey = 'user_name';
 
@@ -114,6 +115,18 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF120226),
+      // Small gear icon for parents to reach controls without cluttering the UI
+      floatingActionButton: FloatingActionButton.small(
+        backgroundColor: Colors.white.withAlpha(30),
+        foregroundColor: Colors.white70,
+        tooltip: 'Parent Controls',
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ParentControlsScreen()),
+        ),
+        child: const Icon(Icons.settings_outlined),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -433,11 +446,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     }
   }
 
-  void _showSnack(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
-  }
 }
 
 /// Button that scales down on press for tactile feedback.

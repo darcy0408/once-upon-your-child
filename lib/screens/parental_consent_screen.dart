@@ -23,6 +23,7 @@ class ParentalConsentScreen extends StatefulWidget {
 class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   String? _parentEmail;
   bool _consentGiven = false;
+  bool _allowPhotoAvatar = true;
   bool _submitting = false;
 
   @override
@@ -83,6 +84,11 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                 const Text('• Provide therapeutic content for emotional growth', style: textWhite),
                 const Text('• Collect minimal data (story preferences only)', style: textWhite),
                 const Text("• Never sell or share your child's information", style: textWhite),
+                const Text(
+                  '• Optionally let your child use a photo to create a personalised avatar'
+                  ' — stored only on this device, never uploaded',
+                  style: textWhite,
+                ),
                 const SizedBox(height: AppSpacing.md),
                 TextField(
                   style: const TextStyle(color: Colors.white),
@@ -109,6 +115,30 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                   ),
                   keyboardType: TextInputType.emailAddress,
                   onChanged: (value) => _parentEmail = value,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                // ── Photo avatar opt-out ───────────────────────────────────
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(20),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white38),
+                  ),
+                  child: SwitchListTile(
+                    title: const Text(
+                      'Allow photo-based avatar creation',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: const Text(
+                      'Your child can use a selfie to create their avatar. '
+                      'Photos are processed on-device and never uploaded.',
+                      style: TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                    activeThumbColor: const Color(0xFFFFD700),
+                    value: _allowPhotoAvatar,
+                    onChanged: (value) =>
+                        setState(() => _allowPhotoAvatar = value),
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Container(
@@ -193,6 +223,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
         age: widget.declaredAge,
         parentEmail: _parentEmail?.trim(),
         method: 'parent',
+        allowPhotoAvatar: _allowPhotoAvatar,
       );
       if (!mounted) return;
       Navigator.of(context).pop(true);

@@ -19,6 +19,7 @@ import '../../services/api_service_manager.dart';
 import '../../services/avatar_generation_state.dart';
 import '../../services/firebase_analytics_service.dart';
 import '../../services/audio_ambience_service.dart';
+import '../../services/parental_consent_service.dart';
 import '../../widgets/image_mode_orb.dart';
 import '../../widgets/image_crystal_formation.dart';
 import '../../data/scenario_data.dart';
@@ -61,6 +62,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   GeneratedAvatar? _generatedAvatar;
   String? _customAvatarFilePath;
   bool _isPremium = false;
+  bool _allowPhotoAvatar = true; // loaded from parental consent pref
 
   // ─── Progressive-Disclosure State ───────────────────────────────────────────
   final List<String> _selectedPersonalityChips = [];
@@ -162,6 +164,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     AvatarGenerationState().addListener(_onAvatarStateChanged);
     ApiServiceManager.hasPremiumAccess().then((premium) {
       if (mounted) setState(() => _isPremium = premium);
+    });
+    const ParentalConsentService().getAllowPhotoAvatar().then((allow) {
+      if (mounted) setState(() => _allowPhotoAvatar = allow);
     });
 
     if (widget.wizardData.characterId != null &&
@@ -1512,19 +1517,20 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 },
               ),
               const SizedBox(height: 8),
-              _AvatarOptionTile(
-                icon: Icons.camera_alt_rounded,
-                title: 'Upload Photo → AI Avatar',
-                subtitle: _isPremium
-                    ? 'Turn a photo into a magical storybook avatar'
-                    : '⭐ Premium — upgrade to unlock',
-                onTap: _isPremium
-                    ? () {
-                        Navigator.pop(context);
-                        _openCustomAvatarScreen();
-                      }
-                    : null,
-              ),
+              if (_allowPhotoAvatar)
+                _AvatarOptionTile(
+                  icon: Icons.camera_alt_rounded,
+                  title: 'Upload Photo → AI Avatar',
+                  subtitle: _isPremium
+                      ? 'Turn a photo into a magical storybook avatar'
+                      : '⭐ Premium — upgrade to unlock',
+                  onTap: _isPremium
+                      ? () {
+                          Navigator.pop(context);
+                          _openCustomAvatarScreen();
+                        }
+                      : null,
+                ),
             ],
           ),
         ),
