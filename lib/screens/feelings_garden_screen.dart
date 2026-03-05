@@ -123,6 +123,7 @@ class _FeelingsGardenScreenState extends State<FeelingsGardenScreen>
                         children: [
                           _HowBigZone(
                             band: band,
+                            childAge: widget.childAge,
                             selectedCore: _selectedCore,
                             intensity: _intensity,
                             onCoreSelected: (c) =>
@@ -163,6 +164,7 @@ class _FeelingsGardenScreenState extends State<FeelingsGardenScreen>
                       )
                     : _HowBigZone(
                         band: band,
+                        childAge: widget.childAge,
                         selectedCore: _selectedCore,
                         intensity: _intensity,
                         onCoreSelected: (c) =>
@@ -297,6 +299,7 @@ class _FeelingsGardenScreenState extends State<FeelingsGardenScreen>
 
 class _HowBigZone extends StatelessWidget {
   final AgeBandThemeData band;
+  final int childAge;
   final CoreEmotion? selectedCore;
   final double intensity;
   final ValueChanged<CoreEmotion> onCoreSelected;
@@ -304,14 +307,84 @@ class _HowBigZone extends StatelessWidget {
 
   const _HowBigZone({
     required this.band,
+    required this.childAge,
     required this.selectedCore,
     required this.intensity,
     required this.onCoreSelected,
     required this.onIntensityChanged,
   });
 
+  static const _sproutEmotions = [
+    {'id': 'happy', 'emoji': '😊', 'label': 'Happy'},
+    {'id': 'sad', 'emoji': '😢', 'label': 'Sad'},
+    {'id': 'angry', 'emoji': '😠', 'label': 'Mad'},
+    {'id': 'fearful', 'emoji': '😨', 'label': 'Scared'},
+    {'id': 'surprised', 'emoji': '😲', 'label': 'Wow!'},
+    {'id': 'bad', 'emoji': '🤢', 'label': 'Yucky'},
+  ];
+
   @override
   Widget build(BuildContext context) {
+    if (childAge <= 5) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _ZoneHeading(band: band, text: 'How are you feeling?'),
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              alignment: WrapAlignment.center,
+              children: _sproutEmotions.map((e) {
+                final isSelected = selectedCore?.id == e['id'];
+                return GestureDetector(
+                  onTap: () {
+                    final core = FeelingsWheelData.coreEmotions
+                        .firstWhere((c) => c.id == e['id'],
+                            orElse: () => FeelingsWheelData.coreEmotions.first);
+                    onCoreSelected(core);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 88,
+                    height: 88,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isSelected
+                          ? Colors.amber.withValues(alpha: 0.8)
+                          : Colors.white.withValues(alpha: 0.15),
+                      border: Border.all(
+                        color: isSelected
+                            ? Colors.amber
+                            : Colors.white.withValues(alpha: 0.3),
+                        width: isSelected ? 3 : 1.5,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(e['emoji'] as String,
+                            style: const TextStyle(fontSize: 36)),
+                        const SizedBox(height: 2),
+                        Text(
+                          e['label'] as String,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      );
+    }
     final cores = FeelingsWheelData.coreEmotions;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -650,24 +723,19 @@ class _CopingCard extends StatelessWidget {
     required this.tertiaryName,
   });
 
-  static String _copingTip(String core, String secondary, String tertiary, int age) {
-    final key = '${core.toLowerCase()}/${secondary.toLowerCase()}';
-    const tips = <String, List<String>>{
-      'angry/mad': ['Take 5 slow breaths', 'Squeeze a pillow', 'Go for a walk'],
-      'angry/critical': ['Write it down', 'Talk to someone you trust', 'Ask yourself: what do I really need?'],
-      'sad/lonely': ['Call a friend', 'Hug something soft', 'Draw how you feel'],
-      'sad/guilty': ['Apologize if you can', 'Remember everyone makes mistakes', 'Do something kind for yourself'],
-      'fear/scared': ['Turn on a light', 'Tell someone', 'Name 5 things you can see'],
-      'fear/anxious': ['Breathe in 4, hold 4, out 4', 'Wiggle your toes', 'Think of a safe place'],
-      'happy/joyful': ['Share it with someone!', 'Dance or sing', 'Write it in your journal'],
-    };
-    final tip = tips[key] ?? tips['${core.toLowerCase()}/'] ?? ['Take a deep breath', 'Talk to someone you trust'];
-    return tip[0];
-  }
-
   @override
   Widget build(BuildContext context) {
-    final tip = _copingTip(coreName, secondaryName, tertiaryName, childAge);
+    // Look up richer coping strategies from the centralized FeelingDetails library.
+    final detail = FeelingDetails.forFeeling(SelectedFeeling(
+      core: coreName,
+      secondary: secondaryName,
+      tertiary: tertiaryName ?? '',
+      emoji: '',
+      eyeType: 'Happy',
+      mouthType: 'Smile',
+      color: Colors.transparent,
+    ));
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -678,7 +746,7 @@ class _CopingCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('💡', style: TextStyle(fontSize: 24)),
+          Text(detail.emoji ?? '💡', style: const TextStyle(fontSize: 24)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -694,13 +762,25 @@ class _CopingCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
+                // Show the first coping strategy (or joined list if appropriate)
                 Text(
-                  tip,
+                  detail.coping.first,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 14,
                   ),
                 ),
+                if (detail.description.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    detail.description,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
