@@ -649,10 +649,93 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   // Page 3: "Who's coming with you?" (Adventure Team — companions + pets)
-  // NOTE: This page is built in _buildCompanionPage() — see Task B.
-  // Placeholder until companion grid is implemented.
   Widget _buildPage3() {
     return _buildAdventureTeamPage();
+  }
+
+  /// Shows selected companions as glowing portrait orbs above the selection grid.
+  /// Empty slots show a dashed placeholder. Tapping a filled orb deselects it.
+  Widget _buildCompanionShowcase() {
+    // Collect selected named companions in order
+    final selectedNamed = _companions
+        .where((c) => widget.wizardData.companionNames.contains(c.name))
+        .toList();
+
+    // Collect selected pet (if any)
+    final petEntry =
+        widget.wizardData.pets.isNotEmpty ? widget.wizardData.pets.first : null;
+    final petName = petEntry?['name'] ?? 'My Pet';
+    final petSelected =
+        petEntry != null && widget.wizardData.companionNames.contains(petName);
+    final petPhoto = petSelected
+        ? widget.wizardData.petPhotos[petName]
+        : null;
+
+    // Build slot list: filled companions first, then pet, then empty placeholders
+    final slots = <_ShowcaseSlot>[];
+    for (final c in selectedNamed) {
+      slots.add(_ShowcaseSlot(
+        imagePath: 'assets/images/companions/${c.id}_normal.jpg',
+        name: c.name,
+      ));
+    }
+    if (petSelected) {
+      slots.add(_ShowcaseSlot(
+        photoBase64: petPhoto,
+        name: petName,
+      ));
+    }
+    // Always show at least 3 slots (empty slots fill the row)
+    const maxSlots = 3;
+    final emptyCount = maxSlots - slots.length;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Filled slots
+            for (int i = 0; i < slots.length; i++) ...[
+              if (i > 0) const SizedBox(width: 16),
+              _GlowingCompanionOrb(
+                slot: slots[i],
+                onTap: () => setState(() {
+                  final matched = selectedNamed
+                      .where((c) => c.name == slots[i].name)
+                      .firstOrNull;
+                  if (matched != null) {
+                    widget.wizardData.companionNames.remove(matched.name);
+                    widget.wizardData.selectedCompanions.remove(matched.id);
+                  } else {
+                    // It's the pet
+                    widget.wizardData.companionNames.remove(slots[i].name);
+                  }
+                }),
+              ),
+            ],
+            // Empty placeholder slots
+            for (int i = 0; i < emptyCount; i++) ...[
+              if (slots.isNotEmpty || i > 0) const SizedBox(width: 16),
+              const _GlowingCompanionOrb(slot: null),
+            ],
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          slots.isEmpty
+              ? 'Tap a companion below to add them'
+              : slots.length == 1
+                  ? '${slots[0].name} is ready!'
+                  : 'Your team is set!',
+          style: TextStyle(
+            color: slots.isEmpty ? Colors.white38 : const Color(0xFFFFD700),
+            fontSize: 12,
+            fontStyle: slots.isEmpty ? FontStyle.italic : FontStyle.normal,
+          ),
+        ),
+      ],
+    );
   }
 
   /// Temporary adventure team placeholder — replaced when companion grid is built.
@@ -683,7 +766,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+          _buildCompanionShowcase(),
+          const SizedBox(height: 20),
           // Companion grid will go here (Task B)
           _buildCompanionGrid(),
           const SizedBox(height: 40),
@@ -1268,6 +1353,32 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             ],
           ),
           const SizedBox(height: 28),
+          // Genre tags — Adventurer+ only
+          if (band.band == AgeBand.adventurer || band.band == AgeBand.creator) ...[
+            const SizedBox(height: 4),
+            Text(
+              "Add a genre twist (optional)",
+              style: GoogleFonts.fredoka(
+                color: Colors.white.withAlpha(200),
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              alignment: WrapAlignment.center,
+              children: [
+                _GenreChip(label: '🔍 Mystery',    value: 'mystery',   selected: widget.wizardData.selectedGenre == 'mystery',   onTap: () => setState(() => widget.wizardData.selectedGenre = widget.wizardData.selectedGenre == 'mystery' ? null : 'mystery')),
+                _GenreChip(label: '😂 Comedy',     value: 'comedy',    selected: widget.wizardData.selectedGenre == 'comedy',    onTap: () => setState(() => widget.wizardData.selectedGenre = widget.wizardData.selectedGenre == 'comedy' ? null : 'comedy')),
+                _GenreChip(label: '🚀 Sci-Fi',     value: 'sci-fi',    selected: widget.wizardData.selectedGenre == 'sci-fi',    onTap: () => setState(() => widget.wizardData.selectedGenre = widget.wizardData.selectedGenre == 'sci-fi' ? null : 'sci-fi')),
+                _GenreChip(label: '⚔️ Action',     value: 'action',    selected: widget.wizardData.selectedGenre == 'action',    onTap: () => setState(() => widget.wizardData.selectedGenre = widget.wizardData.selectedGenre == 'action' ? null : 'action')),
+                _GenreChip(label: '👻 Spooky',     value: 'spooky',    selected: widget.wizardData.selectedGenre == 'spooky',    onTap: () => setState(() => widget.wizardData.selectedGenre = widget.wizardData.selectedGenre == 'spooky' ? null : 'spooky')),
+                _GenreChip(label: '💕 Romance',    value: 'romance',   selected: widget.wizardData.selectedGenre == 'romance',   onTap: () => setState(() => widget.wizardData.selectedGenre = widget.wizardData.selectedGenre == 'romance' ? null : 'romance')),
+              ],
+            ),
+            const SizedBox(height: 24),
+          ],
           // Wish field — "Anything special you want in your story?"
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -1866,9 +1977,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (a.imagePath != null)
-                    Image.asset(a.imagePath!, height: 90, fit: BoxFit.contain)
+                    Image.asset(a.imagePath!, height: 120, fit: BoxFit.contain)
                   else
-                    Text(a.icon ?? '✨', style: const TextStyle(fontSize: 48)),
+                    Text(a.icon ?? '✨', style: const TextStyle(fontSize: 64)),
                   const SizedBox(height: 8),
                   Text(
                     a.name,
@@ -1919,9 +2030,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (a.imagePath != null)
-                    Image.asset(a.imagePath!, height: 100, fit: BoxFit.contain)
+                    Image.asset(a.imagePath!, height: 130, fit: BoxFit.contain)
                   else
-                    Text(a.icon ?? '✨', style: const TextStyle(fontSize: 56)),
+                    Text(a.icon ?? '✨', style: const TextStyle(fontSize: 64)),
                   const SizedBox(height: 8),
                   Text(
                     a.name,
@@ -2348,6 +2459,115 @@ class _CompanionData {
     required this.tagline,
     required this.personality,
   });
+}
+
+/// Data carrier for a showcase orb slot.
+class _ShowcaseSlot {
+  final String? imagePath;
+  final String? photoBase64;
+  final String name;
+  const _ShowcaseSlot({this.imagePath, this.photoBase64, required this.name});
+}
+
+/// A large glowing circle that shows a companion portrait (or empty placeholder).
+class _GlowingCompanionOrb extends StatelessWidget {
+  final _ShowcaseSlot? slot;
+  final VoidCallback? onTap;
+
+  const _GlowingCompanionOrb({this.slot, this.onTap});
+
+  static const double _size = 90.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final filled = slot != null;
+
+    Widget inner;
+    if (!filled) {
+      inner = const Icon(Icons.add_rounded, color: Colors.white24, size: 32);
+    } else if (slot!.photoBase64 != null && slot!.photoBase64!.isNotEmpty) {
+      final bytes = base64Decode(
+          slot!.photoBase64!.replaceFirst(RegExp(r'data:[^,]+,'), ''));
+      inner = Image.memory(bytes,
+          width: _size, height: _size, fit: BoxFit.cover);
+    } else {
+      inner = Image.asset(
+        slot!.imagePath ?? '',
+        width: _size,
+        height: _size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) =>
+            const Icon(Icons.pets, color: Colors.white54, size: 36),
+      );
+    }
+
+    return GestureDetector(
+      onTap: filled ? onTap : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        width: _size + 12,
+        height: _size + 12,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: filled ? const Color(0xFFFFD700) : Colors.white24,
+            width: filled ? 3 : 2,
+          ),
+          boxShadow: filled
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFFFFD700).withAlpha(160),
+                    blurRadius: 24,
+                    spreadRadius: 4,
+                  ),
+                  BoxShadow(
+                    color: const Color(0xFFFFD700).withAlpha(60),
+                    blurRadius: 40,
+                    spreadRadius: 8,
+                  ),
+                ]
+              : [],
+          color: filled ? null : Colors.white.withAlpha(8),
+        ),
+        child: ClipOval(
+          child: filled
+              ? Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    inner,
+                    // Subtle gold overlay tint
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          colors: [
+                            Colors.transparent,
+                            const Color(0xFFFFD700).withAlpha(30),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // "Tap to remove" hint on top-right
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xFFFFD700),
+                        ),
+                        child: const Icon(Icons.close,
+                            color: Colors.black, size: 12),
+                      ),
+                    ),
+                  ],
+                )
+              : Center(child: inner),
+        ),
+      ),
+    );
+  }
 }
 
 const _companions = [
@@ -3380,6 +3600,52 @@ class _SceneImageButtonState extends State<_SceneImageButton> {
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GenreChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _GenreChip({
+    required this.label,
+    required this.value,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected
+              ? const Color(0xFF9E6CFF).withAlpha(230)
+              : Colors.white.withAlpha(25),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: selected ? const Color(0xFFE28EFF) : Colors.white24,
+            width: selected ? 2 : 1,
+          ),
+          boxShadow: selected
+              ? [BoxShadow(color: const Color(0xFF9E6CFF).withAlpha(100), blurRadius: 8, spreadRadius: 1)]
+              : [],
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.fredoka(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
       ),
