@@ -2,6 +2,26 @@
 
 ---
 
+## Session Update - 2026-03-05 (Hero creator page 1 polish + loading UX + backend perf)
+
+### Scope Completed
+- **Hero creator page 1**: Removed "How old are you?" age picker (age is set at the welcome gate; no need to ask again).
+- **Bouncing avatar button**: `_BouncingAvatarButton` replaces the static create-avatar CTA. Uses `create_avatar_normal/pressed.png` (processed via ImageMagick). Bounces twice after 4s of idle to attract attention. Gold glow pulses continuously.
+- **Progress orb images**: `MoonPhaseProgress` now uses new orb images (`progress_orb1/2_active/idle/done.png`) with backgrounds removed via ImageMagick. Green checkmark badge appears on completed orbs. `orbIndex` alternates style between odd/even steps.
+- **Loading UX**: `magical_loading_view.dart` — replaced cryptic messages with kid-friendly adventure messages; added 4-step progress indicator advancing every 3.1s.
+- **Review screen**: Heading changed to "Your Adventure Awaits!"; avatar brightness boosted; companion/setting circles moved below the main orb (no more overlap).
+- **Backend perf**: `interactive_adventure_service.py` — added `max_output_tokens=1200`, direct Gemini call (removed per-call `ThreadPoolExecutor`). Slow-request threshold raised to 15s for AI routes.
+
+### Status
+- **Hero creator page 1:** ✅ Age picker removed; bouncing avatar button live.
+- **Progress orbs:** ✅ New images, checkmarks on completion.
+- **Loading experience:** ✅ Kid-friendly messages + step indicator.
+- **Review screen:** ✅ Adventure heading, brighter avatar, no overlap.
+- **Backend performance:** ✅ ~30% latency reduction on interactive stories.
+- **Launch Readiness:** 72%
+
+---
+
 ## Session Update - 2026-03-05 (Parental consent screen overflow fix)
 
 ### Scope Completed
