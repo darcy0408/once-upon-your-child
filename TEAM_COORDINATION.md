@@ -2,6 +2,32 @@
 
 ---
 
+## Session Update - 2026-03-05 (P3 Growth Features Complete — Full Audit Plan Done)
+
+### Scope Completed
+- **P3-B: Multi-child profiles** — `ChildProfileService` CRUD, `ChildProfileSwitcher` widget (gold-glow active profile, "+" to add, long-press to delete), `ChildProfileManagerScreen` (emoji picker, age buttons, colour swatches). Switcher shown on home screen when 2+ profiles. Syncs `'user_age'` SharedPreferences on switch.
+- **P3-C: Story Remix** — "Change One Thing" chip in `_PostStoryActionBar`. `_showRemixSheet()` opens draggable sheet with 6 world scenarios + 6 twist options (Shorter/Longer/Funnier/Spookier/Rhyming/Adventure). `_launchRemix()` pre-fills `WizardData` and pushes `WizardStoryScreen(initialStep: 1)`.
+- **P3-D: Genre tags** — 6 genre chips (🔍 Mystery, 😂 Comedy, 🚀 Sci-Fi, ⚔️ Action, 👻 Spooky, 💕 Romance) on wizard page 5, only visible for Adventurer+ (age 9+). `selectedGenre` added to `WizardData`; prepended to `customElements` as `"Genre: <genre> | ..."` in `WizardDataMapper` before backend call.
+- **P3-E: Therapist Portal** — Full-stack feature:
+  - Backend: `TherapistClient` SQLAlchemy model, `require_therapist` middleware, 6 REST routes (`/therapist/clients/*`): list, add, delete, update goals/notes, get progress, export report.
+  - Flutter: `TherapistPortalScreen` with client list (FAB to add, pull-to-refresh), client detail (goals editing, story progress stats, JSON report export), `_TherapistClientCard` widget.
+  - Settings: "Therapist Portal" ListTile in parent-unlocked section.
+- **Test verification**: Backend 96 passed / 8 skipped (mock mode). Flutter 196 passed / 2 pre-existing golden test failures (CinzelDecorative font — tracked since `89e2378`, not a regression).
+
+### Status
+- **P0 Safety:** ✅ Complete
+- **P1 Age Differentiation:** ✅ Complete
+- **P2 Engagement/Polish:** ✅ Complete
+- **P3 Growth Features:** ✅ Complete (all 5: Dashboard, Multi-Child, Remix, Genre Tags, Therapist Portal)
+- **Full Audit Plan (P0→P3):** ✅ 100% Complete
+- **Launch Readiness:** 85% — core feature set is complete; remaining work is live user testing, golden test font fix, and production monitoring.
+
+### Known Issues
+- 2 pre-existing golden test failures (`key_screens_golden_test.dart`) — CinzelDecorative font not bundled in test assets. Workaround: age-gate test is `skip: true`; other 2 tests fail to compile. Fix: bundle font in `pubspec.yaml` test assets.
+- Several uncommitted working-tree changes (`lib/main.dart`, `lib/settings_screen.dart`, `pubspec.lock`, golden PNG snapshots) from parallel agent activity — should be reviewed and committed or discarded.
+
+---
+
 ## Session Update - 2026-03-05 (Welcome screen UX overhaul)
 
 ### Scope Completed
