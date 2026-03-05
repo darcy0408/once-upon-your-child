@@ -35,21 +35,30 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
   final List<Offset> _burstPositions = [];
 
   static const List<String> _phaseMessages = <String>[
-    'Threading moonlight through the loom...',
-    'Spinning stardust into story cloth...',
-    'Tuning crystal harmonics...',
-    'Gathering brave thoughts and gentle feelings...',
-    'Architecting a complex world of wonder...',
-    'Stitching surprises into the next scene...',
-    'Weaving themes of resilience and hope...',
-    'Crafting deep character motivations...',
-    'Polishing the prose for maximum magic...',
-    'Building a satisfying emotional journey...',
-    'Warming the ending with a soft glow...',
+    'Your hero is lacing up their boots...',
+    'The adventure map is being drawn...',
+    'Something magical is about to happen...',
+    'Gathering courage and a sprinkle of wonder...',
+    'Your world is coming to life...',
+    'Writing the first exciting scene...',
+    'Adding plot twists and surprises...',
+    'Making sure the magic is just right...',
+    'Your story is almost ready to tell...',
+    'The adventure begins very soon...',
+    'Sprinkling in some extra magic...',
+  ];
+
+  static const List<String> _adventureSteps = [
+    'Entering your world',
+    'Finding your hero',
+    'Writing the story',
+    'Almost ready!',
   ];
 
   Timer? _messageTimer;
+  Timer? _stepTimer;
   int _messageIndex = 0;
+  int _stepIndex = 0;
 
   @override
   void initState() {
@@ -91,11 +100,20 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
       if (!mounted) return;
       setState(() => _messageIndex = (_messageIndex + 1) % _phaseMessages.length);
     });
+
+    // Advance progress steps every ~3s (4 steps over ~12s expected wait)
+    _stepTimer = Timer.periodic(const Duration(milliseconds: 3100), (_) {
+      if (!mounted) return;
+      setState(() {
+        if (_stepIndex < _adventureSteps.length - 1) _stepIndex++;
+      });
+    });
   }
 
   @override
   void dispose() {
     _messageTimer?.cancel();
+    _stepTimer?.cancel();
     _pulseController.dispose();
     _rotationController.dispose();
     _weaveController.dispose();
@@ -372,6 +390,55 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                   ),
                 ),
               ),
+            ),
+            // ── Adventure progress steps ──────────────────────────────────
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(_adventureSteps.length, (i) {
+                final done = i < _stepIndex;
+                final active = i == _stepIndex;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 400),
+                        width: active ? 14 : 10,
+                        height: active ? 14 : 10,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: done || active
+                              ? AppColors.gold
+                              : Colors.white.withValues(alpha: 0.3),
+                          boxShadow: active
+                              ? [BoxShadow(
+                                  color: AppColors.gold.withValues(alpha: 0.7),
+                                  blurRadius: 8)]
+                              : [],
+                        ),
+                        child: done
+                            ? const Icon(Icons.check, size: 8, color: Colors.black)
+                            : null,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _adventureSteps[i],
+                        style: TextStyle(
+                          fontSize: 9,
+                          color: active
+                              ? AppColors.gold
+                              : done
+                                  ? Colors.white.withValues(alpha: 0.7)
+                                  : Colors.white.withValues(alpha: 0.35),
+                          fontWeight: active ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
             ),
             if (_tapCount > 0)
               Padding(

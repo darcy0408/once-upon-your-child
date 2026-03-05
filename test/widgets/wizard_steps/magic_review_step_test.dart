@@ -33,62 +33,50 @@ void main() {
     expect(button.isEnabled, isFalse);
   });
 
-  testWidgets('mode toggles keep rhyme and read-along mutually exclusive',
+  testWidgets('displays rhyme mode label when rhyme mode is set',
       (tester) async {
     setLargeScreen(tester);
     addTearDown(tester.view.resetPhysicalSize);
     final wizardData = WizardData()
       ..characterName = 'Nova'
-      ..selectedArchetypeId = 'The Storm Rider';
+      ..selectedArchetypeId = 'The Storm Rider'
+      ..rhymeTimeMode = true;
 
     await tester.pumpWidget(buildSubject(wizardData));
     await tester.pump();
 
-    await tester.tap(find.text('Rhyme'));
-    await tester.pump();
-    expect(wizardData.rhymeTimeMode, isTrue);
-    expect(wizardData.learningToReadMode, isFalse);
-
-    await tester.tap(find.text('Read-Along'));
-    await tester.pump();
-    expect(wizardData.learningToReadMode, isTrue);
-    expect(wizardData.rhymeTimeMode, isFalse);
+    expect(find.text('Rhyme Time story'), findsOneWidget);
   });
 
-  testWidgets('story length selector updates wizard data', (tester) async {
+  testWidgets('displays story length label', (tester) async {
     setLargeScreen(tester);
     addTearDown(tester.view.resetPhysicalSize);
     final wizardData = WizardData()
       ..characterName = 'Nova'
-      ..selectedArchetypeId = 'The Storm Rider';
+      ..selectedArchetypeId = 'The Storm Rider'
+      ..storyLength = 'epic';
 
     await tester.pumpWidget(buildSubject(wizardData));
     await tester.pump();
 
-    await tester.ensureVisible(find.text('Epic').first);
-    await tester.tap(find.text('Epic').first);
-    await tester.pump();
-
-    expect(wizardData.storyLength, 'epic');
+    expect(find.text('Epic adventure'), findsOneWidget);
   });
 
-  testWidgets('custom whisper input updates custom elements', (tester) async {
+  testWidgets('displays custom elements in summary', (tester) async {
     setLargeScreen(tester);
     addTearDown(tester.view.resetPhysicalSize);
     final wizardData = WizardData()
       ..characterName = 'Nova'
-      ..selectedArchetypeId = 'The Storm Rider';
+      ..selectedArchetypeId = 'The Storm Rider'
+      ..customElements = 'Include a rainbow castle and a puzzle.';
 
     await tester.pumpWidget(buildSubject(wizardData));
     await tester.pump();
 
-    await tester.enterText(
-      find.byType(TextField).first,
-      'Include a rainbow castle and a puzzle.',
+    expect(
+      find.text('"Include a rainbow castle and a puzzle."'),
+      findsOneWidget,
     );
-    await tester.pump();
-
-    expect(wizardData.customElements, 'Include a rainbow castle and a puzzle.');
   });
 
   testWidgets('displays correct scenario label', (tester) async {

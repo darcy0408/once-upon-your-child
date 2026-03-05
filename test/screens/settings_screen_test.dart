@@ -61,7 +61,10 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    // Use timed pumps instead of pumpAndSettle to avoid infinite animation timeouts
+    for (int i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
   }
 
   setUp(() async {
@@ -82,11 +85,11 @@ void main() {
     final darkModeTile = tester
         .widget<SwitchListTile>(find.widgetWithText(SwitchListTile, 'Dark Mode'));
     darkModeTile.onChanged?.call(true);
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
     final secondDarkModeTile = tester
         .widget<SwitchListTile>(find.widgetWithText(SwitchListTile, 'Dark Mode'));
     secondDarkModeTile.onChanged?.call(true);
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('theme_mode'), 'dark');
@@ -99,7 +102,7 @@ void main() {
     await pumpSettingsScreen(tester);
 
     await tester.tap(find.text('Use my own Gemini API key'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Gemini API Key'), findsOneWidget);
     expect(find.text('Validate & Save'), findsOneWidget);
@@ -114,7 +117,7 @@ void main() {
 
     await tester.ensureVisible(find.text('Privacy Policy'));
     await tester.tap(find.text('Privacy Policy'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Privacy Policy'), findsWidgets);
   });
@@ -126,7 +129,7 @@ void main() {
     await pumpSettingsScreen(tester);
 
     await tester.tap(find.text('Use my own Gemini API key'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Benefits'), findsOneWidget);
     expect(find.textContaining('No subscription needed'), findsOneWidget);
@@ -139,14 +142,14 @@ void main() {
     await SecureStorageService.saveApiKey('gemini', 'AIza-test-key');
 
     await pumpSettingsScreen(tester);
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Gemini API Key'), findsOneWidget);
     await tester.tap(find.byIcon(Icons.clear));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
     await tester.tap(find.text('Clear'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
     final saved = await SecureStorageService.getApiKey('gemini');
     expect(saved, isNull);
@@ -159,11 +162,11 @@ void main() {
     await pumpSettingsScreen(tester);
 
     await tester.tap(find.text('Use my own Gemini API key'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
     await tester.enterText(find.byType(TextField), '   ');
     await tester.tap(find.text('Validate & Save'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Please enter an API key'), findsOneWidget);
   });

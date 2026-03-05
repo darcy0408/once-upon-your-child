@@ -56,7 +56,11 @@ class _StoryWeaverAppState extends ConsumerState<StoryWeaverApp> {
   @override
   void initState() {
     super.initState();
-    unawaited(_subscriptionService.initialize());
+    // Defer until after the first frame so the auth token has time to
+    // restore from secure storage before we hit backend endpoints.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_subscriptionService.initialize());
+    });
   }
 
   @override

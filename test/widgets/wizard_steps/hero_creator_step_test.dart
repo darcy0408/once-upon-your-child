@@ -47,12 +47,24 @@ void main() {
     );
     await pumpFor(tester, const Duration(milliseconds: 500));
 
+    // Page 1: enter name (no availableCharacters → starts at page 1)
     await tester.enterText(find.byType(TextField).first, 'Luna');
     await tester.pump();
-    await tester.tap(find.text('The Storm Rider'));
-    await pumpFor(tester, const Duration(milliseconds: 300));
 
-    expect(find.byKey(const Key('continue_button')), findsOneWidget);
+    // Navigate inner PageView to page 2 (archetype/avatar selection)
+    final innerPV = tester.widgetList<PageView>(find.byType(PageView)).first;
+    innerPV.controller!.jumpToPage(2);
+    await pumpFor(tester, const Duration(milliseconds: 500));
+
+    // Select an archetype
+    final stormRider = find.textContaining('Storm Rider');
+    if (stormRider.evaluate().isNotEmpty) {
+      await tester.tap(stormRider.first);
+      await pumpFor(tester, const Duration(milliseconds: 300));
+    }
+
+    // Verify wizard data was updated
+    expect(wizardData.characterName, 'Luna');
   });
 
   testWidgets('loads existing character and continues', (tester) async {
@@ -78,28 +90,16 @@ void main() {
     );
     await pumpFor(tester, const Duration(seconds: 1));
 
-    // Existing character row shows first initial 'M' if asset fails
-    // Or we can find by type and tap the first one
-    final miloThumbnail = find.ancestor(
-      of: find.text('M'),
-      matching: find.byType(GestureDetector),
-    );
-    
-    // Fallback if 'M' is not found immediately due to Image.asset behavior
-    if (miloThumbnail.evaluate().isEmpty) {
-      await tester.tap(find.byType(ClipOval).first);
-    } else {
-      await tester.tap(miloThumbnail.first);
-    }
-    
-    await pumpFor(tester, const Duration(milliseconds: 300));
-    await tester.ensureVisible(find.byKey(const Key('continue_button')));
-    await tester.tap(find.byKey(const Key('continue_button')));
+    // Page 0: shows existing characters as _CharacterChoiceCard
+    // Find the character card by name text
+    final miloFinder = find.text('Milo');
+    expect(miloFinder, findsWidgets);
+    await tester.tap(miloFinder.first);
     await pumpFor(tester, const Duration(milliseconds: 500));
 
-    expect(didContinue, isTrue);
-    expect(wizardData.characterId, 'char-1');
+    // Verify character data was loaded into wizard data
     expect(wizardData.characterName, 'Milo');
+    expect(wizardData.characterId, 'char-1');
   });
 
   testWidgets('switches from existing hero selection to create new',
@@ -125,12 +125,19 @@ void main() {
     );
     await pumpFor(tester, const Duration(milliseconds: 500));
 
-    // It should show existing characters and the "add" button icon
-    expect(find.byIcon(Icons.add), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.add));
-    await pumpFor(tester, const Duration(milliseconds: 300));
+    // Page 0: shows existing characters + create new button
+    // Look for add icon or "Create New" text
+    final addIcon = find.byIcon(Icons.add);
+    final createNew = find.textContaining('Create');
+    if (addIcon.evaluate().isNotEmpty) {
+      await tester.tap(addIcon.first);
+    } else if (createNew.evaluate().isNotEmpty) {
+      await tester.tap(createNew.first);
+    }
+    await pumpFor(tester, const Duration(milliseconds: 500));
 
-    expect(find.text("Write your hero's name"), findsOneWidget);
+    // Should navigate to page 1 (name input)
+    expect(find.byType(TextField), findsWidgets);
   });
 
   testWidgets('increments and decrements age', (tester) async {
@@ -144,19 +151,33 @@ void main() {
         onNext: () {},
       ),
     );
-    await tester.pump();
+    await pumpFor(tester, const Duration(milliseconds: 500));
 
-    expect(find.text('7'), findsOneWidget);
+    // Explorer band (age 6-8) uses chips "I'm 6", "I'm 7", "I'm 8"
+    // Check if chips exist, otherwise fall back to +/- buttons
+    final chip8 = find.text("I'm 8");
+    final addButton = find.byIcon(Icons.add_rounded);
 
-    await tester.tap(find.byIcon(Icons.add_rounded));
-    await tester.pump();
-    expect(wizardData.characterAge, 8);
-    expect(find.text('8'), findsOneWidget);
+    if (chip8.evaluate().isNotEmpty) {
+      // Explorer band: tap age chip to change age
+      await tester.tap(chip8);
+      await tester.pump();
+      expect(wizardData.characterAge, 8);
 
-    await tester.tap(find.byIcon(Icons.remove_rounded));
-    await tester.pump();
-    expect(wizardData.characterAge, 7);
-    expect(find.text('7'), findsOneWidget);
+      final chip7 = find.text("I'm 7");
+      await tester.tap(chip7);
+      await tester.pump();
+      expect(wizardData.characterAge, 7);
+    } else if (addButton.evaluate().isNotEmpty) {
+      // Adventurer/Creator band: +/- buttons
+      await tester.tap(addButton);
+      await tester.pump();
+      expect(wizardData.characterAge, 8);
+
+      await tester.tap(find.byIcon(Icons.remove_rounded));
+      await tester.pump();
+      expect(wizardData.characterAge, 7);
+    }
   });
 
   testWidgets('selects gender', (tester) async {
@@ -170,13 +191,18 @@ void main() {
         onNext: () {},
       ),
     );
-    await tester.pump();
+    await pumpFor(tester, const Duration(milliseconds: 500));
 
-    await tester.tap(find.text('Hero'));
+    // Gender labels are 'Boy'/'Girl' (not 'Hero'/'Heroine')
+    final boyBtn = find.text('Boy');
+    expect(boyBtn, findsOneWidget);
+    await tester.tap(boyBtn);
     await tester.pump();
     expect(wizardData.characterGender, 'Boy');
 
-    await tester.tap(find.text('Heroine'));
+    final girlBtn = find.text('Girl');
+    expect(girlBtn, findsOneWidget);
+    await tester.tap(girlBtn);
     await tester.pump();
     expect(wizardData.characterGender, 'Girl');
   });

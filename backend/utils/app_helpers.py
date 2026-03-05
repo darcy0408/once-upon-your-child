@@ -134,16 +134,21 @@ def make_log_response(logger, log_error):
         if hasattr(g, 'start_time'):
             duration = time.time() - g.start_time
             if duration > 5.0:
-                log_error(
-                    error_type='slow_request',
-                    message=f'Request took {duration:.2f}s',
-                    details={
-                        'method': request.method,
-                        'path': request.path,
-                        'duration': duration,
-                        'status_code': response.status_code
-                    }
-                )
+                # AI generation routes legitimately take 8-15s — only flag truly slow requests
+                ai_paths = ('/generate', '/generate-interactive', '/generate-illustrations',
+                            '/generate-coloring', '/generate-avatar')
+                threshold = 15.0 if any(request.path.startswith(p) for p in ai_paths) else 5.0
+                if duration > threshold:
+                    log_error(
+                        error_type='slow_request',
+                        message=f'Request took {duration:.2f}s',
+                        details={
+                            'method': request.method,
+                            'path': request.path,
+                            'duration': duration,
+                            'status_code': response.status_code
+                        }
+                    )
         log_entry = {
             'method': request.method,
             'path': request.path,

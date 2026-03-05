@@ -40,9 +40,10 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.byKey(const Key('go_solo_button')), findsOneWidget);
-    await tester.ensureVisible(find.byKey(const Key('go_solo_button')));
-    await tester.tap(find.byKey(const Key('go_solo_button')));
+    final goSolo = find.text('Go Solo (Be Brave!)');
+    expect(goSolo, findsOneWidget);
+    await tester.ensureVisible(goSolo);
+    await tester.tap(goSolo);
     await tester.pump();
 
     expect(didContinue, isTrue);

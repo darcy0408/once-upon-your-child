@@ -41,11 +41,11 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
     _tts = FlutterTts();
     _initTts();
     if (widget.wizardData.characterAge >= 10) {
-      _loadingStatus = 'Architecting your Epic Story...';
+      _loadingStatus = 'Your adventure is being written...';
     } else if (widget.wizardData.characterAge >= 7) {
-      _loadingStatus = 'Weaving a grand adventure...';
+      _loadingStatus = 'Your story is coming to life!';
     } else {
-      _loadingStatus = 'Creating your story...';
+      _loadingStatus = 'Making your story! 🌟';
     }
   }
 

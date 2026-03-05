@@ -6,7 +6,7 @@ with inventory, state tracking, and illustrations.
 import json
 import logging
 import uuid
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
 
@@ -46,9 +46,12 @@ class InteractiveAdventureService:
         # Use Gemini model with JSON mode support
         self._model_name = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
         logger.info(f"Initializing Interactive Adventure Service with model: {self._model_name}")
-        # JSON mode config is passed per-request in new SDK
+        # JSON mode config — cap tokens to avoid over-generation (fastest safe limit
+        # that still covers the largest age band's per-segment word count + JSON overhead)
         self._json_config = types.GenerateContentConfig(
-            response_mime_type='application/json'
+            response_mime_type='application/json',
+            max_output_tokens=1200,
+            temperature=0.85,
         )
 
         # Initialize image generator (using Replicate for actual image generation)
@@ -402,25 +405,20 @@ class InteractiveAdventureService:
 
     def _generate_segment_with_retry(self, prompt: str, max_retries: int = 3) -> Dict[str, Any]:
         """Generate segment with retry logic and JSON parsing"""
+        import time
         base_delay = 2
 
         for attempt in range(max_retries):
             try:
                 logger.info(f"Generating segment (attempt {attempt + 1}/{max_retries})")
-                executor = ThreadPoolExecutor(max_workers=1)
-                future = executor.submit(
-                    self._client.models.generate_content,
+                # Call Gemini directly — no ThreadPoolExecutor overhead
+                response = self._client.models.generate_content(
                     model=self._model_name,
                     contents=prompt,
-                    config=self._json_config
+                    config=self._json_config,
                 )
-                try:
-                    response = future.result(timeout=self._request_timeout_seconds)
-                finally:
-                    executor.shutdown(wait=False, cancel_futures=True)
 
                 if response and hasattr(response, 'text') and response.text:
-                    # Parse JSON response
                     segment_data = json.loads(response.text)
                     logger.info("Segment generated successfully")
                     return segment_data
@@ -439,14 +437,12 @@ class InteractiveAdventureService:
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse JSON response: {e}")
                 if attempt < max_retries - 1:
-                    import time
                     time.sleep(base_delay * (2 ** attempt))
                     continue
 
             except google_exceptions.ResourceExhausted as e:
                 logger.warning(f"Rate limit exceeded (attempt {attempt + 1}). Retrying...")
                 if attempt < max_retries - 1:
-                    import time
                     delay = base_delay * (2 ** attempt)
                     logger.warning(f"Retrying in {delay}s...")
                     time.sleep(delay)
@@ -454,21 +450,6 @@ class InteractiveAdventureService:
                 else:
                     logger.error("Max retries exceeded for rate limit.")
                     raise e
-
-            except FuturesTimeoutError as e:
-                logger.warning(
-                    "Gemini segment generation timed out after %ss (attempt %s/%s)",
-                    self._request_timeout_seconds,
-                    attempt + 1,
-                    max_retries,
-                )
-                if attempt < max_retries - 1:
-                    import time
-                    time.sleep(base_delay * (2 ** attempt))
-                    continue
-                raise TimeoutError(
-                    f"Gemini segment generation timed out after {self._request_timeout_seconds}s"
-                ) from e
 
             except Exception as e:
                 logger.error(f"Segment generation failed: {e}", exc_info=True)

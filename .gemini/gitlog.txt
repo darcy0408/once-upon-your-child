@@ -1,0 +1,20 @@
+9cd9eb4 fix: resolve ImageProvider type mismatch in CharacterChoiceCard
+47d7652 UX Cohesion: add audio prompts and magical typography to CompanionSelector and MagicReview steps
+7a42325 fix: resolve base64 avatar rendering bug and add hero creator analytics tracking
+e2fb0c3 Refactor HeroCreatorStep into a guided multi-page wizard with audio support
+31952c0 Refactor HeroCreatorStep into a guided multi-page wizard with audio support
+9f59869 fix: fully resolve RenderFlex overflow in avatar gallery shuffle footer
+9126aa2 fix(tests): bypass require_auth in TESTING mode ΓÇö 96 passed, 0 failed
+fc13eb3 docs: clean up TEAM_COORDINATION.md and move interaction fix to top
+798b747 fix: re-structure name scroll input for better hit-testing and fix indentation
+23effb7 fix: Sentry startup coverage + hero creator build fix
+04d6635 docs: log comprehensive feature verification + latency fix session
+966ba13 fix: prevent RenderFlex overflow in avatar gallery shuffle footer
+ff54cfc feat: replace mock avatar backend with DiceBear API
+0fc83ee feat: wire up real Firebase config for story-weaver-7c279
+351ce46 fix: smooth avatar circle edge with antiAliasWithSaveLayer + border overlay
+f409ed2 docs: log test fixes session in TEAM_COORDINATION.md
+5cd4224 fix(tests): update assertions to match current prompt format
+06e2872 docs: log hair color tagging session in TEAM_COORDINATION.md
+d7952af fix: close missing SizedBox paren in _buildNameScrollInput
+f58f328 feat: tag hair colors for all 150 curated avatars via Gemini Vision

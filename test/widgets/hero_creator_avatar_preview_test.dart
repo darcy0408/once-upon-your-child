@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/screens/wizard_steps/hero_creator_step.dart';
-import 'package:story_weaver_app/widgets/character_preview.dart';
 
 void main() {
   Future<void> pumpFor(WidgetTester tester, Duration total) async {
@@ -16,9 +15,17 @@ void main() {
     }
   }
 
+  void setLargeScreen(WidgetTester tester) {
+    tester.view.physicalSize = const Size(1200, 2600);
+    tester.view.devicePixelRatio = 1.0;
+  }
+
   testWidgets(
       'HeroCreatorStep loads generated avatar for saved character when avatar data stored as JSON string',
       (tester) async {
+    setLargeScreen(tester);
+    addTearDown(tester.view.resetPhysicalSize);
+
     // 1x1 transparent PNG (valid base64) so Image.memory decoding won't throw.
     const pngBase64 =
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+X2ioAAAAASUVORK5CYII=';
@@ -58,14 +65,18 @@ void main() {
     // Let initState + setState run.
     await pumpFor(tester, const Duration(seconds: 1));
 
-    // The avatar preview is inside a ClipOval inside a 148x148 Container
-    expect(find.byType(ClipOval), findsAtLeast(1));
-    // Verify the character name was loaded into wizardData (name field is hidden in existing-char mode)
+    // The character should be auto-selected (first in list when characterId matches).
+    // Verify the character name appears on the screen (shown in _CharacterChoiceCard or name field).
+    expect(find.text('Luna'), findsAtLeast(1));
+    // Verify the character data was loaded into wizardData
     expect(wizardData.characterName, 'Luna');
   });
 
   testWidgets('HeroCreatorStep updates preview after tapping a saved character',
       (tester) async {
+    setLargeScreen(tester);
+    addTearDown(tester.view.resetPhysicalSize);
+
     const pngBase64 =
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+X2ioAAAAASUVORK5CYII=';
     final avatarJson = {
@@ -102,14 +113,14 @@ void main() {
     );
     await pumpFor(tester, const Duration(seconds: 1));
 
-    // Tap the existing character bubble (Milo). 
-    // ClipOval index 0 = Milo's character thumbnail (first in character row).
-    final miloBubble = find.byType(ClipOval).first;
-    await tester.ensureVisible(miloBubble);
-    await tester.tap(miloBubble);
+    // Tap the existing character card by name — character cards show name text.
+    final miloBubble = find.text('Milo');
+    expect(miloBubble, findsAtLeast(1));
+    await tester.ensureVisible(miloBubble.first);
+    await tester.tap(miloBubble.first);
     await pumpFor(tester, const Duration(milliseconds: 500));
 
-    expect(find.byType(ClipOval), findsAtLeast(1));
+    // After tapping, wizardData should reflect Milo.
     expect(wizardData.characterName, 'Milo');
   });
 }

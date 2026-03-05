@@ -19,7 +19,16 @@ class FirebaseAnalyticsService {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    await analytics.setAnalyticsCollectionEnabled(true);
+    // setAnalyticsCollectionEnabled causes a JS interop TypeError on web
+    // (FirebaseException can't be cast to JavaScriptObject). Skip on web —
+    // collection is enabled by default anyway.
+    if (!kIsWeb) {
+      try {
+        await analytics.setAnalyticsCollectionEnabled(true);
+      } catch (e) {
+        // Non-fatal — analytics collection defaults to enabled.
+      }
+    }
     _initialized = true;
   }
 
@@ -27,16 +36,24 @@ class FirebaseAnalyticsService {
     String userId,
     Map<String, dynamic> properties,
   ) async {
-    await analytics.setUserId(id: userId);
-    for (final entry in properties.entries) {
-      await analytics.setUserProperty(
-        name: entry.key,
-        value: entry.value?.toString(),
-      );
+    if (!_initialized) return;
+    try {
+      await analytics.setUserId(id: userId);
+      for (final entry in properties.entries) {
+        await analytics.setUserProperty(
+          name: entry.key,
+          value: entry.value?.toString(),
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('FirebaseAnalyticsService.setUserProperties error: $e');
+      }
     }
   }
 
   static Future<void> logEvent(String eventName, Map<String, dynamic> parameters) async {
+    if (!_initialized) return;
     try {
       // Convert to Map<String, Object> for Firebase Analytics compatibility
       final Map<String, Object> cleanParams = {};
