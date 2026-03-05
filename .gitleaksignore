@@ -1,6 +1,0 @@
-# Firebase API keys in google-services.json and firebase_options.dart are intentionally
-# public - they are restricted by Firebase security rules, not by secrecy.
-# This is standard Flutter/Firebase practice.
-android/app/google-services.json:gcp-api-key:18
-lib/firebase_options.dart:gcp-api-key:25
-lib/firebase_options.dart:gcp-api-key:33

@@ -1,7 +1,0 @@
-{
-  "name": "story-weaver",
-  "description": "Darcy's custom engine for creating personalized children's stories.",
-  "commands": ["generate a story", "start story weaver", "tell a tale"],
-  "entry": "main.py",
-  "version": "1.0.0"
-}
