@@ -255,7 +255,6 @@ class _AvatarPickerScreenState extends State<AvatarPickerScreen> {
               children: [
                 _buildSection('Skin Tone', 'skinColor'),
                 _buildSection('Hair Style', 'top'),
-                _buildSection('Hair Color', 'hairColor'),
                 _buildSection('Eyes', 'eyes'),
                 _buildSection('Eyebrows', 'eyebrows'),
                 _buildSection('Mouth', 'mouth'),
