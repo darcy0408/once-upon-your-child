@@ -1108,129 +1108,173 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
-            "Pick a world — or skip and let the magic decide!",
+            'Create your own world — or choose one below!',
             style: GoogleFonts.fredoka(color: Colors.white70, fontSize: 14),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
 
-          // 2-column grid of featured image buttons — card height driven by cardSize
-          LayoutBuilder(
-            builder: (context, constraints) {
-              const crossAxisCount = 2;
-              const spacing = 12.0;
-              final cardWidth =
-                  (constraints.maxWidth - spacing * (crossAxisCount - 1)) /
-                      crossAxisCount;
-              final aspectRatio = cardWidth / cardSize;
-              return GridView.count(
-                crossAxisCount: crossAxisCount,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisSpacing: spacing,
-                mainAxisSpacing: 12,
-                childAspectRatio: aspectRatio,
-                children: displayButtons
-                    .map((btn) => _SceneImageButton(
-                          data: btn,
-                          isSelected:
-                              widget.wizardData.selectedScenario == btn.id,
-                          labelFontSize: labelFontSize,
-                          onTap: () => setState(() {
-                            widget.wizardData.selectedScenario =
-                                widget.wizardData.selectedScenario == btn.id
-                                    ? null
-                                    : btn.id;
-                          }),
-                        ))
-                    .toList(),
-              );
-            },
-          ),
-
-          const SizedBox(height: 12),
-
-          // Full-width "Imagine It" button
-          _SceneImageButton(
-            data: _SceneButtonData(
-              id: 'safe_space',
-              label: 'Imagine It',
-              normalAsset:
-                  'assets/images/scenarios/imagine_it_btn.png',
-              pressedAsset:
-                  'assets/images/scenarios/imagine_it_btn_pressed.png',
-            ),
+          // ── HERO: Imagine It ────────────────────────────────────────────────
+          _ImagineItHeroCard(
             isSelected: isImagineItSelected,
-            fullWidth: true,
             onTap: () => setState(() {
               widget.wizardData.selectedScenario =
                   isImagineItSelected ? null : 'safe_space';
             }),
           ),
 
-          // "Imagine It" text input — shown when selected
-          if (isImagineItSelected) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(20),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                    color: const Color(0xFFFFD700), width: 2),
+          // Inline text/voice input — expands when Imagine It is selected
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 280),
+            crossFadeState: isImagineItSelected
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
+            firstChild: _buildImagineItInput(),
+            secondChild: const SizedBox.shrink(),
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── Divider: "or explore a ready-made world" ───────────────────────
+          Row(
+            children: [
+              const Expanded(child: Divider(color: Colors.white24, thickness: 1)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  'or explore a ready-made world',
+                  style: GoogleFonts.fredoka(
+                      color: Colors.white54, fontSize: 13),
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '✨ Where do you want your adventure to take place?',
+              const Expanded(child: Divider(color: Colors.white24, thickness: 1)),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // ── 2-column grid of preset scene buttons ──────────────────────────
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            // Natural image ratio: 360×220 = 1.636 — childAspectRatio = w/h
+            childAspectRatio: 360 / 220,
+            children: displayButtons
+                .map((btn) => _SceneImageButton(
+                      data: btn,
+                      isSelected:
+                          widget.wizardData.selectedScenario == btn.id,
+                      labelFontSize: labelFontSize,
+                      onTap: () => setState(() {
+                        widget.wizardData.selectedScenario =
+                            widget.wizardData.selectedScenario == btn.id
+                                ? null
+                                : btn.id;
+                      }),
+                    ))
+                .toList(),
+          ),
+
+          const SizedBox(height: 24),
+          _buildNextArrowButton(
+              enabled: true,
+              onTap: _heroNextPage,
+              hint: 'Next: Story Style'),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImagineItInput() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFFFD700), width: 2),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF2C1B47), Color(0xFF1A0E36)],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFFD700).withAlpha(50),
+              blurRadius: 18,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text('✨', style: TextStyle(fontSize: 20)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Where will your adventure take place?',
                     style: GoogleFonts.fredoka(
                       color: const Color(0xFFFFD700),
-                      fontSize: 15,
+                      fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: _imagineItController,
-                    maxLines: 3,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText:
-                          'e.g., An enchanted forest, outer space, under the ocean...',
-                      hintStyle: TextStyle(
-                          color: Colors.white.withAlpha(100),
-                          fontSize: 13,
-                          fontStyle: FontStyle.italic),
-                      filled: true,
-                      fillColor: Colors.white.withAlpha(15),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                            color: const Color(0xFFD4A0FF).withAlpha(80)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                            color: Color(0xFFFFD700), width: 2),
-                      ),
-                      contentPadding: const EdgeInsets.all(12),
-                    ),
-                    onChanged: (value) {
-                      widget.wizardData.customElements = value;
-                    },
-                  ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _imagineItController,
+              maxLines: 3,
+              style: const TextStyle(color: Colors.white, fontSize: 15),
+              decoration: InputDecoration(
+                hintText:
+                    'e.g. a floating cloud city, deep inside a volcano, underwater palace…',
+                hintStyle: const TextStyle(
+                    color: Color(0xFFFFD700),
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic),
+                filled: true,
+                fillColor: Colors.white.withAlpha(18),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                      color: const Color(0xFFFFD700).withAlpha(100)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide:
+                      const BorderSide(color: Color(0xFFFFD700), width: 2),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                      color: const Color(0xFFFFD700).withAlpha(120)),
+                ),
+                contentPadding: const EdgeInsets.all(14),
               ),
+              onChanged: (value) {
+                widget.wizardData.customElements = value;
+              },
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '✦ The more you describe, the more magical your story becomes!',
+              style: TextStyle(
+                  color: const Color(0xFFFFD700).withAlpha(180),
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic),
             ),
           ],
-
-          const SizedBox(height: 20),
-          _buildNextArrowButton(enabled: true, onTap: _heroNextPage, hint: 'Next: Story Style'),
-          const SizedBox(height: 24),
-        ],
+        ),
       ),
     );
   }
@@ -3583,6 +3627,178 @@ class _PressableArrowButtonState extends State<_PressableArrowButton> {
 
 // ─── Scene Image Button helpers ──────────────────────────────────────────────
 
+// ── Imagine It Hero Card ───────────────────────────────────────────────────────
+
+class _ImagineItHeroCard extends StatefulWidget {
+  final bool isSelected;
+  final VoidCallback onTap;
+  const _ImagineItHeroCard({required this.isSelected, required this.onTap});
+
+  @override
+  State<_ImagineItHeroCard> createState() => _ImagineItHeroCardState();
+}
+
+class _ImagineItHeroCardState extends State<_ImagineItHeroCard>
+    with SingleTickerProviderStateMixin {
+  bool _pressed = false;
+  late AnimationController _glowController;
+  late Animation<double> _glowAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
+    _glowAnim = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final asset = _pressed
+        ? 'assets/images/scenarios/imagine_it_btn_pressed.png'
+        : 'assets/images/scenarios/imagine_it_btn.png';
+
+    return Semantics(
+      button: true,
+      selected: widget.isSelected,
+      label: 'Imagine It — create your own world',
+      child: GestureDetector(
+        onTapDown: (_) {
+          HapticFeedback.mediumImpact();
+          setState(() => _pressed = true);
+        },
+        onTapUp: (_) {
+          setState(() => _pressed = false);
+          widget.onTap();
+        },
+        onTapCancel: () => setState(() => _pressed = false),
+        child: AnimatedBuilder(
+          animation: _glowAnim,
+          builder: (context, child) {
+            return AnimatedScale(
+              scale: _pressed ? 0.96 : 1.0,
+              duration: const Duration(milliseconds: 80),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: widget.isSelected
+                        ? const Color(0xFFFFD700)
+                        : const Color(0xFFFFD700)
+                            .withAlpha((_glowAnim.value * 160).round()),
+                    width: widget.isSelected ? 3 : 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFFD700).withAlpha(
+                          ((_glowAnim.value) * (widget.isSelected ? 120 : 80))
+                              .round()),
+                      blurRadius: widget.isSelected ? 22 : 16,
+                      spreadRadius: widget.isSelected ? 3 : 1,
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Stack(
+                    children: [
+                      // Full image at natural 360×220 ratio — no cropping
+                      AspectRatio(
+                        aspectRatio: 360 / 220,
+                        child: Image.asset(
+                          asset,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: const Color(0xFF2C1B47),
+                            child: Center(
+                              child: Text(
+                                'Imagine It ✨',
+                                style: GoogleFonts.fredoka(
+                                    color: const Color(0xFFFFD700),
+                                    fontSize: 22),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Bottom gradient label
+                      Positioned(
+                        left: 0, right: 0, bottom: 0,
+                        child: Container(
+                          padding: const EdgeInsets.fromLTRB(16, 20, 16, 14),
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [Color(0xEE0D0020), Color(0x00000000)],
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '✨  Imagine It',
+                                style: GoogleFonts.fredoka(
+                                  color: const Color(0xFFFFD700),
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  shadows: const [
+                                    Shadow(
+                                        color: Colors.black,
+                                        blurRadius: 6,
+                                        offset: Offset(0, 1))
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Describe any world you can dream up',
+                                style: GoogleFonts.fredoka(
+                                  color: Colors.white.withAlpha(210),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Selected checkmark
+                      if (widget.isSelected)
+                        Positioned(
+                          top: 10, right: 10,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFFD700),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.check,
+                                color: Colors.black, size: 16),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
 class _SceneButtonData {
   final String id;
   final String label;
@@ -3665,19 +3881,20 @@ class _SceneImageButtonState extends State<_SceneImageButton> {
               borderRadius: BorderRadius.circular(14),
               child: Stack(
                 children: [
-                  // Image
-                  Image.asset(
-                    asset,
-                    width: widget.fullWidth ? double.infinity : null,
-                    height: widget.fullWidth ? 110 : null,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: widget.fullWidth ? 110 : 80,
-                      color: const Color(0xFF3A1070),
-                      child: Center(
-                        child: Text(widget.data.label,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 14)),
+                  // Image at natural 360×220 ratio — no cropping
+                  AspectRatio(
+                    aspectRatio: 360 / 220,
+                    child: Image.asset(
+                      asset,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: const Color(0xFF3A1070),
+                        child: Center(
+                          child: Text(widget.data.label,
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 14)),
+                        ),
                       ),
                     ),
                   ),
