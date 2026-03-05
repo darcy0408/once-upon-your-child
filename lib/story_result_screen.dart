@@ -4,9 +4,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
@@ -126,6 +128,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   String? _activeTherapeuticFocus;
   late final PageController _pageController;
   late final GlobalKey<PageFlipBuilderState> _pageFlipKey;
+  final GlobalKey _storyBoundaryKey = GlobalKey();
   late List<String> _storyPages;
   late List<String> _adventureSteps; // NEW: Adventure step labels
   int _currentPageIndex = 0;
@@ -952,6 +955,103 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       ),
     );
     _trackResultAction('share', extra: {'method': 'system_share'});
+  }
+
+  Future<void> _shareAsImage() async {
+    if (kIsWeb) {
+      _shareStory();
+      return;
+    }
+    try {
+      final boundary = _storyBoundaryKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (boundary == null) {
+        _shareStory();
+        return;
+      }
+      final image = await boundary.toImage(pixelRatio: 2.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return;
+      final bytes = byteData.buffer.asUint8List();
+
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/story_share.png');
+      await file.writeAsBytes(bytes);
+
+      await SharePlus.instance.share(ShareParams(
+        files: [XFile(file.path, mimeType: 'image/png')],
+        subject: widget.title,
+      ));
+      _trackResultAction('share', extra: {'method': 'image_screenshot'});
+    } catch (_) {
+      _shareStory();
+    }
+  }
+
+  void _showShareOptions() {
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: BoxDecoration(
+          color: band.gradientEnd,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white30,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Share "${widget.title}"',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                fontFamily: band.uiFontFamily,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading:
+                  const Icon(Icons.text_snippet_rounded, color: Colors.white),
+              title: Text('Share as text',
+                  style: TextStyle(
+                      color: Colors.white, fontFamily: band.uiFontFamily)),
+              subtitle: const Text('Copy or send the story words',
+                  style: TextStyle(color: Colors.white54, fontSize: 12)),
+              onTap: () {
+                Navigator.pop(context);
+                _shareStory();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.image_rounded, color: Colors.white),
+              title: Text('Share as picture',
+                  style: TextStyle(
+                      color: Colors.white, fontFamily: band.uiFontFamily)),
+              subtitle: const Text('Screenshot of your story page',
+                  style: TextStyle(color: Colors.white54, fontSize: 12)),
+              onTap: () {
+                Navigator.pop(context);
+                _shareAsImage();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _saveStory() async {
@@ -1813,12 +1913,14 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                       children: [
                                         // Story Content - ENHANCED PAGE FLIP
                                         Expanded(
-                                          child: Listener(
-                                            onPointerDown: _onFlipStarted,
-                                            onPointerMove: _onFlipUpdated,
-                                            onPointerUp: _onFlipEnded,
-                                            onPointerCancel: _onFlipEnded,
-                                            child: Stack(
+                                          child: RepaintBoundary(
+                                            key: _storyBoundaryKey,
+                                            child: Listener(
+                                              onPointerDown: _onFlipStarted,
+                                              onPointerMove: _onFlipUpdated,
+                                              onPointerUp: _onFlipEnded,
+                                              onPointerCancel: _onFlipEnded,
+                                              child: Stack(
                                               children: [
                                                 PageFlipBuilder(
                                                   key: _pageFlipKey,
@@ -1900,6 +2002,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                               ],
                                             ),
                                           ),
+                                        ),
                                         ),
                                         // Footer controls
                                         Container(
@@ -2054,7 +2157,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                   ),
                 ),
                 onSave: _isSaved ? null : _saveStory,
-                onShare: _shareStory,
+                onShare: _showShareOptions,
                 onColor: _generateColoringPages,
               ),
       ),
