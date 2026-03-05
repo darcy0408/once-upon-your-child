@@ -1,0 +1,45 @@
+{
+  "inventory": [],
+  "is_completed": false,
+  "segment": {
+    "choices": [
+      {
+        "choice_number": 1,
+        "consequence_type": null,
+        "id": "bbf89f1c-9ab0-4320-bba1-50eab7316c36",
+        "is_selected": false,
+        "selected_at": null,
+        "text": "Look by the big tree"
+      },
+      {
+        "choice_number": 2,
+        "consequence_type": null,
+        "id": "b582469e-54cb-46cf-bd11-e1cbca09dd66",
+        "is_selected": false,
+        "selected_at": null,
+        "text": "Ask the singing bird"
+      }
+    ],
+    "content": "You are Hero. You wake up. Sun is bright! Birds sing a sweet song. A flower smells yummy. You see a tiny light. It's a firefly! The firefly looks sad. He says, \"My light is gone!\" (dialogue). Firefly needs help (help). You hold Firefly gently (bond). The firefly says, \"Will you find my light?\" (dialogue). It is a magical mystery! Where did his light go? You can help Firefly!",
+    "created_at": "2026-02-20T19:35:28.817003",
+    "id": "286e2dc2-7104-4a36-bb73-382e20fa94a9",
+    "image_description": "A child, Hero, is waking up in a sunny meadow. A small, sad-looking firefly floats nearby, its lightbulb unlit.",
+    "image_url": null,
+    "output_type": "CHOICE",
+    "segment_number": 1,
+    "stage_label": "Wake Up!",
+    "title": "Hero and the Firefly",
+    "word_count": 82
+  },
+  "state": {
+    "additional_state": {},
+    "companion_status": "Sad, needs help",
+    "current_goal": "Find the firefly's light",
+    "current_location": "Sunny Meadow",
+    "key_clues": [],
+    "time_pressure": null,
+    "updated_at": "2026-02-20T19:35:28.846812"
+  },
+  "story_id": "2a8a0c5b-6904-4697-ac87-25d0b08db374",
+  "title": "Hero and the Firefly"
+}

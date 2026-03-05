@@ -1,0 +1,45 @@
+{
+  "inventory": [],
+  "is_completed": false,
+  "segment": {
+    "choices": [
+      {
+        "choice_number": 1,
+        "consequence_type": null,
+        "id": "1da5fdc4-e887-470f-8262-1197c0e29c03",
+        "is_selected": false,
+        "selected_at": null,
+        "text": "Rise and follow the firefly into the deeper parts of the Whisperwood, trusting its urgent guidance."
+      },
+      {
+        "choice_number": 2,
+        "consequence_type": null,
+        "id": "c6aa956c-351f-4647-b9a1-028116fb095d",
+        "is_selected": false,
+        "selected_at": null,
+        "text": "Focus your mind on the pulsing light and attempt to decipher the coded message, hoping to glean its meaning before committing to a course of action."
+      }
+    ],
+    "content": "The world awakens around you in hues of twilight blue and dawn pink. Dew clings to the petals of moonpetal blossoms, each a tiny chalice reflecting the nascent light. The air hums with the drowsy buzz of sleepy bumblebees and the distant croaking of the bog's elder bullfrogs. A gentle breeze whispers through the silverleaf trees, carrying the scent of damp earth and blooming nightflowers. You, Hero, lie nestled amongst the roots of an ancient willow, a natural alcove cradling you in its embrace. You stir, stretching your limbs, feeling the cool earth beneath your hands. This is the Whisperwood, a place where magic is as commonplace as the morning mist. But something feels… different this morning. \n\nA faint, rhythmic pulsing catches your attention. It's a soft, bioluminescent glow emanating from a firefly, much larger and brighter than any you’ve encountered before. This firefly, instead of flitting about, hovers directly in front of you, its light blinking in a deliberate pattern – three short pulses, then one long, then two short again. It's an unusual sequence, almost like a coded message. The firefly then begins to dart about erratically, as if urging you toward a specific destination. It weaves between the trees, its light casting dancing shadows on the forest floor. A sense of urgency washes over you; it feels as though something important, something requiring your immediate attention, is at stake. You realize that the firefly seems to expect you to follow. It pauses expectantly, as if awaiting your decision. It's light pulses with renewed intensity, beckoning you to choose your path. Will you heed its call, or will you ignore its plea? You take a deep breath, grounding yourself, and acknowledge the task at hand; the forest is never wrong.\n\n",
+    "created_at": "2026-02-20T19:44:54.145368",
+    "id": "2a1aee57-f4ca-45ed-8102-b7521541adee",
+    "image_description": "A large, glowing firefly hovers in front of Hero, who is lying amongst the roots of an ancient willow tree in a twilight forest.",
+    "image_url": null,
+    "output_type": "CHOICE",
+    "segment_number": 1,
+    "stage_label": "Wake Up!",
+    "title": "The Firefly's Enigma",
+    "word_count": 300
+  },
+  "state": {
+    "additional_state": {},
+    "companion_status": "None",
+    "current_goal": "Follow the firefly and discover the mystery",
+    "current_location": "Whisperwood",
+    "key_clues": [],
+    "time_pressure": null,
+    "updated_at": "2026-02-20T19:44:54.148386"
+  },
+  "story_id": "e31f293d-d14f-40ff-bd12-6cbe0a1297af",
+  "title": "The Firefly's Enigma"
+}

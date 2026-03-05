@@ -1,0 +1,500 @@
+"""
+Avatar Library Templates
+35 diverse, high-quality avatar templates covering all representations
+"""
+
+AVATAR_TEMPLATES = [
+    # PIXAR STYLE (10 avatars) - 3D, rounded, expressive
+    {
+        "id": "pixar_001",
+        "name": "Friendly Explorer",
+        "style": "pixar",
+        "age": 8,
+        "gender": "girl",
+        "skin_tone": "Medium Tan",
+        "hair_style": "Long Curly",
+        "hair_color": "Brown",
+        "outfit": "Explorer Jacket",
+        "expression": "Happy",
+        "tags": ["friendly", "adventurous", "brown-hair", "tan-skin", "explorer"]
+    },
+    {
+        "id": "pixar_002",
+        "name": "Curious Thinker",
+        "style": "pixar",
+        "age": 10,
+        "gender": "boy",
+        "skin_tone": "Light",
+        "hair_style": "Short Spiky",
+        "hair_color": "Blonde",
+        "outfit": "T-Shirt and Jeans",
+        "expression": "Thoughtful",
+        "tags": ["curious", "smart", "blonde-hair", "light-skin", "casual"]
+    },
+    {
+        "id": "pixar_003",
+        "name": "Joyful Dancer",
+        "style": "pixar",
+        "age": 9,
+        "gender": "girl",
+        "skin_tone": "Dark Brown",
+        "hair_style": "Afro",
+        "hair_color": "Black",
+        "outfit": "Colorful Dress",
+        "expression": "Joyful",
+        "tags": ["happy", "dancer", "black-hair", "dark-skin", "dress"]
+    },
+    {
+        "id": "pixar_004",
+        "name": "Brave Athlete",
+        "style": "pixar",
+        "age": 11,
+        "gender": "boy",
+        "skin_tone": "Tan",
+        "hair_style": "Short Wavy",
+        "hair_color": "Black",
+        "outfit": "Sports Jersey",
+        "expression": "Confident",
+        "tags": ["athletic", "brave", "black-hair", "tan-skin", "sporty"]
+    },
+    {
+        "id": "pixar_005",
+        "name": "Creative Artist",
+        "style": "pixar",
+        "age": 7,
+        "gender": "girl",
+        "skin_tone": "Medium Light",
+        "hair_style": "Braided",
+        "hair_color": "Auburn",
+        "outfit": "Colorful Apron",
+        "expression": "Focused",
+        "tags": ["creative", "artist", "auburn-hair", "medium-skin", "artistic"]
+    },
+    {
+        "id": "pixar_006",
+        "name": "Playful Inventor",
+        "style": "pixar",
+        "age": 10,
+        "gender": "boy",
+        "skin_tone": "Medium Tan",
+        "hair_style": "Messy Medium",
+        "hair_color": "Brown",
+        "outfit": "Hoodie",
+        "expression": "Excited",
+        "tags": ["inventive", "playful", "brown-hair", "tan-skin", "hoodie"]
+    },
+    {
+        "id": "pixar_007",
+        "name": "Gentle Helper",
+        "style": "pixar",
+        "age": 8,
+        "gender": "girl",
+        "skin_tone": "Very Light",
+        "hair_style": "Straight Long",
+        "hair_color": "Blonde",
+        "outfit": "School Uniform",
+        "expression": "Caring",
+        "tags": ["kind", "helpful", "blonde-hair", "light-skin", "uniform"]
+    },
+    {
+        "id": "pixar_008",
+        "name": "Bold Leader",
+        "style": "pixar",
+        "age": 12,
+        "gender": "boy",
+        "skin_tone": "Brown",
+        "hair_style": "Short Fade",
+        "hair_color": "Black",
+        "outfit": "Casual Jacket",
+        "expression": "Determined",
+        "tags": ["leader", "bold", "black-hair", "brown-skin", "jacket"]
+    },
+    {
+        "id": "pixar_009",
+        "name": "Dreamy Reader",
+        "style": "pixar",
+        "age": 9,
+        "gender": "girl",
+        "skin_tone": "Light",
+        "hair_style": "Bob Cut",
+        "hair_color": "Red",
+        "outfit": "Sweater",
+        "expression": "Peaceful",
+        "tags": ["reader", "dreamy", "red-hair", "light-skin", "sweater"]
+    },
+    {
+        "id": "pixar_010",
+        "name": "Energetic Performer",
+        "style": "pixar",
+        "age": 11,
+        "gender": "boy",
+        "skin_tone": "Medium Light",
+        "hair_style": "Ponytail",
+        "hair_color": "Brown",
+        "outfit": "Performance Outfit",
+        "expression": "Enthusiastic",
+        "tags": ["performer", "energetic", "brown-hair", "medium-skin", "performer"]
+    },
+
+    # WATERCOLOR STYLE (9 avatars) - Soft, gentle, artistic
+    {
+        "id": "watercolor_001",
+        "name": "Gentle Soul",
+        "style": "watercolor",
+        "age": 7,
+        "gender": "girl",
+        "skin_tone": "Light",
+        "hair_style": "Wavy Shoulder",
+        "hair_color": "Brown",
+        "outfit": "Soft Dress",
+        "expression": "Serene",
+        "tags": ["gentle", "calm", "brown-hair", "light-skin", "dress"]
+    },
+    {
+        "id": "watercolor_002",
+        "name": "Nature Explorer",
+        "style": "watercolor",
+        "age": 9,
+        "gender": "boy",
+        "skin_tone": "Medium Tan",
+        "hair_style": "Messy Short",
+        "hair_color": "Black",
+        "outfit": "Adventure Gear",
+        "expression": "Curious",
+        "tags": ["nature", "explorer", "black-hair", "tan-skin", "outdoor"]
+    },
+    {
+        "id": "watercolor_003",
+        "name": "Sweet Musician",
+        "style": "watercolor",
+        "age": 10,
+        "gender": "girl",
+        "skin_tone": "Dark Brown",
+        "hair_style": "Braided Crown",
+        "hair_color": "Black",
+        "outfit": "Flowing Dress",
+        "expression": "Peaceful",
+        "tags": ["musician", "sweet", "black-hair", "dark-skin", "musical"]
+    },
+    {
+        "id": "watercolor_004",
+        "name": "Quiet Thinker",
+        "style": "watercolor",
+        "age": 11,
+        "gender": "boy",
+        "skin_tone": "Very Light",
+        "hair_style": "Straight Medium",
+        "hair_color": "Blonde",
+        "outfit": "Simple Shirt",
+        "expression": "Thoughtful",
+        "tags": ["thinker", "quiet", "blonde-hair", "light-skin", "simple"]
+    },
+    {
+        "id": "watercolor_005",
+        "name": "Joyful Gardener",
+        "style": "watercolor",
+        "age": 8,
+        "gender": "girl",
+        "skin_tone": "Tan",
+        "hair_style": "Short Curly",
+        "hair_color": "Auburn",
+        "outfit": "Garden Apron",
+        "expression": "Happy",
+        "tags": ["gardener", "joyful", "auburn-hair", "tan-skin", "nature"]
+    },
+    {
+        "id": "watercolor_006",
+        "name": "Peaceful Wanderer",
+        "style": "watercolor",
+        "age": 12,
+        "gender": "boy",
+        "skin_tone": "Brown",
+        "hair_style": "Wavy Long",
+        "hair_color": "Black",
+        "outfit": "Comfortable Tunic",
+        "expression": "Calm",
+        "tags": ["wanderer", "peaceful", "black-hair", "brown-skin", "tunic"]
+    },
+    {
+        "id": "watercolor_007",
+        "name": "Bright Star",
+        "style": "watercolor",
+        "age": 7,
+        "gender": "girl",
+        "skin_tone": "Medium Light",
+        "hair_style": "Twin Braids",
+        "hair_color": "Blonde",
+        "outfit": "Star-print Dress",
+        "expression": "Bright",
+        "tags": ["bright", "cheerful", "blonde-hair", "medium-skin", "stars"]
+    },
+    {
+        "id": "watercolor_008",
+        "name": "Ocean Dreamer",
+        "style": "watercolor",
+        "age": 10,
+        "gender": "boy",
+        "skin_tone": "Medium Tan",
+        "hair_style": "Surfer Cut",
+        "hair_color": "Brown",
+        "outfit": "Beach Shirt",
+        "expression": "Dreamy",
+        "tags": ["dreamer", "ocean", "brown-hair", "tan-skin", "beach"]
+    },
+    {
+        "id": "watercolor_009",
+        "name": "Kind Heart",
+        "style": "watercolor",
+        "age": 9,
+        "gender": "girl",
+        "skin_tone": "Light",
+        "hair_style": "Soft Ponytail",
+        "hair_color": "Red",
+        "outfit": "Cozy Sweater",
+        "expression": "Gentle",
+        "tags": ["kind", "caring", "red-hair", "light-skin", "cozy"]
+    },
+
+    # CARTOON STYLE (8 avatars) - 2D, bold, vibrant
+    {
+        "id": "cartoon_001",
+        "name": "Super Hero",
+        "style": "cartoon",
+        "age": 10,
+        "gender": "boy",
+        "skin_tone": "Tan",
+        "hair_style": "Spiky Short",
+        "hair_color": "Black",
+        "outfit": "Superhero Cape",
+        "expression": "Heroic",
+        "tags": ["superhero", "brave", "black-hair", "tan-skin", "cape"]
+    },
+    {
+        "id": "cartoon_002",
+        "name": "Magic Maker",
+        "style": "cartoon",
+        "age": 9,
+        "gender": "girl",
+        "skin_tone": "Medium Light",
+        "hair_style": "Pigtails",
+        "hair_color": "Purple",
+        "outfit": "Wizard Robes",
+        "expression": "Magical",
+        "tags": ["magical", "wizard", "purple-hair", "medium-skin", "fantasy"]
+    },
+    {
+        "id": "cartoon_003",
+        "name": "Speed Racer",
+        "style": "cartoon",
+        "age": 11,
+        "gender": "boy",
+        "skin_tone": "Dark Brown",
+        "hair_style": "Short Fade",
+        "hair_color": "Black",
+        "outfit": "Racing Jacket",
+        "expression": "Excited",
+        "tags": ["racer", "fast", "black-hair", "dark-skin", "sporty"]
+    },
+    {
+        "id": "cartoon_004",
+        "name": "Space Explorer",
+        "style": "cartoon",
+        "age": 8,
+        "gender": "girl",
+        "skin_tone": "Very Light",
+        "hair_style": "Space Buns",
+        "hair_color": "Blonde",
+        "outfit": "Space Suit",
+        "expression": "Adventurous",
+        "tags": ["space", "explorer", "blonde-hair", "light-skin", "astronaut"]
+    },
+    {
+        "id": "cartoon_005",
+        "name": "Rock Star",
+        "style": "cartoon",
+        "age": 12,
+        "gender": "boy",
+        "skin_tone": "Light",
+        "hair_style": "Long Rocker",
+        "hair_color": "Brown",
+        "outfit": "Band T-Shirt",
+        "expression": "Cool",
+        "tags": ["musician", "rockstar", "brown-hair", "light-skin", "music"]
+    },
+    {
+        "id": "cartoon_006",
+        "name": "Tech Genius",
+        "style": "cartoon",
+        "age": 10,
+        "gender": "girl",
+        "skin_tone": "Brown",
+        "hair_style": "Afro Puffs",
+        "hair_color": "Black",
+        "outfit": "Tech Vest",
+        "expression": "Smart",
+        "tags": ["tech", "genius", "black-hair", "brown-skin", "smart"]
+    },
+    {
+        "id": "cartoon_007",
+        "name": "Wild Adventurer",
+        "style": "cartoon",
+        "age": 9,
+        "gender": "boy",
+        "skin_tone": "Medium Tan",
+        "hair_style": "Messy Wild",
+        "hair_color": "Red",
+        "outfit": "Safari Outfit",
+        "expression": "Wild",
+        "tags": ["adventurer", "wild", "red-hair", "tan-skin", "safari"]
+    },
+    {
+        "id": "cartoon_008",
+        "name": "Champion Athlete",
+        "style": "cartoon",
+        "age": 11,
+        "gender": "girl",
+        "skin_tone": "Tan",
+        "hair_style": "High Ponytail",
+        "hair_color": "Black",
+        "outfit": "Sports Uniform",
+        "expression": "Determined",
+        "tags": ["athlete", "champion", "black-hair", "tan-skin", "sporty"]
+    },
+
+    # CLAY STYLE (8 avatars) - Textured, playful, 3D modeling
+    {
+        "id": "clay_001",
+        "name": "Cozy Reader",
+        "style": "clay",
+        "age": 8,
+        "gender": "girl",
+        "skin_tone": "Light",
+        "hair_style": "Bob Cut",
+        "hair_color": "Brown",
+        "outfit": "Comfy Sweater",
+        "expression": "Content",
+        "tags": ["reader", "cozy", "brown-hair", "light-skin", "books"]
+    },
+    {
+        "id": "clay_002",
+        "name": "Builder Boss",
+        "style": "clay",
+        "age": 10,
+        "gender": "boy",
+        "skin_tone": "Medium Tan",
+        "hair_style": "Short Neat",
+        "hair_color": "Black",
+        "outfit": "Tool Belt",
+        "expression": "Proud",
+        "tags": ["builder", "creator", "black-hair", "tan-skin", "tools"]
+    },
+    {
+        "id": "clay_003",
+        "name": "Flower Friend",
+        "style": "clay",
+        "age": 7,
+        "gender": "girl",
+        "skin_tone": "Dark Brown",
+        "hair_style": "Natural Curls",
+        "hair_color": "Black",
+        "outfit": "Floral Dress",
+        "expression": "Sweet",
+        "tags": ["flowers", "nature", "black-hair", "dark-skin", "gentle"]
+    },
+    {
+        "id": "clay_004",
+        "name": "Science Whiz",
+        "style": "clay",
+        "age": 11,
+        "gender": "boy",
+        "skin_tone": "Very Light",
+        "hair_style": "Curly Medium",
+        "hair_color": "Blonde",
+        "outfit": "Lab Coat",
+        "expression": "Curious",
+        "tags": ["science", "smart", "blonde-hair", "light-skin", "lab"]
+    },
+    {
+        "id": "clay_005",
+        "name": "Dance Star",
+        "style": "clay",
+        "age": 9,
+        "gender": "girl",
+        "skin_tone": "Tan",
+        "hair_style": "Ballet Bun",
+        "hair_color": "Auburn",
+        "outfit": "Dance Outfit",
+        "expression": "Graceful",
+        "tags": ["dancer", "graceful", "auburn-hair", "tan-skin", "ballet"]
+    },
+    {
+        "id": "clay_006",
+        "name": "Chef Master",
+        "style": "clay",
+        "age": 12,
+        "gender": "boy",
+        "skin_tone": "Brown",
+        "hair_style": "Short Curly",
+        "hair_color": "Black",
+        "outfit": "Chef Hat",
+        "expression": "Happy",
+        "tags": ["chef", "cooking", "black-hair", "brown-skin", "food"]
+    },
+    {
+        "id": "clay_007",
+        "name": "Art Star",
+        "style": "clay",
+        "age": 8,
+        "gender": "girl",
+        "skin_tone": "Medium Light",
+        "hair_style": "Messy Bun",
+        "hair_color": "Brown",
+        "outfit": "Paint-splattered Apron",
+        "expression": "Creative",
+        "tags": ["artist", "creative", "brown-hair", "medium-skin", "paint"]
+    },
+    {
+        "id": "clay_008",
+        "name": "Animal Friend",
+        "style": "clay",
+        "age": 10,
+        "gender": "boy",
+        "skin_tone": "Light",
+        "hair_style": "Shaggy Medium",
+        "hair_color": "Red",
+        "outfit": "Nature Vest",
+        "expression": "Friendly",
+        "tags": ["animals", "nature", "red-hair", "light-skin", "caring"]
+    },
+]
+
+def get_templates_by_style(style: str):
+    """Get all templates of a specific style"""
+    return [t for t in AVATAR_TEMPLATES if t['style'] == style]
+
+def get_template_by_id(template_id: str):
+    """Get a specific template by ID"""
+    for template in AVATAR_TEMPLATES:
+        if template['id'] == template_id:
+            return template
+    return None
+
+def search_templates(query: str = None, style: str = None, gender: str = None):
+    """Search templates by various criteria"""
+    results = AVATAR_TEMPLATES.copy()
+
+    if style:
+        results = [t for t in results if t['style'] == style]
+
+    if gender:
+        results = [t for t in results if t['gender'] == gender]
+
+    if query:
+        query_lower = query.lower()
+        results = [t for t in results if
+                   query_lower in ' '.join(t['tags']).lower() or
+                   query_lower in t['name'].lower() or
+                   query_lower in t['hair_color'].lower() or
+                   query_lower in t['outfit'].lower()]
+
+    return results

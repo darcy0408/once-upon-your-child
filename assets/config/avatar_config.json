@@ -1,0 +1,13 @@
+{
+  "baseUrl": "https://blissful-clarity-production-12b3.up.railway.app",
+  "apiVersion": "9.x",
+  "style": "adventurer",
+  "dockerImageTag": "3",
+  "cacheMaxAgeDays": 30,
+  "comments": {
+    "baseUrl": "Railway deployment URL - DiceBear self-hosted API",
+    "apiVersion": "DiceBear API version prefix (9.x, v9, etc.)",
+    "style": "DiceBear style name - NOW USING AVATAAARS (has clothing!)",
+    "dockerImageTag": "Actual Docker image tag used: dicebear/api:3"
+  }
+}

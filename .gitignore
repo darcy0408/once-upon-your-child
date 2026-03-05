@@ -1,0 +1,171 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+__pycache__/
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Test images
+GenericButNotTurds.png
+turds.png
+
+# Secrets - Protect ALL .env files
+.env
+*.env
+backend/.env
+**/.env
+
+# Claude Code (ignore settings, keep commands)
+.claude/settings.local.json
+.claude/.cache/
+
+# Database (local development only)
+backend/characters.db
+backend/*.db
+backend/**/*.db
+backend/instance/*.db
+
+# Python virtual environment
+backend/.venv/
+**/.venv/
+**/venv/
+
+# Flutter tooling
+.tooling/
+
+# Local Netlify folder
+.netlify
+
+# Netlify build script
+!.netlify/install_flutter.sh
+
+# Windows artifacts
+nul
+worktrees/
+INSTRUCTIONS_FOR_USER.md
+instance/*.db
+/bin/
+
+# Development test scripts
+
+
+# Test reports and lint outputs
+reports/
+backend/reports/
+lint_report*.txt
+story_output.txt
+story_request.json
+payload.json
+
+
+# Temporary test documentation (session-specific, keep consolidated version only)
+TEST_IMPLEMENTATION_STATUS.md
+TEST_IMPLEMENTATION_FINAL_SUMMARY.md
+TEST_RUN.md
+
+# Accidentally moved personal project folders
+Twins Great Adventures/
+Twins Great Adventures - Copy/
+
+# Screenshots and images
+Screenshot*.png
+*.jpg
+HowDoYouFeelToday.jpg
+
+# Marketing and reference images (keep local only)
+SellItPowerpoint images/
+StoryWeaverImagestoShare/
+
+# Avatar working files (local only - large binaries, not needed in repo)
+avatarImages/Avatar_Final/
+avatarImages/avatar_review.html
+
+# Old/archived assets
+assets/mood_lanterns/old/
+
+# Documentation files (session-specific)
+handoff*.md
+AVATAR_INTEGRATION_GUIDE.md
+AVATAR_SYSTEM_README.md
+AVATAR_SYSTEM_SUMMARY.md
+TECHNICAL_REPORT.md
+DICEBEAR_ATTRIBUTION.md
+avatar_system_dependencies.yaml
+
+# Temporary folders and files
+feelings wheel images/
+/images/
+tools/
+ng
+check_java.ps1
+*.code-workspace
+test_db_output.txt
+--help
+--version
+
+# Node.js dependencies
+node_modules/
+
+# Coverage reports
+coverage/
+backend/.coverage
+.coverage
+htmlcov/
+
+# Temporary test scripts and utilities
+check_*.py
+live_test_*.py
+/test_*_integration.py
+test_gemini_*.py
+test_mock_*.py
+test_coloring_*.py
+test_illustrations.py
+test_interactive_story.py
+test_avatar_endpoint.py
+test_parser.py
+debug_*.py
+tests/test_backend_*.py
+
+# Generated quality check output
+quality_check_results/
+CONTENT_QUALITY_REPORT_*.md

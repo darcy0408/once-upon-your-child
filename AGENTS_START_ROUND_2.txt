@@ -1,0 +1,52 @@
+===============================================
+AGENT INSTRUCTIONS: START ROUND 2
+===============================================
+
+When you finish your current task (Task 4 or Task 7):
+
+STEP 1: Update TEAM_COORDINATION.md
+- Mark your current task as COMPLETED
+- Add results (tests passing, commits, etc.)
+- Move yourself to "Available for Assignment"
+
+STEP 2: Pick Your Next Task
+- Open: AGENT_TASKS_ROUND_2.md
+- Find your recommended task:
+
+  For Codex (after Task 4):
+  → Task 5: Rate Limiting Tests (CRITICAL - 3-4 hours)
+
+  For Gemini (after Task 7):
+  → Task 13: Fix test_fixtures.dart (HIGH IMPACT - 1-2 hours)
+
+STEP 3: Claim New Task
+- Update TEAM_COORDINATION.md "Active Work" section
+- Follow the standard claim template
+
+STEP 4: Complete Task
+- Follow instructions in AGENT_TASKS_ROUND_2.md
+- Run tests before committing
+- Update TEAM_COORDINATION.md when done
+
+STEP 5: Repeat
+- Pick next task from AGENT_TASKS_ROUND_2.md
+- Continue until all Round 2 tasks complete!
+
+===============================================
+EXPECTED TIMELINE
+===============================================
+
+Round 1: 3-4 hours (in progress now)
+Round 2: 9-11 hours (both agents parallel)
+Total: 12-15 hours
+
+Results: 87 tests created/fixed (86% of Phase 1!)
+
+===============================================
+NO HUMAN INTERVENTION NEEDED
+===============================================
+
+You are autonomous! Keep working through Round 2 tasks.
+Claude will review when you're done.
+
+Good luck! 🚀

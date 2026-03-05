@@ -1,0 +1,276 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.2, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\dev\story-weaver-app\backend
+configfile: pytest.ini
+plugins: anyio-4.9.0, base-url-2.1.0, cov-4.1.0, flask-1.3.0, playwright-0.7.2
+collected 5 items
+
+backend\tests\security_verification.py ....FE                            [100%]
+
+=================================== ERRORS ====================================
+______ ERROR at teardown of test_idor_protection_delete_other_character _______
+  + Exception Group Traceback (most recent call last):
+  |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 353, in from_call
+  |     result: TResult | None = func()
+  |                              ~~~~^^
+  |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 245, in <lambda>
+  |     lambda: runtest_hook(item=item, **kwds),
+  |             ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\pluggy\_hooks.py", line 512, in __call__
+  |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  |            ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\pluggy\_manager.py", line 120, in _hookexec
+  |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  |            ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 167, in _multicall
+  |     raise exception
+  |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 139, in _multicall
+  |     teardown.throw(exception)
+  |     ~~~~~~~~~~~~~~^^^^^^^^^^^
+  |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\_pytest\logging.py", line 858, in pytest_runtest_teardown
+  |     yield
+  |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 139, in _multicall
+  |     teardown.throw(exception)
+  |     ~~~~~~~~~~~~~~^^^^^^^^^^^
+  |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\_pytest\capture.py", line 905, in pytest_runtest_teardown
+  |     return (yield)
+  |             ^^^^^
+  |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\pluggy\_callers.py", line 121, in _multicall
+  |     res = hook_impl.function(*args)
+  |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 194, in pytest_runtest_teardown
+  |     item.session._setupstate.teardown_exact(nextitem)
+  |     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 568, in teardown_exact
+  |     raise BaseExceptionGroup("errors during test teardown", exceptions[::-1])
+  | ExceptionGroup: errors during test teardown (2 sub-exceptions)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 555, in teardown_exact
+    |     fin()
+    |     ~~~^^
+    |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py", line 1053, in finish
+    |     raise exceptions[0]
+    |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py", line 1042, in finish
+    |     fin()
+    |     ~~~^^
+    |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py", line 924, in _teardown_yield_fixture
+    |     next(it)
+    |     ~~~~^^^^
+    |   File "C:\dev\story-weaver-app\backend\tests\conftest.py", line 24, in app
+    |     with app.app_context():
+    |          ~~~~~~~~~~~~~~~^^
+    |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\flask\ctx.py", line 284, in __exit__
+    |     self.pop(exc_value)
+    |     ~~~~~~~~^^^^^^^^^^^
+    |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\flask\ctx.py", line 268, in pop
+    |     raise AssertionError(
+    |         f"Popped wrong app context. ({ctx!r} instead of {self!r})"
+    |     )
+    | AssertionError: Popped wrong app context. (<flask.ctx.AppContext object at 0x000002217F2BE450> instead of <flask.ctx.AppContext object at 0x000002217BAE2210>)
+    +---------------- 2 ----------------
+    | ExceptionGroup: errors while tearing down <Function test_idor_protection_delete_other_character> (2 sub-exceptions)
+    +-+---------------- 1 ----------------
+      | Traceback (most recent call last):
+      |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 555, in teardown_exact
+      |     fin()
+      |     ~~~^^
+      |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py", line 1053, in finish
+      |     raise exceptions[0]
+      |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py", line 1042, in finish
+      |     fin()
+      |     ~~~^^
+      |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py", line 924, in _teardown_yield_fixture
+      |     next(it)
+      |     ~~~~^^^^
+      |   File "C:\dev\story-weaver-app\backend\tests\conftest.py", line 32, in client
+      |     with app.test_client() as client:
+      |          ~~~~~~~~~~~~~~~^^
+      |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\flask\testing.py", line 262, in __exit__
+      |     self._context_stack.close()
+      |     ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+      |   File "C:\Python313\Lib\contextlib.py", line 627, in close
+      |     self.__exit__(None, None, None)
+      |     ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+      |   File "C:\Python313\Lib\contextlib.py", line 619, in __exit__
+      |     raise exc
+      |   File "C:\Python313\Lib\contextlib.py", line 604, in __exit__
+      |     if cb(*exc_details):
+      |        ~~^^^^^^^^^^^^^^
+      |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\flask\ctx.py", line 284, in __exit__
+      |     self.pop(exc_value)
+      |     ~~~~~~~~^^^^^^^^^^^
+      |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\flask\ctx.py", line 268, in pop
+      |     raise AssertionError(
+      |         f"Popped wrong app context. ({ctx!r} instead of {self!r})"
+      |     )
+      | AssertionError: Popped wrong app context. (<flask.ctx.AppContext object at 0x000002217BAE2210> instead of <flask.ctx.AppContext object at 0x000002217F2BE850>)
+      +---------------- 2 ----------------
+      | Traceback (most recent call last):
+      |   File "C:\dev\story-weaver-app\backend\tests\security_verification.py", line 44, in regular_user
+      |     db.session.delete(user)
+      |     ~~~~~~~~~~~~~~~~~^^^^^^
+      |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\scoping.py", line 672, in delete
+      |     return self._proxied.delete(instance)
+      |            ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+      |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\session.py", line 3528, in delete
+      |     self._delete_impl(state, instance, head=True)
+      |     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\session.py", line 3541, in _delete_impl
+      |     to_attach = self._before_attach(state, obj)
+      |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\session.py", line 4255, in _before_attach
+      |     raise sa_exc.InvalidRequestError(
+      |     ...<3 lines>...
+      |     )
+      | sqlalchemy.exc.InvalidRequestError: Object '<User at 0x2217f07ce90>' is already attached to session '5' (this is '6')
+      | 
+      | During handling of the above exception, another exception occurred:
+      | 
+      | Traceback (most recent call last):
+      |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\_pytest\runner.py", line 555, in teardown_exact
+      |     fin()
+      |     ~~~^^
+      |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py", line 1053, in finish
+      |     raise exceptions[0]
+      |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py", line 1042, in finish
+      |     fin()
+      |     ~~~^^
+      |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\_pytest\fixtures.py", line 924, in _teardown_yield_fixture
+      |     next(it)
+      |     ~~~~^^^^
+      |   File "C:\dev\story-weaver-app\backend\tests\security_verification.py", line 30, in regular_user
+      |     with app.app_context():
+      |          ~~~~~~~~~~~~~~~^^
+      |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\flask\ctx.py", line 284, in __exit__
+      |     self.pop(exc_value)
+      |     ~~~~~~~~^^^^^^^^^^^
+      |   File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\flask\ctx.py", line 268, in pop
+      |     raise AssertionError(
+      |         f"Popped wrong app context. ({ctx!r} instead of {self!r})"
+      |     )
+      | AssertionError: Popped wrong app context. (<flask.ctx.AppContext object at 0x000002217F2BE850> instead of <flask.ctx.AppContext object at 0x000002217F2BE450>)
+      +------------------------------------
+------------------------------ Captured log call ------------------------------
+ERROR    story_engine:app_helpers.py:105 {"timestamp": "2026-01-17T01:19:20.009514", "type": "unhandled_error", "message": "404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.", "details": {"request_id": "f6db3a89", "method": "DELETE", "path": "/character/characters/char_test", "error_class": "NotFound"}}
+ERROR    story_engine:app_helpers.py:163 [f6db3a89] Unhandled error: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+Traceback (most recent call last):
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 891, in dispatch_request
+    self.raise_routing_exception(req)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 500, in raise_routing_exception
+    raise request.routing_exception  # type: ignore[misc]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\flask\ctx.py", line 362, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\werkzeug\routing\map.py", line 629, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+================================== FAILURES ===================================
+_________________ test_idor_protection_delete_other_character _________________
+
+client = <FlaskClient <Flask 'backend.app'>>, app = <Flask 'backend.app'>
+user_character = <Character char_test>
+
+    def test_idor_protection_delete_other_character(client, app, user_character):
+        """Test attacker cannot delete valid user's character."""
+        # Create attacker
+        with app.app_context():
+            attacker = db.session.get(User, 'attacker')
+            if not attacker:
+                attacker = User(id='attacker', username='att', email='att@test.com', role='user')
+                attacker.set_password('password')
+                db.session.add(attacker)
+                db.session.commit()
+    
+            from flask_jwt_extended import create_access_token
+            token = create_access_token(identity=attacker.id)
+            attacker_headers = {'Authorization': f'Bearer {token}'}
+    
+        try:
+            response = client.delete(f'/character/characters/{user_character.id}', headers=attacker_headers)
+>           assert response.status_code == 403
+E           assert 500 == 403
+E            +  where 500 = <WrapperTestResponse streamed [500 INTERNAL SERVER ERROR]>.status_code
+
+backend\tests\security_verification.py:119: AssertionError
+------------------------------ Captured log call ------------------------------
+ERROR    story_engine:app_helpers.py:105 {"timestamp": "2026-01-17T01:19:20.009514", "type": "unhandled_error", "message": "404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.", "details": {"request_id": "f6db3a89", "method": "DELETE", "path": "/character/characters/char_test", "error_class": "NotFound"}}
+ERROR    story_engine:app_helpers.py:163 [f6db3a89] Unhandled error: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+Traceback (most recent call last):
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 891, in dispatch_request
+    self.raise_routing_exception(req)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 500, in raise_routing_exception
+    raise request.routing_exception  # type: ignore[misc]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\flask\ctx.py", line 362, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+  File "C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\werkzeug\routing\map.py", line 629, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+============================== warnings summary ===============================
+tests/security_verification.py::test_admin_route_access_denied_no_auth
+  C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\flask_caching\__init__.py:145: DeprecationWarning: Using the initialization functions in flask_caching.backend is deprecated.  Use the a full path to backend classes directly.
+    self._set_cache(app, config)
+
+tests/security_verification.py::test_admin_route_access_denied_no_auth
+tests/security_verification.py::test_admin_route_access_denied_regular_user
+tests/security_verification.py::test_admin_route_access_granted_admin
+tests/security_verification.py::test_endor_protection_user_stats
+tests/security_verification.py::test_idor_protection_delete_other_character
+tests/security_verification.py::test_idor_protection_delete_other_character
+  C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\sql\schema.py:3624: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return util.wrap_callable(lambda ctx: fn(), fn)  # type: ignore
+
+tests/security_verification.py::test_admin_route_access_denied_no_auth
+  C:\dev\story-weaver-app\backend\services\story_generation_service.py:1: FutureWarning: 
+  
+  All support for the `google.generativeai` package has ended. It will no longer be receiving 
+  updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+  See README for more details:
+  
+  https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+  
+    import google.generativeai as genai
+
+tests/security_verification.py::test_admin_route_access_denied_regular_user
+tests/security_verification.py::test_admin_route_access_granted_admin
+tests/security_verification.py::test_endor_protection_user_stats
+  C:\dev\story-weaver-app\backend\middleware\auth.py:61: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    current_user = User.query.get(user_id)
+
+tests/security_verification.py::test_admin_route_access_granted_admin
+tests/security_verification.py::test_admin_route_access_granted_admin
+tests/security_verification.py::test_admin_route_access_granted_admin
+  C:\dev\story-weaver-app\backend\analytics_routes.py:15: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    cutoff = datetime.utcnow() - timedelta(days=days)
+
+tests/security_verification.py::test_admin_route_access_granted_admin
+tests/security_verification.py::test_admin_route_access_granted_admin
+  C:\dev\story-weaver-app\backend\analytics_routes.py:20: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    cutoff = datetime.utcnow() - timedelta(days=days)
+
+tests/security_verification.py::test_admin_route_access_granted_admin
+  C:\dev\story-weaver-app\backend\analytics_routes.py:37: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    cutoff = datetime.utcnow() - timedelta(days=days)
+
+tests/security_verification.py::test_admin_route_access_granted_admin
+  C:\dev\story-weaver-app\backend\analytics_routes.py:42: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    cutoff = datetime.utcnow() - timedelta(days=days)
+
+tests/security_verification.py::test_idor_protection_delete_other_character
+  C:\dev\story-weaver-app\backend\utils\app_helpers.py:100: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    'timestamp': datetime.utcnow().isoformat(),
+
+tests/security_verification.py::test_idor_protection_delete_other_character
+  C:\Users\Darcy VanPelt\AppData\Roaming\Python\Python313\site-packages\flask_sqlalchemy\extension.py:881: SAWarning: Can't sort tables for DROP; an unresolvable foreign key dependency exists between tables: interactive_story, story_choice, story_segment; and backend does not support ALTER.  To restore at least a partial sort, apply use_alter=True to ForeignKey and ForeignKeyConstraint objects involved in the cycle to mark these as known cycles that will be ignored.
+    getattr(metadata, op_name)(bind=engine)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED backend\tests\security_verification.py::test_idor_protection_delete_other_character
+ERROR backend\tests\security_verification.py::test_idor_protection_delete_other_character
+============== 1 failed, 4 passed, 20 warnings, 1 error in 4.48s ==============

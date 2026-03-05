@@ -1,0 +1,61 @@
+{
+  "date": "2026-02-10T13:06:02.894082",
+  "tester": "Automated Test Script",
+  "mock_mode": false,
+  "tests": [
+    {
+      "name": "Backend Health",
+      "status": "PASS",
+      "details": "Status: ok, Database: ok",
+      "duration_ms": 2186
+    },
+    {
+      "name": "Custom Elements - Simple",
+      "status": "PASS",
+      "details": "Talking tree found in story",
+      "duration_ms": 34672
+    },
+    {
+      "name": "Custom Elements - Multiple",
+      "status": "PARTIAL",
+      "details": "Dragon: False, Key/Magic: True",
+      "duration_ms": 29934
+    },
+    {
+      "name": "Empty Custom Elements",
+      "status": "PASS",
+      "details": "Story generated without custom elements",
+      "duration_ms": 31934
+    },
+    {
+      "name": "Special Characters",
+      "status": "PASS",
+      "details": "Story generated with special characters in input",
+      "duration_ms": 33315
+    },
+    {
+      "name": "Story Length - QUICK",
+      "status": "PASS",
+      "details": "Generated 902 words in 27983ms",
+      "duration_ms": 27983
+    },
+    {
+      "name": "Story Length - STANDARD",
+      "status": "PASS",
+      "details": "Generated 1069 words in 28856ms",
+      "duration_ms": 28856
+    },
+    {
+      "name": "Story Length - EPIC",
+      "status": "PASS",
+      "details": "Generated 1437 words in 106035ms",
+      "duration_ms": 106035
+    }
+  ],
+  "summary": {
+    "total_tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "success_rate": "100.0%"
+  }
+}

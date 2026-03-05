@@ -1,0 +1,27 @@
+{
+  "async_illustrations": false,
+  "status": "complete",
+  "story": {
+    "adventure_report": {},
+    "adventure_steps": [
+      "The Story"
+    ],
+    "id": "b171d004-c7be-4d2a-b7ea-dd0c3ff4af21",
+    "illustrations": [],
+    "include_illustrations": false,
+    "learning_to_read_mode": true,
+    "pages": [
+      "{\n  \"story\": [\n    {\n      \"page1\": \"Lumi the firefly was very small. She had a little light.\"\n    },\n    {\n      \"page2\": \"The other fireflies had bright, strong lights. Lumi's light felt dim.\"\n    },\n    {\n      \"page3\": \"She felt a little sad. She wished she was a brave firefly.\"\n    },\n    {\n      \"page4\": \"One night, a big, dark shadow fell. \\\"Oh no!\\\" thought Lumi, scared.\"\n    },\n    {\n      \"page5\": \"She closed her eyes. \\\"This is okay,\\\" she whispered. \\\"I am brave, I am brave.\\\"\"\n    },\n    {\n      \"page6\": \"Lumi opened her eyes. She blinked her little light. She must be a brave little firefly.\"\n    },\n    {\n      \"page7\": \"The shadow was just a branch! Lumi's light showed the way for everyone.\"\n    },\n    {\n      \"page8\": \"Lumi's little light felt strong and bright now. She *felt a little sad* no more!\"\n    }\n  ]\n}"
+    ],
+    "rhyme_time_mode": false,
+    "story_duration": null,
+    "story_text": "{\n  \"story\": [\n    {\n      \"page1\": \"Lumi the firefly was very small. She had a little light.\"\n    },\n    {\n      \"page2\": \"The other fireflies had bright, strong lights. Lumi's light felt dim.\"\n    },\n    {\n      \"page3\": \"She felt a little sad. She wished she was a brave firefly.\"\n    },\n    {\n      \"page4\": \"One night, a big, dark shadow fell. \\\"Oh no!\\\" thought Lumi, scared.\"\n    },\n    {\n      \"page5\": \"She closed her eyes. \\\"This is okay,\\\" she whispered. \\\"I am brave, I am brave.\\\"\"\n    },\n    {\n      \"page6\": \"Lumi opened her eyes. She blinked her little light. She must be a brave little firefly.\"\n    },\n    {\n      \"page7\": \"The shadow was just a branch! Lumi's light showed the way for everyone.\"\n    },\n    {\n      \"page8\": \"Lumi's little light felt strong and bright now. She *felt a little sad* no more!\"\n    }\n  ]\n}",
+    "theme": "The Brave Little Firefly",
+    "title": "A The Brave Little Firefly Adventure",
+    "total_pages": 1,
+    "total_words": 134,
+    "validation_issues": [],
+    "wisdom_gem": "You are magic!"
+  },
+  "task_id": "sync_task"
+}

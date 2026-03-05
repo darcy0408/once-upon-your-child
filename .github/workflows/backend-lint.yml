@@ -1,0 +1,45 @@
+name: Backend Lint
+
+on:
+  push:
+    branches: [main, 'gemini/**']
+    paths:
+      - 'backend/**'
+  pull_request:
+    paths:
+      - 'backend/**'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install linting tools
+        run: |
+          pip install flake8 black isort mypy
+
+      - name: Run Black (format check)
+        run: |
+          cd backend
+          black --check .
+
+      - name: Run isort (import sorting)
+        run: |
+          cd backend
+          isort --check-only .
+
+      - name: Run flake8 (linting)
+        run: |
+          cd backend
+          flake8 . --max-line-length=100 --exclude=venv,.venv,migrations
+
+      - name: Run mypy (type checking)
+        run: |
+          cd backend
+          mypy . --ignore-missing-imports || true

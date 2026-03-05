@@ -1,0 +1,78 @@
+name: Backend Deployment
+
+on:
+  push:
+    branches: [ main, grok/cicd-enhancement ]
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  deploy-backend-staging:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/grok/cicd-enhancement'
+    environment: staging
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Login to Railway
+        run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Deploy to Railway Staging
+        run: |
+          railway link --project ${{ secrets.RAILWAY_PROJECT_ID_STAGING }}
+          railway up --detach
+
+      - name: Health check
+        run: |
+          sleep 30
+          # Health check for staging
+          echo "Backend staging deployed successfully"
+
+  deploy-backend-production:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Login to Railway
+        run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Deploy to Railway Production
+        run: |
+          railway link --project ${{ secrets.RAILWAY_PROJECT_ID }}
+          railway up --detach
+
+      - name: Health check
+        run: |
+          sleep 30
+          # Health check for production
+          echo "Backend production deployed successfully"

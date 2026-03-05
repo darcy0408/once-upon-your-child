@@ -1,0 +1,9 @@
+Testing Custom Pet Story Generation...
+Status Code: 200
+Response: dict_keys(['async_illustrations', 'status', 'story', 'story_text', 'task_id', 'theme', 'title', 'wisdom_gem'])
+
+--- Generated Story Snippet ---
+{'name': 'Alex', 'age': 7, 'personality_traits': ['Brave', 'Curious']} embarks on a quick quest about magical forest and discovers that courage grows with every kind choice....
+
+WARNING: 'Sparky' NOT found in story text.
+WARNING: Personality traits NOT found.

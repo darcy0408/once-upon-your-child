@@ -1,0 +1,42 @@
+{
+  "test_run": "2026-01-27T13:19:00.418146",
+  "summary": {
+    "total_tests": 5,
+    "passed": 2,
+    "failed": 3,
+    "success_rate": "40.0%",
+    "phase_3_ready": false
+  },
+  "tests": [
+    {
+      "name": "Backend Health Check",
+      "status": "PASS",
+      "duration_ms": 38,
+      "details": "Backend responding correctly"
+    },
+    {
+      "name": "Custom Elements - Single Element",
+      "status": "PASS",
+      "duration_ms": 21811,
+      "details": "Single custom element integrated successfully"
+    },
+    {
+      "name": "Custom Elements - Multiple Elements",
+      "status": "FAIL",
+      "duration_ms": 27300,
+      "details": "Multiple elements integration failed"
+    },
+    {
+      "name": "Story Length Options",
+      "status": "FAIL",
+      "duration_ms": 68114,
+      "details": "Story length options failed"
+    },
+    {
+      "name": "Phase 3 Complete Test Suite",
+      "status": "FAIL",
+      "duration_ms": 107081,
+      "details": "Some Phase 3 tests failed"
+    }
+  ]
+}

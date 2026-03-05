@@ -1,0 +1,52 @@
+Starting Container
+[2025-12-13 15:49:39 +0000] [2] [INFO] Starting gunicorn 21.2.0
+[2025-12-13 15:49:39 +0000] [2] [INFO] Listening at: http://0.0.0.0:8080 (2)
+[2025-12-13 15:49:39 +0000] [2] [INFO] Using worker: sync
+[2025-12-13 15:49:39 +0000] [3] [INFO] Booting worker with pid: 3
+[2025-12-13 15:49:39 +0000] [4] [INFO] Booting worker with pid: 4
+2025-12-13 15:49:40,593 - story_engine - INFO - google.generativeai imported successfully.
+2025-12-13 15:49:40,593 - story_engine - INFO - Gemini configured with API key.
+2025-12-13 15:49:40,593 - story_engine - INFO - Gemini model 'models/gemini-2.5-flash' initialized successfully.
+2025-12-13 15:49:40,593 - story_engine - INFO - google.generativeai imported successfully.
+2025-12-13 15:49:40,593 - story_engine - INFO - Gemini configured with API key.
+2025-12-13 15:49:40,594 - story_engine - INFO - Gemini model 'models/gemini-2.5-flash' initialized successfully.
+2025-12-13 15:49:41,130 - stripe_routes - WARNING - STRIPE_API_KEY not set in app config - Stripe routes may not function.
+2025-12-13 15:49:41,130 - story_engine - INFO - Γ£ô Stripe Premium Price ID: price_1SWmbUHrachXBOvWbGRzORj5
+2025-12-13 15:49:41,130 - story_engine - INFO - Γ£ô Stripe Family Price ID: price_1SWmgAHrachXBOvWtQbFhGB3
+2025-12-13 15:49:41,131 - stripe_routes - WARNING - STRIPE_API_KEY not set in app config - Stripe routes may not function.
+2025-12-13 15:49:41,131 - story_engine - INFO - Γ£ô Stripe Premium Price ID: price_1SWmbUHrachXBOvWbGRzORj5
+2025-12-13 15:49:41,131 - story_engine - INFO - Γ£ô Stripe Family Price ID: price_1SWmgAHrachXBOvWtQbFhGB3
+2025-12-13 15:49:41,132 - story_engine - INFO - Image generator initialized with OpenRouter (cost-optimized)
+2025-12-13 15:49:41,133 - story_engine - INFO - Image generator initialized with OpenRouter (cost-optimized)
+2025-12-13 15:49:41,371 - story_engine - INFO - [5796b23d] GET /health
+2025-12-13 15:49:41,375 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 3.13, "ip": "100.64.0.2", "request_id": "5796b23d"}
+2025-12-13 16:15:46,461 - story_engine - INFO - [1d5ba7e2] GET /health
+2025-12-13 16:15:46,465 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 4.35, "ip": "100.64.0.3", "request_id": "1d5ba7e2"}
+2025-12-13 16:15:47,073 - story_engine - INFO - [dfc6fb41] GET /get-story-themes
+2025-12-13 16:15:47,073 - story_engine - INFO - {"method": "GET", "path": "/get-story-themes", "status": 200, "duration_ms": 0.38, "ip": "100.64.0.4", "request_id": "dfc6fb41"}
+2025-12-13 16:15:47,673 - story_engine - INFO - [9c6c50a8] GET /health
+2025-12-13 16:15:47,678 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 5.32, "ip": "100.64.0.5", "request_id": "9c6c50a8"}
+2025-12-13 16:44:07,682 - story_engine - INFO - [17c0261e] GET /health
+2025-12-13 16:44:07,684 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 2.53, "ip": "100.64.0.6", "request_id": "17c0261e"}
+2025-12-13 16:44:08,100 - story_engine - INFO - [b8bc6553] GET /get-story-themes
+2025-12-13 16:44:08,101 - story_engine - INFO - {"method": "GET", "path": "/get-story-themes", "status": 200, "duration_ms": 0.37, "ip": "100.64.0.6", "request_id": "b8bc6553"}
+2025-12-13 16:44:08,503 - story_engine - INFO - [1b703298] GET /health
+2025-12-13 16:44:08,506 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 2.86, "ip": "100.64.0.6", "request_id": "1b703298"}
+2025-12-13 16:54:09,296 - story_engine - INFO - [c648fd2b] GET /health
+2025-12-13 16:54:09,471 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 174.54, "ip": "100.64.0.7", "request_id": "c648fd2b"}
+2025-12-13 16:54:10,145 - story_engine - INFO - [83ac53c6] GET /get-story-themes
+2025-12-13 16:54:10,145 - story_engine - INFO - {"method": "GET", "path": "/get-story-themes", "status": 200, "duration_ms": 0.23, "ip": "100.64.0.8", "request_id": "83ac53c6"}
+2025-12-13 16:54:10,673 - story_engine - INFO - [ee5a2d44] GET /health
+2025-12-13 16:54:10,676 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 2.36, "ip": "100.64.0.3", "request_id": "ee5a2d44"}
+2025-12-13 17:11:09,360 - story_engine - INFO - [0fbae6f8] GET /health
+2025-12-13 17:11:09,532 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 172.58, "ip": "100.64.0.9", "request_id": "0fbae6f8"}
+2025-12-13 17:11:10,074 - story_engine - INFO - [e848fcf0] GET /get-story-themes
+2025-12-13 17:11:10,074 - story_engine - INFO - {"method": "GET", "path": "/get-story-themes", "status": 200, "duration_ms": 0.23, "ip": "100.64.0.8", "request_id": "e848fcf0"}
+2025-12-13 17:11:10,603 - story_engine - INFO - [a1caa0d4] GET /health
+2025-12-13 17:11:10,606 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 2.26, "ip": "100.64.0.3", "request_id": "a1caa0d4"}
+2025-12-13 17:29:49,511 - story_engine - INFO - [281e96ab] GET /health
+2025-12-13 17:29:49,514 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 2.63, "ip": "100.64.0.4", "request_id": "281e96ab"}
+2025-12-13 17:29:50,235 - story_engine - INFO - [689146a6] GET /get-story-themes
+2025-12-13 17:29:50,236 - story_engine - INFO - {"method": "GET", "path": "/get-story-themes", "status": 200, "duration_ms": 0.27, "ip": "100.64.0.10", "request_id": "689146a6"}
+2025-12-13 17:29:50,887 - story_engine - INFO - [ad4e7208] GET /health
+2025-12-13 17:29:50,890 - story_engine - INFO - {"method": "GET", "path": "/health", "status": 200, "duration_ms": 3.13, "ip": "100.64.0.8", "request_id": "ad4e7208"}

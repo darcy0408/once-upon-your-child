@@ -1,0 +1,14 @@
+# Flutter web build configuration for size optimization
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/sounds/
+
+  # Optimize for web builds
+  web:
+    # Disable CanvasKit to reduce bundle size (uses HTML renderer)
+    renderer: html
+    # Enable tree shaking
+    tree-shake-icons: true

@@ -1,0 +1,120 @@
+{
+  "timestamp_utc": "2026-02-20T18:05:52.189474+00:00",
+  "notes": {
+    "target_endpoint": "/generate-story",
+    "mode": "local flask test client with mocked task behaviors",
+    "reset_check_app_config": "dev"
+  },
+  "scenarios": {
+    "sync_fast_path": {
+      "total_requests": 24,
+      "concurrency": 6,
+      "status_counts": {
+        "200": 24
+      },
+      "latency_ms": {
+        "min": 182.02,
+        "p50": 188.71,
+        "p95": 209.81,
+        "p99": 210.89,
+        "max": 211.13,
+        "mean": 191.83
+      },
+      "sample_errors": [],
+      "sample_body_status": [
+        "complete",
+        "complete",
+        "complete",
+        "complete",
+        "complete"
+      ]
+    },
+    "timeout_async_fallback": {
+      "total_requests": 16,
+      "concurrency": 4,
+      "status_counts": {
+        "202": 16
+      },
+      "latency_ms": {
+        "min": 7.34,
+        "p50": 10.66,
+        "p95": 12.74,
+        "p99": 13.21,
+        "max": 13.33,
+        "mean": 10.59
+      },
+      "sample_errors": [],
+      "sample_body_status": [
+        "processing",
+        "processing",
+        "processing",
+        "processing",
+        "processing"
+      ]
+    },
+    "quota_error_429": {
+      "total_requests": 12,
+      "concurrency": 4,
+      "status_counts": {
+        "429": 12
+      },
+      "latency_ms": {
+        "min": 30.04,
+        "p50": 48.12,
+        "p95": 58.55,
+        "p99": 64.05,
+        "max": 65.43,
+        "mean": 46.61
+      },
+      "sample_errors": [
+        {
+          "status_code": 429,
+          "error": "QUOTA_EXCEEDED",
+          "message": "Google Geminin API quota exceeded. Please try again later."
+        },
+        {
+          "status_code": 429,
+          "error": "QUOTA_EXCEEDED",
+          "message": "Google Geminin API quota exceeded. Please try again later."
+        },
+        {
+          "status_code": 429,
+          "error": "QUOTA_EXCEEDED",
+          "message": "Google Geminin API quota exceeded. Please try again later."
+        },
+        {
+          "status_code": 429,
+          "error": "QUOTA_EXCEEDED",
+          "message": "Google Geminin API quota exceeded. Please try again later."
+        },
+        {
+          "status_code": 429,
+          "error": "QUOTA_EXCEEDED",
+          "message": "Google Geminin API quota exceeded. Please try again later."
+        }
+      ],
+      "sample_body_status": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  },
+  "reset_check": {
+    "initial_statuses": [
+      200,
+      200,
+      200
+    ],
+    "after_wait_status": 200,
+    "first_headers": {
+      "X-RateLimit-Limit": null,
+      "X-RateLimit-Remaining": null,
+      "X-RateLimit-Reset": null
+    },
+    "third_error": null,
+    "after_wait_error": null
+  }
+}
