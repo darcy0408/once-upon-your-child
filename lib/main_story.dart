@@ -12,6 +12,10 @@ import 'package:story_weaver_app/theme/app_theme.dart';
 import 'package:story_weaver_app/widgets/story_generation_progress.dart';
 import 'package:story_weaver_app/widgets/user_friendly_error_dialog.dart';
 
+import 'screens/welcome_screen.dart';
+import 'screens/wizard_story_screen.dart';
+import 'services/parental_consent_service.dart';
+
 import 'achievements_screen.dart' deferred as achievements_screen;
 import 'avatar_models.dart';
 import 'character_evolution.dart';
@@ -50,7 +54,7 @@ import 'services/child_profile_service.dart';
 import 'widgets/child_profile_switcher.dart';
 import 'settings_screen.dart' deferred as settings_screen;
 import 'screens/feelings_garden_screen.dart';
-import 'screens/wizard_story_screen.dart';
+// welcome_screen and wizard_story_screen imported at top of file
 
 class StoryCreatorApp extends ConsumerWidget {
   const StoryCreatorApp({super.key});
@@ -64,7 +68,7 @@ class StoryCreatorApp extends ConsumerWidget {
       title: Environment.appName,
       theme: AppTheme.light(ageBand: ageBandTheme),
       darkTheme: ageBandTheme.preferDarkMode ? AppTheme.light(ageBand: ageBandTheme) : null,
-      home: const WizardStoryScreen(),
+      home: const _AppEntryPoint(),
       routes: {
         '/subscription-success': (context) => const SubscriptionSuccessScreen(),
         '/story-home': (context) =>
@@ -76,6 +80,60 @@ class StoryCreatorApp extends ConsumerWidget {
         return child ?? const SizedBox.shrink();
       },
     );
+  }
+}
+
+/// Checks whether onboarding (name + age) is complete and routes accordingly.
+/// - First launch: shows [WelcomeScreen]
+/// - Returning user: shows [WizardStoryScreen] with name pre-filled
+class _AppEntryPoint extends ConsumerStatefulWidget {
+  const _AppEntryPoint();
+
+  @override
+  ConsumerState<_AppEntryPoint> createState() => _AppEntryPointState();
+}
+
+class _AppEntryPointState extends ConsumerState<_AppEntryPoint> {
+  bool? _onboardingDone; // null = still checking
+  String _savedName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _checkOnboarding();
+  }
+
+  Future<void> _checkOnboarding() async {
+    final age = await const ParentalConsentService().getRecordedAge();
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _onboardingDone = age != null;
+      _savedName = prefs.getString('user_name') ?? '';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Still reading prefs — minimal cosmic splash
+    if (_onboardingDone == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF120226),
+        body: Center(
+          child: Icon(Icons.auto_awesome, color: Color(0xFFFFD700), size: 48),
+        ),
+      );
+    }
+
+    // Onboarding complete — launch the wizard with name pre-filled
+    if (_onboardingDone!) {
+      return WizardStoryScreen(
+        initialWizardData: WizardData()..characterName = _savedName,
+      );
+    }
+
+    // First launch — show welcome screen
+    return WelcomeScreen(onComplete: _checkOnboarding);
   }
 }
 

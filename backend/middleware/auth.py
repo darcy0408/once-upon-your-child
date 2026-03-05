@@ -120,6 +120,23 @@ def require_admin(f):
     return decorated
 
 
+def require_therapist(f):
+    """
+    Decorator that requires the user to have therapist role.
+    Must be used after @require_auth.
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not hasattr(request, 'current_user') or not request.current_user:
+            return jsonify({'error': 'Authentication required'}), 401
+        user = request.current_user
+        if getattr(user, 'role', '') not in ('therapist', 'admin'):
+            logger.warning(f"Non-therapist user {user.id} attempted therapist action")
+            return jsonify({'error': 'Therapist access required'}), 403
+        return f(*args, **kwargs)
+    return decorated
+
+
 def require_owner(resource_user_id_param='user_id'):
     """
     Decorator that validates the authenticated user owns the requested resource.
