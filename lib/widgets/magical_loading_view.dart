@@ -31,6 +31,9 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
   final List<_Sparkle> _sparkles = <_Sparkle>[];
   final Random _random = Random();
 
+  int _tapCount = 0;
+  final List<Offset> _burstPositions = [];
+
   static const List<String> _phaseMessages = <String>[
     'Threading moonlight through the loom...',
     'Spinning stardust into story cloth...',
@@ -167,7 +170,17 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                 ),
               ),
             ] else ...[
-            SizedBox(
+            GestureDetector(
+              onTapDown: (details) {
+                if (!mounted) return;
+                setState(() {
+                  _tapCount++;
+                  _burstPositions.add(details.localPosition);
+                  if (_burstPositions.length > 6) _burstPositions.removeAt(0);
+                });
+                _pulseController.forward(from: 0.0);
+              },
+              child: SizedBox(
               height: stageSize,
               width: stageSize,
               child: Stack(
@@ -278,8 +291,31 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                         sparkle: sparkle,
                       );
                     }),
+
+                  // Tap burst overlays
+                  ..._burstPositions.map((pos) => Positioned(
+                    left: pos.dx - 20,
+                    top: pos.dy - 20,
+                    child: TweenAnimationBuilder<double>(
+                      key: ValueKey(pos),
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      duration: const Duration(milliseconds: 600),
+                      builder: (_, t, __) => Opacity(
+                        opacity: (1 - t).clamp(0.0, 1.0),
+                        child: Container(
+                          width: 40 * (1 + t),
+                          height: 40 * (1 + t),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.gold.withValues(alpha: 0.4 * (1 - t)),
+                          ),
+                        ),
+                      ),
+                    ),
+                  )),
                 ],
               ),
+            ),
             ),
             ],
             const SizedBox(height: AppSpacing.lg),
@@ -337,6 +373,34 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                 ),
               ),
             ),
+            if (_tapCount > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: Text(
+                    _tapCount == 1 ? '✨ 1 sparkle!'
+                        : _tapCount < 5 ? '✨ $_tapCount sparkles!'
+                        : _tapCount < 10 ? '🌟 $_tapCount sparkles! Keep going!'
+                        : _tapCount < 20 ? '💫 $_tapCount sparkles! You\'re magic!'
+                        : '🌈 $_tapCount sparkles! You ARE the magic!',
+                    key: ValueKey(_tapCount),
+                    style: const TextStyle(
+                      color: AppColors.gold,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            if (_tapCount == 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  'Tap to make sparkles! ✨',
+                  style: TextStyle(color: Colors.purple.shade300, fontSize: 12),
+                ),
+              ),
             if (widget.onCancel != null) ...[
               const SizedBox(height: AppSpacing.md),
               TextButton(
