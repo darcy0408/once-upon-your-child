@@ -10,6 +10,7 @@ import 'package:story_weaver_app/services/secure_storage_service.dart';
 
 import 'config/environment.dart';
 import 'providers/theme_provider.dart';
+import 'theme/age_band_theme.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_button.dart';
 import 'widgets/app_card.dart';
@@ -226,6 +227,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late final TextEditingController _apiKeyController;
   ProviderSubscription<SettingsState>? _settingsSubscription;
+  bool _parentUnlocked = false;
 
   @override
   void initState() {
@@ -247,6 +249,94 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ref.read(settingsProvider.notifier).updateApiKey(text);
   }
 
+  Future<void> _unlockParentSettings() async {
+    final band = Theme.of(context).extension<AgeBandThemeData>();
+    final rng = DateTime.now().millisecondsSinceEpoch;
+    final a = 12 + (rng % 15);
+    final b = 7 + ((rng ~/ 100) % 12);
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final controller = TextEditingController();
+        String? error;
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            backgroundColor: const Color(0xFF2C1B47),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20)),
+            title: Text('Parent Verification',
+                style: TextStyle(
+                    fontFamily: band?.uiFontFamily ?? 'Quicksand',
+                    color: const Color(0xFFFFD700),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Solve to access parent settings:',
+                    style: TextStyle(color: Colors.white70, fontSize: 14)),
+                const SizedBox(height: 16),
+                Text('$a + $b = ?',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white, fontSize: 20),
+                  decoration: InputDecoration(
+                    hintText: '?',
+                    hintStyle: const TextStyle(color: Colors.white24),
+                    errorText: error,
+                    errorStyle: const TextStyle(color: Colors.orangeAccent),
+                    filled: true,
+                    fillColor: Colors.white.withAlpha(15),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none),
+                  ),
+                  onSubmitted: (_) {
+                    if (int.tryParse(controller.text.trim()) == a + b) {
+                      Navigator.pop(ctx, true);
+                    } else {
+                      setDialogState(() => error = 'Try again!');
+                    }
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel',
+                      style: TextStyle(color: Colors.white54))),
+              ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6A1B9A)),
+                  onPressed: () {
+                    if (int.tryParse(controller.text.trim()) == a + b) {
+                      Navigator.pop(ctx, true);
+                    } else {
+                      setDialogState(() => error = 'Try again!');
+                    }
+                  },
+                  child: const Text('Unlock',
+                      style: TextStyle(color: Colors.white))),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (result == true && mounted) {
+      setState(() => _parentUnlocked = true);
+    }
+  }
+
   @override
   void dispose() {
     _settingsSubscription?.close();
@@ -259,6 +349,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final settings = ref.watch(settingsProvider);
     final themeMode = ref.watch(themeModeNotifierProvider);
     final notifier = ref.read(settingsProvider.notifier);
+    final band = Theme.of(context).extension<AgeBandThemeData>();
+    final isChildBand = band != null && band.band != AgeBand.creator;
 
     if (settings.isLoading) {
       return Scaffold(
@@ -278,14 +370,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           children: [
             _buildHeaderCard(context),
             const SizedBox(height: AppSpacing.lg),
-            _buildApiToggleCard(context, settings, notifier),
-            if (settings.useOwnApiKey) ...[
-              const SizedBox(height: AppSpacing.lg),
-              _buildBenefitsCard(),
-              const SizedBox(height: AppSpacing.md),
-              _buildPrivacyCard(),
-            ],
-            const SizedBox(height: AppSpacing.lg),
             AppCard(
               child: SwitchListTile(
                 title: const Text('Dark Mode'),
@@ -296,6 +380,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 },
               ),
             ),
+            const SizedBox(height: AppSpacing.lg),
+            if (isChildBand && !_parentUnlocked) ...[
+              AppCard(
+                child: ListTile(
+                  leading: const Icon(Icons.lock_outline,
+                      color: Color(0xFFD4A0FF)),
+                  title: Text('Parent Settings',
+                      style: TextStyle(
+                          fontFamily: band.uiFontFamily,
+                          fontWeight: FontWeight.w600)),
+                  subtitle: Text('API keys, subscription, and account',
+                      style: TextStyle(
+                          fontFamily: band.uiFontFamily,
+                          fontSize: 13,
+                          color: Colors.grey)),
+                  trailing: const Icon(Icons.chevron_right,
+                      color: Color(0xFFD4A0FF)),
+                  onTap: _unlockParentSettings,
+                ),
+              ),
+            ] else ...[
+              _buildApiToggleCard(context, settings, notifier),
+              if (settings.useOwnApiKey) ...[
+                const SizedBox(height: AppSpacing.lg),
+                _buildBenefitsCard(),
+                const SizedBox(height: AppSpacing.md),
+                _buildPrivacyCard(),
+              ],
+            ],
             const SizedBox(height: AppSpacing.lg),
             _buildLegalLinks(context),
             if (Environment.isDevelopment) ...[
