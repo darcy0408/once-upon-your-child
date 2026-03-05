@@ -32,6 +32,7 @@ class HeroCreatorStep extends StatefulWidget {
   final VoidCallback onNext;
   final List<Character> availableCharacters;
   final void Function(int subStep)? onSubStepChange;
+  final void Function(int age)? onAgeChanged;
 
   const HeroCreatorStep({
     super.key,
@@ -39,6 +40,7 @@ class HeroCreatorStep extends StatefulWidget {
     required this.onNext,
     this.availableCharacters = const [],
     this.onSubStepChange,
+    this.onAgeChanged,
   });
 
   @override
@@ -1771,7 +1773,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     onSubmitted: (v) {
                       final n = int.tryParse(v);
                       if (n != null) {
-                        setState(() => widget.wizardData.characterAge = n.clamp(3, 99));
+                        final clamped = n.clamp(3, 99);
+                        setState(() => widget.wizardData.characterAge = clamped);
+                        widget.onAgeChanged?.call(clamped);
                       }
                       Navigator.pop(ctx);
                     },
@@ -1781,7 +1785,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                       onPressed: () {
                         final n = int.tryParse(ctrl.text);
                         if (n != null) {
-                          setState(() => widget.wizardData.characterAge = n.clamp(3, 99));
+                          final clamped = n.clamp(3, 99);
+                          setState(() => widget.wizardData.characterAge = clamped);
+                          widget.onAgeChanged?.call(clamped);
                         }
                         Navigator.pop(ctx);
                       },
@@ -1821,17 +1827,21 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             _AgeStepButton(
               icon: Icons.remove_rounded,
               size: 40,
-              onTap: () => setState(() =>
-                  widget.wizardData.characterAge =
-                      (widget.wizardData.characterAge - 1).clamp(3, 99)),
+              onTap: () {
+                final age = (widget.wizardData.characterAge - 1).clamp(3, 99);
+                setState(() => widget.wizardData.characterAge = age);
+                widget.onAgeChanged?.call(age);
+              },
             ),
             const SizedBox(width: 24),
             _AgeStepButton(
               icon: Icons.add_rounded,
               size: 40,
-              onTap: () => setState(() =>
-                  widget.wizardData.characterAge =
-                      (widget.wizardData.characterAge + 1).clamp(3, 99)),
+              onTap: () {
+                final age = (widget.wizardData.characterAge + 1).clamp(3, 99);
+                setState(() => widget.wizardData.characterAge = age);
+                widget.onAgeChanged?.call(age);
+              },
             ),
           ],
         ),
@@ -2093,7 +2103,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             final age = 6 + i;
             final isSelected = widget.wizardData.characterAge == age;
             return GestureDetector(
-              onTap: () => setState(() => widget.wizardData.characterAge = age),
+              onTap: () {
+                  setState(() => widget.wizardData.characterAge = age);
+                  widget.onAgeChanged?.call(age);
+                },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),

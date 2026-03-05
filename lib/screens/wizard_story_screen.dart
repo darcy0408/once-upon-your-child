@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models.dart'; // Import Character model
 import '../theme/age_band_theme.dart';
 import '../theme/app_theme.dart';
 import '../widgets/moon_phase_progress.dart';
 import '../widgets/avatar_generation_banner.dart';
+import '../providers/age_band_provider.dart';
 import 'character_library_screen.dart';
 import 'feelings_garden_screen.dart';
 import 'wizard_steps/hero_creator_step.dart';
@@ -19,7 +21,7 @@ import '../services/api_service_manager.dart';
 /// - Smooth page transitions
 /// - All data collected and passed to final step
 /// - Loads saved characters automatically on init
-class WizardStoryScreen extends StatefulWidget {
+class WizardStoryScreen extends ConsumerStatefulWidget {
   final Character? initialCharacter;
   final List<Character> availableCharacters;
   final int initialStep;
@@ -35,10 +37,10 @@ class WizardStoryScreen extends StatefulWidget {
   });
 
   @override
-  State<WizardStoryScreen> createState() => _WizardStoryScreenState();
+  ConsumerState<WizardStoryScreen> createState() => _WizardStoryScreenState();
 }
 
-class _WizardStoryScreenState extends State<WizardStoryScreen> {
+class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
   late final PageController _pageController; // Late init
   int _currentStep = 0;
   int _progressStep = 0;
@@ -268,6 +270,8 @@ class _WizardStoryScreenState extends State<WizardStoryScreen> {
                       onNext: _nextStep,
                       availableCharacters: _savedCharacters,
                       onSubStepChange: (s) => setState(() => _progressStep = s),
+                      onAgeChanged: (age) =>
+                          ref.read(ageBandNotifierProvider.notifier).setAge(age),
                     ),
                     // Step 2: Review & Launch
                     MagicReviewStep(
