@@ -51,7 +51,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
           ),
         ),
         child: SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,7 +189,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                     ),
                   ],
                 ),
-                const Spacer(),
+                const SizedBox(height: AppSpacing.md),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
