@@ -18,6 +18,7 @@ import 'widgets/app_switch.dart';
 import 'widgets/error_message.dart';
 import 'widgets/loading_spinner.dart';
 import 'screens/byok_setup_wizard.dart';
+import 'screens/child_profile_manager_screen.dart';
 import 'screens/parent_dashboard_screen.dart';
 import 'screens/privacy_policy_screen.dart';
 import 'screens/terms_of_service_screen.dart';
@@ -404,8 +405,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ] else ...[
               AppCard(
                 child: ListTile(
-                  leading:
-                      const Icon(Icons.dashboard_rounded, color: AppColors.primary),
+                  leading: const Icon(Icons.dashboard_rounded,
+                      color: AppColors.primary),
                   title: const Text('Parent Dashboard',
                       style: TextStyle(fontWeight: FontWeight.w600)),
                   subtitle:
@@ -415,6 +416,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const ParentDashboardScreen()),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppCard(
+                child: ListTile(
+                  leading: const Icon(Icons.people_rounded,
+                      color: AppColors.primary),
+                  title: const Text('Manage Child Profiles',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text(
+                      'Add, edit or switch child profiles'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const ChildProfileManagerScreen()),
                   ),
                 ),
               ),

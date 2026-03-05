@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models.dart';
 import '../storage_service.dart';
 import '../theme/app_theme.dart';
+import 'child_profile_manager_screen.dart';
 
 // ─── Local data model ────────────────────────────────────────────────────────
 
@@ -144,6 +145,15 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.people_rounded, color: Colors.white),
+            tooltip: 'Manage Profiles',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const ChildProfileManagerScreen()),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Colors.white70),
             onPressed: () {
