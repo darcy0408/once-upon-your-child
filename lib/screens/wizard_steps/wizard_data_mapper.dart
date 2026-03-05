@@ -29,13 +29,42 @@ class WizardDataMapper {
       characterDetails['outfit'] = data.selectedOutfit;
     }
 
+    // Gender is always available — used by illustration prompt
+    characterDetails['gender'] = data.characterGender;
+
+    // Hair/skin from manual picks (may be empty if user skipped that step)
+    if (data.selectedHairStyle.isNotEmpty) {
+      characterDetails['hair'] = data.selectedHairStyle;
+    }
+    if (data.selectedSkinTone.isNotEmpty) {
+      characterDetails['skin'] = data.selectedSkinTone;
+    }
+
     if (data.pets.isNotEmpty) {
       characterDetails['pets'] = data.pets;
     }
 
-    // Add generated avatar data if available
+    // Add generated avatar data if available.
+    // Backend illustration code looks for 'avatar' key; keep 'generatedAvatar' for
+    // backwards compat with other callers.
     if (data.generatedAvatar != null) {
-      characterDetails['generatedAvatar'] = data.generatedAvatar!.toJson();
+      final avatarJson = data.generatedAvatar!.toJson();
+      characterDetails['generatedAvatar'] = avatarJson;
+      characterDetails['avatar'] = avatarJson; // illustration backend key
+      // Extract simple string fields from attributes (override only if not already set)
+      final attrs = data.generatedAvatar!.attributes;
+      if (characterDetails['hair'] == null) {
+        final h = attrs['hair_color'] ?? attrs['hairColor'];
+        if (h != null && h.isNotEmpty) characterDetails['hair'] = h;
+      }
+      if (characterDetails['skin'] == null) {
+        final s = attrs['skin_tone'] ?? attrs['skinTone'];
+        if (s != null && s.isNotEmpty) characterDetails['skin'] = s;
+      }
+      // Pass the generated image as a reference photo for illustration consistency
+      if (data.generatedAvatar!.imageBase64.isNotEmpty) {
+        characterDetails['custom_avatar_base64'] = data.generatedAvatar!.imageBase64;
+      }
     }
 
     // 4. Map Scenario to Theme and new Fields
