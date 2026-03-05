@@ -628,12 +628,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   builder: (context) {
                     final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
                     final label = band.band == AgeBand.creator
-                        ? 'Character type'
+                        ? 'Create your hero!'
                         : band.band == AgeBand.adventurer
-                            ? 'Choose your character type'
+                            ? 'Create your hero!'
                             : band.band == AgeBand.sprout
-                                ? 'What kind of hero are you?'
-                                : 'Choose your hero type';
+                                ? 'Create your hero!'
+                                : 'Create your hero!';
                     return Text(label, style: _bandTitleStyle(band, baseFontSize: 22));
                   },
                 ),
@@ -1975,21 +1975,20 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Widget _buildArchetypeCards() {
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final ageBand = ageBandFromAge(widget.wizardData.characterAge);
     // Sprout sees only the 4 most visually striking archetypes.
     final archetypes = ageBand == AgeBand.sprout
         ? CharacterArchetypes.all.take(4).toList()
         : CharacterArchetypes.all;
 
-    // Sprout & Explorer: 2-column grid — bigger cards, no scrolling.
+    // Sprout & Explorer: 2-column grid — image-dominant cards.
     if (ageBand == AgeBand.sprout || ageBand == AgeBand.explorer) {
       return GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.82,
+          childAspectRatio: 0.78,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),
@@ -2003,31 +2002,62 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               duration: const Duration(milliseconds: 220),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
-                gradient: LinearGradient(
-                  colors: isSelected
-                      ? [const Color(0xFF9B3FD8), const Color(0xFFFFD700).withAlpha(60)]
-                      : [Colors.white10, Colors.white10],
-                ),
                 border: Border.all(
                   color: isSelected ? const Color(0xFFFFD700) : Colors.white24,
-                  width: 2,
+                  width: isSelected ? 3 : 2,
                 ),
+                boxShadow: isSelected
+                    ? [BoxShadow(color: const Color(0xFFFFD700).withAlpha(100), blurRadius: 12)]
+                    : [],
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (a.imagePath != null)
-                    Image.asset(a.imagePath!, height: 120, fit: BoxFit.contain)
-                  else
-                    Text(a.icon ?? '✨', style: const TextStyle(fontSize: 64)),
-                  const SizedBox(height: 8),
-                  Text(
-                    a.name,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.fredoka(
-                        color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                  ),
-                ],
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Image fills entire card
+                    if (a.imagePath != null)
+                      Image.asset(a.imagePath!, fit: BoxFit.cover)
+                    else
+                      Container(
+                        color: Colors.white10,
+                        child: Center(child: Text(a.icon ?? '✨', style: const TextStyle(fontSize: 72))),
+                      ),
+                    // Gradient overlay at bottom for legibility
+                    Positioned(
+                      left: 0, right: 0, bottom: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [Colors.black.withAlpha(200), Colors.transparent],
+                          ),
+                        ),
+                        child: Text(
+                          a.name,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.fredoka(
+                              color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    // Gold checkmark when selected
+                    if (isSelected)
+                      Positioned(
+                        top: 8, right: 8,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFFD700),
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(3),
+                          child: const Icon(Icons.check, size: 16, color: Colors.black),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           );
@@ -2035,11 +2065,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       );
     }
 
-    // Adventurer & Creator: horizontal list with short description under name.
+    // Adventurer & Creator: horizontal list — image-dominant cards with name overlay.
     final showDescriptions =
         ageBand == AgeBand.adventurer || ageBand == AgeBand.creator;
-    final cardWidth = ageBand == AgeBand.creator ? 140.0 : 160.0;
-    final cardHeight = (showDescriptions ? 290.0 : 260.0) * band.spacingScale;
+    final cardWidth = ageBand == AgeBand.creator ? 150.0 : 165.0;
+    const cardHeight = 220.0;
     return SizedBox(
       height: cardHeight,
       child: ListView.builder(
@@ -2053,47 +2083,77 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),
               width: cardWidth,
-              margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
-                gradient: LinearGradient(
-                  colors: isSelected
-                      ? [const Color(0xFF9B3FD8), const Color(0xFFFFD700).withAlpha(60)]
-                      : [Colors.white10, Colors.white10],
-                ),
                 border: Border.all(
                   color: isSelected ? const Color(0xFFFFD700) : Colors.white24,
-                  width: 2,
+                  width: isSelected ? 3 : 2,
                 ),
+                boxShadow: isSelected
+                    ? [BoxShadow(color: const Color(0xFFFFD700).withAlpha(100), blurRadius: 12)]
+                    : [],
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (a.imagePath != null)
-                    Image.asset(a.imagePath!, height: 130, fit: BoxFit.contain)
-                  else
-                    Text(a.icon ?? '✨', style: const TextStyle(fontSize: 64)),
-                  const SizedBox(height: 8),
-                  Text(
-                    a.name,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.fredoka(
-                        color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                  ),
-                  if (showDescriptions) ...[
-                    const SizedBox(height: 4),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text(
-                        a.description,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white54, fontSize: 10),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (a.imagePath != null)
+                      Image.asset(a.imagePath!, fit: BoxFit.cover)
+                    else
+                      Container(
+                        color: Colors.white10,
+                        child: Center(child: Text(a.icon ?? '✨', style: const TextStyle(fontSize: 64))),
+                      ),
+                    Positioned(
+                      left: 0, right: 0, bottom: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [Colors.black.withAlpha(210), Colors.transparent],
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              a.name,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.fredoka(
+                                  color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                            ),
+                            if (showDescriptions) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                a.description,
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(color: Colors.white70, fontSize: 10),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ),
+                    if (isSelected)
+                      Positioned(
+                        top: 8, right: 8,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFFD700),
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(3),
+                          child: const Icon(Icons.check, size: 16, color: Colors.black),
+                        ),
+                      ),
                   ],
-                ],
+                ),
               ),
             ),
           );
@@ -2991,10 +3051,15 @@ class _PetCardState extends State<_PetCard> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: const Color(0xFFD4A0FF).withAlpha(150),
-              width: 1.5,
+              color: const Color(0xFFFFD700).withAlpha(160),
+              width: 2,
             ),
-            color: Colors.white.withAlpha(8),
+            gradient: LinearGradient(
+              colors: [const Color(0xFF2C1B47), const Color(0xFF1A0E36)],
+            ),
+            boxShadow: [
+              BoxShadow(color: const Color(0xFFFFD700).withAlpha(35), blurRadius: 12),
+            ],
           ),
           child: Row(
             children: [
@@ -3003,10 +3068,10 @@ class _PetCardState extends State<_PetCard> {
                 height: 52,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFD4A0FF).withAlpha(40),
+                  color: const Color(0xFFFFD700).withAlpha(40),
                 ),
                 child: const Icon(Icons.add_a_photo_rounded,
-                    color: Color(0xFFD4A0FF), size: 26),
+                    color: Color(0xFFFFD700), size: 26),
               ),
               const SizedBox(width: 14),
               const Expanded(
@@ -3015,14 +3080,14 @@ class _PetCardState extends State<_PetCard> {
                   children: [
                     Text('Bring Your Pet!',
                         style: TextStyle(
-                          color: Color(0xFFD4A0FF),
+                          color: Color(0xFFFFD700),
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
                         )),
                     SizedBox(height: 3),
                     Text(
                       'Add a photo and we\'ll put them in the story',
-                      style: TextStyle(color: Colors.white54, fontSize: 12),
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                   ],
                 ),
@@ -3035,11 +3100,22 @@ class _PetCardState extends State<_PetCard> {
 
     // Pet card with photo + detail fields
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD4A0FF).withAlpha(150), width: 1.5),
-        color: Colors.white.withAlpha(10),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFFD700).withAlpha(180), width: 2),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [const Color(0xFF2C1B47), const Color(0xFF1A0E36)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFD700).withAlpha(40),
+            blurRadius: 16,
+            spreadRadius: 2,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3056,7 +3132,7 @@ class _PetCardState extends State<_PetCard> {
                       height: 72,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFFD4A0FF), width: 2),
+                        border: Border.all(color: const Color(0xFFFFD700), width: 2),
                         color: const Color(0xFF3A2363),
                       ),
                       child: ClipOval(
@@ -3065,7 +3141,7 @@ class _PetCardState extends State<_PetCard> {
                                 base64Decode(photo.replaceFirst(RegExp(r'data:[^,]+,'), '')),
                                 fit: BoxFit.cover,
                               )
-                            : const Icon(Icons.pets, color: Colors.white54, size: 36),
+                            : const Icon(Icons.pets, color: Colors.white70, size: 36),
                       ),
                     ),
                     Positioned(
@@ -3075,9 +3151,9 @@ class _PetCardState extends State<_PetCard> {
                         padding: const EdgeInsets.all(4),
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Color(0xFFD4A0FF),
+                          color: Color(0xFFFFD700),
                         ),
-                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 12),
+                        child: const Icon(Icons.camera_alt, color: Colors.black, size: 12),
                       ),
                     ),
                   ],
@@ -3126,10 +3202,10 @@ class _PetCardState extends State<_PetCard> {
           ),
           const SizedBox(height: 6),
           Text(
-            'The AI will always use the right name, color, and species!',
+            '✨ The AI will always use the right name, color, and species!',
             style: TextStyle(
-                color: Colors.white.withAlpha(100),
-                fontSize: 10,
+                color: const Color(0xFFFFD700).withAlpha(200),
+                fontSize: 11,
                 fontStyle: FontStyle.italic),
           ),
         ],
@@ -3139,22 +3215,22 @@ class _PetCardState extends State<_PetCard> {
 
   InputDecoration _petFieldDecoration(String hint) => InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.white.withAlpha(80), fontSize: 12),
+        hintStyle: const TextStyle(color: Color(0xFFFFD700), fontSize: 13),
         filled: true,
-        fillColor: Colors.white.withAlpha(15),
+        fillColor: Colors.white.withAlpha(18),
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: const Color(0xFFD4A0FF).withAlpha(80)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: const Color(0xFFFFD700).withAlpha(100)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFD4A0FF), width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: const Color(0xFFD4A0FF).withAlpha(60)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: const Color(0xFFFFD700).withAlpha(120)),
         ),
       );
 }
