@@ -45,6 +45,7 @@ import 'widgets/breathing_avatar.dart';
 import 'services/feature_tour_service.dart';
 import 'widgets/storybook_progress_indicator.dart';
 import 'widgets/storybook_page.dart';
+import 'screens/wizard_story_screen.dart';
 
 class StoryResultScreen extends StatefulWidget {
   final String title;
@@ -1122,6 +1123,185 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     Navigator.of(context).pop();
   }
 
+  // ---------------------------------------------------------------------------
+  // Remix feature
+  // ---------------------------------------------------------------------------
+
+  static const _remixScenarios = [
+    {'id': 'vanishing_colors', 'emoji': '🌈', 'label': 'Rainbow World'},
+    {'id': 'crystal_cavern', 'emoji': '💎', 'label': 'Crystal Cave'},
+    {'id': 'big_feelings_quest', 'emoji': '❤️', 'label': 'Big Feelings'},
+    {'id': 'volcano_dragons', 'emoji': '🐉', 'label': 'Dragon Volcano'},
+    {'id': 'doorway_seasons', 'emoji': '🚪', 'label': 'Magic Door'},
+    {'id': 'starship_engineers', 'emoji': '🚀', 'label': 'Space Quest'},
+  ];
+
+  static const _remixTwists = [
+    {'id': 'shorter', 'emoji': '⚡', 'label': 'Shorter'},
+    {'id': 'longer', 'emoji': '📚', 'label': 'Longer'},
+    {'id': 'funnier', 'emoji': '😂', 'label': 'Funnier'},
+    {'id': 'spookier', 'emoji': '👻', 'label': 'Spookier'},
+    {'id': 'rhyming', 'emoji': '🎵', 'label': 'Rhyming'},
+    {'id': 'interactive', 'emoji': '🎮', 'label': 'Adventure'},
+  ];
+
+  void _showRemixSheet() {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.55,
+        maxChildSize: 0.85,
+        minChildSize: 0.4,
+        expand: false,
+        builder: (_, scrollController) => Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [band.gradientStart, band.gradientEnd],
+            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            controller: scrollController,
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white30,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    '✨ Change One Thing',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: band.uiFontFamily,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Center(
+                  child: Text(
+                    'Keep the same hero, change the adventure!',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontFamily: band.uiFontFamily,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Try a different world:',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: band.uiFontFamily,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                GridView.count(
+                  crossAxisCount: 3,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  childAspectRatio: 1.1,
+                  children: _remixScenarios
+                      .map((s) => _RemixTile(
+                            emoji: s['emoji']!,
+                            label: s['label']!,
+                            band: band,
+                            onTap: () {
+                              Navigator.pop(context);
+                              _launchRemix(scenarioId: s['id']);
+                            },
+                          ))
+                      .toList(),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Add a twist:',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: band.uiFontFamily,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                GridView.count(
+                  crossAxisCount: 3,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  childAspectRatio: 1.1,
+                  children: _remixTwists
+                      .map((t) => _RemixTile(
+                            emoji: t['emoji']!,
+                            label: t['label']!,
+                            band: band,
+                            onTap: () {
+                              Navigator.pop(context);
+                              _launchRemix(twist: t['id']);
+                            },
+                          ))
+                      .toList(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _launchRemix({String? scenarioId, String? twist}) {
+    final data = WizardData()
+      ..characterId = widget.characterId
+      ..characterName = widget.characterName ?? 'Hero'
+      ..characterAge = widget.characterAge ?? 8
+      ..selectedScenario = scenarioId ?? widget.theme ?? 'vanishing_colors'
+      ..storyLength = twist == 'shorter'
+          ? 'quick'
+          : twist == 'longer'
+              ? 'epic'
+              : 'standard'
+      ..rhymeTimeMode = twist == 'rhyming'
+      ..interactiveMode = twist == 'interactive'
+      ..customElements = switch (twist) {
+        'funnier' => 'Make this story funny and silly with lots of jokes and humor',
+        'spookier' => 'Add gentle spooky mystery elements (nothing scary for children)',
+        _ => '',
+      };
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => WizardStoryScreen(
+          initialWizardData: data,
+          initialStep: 1,
+        ),
+      ),
+    );
+  }
+
   Future<void> _exportStory() async {
     if (kIsWeb) {
       await Clipboard.setData(ClipboardData(
@@ -2159,6 +2339,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                 onSave: _isSaved ? null : _saveStory,
                 onShare: _showShareOptions,
                 onColor: _generateColoringPages,
+                onRemix: _showRemixSheet,
               ),
       ),
     );
@@ -2179,6 +2360,7 @@ class _PostStoryActionBar extends StatelessWidget {
   final VoidCallback? onSave; // null when already saved
   final VoidCallback onShare;
   final VoidCallback onColor;
+  final VoidCallback onRemix;
 
   const _PostStoryActionBar({
     required this.isSaved,
@@ -2187,6 +2369,7 @@ class _PostStoryActionBar extends StatelessWidget {
     required this.onSave,
     required this.onShare,
     required this.onColor,
+    required this.onRemix,
   });
 
   @override
@@ -2237,6 +2420,12 @@ class _PostStoryActionBar extends StatelessWidget {
                   icon: Icons.record_voice_over_rounded,
                   label: 'Re-read',
                   onTap: onReread,
+                  color: Colors.white,
+                ),
+                _ActionChip(
+                  icon: Icons.shuffle_rounded,
+                  label: 'Remix',
+                  onTap: onRemix,
                   color: Colors.white,
                 ),
                 _ActionChip(
@@ -2299,6 +2488,55 @@ class _ActionChip extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Remix tile widget
+// ---------------------------------------------------------------------------
+
+class _RemixTile extends StatelessWidget {
+  final String emoji;
+  final String label;
+  final AgeBandThemeData band;
+  final VoidCallback onTap;
+
+  const _RemixTile({
+    required this.emoji,
+    required this.label,
+    required this.band,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(band.buttonRadiusBase),
+          border: Border.all(color: Colors.white30),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 28)),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                fontFamily: band.uiFontFamily,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
