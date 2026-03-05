@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../services/parental_consent_service.dart';
 import '../theme/app_theme.dart';
@@ -24,92 +25,162 @@ class _AgeGateScreenState extends State<AgeGateScreen> {
   int? _selectedAge;
   bool _submitting = false;
 
+  static const _goldColor = Color(0xFFFFD700);
+
+  // Age options: individual ages 3–12, then grouped 13-17 and 18+.
+  static const _ageEntries = <({String label, int value})>[
+    (label: '3', value: 3),
+    (label: '4', value: 4),
+    (label: '5', value: 5),
+    (label: '6', value: 6),
+    (label: '7', value: 7),
+    (label: '8', value: 8),
+    (label: '9', value: 9),
+    (label: '10', value: 10),
+    (label: '11', value: 11),
+    (label: '12', value: 12),
+    (label: '13‑17', value: 14),
+    (label: '18+', value: 21),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Card(
-              margin: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF120226), Color(0xFF2A0A4E)],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.xl,
               ),
-              elevation: 6,
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Welcome to Story Weaver!',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
+                    const Icon(Icons.auto_awesome, color: _goldColor, size: 40),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      'We need your age to keep things safe and follow COPPA rules.',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      'How old are you?',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    DropdownButtonFormField<int>(
-                      initialValue: _selectedAge,
-                      isExpanded: true,
-                      hint: const Text('Select your age'),
-                      items: List.generate(97, (index) => index + 4)
-                          .map(
-                            (age) => DropdownMenuItem(
-                              value: age,
-                              child: Text('$age years old'),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: _submitting
-                          ? null
-                          : (age) => setState(() => _selectedAge = age),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _submitting ? null : _handleContinue,
-                        child: Text(_submitting ? 'Checking...' : 'Continue'),
+                      'Welcome to\nStory Weaver!',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.cinzelDecorative(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: _goldColor,
+                        height: 1.2,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'Parents: please select your child\'s age',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white70,
+                          ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    GridView.count(
+                      crossAxisCount: 3,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: AppSpacing.md,
+                      crossAxisSpacing: AppSpacing.md,
+                      children: _ageEntries.map((entry) {
+                        final selected = _selectedAge == entry.value;
+                        return _AgeCircle(
+                          label: entry.label,
+                          selected: selected,
+                          onTap: _submitting
+                              ? null
+                              : () => setState(() => _selectedAge = entry.value),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    // Continue arrow button
+                    GestureDetector(
+                      onTap: _submitting ? null : _handleContinue,
+                      child: Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF7B2FBE), Color(0xFF4A148C)],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF7B2FBE).withAlpha(100),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: _submitting
+                            ? const Padding(
+                                padding: EdgeInsets.all(16),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.arrow_forward_rounded,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    Text(
+                      'We collect age to provide age-appropriate content. See our',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.white38,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
                     Wrap(
                       alignment: WrapAlignment.center,
                       spacing: 8,
-                      runSpacing: 4,
                       children: [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const PrivacyPolicyScreen(),
-                              ),
-                            );
-                          },
-                          child: const Text('Privacy Policy'),
+                        GestureDetector(
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const PrivacyPolicyScreen(),
+                            ),
+                          ),
+                          child: Text(
+                            'Privacy Policy',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: _goldColor.withAlpha(180),
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: _goldColor.withAlpha(180),
+                                ),
+                          ),
                         ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const TermsOfServiceScreen(),
-                              ),
-                            );
-                          },
-                          child: const Text('Terms of Service'),
+                        GestureDetector(
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const TermsOfServiceScreen(),
+                            ),
+                          ),
+                          child: Text(
+                            'Terms of Service',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: _goldColor.withAlpha(180),
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: _goldColor.withAlpha(180),
+                                ),
+                          ),
                         ),
                       ],
                     ),
@@ -191,6 +262,66 @@ class _AgeGateScreenState extends State<AgeGateScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
+    );
+  }
+}
+
+/// A single tappable age circle with selection glow animation.
+class _AgeCircle extends StatelessWidget {
+  const _AgeCircle({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  static const _gold = Color(0xFFFFD700);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedScale(
+        scale: selected ? 1.1 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutBack,
+        child: Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF4A148C), Color(0xFF7B2FBE)],
+            ),
+            border: selected
+                ? Border.all(color: _gold, width: 3)
+                : Border.all(color: Colors.white24, width: 1.5),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: _gold.withAlpha(100),
+                      blurRadius: 16,
+                      spreadRadius: 2,
+                    ),
+                  ]
+                : [],
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? _gold : Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: label.length > 2 ? 16 : 22,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
