@@ -79,7 +79,7 @@
   - `backend/services/story_service.py`: replaced `COMPANION_PERSONALITIES` with `COMPANION_CARDS` dict (role + prompt_seed + catchphrases) + `_get_companion_injection()` helper; story builder emits a `COMPANION ROLES:` block — server-side injection, frontend just sends name
   - `wizard_data_mapper.dart`: `_getNamedCompanionPersonality()` returns prompt-seed strings keyed by new companion names; named companions now **bypass** the old Power-Pairing lookup entirely (fixes substring-match collision: "Shadow Cat" → `id:'cat'`, "Star Dog" → `id:'dog'` etc.)
 
-- **Dead code removed from `hero_creator_step.dart`:**
+- **Hotfix (`43ecd8a`):** `scenario_data.dart` safe_space rename was committed but old whisper content was still in the file (only CRLF normalisation had been staged). Re-applied all text field changes: emoji ✨, title "Imagine It", all description/hint fields rewritten with imagination language.**
   - `_isContinueHovered`, `_isCreateAvatarPressed` fields
   - `_buildPersonalityPairs()`, `_buildSuperpowerSection()`, `_buildContinueButton()` methods and their helpers (`_superpowerLabel`, `_chipButton`, `_buildVoiceInput`)
   - `class _PetsSection`, `class _QuickCompanion` — ~150 lines total
