@@ -572,31 +572,48 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
                 ),
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: band.band == AgeBand.sprout
+                    ? CrossAxisAlignment.center
+                    : CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Icon(
-                        isPending ? Icons.hourglass_bottom : Icons.alt_route,
-                        color:
-                            isPending ? AppColors.primary : AppColors.secondary,
+                  if (band.band == AgeBand.sprout) ...[
+                    if (isPending)
+                      const Icon(Icons.hourglass_bottom, color: AppColors.primary)
+                    else
+                      Text(_choiceEmoji(choice.text),
+                          style: const TextStyle(fontSize: 44)),
+                    const SizedBox(height: 6),
+                    Text(
+                      choice.text,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontFamily: band.uiFontFamily,
+                        fontSize: 14,
                       ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Text(
-                          choice.text,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontFamily: band.uiFontFamily,
-                            fontSize: band.band == AgeBand.sprout
-                                ? 18.0
-                                : band.band == AgeBand.explorer
-                                    ? 16.0
-                                    : null,
+                    ),
+                  ] else
+                    Row(
+                      children: [
+                        if (isPending)
+                          const Icon(Icons.hourglass_bottom,
+                              color: AppColors.primary)
+                        else
+                          Text(_choiceEmoji(choice.text),
+                              style: const TextStyle(fontSize: 22)),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            choice.text,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontFamily: band.uiFontFamily,
+                              fontSize: band.band == AgeBand.explorer
+                                  ? 16.0
+                                  : null,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
                   if (skill != null && skill.isNotEmpty && band.band != AgeBand.sprout) ...[
                     const SizedBox(height: 6),
                     Chip(
@@ -627,6 +644,26 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
         ),
       ),
     );
+  }
+
+  static String _choiceEmoji(String choiceText) {
+    final text = choiceText.toLowerCase();
+    if (text.contains('run') || text.contains('escape') || text.contains('flee')) return '🏃';
+    if (text.contains('hide') || text.contains('sneak')) return '👀';
+    if (text.contains('help') || text.contains('friend') || text.contains('together')) return '🤝';
+    if (text.contains('magic') || text.contains('spell') || text.contains('wand')) return '🪄';
+    if (text.contains('brave') || text.contains('courage') || text.contains('fight')) return '⚔️';
+    if (text.contains('explore') || text.contains('discover') || text.contains('search')) return '🔍';
+    if (text.contains('talk') || text.contains('ask') || text.contains('tell')) return '💬';
+    if (text.contains('climb') || text.contains('jump') || text.contains('fly')) return '🦅';
+    if (text.contains('water') || text.contains('swim') || text.contains('ocean')) return '🌊';
+    if (text.contains('dark') || text.contains('night') || text.contains('shadow')) return '🌙';
+    if (text.contains('forest') || text.contains('tree') || text.contains('nature')) return '🌳';
+    if (text.contains('treasure') || text.contains('gold') || text.contains('gem')) return '💎';
+    if (text.contains('dragon') || text.contains('beast') || text.contains('creature')) return '🐉';
+    if (text.contains('trust') || text.contains('believe') || text.contains('hope')) return '⭐';
+    if (text.contains('care') || text.contains('heal') || text.contains('kind')) return '💚';
+    return '✨';
   }
 
   String _formatSkill(String skill) {
