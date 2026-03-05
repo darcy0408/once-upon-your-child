@@ -201,7 +201,7 @@ class FeelingDetails {
       ],
       emoji: '😔',
     ),
-    'Vulnerable': const FeelingDetail(
+    'Sensitive': const FeelingDetail(
       description: 'When you feel unprotected or unsure and need extra care.',
       coping: [
         'Sit close to someone safe.',
@@ -210,7 +210,7 @@ class FeelingDetails {
       ],
       emoji: '😟',
     ),
-    'Despair': const FeelingDetail(
+    'Really Sad': const FeelingDetail(
       description: 'When it feels like nothing will get better.',
       coping: [
         'Tell a trusted adult how heavy it feels.',
@@ -228,7 +228,7 @@ class FeelingDetails {
       ],
       emoji: '😔',
     ),
-    'Depressed': const FeelingDetail(
+    'Down': const FeelingDetail(
       description: 'When you feel very low, empty, or drained for a while.',
       coping: [
         'Move your body gently, like a short walk or stretch.',
@@ -367,7 +367,7 @@ class FeelingSupportLibrary {
         'Read or listen to a comforting story',
       ],
     ),
-    'Vulnerable': const FeelingSupportInfo(
+    'Sensitive': const FeelingSupportInfo(
       bodySignals: [
         'Looking around for safety',
         'Tight shoulders',
@@ -379,7 +379,7 @@ class FeelingSupportLibrary {
         'Remind yourself who keeps you safe',
       ],
     ),
-    'Despair': const FeelingSupportInfo(
+    'Really Sad': const FeelingSupportInfo(
       bodySignals: [
         'Slumped posture',
         'Deep sighs',
@@ -403,7 +403,7 @@ class FeelingSupportLibrary {
         'Take a breath and plan a better choice next time',
       ],
     ),
-    'Depressed': const FeelingSupportInfo(
+    'Down': const FeelingSupportInfo(
       bodySignals: [
         'Very low energy',
         'Slow movements',
@@ -749,7 +749,7 @@ class FeelingsWheelData {
           emoji: '😔',
           eyeType: 'Dizzy',
           mouthType: 'Concerned',
-          tertiary: ['Worthless', 'Insignificant'],
+          tertiary: ['Not Good Enough', 'Insignificant'],
         ),
         SecondaryFeeling(
           id: 'rejected',
@@ -757,7 +757,7 @@ class FeelingsWheelData {
           emoji: '😢',
           eyeType: 'Dizzy',
           mouthType: 'Concerned',
-          tertiary: ['Excluded', 'Persecuted'],
+          tertiary: ['Excluded', 'Picked On'],
         ),
         SecondaryFeeling(
           id: 'threatened',
@@ -781,7 +781,7 @@ class FeelingsWheelData {
       secondary: [
         SecondaryFeeling(
           id: 'vulnerable',
-          name: 'Vulnerable',
+          name: 'Sensitive',
           emoji: '😟',
           eyeType: 'Surprised',
           mouthType: 'Concerned',
@@ -789,7 +789,7 @@ class FeelingsWheelData {
         ),
         SecondaryFeeling(
           id: 'despair',
-          name: 'Despair',
+          name: 'Really Sad',
           emoji: '😞',
           eyeType: 'Dizzy',
           mouthType: 'Concerned',
@@ -805,7 +805,7 @@ class FeelingsWheelData {
         ),
         SecondaryFeeling(
           id: 'depressed',
-          name: 'Depressed',
+          name: 'Down',
           emoji: '☁️',
           eyeType: 'Dizzy',
           mouthType: 'Concerned',
@@ -885,7 +885,7 @@ class FeelingsWheelData {
         ),
         SecondaryFeeling(
           id: 'humiliated',
-          name: 'Humiliated',
+          name: 'Embarrassed',
           emoji: '😳',
           eyeType: 'Surprised',
           mouthType: 'Concerned',
@@ -905,15 +905,15 @@ class FeelingsWheelData {
           emoji: '😡',
           eyeType: 'EyeRoll',
           mouthType: 'Serious',
-          tertiary: ['Furious', 'Jealous'],
+          tertiary: ['Really Angry', 'Jealous'],
         ),
         SecondaryFeeling(
           id: 'aggressive',
-          name: 'Aggressive',
+          name: 'Fired Up',
           emoji: '😤',
           eyeType: 'EyeRoll',
           mouthType: 'Serious',
-          tertiary: ['Provoked', 'Hostile'],
+          tertiary: ['Wound Up', 'Ready to Fight'],
         ),
         SecondaryFeeling(
           id: 'frustrated',
@@ -921,7 +921,7 @@ class FeelingsWheelData {
           emoji: '😣',
           eyeType: 'Default',
           mouthType: 'Concerned',
-          tertiary: ['Infuriated', 'Annoyed'],
+          tertiary: ['Steaming', 'Annoyed'],
         ),
         SecondaryFeeling(
           id: 'distant',
