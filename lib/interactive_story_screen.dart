@@ -284,16 +284,21 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
                   : null,
           child: Scaffold(
             appBar: AppBar(
-              title: Text('${widget.character.name}\'s Adventure'),
+              backgroundColor: const Color(0xFF1A0533),
+              elevation: 0,
+              title: Text(
+                '${widget.character.name}\'s Adventure',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
                 onPressed: () => Navigator.of(context).pop(_storySaved),
               ),
             ),
             body: Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppColors.surface, Colors.white],
+                  colors: [Color(0xFF1A0533), Color(0xFF2D1B69)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
@@ -364,42 +369,68 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
   }
 
   Widget _buildHeaderCard() {
-    final theme = Theme.of(context);
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF9E6CFF).withAlpha(80)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-            child: Text(
-              widget.character.name.isNotEmpty
-                  ? widget.character.name[0].toUpperCase()
-                  : '?',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const RadialGradient(
+                colors: [Color(0xFFAA88FF), Color(0xFF7B4FBF)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF9E6CFF).withAlpha(120),
+                  blurRadius: 10,
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                widget.character.name.isNotEmpty
+                    ? widget.character.name[0].toUpperCase()
+                    : '?',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '${widget.character.name} • ${widget.theme}',
-                  style: theme.textTheme.titleMedium,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: band.uiFontFamily,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   _storyEnded
-                      ? 'Adventure complete!'
+                      ? '✨ Adventure complete!'
                       : 'Choice $_currentChoiceNumber of 4',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color:
-                        _storyEnded ? AppColors.secondary : AppColors.primary,
+                  style: TextStyle(
+                    color: _storyEnded
+                        ? const Color(0xFFFFD700)
+                        : const Color(0xFFAA88FF),
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -412,32 +443,56 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
   }
 
   Widget _buildChoiceHistoryChips() {
-    final theme = Theme.of(context);
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Your choices so far',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(_choiceHistory.length, (i) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Tooltip(
+              message: _choiceHistory[i].text,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      i.isEven
+                          ? const Color(0xFFFFB347)
+                          : const Color(0xFF00D4DD),
+                      i.isEven
+                          ? const Color(0xFFFF8C00).withAlpha(180)
+                          : const Color(0xFF007B8A).withAlpha(180),
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (i.isEven
+                              ? const Color(0xFFFFB347)
+                              : const Color(0xFF00D4DD))
+                          .withAlpha(100),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    '${i + 1}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: List.generate(_choiceHistory.length, (index) {
-              final choice = _choiceHistory[index];
-              return Chip(
-                backgroundColor: AppColors.accent.withValues(alpha: 0.2),
-                labelStyle: theme.textTheme.labelLarge,
-                label: Text('${index + 1}. ${choice.text}'),
-              );
-            }),
-          ),
-        ],
+          );
+        }),
       ),
     );
   }
@@ -494,7 +549,22 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
 
         final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
 
-        return AppCard(
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withAlpha(18),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFF9E6CFF).withAlpha(60),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF9E6CFF).withAlpha(30),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -502,7 +572,9 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
               Text(
                 segment.text,
                 style: theme.textTheme.bodyLarge?.copyWith(
+                  color: Colors.white.withAlpha(235),
                   fontFamily: band.uiFontFamily,
+                  height: 1.6,
                   fontSize: band.band == AgeBand.sprout
                       ? 21.0
                       : band.band == AgeBand.explorer
@@ -514,22 +586,26 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
               ),
               if (showChoices) ...[
                 const SizedBox(height: AppSpacing.md),
-                Row(
-                  children: [
-                    const Icon(Icons.alt_route,
-                        size: 18, color: AppColors.primary),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      'Choice ${_choiceIds.length + 1}',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: Row(
+                    children: [
+                      const Text('✨', style: TextStyle(fontSize: 18)),
+                      const SizedBox(width: 8),
+                      Text(
+                        'What do you do next?',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: band.uiFontFamily,
+                          fontSize: band.band == AgeBand.sprout ? 18 : 16,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                ...segment.choices!.map(_buildChoiceButton),
+                ...segment.choices!.asMap().entries.map((e) => _buildChoiceButton(e.value, index: e.key)),
               ],
             ],
           ),
@@ -539,7 +615,7 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
     );
   }
 
-  Widget _buildChoiceButton(StoryChoice choice) {
+  Widget _buildChoiceButton(StoryChoice choice, {int index = 0}) {
     final theme = Theme.of(context);
     final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final isPending = _pendingChoice?.id == choice.id && _isContinuing;
@@ -564,12 +640,26 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
                       ? 16.0
                       : AppSpacing.md),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.04),
+                color: Colors.white.withAlpha(20),
                 borderRadius: BorderRadius.circular(band.buttonRadiusBase),
                 border: Border.all(
-                  color: isPending ? AppColors.primary : Colors.grey.shade200,
-                  width: 1.5,
+                  color: isPending
+                      ? Colors.white.withAlpha(200)
+                      : (index.isEven
+                          ? const Color(0xFFFFB347).withAlpha(160)
+                          : const Color(0xFF00D4DD).withAlpha(160)),
+                  width: isPending ? 2.0 : 1.5,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: (index.isEven
+                            ? const Color(0xFFFFB347)
+                            : const Color(0xFF00D4DD))
+                        .withAlpha(isPending ? 80 : 40),
+                    blurRadius: isPending ? 16 : 8,
+                    spreadRadius: 0,
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: band.band == AgeBand.sprout
@@ -587,6 +677,7 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
                       choice.text,
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.white,
                         fontFamily: band.uiFontFamily,
                         fontSize: 14,
                       ),
@@ -605,10 +696,9 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
                           child: Text(
                             choice.text,
                             style: theme.textTheme.titleMedium?.copyWith(
+                              color: Colors.white,
                               fontFamily: band.uiFontFamily,
-                              fontSize: band.band == AgeBand.explorer
-                                  ? 16.0
-                                  : null,
+                              fontSize: band.band == AgeBand.explorer ? 16.0 : null,
                             ),
                           ),
                         ),
@@ -633,7 +723,7 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
                     Text(
                       choice.description,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.black54,
+                        color: Colors.white.withAlpha(160),
                       ),
                     ),
                   ],
@@ -682,37 +772,48 @@ class _InteractiveStoryScreenState extends State<InteractiveStoryScreen> {
   }
 
   Widget _buildEndingCard() {
-    final theme = Theme.of(context);
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF2D1B69), Color(0xFF1A0533)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFFD700).withAlpha(120), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFD700).withAlpha(60),
+            blurRadius: 20,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(24),
       child: Column(
         children: [
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: List.generate(
-              12,
-              (index) => Icon(
-                Icons.celebration,
-                color:
-                    Colors.primaries[index % Colors.primaries.length].shade300,
-                size: 20 + ((index % 3) * 4),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
+          const Text('✨🌟✨', style: TextStyle(fontSize: 32)),
+          const SizedBox(height: 12),
           Text(
             'The End',
-            style: theme.textTheme.titleLarge?.copyWith(
+            style: TextStyle(
+              color: const Color(0xFFFFD700),
+              fontFamily: band.uiFontFamily,
+              fontSize: 28,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: AppSpacing.xs),
+          const SizedBox(height: 8),
           Text(
             'What an adventure! Tap save so you can read it again anytime.',
             textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium,
+            style: TextStyle(
+              color: Colors.white.withAlpha(200),
+              fontFamily: band.uiFontFamily,
+              fontSize: 14,
+              height: 1.5,
+            ),
           ),
         ],
       ),
