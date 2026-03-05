@@ -176,7 +176,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                     IconButton(
                       icon: Icon(
                         _currentStep == 0 ? Icons.close : Icons.arrow_back,
-                        color: AppColors.textDark,
+                        color: Colors.white,
                       ),
                       onPressed: _currentStep == 0
                           ? () {
@@ -218,7 +218,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                     IconButton(
                       icon: const Icon(
                         Icons.favorite,
-                        color: AppColors.textDark,
+                        color: Colors.white,
                       ),
                       onPressed: () {
                         Navigator.of(context).push(
@@ -235,7 +235,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                     IconButton(
                       icon: const Icon(
                         Icons.people,
-                        color: AppColors.textDark,
+                        color: Colors.white,
                       ),
                       onPressed: () async {
                         await Navigator.of(context).push(
