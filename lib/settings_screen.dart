@@ -23,6 +23,7 @@ import 'screens/parent_dashboard_screen.dart';
 import 'screens/therapist_portal_screen.dart';
 import 'screens/privacy_policy_screen.dart';
 import 'screens/terms_of_service_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsState {
   const SettingsState({
@@ -704,6 +705,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: const Text('Terms of Service'),
             ),
           ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        _buildPartnersSection(context),
+      ],
+    );
+  }
+
+  Widget _buildPartnersSection(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Partners',
+          style: Theme.of(context)
+              .textTheme
+              .titleSmall
+              ?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        InkWell(
+          onTap: () => launchUrl(Uri.parse('https://elevenlabs.io/impact-program')),
+          child: Image.network(
+            isDark
+                ? 'https://eleven-public-cdn.elevenlabs.io/payloadcms/csnjio02mx4-elevenlabs-logo-white.svg'
+                : 'https://eleven-public-cdn.elevenlabs.io/payloadcms/rxk2xwmcbb-elevenlabs-logo-black.svg',
+            height: 28,
+            semanticLabel: 'ElevenLabs Impact Program',
+            errorBuilder: (_, __, ___) => const Text('ElevenLabs Impact Program'),
+          ),
         ),
       ],
     );
