@@ -2,6 +2,44 @@
 
 ---
 
+## Session Update - 2026-03-05 (Archetype images, Feelings Quest modal, cloud prompts)
+
+### Scope Completed
+
+- **Archetype card images enlarged:**
+  - `lib/screens/wizard_steps/hero_creator_step.dart` — 2-column grid: `90 → 120px`; horizontal scroll list: `100 → 130px` (~30% larger in both layouts)
+
+- **Feelings Quest cloud picker modal:**
+  - New `lib/widgets/feelings_quest_modal.dart` — full-screen modal that opens when the "Big Feelings Quest" scenario card is tapped
+  - 7 core emotions displayed as cloud-shaped cards using `_CloudClipper` + emotion face images from `assets/feelings_faces/`
+  - Progressive disclosure by age: ≤5 = core only, 6–8 = core→secondary, 9+ = core→secondary→tertiary pill chips
+  - `AnimatedSwitcher` with slide/fade transitions between levels; back button navigates up; × dismisses
+  - Press-scale haptic feedback; saves `[coreId, secondaryId?, tertiaryId?]` to `wizardData.selectedEmotionChips`
+  - `_CloudEmotionCard` tries `assets/feelings_faces/clouds/{id}.png` first — when user drops cloud art in, it automatically replaces the fallback clipper
+  - Hooked into `feeling_selection_step.dart`: Big Feelings Quest card tap opens modal, then auto-selects the scenario on confirm
+
+- **Feelings cloud image generation prompts:**
+  - New `FEELINGS_CLOUD_IMAGE_PROMPTS.md` — Midjourney prompts for all 44 cloud face images (7 core + 37 secondary), with base style, per-emotion expression descriptions, color guidance, and asset setup checklist
+  - Drop-in path: `assets/feelings_faces/clouds/{id}.png` — no code changes needed once images are generated
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Larger archetype card images |
+| `lib/widgets/feelings_quest_modal.dart` | New — Feelings Quest cloud picker |
+| `lib/screens/wizard_steps/feeling_selection_step.dart` | Open modal on Big Feelings Quest tap |
+| `FEELINGS_CLOUD_IMAGE_PROMPTS.md` | New — 44 Midjourney prompts for cloud face images |
+
+### Status
+- **Archetype images:** ✅ Larger
+- **Feelings Quest modal:** ✅ Built, compiles clean — needs browser test
+- **Cloud face images:** 🟡 Prompts ready, images not yet generated
+- **Voice picker (TTS):** 🟡 Discussed, not yet implemented
+- **Flutter test failures (28):** 🟡 Diagnosed, fixes not yet applied
+- **Launch Readiness:** ~80%
+
+---
+
 ## Session Update - 2026-03-04 (Comprehensive Test Suite Audit & Fixes)
 
 ### Scope Completed

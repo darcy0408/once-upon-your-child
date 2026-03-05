@@ -400,22 +400,27 @@ class _CloudEmotionCardState extends State<_CloudEmotionCard>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Cloud body
+            // Cloud body — self-contained cloud PNG if available, else fallback
             SizedBox(
               height: cloudH,
-              child: ClipPath(
-                clipper: _CloudClipper(),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: widget.color.withAlpha(220),
-                  ),
-                  child: Center(
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: cloudH * 0.05),
-                      child: _FaceImage(
-                        id: widget.id,
-                        emoji: widget.emoji,
-                        height: faceH,
+              child: Image.asset(
+                'assets/feelings_faces/clouds/${widget.id}.png',
+                height: cloudH,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => ClipPath(
+                  clipper: _CloudClipper(),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: widget.color.withAlpha(220),
+                    ),
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: cloudH * 0.05),
+                        child: _FaceImage(
+                          id: widget.id,
+                          emoji: widget.emoji,
+                          height: faceH,
+                        ),
                       ),
                     ),
                   ),
@@ -536,18 +541,12 @@ class _FaceImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Try cloud-face variant first (user-generated assets), then standard face.
     return Image.asset(
-      'assets/feelings_faces/clouds/$id.png',
+      'assets/feelings_faces/$id.png',
       height: height,
       fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => Image.asset(
-        'assets/feelings_faces/$id.png',
-        height: height,
-        fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) =>
-            Text(emoji, style: TextStyle(fontSize: height * 0.65)),
-      ),
+      errorBuilder: (_, __, ___) =>
+          Text(emoji, style: TextStyle(fontSize: height * 0.65)),
     );
   }
 }
