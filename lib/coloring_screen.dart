@@ -7,10 +7,12 @@ import 'coloring_book_service.dart';
 
 class ColoringScreen extends StatefulWidget {
   final ColoringPage coloringPage;
+  final int childAge;
 
   const ColoringScreen({
     super.key,
     required this.coloringPage,
+    this.childAge = 8,
   });
 
   @override
@@ -24,6 +26,10 @@ class _ColoringScreenState extends State<ColoringScreen> {
   Color _selectedColor = Colors.red;
   final List<DrawingPoint> _drawingPoints = [];
   bool _isLoading = true;
+  late double _brushSize;
+
+  double get _defaultBrush =>
+      widget.childAge <= 6 ? 30.0 : widget.childAge <= 10 ? 20.0 : 15.0;
 
   static const List<Color> _colorPalette = [
     Colors.red,
@@ -47,6 +53,7 @@ class _ColoringScreenState extends State<ColoringScreen> {
   @override
   void initState() {
     super.initState();
+    _brushSize = _defaultBrush;
     _loadSavedColoring();
   }
 
@@ -226,6 +233,61 @@ class _ColoringScreenState extends State<ColoringScreen> {
             ),
           ),
 
+          // Brush size picker
+          Container(
+            height: 52,
+            color: Colors.grey.shade100,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Brush:',
+                    style: TextStyle(fontSize: 12, color: Colors.grey)),
+                const SizedBox(width: 8),
+                ...[
+                  {
+                    'size': widget.childAge <= 6 ? 30.0 : 15.0,
+                    'label': '•',
+                    'fontSize': 12.0
+                  },
+                  {
+                    'size': widget.childAge <= 6 ? 45.0 : 25.0,
+                    'label': '●',
+                    'fontSize': 18.0
+                  },
+                  {
+                    'size': widget.childAge <= 6 ? 65.0 : 40.0,
+                    'label': '⬤',
+                    'fontSize': 26.0
+                  },
+                ].map((opt) {
+                  final sz = opt['size'] as double;
+                  final isSelected = (_brushSize - sz).abs() < 1;
+                  return GestureDetector(
+                    onTap: () => setState(() => _brushSize = sz),
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Colors.purple.shade100
+                            : Colors.transparent,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color:
+                              isSelected ? Colors.purple : Colors.grey.shade300,
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: Text(opt['label'] as String,
+                          style: TextStyle(
+                              fontSize: opt['fontSize'] as double)),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+
           // Drawing canvas
           Expanded(
             child: RepaintBoundary(
@@ -277,6 +339,7 @@ class _ColoringScreenState extends State<ColoringScreen> {
                               DrawingPoint(
                                 offset: details.localPosition,
                                 color: _selectedColor,
+                                strokeWidth: _brushSize,
                               ),
                             );
                           });
@@ -287,6 +350,7 @@ class _ColoringScreenState extends State<ColoringScreen> {
                               DrawingPoint(
                                 offset: details.localPosition,
                                 color: _selectedColor,
+                                strokeWidth: _brushSize,
                               ),
                             );
                           });
@@ -294,7 +358,11 @@ class _ColoringScreenState extends State<ColoringScreen> {
                         onPanEnd: (details) {
                           setState(() {
                             _drawingPoints.add(
-                              DrawingPoint(offset: null, color: _selectedColor),
+                              DrawingPoint(
+                                offset: null,
+                                color: _selectedColor,
+                                strokeWidth: _brushSize,
+                              ),
                             );
                           });
                         },
@@ -338,10 +406,12 @@ class _ColoringScreenState extends State<ColoringScreen> {
 class DrawingPoint {
   final Offset? offset;
   final Color color;
+  final double strokeWidth;
 
   DrawingPoint({
     this.offset,
     required this.color,
+    this.strokeWidth = 15.0,
   });
 }
 
@@ -358,7 +428,7 @@ class DrawingPainter extends CustomPainter {
           drawingPoints[i + 1].offset != null) {
         final paint = Paint()
           ..color = drawingPoints[i].color
-          ..strokeWidth = 15.0
+          ..strokeWidth = drawingPoints[i].strokeWidth
           ..strokeCap = StrokeCap.round;
 
         canvas.drawLine(
