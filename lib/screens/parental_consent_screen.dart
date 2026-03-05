@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../services/parental_consent_service.dart';
 import '../theme/app_theme.dart';
@@ -26,91 +27,159 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const textWhite = TextStyle(color: Colors.white);
+    const textWhite70 = TextStyle(color: Colors.white70);
+
     return Scaffold(
+      backgroundColor: AppColors.gradientStart,
       appBar: AppBar(
-        title: const Text('Parental Consent Required'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          'Parental Consent Required',
+          style: GoogleFonts.fredoka(color: Colors.white, fontSize: 20),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Hello Parent/Guardian!',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Your child would like to use Story Weaver (age ${widget.declaredAge}). We need your permission because they are under 13.',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                'What We Do:',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              const Text('• Generate personalized stories using AI'),
-              const Text('• Provide therapeutic content for emotional growth'),
-              const Text('• Collect minimal data (story preferences only)'),
-              const Text('• Never sell or share your child\'s information'),
-              const SizedBox(height: AppSpacing.md),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Your Email (optional)',
-                  hintText: 'parent@example.com',
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-                keyboardType: TextInputType.emailAddress,
-                onChanged: (value) => _parentEmail = value,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              CheckboxListTile(
-                title: const Text(
-                  'I am a parent/guardian and give permission',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: const Text(
-                  'I have read the Privacy Policy and Terms of Service',
-                ),
-                value: _consentGiven,
-                onChanged: (value) =>
-                    setState(() => _consentGiven = value ?? false),
-              ),
-              Row(
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const PrivacyPolicyScreen(),
-                        ),
-                      );
-                    },
-                    child: const Text('Privacy Policy'),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [AppColors.gradientStart, Color(0xFF1E0A3C)],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Hello Parent/Guardian! 👋',
+                  style: GoogleFonts.fredoka(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
                   ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const TermsOfServiceScreen(),
-                        ),
-                      );
-                    },
-                    child: const Text('Terms of Service'),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: !_consentGiven || _submitting ? null : _submitConsent,
-                  child: Text(_submitting ? 'Saving...' : 'Give Permission'),
                 ),
-              ),
-            ],
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Your child (age ${widget.declaredAge}) would like to use Story Weaver. '
+                  'We need your permission because they are under 13.',
+                  style: GoogleFonts.fredoka(color: Colors.white, fontSize: 16),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'What We Do:',
+                  style: GoogleFonts.fredoka(
+                    color: const Color(0xFFFFD700),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                const Text('• Generate personalized stories using AI', style: textWhite),
+                const Text('• Provide therapeutic content for emotional growth', style: textWhite),
+                const Text('• Collect minimal data (story preferences only)', style: textWhite),
+                const Text("• Never sell or share your child's information", style: textWhite),
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Your Email (optional)',
+                    labelStyle: const TextStyle(color: Colors.white70),
+                    hintText: 'parent@example.com',
+                    hintStyle: TextStyle(color: Colors.white.withAlpha(120)),
+                    prefixIcon: const Icon(Icons.email_outlined, color: Colors.white70),
+                    filled: true,
+                    fillColor: Colors.white.withAlpha(25),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.white54),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.white54),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2),
+                    ),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  onChanged: (value) => _parentEmail = value,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(20),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white38),
+                  ),
+                  child: CheckboxListTile(
+                    title: const Text(
+                      'I am a parent/guardian and give permission',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: const Text(
+                      'I have read the Privacy Policy and Terms of Service',
+                      style: textWhite70,
+                    ),
+                    checkColor: Colors.black,
+                    activeColor: const Color(0xFFFFD700),
+                    value: _consentGiven,
+                    onChanged: (value) =>
+                        setState(() => _consentGiven = value ?? false),
+                  ),
+                ),
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const PrivacyPolicyScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text('Privacy Policy',
+                          style: TextStyle(color: Color(0xFFFFD700))),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const TermsOfServiceScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text('Terms of Service',
+                          style: TextStyle(color: Color(0xFFFFD700))),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: !_consentGiven || _submitting ? null : _submitConsent,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFD700),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: Text(
+                      _submitting ? 'Saving...' : 'Give Permission ✓',
+                      style: GoogleFonts.fredoka(
+                          fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
