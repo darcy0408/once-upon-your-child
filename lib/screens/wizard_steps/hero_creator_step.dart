@@ -57,8 +57,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   final FocusNode _nameFocusNode = FocusNode();
   Character? _selectedExistingCharacter;
   bool _isContinuePressed = false;
-  bool _isContinueHovered = false;
-  bool _isCreateAvatarPressed = false;
   bool _isCreatingNew = true;
   GeneratedAvatar? _generatedAvatar;
   String? _customAvatarFilePath;
@@ -639,8 +637,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           const SizedBox(height: 10),
           if (_hasAvatar) _buildEditAvatarButton() else _buildCreateAvatarButton(),
           const SizedBox(height: 24),
-          _buildArchetypeCards(),
-          const SizedBox(height: 40),
+          // Archetype cards only appear after avatar is created
+          if (_hasAvatar) ...[
+            _buildArchetypeCards(),
+            const SizedBox(height: 40),
+          ],
           _buildNextArrowButton(enabled: canGoNext, onTap: _heroNextPage),
         ],
       ),
@@ -960,6 +961,22 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       ),
     ];
 
+    // Sprout users: hide volcano_dragons (potentially scary) and show 3 bigger cards.
+    final displayButtons = band.band == AgeBand.sprout
+        ? featuredButtons.where((b) => b.id != 'volcano_dragons').toList()
+        : featuredButtons;
+
+    final cardSize = band.band == AgeBand.sprout
+        ? 160.0
+        : band.band == AgeBand.explorer
+            ? 140.0
+            : 120.0;
+    final labelFontSize = band.band == AgeBand.sprout
+        ? 14.0
+        : band.band == AgeBand.explorer
+            ? 13.0
+            : 12.0;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -986,27 +1003,38 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           ),
           const SizedBox(height: 16),
 
-          // 2-column grid of featured image buttons
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.5,
-            children: featuredButtons
-                .map((btn) => _SceneImageButton(
-                      data: btn,
-                      isSelected:
-                          widget.wizardData.selectedScenario == btn.id,
-                      onTap: () => setState(() {
-                        widget.wizardData.selectedScenario =
-                            widget.wizardData.selectedScenario == btn.id
-                                ? null
-                                : btn.id;
-                      }),
-                    ))
-                .toList(),
+          // 2-column grid of featured image buttons — card height driven by cardSize
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const crossAxisCount = 2;
+              const spacing = 12.0;
+              final cardWidth =
+                  (constraints.maxWidth - spacing * (crossAxisCount - 1)) /
+                      crossAxisCount;
+              final aspectRatio = cardWidth / cardSize;
+              return GridView.count(
+                crossAxisCount: crossAxisCount,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisSpacing: spacing,
+                mainAxisSpacing: 12,
+                childAspectRatio: aspectRatio,
+                children: displayButtons
+                    .map((btn) => _SceneImageButton(
+                          data: btn,
+                          isSelected:
+                              widget.wizardData.selectedScenario == btn.id,
+                          labelFontSize: labelFontSize,
+                          onTap: () => setState(() {
+                            widget.wizardData.selectedScenario =
+                                widget.wizardData.selectedScenario == btn.id
+                                    ? null
+                                    : btn.id;
+                          }),
+                        ))
+                    .toList(),
+              );
+            },
           ),
 
           const SizedBox(height: 12),
@@ -1312,65 +1340,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
-  Widget _buildNextArrowButton({required bool enabled, required VoidCallback onTap}) {
-    return _PressableArrowButton(enabled: enabled, onTap: onTap);
-  }
-
-  // ─── Personality Pairs ──────────────────────────────────────────────────────
-  Widget _buildPersonalityPairs() {
-    return Column(
-      children: [
-        _PersonalityPair(
-          leftLabel: "Brave",
-          leftIcon: Icons.pets, // Lion-like
-          rightLabel: "Careful",
-          rightIcon: Icons.visibility, // Cat-like
-          sliderKey: "confidence",
-          currentValue: widget.wizardData.personalitySliders['confidence'] ?? 50,
-          onChanged: (val) => setState(() => widget.wizardData.personalitySliders['confidence'] = val),
-        ),
-        const SizedBox(height: 12),
-        _PersonalityPair(
-          leftLabel: "Loud and Silly",
-          leftIcon: Icons.campaign,
-          rightLabel: "Quiet and Thoughtful",
-          rightIcon: Icons.menu_book,
-          sliderKey: "energy",
-          currentValue: widget.wizardData.personalitySliders['energy'] ?? 50,
-          onChanged: (val) => setState(() => widget.wizardData.personalitySliders['energy'] = val),
-        ),
-        const SizedBox(height: 12),
-        _PersonalityPair(
-          leftLabel: "Team Player",
-          leftIcon: Icons.groups,
-          rightLabel: "Solo Explorer",
-          rightIcon: Icons.explore,
-          sliderKey: "sociability",
-          currentValue: widget.wizardData.personalitySliders['sociability'] ?? 50,
-          onChanged: (val) => setState(() => widget.wizardData.personalitySliders['sociability'] = val),
-        ),
-        const SizedBox(height: 12),
-        _PersonalityPair(
-          leftLabel: "Creative Dreamer",
-          leftIcon: Icons.brush,
-          rightLabel: "Practical Thinker",
-          rightIcon: Icons.build,
-          sliderKey: "creativity",
-          currentValue: widget.wizardData.personalitySliders['creativity'] ?? 50,
-          onChanged: (val) => setState(() => widget.wizardData.personalitySliders['creativity'] = val),
-        ),
-        const SizedBox(height: 12),
-        _PersonalityPair(
-          leftLabel: "Homebody",
-          leftIcon: Icons.home,
-          rightLabel: "Adventurer",
-          rightIcon: Icons.rocket_launch,
-          sliderKey: "adventurousness",
-          currentValue: widget.wizardData.personalitySliders['adventurousness'] ?? 50,
-          onChanged: (val) => setState(() => widget.wizardData.personalitySliders['adventurousness'] = val),
-        ),
-      ],
-    );
+  Widget _buildNextArrowButton({required bool enabled, required VoidCallback onTap, String? hint}) {
+    return _PressableArrowButton(enabled: enabled, onTap: onTap, hint: hint);
   }
 
   // ─── Avatar, Age, Gender, Name, Archetype, Superpower, Continue logic ──────────
@@ -2157,85 +2128,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     });
   }
 
-  Widget _buildSuperpowerSection() {
-    final name = widget.wizardData.characterName.isNotEmpty ? widget.wizardData.characterName : 'your hero';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _superpowerLabel('⚡ What is $name\'s superpower?'),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8, runSpacing: 8,
-          children: HeroCreatorStepData.superpowers.map((entry) {
-            final (label, value) = entry;
-            final selected = widget.wizardData.heroSuperpower == value;
-            return _chipButton(label: label, selected: selected, onTap: () => setState(() {
-              widget.wizardData.heroSuperpower = selected ? null : value;
-              _superpowerController.text = selected ? '' : value;
-            }));
-          }).toList(),
-        ),
-        const SizedBox(height: 10),
-        _buildVoiceInput(controller: _superpowerController, hint: 'Speak your own…', field: 'superpower', onChanged: (v) => widget.wizardData.heroSuperpower = v.trim().isEmpty ? null : v.trim()),
-        const SizedBox(height: 20),
-        _superpowerLabel('🗺️ What is $name\'s quest?'),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8, runSpacing: 8,
-          children: HeroCreatorStepData.quests.map((entry) {
-            final (label, value) = entry;
-            final selected = widget.wizardData.heroQuest == value;
-            return _chipButton(label: label, selected: selected, onTap: () => setState(() {
-              widget.wizardData.heroQuest = selected ? null : value;
-              _questController.text = selected ? '' : value;
-            }));
-          }).toList(),
-        ),
-        const SizedBox(height: 10),
-        _buildVoiceInput(controller: _questController, hint: 'Speak your own…', field: 'quest', onChanged: (v) => widget.wizardData.heroQuest = v.trim().isEmpty ? null : v.trim()),
-      ],
-    );
-  }
-
-  Widget _superpowerLabel(String text) => Text(text, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(color: Color(0xFFFFD700), blurRadius: 6)]));
-
-  Widget _chipButton({required String label, required bool selected, required VoidCallback onTap}) => GestureDetector(
-    onTap: onTap,
-    child: AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(color: selected ? const Color(0xFFFFD700).withAlpha(60) : Colors.white10, border: Border.all(color: selected ? const Color(0xFFFFD700) : Colors.white24), borderRadius: BorderRadius.circular(20)),
-      child: Text(label, style: TextStyle(fontSize: 13, color: selected ? const Color(0xFFFFD700) : Colors.white)),
-    ),
-  );
-
-  Widget _buildVoiceInput({required TextEditingController controller, required String hint, required String field, required void Function(String) onChanged}) {
-    final isListening = _listeningFor == field;
-    return Row(
-      children: [
-        Expanded(child: TextField(controller: controller, style: const TextStyle(color: Colors.white, fontSize: 13), decoration: InputDecoration(hintText: hint, hintStyle: const TextStyle(color: Colors.white38), filled: true, fillColor: Colors.white10, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))), onChanged: onChanged)),
-        const SizedBox(width: 8),
-        IconButton(icon: Icon(isListening ? Icons.mic : Icons.mic_none, color: isListening ? Colors.yellow : Colors.white), onPressed: () => _toggleListening(field)),
-      ],
-    );
-  }
-
-  Widget _buildContinueButton() => GestureDetector(
-        onTapDown: (_) => setState(() => _isContinuePressed = true),
-        onTapUp: (_) => setState(() => _isContinuePressed = false),
-        onTapCancel: () => setState(() => _isContinuePressed = false),
-        onTap: _handleContinue,
-        child: AnimatedScale(
-          scale: _isContinuePressed ? 0.92 : 1.0,
-          duration: const Duration(milliseconds: 90),
-          child: Image.asset(
-            _isContinuePressed
-                ? 'assets/images/ui/continue_btn_pressed.png'
-                : 'assets/images/ui/continue_normal.png',
-            height: 70, width: double.infinity, fit: BoxFit.contain,
-          ),
-        ),
-      );
 
   @override
   Widget build(BuildContext context) {
@@ -2443,155 +2335,6 @@ class _AvatarOptionTile extends StatelessWidget {
     final isDisabled = onTap == null;
     return Opacity(opacity: isDisabled ? 0.45 : 1.0, child: Material(color: Colors.white.withAlpha(20), borderRadius: BorderRadius.circular(16), child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(16), child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), child: Row(children: [Container(width: 48, height: 48, decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFFFD700).withAlpha(40), border: Border.all(color: const Color(0xFFFFD700).withAlpha(150), width: 1.5)), child: Icon(icon, color: const Color(0xFFFFD700), size: 24)), const SizedBox(width: 16), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)), const SizedBox(height: 2), Text(subtitle, style: TextStyle(color: Colors.white.withAlpha(180), fontSize: 13))])), const Icon(Icons.chevron_right, color: Colors.white54, size: 20)])))));
   }
-}
-
-class _PetsSection extends StatelessWidget {
-  final WizardData wizardData; final VoidCallback onUpdate;
-  const _PetsSection({required this.wizardData, required this.onUpdate});
-
-  @override Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Your Adventure Team', style: GoogleFonts.cinzelDecorative(color: const Color(0xFFFFD700), fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        SizedBox(height: 80, child: ListView(scrollDirection: Axis.horizontal, children: [
-          GestureDetector(onTap: () => _showAddPetDialog(context), child: Container(width: 70, margin: const EdgeInsets.only(right: 12), decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFFFFD700).withAlpha(150), width: 2), gradient: const LinearGradient(colors: [Color(0xFF5B1BAA), Color(0xFF2D0A4E)])), child: const Icon(Icons.add, color: Color(0xFFFFD700), size: 30))),
-          ...wizardData.pets.map((pet) => _buildPetCircle(context, pet)),
-        ])),
-      ],
-    );
-  }
-
-  Widget _buildPetCircle(BuildContext context, Map<String, String> pet) {
-    final name = pet['name'] ?? '';
-    final avatar = wizardData.petAvatars[name];
-    final photo = wizardData.petPhotos[name];
-    Widget petImage;
-    if (avatar != null) {
-      petImage = Image.memory(base64Decode(avatar.imageBase64.split(',').last), fit: BoxFit.cover);
-    } else if (photo != null) {
-      petImage = Image.memory(base64Decode(photo), fit: BoxFit.cover);
-    } else {
-      petImage = Center(child: Text(_getEmojiForSpecies(pet['species']), style: const TextStyle(fontSize: 30)));
-    }
-    return Container(width: 70, margin: const EdgeInsets.only(right: 12), child: Column(children: [Container(width: 60, height: 60, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFFFFD700), width: 2)), child: ClipOval(child: petImage)), const SizedBox(height: 4), Text(name, style: const TextStyle(color: Colors.white, fontSize: 10), overflow: TextOverflow.ellipsis)]));
-  }
-
-  void _showAddPetDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    final breedController = TextEditingController();
-    String species = 'Dog';
-    String? pickedPhotoBase64;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          final selectedPreviewImage = _PetsSection._speciesImageAssets[species];
-
-          Future<void> pickPhoto() async {
-            final picker = ImagePicker();
-            final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
-            if (picked != null) {
-              final bytes = await picked.readAsBytes();
-              setState(() => pickedPhotoBase64 = base64Encode(bytes));
-            }
-          }
-
-          return Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFF120226), Color(0xFF3D1166)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: const Color(0xFFFFD700).withAlpha(150), width: 2),
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text('Add a Magical Pet', style: GoogleFonts.cinzelDecorative(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFFFFD700)), textAlign: TextAlign.center),
-                    const SizedBox(height: 16),
-                    Center(child: GestureDetector(onTap: pickPhoto, child: Container(width: 110, height: 110, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: pickedPhotoBase64 != null ? const Color(0xFFD4A0FF) : const Color(0xFFFFD700), width: 2.5)), child: ClipOval(child: pickedPhotoBase64 != null ? Image.memory(base64Decode(pickedPhotoBase64!), fit: BoxFit.cover) : selectedPreviewImage != null ? Image.asset(selectedPreviewImage, fit: BoxFit.cover) : Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_a_photo_rounded, color: const Color(0xFFD4A0FF), size: 30), Text('Add Photo', style: TextStyle(color: const Color(0xFFD4A0FF), fontSize: 10))]))))),
-                    const SizedBox(height: 16),
-                    TextField(controller: nameController, style: const TextStyle(color: Colors.white), decoration: _petFieldDecoration(labelText: 'Pet Name', hintText: 'e.g. Luna')),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(value: species, dropdownColor: const Color(0xFF2A0A4E), style: const TextStyle(color: Colors.white), items: _speciesOptions.map((s) => DropdownMenuItem(value: s, child: Text('${_getEmojiForSpecies(s)} $s'))).toList(), onChanged: (v) { if (v != null) setState(() => species = v); }, decoration: _petFieldDecoration(labelText: 'Species')),
-                    const SizedBox(height: 12),
-                    TextField(controller: breedController, style: const TextStyle(color: Colors.white), decoration: _petFieldDecoration(labelText: 'Breed / Appearance', hintText: 'e.g. Golden Retriever')),
-                    const SizedBox(height: 20),
-                    OutlinedButton.icon(
-                      onPressed: () async {
-                        if (nameController.text.trim().isEmpty) return;
-                        final result = await Navigator.push<GeneratedAvatar>(context, MaterialPageRoute(builder: (_) => CustomPetAvatarScreen(petName: nameController.text.trim(), species: species, breedDescription: breedController.text.trim(), ownerFavoriteColor: wizardData.favoriteColor)));
-                        if (result != null) {
-                          wizardData.pets.add({'name': nameController.text.trim(), 'species': species, 'breed': breedController.text.trim()});
-                          wizardData.petAvatars[nameController.text.trim()] = result;
-                          onUpdate(); if (context.mounted) Navigator.pop(context);
-                        }
-                      },
-                      icon: const Icon(Icons.auto_awesome, size: 18),
-                      label: const Text('Make Pet Magical ✨'),
-                      style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFFFFD700), side: const BorderSide(color: Color(0xFFFFD700))),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                      TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel', style: TextStyle(color: Colors.white70))),
-                      ElevatedButton(onPressed: () {
-                        if (nameController.text.trim().isNotEmpty) {
-                          final petName = nameController.text.trim();
-                          wizardData.pets.add({'name': petName, 'species': species, 'breed': breedController.text.trim()});
-                          if (pickedPhotoBase64 != null) wizardData.petPhotos[petName] = pickedPhotoBase64!;
-                          onUpdate(); Navigator.pop(context);
-                        }
-                      }, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF9B3FD8), foregroundColor: Colors.white), child: const Text('Add Pet'))
-                    ]),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  InputDecoration _petFieldDecoration({required String labelText, String? hintText}) {
-    return InputDecoration(
-      labelText: labelText, hintText: hintText, labelStyle: const TextStyle(color: Color(0xFFFFD700)), hintStyle: const TextStyle(color: Colors.white38),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: const Color(0xFFFFD700).withAlpha(100))),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFFD700), width: 2)),
-      filled: true, fillColor: Colors.white10,
-    );
-  }
-
-  static const List<String> _speciesOptions = ['Dog', 'Cat', 'Bird', 'Hamster', 'Fish', 'Bunny', 'Reptile', 'Other'];
-  static const Map<String, String> _speciesImageAssets = {
-    'Fish': 'assets/images/companions/fish.png', 'Bunny': 'assets/images/companions/bunny.png', 'Hamster': 'assets/images/companions/hamster.png', 'Reptile': 'assets/images/companions/reptile.png',
-  };
-
-  String _getEmojiForSpecies(String? species) {
-    switch (species) {
-      case 'Dog': return '🐕'; case 'Cat': return '🐱'; case 'Bird': return '🐦'; case 'Hamster': return '🐹'; case 'Fish': return '🐠'; case 'Bunny': return '🐰'; case 'Reptile': return '🦎'; default: return '🐾';
-    }
-  }
-}
-
-/// Lightweight companion descriptor used for the adventure team grid on Page 3.
-class _QuickCompanion {
-  final String id;
-  final String emoji;
-  final String name;
-
-  const _QuickCompanion({
-    required this.id,
-    required this.emoji,
-    required this.name,
-  });
 }
 
 // ── Companion Image Grid ─────────────────────────────────────────────────────
@@ -3412,9 +3155,14 @@ class _GenderImageButtonState extends State<_GenderImageButton> {
 /// A stateful arrow button with clear press feedback:
 /// shrinks to 86% + brightens gradient + amplifies glow on tap-down.
 class _PressableArrowButton extends StatefulWidget {
-  const _PressableArrowButton({required this.enabled, required this.onTap});
+  const _PressableArrowButton({
+    required this.enabled,
+    required this.onTap,
+    this.hint,
+  });
   final bool enabled;
   final VoidCallback onTap;
+  final String? hint;
 
   @override
   State<_PressableArrowButton> createState() => _PressableArrowButtonState();
@@ -3429,36 +3177,55 @@ class _PressableArrowButtonState extends State<_PressableArrowButton> {
     final btnSize = (band.touchTargetMin / 64.0 * 80).roundToDouble();
     return Opacity(
       opacity: widget.enabled ? 1.0 : 0.4,
-      child: GestureDetector(
-        onTapDown: widget.enabled ? (_) => setState(() => _pressed = true) : null,
-        onTapUp: widget.enabled ? (_) => setState(() => _pressed = false) : null,
-        onTapCancel: () => setState(() => _pressed = false),
-        onTap: widget.enabled ? widget.onTap : null,
-        child: AnimatedScale(
-          scale: _pressed ? 0.86 : 1.0,
-          duration: const Duration(milliseconds: 80),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 80),
-            width: btnSize,
-            height: btnSize,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: _pressed
-                    ? [const Color(0xFFD070FF), const Color(0xFF8B4FD8)]
-                    : [const Color(0xFF9B3FD8), const Color(0xFF5B1BAA)],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFFD700).withAlpha(_pressed ? 200 : 100),
-                  blurRadius: _pressed ? 32 : 20,
-                  spreadRadius: _pressed ? 4 : 0,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTapDown: widget.enabled ? (_) => setState(() => _pressed = true) : null,
+            onTapUp: widget.enabled ? (_) => setState(() => _pressed = false) : null,
+            onTapCancel: () => setState(() => _pressed = false),
+            onTap: widget.enabled ? widget.onTap : null,
+            child: AnimatedScale(
+              scale: _pressed ? 0.86 : 1.0,
+              duration: const Duration(milliseconds: 80),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 80),
+                width: btnSize,
+                height: btnSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: _pressed
+                        ? [const Color(0xFFD070FF), const Color(0xFF8B4FD8)]
+                        : [const Color(0xFF9B3FD8), const Color(0xFF5B1BAA)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFFD700).withAlpha(_pressed ? 200 : 100),
+                      blurRadius: _pressed ? 32 : 20,
+                      spreadRadius: _pressed ? 4 : 0,
+                    ),
+                  ],
                 ),
-              ],
+                child: Icon(Icons.arrow_forward_rounded, color: Colors.white, size: btnSize * 0.5),
+              ),
             ),
-            child: Icon(Icons.arrow_forward_rounded, color: Colors.white, size: btnSize * 0.5),
           ),
-        ),
+          if (widget.hint != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              widget.hint!,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                shadows: const [
+                  Shadow(color: Colors.black54, blurRadius: 4),
+                ],
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -3484,6 +3251,7 @@ class _SceneImageButton extends StatefulWidget {
   final _SceneButtonData data;
   final bool isSelected;
   final bool fullWidth;
+  final double labelFontSize;
   final VoidCallback onTap;
 
   const _SceneImageButton({
@@ -3491,6 +3259,7 @@ class _SceneImageButton extends StatefulWidget {
     required this.isSelected,
     required this.onTap,
     this.fullWidth = false,
+    this.labelFontSize = 13.0,
   });
 
   @override
@@ -3579,11 +3348,11 @@ class _SceneImageButtonState extends State<_SceneImageButton> {
                       ),
                       child: Text(
                         widget.data.label,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 13,
+                          fontSize: widget.labelFontSize,
                           fontWeight: FontWeight.bold,
-                          shadows: [
+                          shadows: const [
                             Shadow(
                                 color: Colors.black,
                                 blurRadius: 4,
