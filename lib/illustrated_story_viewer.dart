@@ -11,6 +11,7 @@ class IllustratedStoryViewer extends StatefulWidget {
   final List<StoryIllustration> illustrations;
   final String? characterName;
   final String? subscriptionTier; // 'free', 'premium', 'family', or null (defaults to free)
+  final bool autoNarrate;
 
   const IllustratedStoryViewer({
     super.key,
@@ -19,6 +20,7 @@ class IllustratedStoryViewer extends StatefulWidget {
     required this.illustrations,
     this.characterName,
     this.subscriptionTier,
+    this.autoNarrate = false,
   });
 
   @override
@@ -38,6 +40,13 @@ class _IllustratedStoryViewerState extends State<IllustratedStoryViewer> {
     _narrator = StoryNarrator();
     _setupNarrator();
     _splitStoryIntoPages();
+    if (widget.autoNarrate) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _storyPages.isNotEmpty) {
+          _startAutoNarration();
+        }
+      });
+    }
   }
 
   void _setupNarrator() {
@@ -230,6 +239,9 @@ class _IllustratedStoryViewerState extends State<IllustratedStoryViewer> {
               });
               if (_isNarrating) {
                 _narrator.stopNarration();
+              }
+              if (widget.autoNarrate) {
+                _startAutoNarration();
               }
             },
             itemCount: _storyPages.length,
@@ -476,6 +488,14 @@ class _IllustratedStoryViewerState extends State<IllustratedStoryViewer> {
         curve: Curves.easeInOut,
       );
     }
+  }
+
+  void _startAutoNarration() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (mounted && _storyPages.isNotEmpty) {
+        await _narrator.startNarration(_storyPages[_currentPage]);
+      }
+    });
   }
 
   void _toggleNarration() async {
