@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/image_continue_button.dart';
+import '../../widgets/feelings_quest_modal.dart';
 import '../../data/scenario_data.dart';
 
 const double _settingCardWidth = 220;
@@ -98,6 +99,20 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   }
 
   bool get _canContinue => _selectedScenario != null;
+
+  /// Opens the Feelings Quest cloud picker, then auto-selects the scenario.
+  Future<void> _openFeelingsQuest() async {
+    final age = widget.wizardData.characterAge <= 0
+        ? 8
+        : widget.wizardData.characterAge;
+    final result = await FeelingsQuestModal.show(context, childAge: age);
+    if (result != null && mounted) {
+      setState(() {
+        widget.wizardData.selectedEmotionChips = result;
+      });
+      _selectScenario('big_feelings_quest');
+    }
+  }
 
   Widget _buildSlider(String leftLabel, String rightLabel, String key,
       Map<String, int> sliders) {
@@ -762,7 +777,9 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                       scenario: scenario,
                       isSelected: isSelected,
                       childAge: age,
-                      onTap: () => _selectScenario(scenario.id),
+                      onTap: scenario.id == 'big_feelings_quest'
+                          ? _openFeelingsQuest
+                          : () => _selectScenario(scenario.id),
                     );
                   },
                 ),
