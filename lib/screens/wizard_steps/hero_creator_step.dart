@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
@@ -587,13 +588,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           const SizedBox(height: 24),
           _buildGenderPicker(),
           const SizedBox(height: 24),
-          // Age picker: hidden for sprout (parent set it at gate),
-          // simplified chip buttons for explorer, full dial for older bands.
-          if (ageBand == AgeBand.explorer)
-            _buildSimpleAgePicker()
-          else if (ageBand == AgeBand.adventurer || ageBand == AgeBand.creator)
-            _buildAgePicker(),
-          if (ageBand != AgeBand.sprout) const SizedBox(height: 24),
+          // Age is already set at the welcome gate — no age picker shown here.
           // Adventurer: personality word chips (pick up to 3)
           if (ageBand == AgeBand.adventurer) ...[
             _buildPersonalityChips(),
@@ -2207,10 +2202,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Widget _buildCreateAvatarButton() {
-    return GestureDetector(
-      onTap: _openAvatarCreation,
-      child: Image.asset('assets/images/ui/create_avatar_btn.png', height: 70, fit: BoxFit.contain),
-    );
+    return _BouncingAvatarButton(onTap: _openAvatarCreation);
   }
 
   // ─── Progressive-Disclosure Helpers ─────────────────────────────────────────
@@ -3999,6 +3991,121 @@ class _GenreChip extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ─── Bouncing Avatar Button ────────────────────────────────────────────────────
+
+/// Glowing create-avatar CTA button that bounces to attract attention if the
+/// user hasn't tapped it within 4 seconds.
+class _BouncingAvatarButton extends StatefulWidget {
+  final VoidCallback onTap;
+  const _BouncingAvatarButton({required this.onTap});
+
+  @override
+  State<_BouncingAvatarButton> createState() => _BouncingAvatarButtonState();
+}
+
+class _BouncingAvatarButtonState extends State<_BouncingAvatarButton>
+    with TickerProviderStateMixin {
+  late final AnimationController _bounceCtrl;
+  late final AnimationController _glowCtrl;
+  late final Animation<double> _bounceAnim;
+  late final Animation<double> _glowAnim;
+  Timer? _idleTimer;
+  bool _pressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _bounceCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+    );
+    _bounceAnim = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: -22.0).chain(CurveTween(curve: Curves.easeOut)), weight: 35),
+      TweenSequenceItem(tween: Tween(begin: -22.0, end: 0.0).chain(CurveTween(curve: Curves.bounceOut)), weight: 65),
+    ]).animate(_bounceCtrl);
+
+    _glowCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _glowAnim = Tween<double>(begin: 0.4, end: 1.0).animate(
+      CurvedAnimation(parent: _glowCtrl, curve: Curves.easeInOut),
+    );
+
+    // Start bouncing after 4s idle
+    _idleTimer = Timer(const Duration(seconds: 4), _startBouncing);
+  }
+
+  void _startBouncing() {
+    if (!mounted) return;
+    _bounceCtrl.forward(from: 0).then((_) {
+      if (!mounted) return;
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (!mounted) return;
+        _bounceCtrl.forward(from: 0).then((_) {
+          if (!mounted) return;
+          // Repeat every 5s
+          _idleTimer = Timer(const Duration(seconds: 5), _startBouncing);
+        });
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _idleTimer?.cancel();
+    _bounceCtrl.dispose();
+    _glowCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([_bounceAnim, _glowAnim]),
+      builder: (context, _) {
+        return Transform.translate(
+          offset: Offset(0, _bounceAnim.value),
+          child: GestureDetector(
+            onTapDown: (_) => setState(() => _pressed = true),
+            onTapUp: (_) {
+              setState(() => _pressed = false);
+              _idleTimer?.cancel();
+              widget.onTap();
+            },
+            onTapCancel: () => setState(() => _pressed = false),
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFFD700).withAlpha((180 * _glowAnim.value).round()),
+                    blurRadius: 28 * _glowAnim.value,
+                    spreadRadius: 4 * _glowAnim.value,
+                  ),
+                ],
+              ),
+              child: Image.asset(
+                _pressed
+                    ? 'assets/images/ui/create_avatar_pressed.png'
+                    : 'assets/images/ui/create_avatar_normal.png',
+                height: 110,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Image.asset(
+                  'assets/images/ui/create_avatar_btn.png',
+                  height: 100,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

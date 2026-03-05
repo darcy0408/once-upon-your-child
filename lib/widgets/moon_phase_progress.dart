@@ -49,6 +49,7 @@ class MoonPhaseProgress extends StatelessWidget {
                   isActive: isActive,
                   isCompleted: isCompleted,
                   label: stepLabels[index],
+                  orbIndex: index % 2, // alternates between orb style 1 and 2
                 ),
                 if (showLabels) ...[
                   const SizedBox(height: 4),
@@ -100,11 +101,13 @@ class _CrystalStepOrb extends StatefulWidget {
   final bool isActive;
   final bool isCompleted;
   final String label;
+  final int orbIndex; // 0 = orb-style-1, 1+ = orb-style-2
 
   const _CrystalStepOrb({
     required this.isActive,
     required this.isCompleted,
     required this.label,
+    this.orbIndex = 0,
   });
 
   @override
@@ -148,9 +151,12 @@ class _CrystalStepOrbState extends State<_CrystalStepOrb>
     super.dispose();
   }
 
-  String get _orbAssetPath => widget.isCompleted
-      ? 'assets/images/ui/clean/progress_done_orb.png'
-      : 'assets/images/ui/clean/progress_active_orb.png';
+  String get _orbAssetPath {
+    final variant = widget.orbIndex == 0 ? 'orb1' : 'orb2';
+    if (widget.isCompleted) return 'assets/images/ui/clean/progress_${variant}_done.png';
+    if (widget.isActive) return 'assets/images/ui/clean/progress_${variant}_active.png';
+    return 'assets/images/ui/clean/progress_${variant}_idle.png';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -188,7 +194,7 @@ class _CrystalStepOrbState extends State<_CrystalStepOrb>
                       ),
                     ),
                   ),
-                // Crystal ball image — no ClipOval so the stand is visible
+                // Orb image (background removed via ImageMagick)
                 Opacity(
                   opacity: widget.isActive || widget.isCompleted ? 1.0 : 0.35,
                   child: Image.asset(
@@ -213,6 +219,22 @@ class _CrystalStepOrbState extends State<_CrystalStepOrb>
                     ),
                   ),
                 ),
+                // Gold checkmark badge when completed
+                if (widget.isCompleted)
+                  Positioned(
+                    bottom: 2,
+                    right: 2,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0xFF2ECC71),
+                        boxShadow: [BoxShadow(color: Color(0xFF27AE60), blurRadius: 4)],
+                      ),
+                      child: const Icon(Icons.check_rounded, color: Colors.white, size: 13),
+                    ),
+                  ),
               ],
             ),
           );
