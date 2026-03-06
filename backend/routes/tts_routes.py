@@ -9,6 +9,11 @@ POST /tts/synthesize
 
 GET /tts/voices
   Returns: { "voices": [...] }  — curated voice list for the picker UI.
+
+POST /tts/transcribe
+  Body: multipart form-data with "audio" file (webm/mp4/wav/mp3)
+  Returns: { "text": str }
+  Used for Speech-to-Text via ElevenLabs.
 """
 
 import base64
@@ -35,8 +40,10 @@ def _get_tts_service():
             logger.warning("elevenlabs_tts_service module not found")
             return None
 
+    import os
     try:
         _tts_service = ElevenLabsTTSService()
+        logger.info("ElevenLabs TTS initialised successfully")
         return _tts_service
     except (ImportError, ValueError) as e:
         logger.warning("ElevenLabs TTS unavailable: %s", e)
@@ -112,5 +119,41 @@ def create_tts_blueprint(limiter, require_auth):
             "format": "mp3",
             "voice_id": voice_id,
         })
+
+    @tts_bp.route("/tts/transcribe", methods=["POST"])
+    @require_auth
+    @limiter.limit("30 per hour", key_func=lambda: request.remote_addr)
+    def transcribe():
+        """
+        Transcribe audio to text using ElevenLabs Speech-to-Text.
+        Accepts multipart form-data with an "audio" file field.
+        Returns { "text": str } or 503 if STT is unavailable.
+        """
+        import os
+
+        api_key = os.environ.get("ELEVENLABS_API_KEY")
+        if not api_key:
+            return jsonify({"error": "STT service unavailable", "message": "ELEVENLABS_API_KEY not configured"}), 503
+
+        if "audio" not in request.files:
+            return jsonify({"error": "audio file required"}), 400
+
+        audio_file = request.files["audio"]
+        audio_bytes = audio_file.read()
+        if not audio_bytes:
+            return jsonify({"error": "Empty audio file"}), 400
+
+        try:
+            from elevenlabs.client import ElevenLabs
+            client = ElevenLabs(api_key=api_key)
+            result = client.speech_to_text.convert(
+                audio=audio_bytes,
+                model_id="scribe_v1",
+            )
+            text = result.text if hasattr(result, "text") else str(result)
+            return jsonify({"text": text.strip()})
+        except Exception as e:
+            logger.error("ElevenLabs STT error: %s", e)
+            return jsonify({"error": "Transcription failed", "message": str(e)}), 500
 
     return tts_bp

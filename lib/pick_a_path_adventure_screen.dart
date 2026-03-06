@@ -13,6 +13,7 @@ import 'package:story_weaver_app/widgets/app_button.dart';
 import 'widgets/app_card.dart';
 import 'widgets/error_message.dart';
 import 'widgets/storybook_progress_indicator.dart';
+import 'widgets/voice_mic_button.dart';
 
 /// Pick-A-Path Adventures: Interactive stories with inventory, state tracking, and age-calibrated content
 class PickAPathAdventureScreen extends StatefulWidget {
@@ -665,6 +666,38 @@ class _PickAPathAdventureScreenState
     );
   }
 
+  /// Tries to match [spoken] words against the current choices.
+  /// Returns the best-matching choice or null if no confident match found.
+  StoryChoiceData? _matchSpokenToChoice(String spoken) {
+    if (_currentSegment == null) return null;
+    final words = spoken.toLowerCase().split(RegExp(r'\s+'));
+    int bestScore = 0;
+    StoryChoiceData? best;
+    for (final choice in _currentSegment!.choices) {
+      final choiceWords = choice.text.toLowerCase().split(RegExp(r'\s+'));
+      final hits = words.where((w) => w.length > 2 && choiceWords.contains(w)).length;
+      if (hits > bestScore) {
+        bestScore = hits;
+        best = choice;
+      }
+    }
+    // Require at least one meaningful keyword match
+    return bestScore >= 1 ? best : null;
+  }
+
+  void _handleVoiceResult(String spoken) {
+    final match = _matchSpokenToChoice(spoken);
+    if (match != null) {
+      _handleChoiceSelected(match);
+    } else {
+      // No match — put the text into the "do something else" field
+      setState(() {
+        _showCustomInput = true;
+        _customChoiceController.text = spoken;
+      });
+    }
+  }
+
   Widget _buildChoicesSection() {
     // Safety check: ensure we have choices to display
     if (_currentSegment!.choices.isEmpty) {
@@ -676,13 +709,25 @@ class _PickAPathAdventureScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'What do you do next?',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'What do you do next?',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(width: 8),
+            VoiceMicButton(
+              onResult: _handleVoiceResult,
+              hint: 'Or say your choice',
+              disabled: _isContinuing,
+              size: 36,
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         ..._currentSegment!.choices.asMap().entries.map((entry) {
