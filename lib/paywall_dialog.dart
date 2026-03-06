@@ -233,16 +233,12 @@ class PaywallDialog {
         ),
         title: Row(
           children: [
-            Icon(
-              Icons.people_outline,
-              color: Colors.orange.shade700,
-              size: 28,
-            ),
+            const Text('👨‍👩‍👧‍👦', style: TextStyle(fontSize: 28)),
             const SizedBox(width: 8),
             const Expanded(
               child: Text(
-                'Character Limit Reached',
-                style: TextStyle(fontSize: 20),
+                'Does someone want to join the adventure?',
+                style: TextStyle(fontSize: 18),
               ),
             ),
           ],
@@ -252,44 +248,59 @@ class PaywallDialog {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'You\'ve reached your limit of $maxCharacters character${maxCharacters == 1 ? '' : 's'}.',
-              style: const TextStyle(fontSize: 16),
+              'You\'ve got $maxCharacters character${maxCharacters == 1 ? '' : 's'} — that\'s your free spot! Does your child have a brother, sister, or best friend who wants their own story too?',
+              style: const TextStyle(fontSize: 15),
             ),
             const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    Colors.purple.shade50,
-                    Colors.blue.shade50,
-                  ],
+                  colors: [Colors.amber.shade50, Colors.orange.shade50],
                 ),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber.shade200),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Icon(Icons.star, color: Colors.amber),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Premium: 5 characters',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
+                  const Text(
+                    '🌟 Family Plan — \$9.99/month',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
+                  const SizedBox(height: 8),
+                  const Text('👧 Unlimited characters — every sibling gets their own hero'),
                   const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.stars, color: Colors.amber),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Family: 20 characters',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
+                  const Text('🤝 Characters can team up and go on adventures together'),
+                  const SizedBox(height: 4),
+                  const Text('🎨 Custom AI avatars that actually look like your kids'),
+                  const SizedBox(height: 4),
+                  const Text('📖 Unlimited stories, every day'),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'One price. The whole crew.',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontStyle: FontStyle.italic),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.purple.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.purple.shade100),
+              ),
+              child: const Row(
+                children: [
+                  Text('🚀', style: TextStyle(fontSize: 16)),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Adventurer — \$4.99/mo · 3 characters · 10 stories/day',
+                      style: TextStyle(fontSize: 13),
+                    ),
                   ),
                 ],
               ),
@@ -299,17 +310,20 @@ class PaywallDialog {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const Text('Maybe later'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple,
+              backgroundColor: Colors.amber.shade700,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
-            child: const Text('Upgrade'),
+            child: const Text(
+              'Bring the whole family! 👨‍👩‍👧‍👦',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),

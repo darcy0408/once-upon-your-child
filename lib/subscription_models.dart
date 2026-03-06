@@ -13,7 +13,7 @@ enum SubscriptionTier {
       case SubscriptionTier.free:
         return 'Free';
       case SubscriptionTier.premium:
-        return 'Premium';
+        return 'Adventurer';
       case SubscriptionTier.family:
         return 'Family';
     }
@@ -78,9 +78,9 @@ class TierLimits {
     switch (tier) {
       case SubscriptionTier.free:
         return const TierLimits(
-          maxCharacters: 2,
-          maxStoriesPerDay: 10, // Increased from 3
-          maxStoriesPerMonth: 100, // Increased from 30
+          maxCharacters: 1,
+          maxStoriesPerDay: 3,
+          maxStoriesPerMonth: 30,
           unlimitedStories: false,
           multiCharacterStories: false,
           voiceNarration: true,
@@ -95,9 +95,9 @@ class TierLimits {
 
       case SubscriptionTier.premium:
         return const TierLimits(
-          maxCharacters: 5,
-          maxStoriesPerDay: 20,
-          maxStoriesPerMonth: 300,
+          maxCharacters: 3,
+          maxStoriesPerDay: 10,
+          maxStoriesPerMonth: 150,
           unlimitedStories: false,
           multiCharacterStories: true,
           voiceNarration: true,
