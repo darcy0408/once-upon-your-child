@@ -73,6 +73,8 @@ class InteractiveAdventureService:
         life_challenge: Optional[str] = None,
         personality_sliders: Optional[Dict[str, int]] = None,
         world_bible: str = "",
+        conflict_hook: str = "",
+        sensory_palette: str = "",
     ) -> Dict[str, Any]:
         """
         Create a new interactive adventure story with opening segment.
@@ -159,6 +161,8 @@ class InteractiveAdventureService:
             life_challenge=life_challenge,
             personality_sliders=personality_sliders,
             world_bible=world_bible,
+            conflict_hook=conflict_hook,
+            sensory_palette=sensory_palette,
         )
 
         # Generate first segment

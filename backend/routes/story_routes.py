@@ -436,6 +436,8 @@ def create_story_blueprint(
         life_challenge = payload.get("life_challenge")
         personality_sliders = payload.get("personality_sliders")
         world_bible = payload.get("worldBible", "")
+        conflict_hook = payload.get("conflictHook", "")
+        sensory_palette = payload.get("sensoryPalette", "")
 
         try:
             # Initialize service
@@ -455,6 +457,8 @@ def create_story_blueprint(
                 life_challenge=life_challenge,
                 personality_sliders=personality_sliders,
                 world_bible=world_bible,
+                conflict_hook=conflict_hook,
+                sensory_palette=sensory_palette,
             )
 
             # Filter content

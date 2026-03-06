@@ -16,41 +16,90 @@ AGE_CONSTRAINTS = {
         'regular': {'short': (200, 300), 'medium': (300, 450), 'long': (450, 650)},
         'rhyme': {'short': (150, 250), 'medium': (250, 350), 'long': (350, 450)},
         'ltr': {'short': 6, 'medium': 8, 'long': 10}, # pages
-        'notes': 'Very simple words, short sentences, repetition, comforting rhythm.'
+        'notes': (
+            'POV: Second-person ("you find", "you reach out") or close third-person. '
+            'Sentences: 5-8 words max; never more than two clauses. '
+            'Vocabulary: CVC words as the base (cat, run, big); introduce 2-3 "magic words" per story (sparkle, rumble) — always explained by what happens next. '
+            'Emotion: Name one feeling simply ("you feel scared / happy / safe") — no internal monologue. '
+            'Structure: Repetition and pattern ("and then... and then... until finally"). '
+            'AVOID: Irony, sarcasm, ambiguous morality, abstract metaphor, time jumps, unfamiliar adult relationships.'
+        ),
     },
     '5-7': {
         'regular': {'short': (450, 650), 'medium': (650, 900), 'long': (900, 1200)},
         'rhyme': {'short': (300, 450), 'medium': (450, 550), 'long': (550, 650)},
         'ltr': {'short': 8, 'medium': 10, 'long': 12},
-        'notes': 'Simple vocabulary with occasional new words explained by context.'
+        'notes': (
+            'POV: Close third-person or second-person; stay anchored in the present action. '
+            'Sentences: 8-14 words on average; one complex clause allowed per paragraph. '
+            'Vocabulary: Grade 1-2 sight words as the foundation; 3-4 new "wow words" each introduced with an immediate context clue. '
+            'Emotion: Simple labeling PLUS one physical sensation (heart beating fast, warm in the chest). '
+            'Structure: Clear 3-act arc (setup → problem → solution) with a single complication. '
+            'AVOID: Dramatic irony, subtext, unreliable narrators, abstract metaphor, romantic tension.'
+        ),
     },
     '8-10': {
         'regular': {'short': (900, 1200), 'medium': (1200, 1800), 'long': (1800, 2400)},
         'rhyme': {'short': (400, 500), 'medium': (500, 650), 'long': (650, 800)},
         'ltr': {'short': 8, 'medium': 10, 'long': 12},
-        'notes': 'Richer detail, humor, clear cause-effect, stronger plot arcs.'
+        'notes': (
+            'POV: Third-person limited (close to the hero); short internal thought snippets are welcome. '
+            'Sentences: 12-20 words on average; compound and complex sentences encouraged. '
+            'Vocabulary: Grade 3-4 level; use precise nouns and vivid verbs; stretch words earn a context clue. '
+            'Emotion: Show competing feelings (excited AND nervous at once); the hero can be wrong and correct themselves — show, do not announce. '
+            'Structure: Two-step challenge where solving the first problem opens a harder second one; subplot connects to the theme. '
+            'AVOID: Explicit romantic tension, heavy existential themes, unreliable narrator, condescending phrasing.'
+        ),
     },
     '11-13': {
         'regular': {'short': (1300, 1700), 'medium': (1800, 2600), 'long': (2600, 3400)},
         'rhyme': {'short': (450, 550), 'medium': (550, 700), 'long': (700, 800)},
         'ltr': {'short': 8, 'medium': 10, 'long': 12},
-        'notes': 'More nuanced emotions, deeper motivation, still clean and age-appropriate.'
+        'notes': (
+            'POV: Third-person limited with meaningful internal monologue (1-2 paragraphs per story). '
+            'Sentences: Vary deliberately — mix punchy 5-word sentences with 25-word complex ones for rhythm. '
+            'Vocabulary: Middle-grade level; figurative language (simile, personification, hyperbole) used purposefully, not decoratively. '
+            'Emotion: Ambivalence is valid — the hero can be right and still feel bad; social dynamics, fairness, and belonging are real stakes. '
+            'Structure: Layered motivation; at least one decision costs something real; no tidy lesson announcement. '
+            'AVOID: Graphic violence, explicit content, condescending phrasing, over-explained morals.'
+        ),
     },
     '13-15': {
         'regular': {'short': (1600, 2200), 'medium': (1800, 2400), 'long': (2400, 3200)},
         'rhyme': {'short': (500, 600), 'medium': (600, 750), 'long': (750, 850)},
-        'notes': 'Identity/friendship themes, respectful humor, no babyish tone.'
+        'notes': (
+            'POV: Third-person limited OR close first-person; the introspective voice must feel earned, not performative. '
+            'Sentences: Fully varied — fragments allowed for impact; sentence rhythm is a craft choice. '
+            'Vocabulary: YA level; abstract nouns welcome; irony and simile are fair game. '
+            'Emotion: Identity, loyalty, fear of judgment, first real-stakes decisions; characters can be genuinely flawed with no clean fix. '
+            'Structure: Subplots intersect; consequences ripple forward; endings can be bittersweet. '
+            'AVOID: Sexual content, graphic violence, nihilism, adult trauma without any path forward, babyish phrasing.'
+        ),
     },
     '15-18': {
         'regular': {'short': (1800, 2200), 'medium': (2000, 2800), 'long': (2800, 3600)},
         'rhyme': {'short': (500, 650), 'medium': (650, 800), 'long': (800, 900)},
-        'notes': 'Complex stakes and introspection; mature but clean.'
+        'notes': (
+            'POV: First-person encouraged, or tight third-person with a distinct narrative voice — the narrator has a personality. '
+            'Sentences: Literary rhythm — alternate fragments with long, flowing sentences; prose style is part of the storytelling. '
+            'Vocabulary: Upper-YA; allusion, complex metaphor, and irony are all welcome — deploy them with precision. '
+            'Emotion: Relational complexity, moral ambiguity, existential stakes; inner conflict can go unresolved where honest. '
+            'Structure: Thematic resonance over formula — imagery introduced early should echo at the climax. '
+            'AVOID: Gratuitous content; characters must grow or be meaningfully changed — not simply punished.'
+        ),
     },
     'adult': {
         'regular': {'short': (1800, 2200), 'medium': (2200, 2800), 'long': (2800, 4000)},
         'rhyme': {'short': (500, 700), 'medium': (700, 850), 'long': (850, 1000)},
         'ltr': {'short': 8, 'medium': 10, 'long': 12},
-        'notes': 'Nuanced themes (stress, meaning, relationships) with immersive and literary tone.'
+        'notes': (
+            'POV: Any — first-person, third-person limited, or close third — the choice should feel intentional. '
+            'Sentences: Literary cadence and rhythm are craft decisions; prose should feel authored, not generated. '
+            'Vocabulary: No ceiling — nuanced, precise, and evocative; abstract themes handled with literary weight. '
+            'Emotion: Full spectrum — grief, desire, regret, joy — layered, textured, and unresolved where appropriate. '
+            'Structure: Thematic depth over formula; the resolution must feel earned through internal change, not plot convenience. '
+            'AVOID: Gratuitous content, heavy-handed moralizing, tidy lessons that undercut genuine emotional complexity.'
+        ),
     }
 }
 
@@ -75,8 +124,7 @@ _META_LEAK_TERMS = [
     "option had a downside", "approached problems using",
 ]
 
-SAFETY_GUARDRAILS = f"""
-{STRICT_OUTPUT_CONSTRAINTS}
+SAFETY_GUARDRAILS = """
 SAFETY RULES:
 - No sexual content, no graphic violence, no self-harm, no illegal wrongdoing.
 - Handle sensitive emotions with care. Keep the tone warm, age-appropriate, and full of wonder.
@@ -191,7 +239,7 @@ class AdvancedStoryEngine:
         
         # Build character context (Gender/Strengths)
         char_details = character_details or {}
-        special_ability = char_details.get('specialAbility', 'None specified')
+        special_ability = char_details.get('specialAbility') or ''
         strengths = ", ".join(char_details.get('strengths', []))
         interests = ", ".join(char_details.get('interests', []))
         gender = char_details.get('gender', 'not specified')
@@ -341,7 +389,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 - **SENSORY PALETTE**: {sensory_palette or 'Bright colors, soft sounds, sweet smells.'}
 {('- **WORLD BIBLE** (CRITICAL — follow this for setting consistency): ' + world_bible) if world_bible else ''}
 - **HERO**: {character} (Strengths: {strengths or 'Brave and kind'}{(', Passions: ' + interests) if interests else ''}).
-- **SPECIAL ABILITY**: {special_ability} (MUST be used at the climax).
+{('- **SPECIAL ABILITY**: ' + special_ability + ' (MUST be used at the climax as the decisive turning point).') if special_ability else '- **SPECIAL ABILITY**: None — hero relies on wit, kindness, and courage.'}
 - **CHARACTER VOICE**: {character} approaches problems using their strengths ({strengths or 'bravery and kindness'}). Let this shape how they think, speak, and act throughout — not just at the climax. A problem-solver notices clues; a healer checks on others first; an adventurer rushes in then reflects.
 {tool_section}
 - **IMPOSSIBLE ELEMENTS**: (Inspiration Only - DO NOT use these exact phrases): {age_impossible}
