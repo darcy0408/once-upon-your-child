@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/generated_avatar.dart';
 import '../services/avatar_service.dart';
 import '../ui/widgets/magical_avatar.dart';
+import '../screens/byok_setup_wizard.dart';
 import 'avatar_tweak_panel.dart';
 
 const int _kBatchSize = 12;
@@ -257,36 +258,158 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
     if (_isLoading || _pool.isEmpty) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
         children: [
-          Flexible(
-            child: Text(
-              '${_pool.length} characters to discover',
-              style: TextStyle(
-                color: Colors.white.withAlpha(153),
-                fontSize: 12,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(
+                  '${_pool.length} characters to discover',
+                  style: TextStyle(
+                    color: Colors.white.withAlpha(153),
+                    fontSize: 12,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 16),
+              ElevatedButton.icon(
+                onPressed: _nextBatch,
+                icon: const Text('🎲', style: TextStyle(fontSize: 18)),
+                label: const Text(
+                  'Shuffle!',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7E57C2),
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 4,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Custom avatar upsell — shown to all users as a teaser
+          GestureDetector(
+            onTap: () => _showCustomAvatarGate(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFFD700), Color(0xFFFF9F43)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFFD700).withAlpha(80),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('✨', style: TextStyle(fontSize: 16)),
+                  SizedBox(width: 6),
+                  Text(
+                    'Create a custom avatar that looks like me!',
+                    style: TextStyle(
+                      color: Color(0xFF3B2363),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(width: 16),
-          ElevatedButton.icon(
-            onPressed: _nextBatch,
-            icon: const Text('🎲', style: TextStyle(fontSize: 18)),
-            label: const Text(
-              'Shuffle!',
-              style: TextStyle(fontWeight: FontWeight.bold),
+        ],
+      ),
+    );
+  }
+
+  void _showCustomAvatarGate(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Text('✨', style: TextStyle(fontSize: 28)),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Create YOUR Avatar',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Imagine an AI-generated portrait of your child as the hero — not a pre-made character, but THEM.',
+              style: TextStyle(fontSize: 14, height: 1.5),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.amber[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.amber[200]!),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('✅ Unlock with Free Premium:',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  SizedBox(height: 4),
+                  Text('• Custom AI avatar generation',
+                      style: TextStyle(fontSize: 13)),
+                  Text('• Story illustrations', style: TextStyle(fontSize: 13)),
+                  Text('• Unlimited stories', style: TextStyle(fontSize: 13)),
+                  SizedBox(height: 4),
+                  Text(
+                    'Use your own free Google AI key — most families spend under \$0.50/month.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Maybe Later'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await Navigator.of(context).push<String>(
+                MaterialPageRoute(
+                  builder: (_) => const ByokSetupWizardScreen(),
+                  fullscreenDialog: true,
+                ),
+              );
+            },
+            icon: const Icon(Icons.key, size: 16),
+            label: const Text('Set Up Free Premium →'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF7E57C2),
               foregroundColor: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-              elevation: 4,
             ),
           ),
         ],

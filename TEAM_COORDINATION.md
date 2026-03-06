@@ -2,6 +2,26 @@
 
 ---
 
+## Session Update - 2026-03-06 (Business Plan + BYOK Onboarding + UI Fixes)
+
+### Scope Completed
+- **Business plan created** (`BUSINESS_PLAN.md` added to repo): full monetization strategy including cost analysis (~$0.002/story), pricing restructure ($0/$4.99/$9.99 recommended), BYOK surfacing strategy, $0-budget marketing channels (TikTok, therapist outreach, Reddit), revenue projections, COPPA/ads analysis.
+- **Prompt quality fixes** (commit `81a4a33`): deduplicated `STRICT_OUTPUT_CONSTRAINTS` from `SAFETY_GUARDRAILS`, fixed contradictory "None specified (MUST be used)" special ability text, wired `conflictHook` + `sensoryPalette` into interactive story route, rewrote all 7 age-band `notes` with rich 6-part tone directives.
+- **Backend tests** (commit `53ecd70`): updated 2 calibration assertions to match new tone descriptors. All 94 tests passing.
+- **Avatar gallery** (commit `8eb8994`): removed hair color filter, added `precacheImage` for parallel loading, added `frameBuilder` spinner.
+- **Companion images fix** (commit `8eb8994`): added `didChangeDependencies` + `precacheImage` to `_CompanionImageButtonState` — fixes paw-print placeholders on My Buddies step.
+- **Phase 1 conversion improvements started**: free tier → 3/day, BYOK button in upgrade dialog, BYOK wizard copy rewrite, illustration teaser, custom avatar upsell gate.
+
+### Status
+- **Prompt quality:** ✅ Committed, tests passing
+- **Avatar gallery (hair filter + loading):** ✅ Committed
+- **Companion images:** ✅ Committed
+- **Business plan:** ✅ In repo at `BUSINESS_PLAN.md`
+- **Phase 1 BYOK/conversion UI:** 🟡 In progress this session
+- **Launch Readiness:** 55%
+
+---
+
 ## Session Update - 2026-03-06 (Interactive Story Screen Dark Theme — Smoke Test Attempt)
 
 ### Scope Completed

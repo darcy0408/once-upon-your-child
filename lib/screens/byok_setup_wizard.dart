@@ -87,11 +87,11 @@ class _BenefitsStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const benefits = [
-      'Unlimited stories & illustrations',
-      'No monthly subscription needed',
-      'Faster generation with your own quota',
-      'Data stays on your key',
-      'Easy to turn on/off anytime',
+      ('🎨', 'Custom AI avatars that look like YOUR child', 'Not just pre-made characters — a real portrait'),
+      ('📖', 'Unlimited stories every day', 'No monthly caps, ever'),
+      ('🖼️', 'Beautiful illustrations for every scene', 'AI-generated artwork from your story'),
+      ('🎭', 'Interactive choose-your-own-adventure', 'Child controls the story path'),
+      ('🎨', 'Printable coloring pages', 'From your own story scenes'),
     ];
 
     return Padding(
@@ -100,11 +100,18 @@ class _BenefitsStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Why use your own key?',
+            'Everything unlocked — totally free',
             style: Theme.of(context)
                 .textTheme
                 .titleLarge
                 ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Google gives you free API credits every month.\nMost families spend \$0.10–0.50/month total.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[600],
+                ),
           ),
           const SizedBox(height: AppSpacing.md),
           AppCard(
@@ -115,12 +122,27 @@ class _BenefitsStep extends StatelessWidget {
                   .map(
                     (b) => Padding(
                       padding: const EdgeInsets.only(
-                          bottom: AppSpacing.xs, top: AppSpacing.xs),
+                          bottom: AppSpacing.sm, top: AppSpacing.xs),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.check_circle, color: AppColors.secondary),
+                          Text(b.$1, style: const TextStyle(fontSize: 22)),
                           const SizedBox(width: AppSpacing.sm),
-                          Expanded(child: Text(b)),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(b.$2,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14)),
+                                Text(b.$3,
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[600])),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -128,9 +150,30 @@ class _BenefitsStep extends StatelessWidget {
                   .toList(),
             ),
           ),
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.lock, color: Colors.green, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Your key stays on YOUR device — we never see it.',
+                    style: TextStyle(fontSize: 12, color: Colors.green[800]),
+                  ),
+                ),
+              ],
+            ),
+          ),
           const Spacer(),
           AppButton.primary(
-            label: 'Next: Get API Key',
+            label: 'Next: Get My Free Key',
             onPressed: onNext,
             icon: Icons.arrow_forward,
           ),

@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import '../services/grace_period_analytics.dart';
+import '../screens/byok_setup_wizard.dart';
 
 class UpgradePromptDialog extends StatelessWidget {
   final bool isSoftPrompt; // true = soft prompt, false = hard limit
@@ -109,8 +110,33 @@ class UpgradePromptDialog extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Get unlimited stories for ~\$0.10-0.50/month using your own Gemini API key!',
+                    'Custom avatars, illustrations, unlimited stories — free with your own Gemini key (~\$0.10-0.50/month).',
                     style: TextStyle(fontSize: 12, color: Colors.blue[800]),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        Navigator.pop(context, false);
+                        await Navigator.of(context).push<String>(
+                          MaterialPageRoute(
+                            builder: (_) => const ByokSetupWizardScreen(),
+                            fullscreenDialog: true,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.key, size: 16),
+                      label: const Text(
+                        'Set Up Free Premium →',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.blue[800],
+                        side: BorderSide(color: Colors.blue[400]!),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                      ),
+                    ),
                   ),
                 ],
               ),

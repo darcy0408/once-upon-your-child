@@ -335,7 +335,7 @@ class TierPricing {
     yearlySavings: 0,
     features: [
       'Up to 2 characters',
-      '10 stories per day',
+      '10 stories per month',
       'Basic themes (Adventure, Magic)',
       'Voice narration',
       'Basic companions',

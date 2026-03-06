@@ -12,7 +12,7 @@ class GracePeriodService {
 
   // Grace period configuration
   static const int gracePeriodDays = 3;
-  static const int freeTierStoryLimit = 200; // Bumped for testing
+  static const int freeTierStoryLimit = 10; // 10 stories/month free tier
   static const int unlimitedLimit = 999; // Effectively unlimited
 
   /// Get user's account age in days
