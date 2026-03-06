@@ -25,6 +25,7 @@ class InteractiveStory(db.Model):
     tone = db.Column(db.String(50), nullable=False)  # whimsical, mystery, sci-fi, fantasy, cozy-adventure
     length = db.Column(db.String(20), nullable=False)  # short, medium, long
     age = db.Column(db.Integer, nullable=False)  # Target age for content calibration
+    world_bible = db.Column(db.Text, nullable=True)  # Rich world description for AI consistency
 
     # Progress tracking
     current_segment_id = db.Column(db.String(36), db.ForeignKey('story_segment.id', use_alter=True, name='fk_story_current_segment'), nullable=True)

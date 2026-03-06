@@ -165,6 +165,7 @@ def create_story_blueprint(
             "mood_physics": payload.get("moodPhysics"), # NEW: Mood Physics
             "conflict_hook": payload.get("conflictHook"), # NEW: Plot Driver
             "sensory_palette": payload.get("sensoryPalette"), # NEW: Atmosphere
+            "world_bible": payload.get("worldBible", ""), # World consistency guide
             "custom_elements": payload.get("customElements", ""), # NEW: Free-form custom story requests
             "therapeutic_prompt": payload.get("therapeutic_prompt", ""),
             "feelings_prompt": feelings_prompt_text or payload.get("feelings_prompt"),
@@ -434,6 +435,7 @@ def create_story_blueprint(
         avoid = payload.get("avoid")
         life_challenge = payload.get("life_challenge")
         personality_sliders = payload.get("personality_sliders")
+        world_bible = payload.get("worldBible", "")
 
         try:
             # Initialize service
@@ -451,7 +453,8 @@ def create_story_blueprint(
                 must_include=must_include,
                 avoid=avoid,
                 life_challenge=life_challenge,
-                personality_sliders=personality_sliders
+                personality_sliders=personality_sliders,
+                world_bible=world_bible,
             )
 
             # Filter content

@@ -264,6 +264,7 @@ SAFETY RULES:
         mood_physics: Optional[Dict] = None,
         conflict_hook: Optional[str] = None,
         sensory_palette: Optional[str] = None,
+        world_bible: str = "",
         life_challenge: Optional[str] = None,
         personality_sliders: Optional[Dict[str, int]] = None
     ) -> str:
@@ -379,6 +380,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 - **THEME**: {theme} | **TONE**: {tone}
 - **CONFLICT**: {conflict_hook or 'A magical mystery needs solving.'}
 - **SENSORY PALETTE**: {final_sensory}
+{('- **WORLD BIBLE** (CRITICAL — follow this for setting consistency): ' + world_bible) if world_bible else ''}
 {challenge_instruction}
 {virtue_instruction}
 - **HERO**: {child_name} (Special Ability: {special_ability}).
@@ -536,6 +538,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 - **INVENTORY**: {", ".join(inventory) if inventory else "None"}
 - **STATE**: location={story_state.get('location', 'Unknown')}, goal={story_state.get('goal', 'Unknown')}
 - **SENSORY PALETTE**: {final_sensory}
+{('- **WORLD BIBLE** (CRITICAL — follow this for setting consistency): ' + story_context.get('world_bible', '')) if story_context.get('world_bible') else ''}
 {continuation_virtue}
 
 **STORY SO FAR (summary)**:

@@ -164,6 +164,7 @@ class AdvancedStoryEngine:
         mood_physics: dict | None = None,
         conflict_hook: str | None = None,
         sensory_palette: str | None = None,
+        world_bible: str = "",
         custom_elements: str = "",
         additional_characters: list | None = None,
         therapeutic_prompt: str = "",
@@ -338,6 +339,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 - **THEME**: {theme}
 - **CONFLICT**: {conflict_hook or 'A magical mystery needs solving.'}
 - **SENSORY PALETTE**: {sensory_palette or 'Bright colors, soft sounds, sweet smells.'}
+{('- **WORLD BIBLE** (CRITICAL — follow this for setting consistency): ' + world_bible) if world_bible else ''}
 - **HERO**: {character} (Strengths: {strengths or 'Brave and kind'}{(', Passions: ' + interests) if interests else ''}).
 - **SPECIAL ABILITY**: {special_ability} (MUST be used at the climax).
 - **CHARACTER VOICE**: {character} approaches problems using their strengths ({strengths or 'bravery and kindness'}). Let this shape how they think, speak, and act throughout — not just at the climax. A problem-solver notices clues; a healer checks on others first; an adventurer rushes in then reflects.

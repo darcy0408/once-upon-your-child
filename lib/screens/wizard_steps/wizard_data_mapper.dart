@@ -81,13 +81,15 @@ class WizardDataMapper {
     String theme = 'Magical Adventure';
     String conflictHook = '';  // Default to empty string instead of null
     String sensoryPalette = '';  // Default to empty string instead of null
+    String worldBible = '';
 
     if (data.selectedScenario != null) {
       final scenarioCard = ScenarioData.getById(data.selectedScenario!);
       if (scenarioCard != null) {
-        theme = scenarioCard.title;
-        conflictHook = scenarioCard.conflictHook;
+        theme = scenarioCard.titleForAge(age);
+        conflictHook = scenarioCard.conflictHookForAge(age);
         sensoryPalette = scenarioCard.sensoryPalette;
+        worldBible = scenarioCard.worldBibleForAge(age);
       }
     }
 
@@ -171,6 +173,7 @@ class WizardDataMapper {
       'theme': theme,
       'conflictHook': conflictHook,
       'sensoryPalette': sensoryPalette,
+      'worldBible': worldBible,
       // Send structured companion data
       'companion_pets': companionsPets,
       'companion_characters': companionsOther,
