@@ -118,7 +118,6 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
           assetPath: _selectedAvatarPath!,
           isPremium: widget.isPremium,
           onConfirm: (imageData) {
-            Navigator.pop(context);
             _confirmAvatar(imageData);
           },
           onBack: () => setState(() => _selectedAvatarPath = null),
@@ -400,7 +399,8 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
               Navigator.pop(ctx);
               await Navigator.of(context).push<String>(
                 MaterialPageRoute(
-                  builder: (_) => ByokSetupWizardScreen(),
+                  builder: (_) => const ByokSetupWizardScreen(),
+
                   fullscreenDialog: true,
                 ),
               );
