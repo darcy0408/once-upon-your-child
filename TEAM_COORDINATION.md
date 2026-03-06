@@ -2,6 +2,30 @@
 
 ---
 
+## Session Update - 2026-03-06 (Interactive Story Screen Dark Theme — Smoke Test Attempt)
+
+### Scope Completed
+- **Interactive story screen redesign** (committed in prior session) — confirmed in source (`lib/interactive_story_screen.dart`): deep purple gradient background, frosted-glass story card, amber/teal glowing choice buttons, orb progress dots, gold "The End" card. AppBar white text on dark purple.
+- **Rebuilt Flutter web** (`flutter build web --dart-define=FLAVOR=development`) twice; confirmed `build/web/index.html` exists.
+- **Static server on :8081** — Python `http.server` serving `build/web`.
+- **Playwright navigation** — successfully reached My Buddies! wizard step (companion selection, "Wise Owl" selected). Wizard pages rendered correctly with dark purple theme.
+
+### Blocked
+- **Playwright Chromium profile conflict** — Multiple stale `playwright-mcp` node.js processes accumulate across sessions and compete for the shared `mcp-chromium` user-data-dir; Chrome responds "Opening in existing browser session" and exits instead of launching. The `lockfile` inside the profile dir is held open by one of these stale processes. Workaround: kill all `playwright-mcp` node processes between sessions.
+- **Software rendering crash** — `--enable-unsafe-swiftshader` (headless software GPU) crashes when avatar gallery loads many `.webp` images simultaneously. Navigate around avatar page by clicking tab bar directly.
+
+### Still Needs Doing
+1. **Navigate to Make Magic! tab** — from My Buddies, click the forward arrow to reach My World! then Make Magic!.
+2. **Generate an interactive story** — select "Adventure" theme, hit Start, wait for backend to respond.
+3. **Screenshot the interactive story screen** — verify the dark redesign looks correct end-to-end.
+
+### Status
+- **Interactive story screen redesign:** ✅ Code committed and confirmed in source
+- **Visual smoke test:** 🟡 Partially complete — wizard renders correctly, blocked before story screen
+- **Launch Readiness:** ~82%
+
+---
+
 ## Session Update - 2026-03-06 (ElevenLabs TTS + Voice STT for Pick-a-Path)
 
 ### Scope Completed
