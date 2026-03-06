@@ -545,68 +545,73 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   Widget _buildPage1() {
     final nameNotEmpty = _nameController.text.trim().isNotEmpty;
     final ageBand = ageBandFromAge(widget.wizardData.characterAge);
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        children: [
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+    return Stack(
+      children: [
+        // Ambient floating sparkles behind the content
+        const Positioned.fill(child: _AmbientSparkleLayer()),
+        SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
             children: [
-              _audioPrompt("Who is your hero?"),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Builder(
-                  builder: (context) {
-                    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-                    return Text(
-                      band.createCharacterLabel,
-                      style: _bandTitleStyle(band, baseFontSize: 24),
-                    );
-                  },
-                ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _audioPrompt("Who is your hero?"),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Builder(
+                      builder: (context) {
+                        final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+                        return Text(
+                          band.createCharacterLabel,
+                          style: _bandTitleStyle(band, baseFontSize: 24),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
+              // Sprout: big colourful prompt to reinforce what to do
+              if (ageBand == AgeBand.sprout) ...[
+                const SizedBox(height: 8),
+                Text(
+                  "What is your hero's name?",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.fredoka(
+                    fontSize: 28,
+                    color: const Color(0xFFFFD700),
+                    fontWeight: FontWeight.bold,
+                    shadows: const [Shadow(color: Color(0xFFFF6B35), blurRadius: 12)],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+              _buildNameScrollInput(),
+              const SizedBox(height: 24),
+              _buildGenderPicker(),
+              const SizedBox(height: 24),
+              // Age is already set at the welcome gate — no age picker shown here.
+              // Adventurer: personality word chips (pick up to 3)
+              if (ageBand == AgeBand.adventurer) ...[
+                _buildPersonalityChips(),
+                const SizedBox(height: 24),
+              ],
+              // Creator: free-text personality description
+              if (ageBand == AgeBand.creator) ...[
+                _buildPersonalityTextField(),
+                const SizedBox(height: 24),
+              ],
+              _buildNextArrowButton(enabled: nameNotEmpty, onTap: _heroNextPage, hint: 'Next: Create Your Look'),
             ],
           ),
-          // Sprout: big colourful prompt to reinforce what to do
-          if (ageBand == AgeBand.sprout) ...[
-            const SizedBox(height: 8),
-            Text(
-              "What is your hero's name?",
-              textAlign: TextAlign.center,
-              style: GoogleFonts.fredoka(
-                fontSize: 28,
-                color: const Color(0xFFFFD700),
-                fontWeight: FontWeight.bold,
-                shadows: const [Shadow(color: Color(0xFFFF6B35), blurRadius: 12)],
-              ),
-            ),
-          ],
-          const SizedBox(height: 20),
-          _buildNameScrollInput(),
-          const SizedBox(height: 24),
-          _buildGenderPicker(),
-          const SizedBox(height: 24),
-          // Age is already set at the welcome gate — no age picker shown here.
-          // Adventurer: personality word chips (pick up to 3)
-          if (ageBand == AgeBand.adventurer) ...[
-            _buildPersonalityChips(),
-            const SizedBox(height: 24),
-          ],
-          // Creator: free-text personality description
-          if (ageBand == AgeBand.creator) ...[
-            _buildPersonalityTextField(),
-            const SizedBox(height: 24),
-          ],
-          _buildNextArrowButton(enabled: nameNotEmpty, onTap: _heroNextPage, hint: 'Next: Create Your Look'),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  // Page 2: "What does your hero look like?"
+  // Page 2: "Pick your hero style!" — archetype selection
   Widget _buildPage2() {
-    // Avatar is optional — kids can skip straight to Pick Your Team
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -615,34 +620,21 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _audioPrompt("What does your hero look like?"),
+              _audioPrompt("Pick your hero style!"),
               const SizedBox(width: 8),
               Flexible(
                 child: Builder(
                   builder: (context) {
                     final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-                    final label = band.band == AgeBand.creator
-                        ? 'Create your hero!'
-                        : band.band == AgeBand.adventurer
-                            ? 'Create your hero!'
-                            : band.band == AgeBand.sprout
-                                ? 'Create your hero!'
-                                : 'Create your hero!';
-                    return Text(label, style: _bandTitleStyle(band, baseFontSize: 22));
+                    return Text('Pick your hero style!', style: _bandTitleStyle(band, baseFontSize: 22));
                   },
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          _buildAvatarSection(),
-          const SizedBox(height: 10),
-          if (_hasAvatar) _buildEditAvatarButton() else _buildCreateAvatarButton(),
-          const SizedBox(height: 24),
-          if (_hasAvatar || _selectedArchetypeId != null) ...[
-            _buildArchetypeCards(),
-            const SizedBox(height: 40),
-          ],
+          _buildArchetypeCards(),
+          const SizedBox(height: 40),
           _buildNextArrowButton(enabled: true, onTap: _heroNextPage, hint: 'Next: Pick Your Team'),
         ],
       ),
@@ -1737,9 +1729,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     return _placeholderWidget();
   }
 
-  Widget _placeholderWidget() => CustomPaint(
-        size: const Size(148, 148),
-        painter: _HeroSilhouettePainter(),
+  Widget _placeholderWidget() => AnimatedBuilder(
+        animation: _glowAnim,
+        builder: (_, __) => CustomPaint(
+          size: const Size(148, 148),
+          painter: _HeroSilhouettePainter(pulse: _glowAnim.value),
+        ),
       );
 
   Widget _buildAvatarSection() {
@@ -1968,27 +1963,52 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Widget _buildGenderPicker() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildGenderCard(label: 'Boy', gender: 'Boy', icon: Icons.boy_rounded),
-        const SizedBox(width: 28),
-        _buildGenderCard(label: 'Girl', gender: 'Girl', icon: Icons.girl_rounded),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final btnW = ((constraints.maxWidth - 28) / 2).clamp(120.0, 180.0);
+        final btnH = btnW * 1.35;
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _GenderImageButton(
+              gender: 'Boy',
+              assetPath: 'assets/images/ui/boy_avatar_button.png',
+              isSelected: widget.wizardData.characterGender == 'Boy',
+              width: btnW,
+              height: btnH,
+              onTap: () {
+                setState(() => widget.wizardData.characterGender = 'Boy');
+                _heroNextPage();
+              },
+            ),
+            const SizedBox(width: 28),
+            _GenderImageButton(
+              gender: 'Girl',
+              assetPath: 'assets/images/ui/girl_avatar_button.png',
+              isSelected: widget.wizardData.characterGender == 'Girl',
+              width: btnW,
+              height: btnH,
+              onTap: () {
+                setState(() => widget.wizardData.characterGender = 'Girl');
+                _heroNextPage();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildGenderCard({
     required String label,
     required String gender,
-    required IconData icon,
   }) {
     final isSelected = widget.wizardData.characterGender == gender;
     final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final cardSize = (band.touchTargetMin / 64.0 * 100).roundToDouble().clamp(90.0, 120.0);
     return _GenderCardButton(
       label: label,
-      icon: icon,
+      gender: gender,
       isSelected: isSelected,
       size: cardSize,
       onTap: () => setState(() => widget.wizardData.characterGender = gender),
@@ -1997,7 +2017,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   Widget _buildNameScrollInput() {
     final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    final fieldHeight = (band.spacingScale * 100).roundToDouble();
     final nameFontSize = band.headingScale * 20;
 
     if (band.band == AgeBand.creator) {
@@ -2029,12 +2048,27 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       );
     }
 
-    return _ThemedNameInput(
-      controller: _nameController,
-      focusNode: _nameFocusNode,
-      fontSize: nameFontSize,
-      height: fieldHeight.clamp(56.0, 80.0),
-      onChanged: (v) => setState(() => widget.wizardData.characterName = v.trim()),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          "HERO'S NAME",
+          style: GoogleFonts.cinzelDecorative(
+            color: const Color(0xFFFFE082).withAlpha(200),
+            fontSize: 11,
+            letterSpacing: 2.0,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 6),
+        _ThemedNameInput(
+          controller: _nameController,
+          focusNode: _nameFocusNode,
+          fontSize: nameFontSize,
+          height: 60,
+          onChanged: (v) => setState(() => widget.wizardData.characterName = v.trim()),
+        ),
+      ],
     );
   }
 
@@ -3497,19 +3531,113 @@ class _StarParticle {
 }
 
 // ---------------------------------------------------------------------------
+// Gender image button — shows artwork image with press/select animation
+// ---------------------------------------------------------------------------
+class _GenderImageButton extends StatefulWidget {
+  const _GenderImageButton({
+    required this.gender,
+    required this.assetPath,
+    required this.isSelected,
+    required this.width,
+    required this.height,
+    required this.onTap,
+  });
+
+  final String gender;
+  final String assetPath;
+  final bool isSelected;
+  final double width;
+  final double height;
+  final VoidCallback onTap;
+
+  @override
+  State<_GenderImageButton> createState() => _GenderImageButtonState();
+}
+
+class _GenderImageButtonState extends State<_GenderImageButton> {
+  bool _pressed = false;
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageWidget = Image.asset(
+      widget.assetPath,
+      width: widget.width,
+      height: widget.height,
+      fit: BoxFit.cover,
+    );
+
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: AnimatedScale(
+          scale: _pressed ? 0.92 : (_hovered ? 1.04 : 1.0),
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOut,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: widget.isSelected
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFFFFD700).withAlpha(160),
+                        blurRadius: 28,
+                        spreadRadius: 4,
+                      ),
+                    ]
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(80),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+              border: Border.all(
+                color: widget.isSelected
+                    ? const Color(0xFFFFD700)
+                    : _hovered
+                        ? const Color(0xFFFFD700).withAlpha(100)
+                        : Colors.white30,
+                width: widget.isSelected ? 3.5 : 1.5,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(17),
+              child: _pressed
+                  ? ColorFiltered(
+                      colorFilter: const ColorFilter.mode(Color(0x55000000), BlendMode.darken),
+                      child: imageWidget,
+                    )
+                  : imageWidget,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Gender card button — coded, cohesive design with gold/purple theme
 // ---------------------------------------------------------------------------
 class _GenderCardButton extends StatefulWidget {
   const _GenderCardButton({
     required this.label,
-    required this.icon,
+    required this.gender,
     required this.isSelected,
     required this.size,
     required this.onTap,
   });
 
   final String label;
-  final IconData icon;
+  final String gender;
   final bool isSelected;
   final double size;
   final VoidCallback onTap;
@@ -3529,13 +3657,14 @@ class _GenderCardButtonState extends State<_GenderCardButton> {
         ? const Color(0xFFFFD54F)
         : _hovered
             ? const Color(0xFFFFD54F).withAlpha(140)
-            : Colors.white24;
+            : Colors.white30;
     final borderWidth = isActive ? 2.0 : 1.0;
-    final iconColor = isActive ? const Color(0xFFFFD54F) : Colors.white60;
-    final labelColor = isActive ? const Color(0xFFFFD54F) : Colors.white60;
+    final symbolColor = isActive ? const Color(0xFFFFD54F) : Colors.white54;
+    final labelColor = isActive ? const Color(0xFFFFD54F) : Colors.white70;
+    // Slightly lighter purple so unselected cards are readable on dark bg
     final bgColor = isActive
-        ? const Color(0xFF2A0A4E).withAlpha(180)
-        : const Color(0xFF2A0A4E).withAlpha(80);
+        ? const Color(0xFF4A1070).withAlpha(220)
+        : const Color(0xFF3D0E5E).withAlpha(160);
 
     return GestureDetector(
       onTap: widget.onTap,
@@ -3559,12 +3688,18 @@ class _GenderCardButtonState extends State<_GenderCardButton> {
               boxShadow: isActive
                   ? [
                       BoxShadow(
-                        color: const Color(0xFFFFD54F).withAlpha(100),
-                        blurRadius: 18,
+                        color: const Color(0xFFFFD54F).withAlpha(120),
+                        blurRadius: 20,
                         spreadRadius: 2,
                       ),
                     ]
-                  : null,
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(60),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -3576,17 +3711,21 @@ class _GenderCardButtonState extends State<_GenderCardButton> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isActive
-                        ? const Color(0xFFFFD54F).withAlpha(30)
-                        : Colors.white.withAlpha(10),
+                        ? const Color(0xFFFFD54F).withAlpha(25)
+                        : Colors.white.withAlpha(12),
                     border: Border.all(
-                      color: iconColor.withAlpha(isActive ? 120 : 40),
+                      color: symbolColor.withAlpha(isActive ? 100 : 50),
                       width: 1.5,
                     ),
                   ),
-                  child: Icon(
-                    widget.icon,
-                    color: iconColor,
-                    size: widget.size * 0.3,
+                  child: Center(
+                    child: CustomPaint(
+                      size: Size(widget.size * 0.28, widget.size * 0.28),
+                      painter: _HeroSymbolPainter(
+                        isBoy: widget.gender == 'Boy',
+                        color: symbolColor,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -3674,23 +3813,30 @@ class _ThemedNameInputState extends State<_ThemedNameInput>
         return Container(
           height: widget.height,
           decoration: BoxDecoration(
-            color: const Color(0xFF2A0A4E).withAlpha(100),
+            // Lighter, more opaque purple so it reads against the dark background
+            color: const Color(0xFF5C1A8C).withAlpha(200),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: _focused
                   ? Color.fromARGB((180 + (g * 75).round()).clamp(0, 255), 0xFF, 0xD5, 0x4F)
-                  : const Color(0xFFFFD54F).withAlpha(70),
-              width: _focused ? 1.5 : 1.0,
+                  : const Color(0xFFFFD54F).withAlpha(130),
+              width: _focused ? 2.0 : 1.5,
             ),
             boxShadow: _focused
                 ? [
                     BoxShadow(
-                      color: const Color(0xFFFFD54F).withAlpha((60 * g).round()),
-                      blurRadius: 16 * g,
+                      color: const Color(0xFFFFD54F).withAlpha((80 * g).round()),
+                      blurRadius: 18 * g,
                       spreadRadius: 1,
                     ),
                   ]
-                : null,
+                : [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(60),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
           child: Center(
             child: Padding(
@@ -3701,14 +3847,15 @@ class _ThemedNameInputState extends State<_ThemedNameInput>
                 textAlign: TextAlign.center,
                 style: GoogleFonts.cinzelDecorative(
                   fontSize: widget.fontSize,
-                  color: const Color(0xFFFFF8E1),
+                  color: Colors.white,
                   fontWeight: FontWeight.w700,
+                  shadows: const [Shadow(color: Color(0xFFFFD54F), blurRadius: 6)],
                 ),
                 decoration: InputDecoration(
-                  hintText: "Hero's Name",
+                  hintText: "Type your hero's name...",
                   hintStyle: GoogleFonts.cinzelDecorative(
-                    color: const Color(0xFFFFE082).withAlpha(100),
-                    fontSize: widget.fontSize,
+                    color: const Color(0xFFFFE082).withAlpha(180),
+                    fontSize: widget.fontSize * 0.85,
                     fontWeight: FontWeight.w400,
                   ),
                   border: InputBorder.none,
@@ -4297,121 +4444,378 @@ class _BouncingAvatarButtonState extends State<_BouncingAvatarButton>
 }
 
 // ---------------------------------------------------------------------------
-// Hero silhouette placeholder — CustomPainter, no image asset needed
+// Hero symbol painter — sword for Boy, wand+star for Girl
+// ---------------------------------------------------------------------------
+class _HeroSymbolPainter extends CustomPainter {
+  final bool isBoy;
+  final Color color;
+  const _HeroSymbolPainter({required this.isBoy, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.10;
+
+    final fillPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+
+    if (isBoy) {
+      // Sword: blade (vertical line), crossguard (horizontal line), pommel (circle)
+      final bladeTop = cy - size.height * 0.42;
+      final bladeBottom = cy + size.height * 0.20;
+      final guardY = cy + size.height * 0.10;
+      final guardHalf = size.width * 0.42;
+      final pommelY = cy + size.height * 0.36;
+
+      // Blade
+      canvas.drawLine(Offset(cx, bladeTop), Offset(cx, bladeBottom), paint);
+      // Blade tip (triangle)
+      final tipPath = Path()
+        ..moveTo(cx - size.width * 0.09, bladeTop + size.height * 0.12)
+        ..lineTo(cx, bladeTop)
+        ..lineTo(cx + size.width * 0.09, bladeTop + size.height * 0.12)
+        ..close();
+      canvas.drawPath(tipPath, fillPaint);
+      // Crossguard
+      canvas.drawLine(
+        Offset(cx - guardHalf, guardY),
+        Offset(cx + guardHalf, guardY),
+        paint,
+      );
+      // Pommel
+      canvas.drawCircle(Offset(cx, pommelY), size.width * 0.12, fillPaint);
+    } else {
+      // Wand: thin staff + 4-pointed star at top
+      final staffTop = cy - size.height * 0.18;
+      final staffBottom = cy + size.height * 0.44;
+      final wandPaint = Paint()
+        ..color = color
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size.width * 0.09;
+      canvas.drawLine(Offset(cx, staffTop), Offset(cx, staffBottom), wandPaint);
+
+      // 4-pointed star at top of wand
+      final starCy = cy - size.height * 0.34;
+      final outerR = size.width * 0.36;
+      final innerR = size.width * 0.14;
+      final starPath = Path();
+      for (int i = 0; i < 8; i++) {
+        final angle = (i * math.pi / 4) - math.pi / 2;
+        final r = i.isEven ? outerR : innerR;
+        final px = cx + r * math.cos(angle);
+        final py = starCy + r * math.sin(angle);
+        i == 0 ? starPath.moveTo(px, py) : starPath.lineTo(px, py);
+      }
+      starPath.close();
+      canvas.drawPath(starPath, fillPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_HeroSymbolPainter old) => old.isBoy != isBoy || old.color != color;
+}
+
+// ---------------------------------------------------------------------------
+// Hero portal placeholder — magical summoning circle, no image asset needed
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Hero Spirit placeholder — glowing crowned silhouette waiting to come to life
 // ---------------------------------------------------------------------------
 class _HeroSilhouettePainter extends CustomPainter {
+  final double pulse; // 0.55–1.0 from _glowAnim, drives breathing brightness
+
+  const _HeroSilhouettePainter({this.pulse = 0.75});
+
   @override
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
     final cy = size.height / 2;
+    final r = size.shortestSide / 2;
 
-    // Background: deep purple radial gradient
-    final bgPaint = Paint();
-    final bgShader = RadialGradient(
-      colors: [const Color(0xFF4A1A72), const Color(0xFF1A0535)],
-    ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-    bgPaint.shader = bgShader;
-    canvas.drawOval(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
-
-    // Silhouette paint: translucent lavender
-    final silPaint = Paint()
-      ..color = const Color(0xFFB388FF).withAlpha(90)
-      ..style = PaintingStyle.fill;
-
-    // Silhouette stroke: slightly brighter outline
-    final outlinePaint = Paint()
-      ..color = const Color(0xFFCE93D8).withAlpha(160)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-
-    // -- Head --
-    final headRadius = size.width * 0.18;
-    final headCenter = Offset(cx, cy - size.height * 0.14);
-    canvas.drawCircle(headCenter, headRadius, silPaint);
-    canvas.drawCircle(headCenter, headRadius, outlinePaint);
-
-    // -- Shoulders / body shape --
-    final shoulderPath = Path();
-    final bodyTop = headCenter.dy + headRadius * 0.8;
-    final bodyBottom = size.height * 0.95;
-    final shoulderWidth = size.width * 0.42;
-    final neckWidth = size.width * 0.09;
-
-    shoulderPath.moveTo(cx - neckWidth, bodyTop);
-    // Left shoulder curve
-    shoulderPath.cubicTo(
-      cx - neckWidth, bodyTop + size.height * 0.04,
-      cx - shoulderWidth, bodyTop + size.height * 0.04,
-      cx - shoulderWidth, bodyTop + size.height * 0.12,
+    // ── 1. Background — deep purple radial gradient ──────────────────────────
+    canvas.drawCircle(
+      Offset(cx, cy),
+      r,
+      Paint()
+        ..shader = RadialGradient(
+          colors: const [Color(0xFF4A1880), Color(0xFF0D0120)],
+          stops: const [0.0, 1.0],
+        ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r)),
     );
-    // Left body side
-    shoulderPath.lineTo(cx - shoulderWidth * 0.85, bodyBottom);
-    // Bottom
-    shoulderPath.lineTo(cx + shoulderWidth * 0.85, bodyBottom);
-    // Right body side
-    shoulderPath.lineTo(cx + shoulderWidth, bodyTop + size.height * 0.12);
-    // Right shoulder curve
-    shoulderPath.cubicTo(
-      cx + shoulderWidth, bodyTop + size.height * 0.04,
-      cx + neckWidth, bodyTop + size.height * 0.04,
-      cx + neckWidth, bodyTop,
+
+    // ── 2. Aura bloom — soft lavender cloud behind figure, breathes ──────────
+    final auraAlpha = (30 + pulse * 50).round();
+    canvas.drawCircle(
+      Offset(cx, cy + r * 0.08),
+      r * 0.62,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            Color.fromARGB(auraAlpha, 0xB0, 0x60, 0xFF),
+            Colors.transparent,
+          ],
+        ).createShader(
+            Rect.fromCircle(center: Offset(cx, cy + r * 0.08), radius: r * 0.62)),
     );
-    shoulderPath.close();
 
-    canvas.drawPath(shoulderPath, silPaint);
-    canvas.drawPath(shoulderPath, outlinePaint);
+    // ── 3. Outer decorative ring ─────────────────────────────────────────────
+    canvas.drawCircle(
+      Offset(cx, cy),
+      r * 0.90,
+      Paint()
+        ..color = const Color(0xFFFFD54F).withAlpha(70)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0,
+    );
 
-    // -- Star sparkles around the silhouette --
-    _drawSparkle(canvas, Offset(cx - size.width * 0.34, cy - size.height * 0.30), 4.5);
-    _drawSparkle(canvas, Offset(cx + size.width * 0.36, cy - size.height * 0.22), 3.5);
-    _drawSparkle(canvas, Offset(cx + size.width * 0.28, cy + size.height * 0.06), 3.0);
-    _drawSparkle(canvas, Offset(cx - size.width * 0.26, cy + size.height * 0.08), 2.5);
-    _drawSparkle(canvas, Offset(cx, cy - size.height * 0.40), 5.0);
+    // ── 4. 4-pointed accent stars at NE/NW/SE/SW corners ────────────────────
+    const diagAngles = [
+      -3 * math.pi / 4, -math.pi / 4, math.pi / 4, 3 * math.pi / 4
+    ];
+    final starAlpha = (130 + pulse * 80).round();
+    for (final angle in diagAngles) {
+      _drawStar4(
+        canvas,
+        Offset(cx + r * 0.72 * math.cos(angle), cy + r * 0.72 * math.sin(angle)),
+        r * 0.065,
+        r * 0.027,
+        starAlpha,
+      );
+    }
 
-    // -- "Tap to create" hint text-like dots (subtle) --
-    final dotPaint = Paint()
-      ..color = const Color(0xFFFFE082).withAlpha(80)
+    // ── 5. Silhouette — head ─────────────────────────────────────────────────
+    final spiritAlpha = (90 + pulse * 100).round();
+    final spiritPaint = Paint()
+      ..color = Color.fromARGB(spiritAlpha, 0xC8, 0x90, 0xFF)
       ..style = PaintingStyle.fill;
-    for (int i = 0; i < 3; i++) {
+    final headR = r * 0.205;
+    final headCy = cy - r * 0.155;
+
+    // Head glow halo
+    canvas.drawCircle(
+      Offset(cx, headCy),
+      headR * 1.55,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            Color.fromARGB((spiritAlpha * 0.45).round(), 0xC8, 0x90, 0xFF),
+            Colors.transparent,
+          ],
+        ).createShader(
+            Rect.fromCircle(center: Offset(cx, headCy), radius: headR * 1.55)),
+    );
+
+    // Head circle
+    canvas.drawCircle(Offset(cx, headCy), headR, spiritPaint);
+
+    // ── 6. Silhouette — robe body ────────────────────────────────────────────
+    final neckTop = headCy + headR * 0.85;
+    final bodyBottom = cy + r * 0.50;
+    final shoulderW = r * 0.23;
+    final hemW = r * 0.40;
+    // Bell-shaped robe: narrow at shoulders, wide at hem
+    final bodyPath = Path()
+      ..moveTo(cx - shoulderW, neckTop)
+      ..quadraticBezierTo(cx - hemW * 0.6, cy, cx - hemW, bodyBottom)
+      ..lineTo(cx + hemW, bodyBottom)
+      ..quadraticBezierTo(cx + hemW * 0.6, cy, cx + shoulderW, neckTop)
+      ..close();
+    canvas.drawPath(bodyPath, spiritPaint);
+
+    // ── 7. Crown ─────────────────────────────────────────────────────────────
+    final crownAlpha = (140 + pulse * 90).round();
+    final crownCy = headCy - headR * 0.90;
+    _drawCrown(canvas, cx, crownCy, r * 0.175, crownAlpha);
+
+    // ── 8. Tiny floating sparkles inside the figure ──────────────────────────
+    // Fixed offsets seeded to stay inside the silhouette area
+    const sparkleOffsets = [
+      Offset(-0.10, -0.05), Offset(0.13, 0.10),
+      Offset(-0.05, 0.25),  Offset(0.08, -0.18),
+      Offset(-0.14, 0.18),  Offset(0.16, 0.28),
+    ];
+    for (final off in sparkleOffsets) {
+      final sx = cx + off.dx * r;
+      final sy = cy + off.dy * r;
+      // Only draw if inside robe/head (rough bounding box check)
+      if ((sx - cx).abs() < r * 0.42 && sy > headCy - headR && sy < bodyBottom) {
+        _drawStar4(canvas, Offset(sx, sy), r * 0.032, r * 0.013, 110);
+      }
+    }
+  }
+
+  void _drawCrown(Canvas canvas, double cx, double tipY, double w, int alpha) {
+    final paint = Paint()
+      ..color = Color.fromARGB(alpha, 0xFF, 0xD5, 0x4F)
+      ..style = PaintingStyle.fill;
+    final h = w * 0.72;
+    // Three-point crown: left peak, tall center peak, right peak
+    final path = Path()
+      ..moveTo(cx - w, tipY + h)        // bottom-left
+      ..lineTo(cx - w, tipY + h * 0.35) // up left side
+      ..lineTo(cx - w * 0.5, tipY + h * 0.62) // inner-left valley
+      ..lineTo(cx, tipY)                // center peak (tallest)
+      ..lineTo(cx + w * 0.5, tipY + h * 0.62) // inner-right valley
+      ..lineTo(cx + w, tipY + h * 0.35) // up right side
+      ..lineTo(cx + w, tipY + h)        // bottom-right
+      ..close();
+    canvas.drawPath(path, paint);
+
+    // Three jewel dots at each peak
+    for (final (jx, jy) in [
+      (cx - w, tipY + h * 0.35),
+      (cx, tipY),
+      (cx + w, tipY + h * 0.35),
+    ]) {
       canvas.drawCircle(
-        Offset(cx - 8.0 + i * 8.0, size.height * 0.88),
-        2.0,
-        dotPaint,
+        Offset(jx, jy),
+        w * 0.11,
+        Paint()..color = Color.fromARGB(alpha, 0xFF, 0xF5, 0xCC),
       );
     }
   }
 
-  void _drawSparkle(Canvas canvas, Offset center, double radius) {
-    final paint = Paint()
-      ..color = const Color(0xFFFFE082).withAlpha(180)
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final fillPaint = Paint()
-      ..color = const Color(0xFFFFE082).withAlpha(220)
-      ..style = PaintingStyle.fill;
-
-    // 4-pointed star
-    const angles = [0.0, 1.5708, 3.1416, 4.7124]; // 0, 90, 180, 270 deg
-    for (final angle in angles) {
-      final x1 = center.dx + (radius * 0.25) * math.cos(angle + 1.5708);
-      final y1 = center.dy + (radius * 0.25) * math.sin(angle + 1.5708);
-      final x2 = center.dx + radius * math.cos(angle);
-      final y2 = center.dy + radius * math.sin(angle);
-      final x3 = center.dx + (radius * 0.25) * math.cos(angle - 1.5708);
-      final y3 = center.dy + (radius * 0.25) * math.sin(angle - 1.5708);
-      final path = Path()
-        ..moveTo(x1, y1)
-        ..lineTo(x2, y2)
-        ..lineTo(x3, y3);
-      canvas.drawPath(path, paint);
+  void _drawStar4(
+      Canvas canvas, Offset center, double outerR, double innerR, int alpha) {
+    final path = Path();
+    for (int i = 0; i < 8; i++) {
+      final angle = (i * math.pi / 4) - math.pi / 2;
+      final rad = i.isEven ? outerR : innerR;
+      final px = center.dx + rad * math.cos(angle);
+      final py = center.dy + rad * math.sin(angle);
+      i == 0 ? path.moveTo(px, py) : path.lineTo(px, py);
     }
-
-    // Center dot
-    canvas.drawCircle(center, radius * 0.18, fillPaint);
+    path.close();
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Color.fromARGB(alpha, 0xFF, 0xE0, 0x82)
+        ..style = PaintingStyle.fill,
+    );
   }
 
   @override
-  bool shouldRepaint(_HeroSilhouettePainter oldDelegate) => false;
+  bool shouldRepaint(_HeroSilhouettePainter old) => old.pulse != pulse;
+}
+
+// ---------------------------------------------------------------------------
+// Ambient sparkle layer — 12 gold particles slowly drifting upward
+// ---------------------------------------------------------------------------
+class _AmbientSparkleLayer extends StatefulWidget {
+  const _AmbientSparkleLayer();
+
+  @override
+  State<_AmbientSparkleLayer> createState() => _AmbientSparkleLayerState();
+}
+
+class _AmbientSparkleLayerState extends State<_AmbientSparkleLayer>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late List<_AmbientParticle> _particles;
+  final _rng = math.Random(42);
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 6),
+    )..repeat();
+    _particles = List.generate(14, (_) => _AmbientParticle(_rng));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        return CustomPaint(
+          painter: _AmbientSparklePainter(
+            particles: _particles,
+            progress: _ctrl.value,
+          ),
+          child: const SizedBox.expand(),
+        );
+      },
+    );
+  }
+}
+
+class _AmbientParticle {
+  final double xFraction; // 0-1, horizontal position as fraction of width
+  final double phase;     // 0-1, offset in the animation cycle
+  final double speed;     // relative speed multiplier
+  final double size;      // star radius
+  final double drift;     // horizontal drift amount
+
+  _AmbientParticle(math.Random rng)
+      : xFraction = rng.nextDouble(),
+        phase = rng.nextDouble(),
+        speed = 0.4 + rng.nextDouble() * 0.6,
+        size = 2.0 + rng.nextDouble() * 3.0,
+        drift = (rng.nextDouble() - 0.5) * 20;
+}
+
+class _AmbientSparklePainter extends CustomPainter {
+  final List<_AmbientParticle> particles;
+  final double progress;
+
+  const _AmbientSparklePainter({required this.particles, required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final p in particles) {
+      // Each particle has its own phase offset; cycles continuously
+      final t = ((progress * p.speed + p.phase) % 1.0);
+      // y goes from bottom (1.0) to top (0.0)
+      final y = size.height * (1.0 - t);
+      final x = size.width * p.xFraction + p.drift * math.sin(t * math.pi * 2);
+
+      // Fade in from bottom, fade out near top
+      final opacity = t < 0.15
+          ? t / 0.15
+          : t > 0.75
+              ? (1.0 - t) / 0.25
+              : 1.0;
+
+      final paint = Paint()
+        ..color = const Color(0xFFFFE082).withAlpha((60 * opacity).round())
+        ..style = PaintingStyle.fill;
+
+      // Draw a tiny 4-pointed star
+      _drawTinyStar(canvas, Offset(x, y), p.size, paint);
+    }
+  }
+
+  void _drawTinyStar(Canvas canvas, Offset center, double r, Paint paint) {
+    final inner = r * 0.38;
+    final path = Path();
+    for (int i = 0; i < 8; i++) {
+      final angle = (i * math.pi / 4) - math.pi / 2;
+      final radius = i.isEven ? r : inner;
+      final px = center.dx + radius * math.cos(angle);
+      final py = center.dy + radius * math.sin(angle);
+      i == 0 ? path.moveTo(px, py) : path.lineTo(px, py);
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_AmbientSparklePainter old) => old.progress != progress;
 }
