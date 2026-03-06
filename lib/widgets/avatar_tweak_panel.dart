@@ -104,39 +104,71 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF4A2F72),
-          ),
+        Row(
+          children: [
+            Container(
+              width: 3,
+              height: 14,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD54F),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFFE8D5FF),
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 10),
         Wrap(
           spacing: 8,
-          runSpacing: 6,
+          runSpacing: 8,
           children: options.map((opt) {
             final isSelected = selected == opt;
-            return ChoiceChip(
-              label: Text(opt,
+            return GestureDetector(
+              onTap: () => setState(() => onSelect(isSelected ? '' : opt)),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? const Color(0xFFFFD54F)
+                      : const Color(0xFF2A0D55),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected
+                        ? const Color(0xFFFFB300)
+                        : const Color(0xFFFFD54F).withAlpha(60),
+                    width: isSelected ? 1.5 : 1.0,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFFFFD54F).withAlpha(80),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          )
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  opt,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                     color: isSelected
                         ? const Color(0xFF3B2363)
-                        : const Color(0xFF5C3A84),
-                    fontWeight: FontWeight.w600,
-                  )),
-              selected: isSelected,
-              selectedColor: const Color(0xFFFFD98A),
-              backgroundColor: const Color(0xFFF4ECFF),
-              side: BorderSide(
-                color: isSelected
-                    ? const Color(0xFFFFB347)
-                    : const Color(0xFFD9C6F0),
+                        : const Color(0xFFD4ADFF),
+                  ),
+                ),
               ),
-              onSelected: (_) => setState(
-                  () => onSelect(isSelected ? '' : opt)),
             );
           }).toList(),
         ),
@@ -267,34 +299,65 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
           ],
         ),
 
-        const SizedBox(height: 24),
-        const Divider(color: Colors.white24),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
 
-        // Customise section
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            widget.isPremium
-                ? '✨ Customise it'
-                : '✨ Customise it  (Premium)',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: widget.isPremium
-                  ? Colors.white
-                  : Colors.white.withAlpha(150),
+        // Customise section header
+        Row(
+          children: [
+            const Text('✨', style: TextStyle(fontSize: 18)),
+            const SizedBox(width: 8),
+            Text(
+              widget.isPremium ? 'Customise it' : 'Customise it',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: widget.isPremium
+                    ? const Color(0xFFFFE082)
+                    : const Color(0xFFFFE082).withAlpha(130),
+                letterSpacing: 0.5,
+              ),
             ),
-          ),
+            if (!widget.isPremium) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD54F).withAlpha(30),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                      color: const Color(0xFFFFD54F).withAlpha(80), width: 1),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('🔒', style: TextStyle(fontSize: 11)),
+                    SizedBox(width: 4),
+                    Text(
+                      'Premium',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFFFD54F),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
         const SizedBox(height: 14),
 
-        // Chip pickers
+        // Attribute pickers — dark glass card
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Colors.white.withAlpha(230),
-            borderRadius: BorderRadius.circular(12),
+            color: const Color(0xFF1A0835).withAlpha(200),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFFFFD54F).withAlpha(45),
+              width: 1.0,
+            ),
           ),
           child: Column(
             children: [
@@ -304,7 +367,9 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
                 selected: _selectedHair,
                 onSelect: (v) => _selectedHair = v.isEmpty ? null : v,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
+              Divider(color: const Color(0xFFFFD54F).withAlpha(30), height: 1),
+              const SizedBox(height: 18),
               _chipRow(
                 label: 'Eye colour',
                 options: _eyeOptions,
@@ -318,51 +383,83 @@ class _AvatarTweakPanelState extends State<AvatarTweakPanel> {
         const SizedBox(height: 20),
 
         // Generate button
-        SizedBox(
-          width: double.infinity,
-          child: _isGenerating
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Column(
-                      children: [
-                        CircularProgressIndicator(color: Color(0xFFFFC44D)),
-                        SizedBox(height: 10),
-                        Text(
-                          'Creating your custom look…',
-                          style: TextStyle(color: Colors.white70, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : ElevatedButton.icon(
-                  onPressed: (widget.isPremium && _hasChanges) ? _generate : null,
-                  icon: Text(
-                    widget.isPremium ? '🪄' : '🔒',
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                  label: Text(
-                    widget.isPremium
-                        ? 'Generate my look'
-                        : 'Premium only',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7E57C2),
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor:
-                        const Color(0xFF7E57C2).withAlpha(90),
-                    disabledForegroundColor: Colors.white60,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30)),
-                    elevation: 4,
+        _isGenerating
+            ? const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Column(
+                    children: [
+                      CircularProgressIndicator(color: Color(0xFFFFC44D)),
+                      SizedBox(height: 10),
+                      Text(
+                        'Creating your custom look…',
+                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                    ],
                   ),
                 ),
-        ),
+              )
+            : _buildGenerateButton(disabled: !(widget.isPremium && _hasChanges)),
       ],
+    );
+  }
+
+  Widget _buildGenerateButton({bool disabled = false}) {
+    final canAct = !disabled && widget.isPremium && _hasChanges;
+    return GestureDetector(
+      onTap: canAct ? _generate : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 15),
+        decoration: BoxDecoration(
+          gradient: canAct
+              ? const LinearGradient(
+                  colors: [Color(0xFFFFD54F), Color(0xFFFFAB40)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: canAct ? null : const Color(0xFF2A0D55),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: canAct
+                ? const Color(0xFFFFB300)
+                : const Color(0xFFFFD54F).withAlpha(40),
+            width: 1.5,
+          ),
+          boxShadow: canAct
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFFFFD54F).withAlpha(100),
+                    blurRadius: 16,
+                    spreadRadius: 2,
+                  )
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              widget.isPremium ? '🪄' : '🔒',
+              style: const TextStyle(fontSize: 20),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              widget.isPremium
+                  ? (_hasChanges ? 'Generate my look' : 'Pick options above')
+                  : 'Premium only',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: canAct ? const Color(0xFF3B2363) : const Color(0xFFD4ADFF).withAlpha(150),
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

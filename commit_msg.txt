@@ -1,8 +1,18 @@
-fix: resolve build-blocking parentheses error in hero_creator_step + log final test results
+feat: Phase 1 monetization — free tier limit, BYOK surfacing, avatar upsell
 
-- Fix parentheses mismatch on line 1641 of hero_creator_step.dart that blocked Flutter web build
-- 20/21 quality check stories passed across all 7 age bands
-- Cross-browser tests passing on Chrome, Firefox, Mobile
-- Log 3 issues to investigate: learning_to_read failure, generic wisdom gems, double-article title
+Business plan (BUSINESS_PLAN.md) added to repo.
+
+Changes:
+- grace_period_service.dart: lower freeTierStoryLimit 200 → 10/month
+- subscription_models.dart: fix free tier copy "per day" → "per month"
+- upgrade_prompt_dialog.dart: add "Set Up Free Premium →" button to BYOK
+  box that navigates directly to ByokSetupWizardScreen
+- byok_setup_wizard.dart: rewrite _BenefitsStep with specific hooks —
+  custom avatars, illustrations, unlimited stories, coloring pages, with
+  emoji icons, sub-text, and privacy reassurance row
+- avatar_gallery_selector.dart: add "Create a custom avatar that looks like
+  me!" golden upsell button in footer; tapping shows gate dialog with
+  feature list and direct link to BYOK wizard
+- TEAM_COORDINATION.md: session log prepended
 
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

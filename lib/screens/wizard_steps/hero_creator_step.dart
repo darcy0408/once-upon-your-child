@@ -6,16 +6,12 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math' as math;
 import '../../models.dart';
-import '../../avatar_models.dart';
-import '../../custom_avatar_screen.dart';
 import '../../theme/age_band_theme.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/archetype_card.dart';
 import '../../widgets/magic_star_cursor.dart';
-import '../../widgets/avatar_gallery_selector.dart';
 import '../../services/api_service_manager.dart';
 import '../../services/avatar_generation_state.dart';
 import '../../services/firebase_analytics_service.dart';
@@ -24,7 +20,6 @@ import '../../services/parental_consent_service.dart';
 import '../../widgets/image_mode_orb.dart';
 import '../../widgets/image_crystal_formation.dart';
 import '../../data/scenario_data.dart';
-import 'custom_pet_avatar_screen.dart';
 
 /// Hero Creator — Step 1 of the story wizard.
 /// Restructured as a guided multi-page wizard (progressive disclosure).
@@ -1578,278 +1573,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   // ─── Avatar, Age, Gender, Name, Archetype, Superpower, Continue logic ──────────
 
-  Future<void> _openAvatarCreation() async {
-    await showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => SafeArea(
-        child: Container(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF2C1B47), Color(0xFF4A1A72)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(100),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                'Choose Your Avatar',
-                style: GoogleFonts.cinzelDecorative(
-                  color: const Color(0xFFFFD700),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 14),
-              _AvatarOptionTile(
-                icon: Icons.auto_awesome,
-                title: 'Browse Character Gallery',
-                subtitle: 'Pick from 94 pre-made heroes & heroines',
-                onTap: () {
-                  Navigator.pop(context);
-                  _openAvatarGallery();
-                },
-              ),
-              const SizedBox(height: 8),
-              _AvatarOptionTile(
-                icon: Icons.tune_rounded,
-                title: 'Build Your Look',
-                subtitle: 'See heroes that match your character\'s age & vibe',
-                onTap: () {
-                  Navigator.pop(context);
-                  _openAvatarGallery(preFilter: true);
-                },
-              ),
-              const SizedBox(height: 8),
-              if (_allowPhotoAvatar)
-                _AvatarOptionTile(
-                  icon: Icons.camera_alt_rounded,
-                  title: 'Upload Photo → AI Avatar',
-                  subtitle: _isPremium
-                      ? 'Turn a photo into a magical storybook avatar'
-                      : '⭐ Premium — upgrade to unlock',
-                  onTap: _isPremium
-                      ? () {
-                          Navigator.pop(context);
-                          _openCustomAvatarScreen();
-                        }
-                      : null,
-                ),
-            ],
-          ),
-        ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openAvatarGallery({bool preFilter = false}) async {
-    if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (_) => AvatarGallerySelector(
-        isPremium: _isPremium,
-        onAvatarSelected: (avatar) {
-          if (mounted) {
-            setState(() {
-              _generatedAvatar = avatar;
-              _customAvatarFilePath = null;
-              widget.wizardData.generatedAvatar = avatar;
-              widget.wizardData.customAvatarPath = avatar.imageBase64;
-            });
-            _sparkleCtrl.forward(from: 0);
-          }
-        },
-        onCancel: () => Navigator.pop(context),
-      ),
-    );
-  }
-
-  Future<void> _openCustomAvatarScreen() async {
-    final result = await Navigator.push<CharacterAvatar>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CustomAvatarScreen(
-          initialName: widget.wizardData.characterName.isNotEmpty
-              ? widget.wizardData.characterName
-              : null,
-          initialAge: widget.wizardData.characterAge > 0
-              ? widget.wizardData.characterAge
-              : null,
-        ),
-      ),
-    );
-    if (!mounted) return;
-    if (result != null && result.customImagePath != null) {
-      setState(() {
-        _customAvatarFilePath = result.customImagePath;
-        widget.wizardData.customAvatarPath = result.customImagePath;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('✨ Avatar created! It will appear in your story.'),
-        backgroundColor: Color(0xFF4CAF50),
-        duration: Duration(seconds: 3),
-      ));
-    }
-  }
-
   bool get _hasAvatar =>
       _generatedAvatar != null || _customAvatarFilePath != null;
 
-  Widget _buildAvatarContent() {
-    if (_customAvatarFilePath != null) {
-      return Image.file(
-        File(_customAvatarFilePath!),
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _placeholderWidget(),
-      );
-    }
-    if (_generatedAvatar != null) {
-      final data = _generatedAvatar!.imageBase64;
-      if (data.startsWith('assets/')) return Image.asset(data, fit: BoxFit.cover);
-      if (data.startsWith('http')) return Image.network(data, fit: BoxFit.cover);
-      try {
-        return Image.memory(base64Decode(data.split(',').last), fit: BoxFit.cover);
-      } catch (_) {}
-    }
-    return _placeholderWidget();
-  }
 
-  Widget _placeholderWidget() => AnimatedBuilder(
-        animation: _glowAnim,
-        builder: (_, __) => CustomPaint(
-          size: const Size(148, 148),
-          painter: _HeroSilhouettePainter(pulse: _glowAnim.value),
-        ),
-      );
 
-  Widget _buildAvatarSection() {
-    return AnimatedBuilder(
-      animation: _floatCtrl,
-      builder: (ctx, child) => Transform.translate(
-        offset: Offset(0, _floatAnim.value),
-        child: child,
-      ),
-      child: AnimatedBuilder(
-        animation: _glowCtrl,
-        builder: (ctx, child) {
-          final g = _glowAnim.value;
-          return GestureDetector(
-            onTap: _openAvatarCreation,
-            child: SizedBox(
-              width: 172,
-              height: 172,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Container(
-                    width: 172,
-                    height: 172,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color.fromARGB((g * 160).round(), 0xFF, 0xD7, 0x00),
-                          blurRadius: 28 + g * 18,
-                          spreadRadius: g * 6,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    width: 148,
-                    height: 148,
-                    decoration: const BoxDecoration(shape: BoxShape.circle),
-                    child: Stack(
-                      children: [
-                        ClipOval(
-                          child: SizedBox(width: 148, height: 148, child: _buildAvatarContent()),
-                        ),
-                        Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Color.fromARGB((g * 200).round(), 0xD4, 0xA0, 0xFF),
-                                width: 2.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  _buildSparkleOverlay(),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildSparkleOverlay() {
-    const radius = 86.0;
-    const count = 8;
-    final sparkleChars = ['✦', '★', '✧', '✦', '★', '✧', '✦', '★'];
-    return AnimatedBuilder(
-      animation: _sparkleAnim,
-      builder: (ctx, _) {
-        final t = _sparkleAnim.value;
-        if (t == 0) return const SizedBox.shrink();
-        return SizedBox(
-          width: 172,
-          height: 172,
-          child: Stack(
-            alignment: Alignment.center,
-            children: List.generate(count, (i) {
-              final angle = (i / count) * math.pi * 2;
-              final delay = i / count;
-              final progress = ((t - delay) / (1 - delay)).clamp(0.0, 1.0);
-              final dist = progress * radius;
-              final opacity = progress < 0.6 ? progress / 0.6 : (1.0 - progress) / 0.4;
-              final scale = 0.4 + progress * 1.0;
-              final x = 86 + math.cos(angle) * dist;
-              final y = 86 + math.sin(angle) * dist;
-              return Positioned(
-                left: x - 10,
-                top: y - 10,
-                child: Opacity(
-                  opacity: opacity.clamp(0.0, 1.0),
-                  child: Transform.scale(
-                    scale: scale,
-                    child: Text(
-                      sparkleChars[i],
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: i.isEven ? const Color(0xFFFFD700) : const Color(0xFFD4A0FF),
-                        shadows: const [Shadow(color: Color(0xFFFFD700), blurRadius: 8)],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }),
-          ),
-        );
-      },
-    );
-  }
 
   Widget _buildAgePicker() {
     return Column(
@@ -1972,7 +1700,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           children: [
             _GenderImageButton(
               gender: 'Boy',
-              assetPath: 'assets/images/ui/boy_avatar_button.png',
+              assetPath: 'assets/images/ui/boy_avatar_button.webp',
               isSelected: widget.wizardData.characterGender == 'Boy',
               width: btnW,
               height: btnH,
@@ -1984,7 +1712,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             const SizedBox(width: 28),
             _GenderImageButton(
               gender: 'Girl',
-              assetPath: 'assets/images/ui/girl_avatar_button.png',
+              assetPath: 'assets/images/ui/girl_avatar_button.webp',
               isSelected: widget.wizardData.characterGender == 'Girl',
               width: btnW,
               height: btnH,
@@ -1999,21 +1727,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
-  Widget _buildGenderCard({
-    required String label,
-    required String gender,
-  }) {
-    final isSelected = widget.wizardData.characterGender == gender;
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    final cardSize = (band.touchTargetMin / 64.0 * 100).roundToDouble().clamp(90.0, 120.0);
-    return _GenderCardButton(
-      label: label,
-      gender: gender,
-      isSelected: isSelected,
-      size: cardSize,
-      onTap: () => setState(() => widget.wizardData.characterGender = gender),
-    );
-  }
 
   Widget _buildNameScrollInput() {
     final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
@@ -2263,9 +1976,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
-  Widget _buildCreateAvatarButton() {
-    return _BouncingAvatarButton(onTap: _openAvatarCreation);
-  }
 
   // ─── Progressive-Disclosure Helpers ─────────────────────────────────────────
 
@@ -2405,11 +2115,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
-  Widget _buildEditAvatarButton() => TextButton.icon(
-        onPressed: _openAvatarCreation,
-        icon: const Icon(Icons.edit_rounded, size: 16, color: Color(0xFFD4A0FF)),
-        label: Text('Change Avatar', style: GoogleFonts.cinzelDecorative(color: const Color(0xFFD4A0FF), fontSize: 12)),
-      );
 
   void _toggleListening(String field) async {
     if (!_speechAvailable) return;
@@ -3580,43 +3285,61 @@ class _GenderImageButtonState extends State<_GenderImageButton> {
           scale: _pressed ? 0.92 : (_hovered ? 1.04 : 1.0),
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOut,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: widget.isSelected
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFFFFD700).withAlpha(160),
-                        blurRadius: 28,
-                        spreadRadius: 4,
-                      ),
-                    ]
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(80),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-              border: Border.all(
-                color: widget.isSelected
-                    ? const Color(0xFFFFD700)
-                    : _hovered
-                        ? const Color(0xFFFFD700).withAlpha(100)
-                        : Colors.white30,
-                width: widget.isSelected ? 3.5 : 1.5,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: widget.isSelected
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFFFFD700).withAlpha(160),
+                            blurRadius: 28,
+                            spreadRadius: 4,
+                          ),
+                        ]
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(80),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                  border: Border.all(
+                    color: widget.isSelected
+                        ? const Color(0xFFFFD700)
+                        : _hovered
+                            ? const Color(0xFFFFD700).withAlpha(100)
+                            : Colors.white30,
+                    width: widget.isSelected ? 3.5 : 1.5,
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(17),
+                  child: _pressed
+                      ? ColorFiltered(
+                          colorFilter: const ColorFilter.mode(Color(0x55000000), BlendMode.darken),
+                          child: imageWidget,
+                        )
+                      : imageWidget,
+                ),
               ),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(17),
-              child: _pressed
-                  ? ColorFiltered(
-                      colorFilter: const ColorFilter.mode(Color(0x55000000), BlendMode.darken),
-                      child: imageWidget,
-                    )
-                  : imageWidget,
-            ),
+              const SizedBox(height: 10),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: GoogleFonts.cinzelDecorative(
+                  color: widget.isSelected ? const Color(0xFFFFD700) : Colors.white70,
+                  fontSize: 15,
+                  fontWeight: widget.isSelected ? FontWeight.bold : FontWeight.normal,
+                  shadows: widget.isSelected
+                      ? [const Shadow(color: Color(0xFFFFD700), blurRadius: 10)]
+                      : null,
+                ),
+                child: Text(widget.gender),
+              ),
+            ],
           ),
         ),
       ),
@@ -3624,127 +3347,6 @@ class _GenderImageButtonState extends State<_GenderImageButton> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Gender card button — coded, cohesive design with gold/purple theme
-// ---------------------------------------------------------------------------
-class _GenderCardButton extends StatefulWidget {
-  const _GenderCardButton({
-    required this.label,
-    required this.gender,
-    required this.isSelected,
-    required this.size,
-    required this.onTap,
-  });
-
-  final String label;
-  final String gender;
-  final bool isSelected;
-  final double size;
-  final VoidCallback onTap;
-
-  @override
-  State<_GenderCardButton> createState() => _GenderCardButtonState();
-}
-
-class _GenderCardButtonState extends State<_GenderCardButton> {
-  bool _hovered = false;
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final isActive = widget.isSelected;
-    final borderColor = isActive
-        ? const Color(0xFFFFD54F)
-        : _hovered
-            ? const Color(0xFFFFD54F).withAlpha(140)
-            : Colors.white30;
-    final borderWidth = isActive ? 2.0 : 1.0;
-    final symbolColor = isActive ? const Color(0xFFFFD54F) : Colors.white54;
-    final labelColor = isActive ? const Color(0xFFFFD54F) : Colors.white70;
-    // Slightly lighter purple so unselected cards are readable on dark bg
-    final bgColor = isActive
-        ? const Color(0xFF4A1070).withAlpha(220)
-        : const Color(0xFF3D0E5E).withAlpha(160);
-
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: AnimatedScale(
-          scale: _pressed ? 0.93 : (_hovered ? 1.04 : 1.0),
-          duration: const Duration(milliseconds: 120),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: widget.size,
-            height: widget.size + 20,
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: borderColor, width: borderWidth),
-              boxShadow: isActive
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFFFFD54F).withAlpha(120),
-                        blurRadius: 20,
-                        spreadRadius: 2,
-                      ),
-                    ]
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(60),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: widget.size * 0.52,
-                  height: widget.size * 0.52,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isActive
-                        ? const Color(0xFFFFD54F).withAlpha(25)
-                        : Colors.white.withAlpha(12),
-                    border: Border.all(
-                      color: symbolColor.withAlpha(isActive ? 100 : 50),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Center(
-                    child: CustomPaint(
-                      size: Size(widget.size * 0.28, widget.size * 0.28),
-                      painter: _HeroSymbolPainter(
-                        isBoy: widget.gender == 'Boy',
-                        color: symbolColor,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  widget.label,
-                  style: GoogleFonts.cinzelDecorative(
-                    color: labelColor,
-                    fontSize: 14,
-                    fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Themed name input — coded gold/purple field replacing scroll PNG
@@ -4328,201 +3930,7 @@ class _GenreChip extends StatelessWidget {
   }
 }
 
-// ─── Bouncing Avatar Button ────────────────────────────────────────────────────
 
-/// Glowing create-avatar CTA button that bounces to attract attention if the
-/// user hasn't tapped it within 4 seconds.
-class _BouncingAvatarButton extends StatefulWidget {
-  final VoidCallback onTap;
-  const _BouncingAvatarButton({required this.onTap});
-
-  @override
-  State<_BouncingAvatarButton> createState() => _BouncingAvatarButtonState();
-}
-
-class _BouncingAvatarButtonState extends State<_BouncingAvatarButton>
-    with TickerProviderStateMixin {
-  late final AnimationController _bounceCtrl;
-  late final AnimationController _glowCtrl;
-  late final Animation<double> _bounceAnim;
-  late final Animation<double> _glowAnim;
-  Timer? _idleTimer;
-  bool _pressed = false;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _bounceCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 520),
-    );
-    _bounceAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: -22.0).chain(CurveTween(curve: Curves.easeOut)), weight: 35),
-      TweenSequenceItem(tween: Tween(begin: -22.0, end: 0.0).chain(CurveTween(curve: Curves.bounceOut)), weight: 65),
-    ]).animate(_bounceCtrl);
-
-    _glowCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
-    _glowAnim = Tween<double>(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(parent: _glowCtrl, curve: Curves.easeInOut),
-    );
-
-    // Start bouncing after 4s idle
-    _idleTimer = Timer(const Duration(seconds: 4), _startBouncing);
-  }
-
-  void _startBouncing() {
-    if (!mounted) return;
-    _bounceCtrl.forward(from: 0).then((_) {
-      if (!mounted) return;
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (!mounted) return;
-        _bounceCtrl.forward(from: 0).then((_) {
-          if (!mounted) return;
-          // Repeat every 5s
-          _idleTimer = Timer(const Duration(seconds: 5), _startBouncing);
-        });
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _idleTimer?.cancel();
-    _bounceCtrl.dispose();
-    _glowCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([_bounceAnim, _glowAnim]),
-      builder: (context, _) {
-        return Transform.translate(
-          offset: Offset(0, _bounceAnim.value),
-          child: GestureDetector(
-            onTapDown: (_) => setState(() => _pressed = true),
-            onTapUp: (_) {
-              setState(() => _pressed = false);
-              _idleTimer?.cancel();
-              widget.onTap();
-            },
-            onTapCancel: () => setState(() => _pressed = false),
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFFFD700).withAlpha((180 * _glowAnim.value).round()),
-                    blurRadius: 28 * _glowAnim.value,
-                    spreadRadius: 4 * _glowAnim.value,
-                  ),
-                ],
-              ),
-              child: Image.asset(
-                _pressed
-                    ? 'assets/images/ui/create_avatar_pressed.png'
-                    : 'assets/images/ui/create_avatar_normal.png',
-                height: 110,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => Image.asset(
-                  'assets/images/ui/create_avatar_btn.png',
-                  height: 100,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Hero symbol painter — sword for Boy, wand+star for Girl
-// ---------------------------------------------------------------------------
-class _HeroSymbolPainter extends CustomPainter {
-  final bool isBoy;
-  final Color color;
-  const _HeroSymbolPainter({required this.isBoy, required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * 0.10;
-
-    final fillPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-
-    if (isBoy) {
-      // Sword: blade (vertical line), crossguard (horizontal line), pommel (circle)
-      final bladeTop = cy - size.height * 0.42;
-      final bladeBottom = cy + size.height * 0.20;
-      final guardY = cy + size.height * 0.10;
-      final guardHalf = size.width * 0.42;
-      final pommelY = cy + size.height * 0.36;
-
-      // Blade
-      canvas.drawLine(Offset(cx, bladeTop), Offset(cx, bladeBottom), paint);
-      // Blade tip (triangle)
-      final tipPath = Path()
-        ..moveTo(cx - size.width * 0.09, bladeTop + size.height * 0.12)
-        ..lineTo(cx, bladeTop)
-        ..lineTo(cx + size.width * 0.09, bladeTop + size.height * 0.12)
-        ..close();
-      canvas.drawPath(tipPath, fillPaint);
-      // Crossguard
-      canvas.drawLine(
-        Offset(cx - guardHalf, guardY),
-        Offset(cx + guardHalf, guardY),
-        paint,
-      );
-      // Pommel
-      canvas.drawCircle(Offset(cx, pommelY), size.width * 0.12, fillPaint);
-    } else {
-      // Wand: thin staff + 4-pointed star at top
-      final staffTop = cy - size.height * 0.18;
-      final staffBottom = cy + size.height * 0.44;
-      final wandPaint = Paint()
-        ..color = color
-        ..strokeCap = StrokeCap.round
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = size.width * 0.09;
-      canvas.drawLine(Offset(cx, staffTop), Offset(cx, staffBottom), wandPaint);
-
-      // 4-pointed star at top of wand
-      final starCy = cy - size.height * 0.34;
-      final outerR = size.width * 0.36;
-      final innerR = size.width * 0.14;
-      final starPath = Path();
-      for (int i = 0; i < 8; i++) {
-        final angle = (i * math.pi / 4) - math.pi / 2;
-        final r = i.isEven ? outerR : innerR;
-        final px = cx + r * math.cos(angle);
-        final py = starCy + r * math.sin(angle);
-        i == 0 ? starPath.moveTo(px, py) : starPath.lineTo(px, py);
-      }
-      starPath.close();
-      canvas.drawPath(starPath, fillPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_HeroSymbolPainter old) => old.isBoy != isBoy || old.color != color;
-}
 
 // ---------------------------------------------------------------------------
 // Hero portal placeholder — magical summoning circle, no image asset needed
@@ -4530,182 +3938,6 @@ class _HeroSymbolPainter extends CustomPainter {
 // ---------------------------------------------------------------------------
 // Hero Spirit placeholder — glowing crowned silhouette waiting to come to life
 // ---------------------------------------------------------------------------
-class _HeroSilhouettePainter extends CustomPainter {
-  final double pulse; // 0.55–1.0 from _glowAnim, drives breathing brightness
-
-  const _HeroSilhouettePainter({this.pulse = 0.75});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-    final r = size.shortestSide / 2;
-
-    // ── 1. Background — deep purple radial gradient ──────────────────────────
-    canvas.drawCircle(
-      Offset(cx, cy),
-      r,
-      Paint()
-        ..shader = RadialGradient(
-          colors: const [Color(0xFF4A1880), Color(0xFF0D0120)],
-          stops: const [0.0, 1.0],
-        ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r)),
-    );
-
-    // ── 2. Aura bloom — soft lavender cloud behind figure, breathes ──────────
-    final auraAlpha = (30 + pulse * 50).round();
-    canvas.drawCircle(
-      Offset(cx, cy + r * 0.08),
-      r * 0.62,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [
-            Color.fromARGB(auraAlpha, 0xB0, 0x60, 0xFF),
-            Colors.transparent,
-          ],
-        ).createShader(
-            Rect.fromCircle(center: Offset(cx, cy + r * 0.08), radius: r * 0.62)),
-    );
-
-    // ── 3. Outer decorative ring ─────────────────────────────────────────────
-    canvas.drawCircle(
-      Offset(cx, cy),
-      r * 0.90,
-      Paint()
-        ..color = const Color(0xFFFFD54F).withAlpha(70)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.0,
-    );
-
-    // ── 4. 4-pointed accent stars at NE/NW/SE/SW corners ────────────────────
-    const diagAngles = [
-      -3 * math.pi / 4, -math.pi / 4, math.pi / 4, 3 * math.pi / 4
-    ];
-    final starAlpha = (130 + pulse * 80).round();
-    for (final angle in diagAngles) {
-      _drawStar4(
-        canvas,
-        Offset(cx + r * 0.72 * math.cos(angle), cy + r * 0.72 * math.sin(angle)),
-        r * 0.065,
-        r * 0.027,
-        starAlpha,
-      );
-    }
-
-    // ── 5. Silhouette — head ─────────────────────────────────────────────────
-    final spiritAlpha = (90 + pulse * 100).round();
-    final spiritPaint = Paint()
-      ..color = Color.fromARGB(spiritAlpha, 0xC8, 0x90, 0xFF)
-      ..style = PaintingStyle.fill;
-    final headR = r * 0.205;
-    final headCy = cy - r * 0.155;
-
-    // Head glow halo
-    canvas.drawCircle(
-      Offset(cx, headCy),
-      headR * 1.55,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [
-            Color.fromARGB((spiritAlpha * 0.45).round(), 0xC8, 0x90, 0xFF),
-            Colors.transparent,
-          ],
-        ).createShader(
-            Rect.fromCircle(center: Offset(cx, headCy), radius: headR * 1.55)),
-    );
-
-    // Head circle
-    canvas.drawCircle(Offset(cx, headCy), headR, spiritPaint);
-
-    // ── 6. Silhouette — robe body ────────────────────────────────────────────
-    final neckTop = headCy + headR * 0.85;
-    final bodyBottom = cy + r * 0.50;
-    final shoulderW = r * 0.23;
-    final hemW = r * 0.40;
-    // Bell-shaped robe: narrow at shoulders, wide at hem
-    final bodyPath = Path()
-      ..moveTo(cx - shoulderW, neckTop)
-      ..quadraticBezierTo(cx - hemW * 0.6, cy, cx - hemW, bodyBottom)
-      ..lineTo(cx + hemW, bodyBottom)
-      ..quadraticBezierTo(cx + hemW * 0.6, cy, cx + shoulderW, neckTop)
-      ..close();
-    canvas.drawPath(bodyPath, spiritPaint);
-
-    // ── 7. Crown ─────────────────────────────────────────────────────────────
-    final crownAlpha = (140 + pulse * 90).round();
-    final crownCy = headCy - headR * 0.90;
-    _drawCrown(canvas, cx, crownCy, r * 0.175, crownAlpha);
-
-    // ── 8. Tiny floating sparkles inside the figure ──────────────────────────
-    // Fixed offsets seeded to stay inside the silhouette area
-    const sparkleOffsets = [
-      Offset(-0.10, -0.05), Offset(0.13, 0.10),
-      Offset(-0.05, 0.25),  Offset(0.08, -0.18),
-      Offset(-0.14, 0.18),  Offset(0.16, 0.28),
-    ];
-    for (final off in sparkleOffsets) {
-      final sx = cx + off.dx * r;
-      final sy = cy + off.dy * r;
-      // Only draw if inside robe/head (rough bounding box check)
-      if ((sx - cx).abs() < r * 0.42 && sy > headCy - headR && sy < bodyBottom) {
-        _drawStar4(canvas, Offset(sx, sy), r * 0.032, r * 0.013, 110);
-      }
-    }
-  }
-
-  void _drawCrown(Canvas canvas, double cx, double tipY, double w, int alpha) {
-    final paint = Paint()
-      ..color = Color.fromARGB(alpha, 0xFF, 0xD5, 0x4F)
-      ..style = PaintingStyle.fill;
-    final h = w * 0.72;
-    // Three-point crown: left peak, tall center peak, right peak
-    final path = Path()
-      ..moveTo(cx - w, tipY + h)        // bottom-left
-      ..lineTo(cx - w, tipY + h * 0.35) // up left side
-      ..lineTo(cx - w * 0.5, tipY + h * 0.62) // inner-left valley
-      ..lineTo(cx, tipY)                // center peak (tallest)
-      ..lineTo(cx + w * 0.5, tipY + h * 0.62) // inner-right valley
-      ..lineTo(cx + w, tipY + h * 0.35) // up right side
-      ..lineTo(cx + w, tipY + h)        // bottom-right
-      ..close();
-    canvas.drawPath(path, paint);
-
-    // Three jewel dots at each peak
-    for (final (jx, jy) in [
-      (cx - w, tipY + h * 0.35),
-      (cx, tipY),
-      (cx + w, tipY + h * 0.35),
-    ]) {
-      canvas.drawCircle(
-        Offset(jx, jy),
-        w * 0.11,
-        Paint()..color = Color.fromARGB(alpha, 0xFF, 0xF5, 0xCC),
-      );
-    }
-  }
-
-  void _drawStar4(
-      Canvas canvas, Offset center, double outerR, double innerR, int alpha) {
-    final path = Path();
-    for (int i = 0; i < 8; i++) {
-      final angle = (i * math.pi / 4) - math.pi / 2;
-      final rad = i.isEven ? outerR : innerR;
-      final px = center.dx + rad * math.cos(angle);
-      final py = center.dy + rad * math.sin(angle);
-      i == 0 ? path.moveTo(px, py) : path.lineTo(px, py);
-    }
-    path.close();
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = Color.fromARGB(alpha, 0xFF, 0xE0, 0x82)
-        ..style = PaintingStyle.fill,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_HeroSilhouettePainter old) => old.pulse != pulse;
-}
 
 // ---------------------------------------------------------------------------
 // Ambient sparkle layer — 12 gold particles slowly drifting upward

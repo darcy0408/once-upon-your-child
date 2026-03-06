@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/age_band_theme.dart';
 
-/// Crystal-orb wizard progress indicator.
+/// Gold step wizard progress indicator.
 ///
-/// Shows step orbs with optional visible labels beneath each orb.
+/// Renders numbered gold circles connected by thin gold lines,
+/// with labels beneath each step. Fully coded — no image assets.
 class MoonPhaseProgress extends StatelessWidget {
-  final int currentStep; // 0-2
-  final int totalSteps; // Should be 3
-  final List<String> stepLabels; // For screen readers & visible display
-  final bool showLabels; // Whether to show text labels beneath orbs
+  final int currentStep;
+  final int totalSteps;
+  final List<String> stepLabels;
+  final bool showLabels;
 
   const MoonPhaseProgress({
     super.key,
@@ -26,7 +27,6 @@ class MoonPhaseProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final band = Theme.of(context).extension<AgeBandThemeData>();
-    // Short labels for the visible text beneath each orb.
     final shortLabels = stepLabels
         .map((l) => l.replaceFirst(RegExp(r'^Step \d+:\s*'), ''))
         .toList();
@@ -35,41 +35,47 @@ class MoonPhaseProgress extends StatelessWidget {
       label:
           'Progress: ${stepLabels[currentStep]}, step ${currentStep + 1} of $totalSteps',
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(totalSteps, (index) {
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: List.generate(totalSteps * 2 - 1, (i) {
+          // Even indices = step circles, odd indices = connector lines
+          if (i.isOdd) {
+            final stepIndex = i ~/ 2;
+            final isDone = stepIndex < currentStep;
+            return _StepConnector(isCompleted: isDone);
+          }
+
+          final index = i ~/ 2;
           final isActive = index == currentStep;
           final isCompleted = index < currentStep;
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _CrystalStepOrb(
-                  isActive: isActive,
-                  isCompleted: isCompleted,
-                  label: stepLabels[index],
-                  orbIndex: index % 2, // alternates between orb style 1 and 2
-                ),
-                if (showLabels) ...[
-                  const SizedBox(height: 4),
-                  SizedBox(
-                    width: 64,
-                    child: Text(
-                      shortLabels[index],
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: _moonLabelStyle(
-                        band,
-                        isActive: isActive,
-                        isCompleted: isCompleted,
-                      ),
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _GoldStepCircle(
+                stepNumber: index + 1,
+                isActive: isActive,
+                isCompleted: isCompleted,
+                label: stepLabels[index],
+              ),
+              if (showLabels) ...[
+                const SizedBox(height: 5),
+                SizedBox(
+                  width: 76,
+                  child: Text(
+                    shortLabels[index],
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: _stepLabelStyle(
+                      band,
+                      isActive: isActive,
+                      isCompleted: isCompleted,
                     ),
                   ),
-                ],
+                ),
               ],
-            ),
+            ],
           );
         }),
       ),
@@ -77,14 +83,45 @@ class MoonPhaseProgress extends StatelessWidget {
   }
 }
 
-TextStyle _moonLabelStyle(
+class _StepConnector extends StatelessWidget {
+  final bool isCompleted;
+  const _StepConnector({required this.isCompleted});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      // Vertically centre the line with the 44px circles
+      padding: const EdgeInsets.only(top: 22),
+      child: Container(
+        width: 28,
+        height: 1.5,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isCompleted
+                ? [const Color(0xFFFFD54F), const Color(0xFFFFE082)]
+                : [
+                    const Color(0xFFFFD54F).withAlpha(60),
+                    const Color(0xFFFFD54F).withAlpha(60),
+                  ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+TextStyle _stepLabelStyle(
   AgeBandThemeData? band, {
   required bool isActive,
   required bool isCompleted,
 }) {
-  final color = (isActive || isCompleted) ? Colors.white : Colors.white38;
+  final color = isActive
+      ? const Color(0xFFFFE082)
+      : isCompleted
+          ? Colors.white70
+          : Colors.white38;
   final weight = isActive ? FontWeight.bold : FontWeight.normal;
-  const size = 10.0;
+  const size = 11.0;
   switch (band?.uiFontFamily) {
     case 'Nunito':
       return GoogleFonts.nunito(fontSize: size, fontWeight: weight, color: color);
@@ -97,144 +134,150 @@ TextStyle _moonLabelStyle(
   }
 }
 
-class _CrystalStepOrb extends StatefulWidget {
+class _GoldStepCircle extends StatefulWidget {
+  final int stepNumber;
   final bool isActive;
   final bool isCompleted;
   final String label;
-  final int orbIndex; // 0 = orb-style-1, 1+ = orb-style-2
 
-  const _CrystalStepOrb({
+  const _GoldStepCircle({
+    required this.stepNumber,
     required this.isActive,
     required this.isCompleted,
     required this.label,
-    this.orbIndex = 0,
   });
 
   @override
-  State<_CrystalStepOrb> createState() => _CrystalStepOrbState();
+  State<_GoldStepCircle> createState() => _GoldStepCircleState();
 }
 
-class _CrystalStepOrbState extends State<_CrystalStepOrb>
+class _GoldStepCircleState extends State<_GoldStepCircle>
     with SingleTickerProviderStateMixin {
-  late AnimationController _glowController;
-  late Animation<double> _glowAnimation;
+  late AnimationController _glowCtrl;
+  late Animation<double> _glowAnim;
 
   @override
   void initState() {
     super.initState();
-    _glowController = AnimationController(
+    _glowCtrl = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    _glowAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+    _glowAnim = Tween<double>(begin: 0.4, end: 1.0).animate(
+      CurvedAnimation(parent: _glowCtrl, curve: Curves.easeInOut),
     );
-    if (widget.isActive) {
-      _glowController.repeat(reverse: true);
-    }
+    if (widget.isActive) _glowCtrl.repeat(reverse: true);
   }
 
   @override
-  void didUpdateWidget(_CrystalStepOrb oldWidget) {
+  void didUpdateWidget(_GoldStepCircle oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isActive && !oldWidget.isActive) {
-      _glowController.repeat(reverse: true);
+      _glowCtrl.repeat(reverse: true);
     } else if (!widget.isActive && oldWidget.isActive) {
-      _glowController.stop();
-      _glowController.value = 0;
+      _glowCtrl.stop();
+      _glowCtrl.value = 0;
     }
   }
 
   @override
   void dispose() {
-    _glowController.dispose();
+    _glowCtrl.dispose();
     super.dispose();
-  }
-
-  String get _orbAssetPath {
-    final variant = widget.orbIndex == 0 ? 'orb1' : 'orb2';
-    if (widget.isCompleted) return 'assets/images/ui/clean/progress_${variant}_done.png';
-    if (widget.isActive) return 'assets/images/ui/clean/progress_${variant}_active.png';
-    return 'assets/images/ui/clean/progress_${variant}_idle.png';
   }
 
   @override
   Widget build(BuildContext context) {
-    const orbSize = 56.0;
+    const size = 44.0;
 
     return Semantics(
       label: widget.label,
       excludeSemantics: true,
       child: AnimatedBuilder(
-        animation: _glowAnimation,
-        builder: (context, child) {
-          final glowFactor = widget.isActive ? _glowAnimation.value : 0.0;
+        animation: _glowAnim,
+        builder: (context, _) {
+          final g = widget.isActive ? _glowAnim.value : 0.0;
 
           return SizedBox(
-            width: orbSize + 8,
-            height: orbSize + 8,
+            width: size + 12,
+            height: size + 12,
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Pulsing glow behind active orb
+                // Pulsing outer glow for active step
                 if (widget.isActive)
                   Container(
-                    width: orbSize + (orbSize * 0.30 * glowFactor),
-                    height: orbSize + (orbSize * 0.30 * glowFactor),
+                    width: size + 8 + (10 * g),
+                    height: size + 8 + (10 * g),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          const Color(0xFFB388FF)
-                              .withValues(alpha: 0.38 * glowFactor),
-                          const Color(0xFF9E6CFF)
-                              .withValues(alpha: 0.20 * glowFactor),
+                          const Color(0xFFFFD54F).withAlpha((80 * g).round()),
+                          const Color(0xFFFFD54F).withAlpha((30 * g).round()),
                           Colors.transparent,
                         ],
                       ),
                     ),
                   ),
-                // Orb image (background removed via ImageMagick)
-                Opacity(
-                  opacity: widget.isActive || widget.isCompleted ? 1.0 : 0.35,
-                  child: Image.asset(
-                    _orbAssetPath,
-                    width: orbSize,
-                    height: orbSize,
-                    fit: BoxFit.contain,
-                    filterQuality: FilterQuality.high,
-                    errorBuilder: (_, __, ___) => Container(
-                      width: orbSize,
-                      height: orbSize,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            Color(0xFFE5DAFF),
-                            Color(0xFF9E6CFF),
-                            Color(0xFF7C4DFF),
-                          ],
-                        ),
-                      ),
+                // Main circle
+                Container(
+                  width: size,
+                  height: size,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: widget.isActive
+                        ? LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color.lerp(const Color(0xFFFFE082),
+                                  const Color(0xFFFFD54F), g)!,
+                              const Color(0xFFFFAB00),
+                            ],
+                          )
+                        : widget.isCompleted
+                            ? const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Color(0xFFFFD54F), Color(0xFFFF8F00)],
+                              )
+                            : null,
+                    color: (!widget.isActive && !widget.isCompleted)
+                        ? const Color(0xFF2A0A4E).withAlpha(180)
+                        : null,
+                    border: Border.all(
+                      color: widget.isActive || widget.isCompleted
+                          ? const Color(0xFFFFD54F)
+                          : const Color(0xFFFFD54F).withAlpha(70),
+                      width: widget.isActive ? 2.0 : 1.5,
                     ),
+                    boxShadow: widget.isActive
+                        ? [
+                            BoxShadow(
+                              color:
+                                  const Color(0xFFFFD54F).withAlpha((100 * g).round()),
+                              blurRadius: 12 * g,
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Center(
+                    child: widget.isCompleted
+                        ? const Icon(Icons.check_rounded,
+                            color: Colors.white, size: 20)
+                        : Text(
+                            '${widget.stepNumber}',
+                            style: TextStyle(
+                              color: widget.isActive
+                                  ? const Color(0xFF3E2000)
+                                  : const Color(0xFFFFD54F).withAlpha(160),
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
-                // Gold checkmark badge when completed
-                if (widget.isCompleted)
-                  Positioned(
-                    bottom: 2,
-                    right: 2,
-                    child: Container(
-                      width: 20,
-                      height: 20,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Color(0xFF2ECC71),
-                        boxShadow: [BoxShadow(color: Color(0xFF27AE60), blurRadius: 4)],
-                      ),
-                      child: const Icon(Icons.check_rounded, color: Colors.white, size: 13),
-                    ),
-                  ),
               ],
             ),
           );
