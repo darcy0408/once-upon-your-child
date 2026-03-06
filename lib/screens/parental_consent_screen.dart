@@ -143,9 +143,16 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                 const SizedBox(height: AppSpacing.sm),
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(20),
+                    color: _consentGiven
+                        ? const Color(0xFFFFD700).withValues(alpha: 0.12)
+                        : Colors.white.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white38),
+                    border: Border.all(
+                      color: _consentGiven
+                          ? const Color(0xFFFFD700)
+                          : Colors.white70,
+                      width: _consentGiven ? 2 : 1.5,
+                    ),
                   ),
                   child: CheckboxListTile(
                     title: const Text(
@@ -157,7 +164,13 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                       style: textWhite70,
                     ),
                     checkColor: Colors.black,
-                    activeColor: const Color(0xFFFFD700),
+                    fillColor: WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return const Color(0xFFFFD700);
+                      }
+                      return Colors.white.withValues(alpha: 0.25);
+                    }),
+                    side: const BorderSide(color: Colors.white70, width: 2),
                     value: _consentGiven,
                     onChanged: (value) =>
                         setState(() => _consentGiven = value ?? false),

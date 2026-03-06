@@ -2,6 +2,24 @@
 
 ---
 
+## Session Update - 2026-03-06 (ElevenLabs TTS + Voice STT for Pick-a-Path)
+
+### Scope Completed
+- **Replaced Google Cloud TTS with ElevenLabs** — New `backend/elevenlabs_tts_service.py` with 8 curated voices (Rachel, Matilda, Dorothy, Gigi, George, Charlie, Callum, Fin), `eleven_turbo_v2_5` model, kid-optimised voice settings. `POST /tts/synthesize` and `GET /tts/voices` endpoints updated.
+- **Flutter voice picker** — `lib/models/elevenlabs_voice.dart`, `lib/providers/voice_preference_provider.dart` (Riverpod, persists to SharedPreferences), `lib/widgets/voice_picker_sheet.dart` bottom sheet with preview buttons. `StoryReaderScreen` converted to `ConsumerStatefulWidget`, 🎙️ button added to controls row.
+- **Fixed ElevenLabs API key** — Original key was a Key ID (hex hash) not the actual `sk_...` API secret. Replaced with correct key in `.env` and Railway dashboard. Confirmed working: 24 voices returned, TTS generates ~34KB MP3.
+- **Speech-to-Text for Pick-a-Path** — `lib/widgets/voice_mic_button.dart` (reusable, pulsing mic animation, uses `speech_to_text` package already installed). Added to `pick_a_path_adventure_screen.dart` `_buildChoicesSection()` — fuzzy keyword match auto-selects spoken choice; falls back to custom text field. Backend `POST /tts/transcribe` endpoint added (ElevenLabs Scribe STT, multipart audio → text).
+- **Parental consent checkbox contrast** — `lib/screens/parental_consent_screen.dart`: unchecked state now has visible white outline (`BorderSide(color: Colors.white70, width: 2)`) and semi-transparent white fill; checked state turns gold with glowing border.
+
+### Status
+- **ElevenLabs TTS:** ✅ API verified working locally, key in Railway
+- **Voice picker UI:** ✅ Built and committed, pending live test
+- **Pick-a-Path STT:** ✅ Built using existing `speech_to_text` package
+- **Parental consent contrast:** ✅ Fixed
+- **Launch Readiness:** ~82%
+
+---
+
 ## Session Update - 2026-03-06 (Feelings Quest Modal Fix + Avatar Step Unblock)
 
 ### Scope Completed
