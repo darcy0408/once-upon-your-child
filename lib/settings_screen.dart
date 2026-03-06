@@ -9,7 +9,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/services/secure_storage_service.dart';
 
 import 'config/environment.dart';
+import 'providers/subscription_provider.dart';
 import 'providers/theme_provider.dart';
+import 'subscription_models.dart';
+import 'subscription_service.dart';
 import 'theme/age_band_theme.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_button.dart';
@@ -468,12 +471,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             _buildLegalLinks(context),
             if (Environment.isDevelopment) ...[
               const SizedBox(height: AppSpacing.lg),
-              ElevatedButton(
-                onPressed: () {
-                  throw Exception('Test crash for Sentry verification');
-                },
-                child: const Text('Test Crash (Dev Only)'),
-              ),
+              _buildDevToolsCard(context),
             ],
           ],
         ),
@@ -665,6 +663,79 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             .textTheme
             .bodyMedium
             ?.copyWith(color: Colors.green.shade900),
+      ),
+    );
+  }
+
+  Widget _buildDevToolsCard(BuildContext context) {
+    return AppCard(
+      color: Colors.deepPurple.withValues(alpha: 0.08),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '🛠 Dev Tools (Development Only)',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    await SubscriptionService().upgradeToPremium(SubscriptionTier.premium);
+                    if (context.mounted) {
+                      ProviderScope.containerOf(context)
+                          .read(subscriptionProvider.notifier)
+                          .refresh();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('✅ Upgraded to Premium (dev only)'),
+                          backgroundColor: Colors.deepPurple,
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('Force Premium'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey[700],
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    await SubscriptionService().downgradeToFree();
+                    if (context.mounted) {
+                      ProviderScope.containerOf(context)
+                          .read(subscriptionProvider.notifier)
+                          .refresh();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('↩ Reset to Free tier')),
+                      );
+                    }
+                  },
+                  child: const Text('Reset to Free'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: () => throw Exception('Test crash for Sentry verification'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[900],
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Test Crash'),
+          ),
+        ],
       ),
     );
   }

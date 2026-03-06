@@ -279,8 +279,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         _PressableButton(
           onPressed: _advanceFromName,
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(32),
               gradient: const LinearGradient(
@@ -334,19 +333,27 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           style: TextStyle(color: Colors.white70, fontSize: 14),
         ),
         const SizedBox(height: AppSpacing.md),
-        GridView.count(
-          crossAxisCount: 3,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: AppSpacing.md,
-          crossAxisSpacing: AppSpacing.md,
-          children: _ageEntries.map((entry) {
-            return _AgeCircle(
-              label: entry.label,
-              selected: _selectedAge == entry.value,
-              onTap: _submitting ? null : () => _onAgeSelected(entry.value),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const spacing = 8.0;
+            final circleSize =
+                ((constraints.maxWidth - (spacing * 2)) / 3).clamp(58.0, 68.0);
+            return GridView.count(
+              crossAxisCount: 3,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: spacing,
+              crossAxisSpacing: spacing,
+              children: _ageEntries.map((entry) {
+                return _AgeCircle(
+                  label: entry.label,
+                  size: circleSize,
+                  selected: _selectedAge == entry.value,
+                  onTap: _submitting ? null : () => _onAgeSelected(entry.value),
+                );
+              }).toList(),
             );
-          }).toList(),
+          },
         ),
         const SizedBox(height: AppSpacing.xl),
 
@@ -417,9 +424,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     await prefs.setString(_kUserNameKey, name);
 
     await const ParentalConsentService().saveDeclaredAge(_selectedAge!);
-    await ref
-        .read(ageBandNotifierProvider.notifier)
-        .setAge(_selectedAge!);
+    await ref.read(ageBandNotifierProvider.notifier).setAge(_selectedAge!);
 
     if (_selectedAge! < 13) {
       if (!mounted) return;
@@ -445,7 +450,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       widget.onComplete();
     }
   }
-
 }
 
 /// Button that scales down on press for tactile feedback.
@@ -486,11 +490,13 @@ class _PressableButtonState extends State<_PressableButton> {
 class _AgeCircle extends StatefulWidget {
   const _AgeCircle({
     required this.label,
+    required this.size,
     required this.selected,
     required this.onTap,
   });
 
   final String label;
+  final double size;
   final bool selected;
   final VoidCallback? onTap;
 
@@ -506,19 +512,20 @@ class _AgeCircleState extends State<_AgeCircle> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: widget.onTap != null
-          ? (_) => setState(() => _pressed = true)
-          : null,
+      onTapDown:
+          widget.onTap != null ? (_) => setState(() => _pressed = true) : null,
       onTapUp: (_) {
         setState(() => _pressed = false);
         widget.onTap?.call();
       },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
-        scale: _pressed ? 0.85 : (widget.selected ? 1.1 : 1.0),
+        scale: _pressed ? 0.9 : (widget.selected ? 1.06 : 1.0),
         duration: const Duration(milliseconds: 100),
         curve: Curves.easeOutBack,
         child: Container(
+          width: widget.size,
+          height: widget.size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: const LinearGradient(
@@ -545,7 +552,7 @@ class _AgeCircleState extends State<_AgeCircle> {
             style: TextStyle(
               color: widget.selected ? _gold : Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: widget.label.length > 2 ? 16 : 22,
+              fontSize: widget.label.length > 2 ? 14 : 20,
             ),
           ),
         ),

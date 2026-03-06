@@ -1,18 +1,13 @@
-feat: Phase 1 monetization — free tier limit, BYOK surfacing, avatar upsell
+feat: illustration teaser for free users on story result screen
 
-Business plan (BUSINESS_PLAN.md) added to repo.
+After every story, free users (no paid sub, no BYOK) now see a locked
+illustration teaser in the post-story action bar:
+- Blurred shimmer preview card with lock icon, amber border, chevron
+- "See this scene illustrated!" headline + unlock nudge
+- Tapping opens a bottom sheet with feature list and "Set Up Free Premium →"
+  button that navigates directly to ByokSetupWizardScreen
 
-Changes:
-- grace_period_service.dart: lower freeTierStoryLimit 200 → 10/month
-- subscription_models.dart: fix free tier copy "per day" → "per month"
-- upgrade_prompt_dialog.dart: add "Set Up Free Premium →" button to BYOK
-  box that navigates directly to ByokSetupWizardScreen
-- byok_setup_wizard.dart: rewrite _BenefitsStep with specific hooks —
-  custom avatars, illustrations, unlimited stories, coloring pages, with
-  emoji icons, sub-text, and privacy reassurance row
-- avatar_gallery_selector.dart: add "Create a custom avatar that looks like
-  me!" golden upsell button in footer; tapping shows gate dialog with
-  feature list and direct link to BYOK wizard
-- TEAM_COORDINATION.md: session log prepended
+Also adds _showIllustrationUnlockSheet() method with full feature list
+(illustrations, custom avatars, unlimited stories, coloring pages, pricing).
 
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

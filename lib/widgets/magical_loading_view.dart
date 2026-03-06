@@ -98,7 +98,8 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
     // Rotate flavor messages independent of backend status updates.
     _messageTimer = Timer.periodic(const Duration(milliseconds: 4200), (_) {
       if (!mounted) return;
-      setState(() => _messageIndex = (_messageIndex + 1) % _phaseMessages.length);
+      setState(
+          () => _messageIndex = (_messageIndex + 1) % _phaseMessages.length);
     });
 
     // Advance progress steps every ~3s (4 steps over ~12s expected wait)
@@ -167,174 +168,216 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
           children: [
             if (reduced) ...[
               // Static fallback for reduced-motion users
-              SizedBox(
-                height: stageSize,
-                width: stageSize,
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTapDown: (details) {
+                  if (!mounted) return;
+                  setState(() {
+                    _tapCount++;
+                    _burstPositions.add(details.localPosition);
+                    if (_burstPositions.length > 6) _burstPositions.removeAt(0);
+                  });
+                },
+                child: SizedBox(
+                  height: stageSize,
+                  width: stageSize,
+                  child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      const CircularProgressIndicator(
-                        color: AppColors.primary,
+                      Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const CircularProgressIndicator(
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            Icon(
+                              Icons.auto_awesome,
+                              size: 36,
+                              color: AppColors.primary.withValues(alpha: 0.6),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: AppSpacing.md),
-                      Icon(
-                        Icons.auto_awesome,
-                        size: 36,
-                        color: AppColors.primary.withValues(alpha: 0.6),
-                      ),
+                      ..._burstPositions.map((pos) => Positioned(
+                            left: pos.dx - 20,
+                            top: pos.dy - 20,
+                            child: TweenAnimationBuilder<double>(
+                              key: ValueKey(pos),
+                              tween: Tween(begin: 0.0, end: 1.0),
+                              duration: const Duration(milliseconds: 600),
+                              builder: (_, t, __) => Opacity(
+                                opacity: (1 - t).clamp(0.0, 1.0),
+                                child: Container(
+                                  width: 40 * (1 + t),
+                                  height: 40 * (1 + t),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.gold
+                                        .withValues(alpha: 0.4 * (1 - t)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )),
                     ],
                   ),
                 ),
               ),
             ] else ...[
-            GestureDetector(
-              onTapDown: (details) {
-                if (!mounted) return;
-                setState(() {
-                  _tapCount++;
-                  _burstPositions.add(details.localPosition);
-                  if (_burstPositions.length > 6) _burstPositions.removeAt(0);
-                });
-                _pulseController.forward(from: 0.0);
-              },
-              child: SizedBox(
-              height: stageSize,
-              width: stageSize,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Layered aura (3 gradient layers)
-                  AnimatedBuilder(
-                    animation: _pulseController,
-                    builder: (context, child) {
-                      return _AuraHalo(
-                        size: stageSize,
-                        t: _pulseController.value,
-                        primary: AppColors.gold,
-                        secondary: AppColors.primary,
-                        tertiary: const Color(0xFF80DEEA),
-                      );
-                    },
-                  ),
-
-                  // Rotating magical ring
-                  AnimatedBuilder(
-                    animation: _rotationController,
-                    builder: (context, child) {
-                      final ringSize = stageSize * 0.80;
-                      return Transform.rotate(
-                        angle: _rotationController.value * 2 * pi,
-                        child: Container(
-                          width: ringSize,
-                          height: ringSize,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.gold.withValues(alpha: 0.28),
-                              width: 2,
-                            ),
-                            gradient: SweepGradient(
-                              colors: [
-                                AppColors.gold.withValues(alpha: 0.0),
-                                AppColors.gold.withValues(alpha: 0.55),
-                                AppColors.gold.withValues(alpha: 0.0),
-                              ],
-                              stops: const [0.0, 0.5, 1.0],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // Central "magic loom" weaving animation
-                  AnimatedBuilder(
-                    animation: Listenable.merge([_weaveController, _pulseController]),
-                    builder: (context, child) {
-                      final loomSize = stageSize * 0.60;
-                      final pulse = _pulseController.value;
-                      return Transform.scale(
-                        scale: 0.98 + (pulse * 0.04),
-                        child: CustomPaint(
-                          size: Size.square(loomSize),
-                          painter: _MagicLoomPainter(
-                            phase: _weaveController.value,
-                            glow: AppColors.gold,
-                            accent: AppColors.primary,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // Center sigil
-                  AnimatedBuilder(
-                    animation: _pulseController,
-                    builder: (context, child) {
-                      final pulse = _pulseController.value;
-                      final sigilSize = stageSize * 0.34;
-                      return Transform.scale(
-                        scale: 1.0 + (pulse * 0.08),
-                        child: Container(
-                          width: sigilSize,
-                          height: sigilSize,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.08),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.30 * pulse),
-                                blurRadius: 20 * pulse,
-                                spreadRadius: 5 * pulse,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.auto_awesome,
-                            size: 36,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // Orbiting sparkles (respects particle prefs + intensity)
-                  if (particles)
-                    ..._sparkles.take(particleCount).map((sparkle) {
-                      return _AnimatedSparkle(
-                        controller: _rotationController,
-                        twinkleController: _weaveController,
-                        sparkle: sparkle,
-                      );
-                    }),
-
-                  // Tap burst overlays
-                  ..._burstPositions.map((pos) => Positioned(
-                    left: pos.dx - 20,
-                    top: pos.dy - 20,
-                    child: TweenAnimationBuilder<double>(
-                      key: ValueKey(pos),
-                      tween: Tween(begin: 0.0, end: 1.0),
-                      duration: const Duration(milliseconds: 600),
-                      builder: (_, t, __) => Opacity(
-                        opacity: (1 - t).clamp(0.0, 1.0),
-                        child: Container(
-                          width: 40 * (1 + t),
-                          height: 40 * (1 + t),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.gold.withValues(alpha: 0.4 * (1 - t)),
-                          ),
-                        ),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTapDown: (details) {
+                  if (!mounted) return;
+                  setState(() {
+                    _tapCount++;
+                    _burstPositions.add(details.localPosition);
+                    if (_burstPositions.length > 6) _burstPositions.removeAt(0);
+                  });
+                  _pulseController.forward(from: 0.0);
+                },
+                child: SizedBox(
+                  height: stageSize,
+                  width: stageSize,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Layered aura (3 gradient layers)
+                      AnimatedBuilder(
+                        animation: _pulseController,
+                        builder: (context, child) {
+                          return _AuraHalo(
+                            size: stageSize,
+                            t: _pulseController.value,
+                            primary: AppColors.gold,
+                            secondary: AppColors.primary,
+                            tertiary: const Color(0xFF80DEEA),
+                          );
+                        },
                       ),
-                    ),
-                  )),
-                ],
+
+                      // Rotating magical ring
+                      AnimatedBuilder(
+                        animation: _rotationController,
+                        builder: (context, child) {
+                          final ringSize = stageSize * 0.80;
+                          return Transform.rotate(
+                            angle: _rotationController.value * 2 * pi,
+                            child: Container(
+                              width: ringSize,
+                              height: ringSize,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.gold.withValues(alpha: 0.28),
+                                  width: 2,
+                                ),
+                                gradient: SweepGradient(
+                                  colors: [
+                                    AppColors.gold.withValues(alpha: 0.0),
+                                    AppColors.gold.withValues(alpha: 0.55),
+                                    AppColors.gold.withValues(alpha: 0.0),
+                                  ],
+                                  stops: const [0.0, 0.5, 1.0],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                      // Central "magic loom" weaving animation
+                      AnimatedBuilder(
+                        animation: Listenable.merge(
+                            [_weaveController, _pulseController]),
+                        builder: (context, child) {
+                          final loomSize = stageSize * 0.60;
+                          final pulse = _pulseController.value;
+                          return Transform.scale(
+                            scale: 0.98 + (pulse * 0.04),
+                            child: CustomPaint(
+                              size: Size.square(loomSize),
+                              painter: _MagicLoomPainter(
+                                phase: _weaveController.value,
+                                glow: AppColors.gold,
+                                accent: AppColors.primary,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                      // Center sigil
+                      AnimatedBuilder(
+                        animation: _pulseController,
+                        builder: (context, child) {
+                          final pulse = _pulseController.value;
+                          final sigilSize = stageSize * 0.34;
+                          return Transform.scale(
+                            scale: 1.0 + (pulse * 0.08),
+                            child: Container(
+                              width: sigilSize,
+                              height: sigilSize,
+                              decoration: BoxDecoration(
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.08),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.30 * pulse),
+                                    blurRadius: 20 * pulse,
+                                    spreadRadius: 5 * pulse,
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.auto_awesome,
+                                size: 36,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                      // Orbiting sparkles (respects particle prefs + intensity)
+                      if (particles)
+                        ..._sparkles.take(particleCount).map((sparkle) {
+                          return _AnimatedSparkle(
+                            controller: _rotationController,
+                            twinkleController: _weaveController,
+                            sparkle: sparkle,
+                          );
+                        }),
+
+                      // Tap burst overlays
+                      ..._burstPositions.map((pos) => Positioned(
+                            left: pos.dx - 20,
+                            top: pos.dy - 20,
+                            child: TweenAnimationBuilder<double>(
+                              key: ValueKey(pos),
+                              tween: Tween(begin: 0.0, end: 1.0),
+                              duration: const Duration(milliseconds: 600),
+                              builder: (_, t, __) => Opacity(
+                                opacity: (1 - t).clamp(0.0, 1.0),
+                                child: Container(
+                                  width: 40 * (1 + t),
+                                  height: 40 * (1 + t),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.gold
+                                        .withValues(alpha: 0.4 * (1 - t)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            ),
             ],
             const SizedBox(height: AppSpacing.lg),
             Text(
@@ -403,41 +446,46 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 400),
-                        width: active ? 14 : 10,
-                        height: active ? 14 : 10,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: done || active
-                              ? AppColors.gold
-                              : Colors.white.withValues(alpha: 0.3),
-                          boxShadow: active
-                              ? [BoxShadow(
-                                  color: AppColors.gold.withValues(alpha: 0.7),
-                                  blurRadius: 8)]
-                              : [],
-                        ),
-                        child: done
-                            ? const Icon(Icons.check, size: 8, color: Colors.black)
-                            : null,
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 400),
+                      width: active ? 14 : 10,
+                      height: active ? 14 : 10,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: done || active
+                            ? AppColors.gold
+                            : Colors.white.withValues(alpha: 0.3),
+                        boxShadow: active
+                            ? [
+                                BoxShadow(
+                                    color:
+                                        AppColors.gold.withValues(alpha: 0.7),
+                                    blurRadius: 8)
+                              ]
+                            : [],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _adventureSteps[i],
-                        style: TextStyle(
-                          fontSize: 9,
-                          color: active
-                              ? AppColors.gold
-                              : done
-                                  ? Colors.white.withValues(alpha: 0.7)
-                                  : Colors.white.withValues(alpha: 0.35),
-                          fontWeight: active ? FontWeight.bold : FontWeight.normal,
-                        ),
+                      child: done
+                          ? const Icon(Icons.check,
+                              size: 8, color: Colors.black)
+                          : null,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _adventureSteps[i],
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: active
+                            ? AppColors.gold
+                            : done
+                                ? Colors.white.withValues(alpha: 0.7)
+                                : Colors.white.withValues(alpha: 0.35),
+                        fontWeight:
+                            active ? FontWeight.bold : FontWeight.normal,
                       ),
-                    ],
-                  );
-                }),
+                    ),
+                  ],
+                );
+              }),
             ),
             if (_tapCount > 0)
               Padding(
@@ -445,11 +493,15 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
                   child: Text(
-                    _tapCount == 1 ? '✨ 1 sparkle!'
-                        : _tapCount < 5 ? '✨ $_tapCount sparkles!'
-                        : _tapCount < 10 ? '🌟 $_tapCount sparkles! Keep going!'
-                        : _tapCount < 20 ? '💫 $_tapCount sparkles! You\'re magic!'
-                        : '🌈 $_tapCount sparkles! You ARE the magic!',
+                    _tapCount == 1
+                        ? '✨ 1 sparkle!'
+                        : _tapCount < 5
+                            ? '✨ $_tapCount sparkles!'
+                            : _tapCount < 10
+                                ? '🌟 $_tapCount sparkles! Keep going!'
+                                : _tapCount < 20
+                                    ? '💫 $_tapCount sparkles! You\'re magic!'
+                                    : '🌈 $_tapCount sparkles! You ARE the magic!',
                     key: ValueKey(_tapCount),
                     style: const TextStyle(
                       color: AppColors.gold,
@@ -519,12 +571,19 @@ class _AnimatedSparkle extends StatelessWidget {
     return AnimatedBuilder(
       animation: Listenable.merge([controller, twinkleController]),
       builder: (context, child) {
-        final orbitAngle = sparkle.angle + (controller.value * 2 * pi * sparkle.speed);
-        final drift = 1.0 + (0.07 * sin((controller.value * 2 * pi * sparkle.driftSpeed) + sparkle.driftPhase));
+        final orbitAngle =
+            sparkle.angle + (controller.value * 2 * pi * sparkle.speed);
+        final drift = 1.0 +
+            (0.07 *
+                sin((controller.value * 2 * pi * sparkle.driftSpeed) +
+                    sparkle.driftPhase));
         final dx = cos(orbitAngle) * sparkle.distance * drift;
         final dy = sin(orbitAngle) * sparkle.distance * drift;
 
-        final tw = 0.5 + 0.5 * sin((twinkleController.value * 2 * pi * sparkle.twinkleSpeed) + sparkle.twinklePhase);
+        final tw = 0.5 +
+            0.5 *
+                sin((twinkleController.value * 2 * pi * sparkle.twinkleSpeed) +
+                    sparkle.twinklePhase);
         final opacity = (0.18 + (0.82 * tw)).clamp(0.0, 1.0);
         final s = sparkle.size * (0.80 + (0.45 * tw));
 
@@ -738,12 +797,16 @@ class _MagicLoomPainter extends CustomPainter {
       ..blendMode = BlendMode.plus;
     final a1 = (phase * 2 * pi);
     final a2 = a1 + pi * 0.78;
-    canvas.drawCircle(center + Offset(cos(a1), sin(a1)) * r, (size.width * 0.02).clamp(1.2, 3.0), glint);
-    canvas.drawCircle(center + Offset(cos(a2), sin(a2)) * r, (size.width * 0.015).clamp(1.0, 2.6), glint);
+    canvas.drawCircle(center + Offset(cos(a1), sin(a1)) * r,
+        (size.width * 0.02).clamp(1.2, 3.0), glint);
+    canvas.drawCircle(center + Offset(cos(a2), sin(a2)) * r,
+        (size.width * 0.015).clamp(1.0, 2.6), glint);
   }
 
   @override
   bool shouldRepaint(covariant _MagicLoomPainter oldDelegate) {
-    return oldDelegate.phase != phase || oldDelegate.glow != glow || oldDelegate.accent != accent;
+    return oldDelegate.phase != phase ||
+        oldDelegate.glow != glow ||
+        oldDelegate.accent != accent;
   }
 }

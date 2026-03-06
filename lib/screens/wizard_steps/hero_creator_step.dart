@@ -16,7 +16,7 @@ import '../../services/api_service_manager.dart';
 import '../../services/avatar_generation_state.dart';
 import '../../services/firebase_analytics_service.dart';
 import '../../services/audio_ambience_service.dart';
-import '../../services/parental_consent_service.dart';
+import '../../widgets/avatar_gallery_selector.dart';
 import '../../widgets/image_mode_orb.dart';
 import '../../widgets/image_crystal_formation.dart';
 import '../../data/scenario_data.dart';
@@ -54,24 +54,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   late TextEditingController _nameController;
   final FocusNode _nameFocusNode = FocusNode();
   Character? _selectedExistingCharacter;
-  bool _isContinuePressed = false;
   bool _isCreatingNew = true;
   GeneratedAvatar? _generatedAvatar;
   String? _customAvatarFilePath;
   bool _isPremium = false;
-  bool _allowPhotoAvatar = true; // loaded from parental consent pref
-
   // ─── Progressive-Disclosure State ───────────────────────────────────────────
   final List<String> _selectedPersonalityChips = [];
   late TextEditingController _personalityDescCtrl;
 
   // ─── Animation ──────────────────────────────────────────────────────────────
-  late AnimationController _floatCtrl;
-  late AnimationController _glowCtrl;
   late AnimationController _sparkleCtrl;
-  late Animation<double> _floatAnim;
-  late Animation<double> _glowAnim;
-  late Animation<double> _sparkleAnim;
 
   late TextEditingController _imagineItController;
 
@@ -99,7 +91,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   @override
   void initState() {
     super.initState();
-    
+
     // Determine initial page
     if (widget.availableCharacters.isNotEmpty) {
       _heroPage = 0;
@@ -134,22 +126,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     _personalityDescCtrl = TextEditingController();
 
     // ── Animation controllers ──────────────────────────────────────────────────
-    _floatCtrl = AnimationController(
-        vsync: this, duration: const Duration(seconds: 3))
-      ..repeat(reverse: true);
-    _floatAnim = Tween<double>(begin: -5.0, end: 5.0).animate(
-        CurvedAnimation(parent: _floatCtrl, curve: Curves.easeInOut));
-
-    _glowCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1800))
-      ..repeat(reverse: true);
-    _glowAnim = Tween<double>(begin: 0.55, end: 1.0).animate(
-        CurvedAnimation(parent: _glowCtrl, curve: Curves.easeInOut));
-
     _sparkleCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1600));
-    _sparkleAnim =
-        CurvedAnimation(parent: _sparkleCtrl, curve: Curves.easeOut);
 
     // ── Speech & TTS ──────────────────────────────────────────────────────────
     _speech.initialize().then((available) {
@@ -162,10 +140,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     ApiServiceManager.hasPremiumAccess().then((premium) {
       if (mounted) setState(() => _isPremium = premium);
     });
-    const ParentalConsentService().getAllowPhotoAvatar().then((allow) {
-      if (mounted) setState(() => _allowPhotoAvatar = allow);
-    });
-
     if (widget.wizardData.characterId != null &&
         widget.availableCharacters.isNotEmpty) {
       _selectedExistingCharacter = widget.availableCharacters.firstWhere(
@@ -195,8 +169,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     _imagineItController.dispose();
     _personalityDescCtrl.dispose();
 
-    _floatCtrl.dispose(); // was missing — caused "disposed with active Ticker"
-    _glowCtrl.dispose();
     _sparkleCtrl.dispose();
     _speech.stop();
     _tts.stop();
@@ -371,6 +343,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         widget.wizardData.characterAge = 5;
       }
     });
+    _heroNextPage();
   }
 
   Future<bool> _saveCharacterDraft() async {
@@ -432,7 +405,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   // ─── TTS Helper ─────────────────────────────────────────────────────────────
   Widget _audioPrompt(String text) {
     return IconButton(
-      icon: const Icon(Icons.volume_up_rounded, color: Color(0xFFFFD700), size: 32),
+      icon: const Icon(Icons.volume_up_rounded,
+          color: Color(0xFFFFD700), size: 32),
       onPressed: () => _tts.speak(text),
     );
   }
@@ -557,7 +531,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   Flexible(
                     child: Builder(
                       builder: (context) {
-                        final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+                        final band =
+                            Theme.of(context).extension<AgeBandThemeData>() ??
+                                explorerTheme;
                         return Text(
                           band.createCharacterLabel,
                           style: _bandTitleStyle(band, baseFontSize: 24),
@@ -577,7 +553,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     fontSize: 28,
                     color: const Color(0xFFFFD700),
                     fontWeight: FontWeight.bold,
-                    shadows: const [Shadow(color: Color(0xFFFF6B35), blurRadius: 12)],
+                    shadows: const [
+                      Shadow(color: Color(0xFFFF6B35), blurRadius: 12)
+                    ],
                   ),
                 ),
               ],
@@ -597,7 +575,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 _buildPersonalityTextField(),
                 const SizedBox(height: 24),
               ],
-              _buildNextArrowButton(enabled: nameNotEmpty, onTap: _heroNextPage, hint: 'Next: Create Your Look'),
+              _buildNextArrowButton(
+                  enabled: nameNotEmpty,
+                  onTap: _heroNextPage,
+                  hint: 'Next: Create Your Look'),
             ],
           ),
         ),
@@ -620,17 +601,21 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               Flexible(
                 child: Builder(
                   builder: (context) {
-                    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-                    return Text('Pick your hero style!', style: _bandTitleStyle(band, baseFontSize: 22));
+                    final band =
+                        Theme.of(context).extension<AgeBandThemeData>() ??
+                            explorerTheme;
+                    return Text('Pick your hero style!',
+                        style: _bandTitleStyle(band, baseFontSize: 22));
                   },
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          _buildAvatarLookCard(),
           const SizedBox(height: 20),
           _buildArchetypeCards(),
-          const SizedBox(height: 40),
-          _buildNextArrowButton(enabled: true, onTap: _heroNextPage, hint: 'Next: Pick Your Team'),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -652,7 +637,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     // Collect selected saved-character friends (not magic companions, not pets)
     final magicAndPetNames = {
       ..._companions.map((c) => c.name),
-      ...widget.wizardData.pets.map((p) => (p['name'] ?? '') as String),
+      ...widget.wizardData.pets.map((p) => p['name'] ?? ''),
     };
     final selectedFriends = widget.availableCharacters
         .where((c) =>
@@ -666,9 +651,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final petName = petEntry?['name'] ?? 'My Pet';
     final petSelected =
         petEntry != null && widget.wizardData.companionNames.contains(petName);
-    final petPhoto = petSelected
-        ? widget.wizardData.petPhotos[petName]
-        : null;
+    final petPhoto = petSelected ? widget.wizardData.petPhotos[petName] : null;
 
     // Build slot list: magic companions, then saved friends, then pet, then empty
     final slots = <_ShowcaseSlot>[];
@@ -751,7 +734,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   /// Temporary adventure team placeholder — replaced when companion grid is built.
   Widget _buildAdventureTeamPage() {
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final companionTitle = band.band == AgeBand.sprout
         ? 'Pick your buddies!'
         : band.band == AgeBand.adventurer
@@ -783,82 +767,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           // Companion grid will go here (Task B)
           _buildCompanionGrid(),
           const SizedBox(height: 40),
-          _buildNextArrowButton(enabled: true, onTap: _heroNextPage, hint: 'Next: Choose Your Scene'),
+          _buildNextArrowButton(
+              enabled: true,
+              onTap: _heroNextPage,
+              hint: 'Next: Choose Your Scene'),
           const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  /// Shows a confirmation badge for the selected archetype's special ability.
-  Widget _buildArchetypePowerBadge() {
-    final archetype = CharacterArchetypes.all
-        .where((a) => a.name == _selectedArchetypeId)
-        .firstOrNull;
-    if (archetype == null) return const SizedBox.shrink();
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFFFFD700).withAlpha(30),
-            const Color(0xFF9E6CFF).withAlpha(20),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFD700).withAlpha(80)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Your Hero Type:',
-            style: TextStyle(color: Colors.white60, fontSize: 11),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              if (archetype.imagePath != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    archetype.imagePath!,
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        const Text('⚡', style: TextStyle(fontSize: 28)),
-                  ),
-                )
-              else
-                const Text('⚡', style: TextStyle(fontSize: 28)),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      archetype.name,
-                      style: const TextStyle(
-                        color: Color(0xFFFFD700),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      archetype.specialAbility,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -1001,7 +914,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   Widget _buildPage4() {
     final age = widget.wizardData.characterAge;
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final placeTitle = band.band == AgeBand.creator
         ? 'Setting'
         : band.band == AgeBand.adventurer
@@ -1017,50 +931,37 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         label: ScenarioData.all
             .firstWhere((s) => s.id == 'vanishing_colors')
             .titleForAge(age),
-        normalAsset:
-            'assets/images/scenarios/rainbow_land_btn.png',
-        pressedAsset:
-            'assets/images/scenarios/rainbow_land_btn_pressed.png',
+        normalAsset: 'assets/images/scenarios/rainbow_land_btn.png',
+        pressedAsset: 'assets/images/scenarios/rainbow_land_btn_pressed.png',
       ),
       _SceneButtonData(
         id: 'crystal_cavern',
         label: ScenarioData.all
             .firstWhere((s) => s.id == 'crystal_cavern')
             .titleForAge(age),
-        normalAsset:
-            'assets/images/scenarios/crystal_cave_btn.png',
-        pressedAsset:
-            'assets/images/scenarios/crystal_cave_btn_pressed.png',
+        normalAsset: 'assets/images/scenarios/crystal_cave_btn.png',
+        pressedAsset: 'assets/images/scenarios/crystal_cave_btn_pressed.png',
       ),
       _SceneButtonData(
         id: 'volcano_dragons',
         label: ScenarioData.all
             .firstWhere((s) => s.id == 'volcano_dragons')
             .titleForAge(age),
-        normalAsset:
-            'assets/images/scenarios/dragon_friends_btn.png',
-        pressedAsset:
-            'assets/images/scenarios/dragon_friends_btn_pressed.png',
+        normalAsset: 'assets/images/scenarios/dragon_friends_btn.png',
+        pressedAsset: 'assets/images/scenarios/dragon_friends_btn_pressed.png',
       ),
       _SceneButtonData(
         id: 'big_feelings_quest',
         label: ScenarioData.all
             .firstWhere((s) => s.id == 'big_feelings_quest')
             .titleForAge(age),
-        normalAsset:
-            'assets/images/scenarios/my_big_feelings_btn.png',
-        pressedAsset:
-            'assets/images/scenarios/my_big_feelings_btn_pressed.png',
+        normalAsset: 'assets/images/scenarios/my_big_feelings_btn.png',
+        pressedAsset: 'assets/images/scenarios/my_big_feelings_btn_pressed.png',
       ),
     ];
 
     final displayButtons = featuredButtons;
 
-    final cardSize = band.band == AgeBand.sprout
-        ? 160.0
-        : band.band == AgeBand.explorer
-            ? 140.0
-            : 120.0;
     final labelFontSize = band.band == AgeBand.sprout
         ? 14.0
         : band.band == AgeBand.explorer
@@ -1117,16 +1018,18 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           // ── Divider: "or explore a ready-made world" ───────────────────────
           Row(
             children: [
-              const Expanded(child: Divider(color: Colors.white24, thickness: 1)),
+              const Expanded(
+                  child: Divider(color: Colors.white24, thickness: 1)),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Text(
                   'or explore a ready-made world',
-                  style: GoogleFonts.fredoka(
-                      color: Colors.white54, fontSize: 13),
+                  style:
+                      GoogleFonts.fredoka(color: Colors.white54, fontSize: 13),
                 ),
               ),
-              const Expanded(child: Divider(color: Colors.white24, thickness: 1)),
+              const Expanded(
+                  child: Divider(color: Colors.white24, thickness: 1)),
             ],
           ),
           const SizedBox(height: 14),
@@ -1225,9 +1128,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
           const SizedBox(height: 24),
           _buildNextArrowButton(
-              enabled: true,
-              onTap: _heroNextPage,
-              hint: 'Next: Story Style'),
+              enabled: true, onTap: _heroNextPage, hint: 'Next: Story Style'),
           const SizedBox(height: 24),
         ],
       ),
@@ -1235,6 +1136,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Widget _buildImagineItInput() {
+    const imagineItPromptText = 'Where will your adventure take place? '
+        'For example, a floating cloud city, deep inside a volcano, or an underwater palace.';
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Container(
@@ -1272,42 +1175,83 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     ),
                   ),
                 ),
+                IconButton(
+                  tooltip: 'Read ideas aloud',
+                  icon: const Icon(Icons.volume_up_rounded,
+                      color: Color(0xFFFFD700), size: 24),
+                  onPressed: () => _tts.speak(imagineItPromptText),
+                ),
               ],
             ),
             const SizedBox(height: 10),
-            TextField(
-              controller: _imagineItController,
-              maxLines: 3,
-              style: const TextStyle(color: Colors.white, fontSize: 15),
-              decoration: InputDecoration(
-                hintText:
-                    'e.g. a floating cloud city, deep inside a volcano, underwater palace…',
-                hintStyle: const TextStyle(
-                    color: Color(0xFFFFD700),
-                    fontSize: 13,
-                    fontStyle: FontStyle.italic),
-                filled: true,
-                fillColor: Colors.white.withAlpha(18),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(
-                      color: const Color(0xFFFFD700).withAlpha(100)),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _imagineItController,
+                    maxLines: 3,
+                    style: const TextStyle(color: Colors.white, fontSize: 15),
+                    decoration: InputDecoration(
+                      hintText:
+                          'e.g. a floating cloud city, deep inside a volcano, underwater palace…',
+                      hintStyle: const TextStyle(
+                          color: Color(0xFFFFD700),
+                          fontSize: 13,
+                          fontStyle: FontStyle.italic),
+                      filled: true,
+                      fillColor: Colors.white.withAlpha(18),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                            color: const Color(0xFFFFD700).withAlpha(100)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                            color: Color(0xFFFFD700), width: 2),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                            color: const Color(0xFFFFD700).withAlpha(120)),
+                      ),
+                      contentPadding: const EdgeInsets.all(14),
+                    ),
+                    onChanged: (value) {
+                      widget.wizardData.customElements = value;
+                      _wishController.text = value;
+                    },
+                  ),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide:
-                      const BorderSide(color: Color(0xFFFFD700), width: 2),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: _speechAvailable
+                      ? 'Speak your setting idea'
+                      : 'Mic unavailable',
+                  icon: Icon(
+                    _listeningFor == 'imagine' ? Icons.mic : Icons.mic_none,
+                    color: _speechAvailable
+                        ? (_listeningFor == 'imagine'
+                            ? Colors.yellow
+                            : Colors.white)
+                        : Colors.white38,
+                  ),
+                  onPressed: _speechAvailable
+                      ? () => _toggleListening('imagine')
+                      : null,
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(
-                      color: const Color(0xFFFFD700).withAlpha(120)),
-                ),
-                contentPadding: const EdgeInsets.all(14),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _speechAvailable
+                  ? '🎤 Tap the mic and say your idea out loud.'
+                  : '✍️ Type your idea here. Mic is unavailable on this device.',
+              style: TextStyle(
+                color: Colors.white.withAlpha(170),
+                fontSize: 11,
               ),
-              onChanged: (value) {
-                widget.wizardData.customElements = value;
-              },
             ),
             const SizedBox(height: 8),
             Text(
@@ -1326,7 +1270,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   // Page 5: "What kind of story?"
   Widget _buildPage5() {
     final data = widget.wizardData;
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final isCreator = band.band == AgeBand.creator;
     final storyTitle = band.band == AgeBand.sprout
         ? 'What story do you want?'
@@ -1372,7 +1317,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     modeType: 'tales',
                     label: isCreator ? 'Story' : 'Story Quest',
                     isActive: data.includeIllustrations,
-                    onTap: () => setState(() => data.includeIllustrations = !data.includeIllustrations),
+                    onTap: () => setState(() =>
+                        data.includeIllustrations = !data.includeIllustrations),
                     primaryColor: const Color(0xFFAA88FF),
                     secondaryColor: const Color(0xFFE28EFF),
                   ),
@@ -1473,7 +1419,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           ),
           const SizedBox(height: 28),
           // Genre tags — Adventurer+ only
-          if (band.band == AgeBand.adventurer || band.band == AgeBand.creator) ...[
+          if (band.band == AgeBand.adventurer ||
+              band.band == AgeBand.creator) ...[
             const SizedBox(height: 4),
             Text(
               "Add a genre twist (optional)",
@@ -1488,12 +1435,60 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               runSpacing: 10,
               alignment: WrapAlignment.center,
               children: [
-                _GenreChip(label: '🔍 Mystery',    value: 'mystery',   selected: widget.wizardData.selectedGenre == 'mystery',   onTap: () => setState(() => widget.wizardData.selectedGenre = widget.wizardData.selectedGenre == 'mystery' ? null : 'mystery')),
-                _GenreChip(label: '😂 Comedy',     value: 'comedy',    selected: widget.wizardData.selectedGenre == 'comedy',    onTap: () => setState(() => widget.wizardData.selectedGenre = widget.wizardData.selectedGenre == 'comedy' ? null : 'comedy')),
-                _GenreChip(label: '🚀 Sci-Fi',     value: 'sci-fi',    selected: widget.wizardData.selectedGenre == 'sci-fi',    onTap: () => setState(() => widget.wizardData.selectedGenre = widget.wizardData.selectedGenre == 'sci-fi' ? null : 'sci-fi')),
-                _GenreChip(label: '⚔️ Action',     value: 'action',    selected: widget.wizardData.selectedGenre == 'action',    onTap: () => setState(() => widget.wizardData.selectedGenre = widget.wizardData.selectedGenre == 'action' ? null : 'action')),
-                _GenreChip(label: '👻 Spooky',     value: 'spooky',    selected: widget.wizardData.selectedGenre == 'spooky',    onTap: () => setState(() => widget.wizardData.selectedGenre = widget.wizardData.selectedGenre == 'spooky' ? null : 'spooky')),
-                _GenreChip(label: '💕 Romance',    value: 'romance',   selected: widget.wizardData.selectedGenre == 'romance',   onTap: () => setState(() => widget.wizardData.selectedGenre = widget.wizardData.selectedGenre == 'romance' ? null : 'romance')),
+                _GenreChip(
+                    label: '🔍 Mystery',
+                    value: 'mystery',
+                    selected: widget.wizardData.selectedGenre == 'mystery',
+                    onTap: () => setState(() =>
+                        widget.wizardData.selectedGenre =
+                            widget.wizardData.selectedGenre == 'mystery'
+                                ? null
+                                : 'mystery')),
+                _GenreChip(
+                    label: '😂 Comedy',
+                    value: 'comedy',
+                    selected: widget.wizardData.selectedGenre == 'comedy',
+                    onTap: () => setState(() =>
+                        widget.wizardData.selectedGenre =
+                            widget.wizardData.selectedGenre == 'comedy'
+                                ? null
+                                : 'comedy')),
+                _GenreChip(
+                    label: '🚀 Sci-Fi',
+                    value: 'sci-fi',
+                    selected: widget.wizardData.selectedGenre == 'sci-fi',
+                    onTap: () => setState(() =>
+                        widget.wizardData.selectedGenre =
+                            widget.wizardData.selectedGenre == 'sci-fi'
+                                ? null
+                                : 'sci-fi')),
+                _GenreChip(
+                    label: '⚔️ Action',
+                    value: 'action',
+                    selected: widget.wizardData.selectedGenre == 'action',
+                    onTap: () => setState(() =>
+                        widget.wizardData.selectedGenre =
+                            widget.wizardData.selectedGenre == 'action'
+                                ? null
+                                : 'action')),
+                _GenreChip(
+                    label: '👻 Spooky',
+                    value: 'spooky',
+                    selected: widget.wizardData.selectedGenre == 'spooky',
+                    onTap: () => setState(() =>
+                        widget.wizardData.selectedGenre =
+                            widget.wizardData.selectedGenre == 'spooky'
+                                ? null
+                                : 'spooky')),
+                _GenreChip(
+                    label: '💕 Romance',
+                    value: 'romance',
+                    selected: widget.wizardData.selectedGenre == 'romance',
+                    onTap: () => setState(() =>
+                        widget.wizardData.selectedGenre =
+                            widget.wizardData.selectedGenre == 'romance'
+                                ? null
+                                : 'romance')),
               ],
             ),
             const SizedBox(height: 24),
@@ -1540,8 +1535,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                           contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 10),
                         ),
-                        onChanged: (v) =>
-                            widget.wizardData.customElements = v,
+                        onChanged: (v) => widget.wizardData.customElements = v,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -1560,15 +1554,101 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             ),
           ),
           const SizedBox(height: 32),
-          _buildNextArrowButton(enabled: true, onTap: widget.onNext, hint: 'Next: Review & Make Magic!'),
+          _buildNextArrowButton(
+              enabled: true,
+              onTap: widget.onNext,
+              hint: 'Next: Review & Make Magic!'),
           const SizedBox(height: 20),
         ],
       ),
     );
   }
 
-  Widget _buildNextArrowButton({required bool enabled, required VoidCallback onTap, String? hint}) {
+  Widget _buildNextArrowButton(
+      {required bool enabled, required VoidCallback onTap, String? hint}) {
     return _PressableArrowButton(enabled: enabled, onTap: onTap, hint: hint);
+  }
+
+  Widget _buildAvatarLookCard() {
+    final imageData = _generatedAvatar?.imageBase64;
+    final avatarProvider =
+        imageData == null ? null : _getImageProviderFromString(imageData);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(14),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFD700).withAlpha(90)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: const Color(0xFF3A2363),
+            backgroundImage: avatarProvider,
+            child: avatarProvider == null
+                ? const Icon(Icons.face_retouching_natural,
+                    color: Color(0xFFFFD700), size: 30)
+                : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _hasAvatar
+                      ? 'Your hero look is ready'
+                      : 'Pick what your hero looks like',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _hasAvatar
+                      ? 'You can change it anytime.'
+                      : 'Choose a look before you continue.',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: _openAvatarGallery,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7E57C2),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+            child: Text(_hasAvatar ? 'Change Look' : 'Pick Look'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openAvatarGallery() async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AvatarGallerySelector(
+        isPremium: _isPremium,
+        onCancel: () => Navigator.of(ctx).pop(),
+        onAvatarSelected: (avatar) {
+          if (!mounted) return;
+          setState(() {
+            _generatedAvatar = avatar;
+            _customAvatarFilePath = null;
+            widget.wizardData.generatedAvatar = avatar;
+          });
+          Navigator.of(ctx).pop();
+        },
+      ),
+    );
   }
 
   // ─── Avatar, Age, Gender, Name, Archetype, Superpower, Continue logic ──────────
@@ -1576,118 +1656,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   bool get _hasAvatar =>
       _generatedAvatar != null || _customAvatarFilePath != null;
 
-
-
-
-  Widget _buildAgePicker() {
-    return Column(
-      children: [
-        // Tap-to-type age input — tapping the number opens keyboard
-        GestureDetector(
-          onTap: () {
-            showDialog<void>(
-              context: context,
-              builder: (ctx) {
-                final ctrl = TextEditingController(text: '${widget.wizardData.characterAge}');
-                return AlertDialog(
-                  backgroundColor: const Color(0xFF2A1060),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  title: Text('How old is your hero?',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.cinzelDecorative(color: const Color(0xFFFFD700), fontSize: 16)),
-                  content: TextField(
-                    controller: ctrl,
-                    autofocus: true,
-                    textAlign: TextAlign.center,
-                    keyboardType: TextInputType.number,
-                    style: GoogleFonts.cinzelDecorative(
-                        color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
-                    decoration: InputDecoration(
-                      hintText: '7',
-                      hintStyle: const TextStyle(color: Colors.white38),
-                      filled: true,
-                      fillColor: Colors.white10,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none),
-                    ),
-                    onSubmitted: (v) {
-                      final n = int.tryParse(v);
-                      if (n != null) {
-                        final clamped = n.clamp(3, 99);
-                        setState(() => widget.wizardData.characterAge = clamped);
-                        widget.onAgeChanged?.call(clamped);
-                      }
-                      Navigator.pop(ctx);
-                    },
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        final n = int.tryParse(ctrl.text);
-                        if (n != null) {
-                          final clamped = n.clamp(3, 99);
-                          setState(() => widget.wizardData.characterAge = clamped);
-                          widget.onAgeChanged?.call(clamped);
-                        }
-                        Navigator.pop(ctx);
-                      },
-                      child: Text('Done',
-                          style: GoogleFonts.fredoka(color: const Color(0xFFFFD700), fontSize: 18)),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-          child: Column(
-            children: [
-              Text(
-                '${widget.wizardData.characterAge}',
-                style: GoogleFonts.cinzelDecorative(
-                  color: const Color(0xFFFFD700),
-                  fontSize: 34,
-                  fontWeight: FontWeight.bold,
-                  shadows: const [Shadow(color: Color(0xFFFFD700), blurRadius: 16)],
-                ),
-              ),
-              Text(
-                'Tap to change age',
-                style: GoogleFonts.cinzelDecorative(
-                  color: Colors.white.withAlpha(160),
-                  fontSize: 10,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _AgeStepButton(
-              icon: Icons.remove_rounded,
-              size: 40,
-              onTap: () {
-                final age = (widget.wizardData.characterAge - 1).clamp(3, 99);
-                setState(() => widget.wizardData.characterAge = age);
-                widget.onAgeChanged?.call(age);
-              },
-            ),
-            const SizedBox(width: 24),
-            _AgeStepButton(
-              icon: Icons.add_rounded,
-              size: 40,
-              onTap: () {
-                final age = (widget.wizardData.characterAge + 1).clamp(3, 99);
-                setState(() => widget.wizardData.characterAge = age);
-                widget.onAgeChanged?.call(age);
-              },
-            ),
-          ],
-        ),
-      ],
-    );
+  ImageProvider<Object> _getImageProviderFromString(String imageData) {
+    if (imageData.startsWith('assets/')) {
+      return AssetImage(imageData);
+    }
+    if (imageData.startsWith('http')) {
+      return NetworkImage(imageData);
+    }
+    final normalized =
+        imageData.contains(',') ? imageData.split(',').last : imageData;
+    return MemoryImage(base64Decode(normalized));
   }
 
   Widget _buildGenderPicker() {
@@ -1704,10 +1682,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               isSelected: widget.wizardData.characterGender == 'Boy',
               width: btnW,
               height: btnH,
-              onTap: () {
-                setState(() => widget.wizardData.characterGender = 'Boy');
-                _heroNextPage();
-              },
+              onTap: () => _handleGenderSelection('Boy'),
             ),
             const SizedBox(width: 28),
             _GenderImageButton(
@@ -1716,10 +1691,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               isSelected: widget.wizardData.characterGender == 'Girl',
               width: btnW,
               height: btnH,
-              onTap: () {
-                setState(() => widget.wizardData.characterGender = 'Girl');
-                _heroNextPage();
-              },
+              onTap: () => _handleGenderSelection('Girl'),
             ),
           ],
         );
@@ -1727,9 +1699,22 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
+  void _handleGenderSelection(String gender) {
+    setState(() => widget.wizardData.characterGender = gender);
+    _heroNextPage();
+
+    // Auto-open look picker right after moving to page 2, so kids don't miss it.
+    if (!_hasAvatar) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted || _heroPage != 2 || _hasAvatar) return;
+        await _openAvatarGallery();
+      });
+    }
+  }
 
   Widget _buildNameScrollInput() {
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final nameFontSize = band.headingScale * 20;
 
     if (band.band == AgeBand.creator) {
@@ -1755,9 +1740,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             borderRadius: BorderRadius.circular(band.buttonRadiusBase),
             borderSide: const BorderSide(color: Color(0xFF7C4DFF)),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
-        onChanged: (v) => setState(() => widget.wizardData.characterName = v.trim()),
+        onChanged: (v) =>
+            setState(() => widget.wizardData.characterName = v.trim()),
       );
     }
 
@@ -1779,7 +1766,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           focusNode: _nameFocusNode,
           fontSize: nameFontSize,
           height: 60,
-          onChanged: (v) => setState(() => widget.wizardData.characterName = v.trim()),
+          onChanged: (v) =>
+              setState(() => widget.wizardData.characterName = v.trim()),
         ),
       ],
     );
@@ -1818,7 +1806,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   width: isSelected ? 3 : 2,
                 ),
                 boxShadow: isSelected
-                    ? [BoxShadow(color: const Color(0xFFFFD700).withAlpha(100), blurRadius: 12)]
+                    ? [
+                        BoxShadow(
+                            color: const Color(0xFFFFD700).withAlpha(100),
+                            blurRadius: 12)
+                      ]
                     : [],
               ),
               child: ClipRRect(
@@ -1830,43 +1822,56 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     Container(color: const Color(0xFF1A0A2E)),
                     // Image — contain so full frame is always visible
                     if (a.imagePath != null)
-                      Image.asset(a.imagePath!, fit: BoxFit.contain, alignment: Alignment.center)
+                      Image.asset(a.imagePath!,
+                          fit: BoxFit.contain, alignment: Alignment.center)
                     else
                       Container(
                         color: Colors.white10,
-                        child: Center(child: Text(a.icon ?? '✨', style: const TextStyle(fontSize: 72))),
+                        child: Center(
+                            child: Text(a.icon ?? '✨',
+                                style: const TextStyle(fontSize: 72))),
                       ),
                     // Gradient overlay at bottom for legibility
                     Positioned(
-                      left: 0, right: 0, bottom: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 6),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.bottomCenter,
                             end: Alignment.topCenter,
-                            colors: [Colors.black.withAlpha(200), Colors.transparent],
+                            colors: [
+                              Colors.black.withAlpha(200),
+                              Colors.transparent
+                            ],
                           ),
                         ),
                         child: Text(
                           a.name,
                           textAlign: TextAlign.center,
                           style: GoogleFonts.fredoka(
-                              color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
                     // Gold checkmark when selected
                     if (isSelected)
                       Positioned(
-                        top: 8, right: 8,
+                        top: 8,
+                        right: 8,
                         child: Container(
                           decoration: const BoxDecoration(
                             color: Color(0xFFFFD700),
                             shape: BoxShape.circle,
                           ),
                           padding: const EdgeInsets.all(3),
-                          child: const Icon(Icons.check, size: 16, color: Colors.black),
+                          child: const Icon(Icons.check,
+                              size: 16, color: Colors.black),
                         ),
                       ),
                   ],
@@ -1904,7 +1909,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   width: isSelected ? 3 : 2,
                 ),
                 boxShadow: isSelected
-                    ? [BoxShadow(color: const Color(0xFFFFD700).withAlpha(100), blurRadius: 12)]
+                    ? [
+                        BoxShadow(
+                            color: const Color(0xFFFFD700).withAlpha(100),
+                            blurRadius: 12)
+                      ]
                     : [],
               ),
               child: ClipRRect(
@@ -1914,21 +1923,30 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   children: [
                     Container(color: const Color(0xFF1A0A2E)),
                     if (a.imagePath != null)
-                      Image.asset(a.imagePath!, fit: BoxFit.contain, alignment: Alignment.center)
+                      Image.asset(a.imagePath!,
+                          fit: BoxFit.contain, alignment: Alignment.center)
                     else
                       Container(
                         color: Colors.white10,
-                        child: Center(child: Text(a.icon ?? '✨', style: const TextStyle(fontSize: 64))),
+                        child: Center(
+                            child: Text(a.icon ?? '✨',
+                                style: const TextStyle(fontSize: 64))),
                       ),
                     Positioned(
-                      left: 0, right: 0, bottom: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 6),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.bottomCenter,
                             end: Alignment.topCenter,
-                            colors: [Colors.black.withAlpha(210), Colors.transparent],
+                            colors: [
+                              Colors.black.withAlpha(210),
+                              Colors.transparent
+                            ],
                           ),
                         ),
                         child: Column(
@@ -1938,7 +1956,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                               a.name,
                               textAlign: TextAlign.center,
                               style: GoogleFonts.fredoka(
-                                  color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold),
                             ),
                             if (showDescriptions) ...[
                               const SizedBox(height: 2),
@@ -1947,7 +1967,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: Colors.white70, fontSize: 10),
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 10),
                               ),
                             ],
                           ],
@@ -1956,14 +1977,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     ),
                     if (isSelected)
                       Positioned(
-                        top: 8, right: 8,
+                        top: 8,
+                        right: 8,
                         child: Container(
                           decoration: const BoxDecoration(
                             color: Color(0xFFFFD700),
                             shape: BoxShape.circle,
                           ),
                           padding: const EdgeInsets.all(3),
-                          child: const Icon(Icons.check, size: 16, color: Colors.black),
+                          child: const Icon(Icons.check,
+                              size: 16, color: Colors.black),
                         ),
                       ),
                   ],
@@ -1973,55 +1996,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           );
         },
       ),
-    );
-  }
-
-
-  // ─── Progressive-Disclosure Helpers ─────────────────────────────────────────
-
-  /// Explorer band (6-8): tappable "I'm X" chips instead of the full age dial.
-  Widget _buildSimpleAgePicker() {
-    return Column(
-      children: [
-        Text(
-          'How old are you?',
-          style: GoogleFonts.fredoka(color: Colors.white70, fontSize: 16),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          children: List.generate(3, (i) {
-            final age = 6 + i;
-            final isSelected = widget.wizardData.characterAge == age;
-            return GestureDetector(
-              onTap: () {
-                  setState(() => widget.wizardData.characterAge = age);
-                  widget.onAgeChanged?.call(age);
-                },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF7C4DFF) : Colors.white10,
-                  borderRadius: BorderRadius.circular(32),
-                  border: Border.all(
-                    color: isSelected ? const Color(0xFFFFD700) : Colors.white24,
-                    width: 2,
-                  ),
-                ),
-                child: Text(
-                  "I'm $age",
-                  style: GoogleFonts.fredoka(
-                    color: isSelected ? const Color(0xFFFFD700) : Colors.white70,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            );
-          }),
-        ),
-      ],
     );
   }
 
@@ -2049,24 +2023,28 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   } else if (_selectedPersonalityChips.length < 3) {
                     _selectedPersonalityChips.add(word);
                   }
-                  widget.wizardData.strengths = List.from(_selectedPersonalityChips);
+                  widget.wizardData.strengths =
+                      List.from(_selectedPersonalityChips);
                 });
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: isSelected ? const Color(0xFF7C4DFF) : Colors.white10,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isSelected ? const Color(0xFFFFD700) : Colors.white24,
+                    color:
+                        isSelected ? const Color(0xFFFFD700) : Colors.white24,
                     width: 1.5,
                   ),
                 ),
                 child: Text(
                   word,
                   style: GoogleFonts.fredoka(
-                    color: isSelected ? const Color(0xFFFFD700) : Colors.white70,
+                    color:
+                        isSelected ? const Color(0xFFFFD700) : Colors.white70,
                     fontSize: 15,
                   ),
                 ),
@@ -2105,7 +2083,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFF7C4DFF)),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
           onChanged: (v) {
             widget.wizardData.strengths = v.trim().isEmpty ? [] : [v.trim()];
@@ -2114,7 +2093,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       ],
     );
   }
-
 
   void _toggleListening(String field) async {
     if (!_speechAvailable) return;
@@ -2129,19 +2107,25 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       setState(() {
         if (field == 'superpower') {
           _superpowerController.text = result.recognizedWords;
-          widget.wizardData.heroSuperpower = result.recognizedWords.isEmpty ? null : result.recognizedWords;
+          widget.wizardData.heroSuperpower =
+              result.recognizedWords.isEmpty ? null : result.recognizedWords;
+        } else if (field == 'imagine') {
+          _imagineItController.text = result.recognizedWords;
+          _wishController.text = result.recognizedWords;
+          widget.wizardData.customElements = result.recognizedWords;
         } else if (field == 'wish') {
           _wishController.text = result.recognizedWords;
+          _imagineItController.text = result.recognizedWords;
           widget.wizardData.customElements = result.recognizedWords;
         } else {
           _questController.text = result.recognizedWords;
-          widget.wizardData.heroQuest = result.recognizedWords.isEmpty ? null : result.recognizedWords;
+          widget.wizardData.heroQuest =
+              result.recognizedWords.isEmpty ? null : result.recognizedWords;
         }
         if (result.finalResult) _listeningFor = '';
       });
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -2150,7 +2134,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFF120226), Color(0xFF3D1166), Color(0xFF120226)],
-            begin: Alignment.topCenter, end: Alignment.bottomCenter,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
         child: SafeArea(
@@ -2170,9 +2155,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               ),
               if (_heroPage > 0)
                 Positioned(
-                  top: 10, left: 10,
+                  top: 10,
+                  left: 10,
                   child: IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                        color: Colors.white),
                     onPressed: _heroPrevPage,
                   ),
                 ),
@@ -2200,7 +2187,8 @@ class _CharacterChoiceCard extends StatelessWidget {
       return NetworkImage(imageBase64);
     }
     try {
-      final normalized = imageBase64.contains(',') ? imageBase64.split(',').last : imageBase64;
+      final normalized =
+          imageBase64.contains(',') ? imageBase64.split(',').last : imageBase64;
       return MemoryImage(base64Decode(normalized));
     } catch (_) {
       return const AssetImage('assets/images/hero_placeholder.jpg');
@@ -2226,80 +2214,28 @@ class _CharacterChoiceCard extends StatelessWidget {
               radius: 35,
               backgroundColor: const Color(0xFF3A2363),
               backgroundImage: avatarData != null
-                ? _getAvatarProvider(avatarData)
-                : const AssetImage('assets/images/hero_placeholder.jpg') as ImageProvider,
+                  ? _getAvatarProvider(avatarData)
+                  : const AssetImage('assets/images/hero_placeholder.jpg')
+                      as ImageProvider,
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(character.name, style: GoogleFonts.cinzelDecorative(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                  Text("${character.age} years old • ${character.role}", style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                  Text(character.name,
+                      style: GoogleFonts.cinzelDecorative(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold)),
+                  Text("${character.age} years old • ${character.role}",
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 14)),
                 ],
               ),
             ),
-            const Icon(Icons.play_circle_fill_rounded, color: Color(0xFFFFD700), size: 40),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PersonalityPair extends StatelessWidget {
-  final String leftLabel;
-  final IconData leftIcon;
-  final String rightLabel;
-  final IconData rightIcon;
-  final String sliderKey;
-  final int currentValue;
-  final ValueChanged<int> onChanged;
-
-  const _PersonalityPair({
-    required this.leftLabel,
-    required this.leftIcon,
-    required this.rightLabel,
-    required this.rightIcon,
-    required this.sliderKey,
-    required this.currentValue,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bool isLeft = currentValue < 50;
-    final bool isRight = currentValue > 50;
-
-    return Row(
-      children: [
-        Expanded(child: _buildChoice(label: leftLabel, icon: leftIcon, isSelected: isLeft, value: 25)),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 10),
-          child: Text("or", style: TextStyle(color: Colors.white54, fontStyle: FontStyle.italic)),
-        ),
-        Expanded(child: _buildChoice(label: rightLabel, icon: rightIcon, isSelected: isRight, value: 75)),
-      ],
-    );
-  }
-
-  Widget _buildChoice({required String label, required IconData icon, required bool isSelected, required int value}) {
-    return GestureDetector(
-      onTap: () => onChanged(isSelected ? 50 : value),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFFD700).withAlpha(40) : Colors.white.withAlpha(10),
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: isSelected ? const Color(0xFFFFD700) : Colors.white24, width: 2),
-          boxShadow: isSelected ? [BoxShadow(color: const Color(0xFFFFD700).withAlpha(60), blurRadius: 10)] : null,
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: isSelected ? const Color(0xFFFFD700) : Colors.white70, size: 28),
-            const SizedBox(height: 4),
-            Text(label, textAlign: TextAlign.center, style: TextStyle(color: isSelected ? const Color(0xFFFFD700) : Colors.white, fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+            const Icon(Icons.play_circle_fill_rounded,
+                color: Color(0xFFFFD700), size: 40),
           ],
         ),
       ),
@@ -2325,30 +2261,6 @@ class HeroCreatorStepData {
     ('🌱 Trying something new', 'Trying something new'),
     ("🦸 Standing up for what's right", "Standing up for what's right"),
   ];
-}
-
-class _AgeStepButton extends StatefulWidget {
-  final IconData icon; final VoidCallback onTap; final double size;
-  const _AgeStepButton({required this.icon, required this.onTap, this.size = 52});
-  @override State<_AgeStepButton> createState() => _AgeStepButtonState();
-}
-class _AgeStepButtonState extends State<_AgeStepButton> {
-  bool _pressed = false;
-  @override Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true), onTapUp: (_) { setState(() => _pressed = false); widget.onTap(); }, onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(scale: _pressed ? 0.88 : 1.0, duration: const Duration(milliseconds: 100), child: Container(width: widget.size, height: widget.size, decoration: BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: [const Color(0xFF5B1BAA), const Color(0xFF9B3FD8)]), boxShadow: [BoxShadow(color: const Color(0xFFFFD700).withAlpha(180), blurRadius: 22)]), child: Icon(widget.icon, color: const Color(0xFFFFE066), size: widget.size * 0.5))),
-    );
-  }
-}
-
-class _AvatarOptionTile extends StatelessWidget {
-  final IconData icon; final String title; final String subtitle; final VoidCallback? onTap;
-  const _AvatarOptionTile({required this.icon, required this.title, required this.subtitle, this.onTap});
-  @override Widget build(BuildContext context) {
-    final isDisabled = onTap == null;
-    return Opacity(opacity: isDisabled ? 0.45 : 1.0, child: Material(color: Colors.white.withAlpha(20), borderRadius: BorderRadius.circular(16), child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(16), child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), child: Row(children: [Container(width: 48, height: 48, decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFFFD700).withAlpha(40), border: Border.all(color: const Color(0xFFFFD700).withAlpha(150), width: 1.5)), child: Icon(icon, color: const Color(0xFFFFD700), size: 24)), const SizedBox(width: 16), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)), const SizedBox(height: 2), Text(subtitle, style: TextStyle(color: Colors.white.withAlpha(180), fontSize: 13))])), const Icon(Icons.chevron_right, color: Colors.white54, size: 20)])))));
-  }
 }
 
 // ── Companion Image Grid ─────────────────────────────────────────────────────
@@ -2401,8 +2313,8 @@ class _GlowingCompanionOrb extends StatelessWidget {
       // Pet photo or friend avatar (base64)
       final raw = slot!.photoBase64!;
       final bytes = base64Decode(raw.contains(',') ? raw.split(',').last : raw);
-      inner = Image.memory(bytes,
-          width: _size, height: _size, fit: BoxFit.cover);
+      inner =
+          Image.memory(bytes, width: _size, height: _size, fit: BoxFit.cover);
     } else if (slot!.isFriend) {
       // Saved character with no avatar image yet — use a person placeholder
       inner = const Icon(Icons.person_rounded, color: Colors.white70, size: 44);
@@ -2491,43 +2403,50 @@ const _companions = [
     id: 'dragon',
     name: 'Dragon',
     tagline: 'Big courage. Bigger heart.',
-    personality: 'Dragon (Brave Protector) stands between you and danger, voice steady and brave. She turns fear into a plan and protects you without making you feel small. Gets extra polite right before getting fierce. Hoards tiny treasures like pebbles and buttons as if they\'re priceless. Catchphrases: "Behind me." / "We\'ve got this."',
+    personality:
+        'Dragon (Brave Protector) stands between you and danger, voice steady and brave. She turns fear into a plan and protects you without making you feel small. Gets extra polite right before getting fierce. Hoards tiny treasures like pebbles and buttons as if they\'re priceless. Catchphrases: "Behind me." / "We\'ve got this."',
   ),
   _CompanionData(
     id: 'owl',
     name: 'Wise Owl',
     tagline: 'Quiet mind, clear sight.',
-    personality: 'Wise Owl (Pattern Seer) watches silently, then names what matters. She spots patterns others miss and offers one clear, calm next step. Speaks in short verdicts — "Noted." "Risky." "Better." Will not be rushed; slows the scene down when emotions spike. Catchphrases: "Look again." / "Follow the pattern."',
+    personality:
+        'Wise Owl (Pattern Seer) watches silently, then names what matters. She spots patterns others miss and offers one clear, calm next step. Speaks in short verdicts — "Noted." "Risky." "Better." Will not be rushed; slows the scene down when emotions spike. Catchphrases: "Look again." / "Follow the pattern."',
   ),
   _CompanionData(
     id: 'cat',
     name: 'Shadow Cat',
     tagline: 'Soft paws. Strong boundaries.',
-    personality: 'Shadow Cat (Boundary Guardian) keeps you calm and untangled. She helps you say no, spot pressure, and choose the cleanest way out. Appears exactly when someone is being manipulative. Purrs like a reset button — breathing steadies when she purrs. Disappears mid-drama, then reappears with the perfect exit route. Catchphrases: "No is complete." / "We leave—now."',
+    personality:
+        'Shadow Cat (Boundary Guardian) keeps you calm and untangled. She helps you say no, spot pressure, and choose the cleanest way out. Appears exactly when someone is being manipulative. Purrs like a reset button — breathing steadies when she purrs. Disappears mid-drama, then reappears with the perfect exit route. Catchphrases: "No is complete." / "We leave—now."',
   ),
   _CompanionData(
     id: 'dog',
     name: 'Star Dog',
     tagline: 'Light up. Keep going.',
-    personality: 'Star Dog (Hope Engine) stays close and lifts your mood fast. He guides you with sparkle-trails and helps you take the next step even when you\'re scared. Sniffs out the most trustworthy person in a room and stands by them. If you freeze, he does something goofy to break the spell of fear. Catchphrases: "One more step!" / "I\'m right here!"',
+    personality:
+        'Star Dog (Hope Engine) stays close and lifts your mood fast. He guides you with sparkle-trails and helps you take the next step even when you\'re scared. Sniffs out the most trustworthy person in a room and stands by them. If you freeze, he does something goofy to break the spell of fear. Catchphrases: "One more step!" / "I\'m right here!"',
   ),
   _CompanionData(
     id: 'unicorn',
     name: 'Unicorn',
     tagline: 'Kindness that makes you stronger.',
-    personality: 'Unicorn (Gentle Healer) brings calm, warmth, and healing. She helps you breathe, name feelings gently, and rebuild confidence without pressure. Horn glow tunes to emotion — soft light for sadness, bright for courage. Refuses shame stories and rewrites self-talk in simple words. Catchphrases: "You are safe." / "You are not broken."',
+    personality:
+        'Unicorn (Gentle Healer) brings calm, warmth, and healing. She helps you breathe, name feelings gently, and rebuild confidence without pressure. Horn glow tunes to emotion — soft light for sadness, bright for courage. Refuses shame stories and rewrites self-talk in simple words. Catchphrases: "You are safe." / "You are not broken."',
   ),
   _CompanionData(
     id: 'fox',
     name: 'Clever Fox',
     tagline: 'Smart paths, sneaky wins.',
-    personality: 'Clever Fox (Strategic Trickster) finds the loophole, the shortcut, the trick that stays fair. He turns obstacles into puzzles and makes you feel capable. Treats problems like games and always offers two clever options. Loves codes, riddles, hidden doors, and rules-lawyering bad guys. Catchphrases: "Watch this." / "Rules didn\'t say I can\'t."',
+    personality:
+        'Clever Fox (Strategic Trickster) finds the loophole, the shortcut, the trick that stays fair. He turns obstacles into puzzles and makes you feel capable. Treats problems like games and always offers two clever options. Loves codes, riddles, hidden doors, and rules-lawyering bad guys. Catchphrases: "Watch this." / "Rules didn\'t say I can\'t."',
   ),
   _CompanionData(
     id: 'robin',
     name: 'Rockin\' Robin',
     tagline: 'Always watching, always guiding you forward.',
-    personality: 'Rockin\' Robin (Scout) darts overhead, chirping warning trills. She swoops low to show the way like a living arrow. If she dive-bombs someone, it\'s because they\'re a threat — even if they look harmless. Acts like a tiny bodyguard with zero chill; won\'t just point — must swoop the route herself. Catchphrases: "Move. Now-now-now." / "Trust me. Wings don\'t lie."',
+    personality:
+        'Rockin\' Robin (Scout) darts overhead, chirping warning trills. She swoops low to show the way like a living arrow. If she dive-bombs someone, it\'s because they\'re a threat — even if they look harmless. Acts like a tiny bodyguard with zero chill; won\'t just point — must swoop the route herself. Catchphrases: "Move. Now-now-now." / "Trust me. Wings don\'t lie."',
   ),
 ];
 
@@ -2535,7 +2454,8 @@ class _CompanionImageGrid extends StatelessWidget {
   final WizardData wizardData;
   final VoidCallback onChanged;
 
-  const _CompanionImageGrid({required this.wizardData, required this.onChanged});
+  const _CompanionImageGrid(
+      {required this.wizardData, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -2544,10 +2464,15 @@ class _CompanionImageGrid extends StatelessWidget {
           Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
       final naturalSize = (band.touchTargetMin / 64.0 * 100).roundToDouble();
 
-      // Calculate the size that fits perRow items without squeezing.
+      // Calculate the size that fits perRow items without overflow.
+      // Each button renders at (size + 8) and each item is wrapped in
+      // horizontal padding of hSpacing / 2 on both sides.
       const perRow = 4;
       const hSpacing = 8.0;
-      final itemSize = ((constraints.maxWidth - hSpacing * (perRow - 1)) /
+      const buttonWidthExtra = 8.0;
+      final itemSize = ((constraints.maxWidth -
+                  perRow * buttonWidthExtra -
+                  perRow * hSpacing) /
               perRow)
           .floorToDouble()
           .clamp(40.0, naturalSize);
@@ -2586,8 +2511,8 @@ class _CompanionImageGrid extends StatelessWidget {
         buttons.add(_CompanionImageButton(
           id: 'my_pet',
           name: petName,
-          tagline:
-              '${petEntry['color'] ?? ''} ${petEntry['species'] ?? 'pet'}'.trim(),
+          tagline: '${petEntry['color'] ?? ''} ${petEntry['species'] ?? 'pet'}'
+              .trim(),
           isSelected: isSelected,
           photoBase64: petPhoto,
           size: itemSize,
@@ -2612,7 +2537,8 @@ class _CompanionImageGrid extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: rowItems
               .map((b) => Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: hSpacing / 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: hSpacing / 2),
                     child: b,
                   ))
               .toList(),
@@ -2651,8 +2577,7 @@ class _CompanionImageButton extends StatefulWidget {
 class _CompanionImageButtonState extends State<_CompanionImageButton> {
   bool _pressed = false;
 
-  String get _normalImage =>
-      'assets/images/companions/${widget.id}_normal.jpg';
+  String get _normalImage => 'assets/images/companions/${widget.id}_normal.jpg';
   String get _pressedImage =>
       'assets/images/companions/${widget.id}_pressed.jpg';
 
@@ -2666,16 +2591,18 @@ class _CompanionImageButtonState extends State<_CompanionImageButton> {
 
   @override
   Widget build(BuildContext context) {
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    final size = widget.size ?? (band.touchTargetMin / 64.0 * 100).roundToDouble();
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final size =
+        widget.size ?? (band.touchTargetMin / 64.0 * 100).roundToDouble();
 
     Widget imageWidget;
     if (widget.photoBase64 != null && widget.photoBase64!.isNotEmpty) {
       // Real pet photo
       final bytes = base64Decode(
           widget.photoBase64!.replaceFirst(RegExp(r'data:[^,]+,'), ''));
-      imageWidget = Image.memory(bytes,
-          width: size, height: size, fit: BoxFit.cover);
+      imageWidget =
+          Image.memory(bytes, width: size, height: size, fit: BoxFit.cover);
     } else {
       imageWidget = Image.asset(
         _pressed ? _pressedImage : _normalImage,
@@ -2811,8 +2738,17 @@ class _PetCardState extends State<_PetCard> {
   String _species = 'Dog';
 
   static const _speciesOptions = [
-    'Dog', 'Cat', 'Bird', 'Rabbit', 'Hamster', 'Fish',
-    'Turtle', 'Snake', 'Horse', 'Guinea Pig', 'Other',
+    'Dog',
+    'Cat',
+    'Bird',
+    'Rabbit',
+    'Hamster',
+    'Fish',
+    'Turtle',
+    'Snake',
+    'Horse',
+    'Guinea Pig',
+    'Other',
   ];
 
   Map<String, String>? get _pet =>
@@ -2840,7 +2776,8 @@ class _PetCardState extends State<_PetCard> {
 
   void _updatePet() {
     final oldName = _pet?['name'] ?? 'My Pet';
-    final newName = _nameCtrl.text.trim().isEmpty ? 'My Pet' : _nameCtrl.text.trim();
+    final newName =
+        _nameCtrl.text.trim().isEmpty ? 'My Pet' : _nameCtrl.text.trim();
     final photo = widget.wizardData.petPhotos[oldName];
     if (widget.wizardData.pets.isEmpty) {
       widget.wizardData.pets.add({});
@@ -2857,7 +2794,8 @@ class _PetCardState extends State<_PetCard> {
       widget.wizardData.petPhotos[newName] = photo;
     }
     // Keep companionNames in sync
-    if (widget.wizardData.companionNames.contains(oldName) && oldName != newName) {
+    if (widget.wizardData.companionNames.contains(oldName) &&
+        oldName != newName) {
       widget.wizardData.companionNames.remove(oldName);
       widget.wizardData.companionNames.add(newName);
     }
@@ -2885,7 +2823,8 @@ class _PetCardState extends State<_PetCard> {
               colors: [const Color(0xFF2C1B47), const Color(0xFF1A0E36)],
             ),
             boxShadow: [
-              BoxShadow(color: const Color(0xFFFFD700).withAlpha(35), blurRadius: 12),
+              BoxShadow(
+                  color: const Color(0xFFFFD700).withAlpha(35), blurRadius: 12),
             ],
           ),
           child: Row(
@@ -2930,7 +2869,8 @@ class _PetCardState extends State<_PetCard> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFD700).withAlpha(180), width: 2),
+        border:
+            Border.all(color: const Color(0xFFFFD700).withAlpha(180), width: 2),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -2959,16 +2899,19 @@ class _PetCardState extends State<_PetCard> {
                       height: 72,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFFFFD700), width: 2),
+                        border: Border.all(
+                            color: const Color(0xFFFFD700), width: 2),
                         color: const Color(0xFF3A2363),
                       ),
                       child: ClipOval(
                         child: photo != null && photo.isNotEmpty
                             ? Image.memory(
-                                base64Decode(photo.replaceFirst(RegExp(r'data:[^,]+,'), '')),
+                                base64Decode(photo.replaceFirst(
+                                    RegExp(r'data:[^,]+,'), '')),
                                 fit: BoxFit.cover,
                               )
-                            : const Icon(Icons.pets, color: Colors.white70, size: 36),
+                            : const Icon(Icons.pets,
+                                color: Colors.white70, size: 36),
                       ),
                     ),
                     Positioned(
@@ -2980,7 +2923,8 @@ class _PetCardState extends State<_PetCard> {
                           shape: BoxShape.circle,
                           color: Color(0xFFFFD700),
                         ),
-                        child: const Icon(Icons.camera_alt, color: Colors.black, size: 12),
+                        child: const Icon(Icons.camera_alt,
+                            color: Colors.black, size: 12),
                       ),
                     ),
                   ],
@@ -2994,7 +2938,8 @@ class _PetCardState extends State<_PetCard> {
                     TextField(
                       controller: _nameCtrl,
                       style: const TextStyle(color: Colors.white, fontSize: 14),
-                      decoration: _petFieldDecoration('Pet\'s name (e.g. Spot)'),
+                      decoration:
+                          _petFieldDecoration('Pet\'s name (e.g. Spot)'),
                       onChanged: (_) => _updatePet(),
                     ),
                     const SizedBox(height: 8),
@@ -3002,7 +2947,8 @@ class _PetCardState extends State<_PetCard> {
                     TextField(
                       controller: _colorCtrl,
                       style: const TextStyle(color: Colors.white, fontSize: 14),
-                      decoration: _petFieldDecoration('Color (e.g. golden, black & white)'),
+                      decoration: _petFieldDecoration(
+                          'Color (e.g. golden, black & white)'),
                       onChanged: (_) => _updatePet(),
                     ),
                   ],
@@ -3046,7 +2992,8 @@ class _PetCardState extends State<_PetCard> {
         filled: true,
         fillColor: Colors.white.withAlpha(18),
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: const Color(0xFFFFD700).withAlpha(100)),
@@ -3104,9 +3051,7 @@ class _FriendChipButtonState extends State<_FriendChipButton> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(30),
           border: Border.all(
-            color: widget.isSelected
-                ? const Color(0xFFFFD700)
-                : Colors.white30,
+            color: widget.isSelected ? const Color(0xFFFFD700) : Colors.white30,
             width: widget.isSelected ? 2 : 1,
           ),
           color: widget.isSelected
@@ -3137,9 +3082,8 @@ class _FriendChipButtonState extends State<_FriendChipButton> {
             Text(
               widget.character.name,
               style: TextStyle(
-                color: widget.isSelected
-                    ? const Color(0xFFFFD700)
-                    : Colors.white,
+                color:
+                    widget.isSelected ? const Color(0xFFFFD700) : Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
               ),
@@ -3150,8 +3094,6 @@ class _FriendChipButtonState extends State<_FriendChipButton> {
     );
   }
 }
-
-
 
 class _StarBurstOverlay extends StatefulWidget {
   final VoidCallback onComplete;
@@ -3320,7 +3262,8 @@ class _GenderImageButtonState extends State<_GenderImageButton> {
                   borderRadius: BorderRadius.circular(17),
                   child: _pressed
                       ? ColorFiltered(
-                          colorFilter: const ColorFilter.mode(Color(0x55000000), BlendMode.darken),
+                          colorFilter: const ColorFilter.mode(
+                              Color(0x55000000), BlendMode.darken),
                           child: imageWidget,
                         )
                       : imageWidget,
@@ -3330,9 +3273,12 @@ class _GenderImageButtonState extends State<_GenderImageButton> {
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 200),
                 style: GoogleFonts.cinzelDecorative(
-                  color: widget.isSelected ? const Color(0xFFFFD700) : Colors.white70,
+                  color: widget.isSelected
+                      ? const Color(0xFFFFD700)
+                      : Colors.white70,
                   fontSize: 15,
-                  fontWeight: widget.isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontWeight:
+                      widget.isSelected ? FontWeight.bold : FontWeight.normal,
                   shadows: widget.isSelected
                       ? [const Shadow(color: Color(0xFFFFD700), blurRadius: 10)]
                       : null,
@@ -3346,7 +3292,6 @@ class _GenderImageButtonState extends State<_GenderImageButton> {
     );
   }
 }
-
 
 // ---------------------------------------------------------------------------
 // Themed name input — coded gold/purple field replacing scroll PNG
@@ -3420,14 +3365,16 @@ class _ThemedNameInputState extends State<_ThemedNameInput>
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: _focused
-                  ? Color.fromARGB((180 + (g * 75).round()).clamp(0, 255), 0xFF, 0xD5, 0x4F)
+                  ? Color.fromARGB(
+                      (180 + (g * 75).round()).clamp(0, 255), 0xFF, 0xD5, 0x4F)
                   : const Color(0xFFFFD54F).withAlpha(130),
               width: _focused ? 2.0 : 1.5,
             ),
             boxShadow: _focused
                 ? [
                     BoxShadow(
-                      color: const Color(0xFFFFD54F).withAlpha((80 * g).round()),
+                      color:
+                          const Color(0xFFFFD54F).withAlpha((80 * g).round()),
                       blurRadius: 18 * g,
                       spreadRadius: 1,
                     ),
@@ -3451,7 +3398,9 @@ class _ThemedNameInputState extends State<_ThemedNameInput>
                   fontSize: widget.fontSize,
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
-                  shadows: const [Shadow(color: Color(0xFFFFD54F), blurRadius: 6)],
+                  shadows: const [
+                    Shadow(color: Color(0xFFFFD54F), blurRadius: 6)
+                  ],
                 ),
                 decoration: InputDecoration(
                   hintText: "Type your hero's name...",
@@ -3494,7 +3443,8 @@ class _PressableArrowButtonState extends State<_PressableArrowButton> {
 
   @override
   Widget build(BuildContext context) {
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final btnSize = (band.touchTargetMin / 64.0 * 80).roundToDouble();
     return Opacity(
       opacity: widget.enabled ? 1.0 : 0.4,
@@ -3502,8 +3452,10 @@ class _PressableArrowButtonState extends State<_PressableArrowButton> {
         mainAxisSize: MainAxisSize.min,
         children: [
           GestureDetector(
-            onTapDown: widget.enabled ? (_) => setState(() => _pressed = true) : null,
-            onTapUp: widget.enabled ? (_) => setState(() => _pressed = false) : null,
+            onTapDown:
+                widget.enabled ? (_) => setState(() => _pressed = true) : null,
+            onTapUp:
+                widget.enabled ? (_) => setState(() => _pressed = false) : null,
             onTapCancel: () => setState(() => _pressed = false),
             onTap: widget.enabled ? widget.onTap : null,
             child: AnimatedScale(
@@ -3522,13 +3474,15 @@ class _PressableArrowButtonState extends State<_PressableArrowButton> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFFFD700).withAlpha(_pressed ? 200 : 100),
+                      color: const Color(0xFFFFD700)
+                          .withAlpha(_pressed ? 200 : 100),
                       blurRadius: _pressed ? 32 : 20,
                       spreadRadius: _pressed ? 4 : 0,
                     ),
                   ],
                 ),
-                child: Icon(Icons.arrow_forward_rounded, color: Colors.white, size: btnSize * 0.5),
+                child: Icon(Icons.arrow_forward_rounded,
+                    color: Colors.white, size: btnSize * 0.5),
               ),
             ),
           ),
@@ -3660,7 +3614,9 @@ class _ImagineItHeroCardState extends State<_ImagineItHeroCard>
                       ),
                       // Bottom gradient label
                       Positioned(
-                        left: 0, right: 0, bottom: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
                         child: Container(
                           padding: const EdgeInsets.fromLTRB(16, 20, 16, 14),
                           decoration: const BoxDecoration(
@@ -3703,7 +3659,8 @@ class _ImagineItHeroCardState extends State<_ImagineItHeroCard>
                       // Selected checkmark
                       if (widget.isSelected)
                         Positioned(
-                          top: 10, right: 10,
+                          top: 10,
+                          right: 10,
                           child: Container(
                             padding: const EdgeInsets.all(4),
                             decoration: const BoxDecoration(
@@ -3743,7 +3700,6 @@ class _SceneButtonData {
 class _SceneImageButton extends StatefulWidget {
   final _SceneButtonData data;
   final bool isSelected;
-  final bool fullWidth;
   final double labelFontSize;
   final VoidCallback onTap;
 
@@ -3751,7 +3707,6 @@ class _SceneImageButton extends StatefulWidget {
     required this.data,
     required this.isSelected,
     required this.onTap,
-    this.fullWidth = false,
     this.labelFontSize = 13.0,
   });
 
@@ -3764,8 +3719,7 @@ class _SceneImageButtonState extends State<_SceneImageButton> {
 
   @override
   Widget build(BuildContext context) {
-    final asset =
-        _pressed ? widget.data.pressedAsset : widget.data.normalAsset;
+    final asset = _pressed ? widget.data.pressedAsset : widget.data.normalAsset;
 
     return Semantics(
       button: true,
@@ -3785,7 +3739,7 @@ class _SceneImageButtonState extends State<_SceneImageButton> {
           scale: _pressed ? 0.93 : 1.0,
           duration: const Duration(milliseconds: 80),
           child: Container(
-            width: widget.fullWidth ? double.infinity : null,
+            width: null,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
@@ -3914,7 +3868,12 @@ class _GenreChip extends StatelessWidget {
             width: selected ? 2 : 1,
           ),
           boxShadow: selected
-              ? [BoxShadow(color: const Color(0xFF9E6CFF).withAlpha(100), blurRadius: 8, spreadRadius: 1)]
+              ? [
+                  BoxShadow(
+                      color: const Color(0xFF9E6CFF).withAlpha(100),
+                      blurRadius: 8,
+                      spreadRadius: 1)
+                ]
               : [],
         ),
         child: Text(
@@ -3929,8 +3888,6 @@ class _GenreChip extends StatelessWidget {
     );
   }
 }
-
-
 
 // ---------------------------------------------------------------------------
 // Hero portal placeholder — magical summoning circle, no image asset needed
@@ -3990,10 +3947,10 @@ class _AmbientSparkleLayerState extends State<_AmbientSparkleLayer>
 
 class _AmbientParticle {
   final double xFraction; // 0-1, horizontal position as fraction of width
-  final double phase;     // 0-1, offset in the animation cycle
-  final double speed;     // relative speed multiplier
-  final double size;      // star radius
-  final double drift;     // horizontal drift amount
+  final double phase; // 0-1, offset in the animation cycle
+  final double speed; // relative speed multiplier
+  final double size; // star radius
+  final double drift; // horizontal drift amount
 
   _AmbientParticle(math.Random rng)
       : xFraction = rng.nextDouble(),
@@ -4007,7 +3964,8 @@ class _AmbientSparklePainter extends CustomPainter {
   final List<_AmbientParticle> particles;
   final double progress;
 
-  const _AmbientSparklePainter({required this.particles, required this.progress});
+  const _AmbientSparklePainter(
+      {required this.particles, required this.progress});
 
   @override
   void paint(Canvas canvas, Size size) {
