@@ -2,6 +2,34 @@
 
 ---
 
+## Session Update - 2026-03-06 (ElevenLabs TTS + Voice Picker)
+
+### Scope Completed
+- **Replaced Google Cloud TTS with ElevenLabs** — `backend/elevenlabs_tts_service.py` new service using `elevenlabs` SDK v2.38.0. Model: `eleven_turbo_v2_5` for low latency. MockElevenLabsTTSService for tests.
+- **8 curated voices for kids' storytelling**: Rachel (default, warm American female), Matilda, Dorothy (British female), Gigi (childlike, ages 3–7), George (British male), Charlie (Australian male), Callum (American male), Fin (Irish male).
+- **Updated `tts_routes.py`**: Uses ElevenLabsTTSService; added `GET /tts/voices` endpoint so the Flutter picker can fetch the voice list.
+- **Voice model** — `lib/models/elevenlabs_voice.dart`: typed `ElevenLabsVoice` class + `curated` list + `byId()` helper.
+- **Voice preference Riverpod provider** — `lib/providers/voice_preference_provider.dart`: persists selected voice ID to SharedPreferences (key `tts_voice_id`), defaults to Rachel.
+- **Voice picker bottom sheet** — `lib/widgets/voice_picker_sheet.dart`: gold-highlighted selected voice, accent/age-hint chips, preview button (plays a short ElevenLabs sample), draggable sheet.
+- **StoryReaderScreen wired up**: converted to `ConsumerStatefulWidget`; voice picker button (🎙️) next to play/stop controls shows current voice name; `_startReading()` passes selected voice ID to backend; "Neural2 voice" badge renamed to "ElevenLabs voice".
+- **`requirements.txt`**: added `elevenlabs>=1.50.0`.
+- **`backend/.env`**: added `ELEVENLABS_API_KEY` placeholder — replace with real key.
+
+### Status
+- **ElevenLabs backend service:** ✅ Complete
+- **Voice picker UI:** ✅ Complete — bottom sheet with 8 voices, preview, persisted selection
+- **StoryReaderScreen integration:** ✅ Complete
+- **Flutter analyze:** ✅ No errors in changed files (pre-existing warnings unaffected)
+- **build_runner:** ✅ 143 outputs generated
+- **Launch Readiness:** 80%
+
+### Next Steps
+1. Add real `ELEVENLABS_API_KEY` to `backend/.env`
+2. Test voice preview in browser
+3. Consider adding voice picker shortcut to Settings screen
+
+---
+
 ## Session Update - 2026-03-05 (Hero creator page 1 polish + loading UX + backend perf)
 
 ### Scope Completed

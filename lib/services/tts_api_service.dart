@@ -1,7 +1,7 @@
 // lib/services/tts_api_service.dart
 //
-// Fetches Neural2 MP3 audio from the backend /tts/synthesize endpoint.
-// Returns null if the backend is unavailable or credentials are not
+// Fetches ElevenLabs MP3 audio from the backend /tts/synthesize endpoint.
+// Returns null if the backend is unavailable or ELEVENLABS_API_KEY is not
 // configured — callers should fall back to on-device flutter_tts.
 
 import 'dart:convert';
@@ -10,24 +10,18 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/environment.dart';
+import '../models/elevenlabs_voice.dart';
 import 'api_service_manager.dart';
 
 class TtsApiService {
-  /// Default Neural2 voice — warm female, great for kids' stories.
-  static const String defaultVoice = 'en-US-Neural2-F';
-
-  /// Comfortable reading pace for children.
-  static const double defaultRate = 0.9;
-
-  /// Synthesize [text] via the backend Google Neural2 endpoint.
+  /// Synthesize [text] via the backend ElevenLabs endpoint.
   ///
+  /// [voiceId] defaults to Rachel if not provided.
   /// Returns raw MP3 bytes on success, or null if the service is
-  /// unavailable (no credentials, network error, etc.) so the caller
-  /// can fall back to flutter_tts.
+  /// unavailable (no API key, network error, etc.).
   static Future<Uint8List?> synthesize(
     String text, {
-    String voiceId = defaultVoice,
-    double speakingRate = defaultRate,
+    String? voiceId,
   }) async {
     if (text.trim().isEmpty) return null;
 
@@ -42,11 +36,10 @@ class TtsApiService {
             headers: headers,
             body: jsonEncode({
               'text': text,
-              'voice_id': voiceId,
-              'speaking_rate': speakingRate,
+              'voice_id': voiceId ?? ElevenLabsVoice.defaultVoiceId,
             }),
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 45));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -56,7 +49,7 @@ class TtsApiService {
         }
       }
 
-      // 503 = credentials not configured → expected fallback
+      // 503 = API key not configured → expected graceful fallback
       if (response.statusCode != 503) {
         debugPrint(
           '⚠️ TTS API returned ${response.statusCode}: ${response.body}',

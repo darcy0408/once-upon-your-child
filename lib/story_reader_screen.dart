@@ -3,12 +3,15 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:story_weaver_app/providers/voice_preference_provider.dart';
 import 'package:story_weaver_app/services/tts_api_service.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
+import 'package:story_weaver_app/widgets/voice_picker_sheet.dart';
 
-class StoryReaderScreen extends StatefulWidget {
+class StoryReaderScreen extends ConsumerStatefulWidget {
   final String title;
   final String storyText;
   final String? characterName;
@@ -21,10 +24,10 @@ class StoryReaderScreen extends StatefulWidget {
   });
 
   @override
-  State<StoryReaderScreen> createState() => _StoryReaderScreenState();
+  ConsumerState<StoryReaderScreen> createState() => _StoryReaderScreenState();
 }
 
-class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTickerProviderStateMixin {
+class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with SingleTickerProviderStateMixin {
   late final FlutterTts _tts;
   late final List<_StoryToken> _tokens;
   late final List<int> _wordTokenIndices;
@@ -191,10 +194,12 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
   }
 
   Future<void> _startReading() async {
-    // Try Neural2 via backend first
+    // Try ElevenLabs via backend first
+    final voiceId = ref.read(voicePreferenceNotifierProvider);
     setState(() => _isLoadingAudio = true);
     final Uint8List? mp3Bytes = await TtsApiService.synthesize(
       widget.storyText,
+      voiceId: voiceId,
     );
     if (!mounted) return;
 
@@ -462,6 +467,47 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
                                                       size: 56,
                                                     ),
                                             ),
+                                            const SizedBox(width: 16),
+                                            // Voice picker button
+                                            Consumer(
+                                              builder: (context, ref, _) {
+                                                final voice = ref
+                                                    .watch(voicePreferenceNotifierProvider.notifier)
+                                                    .currentVoice;
+                                                return Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Container(
+                                                      width: 48,
+                                                      height: 48,
+                                                      decoration: BoxDecoration(
+                                                        color: AppColors.gold.withValues(alpha: 0.15),
+                                                        shape: BoxShape.circle,
+                                                        border: Border.all(
+                                                          color: AppColors.gold.withValues(alpha: 0.5),
+                                                        ),
+                                                      ),
+                                                      child: IconButton(
+                                                        icon: const Icon(Icons.record_voice_over,
+                                                            color: AppColors.gold),
+                                                        iconSize: 22,
+                                                        tooltip: 'Change voice',
+                                                        onPressed: () => VoicePickerSheet.show(context),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      voice.name,
+                                                      style: GoogleFonts.quicksand(
+                                                        fontSize: 11,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: AppColors.gold.withValues(alpha: 0.85),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                            ),
                                           ],
                                         ),
                                         if (_usingNeural2) ...[
@@ -474,7 +520,7 @@ class _StoryReaderScreenState extends State<StoryReaderScreen> with SingleTicker
                                                   color: AppColors.gold.withValues(alpha: 0.8)),
                                               const SizedBox(width: 3),
                                               Text(
-                                                'Neural2 voice',
+                                                'ElevenLabs voice',
                                                 style: GoogleFonts.quicksand(
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.w600,

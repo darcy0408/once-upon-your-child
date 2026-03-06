@@ -1,11 +1,14 @@
 """
-TTS Routes — Google Cloud Neural2 narration endpoint.
+TTS Routes — ElevenLabs high-quality narration endpoints.
 
 POST /tts/synthesize
-  Body: { "text": str, "voice_id": str (optional), "speaking_rate": float (optional) }
+  Body: { "text": str, "voice_id": str (optional) }
   Returns: { "audio_base64": str, "format": "mp3", "voice_id": str }
-  Falls back to 503 if Google credentials not configured so Flutter can
-  fall back to on-device flutter_tts gracefully.
+  Returns 503 if ELEVENLABS_API_KEY not set so Flutter can fall back to
+  on-device flutter_tts gracefully.
+
+GET /tts/voices
+  Returns: { "voices": [...] }  — curated voice list for the picker UI.
 """
 
 import base64
@@ -14,7 +17,7 @@ from flask import Blueprint, jsonify, request
 
 logger = logging.getLogger(__name__)
 
-# Lazy-initialise so the app still starts without Google credentials
+# Lazy-initialise so the app still starts without an API key configured
 _tts_service = None
 
 
@@ -24,45 +27,62 @@ def _get_tts_service():
         return _tts_service
 
     try:
-        from backend.tts_service import TTSService
+        from backend.elevenlabs_tts_service import ElevenLabsTTSService
     except ImportError:
         try:
-            from tts_service import TTSService  # running from backend/ dir
+            from elevenlabs_tts_service import ElevenLabsTTSService
         except ImportError:
-            logger.warning("tts_service module not found")
+            logger.warning("elevenlabs_tts_service module not found")
             return None
 
     try:
-        _tts_service = TTSService()
-        logger.info("Google Cloud TTS initialised")
+        _tts_service = ElevenLabsTTSService()
         return _tts_service
-    except ImportError as e:
-        logger.warning("google-cloud-texttospeech not installed: %s", e)
+    except (ImportError, ValueError) as e:
+        logger.warning("ElevenLabs TTS unavailable: %s", e)
         return None
     except Exception as e:
-        logger.warning("Google TTS unavailable (credentials?): %s", e)
+        logger.warning("ElevenLabs TTS init error: %s", e)
         return None
+
+
+def _get_voice_list():
+    """Return curated voices even when the service is not initialised."""
+    try:
+        from backend.elevenlabs_tts_service import CURATED_VOICES, DEFAULT_VOICE_ID
+    except ImportError:
+        try:
+            from elevenlabs_tts_service import CURATED_VOICES, DEFAULT_VOICE_ID
+        except ImportError:
+            return [], "21m00Tcm4TlvDq8ikWAM"
+    return CURATED_VOICES, DEFAULT_VOICE_ID
 
 
 def create_tts_blueprint(limiter, require_auth):
     tts_bp = Blueprint("tts", __name__)
+
+    @tts_bp.route("/tts/voices", methods=["GET"])
+    def voices():
+        """Return the curated ElevenLabs voice list for the Flutter voice picker."""
+        voice_list, default_id = _get_voice_list()
+        return jsonify({"voices": voice_list, "default_voice_id": default_id})
 
     @tts_bp.route("/tts/synthesize", methods=["POST"])
     @require_auth
     @limiter.limit("20 per hour", key_func=lambda: request.current_user.id if hasattr(request, 'current_user') and request.current_user else request.remote_addr)
     def synthesize():
         """
-        Generate Neural2 MP3 narration for a story text.
+        Generate ElevenLabs MP3 narration for a story text.
         Returns base64-encoded MP3 audio.
-        Returns 503 if credentials are missing so the client falls back to
-        on-device TTS.
+        Returns 503 if ELEVENLABS_API_KEY is missing so the client falls back
+        to on-device TTS.
         """
         service = _get_tts_service()
         if service is None:
             return jsonify({
                 "error": "TTS service unavailable",
-                "message": "Google Cloud credentials not configured. "
-                           "Set GOOGLE_APPLICATION_CREDENTIALS in .env.",
+                "message": "ElevenLabs API key not configured. "
+                           "Set ELEVENLABS_API_KEY in backend/.env.",
             }), 503
 
         data = request.get_json(force=True, silent=True) or {}
@@ -70,12 +90,8 @@ def create_tts_blueprint(limiter, require_auth):
         if not text:
             return jsonify({"error": "text is required"}), 400
 
-        # Default: warm female Neural2 voice, slightly relaxed pace for kids
-        voice_id = data.get("voice_id") or "en-US-Neural2-F"
-        speaking_rate = float(data.get("speaking_rate") or 0.9)
-
-        # Clamp to safe range
-        speaking_rate = max(0.25, min(4.0, speaking_rate))
+        _, default_voice_id = _get_voice_list()
+        voice_id = (data.get("voice_id") or "").strip() or default_voice_id
 
         # Truncate to 5 000 chars (~1 000 words) to keep latency and cost sane
         if len(text) > 5000:
@@ -83,14 +99,9 @@ def create_tts_blueprint(limiter, require_auth):
             text = text[:5000]
 
         try:
-            audio_bytes = service.generate_speech(
-                text=text,
-                voice_name=voice_id,
-                speaking_rate=speaking_rate,
-                use_ssml=True,
-            )
+            audio_bytes = service.generate_speech(text=text, voice_id=voice_id)
         except Exception as e:
-            logger.error("TTS synthesis error: %s", e)
+            logger.error("ElevenLabs TTS synthesis error: %s", e)
             return jsonify({"error": "Synthesis failed", "message": str(e)}), 500
 
         if not audio_bytes:
