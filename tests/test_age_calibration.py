@@ -25,7 +25,7 @@ class TestAgeCalibration(unittest.TestCase):
         )
         self.assertIn("300-450 words", prompt)
         self.assertIn("repetition", prompt.lower())
-        self.assertIn("comforting rhythm", prompt.lower())
+        self.assertIn("repetition and pattern", prompt.lower())
         self.assertIn("simple vocabulary", prompt.lower())
 
     def test_age_7_recipe(self):
@@ -45,7 +45,7 @@ class TestAgeCalibration(unittest.TestCase):
         )
         self.assertIn("1200-1800 words", prompt)
         self.assertIn("two-part", prompt.lower())
-        self.assertIn("cause-effect", prompt.lower())
+        self.assertIn("subplot", prompt.lower())
 
     def test_age_10_recipe(self):
         """Test prompt generation for Pre-Teen (also Age 8-10 band)"""
