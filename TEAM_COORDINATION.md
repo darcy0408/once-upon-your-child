@@ -2,6 +2,26 @@
 
 ---
 
+## Session Update - 2026-03-06 (Feelings Quest Modal Fix + Avatar Step Unblock)
+
+### Scope Completed
+- **Fixed Feelings Quest modal not rendering** — `lib/widgets/feelings_quest_modal.dart` line 18: added `rootNavigator: true` to `Navigator.of(context).push()`. Without this, the push resolved to the PageView's subtree navigator and the modal never appeared full-screen.
+- **Unblocked avatar step for young children** — `lib/screens/wizard_steps/hero_creator_step.dart` `_buildPage2()`: "Next: Pick Your Team" button is now always enabled (`enabled: true`); avatar creation is optional. Archetype cards now appear when `_hasAvatar || _selectedArchetypeId != null` instead of requiring avatar first.
+- **Browser testing confirmed** — Flutter dev server running on `http://localhost:8080` via `flutter run -d web-server --no-web-resources-cdn`. Playwright automation verified wizard launches, step 1 accepts input, avatar dialog appears on step 2 (and can be bypassed).
+
+### Status
+- **Feelings Quest modal rootNavigator fix:** ✅ Committed (`593cf7a`)
+- **Avatar step unblocked:** ✅ Committed (`593cf7a`)
+- **Full modal flow visual confirmation:** 🟡 Server running — navigate to http://localhost:8080 to verify
+- **Launch Readiness:** 78%
+
+### Next Steps
+1. Visually confirm Feelings Quest modal appears (dark purple full-screen with emotion clouds) — wizard → Pick Place → Big Feelings Quest card
+2. Confirm archetype cards appear on avatar step without creating an avatar
+3. Investigate `avatar_config.json` 404 at runtime (file exists in assets, listed in pubspec)
+
+---
+
 ## Session Update - 2026-03-06 (ElevenLabs TTS + Voice Picker)
 
 ### Scope Completed
