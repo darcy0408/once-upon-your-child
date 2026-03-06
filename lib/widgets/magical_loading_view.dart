@@ -393,16 +393,16 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
             ),
             // ── Adventure progress steps ──────────────────────────────────
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 12,
+              runSpacing: 8,
               children: List.generate(_adventureSteps.length, (i) {
                 final done = i < _stepIndex;
                 final active = i == _stepIndex;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 400),
                         width: active ? 14 : 10,
@@ -436,9 +436,8 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                         ),
                       ),
                     ],
-                  ),
-                );
-              }),
+                  );
+                }),
             ),
             if (_tapCount > 0)
               Padding(

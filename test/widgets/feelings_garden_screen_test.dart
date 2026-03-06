@@ -18,6 +18,11 @@ void main() {
     }
   }
 
+  void setLargeScreen(WidgetTester tester) {
+    tester.view.physicalSize = const Size(1200, 1024);
+    tester.view.devicePixelRatio = 1.0;
+  }
+
   Widget createTestWidget(int age) {
     return MaterialApp(
       theme: ThemeData(
@@ -60,6 +65,8 @@ void main() {
     });
 
     testWidgets('can select a core emotion and see intensity slider', (tester) async {
+      setLargeScreen(tester);
+      addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(createTestWidget(8));
       await pumpFor(tester, const Duration(milliseconds: 500));
 
@@ -72,12 +79,14 @@ void main() {
     });
 
     testWidgets('can navigate to Explorer and select core feeling', (tester) async {
+      setLargeScreen(tester);
+      addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(createTestWidget(8));
       await pumpFor(tester, const Duration(milliseconds: 500));
 
       // Switch to Explorer tab
       await tester.tap(find.text('Explorer'));
-      await pumpFor(tester, const Duration(milliseconds: 300));
+      await pumpFor(tester, const Duration(milliseconds: 800));
 
       // Level 0 (_CoreGrid) has no heading; verify core emotions are visible
       expect(find.text('Happy'), findsWidgets);
@@ -93,6 +102,8 @@ void main() {
     });
 
     testWidgets('Saving to journal shows snackbar for age 8+', (tester) async {
+      setLargeScreen(tester);
+      addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(createTestWidget(8));
       await pumpFor(tester, const Duration(milliseconds: 500));
 

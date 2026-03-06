@@ -180,25 +180,32 @@ void main() {
     }
   });
 
-  testWidgets('selects gender', (tester) async {
+  testWidgets('selects Boy gender', (tester) async {
     setLargeScreen(tester);
     addTearDown(tester.view.resetPhysicalSize);
-    final wizardData = WizardData()..characterGender = 'Girl';
+    final wizardData = WizardData();
 
     await tester.pumpWidget(
-      buildSubject(
-        wizardData: wizardData,
-        onNext: () {},
-      ),
+      buildSubject(wizardData: wizardData, onNext: () {}),
     );
     await pumpFor(tester, const Duration(milliseconds: 500));
 
-    // Gender labels are 'Boy'/'Girl' (not 'Hero'/'Heroine')
     final boyBtn = find.text('Boy');
     expect(boyBtn, findsOneWidget);
     await tester.tap(boyBtn);
     await tester.pump();
     expect(wizardData.characterGender, 'Boy');
+  });
+
+  testWidgets('selects Girl gender', (tester) async {
+    setLargeScreen(tester);
+    addTearDown(tester.view.resetPhysicalSize);
+    final wizardData = WizardData();
+
+    await tester.pumpWidget(
+      buildSubject(wizardData: wizardData, onNext: () {}),
+    );
+    await pumpFor(tester, const Duration(milliseconds: 500));
 
     final girlBtn = find.text('Girl');
     expect(girlBtn, findsOneWidget);
