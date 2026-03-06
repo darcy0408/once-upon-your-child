@@ -145,6 +145,13 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   List<_InlineIllustration> _inlineIllustrations = [];
 
+  /// True when the first page is a full-bleed illustration cover.
+  bool get _hasCoverIllustration => _inlineIllustrations.isNotEmpty;
+
+  /// The total "virtual" page count (cover + text pages + end page).
+  int get _totalPages =>
+      _storyPages.length + (_hasCoverIllustration ? 1 : 0) + 1; // +1 for end page
+
   // Quality scoring
   Map<String, dynamic>? _qualityData;
   bool _isLoadingQuality = false;
@@ -416,14 +423,19 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     );
   }
 
+  bool _ambienceMuted = false;
+
   @override
   void initState() {
     super.initState();
     _offlineService =
         widget.offlineService ?? OfflineStoryService(IsarService.instance);
 
-    // Start background ambience
-    AudioAmbienceService().startAmbience(widget.theme ?? 'Adventure');
+    // Load mute preference (no background ambience — this is a reading app)
+    AudioAmbienceService().loadMutePreference().then((_) {
+      _ambienceMuted = AudioAmbienceService().isMuted;
+      if (mounted) setState(() {});
+    });
 
     // For epic stories, repaginate from the full story text to avoid sparse pages.
     if (widget.storyLengthHint == 'epic') {
@@ -1614,23 +1626,22 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       setState(() {
         if (isForward) {
           _currentPageIndex =
-              (_currentPageIndex + 1).clamp(0, _storyPages.length - 1);
+              (_currentPageIndex + 1).clamp(0, _totalPages - 1);
         } else {
           _currentPageIndex =
-              (_currentPageIndex - 1).clamp(0, _storyPages.length - 1);
+              (_currentPageIndex - 1).clamp(0, _totalPages - 1);
         }
       });
-      unawaited(AudioAmbienceService().onUserGesture());
-      // Play page turn SFX (skip on web due codec/asset format issues in browser runtime).
-      if (!kIsWeb) {
-        unawaited(AudioAmbienceService().playSfx('sounds/page_turn.mp3'));
+      // Play sparkle SFX on page flip (respects mute)
+      if (!_ambienceMuted) {
+        unawaited(AudioAmbienceService().playSfx('sounds/magical_shimmer.mp3'));
       }
 
       _trackResultAction(
         'story_page_flipped',
         extra: {
           'page_number': _currentPageIndex + 1,
-          'total_pages': _storyPages.length,
+          'total_pages': _totalPages,
           'direction': isForward ? 'forward' : 'backward',
         },
       );
@@ -1638,7 +1649,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   }
 
   void _goToNextStoryPage() {
-    if (_currentPageIndex >= _storyPages.length - 1) return;
+    if (_currentPageIndex >= _totalPages - 1) return;
     _handlePageFlip(true);
   }
 
@@ -1648,25 +1659,16 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   }
 
   Widget _buildStoryPage(int index) {
-    if (index < 0 || index >= _storyPages.length) {
-      return StoryBookPage(
-        backgroundColor:
-            _highContrastMode ? Colors.black : const Color(0xFFFFF8E7),
-        showDecorations: !_highContrastMode,
-        child: const Center(child: Text('End of Adventure')),
-      );
+    // Cover illustration page
+    if (_hasCoverIllustration && index == 0) {
+      return _buildCoverPage();
     }
 
-    // Get illustration for this page if available
-    final inlineIllustration = index < _inlineIllustrations.length
-        ? _inlineIllustrations[index]
-        : null;
-    final cachedIllustration =
-        _cachedIllustrations != null && index < _cachedIllustrations!.length
-            ? _cachedIllustrations![index]
-            : null;
-    final hasIllustration =
-        inlineIllustration != null || cachedIllustration != null;
+    // End-of-story page
+    final textIndex = _hasCoverIllustration ? index - 1 : index;
+    if (textIndex < 0 || textIndex >= _storyPages.length) {
+      return _buildEndOfStoryPage();
+    }
 
     final bool isRevealed = _revealedPages.contains(index);
 
@@ -1676,7 +1678,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       showDecorations: !_highContrastMode,
       child: InkWell(
         onTap: () {
-          unawaited(AudioAmbienceService().onUserGesture());
           if (!isRevealed) {
             setState(() {
               _revealedPages.add(index);
@@ -1689,56 +1690,10 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Show illustration at top of page if available
-              if (hasIllustration) ...[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: inlineIllustration != null
-                      ? Image.memory(
-                          inlineIllustration.bytes,
-                          fit: BoxFit.cover,
-                          height: 250,
-                          width: double.infinity,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _buildImageErrorPlaceholder();
-                          },
-                        )
-                      : Image.network(
-                          cachedIllustration!.imageUrl,
-                          fit: BoxFit.cover,
-                          height: 250,
-                          width: double.infinity,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              height: 250,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[100],
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes !=
-                                          null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes!
-                                      : null,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            return _buildImageErrorPlaceholder();
-                          },
-                        ),
-                ),
-                const SizedBox(height: 24),
-              ],
               // Story text - MAGIC TYPEWRITER EFFECT
               if (!isRevealed)
                 MagicalTypewriterText(
-                  text: _storyPages[index],
+                  text: _storyPages[textIndex],
                   readerAge: _effectiveAge,
                   onComplete: () {
                     setState(() {
@@ -1763,9 +1718,151 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                           ? Colors.white
                           : const Color(0xFF2C3E50),
                     ),
-                    children: _buildStorySpans(_storyPages[index]),
+                    children: _buildStorySpans(_storyPages[textIndex]),
                   ),
                 ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Full-bleed cover illustration page (picture-book opening spread).
+  Widget _buildCoverPage() {
+    final illustration = _inlineIllustrations.first;
+    return StoryBookPage(
+      backgroundColor:
+          _highContrastMode ? Colors.black : const Color(0xFFFFF8E7),
+      showDecorations: !_highContrastMode,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.memory(
+                illustration.bytes,
+                fit: BoxFit.contain,
+                width: double.infinity,
+                errorBuilder: (context, error, stackTrace) {
+                  return _buildImageErrorPlaceholder();
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              widget.title,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.quicksand(
+                fontSize: 24 * _textScale,
+                fontWeight: FontWeight.bold,
+                color: _highContrastMode
+                    ? Colors.white
+                    : const Color(0xFF2C3E50),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Celebratory end-of-story page with wisdom gem and rating.
+  Widget _buildEndOfStoryPage() {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    return StoryBookPage(
+      backgroundColor:
+          _highContrastMode ? Colors.black : const Color(0xFFFFF8E7),
+      showDecorations: !_highContrastMode,
+      child: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                '✨',
+                style: TextStyle(fontSize: 48 * _textScale),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'The End',
+                style: GoogleFonts.quicksand(
+                  fontSize: 32 * _textScale,
+                  fontWeight: FontWeight.bold,
+                  color: _highContrastMode
+                      ? Colors.white
+                      : band.primary,
+                ),
+              ),
+              if (widget.wisdomGem.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                  decoration: BoxDecoration(
+                    color: AppColors.gold.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.gold.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.auto_awesome, color: AppColors.gold, size: 28),
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.wisdomGem,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.quicksand(
+                          fontSize: 18 * _textScale,
+                          fontWeight: FontWeight.w600,
+                          fontStyle: FontStyle.italic,
+                          color: _highContrastMode
+                              ? Colors.white
+                              : const Color(0xFF2C3E50),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 32),
+              Text(
+                'How did you like this story?',
+                style: GoogleFonts.quicksand(
+                  fontSize: 16 * _textScale,
+                  fontWeight: FontWeight.w600,
+                  color: _highContrastMode ? Colors.white70 : Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (i) {
+                  return Semantics(
+                    label: 'Rate ${i + 1} stars',
+                    button: true,
+                    child: InkWell(
+                      onTap: () {
+                        setState(() => _storyRating = i + 1.0);
+                        _submitFeedback();
+                      },
+                      customBorder: const CircleBorder(),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Icon(
+                          i < _storyRating
+                              ? Icons.star_rounded
+                              : Icons.star_outline_rounded,
+                          color: AppColors.gold,
+                          size: 36,
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
             ],
           ),
         ),
@@ -2139,6 +2236,45 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                           ),
                         ),
                         const SizedBox(width: 4),
+                        // Sound Mute Button
+                        Container(
+                          decoration: BoxDecoration(
+                            color: _ambienceMuted
+                                ? Colors.white.withValues(alpha: 0.1)
+                                : Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            icon: Icon(
+                              _ambienceMuted
+                                  ? Icons.volume_off
+                                  : Icons.volume_up,
+                              color: _ambienceMuted
+                                  ? Colors.white54
+                                  : Colors.white,
+                            ),
+                            tooltip: _ambienceMuted
+                                ? 'Turn sound on'
+                                : 'Turn sound off',
+                            constraints: isNarrow
+                                ? const BoxConstraints(
+                                    maxWidth: 40, maxHeight: 40)
+                                : null,
+                            padding: isNarrow
+                                ? EdgeInsets.zero
+                                : const EdgeInsets.all(8),
+                            onPressed: () async {
+                              await AudioAmbienceService().toggleMute();
+                              if (mounted) {
+                                setState(() {
+                                  _ambienceMuted =
+                                      AudioAmbienceService().isMuted;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 4),
                         // Settings Button
                         Container(
                           decoration: BoxDecoration(
@@ -2216,8 +2352,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                                           _currentPageIndex),
                                                   backBuilder: (context) =>
                                                       _currentPageIndex <
-                                                              _storyPages
-                                                                      .length -
+                                                              _totalPages -
                                                                   1
                                                           ? _buildStoryPage(
                                                               _currentPageIndex +
@@ -2274,7 +2409,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                                     ),
                                                   ),
                                                 // Right arrow (next page)
-                                                if (_currentPageIndex < _storyPages.length - 1)
+                                                if (_currentPageIndex < _totalPages - 1)
                                                   Positioned(
                                                     right: 0,
                                                     top: 0,
@@ -2319,7 +2454,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                             spacing: 8,
                                             runSpacing: 8,
                                             children: [
-                                              if (_storyPages.length > 1)
+                                              if (_totalPages > 1)
                                                 Row(
                                                   mainAxisSize:
                                                       MainAxisSize.min,
@@ -2335,7 +2470,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                                       color: AppColors.primary,
                                                     ),
                                                     Text(
-                                                      'Page ${_currentPageIndex + 1} of ${_storyPages.length}',
+                                                      'Page ${_currentPageIndex + 1} of $_totalPages',
                                                       style: TextStyle(
                                                         fontWeight:
                                                             FontWeight.w700,
@@ -2347,9 +2482,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                                     IconButton(
                                                       tooltip: 'Next page',
                                                       onPressed: _currentPageIndex <
-                                                              _storyPages
-                                                                      .length -
-                                                                  1
+                                                              _totalPages - 1
                                                           ? _goToNextStoryPage
                                                           : null,
                                                       icon: const Icon(Icons
@@ -2362,7 +2495,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                               StorybookProgressIndicator(
                                                 currentPage:
                                                     _currentPageIndex + 1,
-                                                totalPages: _storyPages.length,
+                                                totalPages: _totalPages,
                                                 stageLabel: _adventureSteps
                                                             .length >
                                                         _currentPageIndex
@@ -2373,42 +2506,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                                                 r'^(Step \d+:|🌟|🚪|🎨|😮|🤔|💪|✨|🏠|🎭|🤪|🎉|💭)\s*'),
                                                             '')
                                                     : null,
-                                              ),
-                                              // Simple Feedback
-                                              Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children:
-                                                    List.generate(5, (index) {
-                                                  return Semantics(
-                                                    label:
-                                                        'Rate ${index + 1} stars',
-                                                    button: true,
-                                                    child: InkWell(
-                                                      onTap: () {
-                                                        setState(() =>
-                                                            _storyRating =
-                                                                index + 1.0);
-                                                        _submitFeedback();
-                                                      },
-                                                      customBorder:
-                                                          const CircleBorder(),
-                                                      child: Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .all(8.0),
-                                                        child: Icon(
-                                                          index < _storyRating
-                                                              ? Icons
-                                                                  .star_rounded
-                                                              : Icons
-                                                                  .star_outline_rounded,
-                                                          color: AppColors.gold,
-                                                          size: 24,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  );
-                                                }),
                                               ),
                                             ],
                                           ),
@@ -2436,6 +2533,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                 isFreeTier: widget.subscription?.isFree ?? true,
                 hasIllustrations: _inlineIllustrations.isNotEmpty ||
                     (_cachedIllustrations?.isNotEmpty ?? false),
+                isYoungUser: _isYoungUser,
                 onUnlockIllustrations: () =>
                     _showIllustrationUnlockSheet(context),
                 onTellMeAnother: _createAnotherStory,
@@ -2469,6 +2567,7 @@ class _PostStoryActionBar extends StatelessWidget {
   final bool isSaved;
   final bool isFreeTier;
   final bool hasIllustrations;
+  final bool isYoungUser;
   final VoidCallback onUnlockIllustrations;
   final VoidCallback onTellMeAnother;
   final VoidCallback onReread;
@@ -2481,6 +2580,7 @@ class _PostStoryActionBar extends StatelessWidget {
     required this.isSaved,
     required this.isFreeTier,
     required this.hasIllustrations,
+    this.isYoungUser = false,
     required this.onUnlockIllustrations,
     required this.onTellMeAnother,
     required this.onReread,
@@ -2615,7 +2715,7 @@ class _PostStoryActionBar extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            // Secondary action row
+            // Secondary action row — simplified for young users (5-7)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -2624,31 +2724,43 @@ class _PostStoryActionBar extends StatelessWidget {
                   label: 'Re-read',
                   onTap: onReread,
                   color: Colors.white,
-                ),
-                _ActionChip(
-                  icon: Icons.shuffle_rounded,
-                  label: 'Remix',
-                  onTap: onRemix,
-                  color: Colors.white,
-                ),
-                _ActionChip(
-                  icon: isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
-                  label: isSaved ? 'Saved ✓' : 'Save',
-                  onTap: onSave,
-                  color: isSaved ? AppColors.gold : Colors.white,
-                ),
-                _ActionChip(
-                  icon: Icons.share_rounded,
-                  label: 'Share',
-                  onTap: onShare,
-                  color: Colors.white,
+                  largeMode: isYoungUser,
                 ),
                 _ActionChip(
                   icon: Icons.palette_rounded,
                   label: 'Color',
                   onTap: onColor,
                   color: Colors.white,
+                  largeMode: isYoungUser,
                 ),
+                if (!isYoungUser) ...[
+                  _ActionChip(
+                    icon: Icons.shuffle_rounded,
+                    label: 'Remix',
+                    onTap: onRemix,
+                    color: Colors.white,
+                  ),
+                  _ActionChip(
+                    icon: isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
+                    label: isSaved ? 'Saved ✓' : 'Save',
+                    onTap: onSave,
+                    color: isSaved ? AppColors.gold : Colors.white,
+                  ),
+                  _ActionChip(
+                    icon: Icons.share_rounded,
+                    label: 'Share',
+                    onTap: onShare,
+                    color: Colors.white,
+                  ),
+                ],
+                if (isYoungUser)
+                  _ActionChip(
+                    icon: isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
+                    label: isSaved ? 'Saved ✓' : 'Save',
+                    onTap: onSave,
+                    color: isSaved ? AppColors.gold : Colors.white,
+                    largeMode: true,
+                  ),
               ],
             ),
           ],
@@ -2663,30 +2775,34 @@ class _ActionChip extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
   final Color color;
+  final bool largeMode;
 
   const _ActionChip({
     required this.icon,
     required this.label,
     required this.onTap,
     required this.color,
+    this.largeMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDisabled = onTap == null;
     final effectiveColor = isDisabled ? color.withValues(alpha: 0.45) : color;
+    final iconSize = largeMode ? 32.0 : 24.0;
+    final fontSize = largeMode ? 13.0 : 11.0;
     return GestureDetector(
       onTap: onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: effectiveColor, size: 24),
+          Icon(icon, color: effectiveColor, size: iconSize),
           const SizedBox(height: 3),
           Text(
             label,
             style: TextStyle(
               color: effectiveColor,
-              fontSize: 11,
+              fontSize: fontSize,
               fontWeight: FontWeight.w600,
             ),
           ),

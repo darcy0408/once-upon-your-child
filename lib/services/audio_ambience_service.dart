@@ -1,5 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Service to handle theme-based background ambience audio.
 class AudioAmbienceService {
@@ -7,12 +8,34 @@ class AudioAmbienceService {
   factory AudioAmbienceService() => _instance;
   AudioAmbienceService._internal();
 
+  static const String _kMutedKey = 'audio_ambience_muted';
+
   final AudioPlayer _player = AudioPlayer();
   String? _currentTheme;
   bool _isPlaying = false;
   bool _autoplayBlocked = false;
   String? _pendingTheme;
   double _volume = 0.15;
+  bool _isMuted = false;
+
+  /// Returns whether ambience is currently muted.
+  bool get isMuted => _isMuted;
+
+  /// Loads the persisted mute preference. Call once at app startup or before first play.
+  Future<void> loadMutePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    _isMuted = prefs.getBool(_kMutedKey) ?? false;
+  }
+
+  /// Toggles mute on/off and persists the choice.
+  Future<void> toggleMute() async {
+    _isMuted = !_isMuted;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kMutedKey, _isMuted);
+    try {
+      await _player.setVolume(_isMuted ? 0 : _volume);
+    } catch (_) {}
+  }
 
   /// Map of story themes to their corresponding audio assets.
   final Map<String, String> _themeAudioMap = {
@@ -23,11 +46,9 @@ class AudioAmbienceService {
     'Ocean': 'sounds/ocean_waves.mp3',
   };
 
-  /// Plays a one-shot sound effect.
+  /// Plays a one-shot sound effect (respects mute).
   Future<void> playSfx(String sfxPath) async {
-    // Web audio in this app is already busy with ambience and some SFX assets
-    // are optional; skip one-shot SFX to avoid noisy browser runtime errors.
-    if (kIsWeb) return;
+    if (_isMuted) return;
 
     try {
       final sfxPlayer = AudioPlayer();
@@ -65,8 +86,8 @@ class AudioAmbienceService {
       _autoplayBlocked = false;
 
       await _player.stop();
-      await _player.setReleaseMode(ReleaseMode.loop);
-      await _player.setVolume(_volume);
+      await _player.setReleaseMode(ReleaseMode.release); // Play once, not looped
+      await _player.setVolume(_isMuted ? 0 : _volume);
       await _player.play(AssetSource(assetPath));
       _currentTheme = normalizedTheme;
       _isPlaying = true;
@@ -96,8 +117,8 @@ class AudioAmbienceService {
       if (assetPath == null) return;
 
       await _player.stop();
-      await _player.setReleaseMode(ReleaseMode.loop);
-      await _player.setVolume(_volume);
+      await _player.setReleaseMode(ReleaseMode.release); // Play once
+      await _player.setVolume(_isMuted ? 0 : _volume);
       await _player.play(AssetSource(assetPath));
 
       _currentTheme = theme;

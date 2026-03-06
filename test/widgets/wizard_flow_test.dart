@@ -188,8 +188,8 @@ void main() {
     // --- STEP 4: Magic Review ---
     expect(find.byType(MagicOrbWidget), findsOneWidget);
 
-    // Verify summary
-    expect(find.textContaining('Test Hero'), findsOneWidget);
+    // Verify summary — name appears in both the MagicOrbWidget label and as a title
+    expect(find.textContaining('Test Hero'), findsNWidgets(2));
 
     expect(find.byType(MagicReviewStep), findsOneWidget);
 
