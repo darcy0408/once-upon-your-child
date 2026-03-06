@@ -79,15 +79,17 @@ void main() {
       await tester.tap(find.text('Explorer'));
       await pumpFor(tester, const Duration(milliseconds: 300));
 
-      expect(find.text("Let's name your feeling exactly"), findsOneWidget);
+      // Level 0 (_CoreGrid) has no heading; verify core emotions are visible
+      expect(find.text('Happy'), findsWidgets);
 
-      // Tap '😊 Happy' chip
-      await tester.ensureVisible(find.text('😊 Happy'));
-      await tester.tap(find.text('😊 Happy'));
+      // Tap 'Happy' core emotion card
+      await tester.ensureVisible(find.text('Happy').first);
+      await tester.tap(find.text('Happy').first);
       await pumpFor(tester, const Duration(milliseconds: 300));
       await tester.pump(); // allow setState to rebuild
 
-      expect(find.text('More specific…'), findsOneWidget);
+      // Level 1 (_SecondaryGrid) — secondary emotions under Happy are visible
+      expect(find.text('Playful'), findsWidgets);
     });
 
     testWidgets('Saving to journal shows snackbar for age 8+', (tester) async {

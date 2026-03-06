@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:story_weaver_app/story_reader_screen.dart';
 
@@ -37,11 +38,13 @@ void main() {
   });
 
   Widget buildSubject() {
-    return const MaterialApp(
-      home: StoryReaderScreen(
-        title: 'The Star Trail',
-        storyText: 'Once upon a moonlit night, Luna followed a shining map.',
-        characterName: 'Luna',
+    return const ProviderScope(
+      child: MaterialApp(
+        home: StoryReaderScreen(
+          title: 'The Star Trail',
+          storyText: 'Once upon a moonlit night, Luna followed a shining map.',
+          characterName: 'Luna',
+        ),
       ),
     );
   }
@@ -103,27 +106,29 @@ void main() {
     setLargeScreen(tester);
     addTearDown(tester.view.resetPhysicalSize);
     await tester.pumpWidget(
-      MaterialApp(
-        home: Builder(
-          builder: (context) {
-            return Scaffold(
-              body: Center(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const StoryReaderScreen(
-                          title: 'The Star Trail',
-                          storyText: 'A short story.',
+      ProviderScope(
+        child: MaterialApp(
+          home: Builder(
+            builder: (context) {
+              return Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const StoryReaderScreen(
+                            title: 'The Star Trail',
+                            storyText: 'A short story.',
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                  child: const Text('Open Reader'),
+                      );
+                    },
+                    child: const Text('Open Reader'),
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );

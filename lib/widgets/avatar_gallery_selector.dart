@@ -400,7 +400,7 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
               Navigator.pop(ctx);
               await Navigator.of(context).push<String>(
                 MaterialPageRoute(
-                  builder: (_) => const ByokSetupWizardScreen(),
+                  builder: (_) => ByokSetupWizardScreen(),
                   fullscreenDialog: true,
                 ),
               );

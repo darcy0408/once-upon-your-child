@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:isar/isar.dart';
@@ -148,13 +149,15 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     // 1. Pump the Wizard Screen
     await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light(),
-        home: WizardStoryScreen(
-          availableCharacters: const [],
-          initialWizardData: WizardData()
-            ..characterName = 'Test Hero'
-            ..selectedArchetypeId = 'storm_rider',
+      ProviderScope(
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          home: WizardStoryScreen(
+            availableCharacters: const [],
+            initialWizardData: WizardData()
+              ..characterName = 'Test Hero'
+              ..selectedArchetypeId = 'storm_rider',
+          ),
         ),
       ),
     );
