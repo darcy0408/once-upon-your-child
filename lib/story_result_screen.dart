@@ -2049,6 +2049,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                         ],
                         if (widget.wisdomGem.isNotEmpty)
                           Expanded(
+                            key: const Key('wisdom_chip'),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 8),

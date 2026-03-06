@@ -80,9 +80,10 @@ void main() {
     expect(find.text('Test Story'), findsOneWidget);
     expect(find.textContaining('Once upon a testing time'), findsOneWidget);
     expect(find.textContaining('Be kind and curious'), findsOneWidget);
-  });
+    expect(find.byKey(const Key('wisdom_chip')), findsOneWidget);
+    });
 
-  testWidgets('StoryResultScreen hides wisdom chip when wisdom text is empty',
+    testWidgets('StoryResultScreen hides wisdom chip when wisdom text is empty',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -107,6 +108,6 @@ void main() {
     );
 
     expect(find.textContaining('A tiny test story'), findsOneWidget);
-    expect(find.byIcon(Icons.auto_awesome), findsNothing);
-  });
+    expect(find.byKey(const Key('wisdom_chip')), findsNothing);
+    });
 }

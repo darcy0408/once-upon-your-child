@@ -108,7 +108,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Current Plan'), findsOneWidget);
-    expect(find.text('Premium'), findsOneWidget);
+    expect(find.text('Adventurer'), findsOneWidget);
     expect(find.text('Active'), findsOneWidget);
     expect(find.textContaining('Renews on'), findsOneWidget);
   });

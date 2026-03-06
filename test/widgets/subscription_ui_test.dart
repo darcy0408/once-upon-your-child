@@ -58,7 +58,7 @@ void main() {
     service.emitStatus(subscriptionStatus);
     await tester.pump();
 
-    expect(find.text('Current plan: Premium'), findsOneWidget);
+    expect(find.text('Current plan: Adventurer'), findsOneWidget);
     expect(find.text('Status: Active'), findsOneWidget);
   });
 }

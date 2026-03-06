@@ -45,7 +45,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Current plan: Premium'), findsOneWidget);
+    expect(find.text('Current plan: Adventurer'), findsOneWidget);
   });
 
   testWidgets('shows status changes when stream updates', (tester) async {
