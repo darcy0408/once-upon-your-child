@@ -3056,17 +3056,24 @@ class _PageArrowOverlayState extends State<_PageArrowOverlay>
     with SingleTickerProviderStateMixin {
   double _opacity = 1.0;
   bool _hasInteracted = false;
+  Timer? _fadeTimer;
 
   @override
   void initState() {
     super.initState();
     if (!widget.alwaysVisible) {
-      Future.delayed(const Duration(seconds: 3), () {
+      _fadeTimer = Timer(const Duration(seconds: 3), () {
         if (mounted && !_hasInteracted) {
           setState(() => _opacity = 0.0);
         }
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _fadeTimer?.cancel();
+    super.dispose();
   }
 
   void _handleTap() {
@@ -3076,7 +3083,8 @@ class _PageArrowOverlayState extends State<_PageArrowOverlay>
     });
     widget.onTap();
     if (!widget.alwaysVisible) {
-      Future.delayed(const Duration(seconds: 2), () {
+      _fadeTimer?.cancel();
+      _fadeTimer = Timer(const Duration(seconds: 2), () {
         if (mounted) setState(() => _opacity = 0.0);
       });
     }
