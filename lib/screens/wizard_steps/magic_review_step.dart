@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -814,6 +815,7 @@ class _StaggeredRevealState extends State<_StaggeredReveal>
   late AnimationController _anim;
   late Animation<double> _opacity;
   late Animation<Offset> _slide;
+  Timer? _staggerTimer;
 
   @override
   void initState() {
@@ -823,13 +825,14 @@ class _StaggeredRevealState extends State<_StaggeredReveal>
     _opacity = CurvedAnimation(parent: _anim, curve: Curves.easeOut);
     _slide = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
         CurvedAnimation(parent: _anim, curve: Curves.easeOutBack));
-    Future.delayed(Duration(milliseconds: 100 * widget.index), () {
+    _staggerTimer = Timer(Duration(milliseconds: 100 * widget.index), () {
       if (mounted) _anim.forward();
     });
   }
 
   @override
   void dispose() {
+    _staggerTimer?.cancel();
     _anim.dispose();
     super.dispose();
   }
