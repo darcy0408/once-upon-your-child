@@ -276,6 +276,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                     // Step 2: Review & Launch
                     MagicReviewStep(
                       wizardData: _wizardData,
+                      onGoBack: _previousStep,
                     ),
                   ],
                 ),

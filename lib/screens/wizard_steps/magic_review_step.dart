@@ -24,7 +24,8 @@ import 'wizard_data_mapper.dart';
 /// Updated with audio prompts and consistent magical typography.
 class MagicReviewStep extends StatefulWidget {
   final WizardData wizardData;
-  const MagicReviewStep({super.key, required this.wizardData});
+  final VoidCallback? onGoBack;
+  const MagicReviewStep({super.key, required this.wizardData, this.onGoBack});
   @override
   State<MagicReviewStep> createState() => _MagicReviewStepState();
 }
@@ -185,7 +186,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
   Widget build(BuildContext context) {
     final data = widget.wizardData;
     final screenWidth = MediaQuery.of(context).size.width;
-    final orbSize = (screenWidth - 64).clamp(180.0, 250.0);
+    final orbSize = (screenWidth - 64).clamp(180.0, 220.0);
     final ageBand = Theme.of(context).extension<AgeBandThemeData>();
     final heroFallback = ageBand?.heroLabel ?? 'Your Hero';
     return SingleChildScrollView(
@@ -227,46 +228,30 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 ),
               ]),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
+            if (data.characterName.isNotEmpty) ...[
+              Text(
+                data.characterName,
+                style: GoogleFonts.cinzelDecorative(color: const Color(0xFFFFD700), fontSize: 16, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+            ],
             // ── Setting + companion — below the orb so nothing overlaps ──────
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Setting
-                Column(mainAxisSize: MainAxisSize.min, children: [
-                  MagicalFloat(
-                    distance: 6.0,
-                    duration: const Duration(seconds: 4),
-                    delay: 100,
-                    child: _AuraCircle(
-                      size: 72,
-                      auraColor: const Color(0xFFFFD9A6),
-                      child: ClipOval(child: Image.asset(_scenarioImage, fit: BoxFit.cover)),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
-                    ),
-                    child: Text(_scenarioLabel, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                  ),
-                ]),
-                // Companion (only if selected)
-                if (data.selectedCompanions.isNotEmpty) ...[
-                  const SizedBox(width: 32),
-                  Column(mainAxisSize: MainAxisSize.min, children: [
+                Flexible(
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
                     MagicalFloat(
                       distance: 6.0,
                       duration: const Duration(seconds: 4),
-                      delay: 500,
+                      delay: 100,
                       child: _AuraCircle(
-                        size: 72,
-                        auraColor: const Color(0xFFF3AEFF),
-                        child: _CompanionAvatar(companionImage: _companionImage),
+                        size: 88,
+                        auraColor: const Color(0xFFFFD9A6),
+                        child: ClipOval(child: Image.asset(_scenarioImage, fit: BoxFit.cover)),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -275,25 +260,58 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
                       ),
-                      child: const Text('Companion', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                      child: Text(_scenarioLabel, overflow: TextOverflow.ellipsis, maxLines: 1, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                     ),
                   ]),
+                ),
+                // Companion (only if selected)
+                if (data.selectedCompanions.isNotEmpty) ...[
+                  const SizedBox(width: 24),
+                  Flexible(
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      MagicalFloat(
+                        distance: 6.0,
+                        duration: const Duration(seconds: 4),
+                        delay: 500,
+                        child: _AuraCircle(
+                          size: 88,
+                          auraColor: const Color(0xFFF3AEFF),
+                          child: _CompanionAvatar(companionImage: _companionImage),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          data.companionNames.isNotEmpty ? data.companionNames.first : 'Companion',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ]),
+                  ),
                 ],
               ],
             ),
             const SizedBox(height: 24),
             // ── Read-only story summary ──────────────────────────────────────
-            _SummaryRow(icon: Icons.auto_stories, label: _storyTypeLabel(data)),
+            _SummaryRow(icon: Icons.auto_stories, label: _storyTypeLabel(data), onTap: widget.onGoBack),
             const SizedBox(height: 8),
-            _SummaryRow(icon: Icons.timer, label: _storyLengthLabel(data.storyLength)),
+            _SummaryRow(icon: Icons.timer, label: _storyLengthLabel(data.storyLength), onTap: widget.onGoBack),
             if (data.customElements.isNotEmpty) ...[
               const SizedBox(height: 8),
-              _SummaryRow(icon: Icons.auto_awesome, label: '"${data.customElements}"'),
+              _SummaryRow(icon: Icons.auto_awesome, label: '"${data.customElements}"', onTap: widget.onGoBack),
             ],
             if (data.companionNames.isNotEmpty) ...[
               const SizedBox(height: 8),
-              _SummaryRow(icon: Icons.favorite, label: data.companionNames.join(', ')),
+              _SummaryRow(icon: Icons.favorite, label: data.companionNames.join(', '), onTap: widget.onGoBack),
             ],
             const SizedBox(height: AppSpacing.xxl),
             Center(child: _isGenerating ? MagicalLoadingView(status: _loadingStatus, onCancel: () => setState(() => _isGenerating = false)) : _PulsingCastSpellFrame(isReady: !_isGenerating && data.isComplete, child: ImageMakeMagicButton(onTap: _launchStoryCreation, isEnabled: !_isGenerating && data.isComplete, label: 'MAKE MAGIC'))),
@@ -414,30 +432,42 @@ class _PulsingCastSpellFrameState extends State<_PulsingCastSpellFrame> with Sin
 class _SummaryRow extends StatelessWidget {
   final IconData icon;
   final String label;
-  const _SummaryRow({required this.icon, required this.label});
+  final VoidCallback? onTap;
+  const _SummaryRow({required this.icon, required this.label, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(15),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFD4A0FF).withAlpha(60)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: const Color(0xFFFFD700), size: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 2,
-            ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white.withAlpha(35),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFD4A0FF).withAlpha(80)),
           ),
-        ],
+          child: Row(
+            children: [
+              Icon(icon, color: const Color(0xFFFFD700), size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                ),
+              ),
+              if (onTap != null) ...[
+                const SizedBox(width: 8),
+                const Icon(Icons.edit_outlined, color: Color(0xFFD4A0FF), size: 18),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

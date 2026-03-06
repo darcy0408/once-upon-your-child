@@ -4,6 +4,48 @@ This file tracks all work sessions on the Story Weaver App project. Each entry r
 
 ---
 
+## 2026-03-06 - Make Magic Screen UX Audit & Improvements
+
+**Summary:** Full UX/design audit of the "Make Magic" Step 4 wizard screen (final review before story generation), followed by implementation of all P0/P1/P2 improvements. Identified and fixed a RenderFlex overflow bug, significantly improved summary card visibility and interactivity, enlarged companion/setting circles, added character name display, and wired tap-to-edit navigation.
+
+**Key Changes:**
+- `lib/screens/wizard_steps/magic_review_step.dart` — main screen refactor:
+  - Fixed RenderFlex overflow: wrapped setting/companion `Column`s in `Flexible`, added `ellipsis` overflow to labels
+  - Companion/setting circles enlarged: 72px → 88px
+  - Companion label: replaced hardcoded `'Companion'` with `data.companionNames.first`
+  - Character name label added below orb (gold, `cinzelDecorative` 16px)
+  - Orb max size reduced: 250px → 220px (frees vertical space on small screens)
+  - Summary card background opacity: `withAlpha(15)` → `withAlpha(35)` (was nearly invisible)
+  - Summary card padding: `h:16,v:10` → `h:20,v:14`; font 14px → 16px; icon 18px → 24px
+  - `_SummaryRow` now accepts `onTap` callback; wraps in `InkWell`; shows edit icon when tappable
+- `lib/screens/wizard_story_screen.dart` — passes `onGoBack: _previousStep` to `MagicReviewStep`
+
+**Decisions Made:**
+- Circle size set to 88px (not 96px) to stay safe on narrow screens given the aura glow containers extend to `size + 50`
+- Used `Flexible` (not `Wrap`) to preserve the horizontal side-by-side layout for setting/companion
+- All summary rows tap to the same back destination (step 1) — sub-step targeting not implemented as the wizard only has 2 PageView pages
+
+**Issues Encountered:**
+- The wizard is only a 2-page PageView (not 4), so "tap to jump to specific step" means going to page 0 (HeroCreatorStep) which handles all sub-steps internally
+
+**Remaining Tasks (4 items — not implemented):**
+1. `summary-card-accent` — colored left border per row category (blue/gold/purple/pink)
+2. `summary-shimmer` — subtle sweep animation on summary cards every 4–5s
+3. `stagger-reveal` — staggered fade+slide entrance animation for summary rows
+4. `companion-avatars-inline` — 24px avatar thumbnails in companions summary row
+
+**Detailed handoff with implementation code for remaining items:**
+`~/.copilot/session-state/64e8051a-1b12-4d4f-a082-1698fb395701/files/HANDOFF_Make_Magic_Screen_UX.md`
+
+**Impact:**
+- Resolves the RenderFlex overflow crash on narrow screens
+- Summary cards are now clearly visible and interactive
+- Children can now see their character name prominently below the orb
+- Companion names shown (not generic "Companion") — reinforces therapeutic bonding
+- Screen is significantly more polished and closer to Toca Boca/Headspace Kids quality
+
+---
+
 ## 2025-11-09 - Created Automated Documentation System (Closing Agent)
 
 **Summary:** Built a comprehensive closing agent system that automatically documents work sessions, maintains AI context across different assistants (Claude, Gemini, Codex), and creates meaningful git commits. This solves the user's documentation challenges by treating ideas like code with full version control.

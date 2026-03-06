@@ -2,6 +2,25 @@
 
 ---
 
+## Session Update - 2026-03-06 (Make Magic Screen UX Improvements)
+
+### Scope Completed
+- **RenderFlex overflow fix** (`magic_review_step.dart`): wrapped setting/companion `Column`s in `Flexible`, reduced gap 32→24px, added `ellipsis` overflow to circle labels.
+- **Summary card visibility**: background opacity `withAlpha(15)` → `withAlpha(35)`; border alpha 60→80. Cards were nearly invisible (1.1:1 contrast ratio) — now clearly readable.
+- **Summary card sizing**: padding `h:16,v:10` → `h:20,v:14`; font 14→16px; icon 18→24px. Better readability for young users.
+- **Tap-to-edit**: `_SummaryRow` now accepts `onTap`; all rows pass `onGoBack` callback; edit icon shown on right. `wizard_story_screen.dart` passes `onGoBack: _previousStep`.
+- **Companion circle sizing**: 72px → 88px for better visual prominence of therapeutic companions.
+- **Companion label**: replaced hardcoded `'Companion'` with `data.companionNames.first` (actual name).
+- **Character name label**: golden `cinzelDecorative` name text added below orb — was partially lost inside glow.
+- **Orb size**: max clamp 250→220px to reduce scroll need on small screens.
+
+### Status
+- **Make Magic screen:** ✅ P0 + P1 + P2 improvements implemented and linting clean
+- **4 P2/P3 items remaining:** shimmer, stagger reveal, color accent bars, inline companion avatars — see handoff file
+- **Launch Readiness:** 84%
+
+---
+
 ## Session Update - 2026-06-15 (Test Suite Repair)
 
 ### Scope Completed
