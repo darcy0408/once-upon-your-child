@@ -2,6 +2,19 @@
 
 ---
 
+## Session Update - 2026-06-15 (Test Suite Repair)
+
+### Scope Completed
+- **RenderFlex overflow** (`magical_loading_view.dart`): Converted step-indicator `Row` → `Wrap` to prevent 265px overflow on small viewports.
+- **Viewport hit-test failures** (`feelings_garden_screen_test.dart`): Added `setLargeScreen()` helper + `addTearDown` to all tapping tests; increased post-tab-tap pump duration to 800ms so Explorer tab animation finishes before the tap.
+- **Gender logic mismatch** (`hero_creator_step_test.dart`): Split the single `'selects gender'` test into `'selects Boy gender'` and `'selects Girl gender'` — each starts a fresh widget so the auto-navigation triggered by tapping Boy doesn't push Girl off-screen.
+
+### Status
+- **Test suite:** 199/200 pass ✅ (1 pre-existing `StoryResultScreen` wisdom-chip failure unrelated to this session)
+- **Launch Readiness:** 82%
+
+---
+
 ## Session Update - 2026-06-15 (Boy/Girl Image Buttons + Avatar Screen Simplification)
 
 ### Scope Completed
