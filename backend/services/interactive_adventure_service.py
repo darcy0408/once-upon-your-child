@@ -71,7 +71,8 @@ class InteractiveAdventureService:
         avoid: Optional[List[str]] = None,
         fears_or_sensitivities: Optional[List[str]] = None,
         life_challenge: Optional[str] = None,
-        personality_sliders: Optional[Dict[str, int]] = None
+        personality_sliders: Optional[Dict[str, int]] = None,
+        world_bible: str = "",
     ) -> Dict[str, Any]:
         """
         Create a new interactive adventure story with opening segment.
@@ -156,7 +157,8 @@ class InteractiveAdventureService:
             avoid=avoid,
             fears_or_sensitivities=fears_or_sensitivities,
             life_challenge=life_challenge,
-            personality_sliders=personality_sliders
+            personality_sliders=personality_sliders,
+            world_bible=world_bible,
         )
 
         # Generate first segment
@@ -172,6 +174,7 @@ class InteractiveAdventureService:
             tone=tone,
             length=length,
             age=character_age,
+            world_bible=world_bible or None,
             current_segment_number=1,
             is_completed=segment_data.get('is_ending', False)
         )
@@ -536,6 +539,7 @@ class InteractiveAdventureService:
             'tone': story.tone,
             'length': story.length,
             'age': story.age,
+            'world_bible': story.world_bible or '',
             'character': character_dict,
             'companions': self._get_companions(story)
         }

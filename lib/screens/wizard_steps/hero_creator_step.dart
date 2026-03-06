@@ -1069,10 +1069,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       ),
     ];
 
-    // Sprout users: hide volcano_dragons (potentially scary) and show 3 bigger cards.
-    final displayButtons = band.band == AgeBand.sprout
-        ? featuredButtons.where((b) => b.id != 'volcano_dragons').toList()
-        : featuredButtons;
+    final displayButtons = featuredButtons;
 
     final cardSize = band.band == AgeBand.sprout
         ? 160.0
@@ -1150,29 +1147,96 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           const SizedBox(height: 14),
 
           // ── 2-column grid of preset scene buttons ──────────────────────────
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            // Natural image ratio: 360×220 = 1.636 — childAspectRatio = w/h
-            childAspectRatio: 360 / 220,
-            children: displayButtons
-                .map((btn) => _SceneImageButton(
-                      data: btn,
-                      isSelected:
-                          widget.wizardData.selectedScenario == btn.id,
-                      labelFontSize: labelFontSize,
-                      onTap: () => setState(() {
-                        widget.wizardData.selectedScenario =
-                            widget.wizardData.selectedScenario == btn.id
-                                ? null
-                                : btn.id;
-                      }),
-                    ))
-                .toList(),
-          ),
+          // When the count is even, use a simple 2-column GridView.
+          // When odd (e.g. Sprout hides volcano_dragons), the last card spans
+          // the full width so nothing looks orphaned.
+          if (displayButtons.length.isOdd) ...[
+            for (int i = 0; i < displayButtons.length - 1; i += 2) ...[
+              if (i > 0) const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: AspectRatio(
+                      aspectRatio: 360 / 220,
+                      child: _SceneImageButton(
+                        data: displayButtons[i],
+                        isSelected: widget.wizardData.selectedScenario ==
+                            displayButtons[i].id,
+                        labelFontSize: labelFontSize,
+                        onTap: () => setState(() {
+                          widget.wizardData.selectedScenario =
+                              widget.wizardData.selectedScenario ==
+                                      displayButtons[i].id
+                                  ? null
+                                  : displayButtons[i].id;
+                        }),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: AspectRatio(
+                      aspectRatio: 360 / 220,
+                      child: _SceneImageButton(
+                        data: displayButtons[i + 1],
+                        isSelected: widget.wizardData.selectedScenario ==
+                            displayButtons[i + 1].id,
+                        labelFontSize: labelFontSize,
+                        onTap: () => setState(() {
+                          widget.wizardData.selectedScenario =
+                              widget.wizardData.selectedScenario ==
+                                      displayButtons[i + 1].id
+                                  ? null
+                                  : displayButtons[i + 1].id;
+                        }),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 12),
+            // Last item spans full width when count is odd
+            AspectRatio(
+              aspectRatio: 360 / 110, // half the height for a wide banner feel
+              child: _SceneImageButton(
+                data: displayButtons.last,
+                isSelected: widget.wizardData.selectedScenario ==
+                    displayButtons.last.id,
+                labelFontSize: labelFontSize,
+                onTap: () => setState(() {
+                  widget.wizardData.selectedScenario =
+                      widget.wizardData.selectedScenario ==
+                              displayButtons.last.id
+                          ? null
+                          : displayButtons.last.id;
+                }),
+              ),
+            ),
+          ] else
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              // Natural image ratio: 360×220 = 1.636 — childAspectRatio = w/h
+              childAspectRatio: 360 / 220,
+              children: displayButtons
+                  .map((btn) => _SceneImageButton(
+                        data: btn,
+                        isSelected:
+                            widget.wizardData.selectedScenario == btn.id,
+                        labelFontSize: labelFontSize,
+                        onTap: () => setState(() {
+                          widget.wizardData.selectedScenario =
+                              widget.wizardData.selectedScenario == btn.id
+                                  ? null
+                                  : btn.id;
+                        }),
+                      ))
+                  .toList(),
+            ),
 
           const SizedBox(height: 24),
           _buildNextArrowButton(
@@ -2027,7 +2091,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.78,
+          childAspectRatio: 1.4,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),
@@ -2054,9 +2118,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Image fills entire card
+                    // Dark background so letterbox areas look intentional
+                    Container(color: const Color(0xFF1A0A2E)),
+                    // Image — contain so full frame is always visible
                     if (a.imagePath != null)
-                      Image.asset(a.imagePath!, fit: BoxFit.cover)
+                      Image.asset(a.imagePath!, fit: BoxFit.contain, alignment: Alignment.center)
                     else
                       Container(
                         color: Colors.white10,
@@ -2138,8 +2204,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
+                    Container(color: const Color(0xFF1A0A2E)),
                     if (a.imagePath != null)
-                      Image.asset(a.imagePath!, fit: BoxFit.cover)
+                      Image.asset(a.imagePath!, fit: BoxFit.contain, alignment: Alignment.center)
                     else
                       Container(
                         color: Colors.white10,
@@ -2772,77 +2839,89 @@ class _CompanionImageGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Build companion buttons list
-    final List<Widget> buttons = _companions.map((c) {
-      final isSelected = wizardData.companionNames.contains(c.name);
-      return _CompanionImageButton(
-        id: c.id,
-        name: c.name,
-        tagline: c.tagline,
-        isSelected: isSelected,
-        onTap: () {
-          if (isSelected) {
-            wizardData.companionNames.remove(c.name);
-            wizardData.selectedCompanions.remove(c.id);
-          } else {
-            wizardData.companionNames.add(c.name);
-            wizardData.selectedCompanions.add(c.id);
-          }
-          onChanged();
-        },
-      );
-    }).toList();
+    return LayoutBuilder(builder: (context, constraints) {
+      final band =
+          Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+      final naturalSize = (band.touchTargetMin / 64.0 * 100).roundToDouble();
 
-    // If a pet photo exists, slot it in as the 8th button (filling the pyramid)
-    final petEntry = wizardData.pets.isNotEmpty ? wizardData.pets.first : null;
-    final petPhoto = petEntry != null
-        ? wizardData.petPhotos[petEntry['name'] ?? 'My Pet']
-        : null;
-    if (petEntry != null) {
-      final petName = petEntry['name'] ?? 'My Pet';
-      final isSelected = wizardData.companionNames.contains(petName);
-      buttons.add(_CompanionImageButton(
-        id: 'my_pet',
-        name: petName,
-        tagline: '${petEntry['color'] ?? ''} ${petEntry['species'] ?? 'pet'}'.trim(),
-        isSelected: isSelected,
-        photoBase64: petPhoto,
-        onTap: () {
-          if (isSelected) {
-            wizardData.companionNames.remove(petName);
-          } else {
-            wizardData.companionNames.add(petName);
-          }
-          onChanged();
-        },
-      ));
-    }
+      // Calculate the size that fits perRow items without squeezing.
+      const perRow = 4;
+      const hSpacing = 8.0;
+      final itemSize = ((constraints.maxWidth - hSpacing * (perRow - 1)) /
+              perRow)
+          .floorToDouble()
+          .clamp(40.0, naturalSize);
 
-    // Pyramid layout: rows of 4, then remainder centered
-    final rows = <Widget>[];
-    const perRow = 4;
-    for (int i = 0; i < buttons.length; i += perRow) {
-      final rowItems = buttons.sublist(
-          i, (i + perRow) > buttons.length ? buttons.length : i + perRow);
-      final isFull = rowItems.length == perRow;
-      rows.add(Row(
-        mainAxisAlignment:
-            isFull ? MainAxisAlignment.spaceEvenly : MainAxisAlignment.center,
-        children: rowItems.map((b) {
-          // Full rows: each item gets an equal flex slot so they never overflow.
-          // Partial rows: natural sizing, centred.
-          return isFull
-              ? Expanded(child: Center(child: b))
-              : Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: b,
-                );
-        }).toList(),
-      ));
-      if (i + perRow < buttons.length) rows.add(const SizedBox(height: 12));
-    }
+      // Build companion buttons with a uniform, pre-calculated size.
+      List<Widget> buttons = _companions.map((c) {
+        final isSelected = wizardData.companionNames.contains(c.name);
+        return _CompanionImageButton(
+          id: c.id,
+          name: c.name,
+          tagline: c.tagline,
+          isSelected: isSelected,
+          size: itemSize,
+          onTap: () {
+            if (isSelected) {
+              wizardData.companionNames.remove(c.name);
+              wizardData.selectedCompanions.remove(c.id);
+            } else {
+              wizardData.companionNames.add(c.name);
+              wizardData.selectedCompanions.add(c.id);
+            }
+            onChanged();
+          },
+        );
+      }).toList();
 
-    return Column(children: rows);
+      // If a pet photo exists, slot it in as the 8th button (filling the pyramid)
+      final petEntry =
+          wizardData.pets.isNotEmpty ? wizardData.pets.first : null;
+      final petPhoto = petEntry != null
+          ? wizardData.petPhotos[petEntry['name'] ?? 'My Pet']
+          : null;
+      if (petEntry != null) {
+        final petName = petEntry['name'] ?? 'My Pet';
+        final isSelected = wizardData.companionNames.contains(petName);
+        buttons.add(_CompanionImageButton(
+          id: 'my_pet',
+          name: petName,
+          tagline:
+              '${petEntry['color'] ?? ''} ${petEntry['species'] ?? 'pet'}'.trim(),
+          isSelected: isSelected,
+          photoBase64: petPhoto,
+          size: itemSize,
+          onTap: () {
+            if (isSelected) {
+              wizardData.companionNames.remove(petName);
+            } else {
+              wizardData.companionNames.add(petName);
+            }
+            onChanged();
+          },
+        ));
+      }
+
+      // Pyramid layout: rows of perRow, remainder centered.
+      // All items use the same calculated size so every row is consistent.
+      final rows = <Widget>[];
+      for (int i = 0; i < buttons.length; i += perRow) {
+        final rowItems = buttons.sublist(
+            i, (i + perRow) > buttons.length ? buttons.length : i + perRow);
+        rows.add(Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: rowItems
+              .map((b) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: hSpacing / 2),
+                    child: b,
+                  ))
+              .toList(),
+        ));
+        if (i + perRow < buttons.length) rows.add(const SizedBox(height: 12));
+      }
+
+      return Column(children: rows);
+    });
   }
 }
 
@@ -2853,6 +2932,7 @@ class _CompanionImageButton extends StatefulWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final String? photoBase64; // Real pet photo (base64 data URI)
+  final double? size; // Override theme-derived size
 
   const _CompanionImageButton({
     required this.id,
@@ -2861,6 +2941,7 @@ class _CompanionImageButton extends StatefulWidget {
     required this.isSelected,
     required this.onTap,
     this.photoBase64,
+    this.size,
   });
 
   @override
@@ -2878,7 +2959,7 @@ class _CompanionImageButtonState extends State<_CompanionImageButton> {
   @override
   Widget build(BuildContext context) {
     final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    final size = (band.touchTargetMin / 64.0 * 100).roundToDouble();
+    final size = widget.size ?? (band.touchTargetMin / 64.0 * 100).roundToDouble();
 
     Widget imageWidget;
     if (widget.photoBase64 != null && widget.photoBase64!.isNotEmpty) {
