@@ -15,7 +15,7 @@ class FeelingsQuestModal {
     BuildContext context, {
     required int childAge,
   }) {
-    return Navigator.of(context).push<List<String>>(
+    return Navigator.of(context, rootNavigator: true).push<List<String>>(
       PageRouteBuilder(
         fullscreenDialog: true,
         opaque: true,
