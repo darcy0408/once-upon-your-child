@@ -25,7 +25,7 @@ void main() {
     final wizardData = WizardData();
 
     await tester.pumpWidget(buildSubject(wizardData));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
 
     final button = tester.widget<ImageMakeMagicButton>(
       find.byType(ImageMakeMagicButton),
@@ -43,7 +43,7 @@ void main() {
       ..rhymeTimeMode = true;
 
     await tester.pumpWidget(buildSubject(wizardData));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
 
     expect(find.text('Rhyme Time story'), findsOneWidget);
   });
@@ -57,7 +57,7 @@ void main() {
       ..storyLength = 'epic';
 
     await tester.pumpWidget(buildSubject(wizardData));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
 
     expect(find.text('Epic adventure'), findsOneWidget);
   });
@@ -71,7 +71,7 @@ void main() {
       ..customElements = 'Include a rainbow castle and a puzzle.';
 
     await tester.pumpWidget(buildSubject(wizardData));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
 
     expect(
       find.text('"Include a rainbow castle and a puzzle."'),
@@ -88,7 +88,7 @@ void main() {
       ..selectedScenario = 'doorway_seasons';
 
     await tester.pumpWidget(buildSubject(wizardData));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
 
     // "The Doorway Between Seasons" is the title for ID 'doorway_seasons'
     expect(find.text('The Doorway Between Seasons'), findsWidgets);
