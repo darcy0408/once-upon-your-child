@@ -51,7 +51,6 @@ class HeroCreatorStep extends StatefulWidget {
 class _HeroCreatorStepState extends State<HeroCreatorStep>
     with TickerProviderStateMixin {
   // ─── Assets ─────────────────────────────────────────────────────────────────
-  static const _placeholderAsset = 'assets/images/hero_placeholder.jpg';
 
   // ─── State ──────────────────────────────────────────────────────────────────
   late PageController _heroPageController;
@@ -607,7 +606,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   // Page 2: "What does your hero look like?"
   Widget _buildPage2() {
-    final canGoNext = _selectedArchetypeId != null || _hasAvatar;
+    // Avatar is optional — kids can skip straight to Pick Your Team
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -640,12 +639,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           const SizedBox(height: 10),
           if (_hasAvatar) _buildEditAvatarButton() else _buildCreateAvatarButton(),
           const SizedBox(height: 24),
-          // Archetype cards only appear after avatar is created
-          if (_hasAvatar) ...[
+          if (_hasAvatar || _selectedArchetypeId != null) ...[
             _buildArchetypeCards(),
             const SizedBox(height: 40),
           ],
-          _buildNextArrowButton(enabled: canGoNext, onTap: _heroNextPage, hint: 'Next: Pick Your Team'),
+          _buildNextArrowButton(enabled: true, onTap: _heroNextPage, hint: 'Next: Pick Your Team'),
         ],
       ),
     );
@@ -1739,15 +1737,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     return _placeholderWidget();
   }
 
-  Widget _placeholderWidget() => Image.asset(
-        _placeholderAsset,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(colors: [Color(0xFF7B4BAA), Color(0xFF2D0A4E)]),
-          ),
-        ),
+  Widget _placeholderWidget() => CustomPaint(
+        size: const Size(148, 148),
+        painter: _HeroSilhouettePainter(),
       );
 
   Widget _buildAvatarSection() {
@@ -1979,39 +1971,26 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildGenderImageButton(
-          normalImage: 'assets/images/ui/boy_normal.png',
-          hoverImage: 'assets/images/ui/boy_hover.png',
-          pressedImage: 'assets/images/ui/boy_pressed.png',
-          label: 'Boy',
-          gender: 'Boy',
-        ),
-        const SizedBox(width: 40),
-        _buildGenderImageButton(
-          normalImage: 'assets/images/ui/girl_normal.png',
-          hoverImage: 'assets/images/ui/girl_hover.png',
-          pressedImage: 'assets/images/ui/girl_pressed.png',
-          label: 'Girl',
-          gender: 'Girl',
-        ),
+        _buildGenderCard(label: 'Boy', gender: 'Boy', icon: Icons.boy_rounded),
+        const SizedBox(width: 28),
+        _buildGenderCard(label: 'Girl', gender: 'Girl', icon: Icons.girl_rounded),
       ],
     );
   }
 
-  Widget _buildGenderImageButton({
-    required String normalImage,
-    required String hoverImage,
-    required String pressedImage,
+  Widget _buildGenderCard({
     required String label,
     required String gender,
+    required IconData icon,
   }) {
     final isSelected = widget.wizardData.characterGender == gender;
-    return _GenderImageButton(
-      normalImage: normalImage,
-      hoverImage: hoverImage,
-      pressedImage: pressedImage,
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final cardSize = (band.touchTargetMin / 64.0 * 100).roundToDouble().clamp(90.0, 120.0);
+    return _GenderCardButton(
       label: label,
+      icon: icon,
       isSelected: isSelected,
+      size: cardSize,
       onTap: () => setState(() => widget.wizardData.characterGender = gender),
     );
   }
@@ -2050,30 +2029,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       );
     }
 
-    return SizedBox(
-      height: fieldHeight,
-      child: Stack(
-        children: [
-          Positioned.fill(child: Image.asset('assets/images/ui/scroll_name_input.png', fit: BoxFit.fill)),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 42),
-              child: TextField(
-                controller: _nameController,
-                focusNode: _nameFocusNode,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.cinzelDecorative(fontSize: nameFontSize, color: const Color(0xFF3A1C00), fontWeight: FontWeight.w700),
-                decoration: const InputDecoration(
-                  hintText: "Hero's Name",
-                  border: InputBorder.none,
-                  filled: false,
-                ),
-                onChanged: (v) => setState(() => widget.wizardData.characterName = v.trim()),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return _ThemedNameInput(
+      controller: _nameController,
+      focusNode: _nameFocusNode,
+      fontSize: nameFontSize,
+      height: fieldHeight.clamp(56.0, 80.0),
+      onChanged: (v) => setState(() => widget.wizardData.characterName = v.trim()),
     );
   }
 
@@ -2957,6 +2918,14 @@ class _CompanionImageButtonState extends State<_CompanionImageButton> {
       'assets/images/companions/${widget.id}_pressed.jpg';
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.photoBase64 == null) {
+      precacheImage(AssetImage(_normalImage), context);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final size = widget.size ?? (band.touchTargetMin / 64.0 * 100).roundToDouble();
@@ -2974,6 +2943,8 @@ class _CompanionImageButtonState extends State<_CompanionImageButton> {
         width: size,
         height: size,
         fit: BoxFit.cover,
+        frameBuilder: (ctx, child, frame, _) =>
+            frame == null ? SizedBox(width: size, height: size) : child,
         errorBuilder: (_, __, ___) => Container(
           width: size,
           height: size,
@@ -3526,43 +3497,46 @@ class _StarParticle {
 }
 
 // ---------------------------------------------------------------------------
-// Gender image button — normal / hover / pressed states + selection glow
+// Gender card button — coded, cohesive design with gold/purple theme
 // ---------------------------------------------------------------------------
-class _GenderImageButton extends StatefulWidget {
-  const _GenderImageButton({
-    required this.normalImage,
-    required this.hoverImage,
-    required this.pressedImage,
+class _GenderCardButton extends StatefulWidget {
+  const _GenderCardButton({
     required this.label,
+    required this.icon,
     required this.isSelected,
+    required this.size,
     required this.onTap,
   });
 
-  final String normalImage;
-  final String hoverImage;
-  final String pressedImage;
   final String label;
+  final IconData icon;
   final bool isSelected;
+  final double size;
   final VoidCallback onTap;
 
   @override
-  State<_GenderImageButton> createState() => _GenderImageButtonState();
+  State<_GenderCardButton> createState() => _GenderCardButtonState();
 }
 
-class _GenderImageButtonState extends State<_GenderImageButton> {
+class _GenderCardButtonState extends State<_GenderCardButton> {
   bool _hovered = false;
   bool _pressed = false;
 
-  String get _imagePath {
-    if (_pressed || widget.isSelected) return widget.pressedImage;
-    if (_hovered) return widget.hoverImage;
-    return widget.normalImage;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    final imageSize = (band.touchTargetMin / 64.0 * 100).roundToDouble();
+    final isActive = widget.isSelected;
+    final borderColor = isActive
+        ? const Color(0xFFFFD54F)
+        : _hovered
+            ? const Color(0xFFFFD54F).withAlpha(140)
+            : Colors.white24;
+    final borderWidth = isActive ? 2.0 : 1.0;
+    final iconColor = isActive ? const Color(0xFFFFD54F) : Colors.white60;
+    final labelColor = isActive ? const Color(0xFFFFD54F) : Colors.white60;
+    final bgColor = isActive
+        ? const Color(0xFF2A0A4E).withAlpha(180)
+        : const Color(0xFF2A0A4E).withAlpha(80);
+
     return GestureDetector(
       onTap: widget.onTap,
       onTapDown: (_) => setState(() => _pressed = true),
@@ -3571,50 +3545,181 @@ class _GenderImageButtonState extends State<_GenderImageButton> {
       child: MouseRegion(
         onEnter: (_) => setState(() => _hovered = true),
         onExit: (_) => setState(() => _hovered = false),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
+        child: AnimatedScale(
+          scale: _pressed ? 0.93 : (_hovered ? 1.04 : 1.0),
+          duration: const Duration(milliseconds: 120),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: widget.size,
+            height: widget.size + 20,
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: borderColor, width: borderWidth),
+              boxShadow: isActive
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFFFFD54F).withAlpha(100),
+                        blurRadius: 18,
+                        spreadRadius: 2,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: widget.size * 0.52,
+                  height: widget.size * 0.52,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isActive
+                        ? const Color(0xFFFFD54F).withAlpha(30)
+                        : Colors.white.withAlpha(10),
+                    border: Border.all(
+                      color: iconColor.withAlpha(isActive ? 120 : 40),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Icon(
+                    widget.icon,
+                    color: iconColor,
+                    size: widget.size * 0.3,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  widget.label,
+                  style: GoogleFonts.cinzelDecorative(
+                    color: labelColor,
+                    fontSize: 14,
+                    fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Themed name input — coded gold/purple field replacing scroll PNG
+// ---------------------------------------------------------------------------
+class _ThemedNameInput extends StatefulWidget {
+  const _ThemedNameInput({
+    required this.controller,
+    required this.focusNode,
+    required this.fontSize,
+    required this.height,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final double fontSize;
+  final double height;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_ThemedNameInput> createState() => _ThemedNameInputState();
+}
+
+class _ThemedNameInputState extends State<_ThemedNameInput>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _glowCtrl;
+  late Animation<double> _glowAnim;
+  bool _focused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _glowCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _glowAnim = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _glowCtrl, curve: Curves.easeInOut),
+    );
+    widget.focusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    setState(() => _focused = widget.focusNode.hasFocus);
+    if (_focused) {
+      _glowCtrl.repeat(reverse: true);
+    } else {
+      _glowCtrl.stop();
+      _glowCtrl.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode.removeListener(_onFocusChange);
+    _glowCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _glowAnim,
+      builder: (context, child) {
+        final g = _focused ? _glowAnim.value : 0.0;
+        return Container(
+          height: widget.height,
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: widget.isSelected
+            color: const Color(0xFF2A0A4E).withAlpha(100),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: _focused
+                  ? Color.fromARGB((180 + (g * 75).round()).clamp(0, 255), 0xFF, 0xD5, 0x4F)
+                  : const Color(0xFFFFD54F).withAlpha(70),
+              width: _focused ? 1.5 : 1.0,
+            ),
+            boxShadow: _focused
                 ? [
                     BoxShadow(
-                      color: const Color(0xFFFFD700).withAlpha(180),
-                      blurRadius: 28,
-                      spreadRadius: 4,
+                      color: const Color(0xFFFFD54F).withAlpha((60 * g).round()),
+                      blurRadius: 16 * g,
+                      spreadRadius: 1,
                     ),
                   ]
                 : null,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedScale(
-                scale: _pressed ? 0.92 : (_hovered ? 1.05 : 1.0),
-                duration: const Duration(milliseconds: 120),
-                child: Image.asset(
-                  _imagePath,
-                  width: imageSize,
-                  height: imageSize,
-                  fit: BoxFit.contain,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                widget.label,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: TextField(
+                controller: widget.controller,
+                focusNode: widget.focusNode,
+                textAlign: TextAlign.center,
                 style: GoogleFonts.cinzelDecorative(
-                  color: widget.isSelected
-                      ? const Color(0xFFFFD700)
-                      : Colors.white60,
-                  fontSize: 13,
-                  fontWeight: widget.isSelected
-                      ? FontWeight.bold
-                      : FontWeight.normal,
+                  fontSize: widget.fontSize,
+                  color: const Color(0xFFFFF8E1),
+                  fontWeight: FontWeight.w700,
                 ),
+                decoration: InputDecoration(
+                  hintText: "Hero's Name",
+                  hintStyle: GoogleFonts.cinzelDecorative(
+                    color: const Color(0xFFFFE082).withAlpha(100),
+                    fontSize: widget.fontSize,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  border: InputBorder.none,
+                  filled: false,
+                ),
+                onChanged: widget.onChanged,
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -4189,4 +4294,124 @@ class _BouncingAvatarButtonState extends State<_BouncingAvatarButton>
       },
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Hero silhouette placeholder — CustomPainter, no image asset needed
+// ---------------------------------------------------------------------------
+class _HeroSilhouettePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+
+    // Background: deep purple radial gradient
+    final bgPaint = Paint();
+    final bgShader = RadialGradient(
+      colors: [const Color(0xFF4A1A72), const Color(0xFF1A0535)],
+    ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    bgPaint.shader = bgShader;
+    canvas.drawOval(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
+
+    // Silhouette paint: translucent lavender
+    final silPaint = Paint()
+      ..color = const Color(0xFFB388FF).withAlpha(90)
+      ..style = PaintingStyle.fill;
+
+    // Silhouette stroke: slightly brighter outline
+    final outlinePaint = Paint()
+      ..color = const Color(0xFFCE93D8).withAlpha(160)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+
+    // -- Head --
+    final headRadius = size.width * 0.18;
+    final headCenter = Offset(cx, cy - size.height * 0.14);
+    canvas.drawCircle(headCenter, headRadius, silPaint);
+    canvas.drawCircle(headCenter, headRadius, outlinePaint);
+
+    // -- Shoulders / body shape --
+    final shoulderPath = Path();
+    final bodyTop = headCenter.dy + headRadius * 0.8;
+    final bodyBottom = size.height * 0.95;
+    final shoulderWidth = size.width * 0.42;
+    final neckWidth = size.width * 0.09;
+
+    shoulderPath.moveTo(cx - neckWidth, bodyTop);
+    // Left shoulder curve
+    shoulderPath.cubicTo(
+      cx - neckWidth, bodyTop + size.height * 0.04,
+      cx - shoulderWidth, bodyTop + size.height * 0.04,
+      cx - shoulderWidth, bodyTop + size.height * 0.12,
+    );
+    // Left body side
+    shoulderPath.lineTo(cx - shoulderWidth * 0.85, bodyBottom);
+    // Bottom
+    shoulderPath.lineTo(cx + shoulderWidth * 0.85, bodyBottom);
+    // Right body side
+    shoulderPath.lineTo(cx + shoulderWidth, bodyTop + size.height * 0.12);
+    // Right shoulder curve
+    shoulderPath.cubicTo(
+      cx + shoulderWidth, bodyTop + size.height * 0.04,
+      cx + neckWidth, bodyTop + size.height * 0.04,
+      cx + neckWidth, bodyTop,
+    );
+    shoulderPath.close();
+
+    canvas.drawPath(shoulderPath, silPaint);
+    canvas.drawPath(shoulderPath, outlinePaint);
+
+    // -- Star sparkles around the silhouette --
+    _drawSparkle(canvas, Offset(cx - size.width * 0.34, cy - size.height * 0.30), 4.5);
+    _drawSparkle(canvas, Offset(cx + size.width * 0.36, cy - size.height * 0.22), 3.5);
+    _drawSparkle(canvas, Offset(cx + size.width * 0.28, cy + size.height * 0.06), 3.0);
+    _drawSparkle(canvas, Offset(cx - size.width * 0.26, cy + size.height * 0.08), 2.5);
+    _drawSparkle(canvas, Offset(cx, cy - size.height * 0.40), 5.0);
+
+    // -- "Tap to create" hint text-like dots (subtle) --
+    final dotPaint = Paint()
+      ..color = const Color(0xFFFFE082).withAlpha(80)
+      ..style = PaintingStyle.fill;
+    for (int i = 0; i < 3; i++) {
+      canvas.drawCircle(
+        Offset(cx - 8.0 + i * 8.0, size.height * 0.88),
+        2.0,
+        dotPaint,
+      );
+    }
+  }
+
+  void _drawSparkle(Canvas canvas, Offset center, double radius) {
+    final paint = Paint()
+      ..color = const Color(0xFFFFE082).withAlpha(180)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final fillPaint = Paint()
+      ..color = const Color(0xFFFFE082).withAlpha(220)
+      ..style = PaintingStyle.fill;
+
+    // 4-pointed star
+    const angles = [0.0, 1.5708, 3.1416, 4.7124]; // 0, 90, 180, 270 deg
+    for (final angle in angles) {
+      final x1 = center.dx + (radius * 0.25) * math.cos(angle + 1.5708);
+      final y1 = center.dy + (radius * 0.25) * math.sin(angle + 1.5708);
+      final x2 = center.dx + radius * math.cos(angle);
+      final y2 = center.dy + radius * math.sin(angle);
+      final x3 = center.dx + (radius * 0.25) * math.cos(angle - 1.5708);
+      final y3 = center.dy + (radius * 0.25) * math.sin(angle - 1.5708);
+      final path = Path()
+        ..moveTo(x1, y1)
+        ..lineTo(x2, y2)
+        ..lineTo(x3, y3);
+      canvas.drawPath(path, paint);
+    }
+
+    // Center dot
+    canvas.drawCircle(center, radius * 0.18, fillPaint);
+  }
+
+  @override
+  bool shouldRepaint(_HeroSilhouettePainter oldDelegate) => false;
 }

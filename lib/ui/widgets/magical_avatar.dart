@@ -139,6 +139,24 @@ class _MagicalAvatarState extends State<MagicalAvatar>
       return Image.asset(
         widget.assetPath!,
         fit: BoxFit.cover,
+        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+          if (frame == null) {
+            return Container(
+              color: Colors.grey[200],
+              child: Center(
+                child: SizedBox(
+                  width: widget.size * 0.25,
+                  height: widget.size * 0.25,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.grey[400],
+                  ),
+                ),
+              ),
+            );
+          }
+          return child;
+        },
         errorBuilder: (context, error, stackTrace) {
           debugPrint('MagicalAvatar: Failed to load asset: $error');
           return widget.placeholder ?? _buildDefaultPlaceholder();

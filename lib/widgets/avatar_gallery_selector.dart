@@ -37,8 +37,6 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
   /// Tracks which pool indices have been shown this round
   List<int> _remaining = [];
 
-  Map<String, List<String>> _filterOptions = {};
-  String? _selectedHairColor;
   bool _isLoading = true;
   String? _selectedAvatarPath;
 
@@ -53,7 +51,6 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
       await _avatarService.initialize();
       if (mounted) {
         setState(() {
-          _filterOptions = _avatarService.getCuratedOptions();
           _isLoading = false;
         });
         _refreshPool();
@@ -65,7 +62,7 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
   }
 
   void _refreshPool() {
-    _pool = _avatarService.getCuratedAvatars(hairColor: _selectedHairColor);
+    _pool = _avatarService.getCuratedAvatars();
     _remaining = List.generate(_pool.length, (i) => i);
     _remaining.shuffle(_rng);
     _nextBatch();
@@ -80,8 +77,15 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
     final take = _remaining.length < _kBatchSize ? _remaining.length : _kBatchSize;
     final indices = _remaining.sublist(0, take);
     _remaining = _remaining.sublist(take);
+    final newBatch = indices.map((i) => _pool[i]).toList();
     setState(() {
-      _batch = indices.map((i) => _pool[i]).toList();
+      _batch = newBatch;
+    });
+    // Precache all images in the new batch so they appear simultaneously
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (final path in newBatch) {
+        precacheImage(AssetImage(path), context);
+      }
     });
   }
 
@@ -142,7 +146,6 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
         child: Column(
           children: [
             _buildHeader(),
-            _buildFilterBar(),
             _buildGrid(),
             _buildShuffleFooter(),
           ],
@@ -188,88 +191,6 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
     );
   }
 
-  Widget _buildFilterBar() {
-    final hairColors = _filterOptions['hairColors'] ?? const [];
-    if (hairColors.isEmpty && _selectedHairColor == null) {
-      return const SizedBox.shrink();
-    }
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(237),
-        border: Border(bottom: BorderSide(color: Colors.white.withAlpha(120))),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.brush_outlined, size: 16, color: Color(0xFF4A2F72)),
-          const SizedBox(width: 6),
-          const Text(
-            'Hair:',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF4A2F72),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  ...hairColors.map((color) {
-                    final isSelected = _selectedHairColor == color;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: ChoiceChip(
-                        label: Text(
-                          _friendlyLabelFor(color),
-                          style: TextStyle(
-                            color: isSelected
-                                ? const Color(0xFF3B2363)
-                                : const Color(0xFF4A2F72),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        selected: isSelected,
-                        selectedColor: const Color(0xFFFFD98A),
-                        backgroundColor: const Color(0xFFF4ECFF),
-                        side: BorderSide(
-                          color: isSelected
-                              ? const Color(0xFFFFB347)
-                              : const Color(0xFFD9C6F0),
-                        ),
-                        onSelected: (_) {
-                          setState(() {
-                            _selectedHairColor = isSelected ? null : color;
-                          });
-                          _refreshPool();
-                        },
-                      ),
-                    );
-                  }),
-                  if (_selectedHairColor != null)
-                    TextButton.icon(
-                      onPressed: () {
-                        setState(() => _selectedHairColor = null);
-                        _refreshPool();
-                      },
-                      icon: const Icon(Icons.clear, size: 14),
-                      label: const Text('All'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF5C3A84),
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildGrid() {
     if (_isLoading) {
       return const Expanded(
@@ -280,7 +201,7 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
       return Expanded(
         child: Center(
           child: Text(
-            'No heroes here yet.\nTry a different hair color!',
+            'No characters found.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white.withAlpha(230), fontSize: 16),
           ),
@@ -373,10 +294,4 @@ class _AvatarGallerySelectorState extends State<AvatarGallerySelector> {
     );
   }
 
-  String _friendlyLabelFor(String value) {
-    return value
-        .split('-')
-        .map((s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}')
-        .join(' ');
-  }
 }
