@@ -1146,6 +1146,111 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     {'id': 'interactive', 'emoji': '🎮', 'label': 'Adventure'},
   ];
 
+  void _showIllustrationUnlockSheet(BuildContext ctx) {
+    showModalBottomSheet(
+      context: ctx,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Text('🎨', style: TextStyle(fontSize: 48)),
+            const SizedBox(height: 12),
+            const Text(
+              'See This Scene Come Alive',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Unlock AI-generated illustrations for every scene in your story.',
+              style: TextStyle(fontSize: 14, color: Colors.grey[600], height: 1.5),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.amber[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber[200]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('✅ Free with your own Google AI key:',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  for (final f in [
+                    '🖼️  Illustrations for every story scene',
+                    '🎨  Custom avatar that looks like your child',
+                    '📖  Unlimited stories every day',
+                    '🎭  Interactive choose-your-own-adventure',
+                  ])
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(f, style: const TextStyle(fontSize: 13)),
+                    ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Most families pay \$0.10–0.50/month total.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  await Navigator.of(ctx).push<String>(
+                    MaterialPageRoute(
+                      builder: (_) => const ByokSetupWizardScreen(),
+                      fullscreenDialog: true,
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.key, size: 18),
+                label: const Text(
+                  'Set Up Free Premium →',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7E57C2),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: const StadiumBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Maybe later',
+                  style: TextStyle(color: Colors.grey[500])),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showRemixSheet() {
     final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     showModalBottomSheet(
@@ -2327,6 +2432,11 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
             ? null
             : _PostStoryActionBar(
                 isSaved: _isSaved,
+                isFreeTier: widget.subscription?.isFree ?? true,
+                hasIllustrations: _inlineIllustrations.isNotEmpty ||
+                    (_cachedIllustrations?.isNotEmpty ?? false),
+                onUnlockIllustrations: () =>
+                    _showIllustrationUnlockSheet(context),
                 onTellMeAnother: _createAnotherStory,
                 onReread: () => Navigator.push(
                   context,
@@ -2356,6 +2466,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 /// Secondary row: Re-read · Save · Share · Color.
 class _PostStoryActionBar extends StatelessWidget {
   final bool isSaved;
+  final bool isFreeTier;
+  final bool hasIllustrations;
+  final VoidCallback onUnlockIllustrations;
   final VoidCallback onTellMeAnother;
   final VoidCallback onReread;
   final VoidCallback? onSave; // null when already saved
@@ -2365,6 +2478,9 @@ class _PostStoryActionBar extends StatelessWidget {
 
   const _PostStoryActionBar({
     required this.isSaved,
+    required this.isFreeTier,
+    required this.hasIllustrations,
+    required this.onUnlockIllustrations,
     required this.onTellMeAnother,
     required this.onReread,
     required this.onSave,
@@ -2389,6 +2505,91 @@ class _PostStoryActionBar extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Illustration teaser for free users who have no illustrations
+            if (isFreeTier && !hasIllustrations)
+              GestureDetector(
+                onTap: onUnlockIllustrations,
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.deepPurple.shade800.withValues(alpha: 0.9),
+                        Colors.purple.shade700.withValues(alpha: 0.9),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: Colors.amber.withValues(alpha: 0.5), width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      // Shimmer "locked illustration" preview
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: 52,
+                              height: 52,
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Color(0xFF9C27B0),
+                                    Color(0xFF3F51B5),
+                                    Color(0xFF009688),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                              ),
+                              child: const Icon(Icons.auto_awesome,
+                                  color: Colors.white30, size: 28),
+                            ),
+                            Positioned.fill(
+                              child: BackdropFilter(
+                                filter:
+                                    ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                                child: Container(
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  child: const Icon(Icons.lock_rounded,
+                                      color: Colors.white, size: 22),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '🎨 See this scene illustrated!',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Unlock AI artwork for every story — free with your own key',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.75),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: Colors.amber, size: 20),
+                    ],
+                  ),
+                ),
+              ),
             // Primary CTA
             SizedBox(
               width: double.infinity,
