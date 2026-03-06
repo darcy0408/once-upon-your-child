@@ -2,6 +2,19 @@
 
 ---
 
+## Session Update - 2026-06-15 (Boy/Girl Image Buttons + Avatar Screen Simplification)
+
+### Scope Completed
+- **Artwork image buttons** (commit `8bb51b8`): replaced the small coded Boy/Girl picker cards on the hero-creator name page with large portrait-style image buttons using the provided prince/princess artwork (gold arch frame, purple background).
+  - Added `assets/images/ui/boy_avatar_button.png` and `girl_avatar_button.png`
+  - New `_GenderImageButton` widget: shows artwork, golden glow border + box-shadow when selected, press animation via `AnimatedScale` (scale 0.92 on tap-down), hover scale-up on desktop, `ColorFiltered` darken on press
+  - Tapping Boy or Girl now sets gender AND immediately calls `_heroNextPage()` — no separate Next button tap needed
+- **Page 2 simplification** (commit `8bb51b8`): removed the animated avatar circle and Create Avatar button from the hero style page; archetype cards are now always visible so kids land directly on style selection
+
+### Status
+- **Boy/Girl image buttons:** ✅ Committed, not yet browser-tested (Playwright unavailable this session)
+- **Avatar page simplification:** ✅ Committed
+- **Launch Readiness:** ~82%
 ## Session Update - 2026-03-06 (Test Suite Repair — Post-Refactor Failures)
 
 ### Scope Completed
