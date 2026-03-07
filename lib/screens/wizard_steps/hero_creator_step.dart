@@ -188,7 +188,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     super.didUpdateWidget(oldWidget);
     if (widget.requestedSubStep != null &&
         widget.subStepRequestNonce != oldWidget.subStepRequestNonce) {
-      _jumpToSubStep(widget.requestedSubStep!);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || widget.requestedSubStep == null) return;
+        _jumpToSubStep(widget.requestedSubStep!);
+      });
     }
   }
 
@@ -224,7 +227,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     } else {
       step = 3; // Make Magic
     }
-    widget.onSubStepChange?.call(step);
+    final onSubStepChange = widget.onSubStepChange;
+    if (onSubStepChange == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      onSubStepChange(step);
+    });
   }
 
   void _heroNextPage() {
@@ -546,45 +554,39 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   // Page 1: "Who is your hero?"
   Widget _buildPage1() {
-    final nameNotEmpty = _nameController.text.trim().isNotEmpty;
-    final ageBand = ageBandFromAge(widget.wizardData.characterAge);
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final ageBand = band.band;
     return Stack(
       children: [
         // Ambient floating sparkles behind the content
         const Positioned.fill(child: _AmbientSparkleLayer()),
         SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: EdgeInsets.symmetric(horizontal: band.space(24)),
           child: Column(
             children: [
-              const SizedBox(height: 10),
+              SizedBox(height: band.space(10)),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _audioPrompt("Who is your hero?"),
-                  const SizedBox(width: 8),
+                  SizedBox(width: band.space(8)),
                   Flexible(
-                    child: Builder(
-                      builder: (context) {
-                        final band =
-                            Theme.of(context).extension<AgeBandThemeData>() ??
-                                explorerTheme;
-                        return Text(
-                          band.createCharacterLabel,
-                          style: _bandTitleStyle(band, baseFontSize: 24),
-                        );
-                      },
+                    child: Text(
+                      band.createCharacterLabel,
+                      style: _bandTitleStyle(band, baseFontSize: 24),
                     ),
                   ),
                 ],
               ),
               // Sprout: big colourful prompt to reinforce what to do
               if (ageBand == AgeBand.sprout) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: band.space(8)),
                 Text(
                   "What is your hero's name?",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.fredoka(
-                    fontSize: 28,
+                    fontSize: band.heading(28),
                     color: const Color(0xFFFFD700),
                     fontWeight: FontWeight.bold,
                     shadows: const [
@@ -593,31 +595,33 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   ),
                 ),
               ],
-              const SizedBox(height: 20),
+              SizedBox(height: band.space(20)),
               _buildNameScrollInput(),
-              const SizedBox(height: 24),
+              SizedBox(height: band.space(24)),
               _buildGenderPicker(),
-              const SizedBox(height: 24),
-              // Age is already set at the welcome gate — no age picker shown here.
-              // Adventurer: personality word chips (pick up to 3)
-              if (ageBand == AgeBand.adventurer) ...[
-                _buildPersonalityChips(),
-                const SizedBox(height: 24),
+              if (ageBand != AgeBand.sprout) ...[
+                SizedBox(height: band.space(24)),
+                // Age is already set at the welcome gate — no age picker shown here.
+                _buildAgeBandPersonalityInput(band),
               ],
-              // Creator: free-text personality description
-              if (ageBand == AgeBand.creator) ...[
-                _buildPersonalityTextField(),
-                const SizedBox(height: 24),
-              ],
-              _buildNextArrowButton(
-                  enabled: nameNotEmpty,
-                  onTap: _heroNextPage,
-                  hint: 'Next: Create Your Look'),
             ],
           ),
         ),
       ],
     );
+  }
+
+  Widget _buildAgeBandPersonalityInput(AgeBandThemeData band) {
+    switch (band.band) {
+      case AgeBand.sprout:
+        return _buildSproutPersonalityButtons(band);
+      case AgeBand.explorer:
+        return _buildExplorerPersonalityCards(band);
+      case AgeBand.adventurer:
+        return _buildPersonalityChips();
+      case AgeBand.creator:
+        return _buildPersonalityTextField();
+    }
   }
 
   // Page 2: "Pick your hero style!" — archetype selection
@@ -1304,15 +1308,15 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 ? 'Story type'
                 : 'What kind of story?';
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: EdgeInsets.symmetric(horizontal: band.space(24)),
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: band.space(10)),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _audioPrompt("What kind of story do you want?"),
-              const SizedBox(width: 8),
+              SizedBox(width: band.space(8)),
               Flexible(
                 child: Text(
                   storyTitle,
@@ -1321,16 +1325,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: band.space(24)),
           // Story mode selection — 2×2 grid
           Text(
             "Pick your story style",
             style: GoogleFonts.fredoka(
               color: Colors.white.withAlpha(200),
-              fontSize: 16,
+              fontSize: band.body(16),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: band.space(16)),
           Column(
             children: [
               Row(
@@ -1362,7 +1366,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: band.space(20)),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -1399,16 +1403,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               ),
             ],
           ),
-          const SizedBox(height: 36),
+          SizedBox(height: band.space(36)),
           // Story length selection
           Text(
             "How long should it be?",
             style: GoogleFonts.fredoka(
               color: Colors.white.withAlpha(200),
-              fontSize: 16,
+              fontSize: band.body(16),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: band.space(16)),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -1440,7 +1444,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               ),
             ],
           ),
-          const SizedBox(height: 28),
+          SizedBox(height: band.space(28)),
           // Genre tags — Adventurer+ only
           if (band.band == AgeBand.adventurer ||
               band.band == AgeBand.creator) ...[
@@ -1516,72 +1520,176 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             ),
             const SizedBox(height: 24),
           ],
-          // Wish field — "Anything special you want in your story?"
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    _audioPrompt("Anything special you want in your story?"),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        "Anything special you want?",
-                        style: GoogleFonts.fredoka(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _wishController,
-                        style: const TextStyle(color: Colors.white),
-                        maxLines: 2,
-                        decoration: InputDecoration(
-                          hintText: 'I want to ride a magic carpet…',
-                          hintStyle: const TextStyle(color: Colors.white38),
-                          filled: true,
-                          fillColor: Colors.white.withAlpha(20),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
-                        ),
-                        onChanged: (v) => widget.wizardData.customElements = v,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: Icon(
-                        _listeningFor == 'wish' ? Icons.mic : Icons.mic_none,
-                        color: _listeningFor == 'wish'
-                            ? Colors.yellow
-                            : Colors.white,
-                      ),
-                      onPressed: () => _toggleListening('wish'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
+          if (band.band == AgeBand.sprout || band.band == AgeBand.explorer)
+            _buildWishPromptButtons(band)
+          else
+            _buildWishTextInput(band),
+          SizedBox(height: band.space(32)),
           _buildNextArrowButton(
               enabled: true,
               onTap: widget.onNext,
               hint: 'Next: Review & Make Magic!'),
-          const SizedBox(height: 20),
+          SizedBox(height: band.space(20)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWishPromptButtons(AgeBandThemeData band) {
+    final prompts = <(String emoji, String label, String value)>[
+      ('🧚', 'Magic friend', 'A friendly fairy helps on the journey.'),
+      ('🐉', 'Dragon helper', 'A kind dragon becomes my helper.'),
+      ('🗺️', 'Treasure quest', 'Find a hidden treasure map adventure.'),
+      ('🌈', 'Rainbow world', 'A magical rainbow world appears.'),
+    ];
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: band.space(4)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _audioPrompt("Pick something special for your story!"),
+              SizedBox(width: band.space(4)),
+              Flexible(
+                child: Text(
+                  "Pick something special!",
+                  style: GoogleFonts.fredoka(
+                    color: Colors.white,
+                    fontSize: band.body(16),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: band.space(10)),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: prompts.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 1.6,
+            ),
+            itemBuilder: (context, index) {
+              final prompt = prompts[index];
+              final selected = widget.wizardData.customElements == prompt.$3;
+              return InkWell(
+                borderRadius: BorderRadius.circular(band.radiusMd),
+                onTap: () {
+                  setState(() {
+                    widget.wizardData.customElements = prompt.$3;
+                    _wishController.text = prompt.$3;
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  constraints: BoxConstraints(minHeight: band.touchTarget(72)),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: band.space(10),
+                    vertical: band.space(10),
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected ? const Color(0xFF7C4DFF) : Colors.white10,
+                    borderRadius: BorderRadius.circular(band.radiusMd),
+                    border: Border.all(
+                      color:
+                          selected ? const Color(0xFFFFD700) : Colors.white24,
+                      width: selected ? 2 : 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(prompt.$1,
+                          style: TextStyle(fontSize: band.body(22))),
+                      SizedBox(width: band.space(8)),
+                      Expanded(
+                        child: Text(
+                          prompt.$2,
+                          style: GoogleFonts.fredoka(
+                            color: Colors.white,
+                            fontSize: band.body(13),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWishTextInput(AgeBandThemeData band) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: band.space(4)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _audioPrompt("Anything special you want in your story?"),
+              SizedBox(width: band.space(4)),
+              Flexible(
+                child: Text(
+                  "Anything special you want?",
+                  style: GoogleFonts.fredoka(
+                    color: Colors.white,
+                    fontSize: band.body(16),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: band.space(8)),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _wishController,
+                  style:
+                      TextStyle(color: Colors.white, fontSize: band.body(14)),
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    hintText: 'I want to ride a magic carpet…',
+                    hintStyle: const TextStyle(color: Colors.white38),
+                    filled: true,
+                    fillColor: Colors.white.withAlpha(20),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(band.radiusMd),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: band.space(12),
+                      vertical: band.space(10),
+                    ),
+                  ),
+                  onChanged: (v) => widget.wizardData.customElements = v,
+                ),
+              ),
+              SizedBox(width: band.space(8)),
+              IconButton(
+                iconSize: band.body(24),
+                constraints: BoxConstraints(
+                  minWidth: band.touchTarget(48),
+                  minHeight: band.touchTarget(48),
+                ),
+                icon: Icon(
+                  _listeningFor == 'wish' ? Icons.mic : Icons.mic_none,
+                  color: _listeningFor == 'wish' ? Colors.yellow : Colors.white,
+                ),
+                onPressed: () => _toggleListening('wish'),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -1806,8 +1914,37 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   Widget _buildGenderPicker() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final btnW = ((constraints.maxWidth - 28) / 2).clamp(120.0, 180.0);
+        final isNarrow = constraints.maxWidth < 300;
+        final spacing = isNarrow ? 16.0 : 28.0;
+        final availableWidth =
+            isNarrow ? constraints.maxWidth : constraints.maxWidth - spacing;
+        final btnW = (availableWidth / (isNarrow ? 1 : 2)).clamp(90.0, 180.0);
         final btnH = btnW * 1.35;
+        if (isNarrow) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _GenderImageButton(
+                gender: 'Boy',
+                assetPath: 'assets/images/ui/boy_avatar_button.webp',
+                isSelected: widget.wizardData.characterGender == 'Boy',
+                width: btnW,
+                height: btnH,
+                onTap: () => _handleGenderSelection('Boy'),
+              ),
+              SizedBox(height: spacing),
+              _GenderImageButton(
+                gender: 'Girl',
+                assetPath: 'assets/images/ui/girl_avatar_button.webp',
+                isSelected: widget.wizardData.characterGender == 'Girl',
+                width: btnW,
+                height: btnH,
+                onTap: () => _handleGenderSelection('Girl'),
+              ),
+            ],
+          );
+        }
+
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -1819,7 +1956,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               height: btnH,
               onTap: () => _handleGenderSelection('Boy'),
             ),
-            const SizedBox(width: 28),
+            SizedBox(width: spacing),
             _GenderImageButton(
               gender: 'Girl',
               assetPath: 'assets/images/ui/girl_avatar_button.webp',
@@ -2136,15 +2273,18 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   /// Adventurer band (9-12): 6 word chips, pick up to 3.
   Widget _buildPersonalityChips() {
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     const options = ['Brave', 'Curious', 'Kind', 'Funny', 'Creative', 'Shy'];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Pick up to 3 words that describe you:',
-          style: GoogleFonts.fredoka(color: Colors.white70, fontSize: 15),
+          style: GoogleFonts.fredoka(
+              color: Colors.white70, fontSize: band.body(15)),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: band.space(10)),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -2164,11 +2304,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: EdgeInsets.symmetric(
+                    horizontal: band.space(16), vertical: band.space(8)),
                 decoration: BoxDecoration(
                   color: isSelected ? const Color(0xFF7C4DFF) : Colors.white10,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(band.radiusLg),
                   border: Border.all(
                     color:
                         isSelected ? const Color(0xFFFFD700) : Colors.white24,
@@ -2180,7 +2320,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   style: GoogleFonts.fredoka(
                     color:
                         isSelected ? const Color(0xFFFFD700) : Colors.white70,
-                    fontSize: 15,
+                    fontSize: band.body(15),
                   ),
                 ),
               ),
@@ -2193,36 +2333,203 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   /// Creator band (13+): free-text personality description field.
   Widget _buildPersonalityTextField() {
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           "Describe your character's personality:",
-          style: GoogleFonts.sourceSans3(color: Colors.white60, fontSize: 14),
+          style: GoogleFonts.sourceSans3(
+              color: Colors.white60, fontSize: band.body(14)),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: band.space(8)),
         TextField(
           controller: _personalityDescCtrl,
           maxLines: 3,
-          style: GoogleFonts.sourceSans3(color: Colors.white70, fontSize: 14),
+          style: GoogleFonts.sourceSans3(
+              color: Colors.white70, fontSize: band.body(14)),
           decoration: InputDecoration(
             hintText: 'e.g. introverted but fiercely loyal, sarcastic wit…',
             hintStyle: const TextStyle(color: Colors.white24),
             filled: true,
             fillColor: Colors.white.withAlpha(10),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(band.radiusMd),
               borderSide: const BorderSide(color: Colors.white24),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(band.radiusMd),
               borderSide: const BorderSide(color: Color(0xFF7C4DFF)),
             ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: band.space(16),
+              vertical: band.space(12),
+            ),
           ),
           onChanged: (v) {
             widget.wizardData.strengths = v.trim().isEmpty ? [] : [v.trim()];
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSproutPersonalityButtons(AgeBandThemeData band) {
+    final options = <(String emoji, String label)>[
+      ('🦁', 'Brave'),
+      ('🌈', 'Kind'),
+      ('🔍', 'Curious'),
+      ('🎨', 'Creative'),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Pick one hero feeling:',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.fredoka(
+            color: Colors.white70,
+            fontSize: band.body(16),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        SizedBox(height: band.space(12)),
+        Wrap(
+          spacing: band.space(12),
+          runSpacing: band.space(12),
+          alignment: WrapAlignment.center,
+          children: options.map((opt) {
+            final isSelected = _selectedPersonalityChips.isNotEmpty &&
+                _selectedPersonalityChips.first == opt.$2;
+            return SizedBox(
+              width: band.touchTarget(120),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(band.radiusLg),
+                onTap: () {
+                  setState(() {
+                    _selectedPersonalityChips
+                      ..clear()
+                      ..add(opt.$2);
+                    widget.wizardData.strengths = [opt.$2];
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: band.space(12),
+                    vertical: band.space(14),
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        isSelected ? const Color(0xFF7C4DFF) : Colors.white10,
+                    borderRadius: BorderRadius.circular(band.radiusLg),
+                    border: Border.all(
+                      color:
+                          isSelected ? const Color(0xFFFFD700) : Colors.white24,
+                      width: isSelected ? 2.5 : 1.5,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(opt.$1,
+                          style: TextStyle(fontSize: band.heading(26))),
+                      SizedBox(height: band.space(6)),
+                      Text(
+                        opt.$2,
+                        style: GoogleFonts.fredoka(
+                          color: Colors.white,
+                          fontSize: band.body(14),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExplorerPersonalityCards(AgeBandThemeData band) {
+    final options = <(String emoji, String label)>[
+      ('🦸', 'Brave'),
+      ('🧠', 'Curious'),
+      ('💛', 'Kind'),
+      ('😄', 'Funny'),
+      ('🎨', 'Creative'),
+      ('🌙', 'Calm'),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Pick up to 2 hero traits:',
+          style: GoogleFonts.fredoka(
+            color: Colors.white70,
+            fontSize: band.body(15),
+          ),
+        ),
+        SizedBox(height: band.space(10)),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: options.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 0.95,
+          ),
+          itemBuilder: (context, index) {
+            final option = options[index];
+            final isSelected = _selectedPersonalityChips.contains(option.$2);
+            return InkWell(
+              borderRadius: BorderRadius.circular(band.radiusMd),
+              onTap: () {
+                setState(() {
+                  if (isSelected) {
+                    _selectedPersonalityChips.remove(option.$2);
+                  } else if (_selectedPersonalityChips.length < 2) {
+                    _selectedPersonalityChips.add(option.$2);
+                  }
+                  widget.wizardData.strengths =
+                      List.from(_selectedPersonalityChips);
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                constraints: BoxConstraints(minHeight: band.touchTarget(72)),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF7C4DFF) : Colors.white10,
+                  borderRadius: BorderRadius.circular(band.radiusMd),
+                  border: Border.all(
+                    color:
+                        isSelected ? const Color(0xFFFFD700) : Colors.white24,
+                    width: isSelected ? 2 : 1.5,
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(option.$1,
+                        style: TextStyle(fontSize: band.heading(24))),
+                    SizedBox(height: band.space(4)),
+                    Text(
+                      option.$2,
+                      style: GoogleFonts.fredoka(
+                        color: Colors.white,
+                        fontSize: band.body(13),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
           },
         ),
       ],
@@ -3103,7 +3410,7 @@ class _PetCardState extends State<_PetCard> {
           const SizedBox(height: 10),
           // Companion type dropdown
           DropdownButtonFormField<String>(
-            value: _species,
+            initialValue: _species,
             dropdownColor: const Color(0xFF2C1B47),
             style: const TextStyle(color: Colors.white, fontSize: 14),
             decoration: _petFieldDecoration('Companion type'),
