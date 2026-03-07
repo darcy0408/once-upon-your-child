@@ -25,18 +25,14 @@ class WelcomeScreen extends ConsumerStatefulWidget {
   ConsumerState<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
-    with TickerProviderStateMixin {
+class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   final _nameController = TextEditingController();
   int? _selectedAge;
   bool _submitting = false;
 
-  /// Current step: 0 = title, 1 = name, 2 = age + button.
+  /// Current step: 0 = title, 1 = name, 2 = age picker.
   int _step = 0;
 
-  late final AnimationController _bounceController;
-  late final Animation<double> _bounceAnimation;
-  Timer? _bounceTimer;
   Timer? _titleTimer;
 
   static const _goldColor = Color(0xFFFFD700);
@@ -59,13 +55,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   @override
   void initState() {
     super.initState();
-    _bounceController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 450),
-    );
-    _bounceAnimation = Tween<double>(begin: 0, end: -14).animate(
-      CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
-    );
     // Auto-advance from title to name after 2.5 s (tap also advances).
     _titleTimer = Timer(const Duration(milliseconds: 2500), () {
       if (mounted && _step == 0) setState(() => _step = 1);
@@ -75,8 +64,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   @override
   void dispose() {
     _nameController.dispose();
-    _bounceController.dispose();
-    _bounceTimer?.cancel();
     _titleTimer?.cancel();
     super.dispose();
   }
@@ -95,19 +82,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   }
 
   void _onAgeSelected(int age) {
+    if (_submitting) return;
     setState(() => _selectedAge = age);
-    _startBounceCountdown();
-  }
-
-  /// After 3 s of inactivity on the age step, bounce the Let's Go button.
-  void _startBounceCountdown() {
-    _bounceTimer?.cancel();
-    _bounceController
-      ..stop()
-      ..reset();
-    _bounceTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted && !_submitting) _bounceController.repeat(reverse: true);
-    });
+    _handleContinue();
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -307,10 +284,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     );
   }
 
-  // ── Step 2: Age picker + Let's Go ─────────────────────────────────────────
+  // ── Step 2: Age picker ────────────────────────────────────────────────────
 
   Widget _buildAgeStep() {
-    final ready = _selectedAge != null;
     return Column(
       key: const ValueKey('age'),
       mainAxisSize: MainAxisSize.min,
@@ -322,11 +298,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           textAlign: TextAlign.center,
           style: GoogleFonts.fredoka(
             color: _goldColor,
-            fontSize: 23,
-            fontWeight: FontWeight.w600,
+            fontSize: 34,
+            fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         const Text(
           'Parents: please select your child\'s age',
           textAlign: TextAlign.center,
@@ -335,9 +311,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         const SizedBox(height: 8),
         LayoutBuilder(
           builder: (context, constraints) {
-            const spacing = 5.0;
+            const spacing = 12.0;
             final circleSize =
-                ((constraints.maxWidth - (spacing * 2)) / 3).clamp(41.0, 48.0);
+                ((constraints.maxWidth - (spacing * 2)) / 3).clamp(32.0, 42.0);
             return GridView.count(
               crossAxisCount: 3,
               shrinkWrap: true,
@@ -355,58 +331,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
             );
           },
         ),
-        const SizedBox(height: AppSpacing.md),
-
-        // ── Let's Go button with bounce + brighten ─────────────────────────
-        AnimatedBuilder(
-          animation: _bounceAnimation,
-          builder: (context, child) => Transform.translate(
-            offset: Offset(0, _bounceAnimation.value),
-            child: child,
-          ),
-          child: _PressableButton(
-            onPressed: (_submitting || !ready) ? null : _handleContinue,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              width: double.infinity,
-              height: 50,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(32),
-                gradient: LinearGradient(
-                  colors: ready
-                      ? [
-                          const Color(0xFFFFD700),
-                          const Color(0xFFFF8C00),
-                        ]
-                      : [Colors.white12, Colors.white12],
-                ),
-                boxShadow: ready
-                    ? [
-                        BoxShadow(
-                          color: const Color(0xFFFFD700).withAlpha(130),
-                          blurRadius: 24,
-                          spreadRadius: 2,
-                          offset: const Offset(0, 4),
-                        )
-                      ]
-                    : [],
-              ),
-              child: Center(
-                child: _submitting
-                    ? const CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white)
-                    : Text(
-                        "Let's go! \u2728",
-                        style: GoogleFonts.fredoka(
-                          color: ready ? Colors.white : Colors.white38,
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -417,7 +341,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     final name = _nameController.text.trim();
     if (name.isEmpty || _selectedAge == null) return;
 
-    _bounceController.stop();
     setState(() => _submitting = true);
 
     final prefs = await SharedPreferences.getInstance();
