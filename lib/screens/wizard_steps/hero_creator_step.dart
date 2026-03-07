@@ -85,6 +85,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   late TextEditingController _questController;
   late TextEditingController _wishController;
   late FlutterTts _tts;
+  bool _isPetAvatarGenerating = false;
+  String? _petAvatarStatusMessage;
 
   // ─── Analytics Helpers ──────────────────────────────────────────────────────
   void _logPageView(int pageIndex) {
@@ -880,6 +882,30 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           onPickPhoto: ({int? petIndex}) => _pickPetPhoto(petIndex: petIndex),
           onChanged: () => setState(() {}),
         ),
+        const SizedBox(height: 8),
+        if (_isPetAvatarGenerating)
+          Row(
+            children: [
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xFFFFD700),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Transforming your pet into magical Pixar style...',
+                style: TextStyle(color: Color(0xFFFFD700), fontSize: 12),
+              ),
+            ],
+          )
+        else if (_petAvatarStatusMessage != null)
+          Text(
+            _petAvatarStatusMessage!,
+            style: const TextStyle(color: Color(0xFFFFD700), fontSize: 12),
+          ),
         const SizedBox(height: 12),
         // Go Solo option
         TextButton.icon(
@@ -940,16 +966,39 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final targetIndex =
         (petIndex ?? 0).clamp(0, widget.wizardData.pets.length - 1);
     final pet = widget.wizardData.pets[targetIndex];
-    await _generateMagicalPetAvatar(
+
+    if (mounted) {
+      setState(() {
+        _isPetAvatarGenerating = true;
+        _petAvatarStatusMessage = null;
+      });
+    }
+
+    final success = await _generateMagicalPetAvatar(
       petName: pet['name'] ?? _defaultPetNameForIndex(targetIndex),
       species: pet['species'] ?? 'Dog',
       looksDescription: pet['color'] ?? 'cute and friendly',
       photoBytes: bytes,
       filename: file.name.isNotEmpty ? file.name : 'pet_photo.jpg',
     );
+
+    if (!mounted) return;
+    setState(() {
+      _isPetAvatarGenerating = false;
+      _petAvatarStatusMessage = success
+          ? '✨ Magical pet avatar ready!'
+          : 'Photo saved. Magical transform unavailable right now.';
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(_petAvatarStatusMessage!),
+        backgroundColor:
+            success ? const Color(0xFF4CAF50) : const Color(0xFF6D4C41),
+      ),
+    );
   }
 
-  Future<void> _generateMagicalPetAvatar({
+  Future<bool> _generateMagicalPetAvatar({
     required String petName,
     required String species,
     required String looksDescription,
@@ -980,19 +1029,21 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
       final streamed = await request.send().timeout(const Duration(minutes: 3));
       final response = await http.Response.fromStream(streamed);
-      if (response.statusCode != 200) return;
+      if (response.statusCode != 200) return false;
       final body = jsonDecode(response.body) as Map<String, dynamic>;
-      if (body['status'] != 'success') return;
+      if (body['status'] != 'success') return false;
       final avatarJson = body['avatar'] as Map<String, dynamic>?;
-      if (avatarJson == null) return;
+      if (avatarJson == null) return false;
 
       final generated = GeneratedAvatar.fromJson(avatarJson);
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() {
         widget.wizardData.petAvatars[petName] = generated;
       });
+      return true;
     } catch (_) {
       // Keep raw pet photo fallback if generation is unavailable.
+      return false;
     }
   }
 
