@@ -895,9 +895,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 ),
               ),
               const SizedBox(width: 8),
-              const Text(
-                'Transforming your pet into magical Pixar style...',
-                style: TextStyle(color: Color(0xFFFFD700), fontSize: 12),
+              const Expanded(
+                child: Text(
+                  'Transforming your pet into magical Pixar style...',
+                  style: TextStyle(color: Color(0xFFFFD700), fontSize: 12),
+                  softWrap: true,
+                ),
               ),
             ],
           )
