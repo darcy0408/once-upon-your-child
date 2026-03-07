@@ -332,12 +332,26 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       ? 'short'
       : (wizardLength == 'epic' ? 'long' : 'medium');
 
-  String _storyTypeLabel(WizardData data) {
-    if (data.interactiveMode) return 'Pick a Path adventure';
-    if (data.rhymeTimeMode) return 'Rhyme Time story';
-    if (data.learningToReadMode) return 'Learn to Read story';
-    if (data.includeIllustrations) return 'Illustrated tale';
-    return 'Magical story';
+  String _storyTypeLabel(WizardData data, AgeBandThemeData band) {
+    if (data.interactiveMode) {
+      return band.band == AgeBand.sprout
+          ? 'Pick a Path'
+          : 'Pick a Path adventure';
+    }
+    if (data.rhymeTimeMode) {
+      return band.band == AgeBand.sprout ? 'Rhyme story' : 'Rhyme Time story';
+    }
+    if (data.learningToReadMode) {
+      return band.band == AgeBand.sprout
+          ? 'Easy reader'
+          : 'Learn to Read story';
+    }
+    if (data.includeIllustrations) {
+      return band.band == AgeBand.creator
+          ? 'Illustrated story'
+          : 'Picture tale';
+    }
+    return band.band == AgeBand.creator ? 'Story draft' : 'Magical story';
   }
 
   String _storyLengthLabel(String length) {
@@ -355,25 +369,29 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
   Widget build(BuildContext context) {
     final data = widget.wizardData;
     final screenWidth = MediaQuery.of(context).size.width;
-    final orbSize = (screenWidth - 64).clamp(180.0, 220.0);
-    final ageBand = Theme.of(context).extension<AgeBandThemeData>();
-    final heroFallback = ageBand?.heroLabel ?? 'Your Hero';
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final orbSize =
+        (screenWidth - band.space(64)).clamp(180.0, 220.0).toDouble();
+    final heroFallback = band.heroLabel;
+    final sideCircleSize = band.touchTarget(88).clamp(72.0, 112.0).toDouble();
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
+        padding: EdgeInsets.symmetric(
+            horizontal: band.space(AppSpacing.lg),
+            vertical: band.space(AppSpacing.xl)),
         child: Column(
           children: [
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               _audioPrompt("Your adventure awaits!"),
-              const SizedBox(width: 8),
+              SizedBox(width: band.space(8)),
               Text("Your Adventure Awaits!",
                   style: GoogleFonts.cinzelDecorative(
                       color: const Color(0xFFFFD700),
-                      fontSize: 22,
+                      fontSize: band.heading(22),
                       fontWeight: FontWeight.bold))
             ]),
-            const SizedBox(height: 24),
+            SizedBox(height: band.space(24)),
             // ── Hero orb (avatar only, no overlapping circles) ───────────────
             SizedBox(
               height: orbSize + 50,
@@ -413,17 +431,17 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 ),
               ]),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: band.space(8)),
             if (data.characterName.isNotEmpty) ...[
               Text(
                 data.characterName,
                 style: GoogleFonts.cinzelDecorative(
                     color: const Color(0xFFFFD700),
-                    fontSize: 16,
+                    fontSize: band.heading(16),
                     fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: band.space(12)),
             ],
             // ── Setting + companion — below the orb so nothing overlaps ──────
             Row(
@@ -437,17 +455,17 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                       duration: const Duration(seconds: 4),
                       delay: 100,
                       child: _AuraCircle(
-                        size: 88,
+                        size: sideCircleSize,
                         auraColor: const Color(0xFFFFD9A6),
                         child: ClipOval(
                             child:
                                 Image.asset(_scenarioImage, fit: BoxFit.cover)),
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: band.space(6)),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: band.space(10), vertical: band.space(4)),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(12),
@@ -458,16 +476,16 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                       child: Text(_scenarioLabel,
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: Colors.white,
-                              fontSize: 12,
+                              fontSize: band.body(12),
                               fontWeight: FontWeight.bold)),
                     ),
                   ]),
                 ),
                 // Companion (only if selected)
                 if (data.selectedCompanions.isNotEmpty) ...[
-                  const SizedBox(width: 24),
+                  SizedBox(width: band.space(24)),
                   Flexible(
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
                       MagicalFloat(
@@ -475,16 +493,17 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                         duration: const Duration(seconds: 4),
                         delay: 500,
                         child: _AuraCircle(
-                          size: 88,
+                          size: sideCircleSize,
                           auraColor: const Color(0xFFF3AEFF),
                           child:
                               _CompanionAvatar(companionImage: _companionImage),
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: band.space(6)),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                        padding: EdgeInsets.symmetric(
+                            horizontal: band.space(10),
+                            vertical: band.space(4)),
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.6),
                           borderRadius: BorderRadius.circular(12),
@@ -495,9 +514,9 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                               : 'Companion',
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: Colors.white,
-                              fontSize: 12,
+                              fontSize: band.body(12),
                               fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -506,40 +525,44 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                 ],
               ],
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: band.space(24)),
             // ── Read-only story summary ──────────────────────────────────────
             _StaggeredReveal(
                 index: 0,
                 child: _SummaryRow(
                     icon: Icons.auto_stories,
-                    label: _storyTypeLabel(data),
+                    label: _storyTypeLabel(data, band),
+                    band: band,
                     onTap: widget.onGoBack,
                     colorAccent: const Color(0xFF9C4DCC))),
-            const SizedBox(height: 8),
+            SizedBox(height: band.space(8)),
             _StaggeredReveal(
                 index: 1,
                 child: _SummaryRow(
                     icon: Icons.timer,
+                    band: band,
                     label: _storyLengthLabel(data.storyLength),
                     onTap: widget.onGoBack,
                     colorAccent: const Color(0xFF4DB6AC))),
             if (data.customElements.isNotEmpty) ...[
-              const SizedBox(height: 8),
+              SizedBox(height: band.space(8)),
               _StaggeredReveal(
                   index: 2,
                   child: _SummaryRow(
                       icon: Icons.auto_awesome,
+                      band: band,
                       label: '"${data.customElements}"',
                       onTap: widget.onGoBack,
                       colorAccent: const Color(0xFFFFD54F),
                       isShimmering: true)),
             ],
             if (data.companionNames.isNotEmpty) ...[
-              const SizedBox(height: 8),
+              SizedBox(height: band.space(8)),
               _StaggeredReveal(
                   index: 3,
                   child: _SummaryRow(
                     icon: Icons.favorite,
+                    band: band,
                     label: data.companionNames.join(', '),
                     onTap: widget.onGoBack,
                     colorAccent: const Color(0xFFF06292),
@@ -547,7 +570,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                         _CompanionAvatar(companionImage: _companionImage),
                   )),
             ],
-            const SizedBox(height: AppSpacing.xxl),
+            SizedBox(height: band.space(AppSpacing.xxl)),
             Center(
                 child: _isGenerating
                     ? MagicalLoadingView(
@@ -559,7 +582,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                             onTap: _launchStoryCreation,
                             isEnabled: !_isGenerating && data.isComplete,
                             label: 'MAKE MAGIC'))),
-            const SizedBox(height: AppSpacing.xl),
+            SizedBox(height: band.space(AppSpacing.xl)),
           ],
         ),
       ),
@@ -838,6 +861,7 @@ class _PulsingCastSpellFrameState extends State<_PulsingCastSpellFrame>
 class _SummaryRow extends StatelessWidget {
   final IconData icon;
   final String label;
+  final AgeBandThemeData band;
   final VoidCallback? onTap;
   final Color? colorAccent;
   final Widget? leadingAvatar;
@@ -846,6 +870,7 @@ class _SummaryRow extends StatelessWidget {
   const _SummaryRow({
     required this.icon,
     required this.label,
+    required this.band,
     this.onTap,
     this.colorAccent,
     this.leadingAvatar,
@@ -858,12 +883,15 @@ class _SummaryRow extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(band.radiusMd),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: EdgeInsets.symmetric(
+            horizontal: band.space(16),
+            vertical: band.space(14),
+          ),
           decoration: BoxDecoration(
             color: Colors.white.withAlpha(35),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(band.radiusMd),
             border: Border.all(color: const Color(0xFFD4A0FF).withAlpha(80)),
           ),
           child: Row(
@@ -871,9 +899,9 @@ class _SummaryRow extends StatelessWidget {
               // Left accent bar
               if (colorAccent != null)
                 Container(
-                  width: 4,
-                  height: 24,
-                  margin: const EdgeInsets.only(right: 12),
+                  width: band.space(4),
+                  height: band.touchTarget(24),
+                  margin: EdgeInsets.only(right: band.space(12)),
                   decoration: BoxDecoration(
                     color: colorAccent,
                     borderRadius: BorderRadius.circular(2),
@@ -883,28 +911,33 @@ class _SummaryRow extends StatelessWidget {
               // Leading Avatar or Icon
               if (leadingAvatar != null) ...[
                 SizedBox(
-                  width: 32,
-                  height: 32,
+                  width: band.touchTarget(32),
+                  height: band.touchTarget(32),
                   child: leadingAvatar!,
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: band.space(12)),
               ] else ...[
-                Icon(icon, color: const Color(0xFFFFD700), size: 24),
-                const SizedBox(width: 12),
+                Icon(
+                  icon,
+                  color: const Color(0xFFFFD700),
+                  size: band.body(24),
+                ),
+                SizedBox(width: band.space(12)),
               ],
 
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                  style:
+                      TextStyle(color: Colors.white, fontSize: band.body(16)),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 2,
                 ),
               ),
               if (onTap != null) ...[
-                const SizedBox(width: 8),
-                const Icon(Icons.edit_outlined,
-                    color: Color(0xFFD4A0FF), size: 18),
+                SizedBox(width: band.space(8)),
+                Icon(Icons.edit_outlined,
+                    color: const Color(0xFFD4A0FF), size: band.body(18)),
               ],
             ],
           ),

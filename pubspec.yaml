@@ -109,8 +109,7 @@ flutter:
     - assets/mood_lanterns/
     - assets/sounds/
     - thePlaceholderImageBeforeCharacterGeneration.jpeg
-    - assets/config/avatar_config.json
-    - assets/config/allowlists.json
+    - assets/config/
     - assets/avatars/midjourney/
     - assets/avatars/midjourney/metadata.json
     - assets/fonts/

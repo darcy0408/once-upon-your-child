@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.storyweaver.story_weaver_app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

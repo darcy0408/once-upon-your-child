@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -411,6 +413,13 @@ AgeBandThemeData themeForBand(AgeBand band) {
 
 /// Look up the theme data for a given age.
 AgeBandThemeData themeForAge(int age) => themeForBand(ageBandFromAge(age));
+
+extension AgeBandSizing on AgeBandThemeData {
+  double heading(double base) => base * headingScale;
+  double body(double base) => base * bodyScale;
+  double space(double base) => base * spacingScale;
+  double touchTarget(double base) => math.max(base, touchTargetMin);
+}
 
 // ---------------------------------------------------------------------------
 // Helpers — map font family strings to Google Fonts constructors

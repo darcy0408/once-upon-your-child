@@ -19,24 +19,27 @@ class AppBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final band = ageBandFromAge(childAge);
+    final bandTheme = Theme.of(context).extension<AgeBandThemeData>() ??
+        themeForAge(childAge);
+    final band = bandTheme.band;
 
     // Nav height and icon size scale up for younger users (larger touch targets).
     final double iconSize;
-    final double navHeight;
+    final navHeight =
+        (bandTheme.touchTargetMin + 8).clamp(60.0, 96.0).toDouble();
+    final hitSize = bandTheme.touchTargetMin.clamp(48.0, 88.0).toDouble();
+    final labelFontSize =
+        (12 * bandTheme.bodyScale).clamp(10.0, 14.0).toDouble();
     switch (band) {
       case AgeBand.sprout:
-        iconSize = 30;
-        navHeight = 72;
+        iconSize = 30 * bandTheme.bodyScale;
         break;
       case AgeBand.explorer:
-        iconSize = 28;
-        navHeight = 64;
+        iconSize = 28 * bandTheme.bodyScale;
         break;
       case AgeBand.adventurer:
       case AgeBand.creator:
-        iconSize = 26;
-        navHeight = 60;
+        iconSize = 26 * bandTheme.bodyScale;
         break;
     }
 
@@ -83,7 +86,8 @@ class AppBottomNavigationBar extends StatelessWidget {
     final items = <BottomNavigationBarItem>[];
     for (var i = 0; i < tabConfigs.length; i++) {
       final cfg = tabConfigs[i];
-      Widget iconWidget = _NavIcon(icon: cfg.icon, size: iconSize);
+      Widget iconWidget =
+          _NavIcon(icon: cfg.icon, size: iconSize, hitSize: hitSize);
       if (i == 2) {
         iconWidget = FeatureUnlockTooltip(
           feature: FeatureType.characterCreation,
@@ -106,6 +110,10 @@ class AppBottomNavigationBar extends StatelessWidget {
         currentIndex: clampedIndex,
         onTap: onTap,
         type: BottomNavigationBarType.fixed,
+        selectedFontSize: labelFontSize,
+        unselectedFontSize: labelFontSize,
+        selectedLabelStyle: TextStyle(fontWeight: FontWeight.w700),
+        unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w600),
         selectedItemColor: Colors.purple,
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
@@ -124,14 +132,19 @@ class _TabConfig {
 class _NavIcon extends StatelessWidget {
   final IconData icon;
   final double size;
+  final double hitSize;
 
-  const _NavIcon({required this.icon, this.size = 26});
+  const _NavIcon({
+    required this.icon,
+    this.size = 26,
+    this.hitSize = 48,
+  });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 48,
-      height: 48,
+      width: hitSize,
+      height: hitSize,
       child: Center(
         child: Icon(icon, size: size),
       ),

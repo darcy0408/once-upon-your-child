@@ -21,6 +21,9 @@ subprojects {
         if (android.namespace == null) {
             android.namespace = project.group.toString()
         }
+        // Force compileSdk >= 36 so plugins like isar_flutter_libs
+        // (which need android:attr/lStar from API 31+) build correctly.
+        android.compileSdk = 36
     }
 }
 

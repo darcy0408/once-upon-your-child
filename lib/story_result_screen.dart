@@ -148,7 +148,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   /// The total "virtual" page count (cover + text pages + end page).
   int get _totalPages =>
-      _storyPages.length + (_hasCoverIllustration ? 1 : 0) + 1; // +1 for end page
+      _storyPages.length +
+      (_hasCoverIllustration ? 1 : 0) +
+      1; // +1 for end page
 
   // Quality scoring
   Map<String, dynamic>? _qualityData;
@@ -156,7 +158,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   bool get _isYoungUser {
     final band = Theme.of(context).extension<AgeBandThemeData>();
-    return band != null && (band.band == AgeBand.sprout || band.band == AgeBand.explorer);
+    return band != null &&
+        (band.band == AgeBand.sprout || band.band == AgeBand.explorer);
   }
 
   String get _analyticsStoryId =>
@@ -194,6 +197,20 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       return 7;
     }
     return age;
+  }
+
+  String _readingLevelLabel(AgeBandThemeData band) {
+    if (widget.isLearningToReadMode) return 'Reading Level: Easy Reader';
+    switch (band.band) {
+      case AgeBand.sprout:
+        return 'Reading Level: Picture-Book';
+      case AgeBand.explorer:
+        return 'Reading Level: Early Reader';
+      case AgeBand.adventurer:
+        return 'Reading Level: Middle Grade';
+      case AgeBand.creator:
+        return 'Reading Level: Teen';
+    }
   }
 
   CharacterAppearance? _buildCharacterAppearance() {
@@ -410,7 +427,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
                     color: AppColors.primary.withValues(alpha: 0.3),
-                    child: const Icon(Icons.pets, color: Colors.white, size: 18),
+                    child:
+                        const Icon(Icons.pets, color: Colors.white, size: 18),
                   ),
                 ),
               ),
@@ -435,25 +453,43 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       if (mounted) setState(() {});
     });
 
+    final normalizedStoryText = _normalizeStoryText(widget.storyText);
+    final normalizedIncomingPages = (widget.pages ?? const <String>[])
+        .map(_normalizeStoryText)
+        .where((p) => p.trim().isNotEmpty)
+        .toList();
+
     // For epic stories, repaginate from the full story text to avoid sparse pages.
     if (widget.storyLengthHint == 'epic') {
-      final epicSource = widget.storyText.trim().isNotEmpty
-          ? widget.storyText
-          : (widget.pages ?? const <String>[]).join('\n\n');
+      final epicSource = normalizedStoryText.trim().isNotEmpty
+          ? normalizedStoryText
+          : normalizedIncomingPages.join('\n\n');
       _storyPages = _paginateStory(epicSource, wordsPerPage: 170);
       _adventureSteps = List.generate(
         _storyPages.length,
         (i) => 'Page ${i + 1}',
       );
-    } else if (widget.pages != null && widget.pages!.isNotEmpty) {
-      _storyPages = widget.pages!;
+    } else if (normalizedIncomingPages.isNotEmpty) {
+      _storyPages = normalizedIncomingPages;
       _adventureSteps = widget.adventureSteps ??
           List.generate(
             _storyPages.length,
             (i) => 'Step ${i + 1}',
           );
+      // If pages are too sparse (common with fragmented model output),
+      // rebuild into fuller reading pages for smoother read-aloud flow.
+      if (_averageWordsPerPage(_storyPages) < 50) {
+        final source = normalizedStoryText.trim().isNotEmpty
+            ? normalizedStoryText
+            : _storyPages.join('\n\n');
+        _storyPages = _paginateStory(source, wordsPerPage: 120);
+        _adventureSteps = List.generate(
+          _storyPages.length,
+          (i) => 'Page ${i + 1}',
+        );
+      }
     } else {
-      _storyPages = _paginateStory(widget.storyText);
+      _storyPages = _paginateStory(normalizedStoryText);
       _adventureSteps = List.generate(
         _storyPages.length,
         (i) => 'Page ${i + 1}',
@@ -700,10 +736,11 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   }
 
   List<String> _paginateStory(String text, {int wordsPerPage = 120}) {
+    final normalized = _normalizeStoryText(text);
     final words =
-        text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+        normalized.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
     if (words.isEmpty) {
-      return [text];
+      return [normalized];
     }
     final pages = <String>[];
     final buffer = StringBuffer();
@@ -721,7 +758,37 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     if (buffer.isNotEmpty) {
       pages.add(buffer.toString().trim());
     }
-    return pages.isEmpty ? [text] : pages;
+    return pages.isEmpty ? [normalized] : pages;
+  }
+
+  String _normalizeStoryText(String raw) {
+    var text = raw;
+    // Decode escaped line breaks/tabs that sometimes arrive double-escaped.
+    text = text.replaceAll(r'\n', '\n').replaceAll(r'\t', '  ');
+    text = text.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+
+    // Remove internal/meta labels if they leak into visible story text.
+    text = text.replaceAllMapped(
+      RegExp(
+        r'^\s*(REQUEST SUMMARY|STORY START|STORY END|WISDOM GEM|ADVENTURE REPORT|CRITICAL:.*)\s*$',
+        multiLine: true,
+        caseSensitive: false,
+      ),
+      (_) => '',
+    );
+
+    // Keep paragraph breaks, but collapse noisy excess whitespace.
+    text = text.replaceAll(RegExp(r'\n{3,}'), '\n\n');
+    text = text.replaceAll(RegExp(r'[ \t]{2,}'), ' ');
+    return text.trim();
+  }
+
+  double _averageWordsPerPage(List<String> pages) {
+    if (pages.isEmpty) return 0;
+    final totalWords = pages
+        .map((p) => p.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length)
+        .fold<int>(0, (sum, count) => sum + count);
+    return totalWords / pages.length;
   }
 
   List<InlineSpan> _buildStorySpans(String pageText) {
@@ -1162,7 +1229,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
                 color: Colors.grey[300],
@@ -1179,7 +1247,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
             const SizedBox(height: 8),
             Text(
               'Unlock AI-generated illustrations for every scene in your story.',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600], height: 1.5),
+              style:
+                  TextStyle(fontSize: 14, color: Colors.grey[600], height: 1.5),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -1253,7 +1322,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   }
 
   void _showRemixSheet() {
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1393,8 +1463,10 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       ..rhymeTimeMode = twist == 'rhyming'
       ..interactiveMode = twist == 'interactive'
       ..customElements = switch (twist) {
-        'funnier' => 'Make this story funny and silly with lots of jokes and humor',
-        'spookier' => 'Add gentle spooky mystery elements (nothing scary for children)',
+        'funnier' =>
+          'Make this story funny and silly with lots of jokes and humor',
+        'spookier' =>
+          'Add gentle spooky mystery elements (nothing scary for children)',
         _ => '',
       };
 
@@ -1492,11 +1564,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     if (mounted) {
       setState(() {
         if (isForward) {
-          _currentPageIndex =
-              (_currentPageIndex + 1).clamp(0, _totalPages - 1);
+          _currentPageIndex = (_currentPageIndex + 1).clamp(0, _totalPages - 1);
         } else {
-          _currentPageIndex =
-              (_currentPageIndex - 1).clamp(0, _totalPages - 1);
+          _currentPageIndex = (_currentPageIndex - 1).clamp(0, _totalPages - 1);
         }
       });
       // Play sparkle SFX on page flip (respects mute)
@@ -1602,42 +1672,53 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       backgroundColor:
           _highContrastMode ? Colors.black : const Color(0xFFFFF8E7),
       showDecorations: !_highContrastMode,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.memory(
-                illustration.bytes,
-                fit: BoxFit.contain,
-                width: double.infinity,
-                errorBuilder: (context, error, stackTrace) {
-                  return _buildImageErrorPlaceholder();
-                },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final maxImageHeight = constraints.maxHeight * 0.62;
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: maxImageHeight),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.memory(
+                      illustration.bytes,
+                      fit: BoxFit.contain,
+                      width: double.infinity,
+                      errorBuilder: (context, error, stackTrace) {
+                        return _buildImageErrorPlaceholder();
+                      },
+                    ),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              widget.title,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.quicksand(
-                fontSize: 24 * _textScale,
-                fontWeight: FontWeight.bold,
-                color: _highContrastMode
-                    ? Colors.white
-                    : const Color(0xFF2C3E50),
+              const SizedBox(height: 12),
+              Text(
+                widget.title,
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.quicksand(
+                  fontSize: 22 * _textScale,
+                  fontWeight: FontWeight.bold,
+                  color: _highContrastMode
+                      ? Colors.white
+                      : const Color(0xFF2C3E50),
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          );
+        },
       ),
     );
   }
 
   /// Celebratory end-of-story page with wisdom gem and rating.
   Widget _buildEndOfStoryPage() {
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     return StoryBookPage(
       backgroundColor:
           _highContrastMode ? Colors.black : const Color(0xFFFFF8E7),
@@ -1657,15 +1738,14 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                 style: GoogleFonts.quicksand(
                   fontSize: 32 * _textScale,
                   fontWeight: FontWeight.bold,
-                  color: _highContrastMode
-                      ? Colors.white
-                      : band.primary,
+                  color: _highContrastMode ? Colors.white : band.primary,
                 ),
               ),
               if (widget.wisdomGem.isNotEmpty) ...[
                 const SizedBox(height: 24),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   margin: const EdgeInsets.symmetric(horizontal: 24),
                   decoration: BoxDecoration(
                     color: AppColors.gold.withValues(alpha: 0.12),
@@ -1676,7 +1756,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                   ),
                   child: Column(
                     children: [
-                      const Icon(Icons.auto_awesome, color: AppColors.gold, size: 28),
+                      const Icon(Icons.auto_awesome,
+                          color: AppColors.gold, size: 28),
                       const SizedBox(height: 8),
                       Text(
                         widget.wisdomGem,
@@ -1969,7 +2050,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     return ErrorBoundary(
       onRetry: _retryLoadData,
       child: Scaffold(
@@ -1986,10 +2068,17 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
               children: [
                 // Magical App Bar
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: band.space(8),
+                    vertical: band.space(8),
+                  ),
                   child: LayoutBuilder(builder: (context, constraints) {
                     final bool isNarrow = constraints.maxWidth < 400;
+                    final compactIconSize =
+                        band.touchTarget(40).clamp(40.0, 64.0).toDouble();
+                    final iconPadding = isNarrow
+                        ? EdgeInsets.zero
+                        : EdgeInsets.all(band.space(8));
 
                     return Row(
                       children: [
@@ -2004,12 +2093,12 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                             onPressed: () => Navigator.of(context).pop(),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: band.space(8)),
                         if (_character != null) ...[
                           _buildBreathingHeroAvatar(size: isNarrow ? 36 : 42),
                           _buildBreathingCompanionAvatars(
                               size: isNarrow ? 28 : 32),
-                          const SizedBox(width: 8),
+                          SizedBox(width: band.space(8)),
                         ],
                         if (widget.wisdomGem.isNotEmpty)
                           Expanded(
@@ -2039,7 +2128,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                         style: GoogleFonts.quicksand(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 14,
+                                          fontSize: band.body(14),
                                         ),
                                       ),
                                     ),
@@ -2048,7 +2137,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                               ),
                             ),
                           ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: band.space(8)),
                         // Adventure Log Button (only if choices exist)
                         if (widget.choicesMade != null &&
                             widget.choicesMade!.isNotEmpty) ...[
@@ -2062,16 +2151,15 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                   color: Colors.white),
                               tooltip: 'Adventure Log',
                               constraints: isNarrow
-                                  ? const BoxConstraints(
-                                      maxWidth: 40, maxHeight: 40)
+                                  ? BoxConstraints(
+                                      maxWidth: compactIconSize,
+                                      maxHeight: compactIconSize)
                                   : null,
-                              padding: isNarrow
-                                  ? EdgeInsets.zero
-                                  : const EdgeInsets.all(8),
+                              padding: iconPadding,
                               onPressed: _showAdventureLog,
                             ),
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: band.space(4)),
                         ],
                         // Favorite Button
                         Container(
@@ -2093,16 +2181,15 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                 ? 'Remove from favorites'
                                 : 'Add to favorites',
                             constraints: isNarrow
-                                ? const BoxConstraints(
-                                    maxWidth: 40, maxHeight: 40)
+                                ? BoxConstraints(
+                                    maxWidth: compactIconSize,
+                                    maxHeight: compactIconSize)
                                 : null,
-                            padding: isNarrow
-                                ? EdgeInsets.zero
-                                : const EdgeInsets.all(8),
+                            padding: iconPadding,
                             onPressed: _toggleFavorite,
                           ),
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(width: band.space(4)),
                         // Sound Mute Button
                         Container(
                           decoration: BoxDecoration(
@@ -2124,12 +2211,11 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                 ? 'Turn sound on'
                                 : 'Turn sound off',
                             constraints: isNarrow
-                                ? const BoxConstraints(
-                                    maxWidth: 40, maxHeight: 40)
+                                ? BoxConstraints(
+                                    maxWidth: compactIconSize,
+                                    maxHeight: compactIconSize)
                                 : null,
-                            padding: isNarrow
-                                ? EdgeInsets.zero
-                                : const EdgeInsets.all(8),
+                            padding: iconPadding,
                             onPressed: () async {
                               await AudioAmbienceService().toggleMute();
                               if (mounted) {
@@ -2141,7 +2227,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                             },
                           ),
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(width: band.space(4)),
                         // Settings Button
                         Container(
                           decoration: BoxDecoration(
@@ -2153,12 +2239,11 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                 const Icon(Icons.settings, color: Colors.white),
                             tooltip: 'Reading Settings',
                             constraints: isNarrow
-                                ? const BoxConstraints(
-                                    maxWidth: 40, maxHeight: 40)
+                                ? BoxConstraints(
+                                    maxWidth: compactIconSize,
+                                    maxHeight: compactIconSize)
                                 : null,
-                            padding: isNarrow
-                                ? EdgeInsets.zero
-                                : const EdgeInsets.all(8),
+                            padding: iconPadding,
                             onPressed: _showReadingOptions,
                           ),
                         ),
@@ -2173,15 +2258,16 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 800),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: band.space(24)),
                         child: Column(
                           children: [
-                            const SizedBox(height: 20),
+                            SizedBox(height: band.space(20)),
                             Text(
                               widget.title,
                               textAlign: TextAlign.center,
                               style: GoogleFonts.merriweather(
-                                fontSize: 28,
+                                fontSize: band.heading(28),
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                                 shadows: [
@@ -2193,7 +2279,30 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 24),
+                            SizedBox(height: band.space(8)),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: band.space(12),
+                                vertical: band.space(6),
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius:
+                                    BorderRadius.circular(band.radiusMd),
+                                border: Border.all(
+                                  color: band.accent.withValues(alpha: 0.55),
+                                ),
+                              ),
+                              child: Text(
+                                _readingLevelLabel(band),
+                                style: GoogleFonts.quicksand(
+                                  color: band.accentLight,
+                                  fontSize: band.body(12),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: band.space(24)),
                             Expanded(
                               child: _isLoading
                                   ? const Center(
@@ -2211,87 +2320,102 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                               onPointerUp: _onFlipEnded,
                                               onPointerCancel: _onFlipEnded,
                                               child: Stack(
-                                              children: [
-                                                PageFlipBuilder(
-                                                  key: _pageFlipKey,
-                                                  frontBuilder: (context) =>
-                                                      _buildStoryPage(
-                                                          _currentPageIndex),
-                                                  backBuilder: (context) =>
-                                                      _currentPageIndex <
-                                                              _totalPages -
-                                                                  1
-                                                          ? _buildStoryPage(
-                                                              _currentPageIndex +
-                                                                  1)
-                                                          : _buildStoryPage(
-                                                              _currentPageIndex),
-                                                  flipAxis: Axis.horizontal,
-                                                  maxTilt:
-                                                      0.005, // Increased tilt for more 3D feel
-                                                  maxScale: 0.1,
-                                                  onFlipComplete:
-                                                      _handlePageFlip,
-                                                  interactiveFlipEnabled: true,
-                                                ),
-                                                // Dynamic Shadow Overlay
-                                                if (_flipShadowIntensity > 0)
-                                                  IgnorePointer(
-                                                    child: AnimatedContainer(
-                                                      duration: const Duration(
-                                                          milliseconds: 100),
-                                                      decoration: BoxDecoration(
-                                                        gradient:
-                                                            LinearGradient(
-                                                          begin: Alignment(
-                                                              _flipShadowAlignment -
-                                                                  0.2,
-                                                              0),
-                                                          end: Alignment(
-                                                              _flipShadowAlignment +
-                                                                  0.2,
-                                                              0),
-                                                          colors: [
-                                                            Colors.transparent,
-                                                            Colors.black.withValues(
-                                                                alpha:
-                                                                    _flipShadowIntensity),
-                                                            Colors.transparent,
-                                                          ],
+                                                children: [
+                                                  PageFlipBuilder(
+                                                    key: _pageFlipKey,
+                                                    frontBuilder: (context) =>
+                                                        _buildStoryPage(
+                                                            _currentPageIndex),
+                                                    backBuilder: (context) =>
+                                                        _currentPageIndex <
+                                                                _totalPages - 1
+                                                            ? _buildStoryPage(
+                                                                _currentPageIndex +
+                                                                    1)
+                                                            : _buildStoryPage(
+                                                                _currentPageIndex),
+                                                    flipAxis: Axis.horizontal,
+                                                    maxTilt:
+                                                        0.005, // Increased tilt for more 3D feel
+                                                    maxScale: 0.1,
+                                                    onFlipComplete:
+                                                        _handlePageFlip,
+                                                    interactiveFlipEnabled:
+                                                        true,
+                                                  ),
+                                                  // Dynamic Shadow Overlay
+                                                  if (_flipShadowIntensity > 0)
+                                                    IgnorePointer(
+                                                      child: AnimatedContainer(
+                                                        duration:
+                                                            const Duration(
+                                                                milliseconds:
+                                                                    100),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          gradient:
+                                                              LinearGradient(
+                                                            begin: Alignment(
+                                                                _flipShadowAlignment -
+                                                                    0.2,
+                                                                0),
+                                                            end: Alignment(
+                                                                _flipShadowAlignment +
+                                                                    0.2,
+                                                                0),
+                                                            colors: [
+                                                              Colors
+                                                                  .transparent,
+                                                              Colors.black
+                                                                  .withValues(
+                                                                      alpha:
+                                                                          _flipShadowIntensity),
+                                                              Colors
+                                                                  .transparent,
+                                                            ],
+                                                          ),
                                                         ),
                                                       ),
                                                     ),
-                                                  ),
-                                                // Left arrow (previous page)
-                                                if (_currentPageIndex > 0)
-                                                  Positioned(
-                                                    left: 0,
-                                                    top: 0,
-                                                    bottom: 0,
-                                                    width: 56,
-                                                    child: _PageArrowOverlay(
-                                                      direction: _PageArrowDirection.left,
-                                                      onTap: _goToPreviousStoryPage,
-                                                      alwaysVisible: _isYoungUser,
+                                                  // Left arrow (previous page)
+                                                  if (_currentPageIndex > 0)
+                                                    Positioned(
+                                                      left: 0,
+                                                      top: 0,
+                                                      bottom: 0,
+                                                      width: 56,
+                                                      child: _PageArrowOverlay(
+                                                        direction:
+                                                            _PageArrowDirection
+                                                                .left,
+                                                        onTap:
+                                                            _goToPreviousStoryPage,
+                                                        alwaysVisible:
+                                                            _isYoungUser,
+                                                      ),
                                                     ),
-                                                  ),
-                                                // Right arrow (next page)
-                                                if (_currentPageIndex < _totalPages - 1)
-                                                  Positioned(
-                                                    right: 0,
-                                                    top: 0,
-                                                    bottom: 0,
-                                                    width: 56,
-                                                    child: _PageArrowOverlay(
-                                                      direction: _PageArrowDirection.right,
-                                                      onTap: _goToNextStoryPage,
-                                                      alwaysVisible: _isYoungUser,
+                                                  // Right arrow (next page)
+                                                  if (_currentPageIndex <
+                                                      _totalPages - 1)
+                                                    Positioned(
+                                                      right: 0,
+                                                      top: 0,
+                                                      bottom: 0,
+                                                      width: 56,
+                                                      child: _PageArrowOverlay(
+                                                        direction:
+                                                            _PageArrowDirection
+                                                                .right,
+                                                        onTap:
+                                                            _goToNextStoryPage,
+                                                        alwaysVisible:
+                                                            _isYoungUser,
+                                                      ),
                                                     ),
-                                                  ),
-                                              ],
+                                                ],
+                                              ),
                                             ),
                                           ),
-                                        ),
                                         ),
                                         // Footer controls
                                         Container(
@@ -2348,10 +2472,12 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                                     ),
                                                     IconButton(
                                                       tooltip: 'Next page',
-                                                      onPressed: _currentPageIndex <
-                                                              _totalPages - 1
-                                                          ? _goToNextStoryPage
-                                                          : null,
+                                                      onPressed:
+                                                          _currentPageIndex <
+                                                                  _totalPages -
+                                                                      1
+                                                              ? _goToNextStoryPage
+                                                              : null,
                                                       icon: const Icon(Icons
                                                           .arrow_forward_rounded),
                                                       color: AppColors.primary,
@@ -2459,7 +2585,8 @@ class _PostStoryActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     return SafeArea(
       top: false,
       child: Container(
@@ -2479,7 +2606,8 @@ class _PostStoryActionBar extends StatelessWidget {
                 onTap: onUnlockIllustrations,
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -2553,7 +2681,8 @@ class _PostStoryActionBar extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const Icon(Icons.chevron_right, color: Colors.amber, size: 20),
+                      const Icon(Icons.chevron_right,
+                          color: Colors.amber, size: 20),
                     ],
                   ),
                 ),
@@ -2608,7 +2737,8 @@ class _PostStoryActionBar extends StatelessWidget {
                     color: Colors.white,
                   ),
                   _ActionChip(
-                    icon: isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
+                    icon:
+                        isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
                     label: isSaved ? 'Saved ✓' : 'Save',
                     onTap: onSave,
                     color: isSaved ? AppColors.gold : Colors.white,
@@ -2622,7 +2752,8 @@ class _PostStoryActionBar extends StatelessWidget {
                 ],
                 if (isYoungUser)
                   _ActionChip(
-                    icon: isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
+                    icon:
+                        isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
                     label: isSaved ? 'Saved ✓' : 'Save',
                     onTap: onSave,
                     color: isSaved ? AppColors.gold : Colors.white,

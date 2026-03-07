@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../providers/age_band_provider.dart';
 import '../services/parental_consent_service.dart';
 import '../theme/app_theme.dart';
 import 'parental_consent_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'terms_of_service_screen.dart';
 
-class AgeGateScreen extends StatefulWidget {
+class AgeGateScreen extends ConsumerStatefulWidget {
   const AgeGateScreen({
     super.key,
     required this.consentService,
@@ -18,10 +20,10 @@ class AgeGateScreen extends StatefulWidget {
   final VoidCallback onConsentCompleted;
 
   @override
-  State<AgeGateScreen> createState() => _AgeGateScreenState();
+  ConsumerState<AgeGateScreen> createState() => _AgeGateScreenState();
 }
 
-class _AgeGateScreenState extends State<AgeGateScreen> {
+class _AgeGateScreenState extends ConsumerState<AgeGateScreen> {
   int? _selectedAge;
   bool _submitting = false;
 
@@ -218,6 +220,7 @@ class _AgeGateScreenState extends State<AgeGateScreen> {
 
     setState(() => _submitting = true);
     await widget.consentService.saveDeclaredAge(_selectedAge!);
+    await ref.read(ageBandNotifierProvider.notifier).setAge(_selectedAge!);
 
     if (_selectedAge! < 13) {
       if (!mounted) return;
