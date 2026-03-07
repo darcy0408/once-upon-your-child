@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/app_theme.dart';
 import '../utils/motion_utils.dart';
@@ -172,6 +173,7 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                 behavior: HitTestBehavior.opaque,
                 onTapDown: (details) {
                   if (!mounted) return;
+                  HapticFeedback.lightImpact();
                   setState(() {
                     _tapCount++;
                     _burstPositions.add(details.localPosition);
@@ -230,6 +232,7 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                 behavior: HitTestBehavior.opaque,
                 onTapDown: (details) {
                   if (!mounted) return;
+                  HapticFeedback.lightImpact();
                   setState(() {
                     _tapCount++;
                     _burstPositions.add(details.localPosition);

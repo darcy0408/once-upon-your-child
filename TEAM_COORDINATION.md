@@ -2,6 +2,33 @@
 
 ---
 
+## Session Update - 2026-03-06 (Magic Review Polish & Audio Mute)
+
+### Scope Completed
+- **Magic Review UX Finish:**
+  - **Staggered Reveal:** Added `_StaggeredReveal` widget for animated entry of summary rows (index-based delay).
+  - **Magical Shimmer:** Added `_ShimmerWrapper` using `ShaderMask` and `accentShimmer` gradient; applied to custom elements row.
+  - **Color Accent Bars:** Added vertical 4px bars to `_SummaryRow` for visual categorization (Purple/Teal/Gold/Pink).
+  - **Inline Avatars:** `_SummaryRow` now displays `_CompanionAvatar` directly in the companion row.
+- **Audio Mute Support:**
+  - **Persisted Mute:** Updated `AudioAmbienceService` to support `isMuted` state, saved to `SharedPreferences`.
+  - **Mute Toggle:** Added volume toggle button to `StoryResultScreen` app bar; respects system-wide mute for SFX and ambience.
+- **Story Reader Polish:**
+  - **Cover Page:** Added full-bleed cover spreads for stories with illustrations.
+  - **Celebratory End Page:** New dedicated final page with "The End", wisdom gem card, and star rating UI.
+- **Test Suite & Environment:**
+  - **100% Green:** Resolved `wisdom_chip` finder collision in `story_result_test.dart` and path assertions in `wizard_flow_test.dart`.
+  - **Path Confusion Fix:** Hard-deleted `.dart_tool` and re-ran `pub get` on Windows to clear stale Linux-style paths from the build environment.
+  - **ElevenLabs TTS:** Manually verified backend service with live API call (71KB audio generated/saved).
+
+### Status
+- **Make Magic Screen:** ✅ 100% Complete (Animations + UX polish)
+- **Audio/TTS:** ✅ Fully functional and muted on demand
+- **Test Suite:** ✅ 201/201 passed
+- **Launch Readiness:** 92%
+
+---
+
 ## Session Update - 2026-03-06 (Make Magic Screen UX Improvements)
 
 ### Scope Completed

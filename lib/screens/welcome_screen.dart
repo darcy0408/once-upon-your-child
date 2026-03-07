@@ -311,33 +311,43 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
 
   Widget _buildAgeStep() {
     final ready = _selectedAge != null;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final compactLayout = screenHeight < 820;
     return Column(
       key: const ValueKey('age'),
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.auto_awesome, color: _goldColor, size: 48),
-        const SizedBox(height: AppSpacing.sm),
+        Icon(
+          Icons.auto_awesome,
+          color: _goldColor,
+          size: compactLayout ? 40 : 48,
+        ),
+        SizedBox(height: compactLayout ? 4 : AppSpacing.sm),
         Text(
           'How old are you?',
           textAlign: TextAlign.center,
           style: GoogleFonts.fredoka(
             color: _goldColor,
-            fontSize: 28,
+            fontSize: compactLayout ? 24 : 28,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: AppSpacing.xs),
-        const Text(
+        SizedBox(height: compactLayout ? 2 : AppSpacing.xs),
+        Text(
           'Parents: please select your child\'s age',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white70, fontSize: 14),
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: compactLayout ? 13 : 14,
+          ),
         ),
-        const SizedBox(height: AppSpacing.md),
+        SizedBox(height: compactLayout ? 8 : AppSpacing.md),
         LayoutBuilder(
           builder: (context, constraints) {
-            const spacing = 8.0;
-            final circleSize =
-                ((constraints.maxWidth - (spacing * 2)) / 3).clamp(58.0, 68.0);
+            final spacing = compactLayout ? 6.0 : 8.0;
+            final circleSize = ((constraints.maxWidth - (spacing * 2)) / 3)
+                .clamp(
+                    compactLayout ? 46.0 : 50.0, compactLayout ? 52.0 : 58.0);
             return GridView.count(
               crossAxisCount: 3,
               shrinkWrap: true,
@@ -355,7 +365,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
             );
           },
         ),
-        const SizedBox(height: AppSpacing.xl),
+        SizedBox(height: compactLayout ? AppSpacing.md : AppSpacing.xl),
 
         // ── Let's Go button with bounce + brighten ─────────────────────────
         AnimatedBuilder(
@@ -369,7 +379,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               width: double.infinity,
-              height: 56,
+              height: compactLayout ? 52 : 56,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(32),
                 gradient: LinearGradient(
@@ -399,7 +409,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                         "Let's go! \u2728",
                         style: GoogleFonts.fredoka(
                           color: ready ? Colors.white : Colors.white38,
-                          fontSize: 20,
+                          fontSize: compactLayout ? 18 : 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -520,7 +530,7 @@ class _AgeCircleState extends State<_AgeCircle> {
       },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
-        scale: _pressed ? 0.9 : (widget.selected ? 1.06 : 1.0),
+        scale: _pressed ? 0.9 : (widget.selected ? 1.03 : 1.0),
         duration: const Duration(milliseconds: 100),
         curve: Curves.easeOutBack,
         child: Container(
@@ -552,7 +562,7 @@ class _AgeCircleState extends State<_AgeCircle> {
             style: TextStyle(
               color: widget.selected ? _gold : Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: widget.label.length > 2 ? 14 : 20,
+              fontSize: widget.label.length > 2 ? 12 : 17,
             ),
           ),
         ),

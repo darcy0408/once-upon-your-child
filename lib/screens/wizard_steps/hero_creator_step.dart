@@ -8,6 +8,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import '../../models.dart';
+import '../../avatar_models.dart';
+import '../../custom_avatar_screen.dart';
 import '../../theme/age_band_theme.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/archetype_card.dart';
@@ -27,6 +29,8 @@ class HeroCreatorStep extends StatefulWidget {
   final WizardData wizardData;
   final VoidCallback onNext;
   final List<Character> availableCharacters;
+  final int? requestedSubStep;
+  final int subStepRequestNonce;
   final void Function(int subStep)? onSubStepChange;
   final void Function(int age)? onAgeChanged;
 
@@ -35,6 +39,8 @@ class HeroCreatorStep extends StatefulWidget {
     required this.wizardData,
     required this.onNext,
     this.availableCharacters = const [],
+    this.requestedSubStep,
+    this.subStepRequestNonce = 0,
     this.onSubStepChange,
     this.onAgeChanged,
   });
@@ -177,6 +183,15 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant HeroCreatorStep oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.requestedSubStep != null &&
+        widget.subStepRequestNonce != oldWidget.subStepRequestNonce) {
+      _jumpToSubStep(widget.requestedSubStep!);
+    }
+  }
+
   // ─── Avatar state listener ───────────────────────────────────────────────────
   void _onAvatarStateChanged() {
     final state = AvatarGenerationState();
@@ -254,6 +269,25 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       _logPageView(_heroPage);
       _notifySubStep();
     }
+  }
+
+  void _jumpToSubStep(int subStep) {
+    final targetPage = switch (subStep) {
+      0 => 1, // Create Hero
+      1 => 3, // Pick Team
+      2 => 4, // Pick Place
+      _ => 5, // Make Magic
+    };
+    if (!_heroPageController.hasClients) return;
+    final clampedTarget = targetPage.clamp(0, 5);
+    _heroPageController.animateToPage(
+      clampedTarget,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeInOut,
+    );
+    setState(() => _heroPage = clampedTarget);
+    _logPageView(_heroPage);
+    _notifySubStep();
   }
 
   // ─── Character helpers ────────────────────────────────────────────────────────
@@ -631,7 +665,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   Widget _buildCompanionShowcase() {
     // Collect selected named companions in order
     final selectedNamed = _companions
-        .where((c) => widget.wizardData.companionNames.contains(c.name))
+        .where((c) =>
+            widget.wizardData.companionNames.contains(c.name) ||
+            widget.wizardData.selectedCompanions.contains(c.id))
         .toList();
 
     // Collect selected saved-character friends (not magic companions, not pets)
@@ -888,9 +924,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF2C1B47),
-        title: const Text('Add Your Pet',
+        title: const Text('Add Your Companion',
             style: TextStyle(color: Color(0xFFFFD700))),
-        content: const Text('How would you like to add your pet?',
+        content: const Text('How would you like to add your companion?',
             style: TextStyle(color: Colors.white70)),
         actions: [
           TextButton.icon(
@@ -1053,10 +1089,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                         labelFontSize: labelFontSize,
                         onTap: () => setState(() {
                           widget.wizardData.selectedScenario =
-                              widget.wizardData.selectedScenario ==
-                                      displayButtons[i].id
-                                  ? null
-                                  : displayButtons[i].id;
+                              displayButtons[i].id;
                         }),
                       ),
                     ),
@@ -1072,10 +1105,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                         labelFontSize: labelFontSize,
                         onTap: () => setState(() {
                           widget.wizardData.selectedScenario =
-                              widget.wizardData.selectedScenario ==
-                                      displayButtons[i + 1].id
-                                  ? null
-                                  : displayButtons[i + 1].id;
+                              displayButtons[i + 1].id;
                         }),
                       ),
                     ),
@@ -1093,11 +1123,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     displayButtons.last.id,
                 labelFontSize: labelFontSize,
                 onTap: () => setState(() {
-                  widget.wizardData.selectedScenario =
-                      widget.wizardData.selectedScenario ==
-                              displayButtons.last.id
-                          ? null
-                          : displayButtons.last.id;
+                  widget.wizardData.selectedScenario = displayButtons.last.id;
                 }),
               ),
             ),
@@ -1117,10 +1143,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                             widget.wizardData.selectedScenario == btn.id,
                         labelFontSize: labelFontSize,
                         onTap: () => setState(() {
-                          widget.wizardData.selectedScenario =
-                              widget.wizardData.selectedScenario == btn.id
-                                  ? null
-                                  : btn.id;
+                          widget.wizardData.selectedScenario = btn.id;
                         }),
                       ))
                   .toList(),
@@ -1618,15 +1641,88 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             ),
           ),
           ElevatedButton(
-            onPressed: _openAvatarGallery,
+            onPressed: _openAvatarCreationOptions,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF7E57C2),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
-            child: Text(_hasAvatar ? 'Change Look' : 'Pick Look'),
+            child: Text(_hasAvatar ? 'Change Look' : 'Choose Look'),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _openAvatarCreationOptions() async {
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF2C1B47),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 4),
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white30,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Choose Your Avatar',
+                style: TextStyle(
+                  color: Color(0xFFFFD700),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Pick a pre-made look or create a magical AI avatar from a photo.',
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              const SizedBox(height: 10),
+              ListTile(
+                leading:
+                    const Icon(Icons.auto_awesome, color: Color(0xFFFFD700)),
+                title: const Text('Gallery Avatar',
+                    style: TextStyle(color: Colors.white)),
+                subtitle: const Text('Quick pick from magical presets',
+                    style: TextStyle(color: Colors.white70)),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _openAvatarGallery();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_rounded,
+                    color: Color(0xFFFFD700)),
+                title: const Text('Take/Upload Photo → AI Avatar',
+                    style: TextStyle(color: Colors.white)),
+                subtitle: const Text(
+                    'Creates a Pixar-style hero from your child photo',
+                    style: TextStyle(color: Colors.white70)),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  _openCustomAvatarScreen();
+                },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1647,6 +1743,45 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           });
           Navigator.of(ctx).pop();
         },
+      ),
+    );
+  }
+
+  Future<void> _openCustomAvatarScreen() async {
+    if (!mounted) return;
+    final result = await Navigator.of(context).push<CharacterAvatar>(
+      MaterialPageRoute(
+        builder: (_) => CustomAvatarScreen(
+          initialName: widget.wizardData.characterName,
+          initialAge: widget.wizardData.characterAge,
+        ),
+        fullscreenDialog: true,
+      ),
+    );
+
+    final dataUri = result?.customImagePath;
+    if (!mounted || dataUri == null || dataUri.isEmpty) return;
+
+    final generated = GeneratedAvatar(
+      id: 'custom_photo_${DateTime.now().millisecondsSinceEpoch}',
+      imageBase64: dataUri,
+      seed: 'custom_photo',
+      style: 'pixar',
+      attributes: const {'source': 'custom_photo'},
+      generatedAt: DateTime.now(),
+    );
+
+    setState(() {
+      _generatedAvatar = generated;
+      _customAvatarFilePath = null;
+      widget.wizardData.generatedAvatar = generated;
+      widget.wizardData.customAvatarPath = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('✨ Custom avatar ready!'),
+        backgroundColor: Color(0xFF4CAF50),
       ),
     );
   }
@@ -1707,7 +1842,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     if (!_hasAvatar) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted || _heroPage != 2 || _hasAvatar) return;
-        await _openAvatarGallery();
+        await _openAvatarCreationOptions();
       });
     }
   }
@@ -2358,6 +2493,7 @@ class _GlowingCompanionOrb extends StatelessWidget {
           color: filled ? null : Colors.white.withAlpha(8),
         ),
         child: ClipOval(
+          clipBehavior: Clip.antiAlias,
           child: filled
               ? Stack(
                   fit: StackFit.expand,
@@ -2479,7 +2615,8 @@ class _CompanionImageGrid extends StatelessWidget {
 
       // Build companion buttons with a uniform, pre-calculated size.
       List<Widget> buttons = _companions.map((c) {
-        final isSelected = wizardData.companionNames.contains(c.name);
+        final isSelected = wizardData.companionNames.contains(c.name) ||
+            wizardData.selectedCompanions.contains(c.id);
         return _CompanionImageButton(
           id: c.id,
           name: c.name,
@@ -2521,6 +2658,12 @@ class _CompanionImageGrid extends StatelessWidget {
               wizardData.companionNames.remove(petName);
             } else {
               wizardData.companionNames.add(petName);
+              if (!wizardData.selectedCompanions.contains('my_pet')) {
+                wizardData.selectedCompanions.add('my_pet');
+              }
+            }
+            if (isSelected) {
+              wizardData.selectedCompanions.remove('my_pet');
             }
             onChanged();
           },
@@ -2659,7 +2802,7 @@ class _CompanionImageButtonState extends State<_CompanionImageButton> {
                 ),
                 child: Stack(
                   children: [
-                    ClipOval(child: imageWidget),
+                    ClipOval(clipBehavior: Clip.antiAlias, child: imageWidget),
                     if (widget.isSelected)
                       Positioned(
                         top: 4,
@@ -2738,6 +2881,7 @@ class _PetCardState extends State<_PetCard> {
   String _species = 'Dog';
 
   static const _speciesOptions = [
+    'Human',
     'Dog',
     'Cat',
     'Bird',
@@ -2808,7 +2952,7 @@ class _PetCardState extends State<_PetCard> {
     final photo = _photo;
 
     if (!hasPet) {
-      // "Add Your Pet" prompt
+      // "Add Your Companion" prompt
       return GestureDetector(
         onTap: widget.onPickPhoto,
         child: Container(
@@ -2844,7 +2988,7 @@ class _PetCardState extends State<_PetCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Bring Your Pet!',
+                    Text('Bring Your Companion!',
                         style: TextStyle(
                           color: Color(0xFFFFD700),
                           fontWeight: FontWeight.bold,
@@ -2864,7 +3008,7 @@ class _PetCardState extends State<_PetCard> {
       );
     }
 
-    // Pet card with photo + detail fields
+    // Companion card with photo + detail fields
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -2939,16 +3083,16 @@ class _PetCardState extends State<_PetCard> {
                       controller: _nameCtrl,
                       style: const TextStyle(color: Colors.white, fontSize: 14),
                       decoration:
-                          _petFieldDecoration('Pet\'s name (e.g. Spot)'),
+                          _petFieldDecoration('Companion name (e.g. Alex)'),
                       onChanged: (_) => _updatePet(),
                     ),
                     const SizedBox(height: 8),
-                    // Color field
+                    // Looks field (stored in legacy `color` key for compatibility)
                     TextField(
                       controller: _colorCtrl,
                       style: const TextStyle(color: Colors.white, fontSize: 14),
                       decoration: _petFieldDecoration(
-                          'Color (e.g. golden, black & white)'),
+                          'Looks (e.g. blond hair, glasses, golden fur)'),
                       onChanged: (_) => _updatePet(),
                     ),
                   ],
@@ -2957,12 +3101,12 @@ class _PetCardState extends State<_PetCard> {
             ],
           ),
           const SizedBox(height: 10),
-          // Species dropdown
+          // Companion type dropdown
           DropdownButtonFormField<String>(
             value: _species,
             dropdownColor: const Color(0xFF2C1B47),
             style: const TextStyle(color: Colors.white, fontSize: 14),
-            decoration: _petFieldDecoration('Type of animal'),
+            decoration: _petFieldDecoration('Companion type'),
             items: _speciesOptions
                 .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                 .toList(),
@@ -2975,7 +3119,7 @@ class _PetCardState extends State<_PetCard> {
           ),
           const SizedBox(height: 6),
           Text(
-            '✨ The AI will always use the right name, color, and species!',
+            '✨ The AI will always use the right name, looks, and companion type!',
             style: TextStyle(
                 color: const Color(0xFFFFD700).withAlpha(200),
                 fontSize: 11,

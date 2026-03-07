@@ -59,7 +59,7 @@ class _AgeGateScreenState extends State<AgeGateScreen> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.lg,
-                vertical: AppSpacing.xl,
+                vertical: AppSpacing.sm,
               ),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 400),
@@ -67,18 +67,18 @@ class _AgeGateScreenState extends State<AgeGateScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(Icons.auto_awesome, color: _goldColor, size: 40),
-                    const SizedBox(height: AppSpacing.sm),
+                    const SizedBox(height: 4),
                     Text(
                       'Welcome to\nStory Weaver!',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.cinzelDecorative(
-                        fontSize: 28,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: _goldColor,
                         height: 1.2,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: 6),
                     Text(
                       'Parents: please select your child\'s age',
                       textAlign: TextAlign.center,
@@ -86,25 +86,35 @@ class _AgeGateScreenState extends State<AgeGateScreen> {
                             color: Colors.white70,
                           ),
                     ),
-                    const SizedBox(height: AppSpacing.lg),
-                    GridView.count(
-                      crossAxisCount: 3,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: AppSpacing.md,
-                      crossAxisSpacing: AppSpacing.md,
-                      children: _ageEntries.map((entry) {
-                        final selected = _selectedAge == entry.value;
-                        return _AgeCircle(
-                          label: entry.label,
-                          selected: selected,
-                          onTap: _submitting
-                              ? null
-                              : () => setState(() => _selectedAge = entry.value),
+                    const SizedBox(height: 8),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        const spacing = 6.0;
+                        final circleSize =
+                            ((constraints.maxWidth - (spacing * 2)) / 3)
+                                .clamp(50.0, 56.0);
+                        return GridView.count(
+                          crossAxisCount: 3,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          mainAxisSpacing: spacing,
+                          crossAxisSpacing: spacing,
+                          children: _ageEntries.map((entry) {
+                            final selected = _selectedAge == entry.value;
+                            return _AgeCircle(
+                              label: entry.label,
+                              size: circleSize,
+                              selected: selected,
+                              onTap: _submitting
+                                  ? null
+                                  : () => setState(
+                                      () => _selectedAge = entry.value),
+                            );
+                          }).toList(),
                         );
-                      }).toList(),
+                      },
                     ),
-                    const SizedBox(height: AppSpacing.lg),
+                    const SizedBox(height: 8),
                     // Continue arrow button
                     GestureDetector(
                       onTap: _submitting ? null : _handleContinue,
@@ -139,7 +149,7 @@ class _AgeGateScreenState extends State<AgeGateScreen> {
                               ),
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xl),
+                    const SizedBox(height: 8),
                     Text(
                       'We collect age to provide age-appropriate content. See our',
                       textAlign: TextAlign.center,
@@ -147,7 +157,7 @@ class _AgeGateScreenState extends State<AgeGateScreen> {
                             color: Colors.white38,
                           ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Wrap(
                       alignment: WrapAlignment.center,
                       spacing: 8,
@@ -160,7 +170,10 @@ class _AgeGateScreenState extends State<AgeGateScreen> {
                           ),
                           child: Text(
                             'Privacy Policy',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
                                   color: _goldColor.withAlpha(180),
                                   decoration: TextDecoration.underline,
                                   decorationColor: _goldColor.withAlpha(180),
@@ -175,7 +188,10 @@ class _AgeGateScreenState extends State<AgeGateScreen> {
                           ),
                           child: Text(
                             'Terms of Service',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
                                   color: _goldColor.withAlpha(180),
                                   decoration: TextDecoration.underline,
                                   decorationColor: _goldColor.withAlpha(180),
@@ -270,11 +286,13 @@ class _AgeGateScreenState extends State<AgeGateScreen> {
 class _AgeCircle extends StatelessWidget {
   const _AgeCircle({
     required this.label,
+    required this.size,
     required this.selected,
     required this.onTap,
   });
 
   final String label;
+  final double size;
   final bool selected;
   final VoidCallback? onTap;
 
@@ -285,12 +303,12 @@ class _AgeCircle extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedScale(
-        scale: selected ? 1.1 : 1.0,
+        scale: selected ? 1.03 : 1.0,
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutBack,
         child: Container(
-          width: 72,
-          height: 72,
+          width: size,
+          height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: const LinearGradient(
@@ -317,7 +335,7 @@ class _AgeCircle extends StatelessWidget {
             style: TextStyle(
               color: selected ? _gold : Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: label.length > 2 ? 16 : 22,
+              fontSize: label.length > 2 ? 12 : 17,
             ),
           ),
         ),

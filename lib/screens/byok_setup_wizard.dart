@@ -40,7 +40,8 @@ class _ByokSetupWizardScreenState extends State<ByokSetupWizardScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Could not open Google AI Studio. Please open it manually.'),
+          content:
+              Text('Could not open Google AI Studio. Please open it manually.'),
         ),
       );
     }
@@ -87,11 +88,27 @@ class _BenefitsStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const benefits = [
-      ('🎨', 'Custom AI avatars that look like YOUR child', 'Not just pre-made characters — a real portrait'),
-      ('📖', 'Unlimited stories every day', 'No monthly caps, ever'),
-      ('🖼️', 'Beautiful illustrations for every scene', 'AI-generated artwork from your story'),
-      ('🎭', 'Interactive choose-your-own-adventure', 'Child controls the story path'),
-      ('🎨', 'Printable coloring pages', 'From your own story scenes'),
+      (
+        '🧒',
+        'A Pixar-style cartoon hero of YOUR child',
+        'Create a character that actually looks like your kid.'
+      ),
+      (
+        '🖼️',
+        'More story illustrations',
+        'Scenes are generated using your child hero across the adventure.'
+      ),
+      (
+        '🎨',
+        'Coloring pages from your own story scenes',
+        'Turn those illustrations into printable coloring pages.'
+      ),
+      ('📖', 'Unlimited stories', 'No daily caps, so kids can keep creating.'),
+      (
+        '🎭',
+        'Interactive choices',
+        'Pick-a-path mode lets your child guide what happens next.'
+      ),
     ];
 
     return Padding(
@@ -99,79 +116,92 @@ class _BenefitsStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Everything unlocked — totally free',
-            style: Theme.of(context)
-                .textTheme
-                .titleLarge
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Google gives you free API credits every month.\nMost families spend \$0.10–0.50/month total.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          AppCard(
-            color: AppColors.secondary.withValues(alpha: 0.1),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: benefits
-                  .map(
-                    (b) => Padding(
-                      padding: const EdgeInsets.only(
-                          bottom: AppSpacing.sm, top: AppSpacing.xs),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(b.$1, style: const TextStyle(fontSize: 22)),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(b.$2,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14)),
-                                Text(b.$3,
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey[600])),
-                              ],
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Give your child the full experience',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'BYOK unlocks premium features with your own Google key.\nMost families spend about \$0.10–0.50/month.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  AppCard(
+                    color: AppColors.secondary.withValues(alpha: 0.1),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: benefits
+                          .map(
+                            (b) => Padding(
+                              padding: const EdgeInsets.only(
+                                  bottom: AppSpacing.sm, top: AppSpacing.xs),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(b.$1,
+                                      style: const TextStyle(fontSize: 22)),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(b.$2,
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14)),
+                                        Text(b.$3,
+                                            style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey[600])),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          )
+                          .toList(),
                     ),
-                  )
-                  .toList(),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: Colors.green.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.lock, color: Colors.green, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Your key stays on your device. We never see it.',
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.green[800]),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: BoxDecoration(
-              color: Colors.green.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.lock, color: Colors.green, size: 16),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Your key stays on YOUR device — we never see it.',
-                    style: TextStyle(fontSize: 12, color: Colors.green[800]),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Spacer(),
           AppButton.primary(
             label: 'Next: Get My Free Key',
             onPressed: onNext,
@@ -294,7 +324,8 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
     // Lightweight validation: check prefix and ping Google models endpoint.
     if (!key.startsWith('AIza')) {
       setState(() {
-        _status = 'That does not look like a Google AI Studio key (should start with AIza).';
+        _status =
+            'That does not look like a Google AI Studio key (should start with AIza).';
         _valid = false;
         _validating = false;
       });
@@ -315,7 +346,8 @@ class _EnterKeyStepState extends State<_EnterKeyStep> {
         final Map<String, dynamic>? body =
             response.body.isNotEmpty ? jsonDecode(response.body) : null;
         setState(() {
-          _status = 'Validation failed: ${body?['error']?['message'] ?? 'Unknown error'}';
+          _status =
+              'Validation failed: ${body?['error']?['message'] ?? 'Unknown error'}';
           _valid = false;
           _validating = false;
         });

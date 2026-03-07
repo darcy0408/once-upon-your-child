@@ -34,7 +34,8 @@ class MagicReviewStep extends StatefulWidget {
 class _MagicReviewStepState extends State<MagicReviewStep> {
   bool _isGenerating = false;
   late String _loadingStatus;
-  final StoryIllustrationService _illustrationService = StoryIllustrationService();
+  final StoryIllustrationService _illustrationService =
+      StoryIllustrationService();
   late FlutterTts _tts;
 
   @override
@@ -65,9 +66,12 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
 
   String get _scenarioImage {
     if (widget.wizardData.selectedScenario != null) {
-      final scenario = ScenarioData.getById(widget.wizardData.selectedScenario!);
+      final scenario =
+          ScenarioData.getById(widget.wizardData.selectedScenario!);
       if (scenario != null) {
-        return scenario.illustration.startsWith('assets/') ? scenario.illustration : 'assets/${scenario.illustration}';
+        return scenario.illustration.startsWith('assets/')
+            ? scenario.illustration
+            : 'assets/${scenario.illustration}';
       }
     }
     return 'assets/images/scenarios/magic_door.png';
@@ -79,18 +83,38 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       try {
         final magicComp = magicCompanions.firstWhere((c) => c.id == firstComp);
         return 'assets/images/companions/${magicComp.id}.jpg';
-      } catch (_) { return null; }
+      } catch (_) {
+        // If it's a custom companion/photo (e.g. my_pet), fall through.
+      }
+    }
+    if (widget.wizardData.companionNames.isNotEmpty &&
+        widget.wizardData.petPhotos.isNotEmpty) {
+      final petName = widget.wizardData.companionNames.firstWhere(
+        (name) => widget.wizardData.petPhotos.containsKey(name),
+        orElse: () => '',
+      );
+      if (petName.isNotEmpty) {
+        return widget.wizardData.petPhotos[petName];
+      }
     }
     return null;
   }
 
-  String get _scenarioLabel => widget.wizardData.selectedScenario != null ? (ScenarioData.getById(widget.wizardData.selectedScenario!)?.title ?? 'Magical Adventure') : 'Magical Adventure';
+  String get _scenarioLabel => widget.wizardData.selectedScenario != null
+      ? (ScenarioData.getById(widget.wizardData.selectedScenario!)?.title ??
+          'Magical Adventure')
+      : 'Magical Adventure';
 
-  Widget _audioPrompt(String text) => IconButton(icon: const Icon(Icons.volume_up_rounded, color: Color(0xFFFFD700), size: 32), onPressed: () => _tts.speak(text));
+  Widget _audioPrompt(String text) => IconButton(
+      icon: const Icon(Icons.volume_up_rounded,
+          color: Color(0xFFFFD700), size: 32),
+      onPressed: () => _tts.speak(text));
 
   void _launchStoryCreation() async {
     if (!widget.wizardData.isComplete) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please complete all steps first!'), backgroundColor: AppColors.warning));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Please complete all steps first!'),
+          backgroundColor: AppColors.warning));
       return;
     }
     if (!mounted) return;
@@ -102,11 +126,37 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
     try {
       await _saveCharacterIfNeeded();
       final requestData = WizardDataMapper.mapToStoryRequest(widget.wizardData);
-      if (currentFeeling != null) requestData['currentFeeling'] = currentFeeling.toJson();
+      if (currentFeeling != null) {
+        requestData['currentFeeling'] = currentFeeling.toJson();
+      }
       if (widget.wizardData.interactiveMode) {
         if (mounted) {
-          final character = Character(id: widget.wizardData.characterId ?? 'temp-${DateTime.now().millisecondsSinceEpoch}', name: widget.wizardData.characterName, age: widget.wizardData.characterAge, role: widget.wizardData.selectedArchetypeId ?? 'Adventurer', gender: widget.wizardData.characterGender, personalitySliders: widget.wizardData.personalitySliders);
-          await Navigator.of(context).push(MaterialPageRoute(builder: (context) => PickAPathAdventureScreen(userId: 'guest', character: character, theme: requestData['theme'] ?? 'Adventure', tone: 'whimsical', length: _mapStoryLength(widget.wizardData.storyLength), interests: widget.wizardData.selectedEmotionChips.isNotEmpty ? widget.wizardData.selectedEmotionChips : null, mustInclude: widget.wizardData.customElements.isNotEmpty ? [widget.wizardData.customElements] : null, avoid: widget.wizardData.fears.isNotEmpty ? widget.wizardData.fears : null, lifeChallenge: widget.wizardData.lifeChallenge, personalitySliders: widget.wizardData.personalitySliders)));
+          final character = Character(
+              id: widget.wizardData.characterId ??
+                  'temp-${DateTime.now().millisecondsSinceEpoch}',
+              name: widget.wizardData.characterName,
+              age: widget.wizardData.characterAge,
+              role: widget.wizardData.selectedArchetypeId ?? 'Adventurer',
+              gender: widget.wizardData.characterGender,
+              personalitySliders: widget.wizardData.personalitySliders);
+          await Navigator.of(context).push(MaterialPageRoute(
+              builder: (context) => PickAPathAdventureScreen(
+                  userId: 'guest',
+                  character: character,
+                  theme: requestData['theme'] ?? 'Adventure',
+                  tone: 'whimsical',
+                  length: _mapStoryLength(widget.wizardData.storyLength),
+                  interests: widget.wizardData.selectedEmotionChips.isNotEmpty
+                      ? widget.wizardData.selectedEmotionChips
+                      : null,
+                  mustInclude: widget.wizardData.customElements.isNotEmpty
+                      ? [widget.wizardData.customElements]
+                      : null,
+                  avoid: widget.wizardData.fears.isNotEmpty
+                      ? widget.wizardData.fears
+                      : null,
+                  lifeChallenge: widget.wizardData.lifeChallenge,
+                  personalitySliders: widget.wizardData.personalitySliders)));
         }
       } else {
         final result = await ApiServiceManager.generateStory(
@@ -148,7 +198,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
         if (widget.wizardData.includeIllustrations &&
             inlineIllustrations.isEmpty) {
           if (mounted) {
-            setState(() => _loadingStatus = 'Painting magical illustrations...');
+            setState(
+                () => _loadingStatus = 'Painting magical illustrations...');
           }
           inlineIllustrations = await _generateInlineIllustrations(
               storyText: result.storyText,
@@ -161,8 +212,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                   title: result.title ?? 'My Magical Story',
                   storyText: result.storyText,
                   wisdomGem: result.wisdomGem ?? 'You are magic!',
-                  characterName:
-                      requestData['characterName'] ?? widget.wizardData.characterName,
+                  characterName: requestData['characterName'] ??
+                      widget.wizardData.characterName,
                   theme: requestData['theme'],
                   characterId: widget.wizardData.characterId,
                   characterAge: requestData['age'],
@@ -205,34 +256,81 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
     }
   }
 
-  Future<List<Map<String, dynamic>>> _generateInlineIllustrations({required String storyText, required String storyTitle, required Map<String, dynamic> requestData}) async {
+  Future<List<Map<String, dynamic>>> _generateInlineIllustrations(
+      {required String storyText,
+      required String storyTitle,
+      required Map<String, dynamic> requestData}) async {
     try {
-      final generated = await _illustrationService.generateIllustrations(storyText: storyText, storyTitle: storyTitle, characterName: requestData['character']?.toString() ?? widget.wizardData.characterName, theme: requestData['theme']?.toString(), numberOfImages: 1, age: requestData['age'] as int? ?? widget.wizardData.characterAge, characterAppearance: requestData['characterDetails'] as Map<String, dynamic>?);
-      return generated.map((illustration) {
-        final url = illustration.imageUrl;
-        if (url.startsWith('data:image/') && url.contains(',')) {
-          final commaIndex = url.indexOf(',');
-          if (commaIndex < 0 || commaIndex + 1 >= url.length) return null;
-          return {'id': illustration.id, 'prompt': illustration.prompt, 'image_data': url.substring(commaIndex + 1)};
-        }
-        return null;
-      }).whereType<Map<String, dynamic>>().toList();
-    } catch (e) { debugPrint('⚠️ Illustration generation failed: $e'); return const []; }
+      final generated = await _illustrationService.generateIllustrations(
+          storyText: storyText,
+          storyTitle: storyTitle,
+          characterName: requestData['character']?.toString() ??
+              widget.wizardData.characterName,
+          theme: requestData['theme']?.toString(),
+          numberOfImages: 1,
+          age: requestData['age'] as int? ?? widget.wizardData.characterAge,
+          characterAppearance:
+              requestData['characterDetails'] as Map<String, dynamic>?);
+      return generated
+          .map((illustration) {
+            final url = illustration.imageUrl;
+            if (url.startsWith('data:image/') && url.contains(',')) {
+              final commaIndex = url.indexOf(',');
+              if (commaIndex < 0 || commaIndex + 1 >= url.length) return null;
+              return {
+                'id': illustration.id,
+                'prompt': illustration.prompt,
+                'image_data': url.substring(commaIndex + 1)
+              };
+            }
+            return null;
+          })
+          .whereType<Map<String, dynamic>>()
+          .toList();
+    } catch (e) {
+      debugPrint('⚠️ Illustration generation failed: $e');
+      return const [];
+    }
   }
 
   Future<void> _saveCharacterIfNeeded() async {
     try {
-      final characterDetails = WizardDataMapper.mapToStoryRequest(widget.wizardData)['characterDetails'] as Map<String, dynamic>;
-      final body = {'name': widget.wizardData.characterName, 'age': widget.wizardData.characterAge, 'gender': widget.wizardData.characterGender, 'role': widget.wizardData.selectedArchetypeId, 'character_type': 'Everyday Kid', 'character_style': 'Regular Kid', 'likes': characterDetails['interests'] ?? [], 'strengths': characterDetails['strengths'] ?? [], 'pets': widget.wizardData.pets, 'friends': widget.wizardData.additionalCharacters, 'avatar': {'hairColor': 'Brown', 'skinTone': 'Light'}, if (widget.wizardData.generatedAvatar != null) 'avatar_data': widget.wizardData.generatedAvatar!.toJson()};
+      final characterDetails = WizardDataMapper.mapToStoryRequest(
+          widget.wizardData)['characterDetails'] as Map<String, dynamic>;
+      final body = {
+        'name': widget.wizardData.characterName,
+        'age': widget.wizardData.characterAge,
+        'gender': widget.wizardData.characterGender,
+        'role': widget.wizardData.selectedArchetypeId,
+        'character_type': 'Everyday Kid',
+        'character_style': 'Regular Kid',
+        'likes': characterDetails['interests'] ?? [],
+        'strengths': characterDetails['strengths'] ?? [],
+        'pets': widget.wizardData.pets,
+        'friends': widget.wizardData.additionalCharacters,
+        'avatar': {'hairColor': 'Brown', 'skinTone': 'Light'},
+        if (widget.wizardData.generatedAvatar != null)
+          'avatar_data': widget.wizardData.generatedAvatar!.toJson()
+      };
       final api = ApiServiceManager();
-      if (widget.wizardData.characterId != null) { await api.patch('/characters/${widget.wizardData.characterId}', body); } else {
+      if (widget.wizardData.characterId != null) {
+        await api.patch('/characters/${widget.wizardData.characterId}', body);
+      } else {
         final response = await api.post('/create-character', body);
-        if (response.containsKey('character_id')) { widget.wizardData.characterId = response['character_id']?.toString(); } else if (response.containsKey('id')) { widget.wizardData.characterId = response['id']?.toString(); }
+        if (response.containsKey('character_id')) {
+          widget.wizardData.characterId = response['character_id']?.toString();
+        } else if (response.containsKey('id')) {
+          widget.wizardData.characterId = response['id']?.toString();
+        }
       }
-    } catch (e) { debugPrint('⚠️ Character save failed: $e'); }
+    } catch (e) {
+      debugPrint('⚠️ Character save failed: $e');
+    }
   }
 
-  String _mapStoryLength(String wizardLength) => wizardLength == 'quick' ? 'short' : (wizardLength == 'epic' ? 'long' : 'medium');
+  String _mapStoryLength(String wizardLength) => wizardLength == 'quick'
+      ? 'short'
+      : (wizardLength == 'epic' ? 'long' : 'medium');
 
   String _storyTypeLabel(WizardData data) {
     if (data.interactiveMode) return 'Pick a Path adventure';
@@ -244,9 +342,12 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
 
   String _storyLengthLabel(String length) {
     switch (length) {
-      case 'quick': return 'Quick read';
-      case 'epic': return 'Epic adventure';
-      default: return 'Classic length';
+      case 'quick':
+        return 'Quick read';
+      case 'epic':
+        return 'Epic adventure';
+      default:
+        return 'Classic length';
     }
   }
 
@@ -259,10 +360,19 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
     final heroFallback = ageBand?.heroLabel ?? 'Your Hero';
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
         child: Column(
           children: [
-            Row(mainAxisAlignment: MainAxisAlignment.center, children: [_audioPrompt("Your adventure awaits!"), const SizedBox(width: 8), Text("Your Adventure Awaits!", style: GoogleFonts.cinzelDecorative(color: const Color(0xFFFFD700), fontSize: 22, fontWeight: FontWeight.bold))]),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              _audioPrompt("Your adventure awaits!"),
+              const SizedBox(width: 8),
+              Text("Your Adventure Awaits!",
+                  style: GoogleFonts.cinzelDecorative(
+                      color: const Color(0xFFFFD700),
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold))
+            ]),
             const SizedBox(height: 24),
             // ── Hero orb (avatar only, no overlapping circles) ───────────────
             SizedBox(
@@ -278,7 +388,12 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                       const Color(0xFFE985FF).withValues(alpha: 0.3),
                       const Color(0xFFB5F7FF).withValues(alpha: 0.2),
                       Colors.transparent,
-                    ], stops: const [0.0, 0.4, 0.7, 1.0]),
+                    ], stops: const [
+                      0.0,
+                      0.4,
+                      0.7,
+                      1.0
+                    ]),
                   ),
                 ),
                 MagicOrbWidget(
@@ -286,7 +401,9 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                   size: orbSize * 0.95,
                   glowColor: AppColors.gold,
                   topLabel: _scenarioLabel,
-                  label: data.characterName.isNotEmpty ? data.characterName : heroFallback,
+                  label: data.characterName.isNotEmpty
+                      ? data.characterName
+                      : heroFallback,
                   childScale: 0.92,
                   child: _HeroAvatar(
                     generatedAvatar: data.generatedAvatar,
@@ -300,7 +417,10 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             if (data.characterName.isNotEmpty) ...[
               Text(
                 data.characterName,
-                style: GoogleFonts.cinzelDecorative(color: const Color(0xFFFFD700), fontSize: 16, fontWeight: FontWeight.bold),
+                style: GoogleFonts.cinzelDecorative(
+                    color: const Color(0xFFFFD700),
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
@@ -319,18 +439,29 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                       child: _AuraCircle(
                         size: 88,
                         auraColor: const Color(0xFFFFD9A6),
-                        child: ClipOval(child: Image.asset(_scenarioImage, fit: BoxFit.cover)),
+                        child: ClipOval(
+                            child:
+                                Image.asset(_scenarioImage, fit: BoxFit.cover)),
                       ),
                     ),
                     const SizedBox(height: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            width: 1),
                       ),
-                      child: Text(_scenarioLabel, overflow: TextOverflow.ellipsis, maxLines: 1, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                      child: Text(_scenarioLabel,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold)),
                     ),
                   ]),
                 ),
@@ -346,21 +477,28 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                         child: _AuraCircle(
                           size: 88,
                           auraColor: const Color(0xFFF3AEFF),
-                          child: _CompanionAvatar(companionImage: _companionImage),
+                          child:
+                              _CompanionAvatar(companionImage: _companionImage),
                         ),
                       ),
                       const SizedBox(height: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.6),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          data.companionNames.isNotEmpty ? data.companionNames.first : 'Companion',
+                          data.companionNames.isNotEmpty
+                              ? data.companionNames.first
+                              : 'Companion',
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
-                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold),
                         ),
                       ),
                     ]),
@@ -405,7 +543,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                     label: data.companionNames.join(', '),
                     onTap: widget.onGoBack,
                     colorAccent: const Color(0xFFF06292),
-                    leadingAvatar: _CompanionAvatar(companionImage: _companionImage),
+                    leadingAvatar:
+                        _CompanionAvatar(companionImage: _companionImage),
                   )),
             ],
             const SizedBox(height: AppSpacing.xxl),
@@ -515,7 +654,8 @@ class _HeroAvatar extends StatelessWidget {
       img = Image.network(data, fit: BoxFit.cover);
     } else {
       try {
-        img = Image.memory(base64Decode(data.split(',').last), fit: BoxFit.cover);
+        img =
+            Image.memory(base64Decode(data.split(',').last), fit: BoxFit.cover);
       } catch (_) {
         return _GradientSphereFallback(
             child: _HeroFallbackIdentity(name: characterName, role: role));
@@ -600,7 +740,30 @@ class _CompanionAvatar extends StatelessWidget {
       return const _GradientSphereFallback(
           child: Icon(Icons.pets, color: Colors.white, size: 48));
     }
-    return ClipOval(child: Image.asset(companionImage!, fit: BoxFit.cover));
+    if (companionImage!.startsWith('assets/')) {
+      return ClipOval(
+        clipBehavior: Clip.antiAlias,
+        child: Image.asset(companionImage!, fit: BoxFit.cover),
+      );
+    }
+    if (companionImage!.startsWith('http')) {
+      return ClipOval(
+        clipBehavior: Clip.antiAlias,
+        child: Image.network(companionImage!, fit: BoxFit.cover),
+      );
+    }
+    try {
+      final normalized = companionImage!.contains(',')
+          ? companionImage!.split(',').last
+          : companionImage!;
+      return ClipOval(
+        clipBehavior: Clip.antiAlias,
+        child: Image.memory(base64Decode(normalized), fit: BoxFit.cover),
+      );
+    } catch (_) {
+      return const _GradientSphereFallback(
+          child: Icon(Icons.pets, color: Colors.white, size: 48));
+    }
   }
 }
 
@@ -612,9 +775,15 @@ class _GradientSphereFallback extends StatelessWidget {
     return Container(
         decoration: const BoxDecoration(
             shape: BoxShape.circle,
-            gradient: RadialGradient(
-                colors: [Color(0xFFFFF3D6), Color(0xFFEAA6FF), Color(0xFFAA7CEB)],
-                stops: [0.1, 0.6, 1.0])),
+            gradient: RadialGradient(colors: [
+              Color(0xFFFFF3D6),
+              Color(0xFFEAA6FF),
+              Color(0xFFAA7CEB)
+            ], stops: [
+              0.1,
+              0.6,
+              1.0
+            ])),
         child: Center(child: child));
   }
 }
@@ -660,7 +829,8 @@ class _PulsingCastSpellFrameState extends State<_PulsingCastSpellFrame>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
         animation: _ctrl,
-        builder: (ctx, child) => Padding(padding: const EdgeInsets.all(8), child: child),
+        builder: (ctx, child) =>
+            Padding(padding: const EdgeInsets.all(8), child: child),
         child: widget.child);
   }
 }
@@ -823,8 +993,8 @@ class _StaggeredRevealState extends State<_StaggeredReveal>
     _anim = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 600));
     _opacity = CurvedAnimation(parent: _anim, curve: Curves.easeOut);
-    _slide = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
-        CurvedAnimation(parent: _anim, curve: Curves.easeOutBack));
+    _slide = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _anim, curve: Curves.easeOutBack));
     _staggerTimer = Timer(Duration(milliseconds: 100 * widget.index), () {
       if (mounted) _anim.forward();
     });
@@ -844,4 +1014,3 @@ class _StaggeredRevealState extends State<_StaggeredReveal>
         child: SlideTransition(position: _slide, child: widget.child));
   }
 }
-

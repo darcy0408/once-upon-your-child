@@ -123,6 +123,8 @@ class AvatarGenerationService:
             raise ValueError("Age must be between 3 and 99")
         if gender.lower() not in ['boy', 'girl']:
             raise ValueError("Gender must be 'boy' or 'girl'")
+        if not photo_bytes:
+            raise ValueError("Photo bytes are required")
 
         # 'character/storybook hero' wording avoids Gemini safety classifier triggers
         # (words like 'child/children/person' + photo = policy rejection)
@@ -167,8 +169,18 @@ Maintain the character's facial features while converting them into a vibrant no
 
         logger.info(f"Generating custom avatar for {character_name}, age {age}, eye_color {eye_color}, fav_color {favorite_color}")
 
-        # Call the new generator method
+        if self.image_generator is None and self.fallback_generator is None:
+            raise Exception(
+                "Custom avatar generation is not configured. Set GEMINI_API_KEY, "
+                "REPLICATE_API_TOKEN, or OPENROUTER_API_KEY on the backend."
+            )
+
+        primary_error = None
+
+        # Try primary generator first.
         try:
+            if self.image_generator is None:
+                raise Exception("Primary generator unavailable")
             results = self.image_generator.generate_custom_avatar(
                 base_image_bytes=photo_bytes,
                 prompt=prompt,
@@ -176,20 +188,48 @@ Maintain the character's facial features while converting them into a vibrant no
                 age=age,
                 num_images=1
             )
+            image_base64 = self._extract_base64_from_results(results)
+            if not image_base64:
+                raise Exception("No image generated for custom avatar")
 
-            if results and len(results) > 0:
-                result = results[0]
-                image_base64 = result.get('image_data')
-                
-                # Check for "data:image" prefix and clean up
-                if image_base64 and "," in image_base64:
-                    image_base64 = image_base64.split(",", 1)[1]
-                
-                # Build response
+            avatar_id = str(uuid.uuid4())
+            end_time = datetime.now()
+            generation_time_ms = int((end_time - start_time).total_seconds() * 1000)
+
+            return {
+                'id': avatar_id,
+                'image_base64': f"data:image/png;base64,{image_base64}",
+                'style': 'pixar-custom',
+                'attributes': {
+                    'character_name': character_name,
+                    'age': age,
+                    'gender': gender,
+                    'eye_color': eye_color,
+                    'favorite_color': favorite_color
+                },
+                'generated_at': datetime.now().isoformat(),
+                'generation_time_ms': generation_time_ms,
+                'version': 3
+            }
+        except Exception as e:
+            primary_error = e
+            logger.error(f"Custom avatar generation failed with primary generator: {e}")
+
+        # Try fallback generator.
+        if self.fallback_generator is not None:
+            try:
+                logger.info("Retrying custom avatar with fallback generator")
+                results = self.fallback_generator.generate_custom_avatar(
+                    base_image_bytes=photo_bytes,
+                    prompt=prompt,
+                    character_name=character_name,
+                    age=age,
+                )
+                image_base64 = self._extract_base64_from_results(results)
+                if not image_base64:
+                    raise Exception("Fallback returned no image")
+
                 avatar_id = str(uuid.uuid4())
-                end_time = datetime.now()
-                generation_time_ms = int((end_time - start_time).total_seconds() * 1000)
-
                 return {
                     'id': avatar_id,
                     'image_base64': f"data:image/png;base64,{image_base64}",
@@ -202,41 +242,43 @@ Maintain the character's facial features while converting them into a vibrant no
                         'favorite_color': favorite_color
                     },
                     'generated_at': datetime.now().isoformat(),
-                    'generation_time_ms': generation_time_ms,
-                    'version': 3
+                    'version': 3,
                 }
-            else:
-                raise Exception("No image generated for custom avatar")
+            except Exception as fallback_err:
+                logger.error(f"Fallback custom avatar generation also failed: {fallback_err}")
+                raise Exception(
+                    f"Custom avatar generation failed. Primary: {primary_error}. "
+                    f"Fallback: {fallback_err}"
+                )
 
-        except Exception as e:
-            logger.error(f"Custom avatar generation failed with primary generator: {e}")
-            # Try OpenRouter fallback (handles photos that Gemini safety policies reject)
-            if self.fallback_generator is not None:
-                try:
-                    logger.info("Retrying custom avatar with OpenRouter fallback")
-                    results = self.fallback_generator.generate_custom_avatar(
-                        base_image_bytes=photo_bytes,
-                        prompt=prompt,
-                        character_name=character_name,
-                        age=age,
-                    )
-                    if results and len(results) > 0:
-                        result = results[0]
-                        image_base64 = result.get('image_data') or result.get('image_base64', '')
-                        if image_base64 and "," in image_base64:
-                            image_base64 = image_base64.split(",", 1)[1]
-                        avatar_id = str(uuid.uuid4())
-                        return {
-                            'id': avatar_id,
-                            'image_base64': f"data:image/png;base64,{image_base64}",
-                            'style': 'pixar-custom',
-                            'attributes': {'character_name': character_name, 'age': age, 'gender': gender},
-                            'generated_at': datetime.now().isoformat(),
-                            'version': 3,
-                        }
-                except Exception as fallback_err:
-                    logger.error(f"OpenRouter fallback also failed: {fallback_err}")
-            raise Exception(f"Custom avatar generation failed: {str(e)}")
+        raise Exception(f"Custom avatar generation failed: {primary_error}")
+
+    def _extract_base64_from_results(self, results: Optional[List[Dict]]) -> Optional[str]:
+        """Extract clean base64 image data from a generator results list."""
+        if not results:
+            return None
+
+        for result in results:
+            if not isinstance(result, dict):
+                continue
+            image_base64 = result.get('image_data') or result.get('image_base64')
+            if not image_base64 or not isinstance(image_base64, str):
+                continue
+
+            image_base64 = image_base64.strip()
+            if image_base64.startswith("data:image"):
+                image_base64 = image_base64.split(",", 1)[1] if "," in image_base64 else image_base64
+            image_base64 = re.sub(r"\s+", "", image_base64)
+            if not image_base64:
+                continue
+
+            try:
+                base64.b64decode(image_base64, validate=True)
+                return image_base64
+            except Exception:
+                continue
+
+        return None
 
     def generate_pet_avatar(
         self,

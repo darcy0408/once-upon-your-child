@@ -44,6 +44,8 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
   late final PageController _pageController; // Late init
   int _currentStep = 0;
   int _progressStep = 0;
+  int? _requestedSubStep;
+  int _subStepRequestNonce = 0;
 
   // Wizard data collected across steps
   late final WizardData _wizardData;
@@ -54,7 +56,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     _wizardData = widget.initialWizardData ?? WizardData();
     if (widget.initialCharacter != null) {
       _initializeFromCharacter(widget.initialCharacter!);
@@ -64,7 +66,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
       _currentStep = widget.initialStep;
     }
     _pageController = PageController(initialPage: _currentStep);
-    
+
     _loadSavedCharacters();
   }
 
@@ -76,7 +78,8 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
       final List<dynamic> characterList = response['data'] is List
           ? response['data'] as List<dynamic>
           : (response['characters'] as List<dynamic>? ?? const []);
-      debugPrint('🔍 _loadSavedCharacters: Fetched ${characterList.length} raw items from backend');
+      debugPrint(
+          '🔍 _loadSavedCharacters: Fetched ${characterList.length} raw items from backend');
       final characters = characterList
           .map((data) => Character.fromJson(data as Map<String, dynamic>))
           .toList();
@@ -85,7 +88,8 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
         setState(() {
           _savedCharacters = characters;
         });
-        debugPrint('✅ Loaded ${characters.length} saved characters from backend');
+        debugPrint(
+            '✅ Loaded ${characters.length} saved characters from backend');
         for (var c in characters) {
           debugPrint('   - Character: ${c.name}, Role: ${c.role}, ID: ${c.id}');
         }
@@ -107,19 +111,19 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
     _wizardData.characterId = character.id;
     _wizardData.generatedAvatar = character.generatedAvatar;
     _wizardData.characterGender = character.gender ?? 'Girl';
-    
+
     // Map personality if available
     if (character.personalitySliders != null) {
-      _wizardData.personalitySliders = Map<String, int>.from(character.personalitySliders!);
+      _wizardData.personalitySliders =
+          Map<String, int>.from(character.personalitySliders!);
     }
 
     // Map appearance if available
     if (character.avatar != null) {
-        // Simple mapping for now, more detailed one could be added
-        // _wizardData.selectedHairStyle = character.avatarConfig!['hairStyle'] ?? '';
+      // Simple mapping for now, more detailed one could be added
+      // _wizardData.selectedHairStyle = character.avatarConfig!['hairStyle'] ?? '';
     }
   }
-
 
   @override
   void dispose() {
@@ -151,7 +155,8 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -195,18 +200,47 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                           child: Builder(
                             builder: (context) {
                               final stepLabels = band.band == AgeBand.sprout
-                                  ? const ['My Hero!', 'My Buddies!', 'My World!', 'Make Magic!']
+                                  ? const [
+                                      'My Hero!',
+                                      'My Buddies!',
+                                      'My World!',
+                                      'Make Magic!'
+                                    ]
                                   : band.band == AgeBand.adventurer
-                                      ? const ['My Character', 'My Companions', 'Setting', 'Begin']
+                                      ? const [
+                                          'My Character',
+                                          'My Companions',
+                                          'Setting',
+                                          'Begin'
+                                        ]
                                       : band.band == AgeBand.creator
-                                          ? const ['Character', 'Companions', 'Setting', 'Begin']
-                                          : const ['Create Hero', 'Pick Team', 'Pick Place', 'Make Magic'];
+                                          ? const [
+                                              'Character',
+                                              'Companions',
+                                              'Setting',
+                                              'Begin'
+                                            ]
+                                          : const [
+                                              'Create Hero',
+                                              'Pick Team',
+                                              'Pick Place',
+                                              'Make Magic'
+                                            ];
                               return Transform.scale(
                                 scale: band.spacingScale,
                                 child: MoonPhaseProgress(
                                   currentStep: _progressStep,
                                   totalSteps: 4,
                                   stepLabels: stepLabels,
+                                  onStepTap: (step) {
+                                    if (_currentStep == 0) {
+                                      setState(() {
+                                        _requestedSubStep = step;
+                                        _progressStep = step;
+                                        _subStepRequestNonce++;
+                                      });
+                                    }
+                                  },
                                 ),
                               );
                             },
@@ -224,7 +258,9 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) => FeelingsGardenScreen(
-                              childAge: _wizardData.characterAge <= 0 ? 8 : _wizardData.characterAge,
+                              childAge: _wizardData.characterAge <= 0
+                                  ? 8
+                                  : _wizardData.characterAge,
                             ),
                           ),
                         );
@@ -240,7 +276,8 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                       onPressed: () async {
                         await Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) => const CharacterLibraryScreen(),
+                            builder: (context) =>
+                                const CharacterLibraryScreen(),
                           ),
                         );
                         // Reload characters after returning
@@ -256,7 +293,8 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
               Expanded(
                 child: PageView(
                   controller: _pageController,
-                  physics: const NeverScrollableScrollPhysics(), // Disable swipe
+                  physics:
+                      const NeverScrollableScrollPhysics(), // Disable swipe
                   onPageChanged: (index) {
                     setState(() {
                       _currentStep = index;
@@ -269,9 +307,12 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                       wizardData: _wizardData,
                       onNext: _nextStep,
                       availableCharacters: _savedCharacters,
+                      requestedSubStep: _requestedSubStep,
+                      subStepRequestNonce: _subStepRequestNonce,
                       onSubStepChange: (s) => setState(() => _progressStep = s),
-                      onAgeChanged: (age) =>
-                          ref.read(ageBandNotifierProvider.notifier).setAge(age),
+                      onAgeChanged: (age) => ref
+                          .read(ageBandNotifierProvider.notifier)
+                          .setAge(age),
                     ),
                     // Step 2: Review & Launch
                     MagicReviewStep(
@@ -288,4 +329,3 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
     );
   }
 }
-

@@ -11,6 +11,7 @@ class MoonPhaseProgress extends StatelessWidget {
   final int totalSteps;
   final List<String> stepLabels;
   final bool showLabels;
+  final ValueChanged<int>? onStepTap;
 
   const MoonPhaseProgress({
     super.key,
@@ -22,6 +23,7 @@ class MoonPhaseProgress extends StatelessWidget {
       'Step 3: Make magic',
     ],
     this.showLabels = true,
+    this.onStepTap,
   });
 
   @override
@@ -52,11 +54,15 @@ class MoonPhaseProgress extends StatelessWidget {
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _GoldStepCircle(
-                stepNumber: index + 1,
-                isActive: isActive,
-                isCompleted: isCompleted,
-                label: stepLabels[index],
+              GestureDetector(
+                onTap: onStepTap == null ? null : () => onStepTap!(index),
+                behavior: HitTestBehavior.opaque,
+                child: _GoldStepCircle(
+                  stepNumber: index + 1,
+                  isActive: isActive,
+                  isCompleted: isCompleted,
+                  label: stepLabels[index],
+                ),
               ),
               if (showLabels) ...[
                 const SizedBox(height: 5),
@@ -124,13 +130,17 @@ TextStyle _stepLabelStyle(
   const size = 11.0;
   switch (band?.uiFontFamily) {
     case 'Nunito':
-      return GoogleFonts.nunito(fontSize: size, fontWeight: weight, color: color);
+      return GoogleFonts.nunito(
+          fontSize: size, fontWeight: weight, color: color);
     case 'Bitter':
-      return GoogleFonts.bitter(fontSize: size, fontWeight: weight, color: color);
+      return GoogleFonts.bitter(
+          fontSize: size, fontWeight: weight, color: color);
     case 'SourceSansPro':
-      return GoogleFonts.sourceSans3(fontSize: size, fontWeight: weight, color: color);
+      return GoogleFonts.sourceSans3(
+          fontSize: size, fontWeight: weight, color: color);
     default:
-      return GoogleFonts.quicksand(fontSize: size, fontWeight: weight, color: color);
+      return GoogleFonts.quicksand(
+          fontSize: size, fontWeight: weight, color: color);
   }
 }
 
@@ -255,8 +265,8 @@ class _GoldStepCircleState extends State<_GoldStepCircle>
                     boxShadow: widget.isActive
                         ? [
                             BoxShadow(
-                              color:
-                                  const Color(0xFFFFD54F).withAlpha((100 * g).round()),
+                              color: const Color(0xFFFFD54F)
+                                  .withAlpha((100 * g).round()),
                               blurRadius: 12 * g,
                             ),
                           ]
