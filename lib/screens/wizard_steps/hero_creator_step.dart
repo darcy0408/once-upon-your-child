@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -20,6 +21,7 @@ import '../../services/avatar_generation_state.dart';
 import '../../services/firebase_analytics_service.dart';
 import '../../services/audio_ambience_service.dart';
 import '../../services/tts_api_service.dart';
+import '../../config/environment.dart';
 import '../../widgets/avatar_gallery_selector.dart';
 import '../../widgets/image_mode_orb.dart';
 import '../../widgets/image_crystal_formation.dart';
@@ -712,7 +714,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     for (final pet in selectedPets) {
       final petName = pet['name'] ?? 'My Pet';
       slots.add(_ShowcaseSlot(
-        photoBase64: widget.wizardData.petPhotos[petName],
+        photoBase64: widget.wizardData.petAvatars[petName]?.imageBase64 ??
+            widget.wizardData.petPhotos[petName],
         name: petName,
       ));
     }
@@ -927,11 +930,70 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       widget.wizardData.pets[targetIndex]['name'] = existingName;
       // Store photo keyed by name in petPhotos (not petAvatars)
       widget.wizardData.petPhotos[existingName] = b64;
+      widget.wizardData.petAvatars.remove(existingName);
       // Auto-select the pet as a companion
       if (!widget.wizardData.companionNames.contains(existingName)) {
         widget.wizardData.companionNames.add(existingName);
       }
     });
+
+    final targetIndex =
+        (petIndex ?? 0).clamp(0, widget.wizardData.pets.length - 1);
+    final pet = widget.wizardData.pets[targetIndex];
+    await _generateMagicalPetAvatar(
+      petName: pet['name'] ?? _defaultPetNameForIndex(targetIndex),
+      species: pet['species'] ?? 'Dog',
+      looksDescription: pet['color'] ?? 'cute and friendly',
+      photoBytes: bytes,
+      filename: file.name.isNotEmpty ? file.name : 'pet_photo.jpg',
+    );
+  }
+
+  Future<void> _generateMagicalPetAvatar({
+    required String petName,
+    required String species,
+    required String looksDescription,
+    required List<int> photoBytes,
+    required String filename,
+  }) async {
+    try {
+      final url =
+          Uri.parse('${Environment.backendUrl}/avatar/generate-pet-avatar');
+      final request = http.MultipartRequest('POST', url);
+      request.files.add(http.MultipartFile.fromBytes(
+        'photo',
+        photoBytes,
+        filename: filename,
+      ));
+      request.fields['pet_name'] = petName;
+      request.fields['species'] = species;
+      request.fields['breed_description'] =
+          looksDescription.trim().isEmpty ? species : looksDescription;
+      request.fields['owner_favorite_color'] = 'gold';
+
+      final headers = await ApiServiceManager.authHeaders();
+      headers.forEach((key, value) {
+        if (key.toLowerCase() != 'content-type') {
+          request.headers[key] = value;
+        }
+      });
+
+      final streamed = await request.send().timeout(const Duration(minutes: 3));
+      final response = await http.Response.fromStream(streamed);
+      if (response.statusCode != 200) return;
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      if (body['status'] != 'success') return;
+      final avatarJson = body['avatar'] as Map<String, dynamic>?;
+      if (avatarJson == null) return;
+
+      final generated = GeneratedAvatar.fromJson(avatarJson);
+      if (!mounted) return;
+      setState(() {
+        widget.wizardData.petAvatars[petName] = generated;
+      });
+    } catch (_) {
+      // Keep raw pet photo fallback if generation is unavailable.
+    }
   }
 
   Future<ImageSource?> _showPhotoSourceDialog() async {
@@ -3005,7 +3067,8 @@ class _CompanionImageGrid extends StatelessWidget {
           tagline: '${petEntry['color'] ?? ''} ${petEntry['species'] ?? 'pet'}'
               .trim(),
           isSelected: isSelected,
-          photoBase64: wizardData.petPhotos[petName],
+          photoBase64: wizardData.petAvatars[petName]?.imageBase64 ??
+              wizardData.petPhotos[petName],
           size: itemSize,
           onTap: () {
             if (isSelected) {
@@ -3264,7 +3327,8 @@ class _PetCardState extends State<_PetCard> {
 
   String? get _photo {
     final name = _pet?['name'] ?? 'My Pet';
-    return widget.wizardData.petPhotos[name];
+    return widget.wizardData.petAvatars[name]?.imageBase64 ??
+        widget.wizardData.petPhotos[name];
   }
 
   @override
@@ -3433,6 +3497,11 @@ class _PetCardState extends State<_PetCard> {
     if (photo != null && oldName != newName) {
       widget.wizardData.petPhotos.remove(oldName);
       widget.wizardData.petPhotos[newName] = photo;
+    }
+    final generated = widget.wizardData.petAvatars[oldName];
+    if (generated != null && oldName != newName) {
+      widget.wizardData.petAvatars.remove(oldName);
+      widget.wizardData.petAvatars[newName] = generated;
     }
     // Keep companionNames in sync
     if (widget.wizardData.companionNames.contains(oldName) &&
