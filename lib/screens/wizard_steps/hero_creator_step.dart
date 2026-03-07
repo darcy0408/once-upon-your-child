@@ -874,7 +874,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         // ── Pet card (photo + name/species/color) ──────────────────────────────
         _PetCard(
           wizardData: widget.wizardData,
-          onPickPhoto: _pickPetPhoto,
+          onPickPhoto: ({int? petIndex}) => _pickPetPhoto(petIndex: petIndex),
           onChanged: () => setState(() {}),
         ),
         const SizedBox(height: 12),
@@ -894,7 +894,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
-  Future<void> _pickPetPhoto() async {
+  String _defaultPetNameForIndex(int index) =>
+      index == 0 ? 'My Pet' : 'My Pet ${index + 1}';
+
+  Future<void> _pickPetPhoto({int? petIndex}) async {
     final source = await _showPhotoSourceDialog();
     if (source == null || !mounted) return;
     final picker = ImagePicker();
@@ -904,18 +907,24 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final bytes = await file.readAsBytes();
     final b64 = 'data:image/jpeg;base64,${base64Encode(bytes)}';
     setState(() {
-      // Preserve existing pet name if already set, otherwise default
-      final existingName = widget.wizardData.pets.isNotEmpty
-          ? (widget.wizardData.pets.first['name'] ?? 'My Pet')
-          : 'My Pet';
-      if (widget.wizardData.pets.isEmpty) {
+      int targetIndex = petIndex ?? 0;
+      if (targetIndex < 0) targetIndex = 0;
+
+      while (widget.wizardData.pets.length <= targetIndex) {
+        final idx = widget.wizardData.pets.length;
         widget.wizardData.pets.add({
-          'name': existingName,
+          'name': _defaultPetNameForIndex(idx),
           'species': 'Dog',
           'color': '',
           'personality': '',
         });
       }
+
+      final existingName =
+          (widget.wizardData.pets[targetIndex]['name'] ?? '').trim().isNotEmpty
+              ? widget.wizardData.pets[targetIndex]['name']!
+              : _defaultPetNameForIndex(targetIndex);
+      widget.wizardData.pets[targetIndex]['name'] = existingName;
       // Store photo keyed by name in petPhotos (not petAvatars)
       widget.wizardData.petPhotos[existingName] = b64;
       // Auto-select the pet as a companion
@@ -2985,34 +2994,31 @@ class _CompanionImageGrid extends StatelessWidget {
         );
       }).toList();
 
-      // If a pet photo exists, slot it in as the 8th button (filling the pyramid)
-      final petEntry =
-          wizardData.pets.isNotEmpty ? wizardData.pets.first : null;
-      final petPhoto = petEntry != null
-          ? wizardData.petPhotos[petEntry['name'] ?? 'My Pet']
-          : null;
-      if (petEntry != null) {
-        final petName = petEntry['name'] ?? 'My Pet';
+      // Add saved pets as selectable companion buttons.
+      for (int i = 0; i < wizardData.pets.length; i++) {
+        final petEntry = wizardData.pets[i];
+        final petName = (petEntry['name'] ?? '').trim().isEmpty
+            ? 'My Pet ${i + 1}'
+            : petEntry['name']!;
+        final petId = 'my_pet_$i';
         final isSelected = wizardData.companionNames.contains(petName);
         buttons.add(_CompanionImageButton(
-          id: 'my_pet',
+          id: petId,
           name: petName,
           tagline: '${petEntry['color'] ?? ''} ${petEntry['species'] ?? 'pet'}'
               .trim(),
           isSelected: isSelected,
-          photoBase64: petPhoto,
+          photoBase64: wizardData.petPhotos[petName],
           size: itemSize,
           onTap: () {
             if (isSelected) {
               wizardData.companionNames.remove(petName);
+              wizardData.selectedCompanions.remove(petId);
             } else {
               wizardData.companionNames.add(petName);
-              if (!wizardData.selectedCompanions.contains('my_pet')) {
-                wizardData.selectedCompanions.add('my_pet');
+              if (!wizardData.selectedCompanions.contains(petId)) {
+                wizardData.selectedCompanions.add(petId);
               }
-            }
-            if (isSelected) {
-              wizardData.selectedCompanions.remove('my_pet');
             }
             onChanged();
           },
@@ -3211,7 +3217,7 @@ class _CompanionImageButtonState extends State<_CompanionImageButton> {
 /// or shows the photo + editable name/species/color fields once added.
 class _PetCard extends StatefulWidget {
   final WizardData wizardData;
-  final VoidCallback onPickPhoto;
+  final Future<void> Function({int? petIndex}) onPickPhoto;
   final VoidCallback onChanged;
 
   const _PetCard({
@@ -3228,10 +3234,12 @@ class _PetCardState extends State<_PetCard> {
   late TextEditingController _nameCtrl;
   late TextEditingController _colorCtrl;
   String _species = 'Dog';
+  int _selectedPetIndex = -1;
+  bool _isEditing = false;
   final SpeechToText _speech = SpeechToText();
   bool _speechReady = false;
   String _listeningField = '';
-  late FlutterTts _tts;
+  FlutterTts? _tts;
   final AudioPlayer _promptAudioPlayer = AudioPlayer();
 
   static const _speciesOptions = [
@@ -3249,8 +3257,13 @@ class _PetCardState extends State<_PetCard> {
     'Other',
   ];
 
-  Map<String, String>? get _pet =>
-      widget.wizardData.pets.isNotEmpty ? widget.wizardData.pets.first : null;
+  Map<String, String>? get _pet {
+    if (_selectedPetIndex < 0 ||
+        _selectedPetIndex >= widget.wizardData.pets.length) {
+      return null;
+    }
+    return widget.wizardData.pets[_selectedPetIndex];
+  }
 
   String? get _photo {
     final name = _pet?['name'] ?? 'My Pet';
@@ -3260,16 +3273,30 @@ class _PetCardState extends State<_PetCard> {
   @override
   void initState() {
     super.initState();
-    _nameCtrl = TextEditingController(text: _pet?['name'] ?? '');
-    _colorCtrl = TextEditingController(text: _pet?['color'] ?? '');
-    _species = _pet?['species'] ?? 'Dog';
+    if (widget.wizardData.pets.isNotEmpty) {
+      _selectedPetIndex = 0;
+    }
+    _nameCtrl = TextEditingController();
+    _colorCtrl = TextEditingController();
+    _loadFromSelectedPet();
     _initVoiceHelpers();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PetCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_selectedPetIndex >= widget.wizardData.pets.length) {
+      _selectedPetIndex = widget.wizardData.pets.isEmpty
+          ? -1
+          : widget.wizardData.pets.length - 1;
+      _loadFromSelectedPet();
+    }
   }
 
   @override
   void dispose() {
     _speech.stop();
-    _tts.stop();
+    _tts?.stop();
     _promptAudioPlayer.dispose();
     _nameCtrl.dispose();
     _colorCtrl.dispose();
@@ -3290,9 +3317,9 @@ class _PetCardState extends State<_PetCard> {
       },
     );
     _tts = FlutterTts();
-    await _tts.setLanguage('en-US');
-    await _tts.setPitch(1.0);
-    await _tts.setSpeechRate(0.5);
+    await _tts!.setLanguage('en-US');
+    await _tts!.setPitch(1.0);
+    await _tts!.setSpeechRate(0.5);
   }
 
   Future<void> _speakPrompt(String text) async {
@@ -3302,8 +3329,9 @@ class _PetCardState extends State<_PetCard> {
       await _promptAudioPlayer.play(BytesSource(mp3));
       return;
     }
-    await _tts.stop();
-    await _tts.speak(text);
+    if (_tts == null) return;
+    await _tts!.stop();
+    await _tts!.speak(text);
   }
 
   Future<void> _toggleVoiceInput({
@@ -3389,14 +3417,16 @@ class _PetCardState extends State<_PetCard> {
   }
 
   void _updatePet() {
-    final oldName = _pet?['name'] ?? 'My Pet';
-    final newName =
-        _nameCtrl.text.trim().isEmpty ? 'My Pet' : _nameCtrl.text.trim();
-    final photo = widget.wizardData.petPhotos[oldName];
-    if (widget.wizardData.pets.isEmpty) {
-      widget.wizardData.pets.add({});
+    if (_selectedPetIndex < 0 ||
+        _selectedPetIndex >= widget.wizardData.pets.length) {
+      return;
     }
-    widget.wizardData.pets[0] = {
+    final oldName = _pet?['name'] ?? 'My Pet';
+    final newName = _nameCtrl.text.trim().isEmpty
+        ? 'My Pet ${_selectedPetIndex + 1}'
+        : _nameCtrl.text.trim();
+    final photo = widget.wizardData.petPhotos[oldName];
+    widget.wizardData.pets[_selectedPetIndex] = {
       'name': newName,
       'species': _species,
       'color': _colorCtrl.text.trim(),
@@ -3416,15 +3446,57 @@ class _PetCardState extends State<_PetCard> {
     widget.onChanged();
   }
 
+  void _loadFromSelectedPet() {
+    final pet = _pet;
+    _nameCtrl.text = pet?['name'] ?? '';
+    _colorCtrl.text = pet?['color'] ?? '';
+    _species = pet?['species'] ?? 'Dog';
+  }
+
+  void _selectPet(int index, {bool edit = false}) {
+    if (index < 0 || index >= widget.wizardData.pets.length) return;
+    setState(() {
+      _selectedPetIndex = index;
+      _isEditing = edit;
+      _loadFromSelectedPet();
+    });
+  }
+
+  void _addAnotherPet() {
+    final nextIndex = widget.wizardData.pets.length;
+    final name = nextIndex == 0 ? 'My Pet' : 'My Pet ${nextIndex + 1}';
+    widget.wizardData.pets.add({
+      'name': name,
+      'species': 'Dog',
+      'color': '',
+      'personality': '',
+    });
+    if (!widget.wizardData.companionNames.contains(name)) {
+      widget.wizardData.companionNames.add(name);
+    }
+    widget.onChanged();
+    _selectPet(nextIndex, edit: true);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final hasPet = _pet != null;
+    final hasPet = widget.wizardData.pets.isNotEmpty;
     final photo = _photo;
 
     if (!hasPet) {
       // "Add Your Companion" prompt
       return GestureDetector(
-        onTap: widget.onPickPhoto,
+        onTap: () async {
+          await widget.onPickPhoto(petIndex: 0);
+          if (!mounted) return;
+          setState(() {
+            if (widget.wizardData.pets.isNotEmpty) {
+              _selectedPetIndex = 0;
+              _isEditing = true;
+              _loadFromSelectedPet();
+            }
+          });
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           decoration: BoxDecoration(
@@ -3478,7 +3550,95 @@ class _PetCardState extends State<_PetCard> {
       );
     }
 
-    // Companion card with photo + detail fields
+    if (_selectedPetIndex == -1) {
+      _selectedPetIndex = 0;
+      _loadFromSelectedPet();
+    }
+
+    if (!_isEditing) {
+      final petName = _pet?['name'] ?? 'My Pet';
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: const Color(0xFFFFD700).withAlpha(150), width: 1.5),
+          color: const Color(0xFF2C1B47),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (int i = 0; i < widget.wizardData.pets.length; i++)
+                  ChoiceChip(
+                    label: Text(
+                        widget.wizardData.pets[i]['name'] ?? 'Pet ${i + 1}'),
+                    selected: i == _selectedPetIndex,
+                    selectedColor: const Color(0xFFFFD700).withAlpha(40),
+                    labelStyle: TextStyle(
+                      color: i == _selectedPetIndex
+                          ? const Color(0xFFFFD700)
+                          : Colors.white70,
+                      fontSize: 12,
+                    ),
+                    onSelected: (_) => _selectPet(i),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: const Color(0xFF3A2363),
+                  backgroundImage: photo != null && photo.isNotEmpty
+                      ? MemoryImage(base64Decode(
+                          photo.replaceFirst(RegExp(r'data:[^,]+,'), '')))
+                      : null,
+                  child: photo == null || photo.isEmpty
+                      ? const Icon(Icons.pets, color: Colors.white70)
+                      : null,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '$petName is saved.',
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => setState(() => _isEditing = true),
+                  child: const Text('Edit'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _addAnotherPet,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add another pet'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      widget.onPickPhoto(petIndex: _selectedPetIndex),
+                  icon: const Icon(Icons.camera_alt),
+                  label: const Text('Change photo'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Companion editor card
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -3505,7 +3665,7 @@ class _PetCardState extends State<_PetCard> {
             children: [
               // Photo circle (tap to change)
               GestureDetector(
-                onTap: widget.onPickPhoto,
+                onTap: () => widget.onPickPhoto(petIndex: _selectedPetIndex),
                 child: Stack(
                   children: [
                     Container(
@@ -3593,6 +3753,18 @@ class _PetCardState extends State<_PetCard> {
                 color: const Color(0xFFFFD700).withAlpha(200),
                 fontSize: 11,
                 fontStyle: FontStyle.italic),
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.icon(
+              onPressed: () {
+                _updatePet();
+                setState(() => _isEditing = false);
+              },
+              icon: const Icon(Icons.check_rounded, size: 18),
+              label: const Text('Save Companion'),
+            ),
           ),
         ],
       ),
