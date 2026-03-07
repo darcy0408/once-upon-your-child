@@ -2,6 +2,55 @@
 
 ---
 
+## Session Update - 2026-03-07 (Wizard Stability + Mobile UX + Pet Pixar Flow)
+
+### Scope Completed
+- **Welcome age gate simplification** (commit `e5ae864`):
+  - Removed "Let's go" button.
+  - Age tap now auto-continues.
+  - Increased heading size and reduced/spaced age bubbles for better readability.
+- **Hero step cleanup** (commit `dc99969`):
+  - Removed step-1 Sprout "Pick one hero feeling" cards.
+  - Removed step-1 purple next-arrow dependency; Boy/Girl auto-advance retained.
+- **Sparkle SFX duration fix** (commit `47b6c67`):
+  - Added one-shot playback cap in `AudioAmbienceService.playSfx`.
+  - `sounds/magical_shimmer.mp3` now auto-stops quickly instead of playing long.
+- **Pet card copy + voice UX** (commit `9d71821`):
+  - Updated helper text to "Bring your companion on your magical adventure!"
+  - Added voice prompt playback and mic input controls for pet name/looks fields.
+- **Imagine It mic reliability fix** (commit `33003b4`):
+  - Re-init speech on demand, improved listen options, better listening-state cleanup.
+  - Spoken guidance + fallback message when microphone is unavailable.
+- **Pet save/collapse + multi-pet support** (commit `1d37587`):
+  - Added explicit "Save Companion" collapse flow.
+  - Added "Add another pet" with multi-pet chips and edit/select behavior.
+  - Companion showcase/grid now supports multiple pets.
+- **Story mode single-select fix** (commit `391a4c4`):
+  - Enforced exclusive selection among Story / Rhyme / First Reader / Choose Your Path.
+- **Auto Pixar pet transform integration** (commit `30ef95e`):
+  - After pet photo upload, app now calls `/avatar/generate-pet-avatar` automatically.
+  - Companion UI now prefers generated pet avatar over raw photo, with fallback.
+  - Pet avatar key sync maintained on pet rename.
+- **Pet transform loading feedback** (commit `e091d39`):
+  - Inline "Transforming..." status row + spinner.
+  - Success/fallback status messages + snackbars.
+- **Pet transform status overflow fix** (commit `1710f1d`):
+  - Status text row updated with `Expanded` to avoid narrow-width overflow.
+- **Story creation overflow root-cause fix** (current session):
+  - Found likely source in `ImageCrystalFormation` width math under narrow `Flexible` constraints.
+  - Added hard width cap so crystal content cannot exceed available row width.
+
+### Notes
+- Many Android `ApkAssets: Deleting...` log lines observed by user are framework noise, not app-failure root causes.
+- Primary actionable runtime signal remains Flutter exceptions (e.g., `RenderFlex overflowed ...`) and HTTP errors around story generation.
+
+### Status
+- **Wizard stability:** 🟢 significantly improved on web + Android
+- **Pet Pixar flow:** 🟢 integrated with user-visible progress and fallback behavior
+- **Known focus:** verify no further overflows on small Android screens during story-type selection and confirm full story generation path end-to-end
+
+---
+
 ## Session Update - 2026-03-06 (Magic Review Polish & Audio Mute)
 
 ### Scope Completed

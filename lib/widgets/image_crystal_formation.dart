@@ -74,7 +74,10 @@ class _ImageCrystalFormationState extends State<ImageCrystalFormation>
         final availableWidth = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : MediaQuery.of(context).size.width;
-        final crystalSize = (availableWidth * 0.72).clamp(78.0, 132.0);
+        final maxCrystalByWidth = (availableWidth - 26).clamp(56.0, 132.0);
+        final crystalSize = (availableWidth * 0.72)
+            .clamp(56.0, 132.0)
+            .clamp(56.0, maxCrystalByWidth);
 
         return MagicalFloat(
           distance: 6.0,
@@ -130,15 +133,16 @@ class _ImageCrystalFormationState extends State<ImageCrystalFormation>
                                 ? [
                                     BoxShadow(
                                       color: glowColor.withValues(alpha: 0.8),
-                                      blurRadius:
-                                          (crystalSize * 0.28).clamp(18.0, 40.0),
+                                      blurRadius: (crystalSize * 0.28)
+                                          .clamp(18.0, 40.0),
                                       spreadRadius:
                                           (crystalSize * 0.06).clamp(4.0, 10.0),
                                     ),
                                     BoxShadow(
-                                      color: Colors.white.withValues(alpha: 0.5),
-                                      blurRadius:
-                                          (crystalSize * 0.14).clamp(10.0, 20.0),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.5),
+                                      blurRadius: (crystalSize * 0.14)
+                                          .clamp(10.0, 20.0),
                                       spreadRadius:
                                           (crystalSize * 0.02).clamp(1.0, 4.0),
                                     ),
