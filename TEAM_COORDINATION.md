@@ -3692,3 +3692,34 @@ ls ~/.cache/ms-playwright/   # chromium-1208 present
 - Both MCP servers should now connect without timeout errors
 - Playwright can automate the Flutter web UI at `http://localhost:8080`
 - SQLite MCP can query `instance/app.db` (users, characters, stories, achievements)
+
+## Session Update - 2026-03-07 (Hero Flow + Avatar UX)
+
+### Scope Completed
+- Removed personality entry from hero setup flow.
+- Reordered hero setup to: gender pick -> archetype pick -> avatar look creation.
+- Added age hydration so custom avatar creator uses saved age-gate value.
+- Reworked avatar trait controls into kid-friendly visual pickers.
+
+### Changes
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+  - Removed personality UI from page 1 and deleted unused personality helper widgets.
+  - Updated page 2 sequence so archetype is selected first; avatar look selection is unlocked afterward.
+  - Auto-opens avatar creation options after archetype selection when no avatar exists.
+  - Auto-advances once both archetype and avatar exist.
+  - Added `_hydrateAgeFromSavedPreference()` using `SharedPreferences` key `user_age` to keep wizard age aligned with age gate.
+- `lib/custom_avatar_screen.dart`
+  - Replaced dropdown-style eye/favorite selectors with visual tap pickers.
+  - Added visual eye-color and hair-color swatch options.
+  - Renamed UI concept from "Favorite Color" to "Hair Color" for generation clarity.
+  - Sends `hair_color` in custom avatar request (and mirrors to `favorite_color` for backward compatibility).
+
+### Verification
+```bash
+flutter analyze lib/custom_avatar_screen.dart lib/screens/wizard_steps/hero_creator_step.dart
+```
+
+### Result
+- PASS: No analyzer issues in edited files.
+- Hero flow now matches requested progression and removes the personality textbox.
+- Avatar customization UI is more child-friendly and age now stays in sync with age gate.

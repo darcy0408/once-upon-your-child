@@ -6,6 +6,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
@@ -68,10 +69,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   GeneratedAvatar? _generatedAvatar;
   String? _customAvatarFilePath;
   bool _isPremium = false;
-  // ─── Progressive-Disclosure State ───────────────────────────────────────────
-  final List<String> _selectedPersonalityChips = [];
-  late TextEditingController _personalityDescCtrl;
-
   // ─── Animation ──────────────────────────────────────────────────────────────
   late AnimationController _sparkleCtrl;
 
@@ -120,6 +117,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     if (widget.wizardData.characterGender.isEmpty) {
       widget.wizardData.characterGender = 'Girl';
     }
+    _hydrateAgeFromSavedPreference();
     _nameController = TextEditingController(
       text: widget.wizardData.characterName,
     );
@@ -135,8 +133,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     _imagineItController = TextEditingController(
       text: widget.wizardData.customElements,
     );
-    _personalityDescCtrl = TextEditingController();
-
     // ── Animation controllers ──────────────────────────────────────────────────
     _sparkleCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1600));
@@ -165,6 +161,18 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     }
   }
 
+  Future<void> _hydrateAgeFromSavedPreference() async {
+    // Keep new character age in sync with age-gate selection (e.g. 4 stays 4).
+    if (widget.wizardData.characterId != null) return;
+    final prefs = await SharedPreferences.getInstance();
+    final savedAge = prefs.getInt('user_age');
+    if (savedAge == null || savedAge < 3 || savedAge > 99) return;
+    if (!mounted) return;
+    setState(() {
+      widget.wizardData.characterAge = savedAge;
+    });
+  }
+
   Future<void> _initTts() async {
     await _tts.setLanguage("en-US");
     await _tts.setPitch(1.0);
@@ -179,7 +187,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     _questController.dispose();
     _wishController.dispose();
     _imagineItController.dispose();
-    _personalityDescCtrl.dispose();
 
     _sparkleCtrl.dispose();
     _speech.stop();
@@ -391,7 +398,20 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         widget.wizardData.characterAge = 5;
       }
     });
-    _heroNextPage();
+
+    // Step flow on page 2:
+    // 1) Pick archetype first
+    // 2) Then pick/generate hero look
+    // 3) Auto-advance once both are selected
+    if (_heroPage != 2) return;
+    if (_hasAvatar) {
+      _heroNextPage();
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || _heroPage != 2 || _hasAvatar) return;
+      await _openAvatarCreationOptions();
+    });
   }
 
   Future<bool> _saveCharacterDraft() async {
@@ -605,29 +625,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               _buildNameScrollInput(),
               SizedBox(height: band.space(24)),
               _buildGenderPicker(),
-              if (ageBand != AgeBand.sprout) ...[
-                SizedBox(height: band.space(24)),
-                // Age is already set at the welcome gate — no age picker shown here.
-                _buildAgeBandPersonalityInput(band),
-              ],
             ],
           ),
         ),
       ],
     );
-  }
-
-  Widget _buildAgeBandPersonalityInput(AgeBandThemeData band) {
-    switch (band.band) {
-      case AgeBand.sprout:
-        return _buildSproutPersonalityButtons(band);
-      case AgeBand.explorer:
-        return _buildExplorerPersonalityCards(band);
-      case AgeBand.adventurer:
-        return _buildPersonalityChips();
-      case AgeBand.creator:
-        return _buildPersonalityTextField();
-    }
   }
 
   // Page 2: "Pick your hero style!" — archetype selection
@@ -648,7 +650,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     final band =
                         Theme.of(context).extension<AgeBandThemeData>() ??
                             explorerTheme;
-                    return Text('Pick your hero style!',
+                    return Text('Pick your hero style first!',
                         style: _bandTitleStyle(band, baseFontSize: 22));
                   },
                 ),
@@ -656,9 +658,22 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             ],
           ),
           const SizedBox(height: 12),
-          _buildAvatarLookCard(),
-          const SizedBox(height: 20),
           _buildArchetypeCards(),
+          const SizedBox(height: 20),
+          if (_selectedArchetypeId != null) ...[
+            _buildAvatarLookCard(),
+            const SizedBox(height: 12),
+            const Text(
+              'Now choose your hero look to continue.',
+              style: TextStyle(color: Colors.white70, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ] else
+            const Text(
+              'Pick one archetype to unlock character look creation.',
+              style: TextStyle(color: Colors.white70, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
           const SizedBox(height: 24),
         ],
       ),
@@ -2098,14 +2113,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   void _handleGenderSelection(String gender) {
     setState(() => widget.wizardData.characterGender = gender);
     _heroNextPage();
-
-    // Auto-open look picker right after moving to page 2, so kids don't miss it.
-    if (!_hasAvatar) {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!mounted || _heroPage != 2 || _hasAvatar) return;
-        await _openAvatarCreationOptions();
-      });
-    }
   }
 
   Widget _buildNameScrollInput() {
@@ -2392,271 +2399,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           );
         },
       ),
-    );
-  }
-
-  /// Adventurer band (9-12): 6 word chips, pick up to 3.
-  Widget _buildPersonalityChips() {
-    final band =
-        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    const options = ['Brave', 'Curious', 'Kind', 'Funny', 'Creative', 'Shy'];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Pick up to 3 words that describe you:',
-          style: GoogleFonts.fredoka(
-              color: Colors.white70, fontSize: band.body(15)),
-        ),
-        SizedBox(height: band.space(10)),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: options.map((word) {
-            final isSelected = _selectedPersonalityChips.contains(word);
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  if (isSelected) {
-                    _selectedPersonalityChips.remove(word);
-                  } else if (_selectedPersonalityChips.length < 3) {
-                    _selectedPersonalityChips.add(word);
-                  }
-                  widget.wizardData.strengths =
-                      List.from(_selectedPersonalityChips);
-                });
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: EdgeInsets.symmetric(
-                    horizontal: band.space(16), vertical: band.space(8)),
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF7C4DFF) : Colors.white10,
-                  borderRadius: BorderRadius.circular(band.radiusLg),
-                  border: Border.all(
-                    color:
-                        isSelected ? const Color(0xFFFFD700) : Colors.white24,
-                    width: 1.5,
-                  ),
-                ),
-                child: Text(
-                  word,
-                  style: GoogleFonts.fredoka(
-                    color:
-                        isSelected ? const Color(0xFFFFD700) : Colors.white70,
-                    fontSize: band.body(15),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  /// Creator band (13+): free-text personality description field.
-  Widget _buildPersonalityTextField() {
-    final band =
-        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Describe your character's personality:",
-          style: GoogleFonts.sourceSans3(
-              color: Colors.white60, fontSize: band.body(14)),
-        ),
-        SizedBox(height: band.space(8)),
-        TextField(
-          controller: _personalityDescCtrl,
-          maxLines: 3,
-          style: GoogleFonts.sourceSans3(
-              color: Colors.white70, fontSize: band.body(14)),
-          decoration: InputDecoration(
-            hintText: 'e.g. introverted but fiercely loyal, sarcastic wit…',
-            hintStyle: const TextStyle(color: Colors.white24),
-            filled: true,
-            fillColor: Colors.white.withAlpha(10),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(band.radiusMd),
-              borderSide: const BorderSide(color: Colors.white24),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(band.radiusMd),
-              borderSide: const BorderSide(color: Color(0xFF7C4DFF)),
-            ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: band.space(16),
-              vertical: band.space(12),
-            ),
-          ),
-          onChanged: (v) {
-            widget.wizardData.strengths = v.trim().isEmpty ? [] : [v.trim()];
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSproutPersonalityButtons(AgeBandThemeData band) {
-    final options = <(String emoji, String label)>[
-      ('🦁', 'Brave'),
-      ('🌈', 'Kind'),
-      ('🔍', 'Curious'),
-      ('🎨', 'Creative'),
-    ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Pick one hero feeling:',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.fredoka(
-            color: Colors.white70,
-            fontSize: band.body(16),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        SizedBox(height: band.space(12)),
-        Wrap(
-          spacing: band.space(12),
-          runSpacing: band.space(12),
-          alignment: WrapAlignment.center,
-          children: options.map((opt) {
-            final isSelected = _selectedPersonalityChips.isNotEmpty &&
-                _selectedPersonalityChips.first == opt.$2;
-            return SizedBox(
-              width: band.touchTarget(120),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(band.radiusLg),
-                onTap: () {
-                  setState(() {
-                    _selectedPersonalityChips
-                      ..clear()
-                      ..add(opt.$2);
-                    widget.wizardData.strengths = [opt.$2];
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: band.space(12),
-                    vertical: band.space(14),
-                  ),
-                  decoration: BoxDecoration(
-                    color:
-                        isSelected ? const Color(0xFF7C4DFF) : Colors.white10,
-                    borderRadius: BorderRadius.circular(band.radiusLg),
-                    border: Border.all(
-                      color:
-                          isSelected ? const Color(0xFFFFD700) : Colors.white24,
-                      width: isSelected ? 2.5 : 1.5,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(opt.$1,
-                          style: TextStyle(fontSize: band.heading(26))),
-                      SizedBox(height: band.space(6)),
-                      Text(
-                        opt.$2,
-                        style: GoogleFonts.fredoka(
-                          color: Colors.white,
-                          fontSize: band.body(14),
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildExplorerPersonalityCards(AgeBandThemeData band) {
-    final options = <(String emoji, String label)>[
-      ('🦸', 'Brave'),
-      ('🧠', 'Curious'),
-      ('💛', 'Kind'),
-      ('😄', 'Funny'),
-      ('🎨', 'Creative'),
-      ('🌙', 'Calm'),
-    ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Pick up to 2 hero traits:',
-          style: GoogleFonts.fredoka(
-            color: Colors.white70,
-            fontSize: band.body(15),
-          ),
-        ),
-        SizedBox(height: band.space(10)),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: options.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 0.95,
-          ),
-          itemBuilder: (context, index) {
-            final option = options[index];
-            final isSelected = _selectedPersonalityChips.contains(option.$2);
-            return InkWell(
-              borderRadius: BorderRadius.circular(band.radiusMd),
-              onTap: () {
-                setState(() {
-                  if (isSelected) {
-                    _selectedPersonalityChips.remove(option.$2);
-                  } else if (_selectedPersonalityChips.length < 2) {
-                    _selectedPersonalityChips.add(option.$2);
-                  }
-                  widget.wizardData.strengths =
-                      List.from(_selectedPersonalityChips);
-                });
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                constraints: BoxConstraints(minHeight: band.touchTarget(72)),
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF7C4DFF) : Colors.white10,
-                  borderRadius: BorderRadius.circular(band.radiusMd),
-                  border: Border.all(
-                    color:
-                        isSelected ? const Color(0xFFFFD700) : Colors.white24,
-                    width: isSelected ? 2 : 1.5,
-                  ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(option.$1,
-                        style: TextStyle(fontSize: band.heading(24))),
-                    SizedBox(height: band.space(4)),
-                    Text(
-                      option.$2,
-                      style: GoogleFonts.fredoka(
-                        color: Colors.white,
-                        fontSize: band.body(13),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ],
     );
   }
 

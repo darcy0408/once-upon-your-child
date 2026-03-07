@@ -31,24 +31,36 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
 
   String _gender = 'girl';
   String _eyeColor = 'Brown';
-  String _favoriteColor = 'Blue';
+  String _hairColor = 'Brown';
 
   Uint8List? _imageBytes; // In-memory bytes — works on web + native
   bool _isGenerating = false;
   String? _generatedImageBase64; // Pure base64, no data: prefix
 
   final List<String> _eyeColors = ['Brown', 'Blue', 'Green', 'Hazel', 'Grey'];
-  final List<String> _favoriteColors = [
+  final List<String> _hairColors = [
+    'Black',
+    'Brown',
+    'Blonde',
     'Red',
-    'Blue',
-    'Green',
-    'Yellow',
-    'Purple',
+    'Grey',
     'Pink',
-    'Orange',
-    'Teal',
-    'Gold'
   ];
+  static const Map<String, Color> _eyeColorSwatches = {
+    'Brown': Color(0xFF6D4C41),
+    'Blue': Color(0xFF4FC3F7),
+    'Green': Color(0xFF66BB6A),
+    'Hazel': Color(0xFF8D6E63),
+    'Grey': Color(0xFF90A4AE),
+  };
+  static const Map<String, Color> _hairColorSwatches = {
+    'Black': Color(0xFF1B1B1F),
+    'Brown': Color(0xFF6D4C41),
+    'Blonde': Color(0xFFFFE082),
+    'Red': Color(0xFFE57373),
+    'Grey': Color(0xFFB0BEC5),
+    'Pink': Color(0xFFF48FB1),
+  };
 
   @override
   void initState() {
@@ -129,7 +141,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
         request.fields['age'] = _ageController.text;
         request.fields['gender'] = _gender;
         request.fields['eye_color'] = _eyeColor;
-        request.fields['favorite_color'] = _favoriteColor;
+        request.fields['hair_color'] = _hairColor;
+        request.fields['favorite_color'] = _hairColor;
         debugPrint('📡 Sending custom avatar request to $url');
         final streamedResponse =
             await request.send().timeout(const Duration(minutes: 3));
@@ -212,6 +225,95 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: AppColors.gold, width: 2),
+      ),
+    );
+  }
+
+  Widget _buildVisualColorPicker({
+    required String title,
+    required IconData icon,
+    required List<String> options,
+    required Map<String, Color> swatches,
+    required String selected,
+    required ValueChanged<String> onSelected,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFF2C1B47),
+        border: Border.all(color: AppColors.gold.withAlpha(70)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: AppColors.gold, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: GoogleFonts.quicksand(
+                  color: AppColors.goldLight,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: options.map((option) {
+              final isSelected = option == selected;
+              final color = swatches[option] ?? Colors.white;
+              return InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () => onSelected(option),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    color: isSelected
+                        ? const Color(0xFFFFD54F).withAlpha(36)
+                        : Colors.white.withAlpha(12),
+                    border: Border.all(
+                      color: isSelected ? AppColors.gold : Colors.white24,
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: color,
+                          border: Border.all(color: Colors.white30),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        option,
+                        style: GoogleFonts.quicksand(
+                          color: Colors.white,
+                          fontWeight:
+                              isSelected ? FontWeight.w800 : FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }
@@ -461,87 +563,106 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                               border: Border.all(
                                   color: AppColors.gold.withAlpha(70)),
                             ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.wc_rounded,
-                                    color: AppColors.gold, size: 20),
-                                const SizedBox(width: 10),
-                                Text(
-                                  'Gender',
-                                  style: GoogleFonts.quicksand(
-                                    color: AppColors.goldLight,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w800,
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final isNarrow = constraints.maxWidth < 360;
+
+                                Widget genderPicker = SegmentedButton<String>(
+                                  style: SegmentedButton.styleFrom(
+                                    backgroundColor: Colors.white.withAlpha(18),
+                                    foregroundColor: Colors.white70,
+                                    selectedBackgroundColor: AppColors.gold,
+                                    selectedForegroundColor:
+                                        const Color(0xFF1A0D2E),
+                                    side: BorderSide(
+                                        color: AppColors.gold.withAlpha(120)),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: SegmentedButton<String>(
-                                    style: SegmentedButton.styleFrom(
-                                      backgroundColor:
-                                          Colors.white.withAlpha(18),
-                                      foregroundColor: Colors.white70,
-                                      selectedBackgroundColor: AppColors.gold,
-                                      selectedForegroundColor:
-                                          const Color(0xFF1A0D2E),
-                                      side: BorderSide(
-                                          color: AppColors.gold.withAlpha(120)),
+                                  segments: const [
+                                    ButtonSegment(
+                                      value: 'girl',
+                                      label: Text('Girl'),
+                                      icon: Icon(Icons.female),
                                     ),
-                                    segments: const [
-                                      ButtonSegment(
-                                        value: 'girl',
-                                        label: Text('Girl'),
-                                        icon: Icon(Icons.female),
+                                    ButtonSegment(
+                                      value: 'boy',
+                                      label: Text('Boy'),
+                                      icon: Icon(Icons.male),
+                                    ),
+                                  ],
+                                  selected: {_gender},
+                                  onSelectionChanged:
+                                      (Set<String> newSelection) {
+                                    setState(() {
+                                      _gender = newSelection.first;
+                                    });
+                                  },
+                                );
+
+                                if (isNarrow) {
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(Icons.wc_rounded,
+                                              color: AppColors.gold, size: 20),
+                                          const SizedBox(width: 10),
+                                          Text(
+                                            'Gender',
+                                            style: GoogleFonts.quicksand(
+                                              color: AppColors.goldLight,
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      ButtonSegment(
-                                        value: 'boy',
-                                        label: Text('Boy'),
-                                        icon: Icon(Icons.male),
-                                      ),
+                                      const SizedBox(height: 10),
+                                      genderPicker,
                                     ],
-                                    selected: {_gender},
-                                    onSelectionChanged:
-                                        (Set<String> newSelection) {
-                                      setState(() {
-                                        _gender = newSelection.first;
-                                      });
-                                    },
-                                  ),
-                                ),
-                              ],
+                                  );
+                                }
+
+                                return Row(
+                                  children: [
+                                    Icon(Icons.wc_rounded,
+                                        color: AppColors.gold, size: 20),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      'Gender',
+                                      style: GoogleFonts.quicksand(
+                                        color: AppColors.goldLight,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(child: genderPicker),
+                                  ],
+                                );
+                              },
                             ),
                           ),
                           const SizedBox(height: 12),
-                          DropdownButtonFormField<String>(
-                            initialValue: _eyeColor,
-                            decoration: _fieldDecoration(
-                                label: 'Eye Color',
-                                icon: Icons.visibility_rounded),
-                            dropdownColor: const Color(0xFF2C1B47),
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 16),
-                            items: _eyeColors
-                                .map((c) =>
-                                    DropdownMenuItem(value: c, child: Text(c)))
-                                .toList(),
-                            onChanged: (val) =>
-                                setState(() => _eyeColor = val!),
+                          _buildVisualColorPicker(
+                            title: 'Eye Color',
+                            icon: Icons.visibility_rounded,
+                            options: _eyeColors,
+                            swatches: _eyeColorSwatches,
+                            selected: _eyeColor,
+                            onSelected: (value) =>
+                                setState(() => _eyeColor = value),
                           ),
                           const SizedBox(height: 12),
-                          DropdownButtonFormField<String>(
-                            initialValue: _favoriteColor,
-                            decoration: _fieldDecoration(
-                                label: 'Favorite Color',
-                                icon: Icons.auto_awesome_rounded),
-                            dropdownColor: const Color(0xFF2C1B47),
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 16),
-                            items: _favoriteColors
-                                .map((c) =>
-                                    DropdownMenuItem(value: c, child: Text(c)))
-                                .toList(),
-                            onChanged: (val) =>
-                                setState(() => _favoriteColor = val!),
+                          _buildVisualColorPicker(
+                            title: 'Hair Color',
+                            icon: Icons.face_retouching_natural,
+                            options: _hairColors,
+                            swatches: _hairColorSwatches,
+                            selected: _hairColor,
+                            onSelected: (value) =>
+                                setState(() => _hairColor = value),
                           ),
                         ],
                       ),
