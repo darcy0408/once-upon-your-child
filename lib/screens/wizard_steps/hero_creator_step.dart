@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -18,6 +19,7 @@ import '../../services/api_service_manager.dart';
 import '../../services/avatar_generation_state.dart';
 import '../../services/firebase_analytics_service.dart';
 import '../../services/audio_ambience_service.dart';
+import '../../services/tts_api_service.dart';
 import '../../widgets/avatar_gallery_selector.dart';
 import '../../widgets/image_mode_orb.dart';
 import '../../widgets/image_crystal_formation.dart';
@@ -3186,6 +3188,11 @@ class _PetCardState extends State<_PetCard> {
   late TextEditingController _nameCtrl;
   late TextEditingController _colorCtrl;
   String _species = 'Dog';
+  final SpeechToText _speech = SpeechToText();
+  bool _speechReady = false;
+  String _listeningField = '';
+  late FlutterTts _tts;
+  final AudioPlayer _promptAudioPlayer = AudioPlayer();
 
   static const _speciesOptions = [
     'Human',
@@ -3216,13 +3223,129 @@ class _PetCardState extends State<_PetCard> {
     _nameCtrl = TextEditingController(text: _pet?['name'] ?? '');
     _colorCtrl = TextEditingController(text: _pet?['color'] ?? '');
     _species = _pet?['species'] ?? 'Dog';
+    _initVoiceHelpers();
   }
 
   @override
   void dispose() {
+    _speech.stop();
+    _tts.stop();
+    _promptAudioPlayer.dispose();
     _nameCtrl.dispose();
     _colorCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _initVoiceHelpers() async {
+    _speechReady = await _speech.initialize(
+      onStatus: (status) {
+        if (!mounted) return;
+        if (status == 'done' || status == 'notListening') {
+          setState(() => _listeningField = '');
+        }
+      },
+      onError: (_) {
+        if (!mounted) return;
+        setState(() => _listeningField = '');
+      },
+    );
+    _tts = FlutterTts();
+    await _tts.setLanguage('en-US');
+    await _tts.setPitch(1.0);
+    await _tts.setSpeechRate(0.5);
+  }
+
+  Future<void> _speakPrompt(String text) async {
+    final mp3 = await TtsApiService.synthesize(text);
+    if (mp3 != null && mp3.isNotEmpty) {
+      await _promptAudioPlayer.stop();
+      await _promptAudioPlayer.play(BytesSource(mp3));
+      return;
+    }
+    await _tts.stop();
+    await _tts.speak(text);
+  }
+
+  Future<void> _toggleVoiceInput({
+    required String fieldKey,
+    required TextEditingController controller,
+    required String prompt,
+  }) async {
+    if (!_speechReady) {
+      await _speakPrompt('Microphone is unavailable right now.');
+      return;
+    }
+    if (_listeningField == fieldKey) {
+      await _speech.stop();
+      if (mounted) setState(() => _listeningField = '');
+      return;
+    }
+
+    await _speakPrompt(prompt);
+    if (mounted) setState(() => _listeningField = fieldKey);
+
+    await _speech.listen(
+      listenFor: const Duration(seconds: 12),
+      pauseFor: const Duration(seconds: 2),
+      onResult: (result) {
+        final words = result.recognizedWords.trim();
+        if (words.isEmpty) return;
+        if (mounted) {
+          setState(() {
+            controller.text = words;
+          });
+          _updatePet();
+        }
+        if (result.finalResult) {
+          _speech.stop();
+          if (mounted) setState(() => _listeningField = '');
+        }
+      },
+    );
+  }
+
+  Widget _buildVoiceField({
+    required TextEditingController controller,
+    required String hint,
+    required String fieldKey,
+    required String speakPrompt,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: controller,
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+            decoration: _petFieldDecoration(hint),
+            onChanged: (_) => _updatePet(),
+          ),
+        ),
+        const SizedBox(width: 6),
+        IconButton(
+          tooltip: 'Read prompt aloud',
+          icon: const Icon(Icons.volume_up_rounded,
+              color: Color(0xFFFFD700), size: 20),
+          onPressed: () => _speakPrompt(speakPrompt),
+        ),
+        IconButton(
+          tooltip: _speechReady ? 'Tap and speak' : 'Mic unavailable',
+          icon: Icon(
+            _listeningField == fieldKey ? Icons.mic : Icons.mic_none,
+            color: _speechReady
+                ? (_listeningField == fieldKey
+                    ? const Color(0xFFFFD700)
+                    : Colors.white70)
+                : Colors.white38,
+            size: 20,
+          ),
+          onPressed: () => _toggleVoiceInput(
+            fieldKey: fieldKey,
+            controller: controller,
+            prompt: speakPrompt,
+          ),
+        ),
+      ],
+    );
   }
 
   void _updatePet() {
@@ -3386,21 +3509,20 @@ class _PetCardState extends State<_PetCard> {
                 child: Column(
                   children: [
                     // Name field
-                    TextField(
+                    _buildVoiceField(
                       controller: _nameCtrl,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
-                      decoration:
-                          _petFieldDecoration('Companion name (e.g. Alex)'),
-                      onChanged: (_) => _updatePet(),
+                      hint: 'Companion name (e.g. Alex)',
+                      fieldKey: 'pet_name',
+                      speakPrompt:
+                          'Say your companion name. For example, Whiskers.',
                     ),
                     const SizedBox(height: 8),
                     // Looks field (stored in legacy `color` key for compatibility)
-                    TextField(
+                    _buildVoiceField(
                       controller: _colorCtrl,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
-                      decoration: _petFieldDecoration(
-                          'Looks (e.g. blond hair, glasses, golden fur)'),
-                      onChanged: (_) => _updatePet(),
+                      hint: 'Looks (e.g. blond hair, glasses, golden fur)',
+                      fieldKey: 'pet_looks',
+                      speakPrompt: 'Describe what your companion looks like.',
                     ),
                   ],
                 ),
@@ -3426,7 +3548,7 @@ class _PetCardState extends State<_PetCard> {
           ),
           const SizedBox(height: 6),
           Text(
-            '✨ The AI will always use the right name, looks, and companion type!',
+            '✨ Bring your companion on your magical adventure!',
             style: TextStyle(
                 color: const Color(0xFFFFD700).withAlpha(200),
                 fontSize: 11,
