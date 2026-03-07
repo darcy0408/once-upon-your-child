@@ -169,3 +169,6 @@ tests/test_backend_*.py
 # Generated quality check output
 quality_check_results/
 CONTENT_QUALITY_REPORT_*.md
+
+# Golden test failure artifacts
+test/goldens/failures/
