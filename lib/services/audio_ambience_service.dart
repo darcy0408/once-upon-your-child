@@ -1,10 +1,13 @@
+import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Service to handle theme-based background ambience audio.
 class AudioAmbienceService {
-  static final AudioAmbienceService _instance = AudioAmbienceService._internal();
+  static final AudioAmbienceService _instance =
+      AudioAmbienceService._internal();
   factory AudioAmbienceService() => _instance;
   AudioAmbienceService._internal();
 
@@ -46,15 +49,44 @@ class AudioAmbienceService {
     'Ocean': 'sounds/ocean_waves.mp3',
   };
 
+  /// Optional max playback duration for one-shot SFX assets.
+  static const Map<String, Duration> _sfxPlaybackLimits = {
+    'sounds/magical_shimmer.mp3': Duration(milliseconds: 900),
+  };
+
   /// Plays a one-shot sound effect (respects mute).
   Future<void> playSfx(String sfxPath) async {
     if (_isMuted) return;
 
     try {
       final sfxPlayer = AudioPlayer();
+      await sfxPlayer.setReleaseMode(ReleaseMode.release);
       await sfxPlayer.play(AssetSource(sfxPath));
-      // Cleanup player after completion
-      sfxPlayer.onPlayerComplete.listen((_) => sfxPlayer.dispose());
+
+      var disposed = false;
+      Future<void> safeDispose({bool stopFirst = false}) async {
+        if (disposed) return;
+        disposed = true;
+        if (stopFirst) {
+          try {
+            await sfxPlayer.stop();
+          } catch (_) {}
+        }
+        try {
+          await sfxPlayer.dispose();
+        } catch (_) {}
+      }
+
+      // Cleanup player after completion.
+      sfxPlayer.onPlayerComplete.listen((_) => unawaited(safeDispose()));
+
+      // For long sparkle-pad files, force a short one-shot playback.
+      final maxDuration = _sfxPlaybackLimits[sfxPath];
+      if (maxDuration != null) {
+        unawaited(Future<void>.delayed(maxDuration, () async {
+          await safeDispose(stopFirst: true);
+        }));
+      }
     } catch (_) {
       // Non-critical effect; fail silently.
     }
@@ -64,14 +96,15 @@ class AudioAmbienceService {
   Future<void> startAmbience(String theme) async {
     // Normalize theme name
     final normalizedTheme = _normalizeTheme(theme);
-    
+
     if (_currentTheme == normalizedTheme && _isPlaying) return;
 
     String? assetPath = _themeAudioMap[normalizedTheme];
-    
+
     // Fallback to "Magic" if no specific theme match is found
     if (assetPath == null) {
-      debugPrint('No specific ambience for theme: $theme. Falling back to Magic.');
+      debugPrint(
+          'No specific ambience for theme: $theme. Falling back to Magic.');
       assetPath = _themeAudioMap['Magic'];
     }
 
@@ -86,7 +119,8 @@ class AudioAmbienceService {
       _autoplayBlocked = false;
 
       await _player.stop();
-      await _player.setReleaseMode(ReleaseMode.release); // Play once, not looped
+      await _player
+          .setReleaseMode(ReleaseMode.release); // Play once, not looped
       await _player.setVolume(_isMuted ? 0 : _volume);
       await _player.play(AssetSource(assetPath));
       _currentTheme = normalizedTheme;
@@ -158,10 +192,21 @@ class AudioAmbienceService {
   String _normalizeTheme(String theme) {
     final lower = theme.toLowerCase();
     if (lower.contains('adventure')) return 'Adventure';
-    if (lower.contains('space') || lower.contains('sky') || lower.contains('stars')) return 'Space';
-    if (lower.contains('forest') || lower.contains('jungle') || lower.contains('meadow') || lower.contains('field')) return 'Forest';
-    if (lower.contains('magic') || lower.contains('crystal') || lower.contains('firefly') || lower.contains('glow')) return 'Magic';
-    if (lower.contains('ocean') || lower.contains('water') || lower.contains('waves') || lower.contains('falls')) return 'Ocean';
+    if (lower.contains('space') ||
+        lower.contains('sky') ||
+        lower.contains('stars')) return 'Space';
+    if (lower.contains('forest') ||
+        lower.contains('jungle') ||
+        lower.contains('meadow') ||
+        lower.contains('field')) return 'Forest';
+    if (lower.contains('magic') ||
+        lower.contains('crystal') ||
+        lower.contains('firefly') ||
+        lower.contains('glow')) return 'Magic';
+    if (lower.contains('ocean') ||
+        lower.contains('water') ||
+        lower.contains('waves') ||
+        lower.contains('falls')) return 'Ocean';
     if (lower.contains('storm')) return 'Adventure'; // Wind fits storm
     return theme;
   }
