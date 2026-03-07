@@ -195,23 +195,23 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
     return InputDecoration(
       labelText: label,
       labelStyle: GoogleFonts.quicksand(
-        color: const Color(0xFF3A2A57),
+        color: AppColors.goldLight,
         fontWeight: FontWeight.w700,
       ),
-      prefixIcon: Icon(icon, color: const Color(0xFF5B3D8A)),
+      prefixIcon: Icon(icon, color: AppColors.gold),
       filled: true,
-      fillColor: Colors.white.withAlpha(235),
+      fillColor: const Color(0xFF2C1B47),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: AppColors.primary.withAlpha(70)),
+        borderSide: BorderSide(color: AppColors.gold.withAlpha(70)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: AppColors.primary.withAlpha(70)),
+        borderSide: BorderSide(color: AppColors.gold.withAlpha(70)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        borderSide: const BorderSide(color: AppColors.gold, width: 2),
       ),
     );
   }
@@ -424,6 +424,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                         children: [
                           TextFormField(
                             controller: _nameController,
+                            style: const TextStyle(color: Colors.white),
                             decoration: _fieldDecoration(
                                 label: 'Hero Name', icon: Icons.person_rounded),
                             validator: (value) =>
@@ -434,6 +435,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _ageController,
+                            style: const TextStyle(color: Colors.white),
                             decoration: _fieldDecoration(
                                 label: 'Age (3-99)', icon: Icons.cake_rounded),
                             keyboardType: TextInputType.number,
@@ -452,17 +454,22 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                           const SizedBox(height: 12),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
+                                horizontal: 12, vertical: 10),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(16),
-                              color: Colors.white.withAlpha(230),
+                              color: const Color(0xFF2C1B47),
+                              border: Border.all(
+                                  color: AppColors.gold.withAlpha(70)),
                             ),
                             child: Row(
                               children: [
+                                Icon(Icons.wc_rounded,
+                                    color: AppColors.gold, size: 20),
+                                const SizedBox(width: 10),
                                 Text(
                                   'Gender',
                                   style: GoogleFonts.quicksand(
-                                    color: const Color(0xFF3A2A57),
+                                    color: AppColors.goldLight,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w800,
                                   ),
@@ -470,6 +477,16 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: SegmentedButton<String>(
+                                    style: SegmentedButton.styleFrom(
+                                      backgroundColor:
+                                          Colors.white.withAlpha(18),
+                                      foregroundColor: Colors.white70,
+                                      selectedBackgroundColor: AppColors.gold,
+                                      selectedForegroundColor:
+                                          const Color(0xFF1A0D2E),
+                                      side: BorderSide(
+                                          color: AppColors.gold.withAlpha(120)),
+                                    ),
                                     segments: const [
                                       ButtonSegment(
                                         value: 'girl',
@@ -500,6 +517,9 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                             decoration: _fieldDecoration(
                                 label: 'Eye Color',
                                 icon: Icons.visibility_rounded),
+                            dropdownColor: const Color(0xFF2C1B47),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 16),
                             items: _eyeColors
                                 .map((c) =>
                                     DropdownMenuItem(value: c, child: Text(c)))
@@ -513,6 +533,9 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                             decoration: _fieldDecoration(
                                 label: 'Favorite Color',
                                 icon: Icons.auto_awesome_rounded),
+                            dropdownColor: const Color(0xFF2C1B47),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 16),
                             items: _favoriteColors
                                 .map((c) =>
                                     DropdownMenuItem(value: c, child: Text(c)))
