@@ -3723,3 +3723,28 @@ flutter analyze lib/custom_avatar_screen.dart lib/screens/wizard_steps/hero_crea
 - PASS: No analyzer issues in edited files.
 - Hero flow now matches requested progression and removes the personality textbox.
 - Avatar customization UI is more child-friendly and age now stays in sync with age gate.
+
+## Session Update - 2026-03-07 (Custom Avatar Prompt Age/Scene Tuning)
+
+### Scope Completed
+- Tuned custom-avatar prompt generation to better respect entered age.
+- Added brighter, more playful scene + lighting defaults for younger ages.
+- Kept safety-sensitive wording focused on "character" (no "child" prompt wording).
+
+### Changes
+- `backend/services/avatar_generation_service.py`
+  - Added age-bracket prompt controls:
+    - `age <= 5`: brighter whimsical daytime scene, high-key lighting, younger proportions
+    - `age 6-8`: playful vibrant scene with youthful proportions
+    - `age >= 9`: richer cinematic scene with more mature stylized proportions
+  - Injected explicit age-proportion guidance into the custom avatar prompt.
+  - Retained favorite-color wardrobe/cape guidance.
+
+### Verification
+```bash
+python -m pytest backend/tests/unit/test_avatar_generation_service.py -q
+```
+
+### Result
+- PASS: `6 passed`.
+- Prompt now biases 4-year-old avatars toward lighter, fun backgrounds while preserving favorite-color costume direction.

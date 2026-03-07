@@ -128,6 +128,40 @@ class AvatarGenerationService:
 
         # 'character/storybook hero' wording avoids Gemini safety classifier triggers
         # (words like 'child/children/person' + photo = policy rejection)
+        if age <= 5:
+            age_profile = (
+                "Age Styling: Character should read as approximately {age} years old "
+                "with a larger head-to-body ratio, round cheeks, softer jawline, "
+                "shorter neck, and playful proportions."
+            )
+            environment_style = (
+                "Bright whimsical day scene with soft sky glow, pastel highlights, "
+                "sparkly flowers, floating bubbles, and cheerful magical particles."
+            )
+            lighting_style = (
+                "High-key lighting, bright midtones, gentle bloom, uplifting palette."
+            )
+        elif age <= 8:
+            age_profile = (
+                "Age Styling: Character should read as approximately {age} years old "
+                "with youthful proportions, expressive eyes, and rounded features."
+            )
+            environment_style = (
+                "Playful storybook setting with warm light rays, colorful foliage, "
+                "and soft magical sparkles."
+            )
+            lighting_style = "Soft cinematic lighting with vibrant color contrast."
+        else:
+            age_profile = (
+                "Age Styling: Character should read as approximately {age} years old "
+                "with proportionally mature but still stylized animated features."
+            )
+            environment_style = (
+                "Magical storybook environment with layered depth, subtle glow effects, "
+                "and elegant cinematic atmosphere."
+            )
+            lighting_style = "Cinematic lighting with balanced contrast and rich texture detail."
+
         prompt_template = """
 **Magical Storybook Character Creator v3 (Dynamic Celestial Edition)**
 
@@ -137,11 +171,13 @@ Maintain the character's facial features while converting them into a vibrant no
 **Core Capabilities**
 * Character Stylist: translating reference features into stylized 3D animated character designs.
 * Feature Preservation: maintains eye shape, smile lines, hair texture in illustrated animation style.
+* {age_profile}
 
 **Technical Configuration**
 * Style: Non-photorealistic illustrated 3D animation. NOT a photograph. NOT realistic.
 * Use the reference image for head shape, skin tone, and facial structure only.
-* Style: Professional 3D animated film aesthetic; vibrant textures, soft subsurface scattering, cinematic lighting.
+* Style: Professional 3D animated film aesthetic; vibrant textures, soft subsurface scattering.
+* Lighting Direction: {lighting_style}
 
 **Character Design**
 1. Likeness Synthesis: Use reference image for structural likeness. Eye Color: {eye_color} for iris tint.
@@ -149,7 +185,7 @@ Maintain the character's facial features while converting them into a vibrant no
    Silhouette: {gender_tailoring}
    Celestial Cape: semi-translucent cape glowing with nebula light in Favorite Color: {favorite_color},
    with tiny floating gold star particles. Gold constellation embroidery on collar and cuffs.
-3. Environment: Painterly Storybook Forest with bokeh glowing mushrooms and floating fireflies.
+3. Environment: {environment_style}
 4. Final Render: Chest-up portrait, center-aligned, 1024x1024 square.
 
 **Output**: Pixar-inspired 3D animation, soft lighting, fully illustrated, NOT photographic.
@@ -162,9 +198,13 @@ Maintain the character's facial features while converting them into a vibrant no
         )
 
         prompt = prompt_template.format(
+            age=age,
+            age_profile=age_profile.format(age=age),
             eye_color=eye_color,
             favorite_color=favorite_color,
-            gender_tailoring=gender_tailoring
+            gender_tailoring=gender_tailoring,
+            environment_style=environment_style,
+            lighting_style=lighting_style,
         )
 
         logger.info(f"Generating custom avatar for {character_name}, age {age}, eye_color {eye_color}, fav_color {favorite_color}")
