@@ -1311,6 +1311,22 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final isCreator = band.band == AgeBand.creator;
+    String selectedMode = 'tales';
+    if (data.interactiveMode) {
+      selectedMode = 'pickpath';
+    } else if (data.learningToReadMode) {
+      selectedMode = 'reading';
+    } else if (data.rhymeTimeMode) {
+      selectedMode = 'rhyme';
+    }
+
+    void setStoryMode(String mode) {
+      data.includeIllustrations = mode == 'tales';
+      data.rhymeTimeMode = mode == 'rhyme';
+      data.learningToReadMode = mode == 'reading';
+      data.interactiveMode = mode == 'pickpath';
+    }
+
     final storyTitle = band.band == AgeBand.sprout
         ? 'What story do you want?'
         : band.band == AgeBand.adventurer
@@ -1354,9 +1370,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   ImageModeOrb(
                     modeType: 'tales',
                     label: isCreator ? 'Story' : 'Story Quest',
-                    isActive: data.includeIllustrations,
-                    onTap: () => setState(() =>
-                        data.includeIllustrations = !data.includeIllustrations),
+                    isActive: selectedMode == 'tales',
+                    onTap: () => setState(() => setStoryMode('tales')),
                     primaryColor: const Color(0xFFAA88FF),
                     secondaryColor: const Color(0xFFE28EFF),
                   ),
@@ -1364,14 +1379,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   ImageModeOrb(
                     modeType: 'rhyme',
                     label: isCreator ? 'Poetry' : 'Rhyme Time',
-                    isActive: data.rhymeTimeMode,
-                    onTap: () => setState(() {
-                      data.rhymeTimeMode = !data.rhymeTimeMode;
-                      if (data.rhymeTimeMode) {
-                        data.learningToReadMode = false;
-                        data.interactiveMode = false;
-                      }
-                    }),
+                    isActive: selectedMode == 'rhyme',
+                    onTap: () => setState(() => setStoryMode('rhyme')),
                     primaryColor: const Color(0xFF00D4DD),
                     secondaryColor: const Color(0xFF7FDDFF),
                   ),
@@ -1384,14 +1393,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   ImageModeOrb(
                     modeType: 'reading',
                     label: isCreator ? 'First Chapter' : 'First Reader',
-                    isActive: data.learningToReadMode,
-                    onTap: () => setState(() {
-                      data.learningToReadMode = !data.learningToReadMode;
-                      if (data.learningToReadMode) {
-                        data.rhymeTimeMode = false;
-                        data.interactiveMode = false;
-                      }
-                    }),
+                    isActive: selectedMode == 'reading',
+                    onTap: () => setState(() => setStoryMode('reading')),
                     primaryColor: const Color(0xFFB88AFF),
                     secondaryColor: const Color(0xFFFF9ECC),
                   ),
@@ -1399,14 +1402,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   ImageModeOrb(
                     modeType: 'pickpath',
                     label: isCreator ? 'Choose Your Path' : 'Pick a Path',
-                    isActive: data.interactiveMode,
-                    onTap: () => setState(() {
-                      data.interactiveMode = !data.interactiveMode;
-                      if (data.interactiveMode) {
-                        data.rhymeTimeMode = false;
-                        data.learningToReadMode = false;
-                      }
-                    }),
+                    isActive: selectedMode == 'pickpath',
+                    onTap: () => setState(() => setStoryMode('pickpath')),
                     primaryColor: const Color(0xFF9E6CFF),
                     secondaryColor: const Color(0xFFFFB3E6),
                   ),
