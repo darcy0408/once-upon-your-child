@@ -39,7 +39,15 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
 
   final List<String> _eyeColors = ['Brown', 'Blue', 'Green', 'Hazel', 'Grey'];
   final List<String> _favoriteColors = [
-    'Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Pink', 'Orange', 'Teal', 'Gold'
+    'Red',
+    'Blue',
+    'Green',
+    'Yellow',
+    'Purple',
+    'Pink',
+    'Orange',
+    'Teal',
+    'Gold'
   ];
 
   @override
@@ -65,7 +73,9 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
     if (picked != null) {
       final bytes = await picked.readAsBytes();
       if (mounted) {
-        setState(() { _imageBytes = bytes; });
+        setState(() {
+          _imageBytes = bytes;
+        });
       }
     }
   }
@@ -76,7 +86,9 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
     if (picked != null) {
       final bytes = await picked.readAsBytes();
       if (mounted) {
-        setState(() { _imageBytes = bytes; });
+        setState(() {
+          _imageBytes = bytes;
+        });
       }
     }
   }
@@ -84,41 +96,53 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
   Future<void> _generateAvatar() async {
     if (!_formKey.currentState!.validate() || _imageBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please complete all fields and add a photo.')),
+        const SnackBar(
+            content: Text('Please complete all fields and add a photo.')),
       );
       return;
     }
 
-    setState(() { _isGenerating = true; });
+    setState(() {
+      _isGenerating = true;
+    });
 
     try {
       final baseUrl = Environment.backendUrl;
       final url = Uri.parse('$baseUrl/avatar/generate-custom-avatar');
 
-      final request = http.MultipartRequest('POST', url);
-      final authHeaders = await ApiServiceManager.authHeaders();
-      // Only add Authorization header — Content-Type is set automatically for multipart
-      if (authHeaders.containsKey('Authorization')) {
-        request.headers['Authorization'] = authHeaders['Authorization']!;
+      Future<http.Response> sendRequest() async {
+        final request = http.MultipartRequest('POST', url);
+        final authHeaders = await ApiServiceManager.authHeaders();
+        // Only add Authorization header — Content-Type is set automatically for multipart
+        if (authHeaders.containsKey('Authorization')) {
+          request.headers['Authorization'] = authHeaders['Authorization']!;
+        }
+        // fromBytes works on all platforms including web (no dart:io needed)
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'photo',
+            _imageBytes!,
+            filename: 'photo.jpg',
+          ),
+        );
+        request.fields['character_name'] = _nameController.text;
+        request.fields['age'] = _ageController.text;
+        request.fields['gender'] = _gender;
+        request.fields['eye_color'] = _eyeColor;
+        request.fields['favorite_color'] = _favoriteColor;
+        debugPrint('📡 Sending custom avatar request to $url');
+        final streamedResponse =
+            await request.send().timeout(const Duration(minutes: 3));
+        return http.Response.fromStream(streamedResponse);
       }
-      // fromBytes works on all platforms including web (no dart:io needed)
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'photo',
-          _imageBytes!,
-          filename: 'photo.jpg',
-        ),
-      );
-      request.fields['character_name'] = _nameController.text;
-      request.fields['age'] = _ageController.text;
-      request.fields['gender'] = _gender;
-      request.fields['eye_color'] = _eyeColor;
-      request.fields['favorite_color'] = _favoriteColor;
 
-      debugPrint('📡 Sending custom avatar request to $url');
-      final streamedResponse =
-          await request.send().timeout(const Duration(minutes: 3));
-      final response = await http.Response.fromStream(streamedResponse);
+      http.Response response = await sendRequest();
+      if (response.statusCode == 401) {
+        debugPrint(
+            '⚠️ Custom avatar request returned 401; refreshing auth and retrying once');
+        await ApiServiceManager.resetAndReauthenticate();
+        response = await sendRequest();
+      }
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -154,7 +178,9 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
     } catch (e) {
       debugPrint('❌ Error generating custom avatar: $e');
       if (mounted) {
-        setState(() { _isGenerating = false; });
+        setState(() {
+          _isGenerating = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
         );
@@ -207,7 +233,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
         foregroundColor: Colors.white,
       ),
       body: Container(
-        decoration: const BoxDecoration(gradient: AppGradients.magicalBackground),
+        decoration:
+            const BoxDecoration(gradient: AppGradients.magicalBackground),
         child: Stack(
           children: [
             Positioned(
@@ -302,7 +329,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                                       height: 200,
                                     )
                                   : Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         const Icon(
                                           Icons.add_photo_alternate_rounded,
@@ -333,7 +361,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF5F4BDB),
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 13),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 13),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
                                     ),
@@ -343,13 +372,15 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: ElevatedButton.icon(
-                                  onPressed: _isGenerating ? null : _pickFromGallery,
+                                  onPressed:
+                                      _isGenerating ? null : _pickFromGallery,
                                   icon: const Icon(Icons.photo_library_rounded),
                                   label: const Text('Upload'),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF7A3FC8),
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 13),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 13),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
                                     ),

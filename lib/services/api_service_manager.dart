@@ -79,6 +79,14 @@ class ApiServiceManager {
     };
   }
 
+  /// Clears any cached auth tokens and immediately re-authenticates.
+  /// Useful for one-off retry flows (e.g., multipart uploads) that receive 401.
+  static Future<void> resetAndReauthenticate() async {
+    final mgr = ApiServiceManager();
+    await mgr._clearAuthState();
+    await mgr._ensureAuthenticated();
+  }
+
   /// Ensure we have a valid auth token (get anonymous token if needed)
   Future<void> _ensureAuthenticated() async {
     if (_authInFlight != null) {
@@ -1900,8 +1908,7 @@ Do NOT wrap JSON in backticks.
           return 'data:image/png;base64,$b64';
         }
       }
-      debugPrint(
-          'tweakGalleryAvatar failed: ${streamed.statusCode} $body');
+      debugPrint('tweakGalleryAvatar failed: ${streamed.statusCode} $body');
       return null;
     } catch (e) {
       debugPrint('tweakGalleryAvatar error: $e');

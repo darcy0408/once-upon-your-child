@@ -311,43 +311,33 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
 
   Widget _buildAgeStep() {
     final ready = _selectedAge != null;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final compactLayout = screenHeight < 820;
     return Column(
       key: const ValueKey('age'),
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          Icons.auto_awesome,
-          color: _goldColor,
-          size: compactLayout ? 40 : 48,
-        ),
-        SizedBox(height: compactLayout ? 4 : AppSpacing.sm),
+        const Icon(Icons.auto_awesome, color: _goldColor, size: 36),
+        const SizedBox(height: 4),
         Text(
           'How old are you?',
           textAlign: TextAlign.center,
           style: GoogleFonts.fredoka(
             color: _goldColor,
-            fontSize: compactLayout ? 24 : 28,
+            fontSize: 23,
             fontWeight: FontWeight.w600,
           ),
         ),
-        SizedBox(height: compactLayout ? 2 : AppSpacing.xs),
-        Text(
+        const SizedBox(height: 2),
+        const Text(
           'Parents: please select your child\'s age',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.white70,
-            fontSize: compactLayout ? 13 : 14,
-          ),
+          style: TextStyle(color: Colors.white70, fontSize: 12),
         ),
-        SizedBox(height: compactLayout ? 8 : AppSpacing.md),
+        const SizedBox(height: 8),
         LayoutBuilder(
           builder: (context, constraints) {
-            final spacing = compactLayout ? 6.0 : 8.0;
-            final circleSize = ((constraints.maxWidth - (spacing * 2)) / 3)
-                .clamp(
-                    compactLayout ? 46.0 : 50.0, compactLayout ? 52.0 : 58.0);
+            const spacing = 5.0;
+            final circleSize =
+                ((constraints.maxWidth - (spacing * 2)) / 3).clamp(41.0, 48.0);
             return GridView.count(
               crossAxisCount: 3,
               shrinkWrap: true,
@@ -365,7 +355,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
             );
           },
         ),
-        SizedBox(height: compactLayout ? AppSpacing.md : AppSpacing.xl),
+        const SizedBox(height: AppSpacing.md),
 
         // ── Let's Go button with bounce + brighten ─────────────────────────
         AnimatedBuilder(
@@ -379,7 +369,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               width: double.infinity,
-              height: compactLayout ? 52 : 56,
+              height: 50,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(32),
                 gradient: LinearGradient(
@@ -409,7 +399,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                         "Let's go! \u2728",
                         style: GoogleFonts.fredoka(
                           color: ready ? Colors.white : Colors.white38,
-                          fontSize: compactLayout ? 18 : 20,
+                          fontSize: 17,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -562,7 +552,7 @@ class _AgeCircleState extends State<_AgeCircle> {
             style: TextStyle(
               color: widget.selected ? _gold : Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: widget.label.length > 2 ? 12 : 17,
+              fontSize: widget.label.length > 2 ? 10 : 14,
             ),
           ),
         ),

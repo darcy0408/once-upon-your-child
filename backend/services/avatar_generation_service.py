@@ -246,6 +246,53 @@ Maintain the character's facial features while converting them into a vibrant no
                 }
             except Exception as fallback_err:
                 logger.error(f"Fallback custom avatar generation also failed: {fallback_err}")
+                # If Replicate fails (e.g. model endpoint changes), retry with OpenRouter.
+                tertiary_error = None
+                try:
+                    fallback_provider = type(self.fallback_generator).__name__.lower()
+                    if "replicate" in fallback_provider:
+                        logger.info("Replicate fallback failed; retrying custom avatar with OpenRouter")
+                        try:
+                            from backend.openrouter_image_generator import OpenRouterImageGenerator
+                        except ImportError:
+                            from openrouter_image_generator import OpenRouterImageGenerator
+
+                        openrouter = OpenRouterImageGenerator()
+                        if openrouter.api_key:
+                            results = openrouter.generate_custom_avatar(
+                                base_image_bytes=photo_bytes,
+                                prompt=prompt,
+                                character_name=character_name,
+                                age=age,
+                            )
+                            image_base64 = self._extract_base64_from_results(results)
+                            if image_base64:
+                                avatar_id = str(uuid.uuid4())
+                                return {
+                                    'id': avatar_id,
+                                    'image_base64': f"data:image/png;base64,{image_base64}",
+                                    'style': 'pixar-custom',
+                                    'attributes': {
+                                        'character_name': character_name,
+                                        'age': age,
+                                        'gender': gender,
+                                        'eye_color': eye_color,
+                                        'favorite_color': favorite_color
+                                    },
+                                    'generated_at': datetime.now().isoformat(),
+                                    'version': 3,
+                                }
+                            tertiary_error = Exception("OpenRouter returned no image")
+                        else:
+                            tertiary_error = Exception("OPENROUTER_API_KEY missing for tertiary fallback")
+                except Exception as openrouter_err:
+                    tertiary_error = openrouter_err
+
+                if tertiary_error is not None:
+                    raise Exception(
+                        f"Custom avatar generation failed. Primary: {primary_error}. "
+                        f"Fallback: {fallback_err}. Tertiary: {tertiary_error}"
+                    )
                 raise Exception(
                     f"Custom avatar generation failed. Primary: {primary_error}. "
                     f"Fallback: {fallback_err}"
