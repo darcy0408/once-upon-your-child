@@ -687,13 +687,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             !magicAndPetNames.contains(c.name))
         .toList();
 
-    // Collect selected pet (if any)
-    final petEntry =
-        widget.wizardData.pets.isNotEmpty ? widget.wizardData.pets.first : null;
-    final petName = petEntry?['name'] ?? 'My Pet';
-    final petSelected =
-        petEntry != null && widget.wizardData.companionNames.contains(petName);
-    final petPhoto = petSelected ? widget.wizardData.petPhotos[petName] : null;
+    // Collect selected pets (supports multiple saved pets).
+    final selectedPets = widget.wizardData.pets.where((pet) {
+      final petName = (pet['name'] ?? '').trim();
+      return petName.isNotEmpty &&
+          widget.wizardData.companionNames.contains(petName);
+    }).toList();
 
     // Build slot list: magic companions, then saved friends, then pet, then empty
     final slots = <_ShowcaseSlot>[];
@@ -710,9 +709,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         isFriend: true,
       ));
     }
-    if (petSelected) {
+    for (final pet in selectedPets) {
+      final petName = pet['name'] ?? 'My Pet';
       slots.add(_ShowcaseSlot(
-        photoBase64: petPhoto,
+        photoBase64: widget.wizardData.petPhotos[petName],
         name: petName,
       ));
     }
@@ -2539,36 +2539,76 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   void _toggleListening(String field) async {
-    if (!_speechAvailable) return;
+    if (!_speechAvailable) {
+      final available = await _speech.initialize(
+        onStatus: (status) {
+          if (!mounted) return;
+          if (status == 'done' || status == 'notListening') {
+            setState(() => _listeningFor = '');
+          }
+        },
+        onError: (_) {
+          if (!mounted) return;
+          setState(() => _listeningFor = '');
+        },
+      );
+      if (!mounted) return;
+      setState(() => _speechAvailable = available);
+      if (!available) {
+        if (field == 'imagine') {
+          unawaited(
+              _tts.speak('Microphone is unavailable. Please type your idea.'));
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Microphone unavailable on this device')),
+        );
+        return;
+      }
+    }
+
     if (_listeningFor == field) {
       await _speech.stop();
       setState(() => _listeningFor = '');
       return;
     }
+
+    if (field == 'imagine') {
+      unawaited(_tts.speak('Tell me where your adventure takes place.'));
+    }
+
     setState(() => _listeningFor = field);
-    await _speech.listen(onResult: (result) {
-      if (!mounted) return;
-      setState(() {
-        if (field == 'superpower') {
-          _superpowerController.text = result.recognizedWords;
-          widget.wizardData.heroSuperpower =
-              result.recognizedWords.isEmpty ? null : result.recognizedWords;
-        } else if (field == 'imagine') {
-          _imagineItController.text = result.recognizedWords;
-          _wishController.text = result.recognizedWords;
-          widget.wizardData.customElements = result.recognizedWords;
-        } else if (field == 'wish') {
-          _wishController.text = result.recognizedWords;
-          _imagineItController.text = result.recognizedWords;
-          widget.wizardData.customElements = result.recognizedWords;
-        } else {
-          _questController.text = result.recognizedWords;
-          widget.wizardData.heroQuest =
-              result.recognizedWords.isEmpty ? null : result.recognizedWords;
-        }
-        if (result.finalResult) _listeningFor = '';
-      });
-    });
+    await _speech.listen(
+      listenFor: const Duration(seconds: 15),
+      pauseFor: const Duration(seconds: 3),
+      listenOptions: SpeechListenOptions(
+        partialResults: true,
+        listenMode: ListenMode.dictation,
+      ),
+      onResult: (result) {
+        if (!mounted) return;
+        final words = result.recognizedWords.trim();
+        if (words.isEmpty) return;
+        setState(() {
+          if (field == 'superpower') {
+            _superpowerController.text = words;
+            widget.wizardData.heroSuperpower = words;
+          } else if (field == 'imagine') {
+            _imagineItController.text = words;
+            _wishController.text = words;
+            widget.wizardData.customElements = words;
+          } else if (field == 'wish') {
+            _wishController.text = words;
+            _imagineItController.text = words;
+            widget.wizardData.customElements = words;
+          } else {
+            _questController.text = words;
+            widget.wizardData.heroQuest = words;
+          }
+          if (result.finalResult) _listeningFor = '';
+        });
+      },
+    );
   }
 
   @override
