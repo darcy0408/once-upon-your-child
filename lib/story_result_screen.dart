@@ -34,8 +34,6 @@ import 'services/therapeutic_analytics.dart';
 import 'subscription_models.dart';
 import 'theme/age_band_theme.dart';
 import 'theme/app_theme.dart';
-import 'widgets/app_button.dart';
-import 'widgets/app_card.dart';
 import 'widgets/error_boundary.dart';
 import 'widgets/user_friendly_error_dialog.dart';
 import 'widgets/golden_ticket_animation.dart';
@@ -921,15 +919,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     );
   }
 
-  Map<String, dynamic> _buildSharePayload() => {
-        'title': widget.title,
-        'story': widget.storyText,
-        'wisdomGem': widget.wisdomGem,
-        'characterName': widget.characterName,
-        'theme': widget.theme,
-        'generatedAt': widget.storyCreatedAt?.toIso8601String(),
-      };
-
   String _formatShareText({bool includeMetadata = false}) {
     final buffer = StringBuffer()
       ..writeln(widget.title)
@@ -1416,128 +1405,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
           initialWizardData: data,
           initialStep: 1,
         ),
-      ),
-    );
-  }
-
-  Future<void> _exportStory() async {
-    if (kIsWeb) {
-      await Clipboard.setData(ClipboardData(
-        text: _formatShareText(includeMetadata: true),
-      ));
-      if (mounted) {
-        _showSnackBar('Story text copied to clipboard! 📄', backgroundColor: Colors.green);
-      }
-      _trackResultAction('share', extra: {'method': 'copy_txt_web'});
-      return;
-    }
-    final directory = await getTemporaryDirectory();
-    final fileName =
-        widget.title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
-    final file = File('${directory.path}/$fileName.txt');
-    await file.writeAsString(_formatShareText(includeMetadata: true));
-    await SharePlus.instance.share(
-      ShareParams(
-        files: [XFile(file.path)],
-        text: 'Story export ready to download or print.',
-        subject: widget.title,
-      ),
-    );
-    _trackResultAction('share', extra: {'method': 'export_txt'});
-  }
-
-  Future<void> _copyShareData() async {
-    await Clipboard.setData(ClipboardData(
-      text: jsonEncode(_buildSharePayload()),
-    ));
-    if (mounted) {
-      _showSnackBar('Story data copied for Gemini coordination.',
-          backgroundColor: Colors.green);
-    }
-    _trackResultAction('share', extra: {'method': 'copy_json'});
-  }
-
-  Widget _buildShareActions() {
-    final theme = Theme.of(context);
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Share this story',
-            style: theme.textTheme.titleMedium,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Send the adventure to family, export a text copy, or grab the JSON payload for coordination.',
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              SizedBox(
-                width: 200,
-                child: AppButton.primary(
-                  label: 'Share',
-                  icon: Icons.share,
-                  onPressed: _shareStory,
-                ),
-              ),
-              SizedBox(
-                width: 200,
-                child: AppButton.secondary(
-                  label: 'Export .txt',
-                  icon: Icons.file_download,
-                  onPressed: _exportStory,
-                ),
-              ),
-              SizedBox(
-                width: 200,
-                child: AppButton.secondary(
-                  label: 'Copy JSON',
-                  icon: Icons.code,
-                  onPressed: _copyShareData,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          const Divider(),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            'Actions',
-            style: theme.textTheme.titleMedium,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              SizedBox(
-                width: 200,
-                child: AppButton.secondary(
-                  label: 'Save to Library',
-                  icon: Icons.bookmark_add_outlined,
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _saveStory();
-                  },
-                ),
-              ),
-              SizedBox(
-                width: 200,
-                child: AppButton.primary(
-                  label: 'Create New Story',
-                  icon: Icons.auto_awesome,
-                  onPressed: _createAnotherStory,
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
