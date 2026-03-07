@@ -84,7 +84,7 @@ def test_generate_story_falls_back_when_queue_fails(client, auth_headers, monkey
         ("FAILURE", RuntimeError("boom"), {"status": "failed", "error": "boom"}),
     ],
 )
-def test_task_status_maps_celery_states(client, monkeypatch, state, info, expected):
+def test_task_status_maps_celery_states(client, auth_headers, monkeypatch, state, info, expected):
     class _FakeAsyncResult:
         def __init__(self, state, info):
             self.state = state
@@ -101,8 +101,9 @@ def test_task_status_maps_celery_states(client, monkeypatch, state, info, expect
     result = _FakeAsyncResult(state, info)
     monkeypatch.setattr(story_routes, "celery", _FakeCelery(result))
 
-    response = client.get("/task-status/demo-task")
+    response = client.get("/task-status/demo-task", headers=auth_headers)
     assert response.status_code == 200
+
     payload = response.get_json()
     for key, value in expected.items():
         assert payload[key] == value
