@@ -597,19 +597,21 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           child: Column(
             children: [
               SizedBox(height: band.space(10)),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _audioPrompt("Who is your hero?"),
-                  SizedBox(width: band.space(8)),
-                  Flexible(
-                    child: Text(
-                      band.createCharacterLabel,
-                      style: _bandTitleStyle(band, baseFontSize: 24),
+              if (!(widget.wizardData.characterAge <= 4 &&
+                  ageBand == AgeBand.sprout))
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _audioPrompt("Who is your hero?"),
+                    SizedBox(width: band.space(8)),
+                    Flexible(
+                      child: Text(
+                        band.createCharacterLabel,
+                        style: _bandTitleStyle(band, baseFontSize: 24),
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               // Sprout: big colourful prompt to reinforce what to do
               if (ageBand == AgeBand.sprout) ...[
                 SizedBox(height: band.space(8)),
@@ -2141,6 +2143,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final nameFontSize = band.headingScale * 20;
+    final isSproutFour = widget.wizardData.characterAge <= 4;
 
     if (band.band == AgeBand.creator) {
       return TextField(
@@ -2173,6 +2176,65 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       );
     }
 
+    if (isSproutFour) {
+      return Container(
+        height: 60,
+        decoration: BoxDecoration(
+          color: const Color(0xFF5C1A8C).withAlpha(200),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _listeningFor == 'name'
+                ? const Color(0xFFE28EFF)
+                : const Color(0xFFFFD54F).withAlpha(120),
+            width: 1.8,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _nameController,
+                  focusNode: _nameFocusNode,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.fredoka(
+                    fontSize: 22,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    hintText: _listeningFor == 'name'
+                        ? 'Listening...'
+                        : "What's your name?",
+                    hintStyle: GoogleFonts.fredoka(
+                      color: Colors.white70,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onChanged: (v) =>
+                      setState(() => widget.wizardData.characterName = v.trim()),
+                ),
+              ),
+              IconButton(
+                onPressed: () => _toggleListening('name'),
+                icon: Icon(
+                  _listeningFor == 'name'
+                      ? Icons.mic_rounded
+                      : Icons.mic_none_rounded,
+                  color: _listeningFor == 'name'
+                      ? const Color(0xFFFFD700)
+                      : Colors.white70,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -2196,61 +2258,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           onChanged: (v) =>
               setState(() => widget.wizardData.characterName = v.trim()),
         ),
-        if (widget.wizardData.characterAge <= 4) ...[
-          const SizedBox(height: 20),
-          GestureDetector(
-            onTap: () => _toggleListening('name'),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              decoration: BoxDecoration(
-                color: _listeningFor == 'name'
-                    ? const Color(0xFF9E6CFF).withAlpha(200)
-                    : Colors.white.withAlpha(25),
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(
-                  color: _listeningFor == 'name'
-                      ? const Color(0xFFE28EFF)
-                      : Colors.white30,
-                  width: 2,
-                ),
-                boxShadow: _listeningFor == 'name'
-                    ? [
-                        BoxShadow(
-                          color: const Color(0xFF9E6CFF).withAlpha(120),
-                          blurRadius: 16,
-                          spreadRadius: 2,
-                        )
-                      ]
-                    : [],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _listeningFor == 'name'
-                        ? Icons.mic_rounded
-                        : Icons.mic_none_rounded,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    _listeningFor == 'name'
-                        ? 'Listening... 🎤'
-                        : '🎤 Say your name!',
-                    style: GoogleFonts.fredoka(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
       ],
     );
   }

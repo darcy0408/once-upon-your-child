@@ -3792,3 +3792,25 @@ flutter analyze lib/screens/wizard_steps/hero_creator_step.dart
 ### Result
 - PASS: No analyzer issues.
 - Archetype names no longer block key parts of the character art.
+
+## Session Update - 2026-03-08 (Age-4 Name Input Simplification)
+
+### Scope Completed
+- Simplified first name-entry page for age-4 flow to reduce UI clutter.
+
+### Changes
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+  - For age 4 (sprout), removed separate top heading row on page 1.
+  - Replaced separate name field + separate listening button with one combined name input control:
+    - inline prompt text (`What's your name?`)
+    - inline mic button with listening state
+  - Kept `That's me!` progression button unchanged.
+
+### Verification
+```bash
+flutter analyze lib/screens/wizard_steps/hero_creator_step.dart
+```
+
+### Result
+- PASS: No analyzer issues.
+- First page for age-4 now shows one unified name/listen control plus `That's me!`.
