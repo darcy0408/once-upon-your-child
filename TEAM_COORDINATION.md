@@ -3748,3 +3748,26 @@ python -m pytest backend/tests/unit/test_avatar_generation_service.py -q
 ### Result
 - PASS: `6 passed`.
 - Prompt now biases 4-year-old avatars toward lighter, fun backgrounds while preserving favorite-color costume direction.
+
+## Session Update - 2026-03-08 (Sprout Archetype Set Adjustment)
+
+### Scope Completed
+- Updated 4-year-old/sprout archetype options to remove `Quiz Whiz`.
+- Added `Animal Whisperer` into the 4-card sprout set.
+
+### Changes
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+  - Replaced sprout archetype selection logic from `take(4)` to explicit list:
+    - `The Storm Rider`
+    - `The Master Creator`
+    - `The Heart Healer`
+    - `The Animal Whisperer`
+
+### Verification
+```bash
+flutter analyze lib/screens/wizard_steps/hero_creator_step.dart
+```
+
+### Result
+- PASS: No analyzer issues.
+- 4-year-old flow no longer shows `Quiz Whiz`.

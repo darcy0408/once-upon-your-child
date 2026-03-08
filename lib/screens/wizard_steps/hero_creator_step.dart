@@ -13,6 +13,7 @@ import 'dart:math' as math;
 import '../../models.dart';
 import '../../avatar_models.dart';
 import '../../custom_avatar_screen.dart';
+import '../../utils/motion_utils.dart';
 import '../../theme/age_band_theme.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/archetype_card.dart';
@@ -268,6 +269,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   void _showStarBurst() {
+    final showParticles = MotionPrefs.showParticles(context);
+    if (!showParticles) return;
+
     final overlay = Overlay.of(context);
     late OverlayEntry entry;
     entry = OverlayEntry(
@@ -534,6 +538,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               final char = widget.availableCharacters[index];
               return _CharacterChoiceCard(
                 character: char,
+                getAvatarProvider: _getAvatarProvider,
                 onTap: () {
                   _loadExistingCharacter(char);
                   _handleContinue();
@@ -1436,6 +1441,18 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
+  String _getReadingLabel(AgeBand band) {
+    switch (band) {
+      case AgeBand.sprout:
+        return 'First Reader';
+      case AgeBand.explorer:
+      case AgeBand.adventurer:
+        return 'Limerick Laughs';
+      case AgeBand.creator:
+        return 'First Chapter';
+    }
+  }
+
   // Page 5: "What kind of story?"
   Widget _buildPage5() {
     final data = widget.wizardData;
@@ -1509,7 +1526,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   const SizedBox(width: 24),
                   ImageModeOrb(
                     modeType: 'rhyme',
-                    label: isCreator ? 'Poetry' : 'Rhyme Time',
+                    label: data.characterAge >= 11 ? 'Poetry' : 'Rhyme Time',
                     isActive: selectedMode == 'rhyme',
                     onTap: () => setState(() => setStoryMode('rhyme')),
                     primaryColor: const Color(0xFF00D4DD),
@@ -1521,23 +1538,28 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  ImageModeOrb(
-                    modeType: 'reading',
-                    label: isCreator ? 'First Chapter' : 'First Reader',
-                    isActive: selectedMode == 'reading',
-                    onTap: () => setState(() => setStoryMode('reading')),
-                    primaryColor: const Color(0xFFB88AFF),
-                    secondaryColor: const Color(0xFFFF9ECC),
-                  ),
-                  const SizedBox(width: 24),
-                  ImageModeOrb(
-                    modeType: 'pickpath',
-                    label: isCreator ? 'Choose Your Path' : 'Pick a Path',
-                    isActive: selectedMode == 'pickpath',
-                    onTap: () => setState(() => setStoryMode('pickpath')),
-                    primaryColor: const Color(0xFF9E6CFF),
-                    secondaryColor: const Color(0xFFFFB3E6),
-                  ),
+                  if (data.characterAge > 4) ...[
+                    ImageModeOrb(
+                      modeType: 'pickpath',
+                      label: isCreator ? 'Choose Your Path' : 'Pick a Path',
+                      isActive: selectedMode == 'pickpath',
+                      onTap: () => setState(() => setStoryMode('pickpath')),
+                      primaryColor: const Color(0xFF9E6CFF),
+                      secondaryColor: const Color(0xFFFFB3E6),
+                    ),
+                  ],
+                  if (data.characterAge > 4 && data.characterAge < 9)
+                    const SizedBox(width: 24),
+                  if (data.characterAge < 9) ...[
+                    ImageModeOrb(
+                      modeType: 'reading',
+                      label: _getReadingLabel(band.band),
+                      isActive: selectedMode == 'reading',
+                      onTap: () => setState(() => setStoryMode('reading')),
+                      primaryColor: const Color(0xFFB88AFF),
+                      secondaryColor: const Color(0xFFFF9ECC),
+                    ),
+                  ]
                 ],
               ),
             ],
@@ -2155,10 +2177,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
-          "HERO'S NAME",
+          widget.wizardData.characterName.isNotEmpty
+              ? "HI ${widget.wizardData.characterName.toUpperCase()}!"
+              : "HERO'S NAME",
           style: GoogleFonts.cinzelDecorative(
             color: const Color(0xFFFFE082).withAlpha(200),
-            fontSize: 11,
+            fontSize: 14,
             letterSpacing: 2.0,
             fontWeight: FontWeight.w600,
           ),
@@ -2172,15 +2196,75 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           onChanged: (v) =>
               setState(() => widget.wizardData.characterName = v.trim()),
         ),
+        if (widget.wizardData.characterAge <= 4) ...[
+          const SizedBox(height: 20),
+          GestureDetector(
+            onTap: () => _toggleListening('name'),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: BoxDecoration(
+                color: _listeningFor == 'name'
+                    ? const Color(0xFF9E6CFF).withAlpha(200)
+                    : Colors.white.withAlpha(25),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: _listeningFor == 'name'
+                      ? const Color(0xFFE28EFF)
+                      : Colors.white30,
+                  width: 2,
+                ),
+                boxShadow: _listeningFor == 'name'
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF9E6CFF).withAlpha(120),
+                          blurRadius: 16,
+                          spreadRadius: 2,
+                        )
+                      ]
+                    : [],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _listeningFor == 'name'
+                        ? Icons.mic_rounded
+                        : Icons.mic_none_rounded,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    _listeningFor == 'name'
+                        ? 'Listening... 🎤'
+                        : '🎤 Say your name!',
+                    style: GoogleFonts.fredoka(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
       ],
     );
   }
 
   Widget _buildArchetypeCards() {
     final ageBand = ageBandFromAge(widget.wizardData.characterAge);
-    // Sprout sees only the 4 most visually striking archetypes.
+    // Sprout sees 4 age-appropriate archetypes (exclude Quiz Whiz).
     final archetypes = ageBand == AgeBand.sprout
-        ? CharacterArchetypes.all.take(4).toList()
+        ? <ArchetypeData>[
+            CharacterArchetypes.adventurer,
+            CharacterArchetypes.artist,
+            CharacterArchetypes.helper,
+            CharacterArchetypes.shyOne, // Animal Whisperer
+          ]
         : CharacterArchetypes.all;
 
     // Sprout & Explorer: 2-column grid — image-dominant cards.
@@ -2439,6 +2523,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
     if (field == 'imagine') {
       unawaited(_tts.speak('Tell me where your adventure takes place.'));
+    } else if (field == 'name') {
+      final name = widget.wizardData.characterName;
+      if (name.isNotEmpty) {
+        unawaited(_tts.speak('What is the hero name for $name?'));
+      } else {
+        unawaited(_tts.speak('What is your hero\'s name?'));
+      }
     }
 
     setState(() => _listeningFor = field);
@@ -2454,7 +2545,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         final words = result.recognizedWords.trim();
         if (words.isEmpty) return;
         setState(() {
-          if (field == 'superpower') {
+          if (field == 'name') {
+            _nameController.text = words;
+            widget.wizardData.characterName = words;
+          } else if (field == 'superpower') {
             _superpowerController.text = words;
             widget.wizardData.heroSuperpower = words;
           } else if (field == 'imagine') {
@@ -2477,6 +2571,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   @override
   Widget build(BuildContext context) {
+    final bandData =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final isTeen = bandData.band == AgeBand.creator;
+
     return MagicStarCursor(
       child: Container(
         decoration: const BoxDecoration(
@@ -2489,19 +2587,22 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         child: SafeArea(
           child: Stack(
             children: [
-              PageView(
-                controller: _heroPageController,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _buildPage0(),
-                  _buildPage1(),
-                  _buildPage2(),
-                  _buildPage3(),
-                  _buildPage4(),
-                  _buildPage5(),
-                ],
-              ),
-              if (_heroPage > 0)
+              if (isTeen)
+                _buildCreativeBrief()
+              else
+                PageView(
+                  controller: _heroPageController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    _buildPage0(),
+                    _buildPage1(),
+                    _buildPage2(),
+                    _buildPage3(),
+                    _buildPage4(),
+                    _buildPage5(),
+                  ],
+                ),
+              if (!isTeen && _heroPage > 0)
                 Positioned(
                   top: 10,
                   left: 10,
@@ -2517,15 +2618,438 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       ),
     );
   }
-}
 
-// ─── Support Widgets ──────────────────────────────────────────────────────────
+  // ─── Creative Brief (Teen Flow) ─────────────────────────────────────────────
 
-class _CharacterChoiceCard extends StatelessWidget {
-  final Character character;
-  final VoidCallback onTap;
+  Widget _buildCreativeBrief() {
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildBriefHeader(band),
+          const SizedBox(height: 16),
+          _buildRestoreCharacterSection(),
+          const SizedBox(height: 16),
+          _buildBriefSection(
+              'Identity & Archetype', _buildBriefIdentityInputs()),
+          const SizedBox(height: 32),
+          _buildBriefSection(
+              'Psychological Profile', _buildBriefPersonalitySliders()),
+          const SizedBox(height: 32),
+          _buildBriefSection(
+              'Setting & Narrative Focus', _buildBriefWorldInputs()),
+          const SizedBox(height: 32),
+          _buildBriefSection('Technical Parameters', _buildBriefConfigInputs()),
+          const SizedBox(height: 48),
+          Center(
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _handleContinue,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFD700),
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                  elevation: 8,
+                ),
+                child: Text(
+                  'INITIALIZE STORY GENERATION',
+                  style: GoogleFonts.sourceSans3(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2.0,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
 
-  const _CharacterChoiceCard({required this.character, required this.onTap});
+  Widget _buildBriefHeader(AgeBandThemeData band) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'CREATIVE BRIEF',
+          style: GoogleFonts.sourceSans3(
+            color: const Color(0xFFFFD700),
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 4.0,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Define the parameters of your experience.',
+          style: GoogleFonts.sourceSans3(
+            color: Colors.white70,
+            fontSize: 16,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Divider(color: Color(0xFFFFD700), thickness: 2, endIndent: 200),
+      ],
+    );
+  }
+
+  Widget _buildBriefSection(String title, Widget content) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title.toUpperCase(),
+          style: GoogleFonts.sourceSans3(
+            color: const Color(0xFFFFD700).withAlpha(180),
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(height: 16),
+        content,
+      ],
+    );
+  }
+
+  Widget _buildRestoreCharacterSection() {
+    if (widget.availableCharacters.isEmpty) return const SizedBox.shrink();
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        title: Text(
+          'RESTORE PREVIOUS CHARACTER',
+          style: GoogleFonts.sourceSans3(
+            color: const Color(0xFFFFD700),
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.0,
+          ),
+        ),
+        subtitle: Text('Load an existing hero profile',
+            style: TextStyle(
+                color: Colors.white.withAlpha(80), fontSize: 10, height: 1.5)),
+        iconColor: const Color(0xFFFFD700),
+        collapsedIconColor: const Color(0xFFFFD700),
+        children: widget.availableCharacters.map((char) {
+          final avatarData = char.generatedAvatar?.imageBase64;
+          return ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+            leading: CircleAvatar(
+              radius: 18,
+              backgroundColor: const Color(0xFF3A2363),
+              backgroundImage: avatarData != null
+                  ? _getAvatarProvider(avatarData)
+                  : const AssetImage('assets/images/hero_placeholder.jpg')
+                      as ImageProvider,
+            ),
+            title: Text(char.name,
+                style: const TextStyle(color: Colors.white, fontSize: 14)),
+            subtitle: Text(char.role,
+                style: TextStyle(
+                    color: Colors.white.withAlpha(100), fontSize: 11)),
+            trailing: const Icon(Icons.file_upload_outlined,
+                color: Color(0xFFFFD700), size: 18),
+            onTap: () {
+              setState(() {
+                _loadExistingCharacter(char);
+                _nameController.text = char.name;
+              });
+            },
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildBriefIdentityInputs() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _nameController,
+          style: GoogleFonts.sourceSans3(color: Colors.white, fontSize: 18),
+          decoration: InputDecoration(
+            labelText: 'PROTAGONIST NAME',
+            labelStyle: GoogleFonts.sourceSans3(
+                color: const Color(0xFFFFD700), fontSize: 10),
+            hintText: 'Enter name...',
+            hintStyle: TextStyle(color: Colors.white.withAlpha(40)),
+            enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.white.withAlpha(40))),
+            focusedBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFFFFD700))),
+          ),
+          onChanged: (v) => widget.wizardData.characterName = v,
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'CORE ARCHETYPE',
+          style: GoogleFonts.sourceSans3(
+              color: Colors.white.withAlpha(100),
+              fontSize: 10,
+              fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: CharacterArchetypes.all.map((archetype) {
+            final isSelected = _selectedArchetypeId == archetype.name;
+            return FilterChip(
+              label: Text(archetype.name.toUpperCase()),
+              selected: isSelected,
+              onSelected: (_) => _selectArchetype(archetype),
+              backgroundColor: Colors.white.withAlpha(10),
+              selectedColor: const Color(0xFFFFD700).withAlpha(40),
+              labelStyle: GoogleFonts.sourceSans3(
+                color: isSelected ? const Color(0xFFFFD700) : Colors.white70,
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(
+                    color: isSelected
+                        ? const Color(0xFFFFD700)
+                        : Colors.white.withAlpha(10)),
+              ),
+              showCheckmark: false,
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBriefPersonalitySliders() {
+    final sliders = widget.wizardData.personalitySliders;
+    return Column(
+      children: [
+        _buildBriefSlider('ENERGY RANGE', 'Calm', 'Active', 'expressiveness', sliders),
+        _buildBriefSlider('SOCIAL DYNAMIC', 'Reserved', 'Outgoing',
+            'sociability', sliders),
+        _buildBriefSlider('COGNITIVE STYLE', 'Logical', 'Imagination',
+            'problem_solving', sliders),
+        _buildBriefSlider('RISK PROFILE', 'Cautious', 'Adventurous', 'adventure',
+            sliders),
+      ],
+    );
+  }
+
+  Widget _buildBriefSlider(String label, String left, String right, String key,
+      Map<String, int> sliders) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: GoogleFonts.sourceSans3(
+                  color: Colors.white.withAlpha(80),
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold)),
+          Row(
+            children: [
+              Text(left,
+                  style: GoogleFonts.sourceSans3(
+                      color: Colors.white70, fontSize: 10)),
+              Expanded(
+                child: SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    activeTrackColor: const Color(0xFFFFD700),
+                    inactiveTrackColor: Colors.white12,
+                    thumbColor: const Color(0xFFFFD700),
+                    overlayColor: const Color(0xFFFFD700).withAlpha(32),
+                    trackHeight: 2,
+                    thumbShape:
+                        const RoundSliderThumbShape(enabledThumbRadius: 6),
+                  ),
+                  child: Slider(
+                    value: (sliders[key] ?? 50).toDouble(),
+                    min: 0,
+                    max: 100,
+                    onChanged: (v) => setState(() => sliders[key] = v.round()),
+                  ),
+                ),
+              ),
+              Text(right,
+                  style: GoogleFonts.sourceSans3(
+                      color: Colors.white70, fontSize: 10)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBriefWorldInputs() {
+    final scenarios =
+        ScenarioData.all.where((s) => s.id != 'safe_space').toList();
+    final isCustom = widget.wizardData.selectedScenario == 'safe_space';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'PRIMARY SETTING',
+          style: GoogleFonts.sourceSans3(
+              color: Colors.white.withAlpha(100),
+              fontSize: 10,
+              fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ...scenarios.map((s) {
+              final isSelected = widget.wizardData.selectedScenario == s.id;
+              return ChoiceChip(
+                label: Text(s.titleForAge(15).toUpperCase()),
+                selected: isSelected,
+                onSelected: (v) => setState(
+                    () => widget.wizardData.selectedScenario = v ? s.id : null),
+                backgroundColor: Colors.white.withAlpha(10),
+                selectedColor: const Color(0xFFFFD700).withAlpha(40),
+                labelStyle: GoogleFonts.sourceSans3(
+                  color: isSelected ? const Color(0xFFFFD700) : Colors.white70,
+                  fontSize: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide.none),
+              );
+            }),
+            ChoiceChip(
+              label: const Text('CUSTOM PREMISE'),
+              selected: isCustom,
+              onSelected: (v) => setState(() =>
+                  widget.wizardData.selectedScenario = v ? 'safe_space' : null),
+              backgroundColor: Colors.white.withAlpha(10),
+              selectedColor: const Color(0xFFFFD700).withAlpha(40),
+              labelStyle: GoogleFonts.sourceSans3(
+                color: isCustom ? const Color(0xFFFFD700) : Colors.white70,
+                fontSize: 10,
+              ),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide.none),
+            ),
+          ],
+        ),
+        if (isCustom) ...[
+          const SizedBox(height: 16),
+          TextField(
+            controller: _imagineItController,
+            maxLines: 2,
+            style: GoogleFonts.sourceSans3(color: Colors.white, fontSize: 13),
+            decoration: InputDecoration(
+              hintText: 'Describe your world or premise...',
+              hintStyle: TextStyle(
+                  color: Colors.white.withAlpha(40),
+                  fontStyle: FontStyle.italic),
+              filled: true,
+              fillColor: Colors.white.withAlpha(10),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none),
+            ),
+            onChanged: (v) {
+              widget.wizardData.customElements = v;
+              _wishController.text = v;
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildBriefConfigInputs() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildBriefDropdown(
+                'NARRATIVE MODE',
+                widget.wizardData.interactiveMode
+                    ? 'Interactive'
+                    : (widget.wizardData.rhymeTimeMode
+                        ? 'Poetry'
+                        : 'Standard View'),
+                ['Standard View', 'Interactive', 'Poetry'],
+                (v) {
+                  setState(() {
+                    widget.wizardData.interactiveMode = v == 'Interactive';
+                    widget.wizardData.rhymeTimeMode = v == 'Poetry';
+                  });
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildBriefDropdown(
+                'TARGET DURATION',
+                widget.wizardData.storyLength.toUpperCase(),
+                ['SHORT', 'MEDIUM', 'LONG'],
+                (v) => setState(
+                    () => widget.wizardData.storyLength = v!.toLowerCase()),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBriefDropdown(String label, String value, List<String> options,
+      ValueChanged<String?> onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: GoogleFonts.sourceSans3(
+                color: Colors.white.withAlpha(80),
+                fontSize: 9,
+                fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withAlpha(10),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: options.contains(value) ? value : options.first,
+              dropdownColor: const Color(0xFF2C1B47),
+              isExpanded: true,
+              style: GoogleFonts.sourceSans3(color: Colors.white, fontSize: 12),
+              icon: const Icon(Icons.keyboard_arrow_down,
+                  color: Color(0xFFFFD700), size: 18),
+              onChanged: onChanged,
+              items: options
+                  .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+                  .toList(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   ImageProvider<Object> _getAvatarProvider(String imageBase64) {
     if (imageBase64.startsWith('assets/')) {
@@ -2542,6 +3066,17 @@ class _CharacterChoiceCard extends StatelessWidget {
       return const AssetImage('assets/images/hero_placeholder.jpg');
     }
   }
+}
+
+// ─── Support Widgets ──────────────────────────────────────────────────────────
+
+class _CharacterChoiceCard extends StatelessWidget {
+  final Character character;
+  final VoidCallback onTap;
+  final ImageProvider<Object> Function(String) getAvatarProvider;
+
+  const _CharacterChoiceCard(
+      {required this.character, required this.onTap, required this.getAvatarProvider});
 
   @override
   Widget build(BuildContext context) {
@@ -2562,7 +3097,7 @@ class _CharacterChoiceCard extends StatelessWidget {
               radius: 35,
               backgroundColor: const Color(0xFF3A2363),
               backgroundImage: avatarData != null
-                  ? _getAvatarProvider(avatarData)
+                  ? getAvatarProvider(avatarData)
                   : const AssetImage('assets/images/hero_placeholder.jpg')
                       as ImageProvider,
             ),
@@ -4577,6 +5112,10 @@ class _AmbientSparkleLayerState extends State<_AmbientSparkleLayer>
 
   @override
   Widget build(BuildContext context) {
+    if (!MotionPrefs.showParticles(context)) {
+      return const SizedBox.expand();
+    }
+
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (context, _) {
