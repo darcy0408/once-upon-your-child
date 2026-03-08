@@ -2302,65 +2302,65 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Stack(
-                  fit: StackFit.expand,
+                child: Column(
                   children: [
-                    // Dark background so letterbox areas look intentional
-                    Container(color: const Color(0xFF1A0A2E)),
-                    // Image — contain so full frame is always visible
-                    if (a.imagePath != null)
-                      Image.asset(a.imagePath!,
-                          fit: BoxFit.contain, alignment: Alignment.center)
-                    else
-                      Container(
-                        color: Colors.white10,
-                        child: Center(
-                            child: Text(a.icon ?? '✨',
-                                style: const TextStyle(fontSize: 72))),
+                    Expanded(
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Container(color: const Color(0xFF1A0A2E)),
+                          if (a.imagePath != null)
+                            Image.asset(
+                              a.imagePath!,
+                              fit: BoxFit.contain,
+                              alignment: Alignment.center,
+                            )
+                          else
+                            Container(
+                              color: Colors.white10,
+                              child: Center(
+                                child: Text(
+                                  a.icon ?? '✨',
+                                  style: const TextStyle(fontSize: 72),
+                                ),
+                              ),
+                            ),
+                          if (isSelected)
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Container(
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFFFD700),
+                                  shape: BoxShape.circle,
+                                ),
+                                padding: const EdgeInsets.all(3),
+                                child: const Icon(Icons.check,
+                                    size: 16, color: Colors.black),
+                              ),
+                            ),
+                        ],
                       ),
-                    // Gradient overlay at bottom for legibility
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 6),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [
-                              Colors.black.withAlpha(200),
-                              Colors.transparent
-                            ],
-                          ),
-                        ),
-                        child: Text(
-                          a.name,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.fredoka(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold),
+                    ),
+                    Container(
+                      width: double.infinity,
+                      color: Colors.black.withAlpha(120),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 6,
+                        horizontal: 6,
+                      ),
+                      child: Text(
+                        a.name,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.fredoka(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                    // Gold checkmark when selected
-                    if (isSelected)
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFFD700),
-                            shape: BoxShape.circle,
-                          ),
-                          padding: const EdgeInsets.all(3),
-                          child: const Icon(Icons.check,
-                              size: 16, color: Colors.black),
-                        ),
-                      ),
                   ],
                 ),
               ),

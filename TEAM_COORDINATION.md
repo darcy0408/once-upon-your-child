@@ -3771,3 +3771,24 @@ flutter analyze lib/screens/wizard_steps/hero_creator_step.dart
 ### Result
 - PASS: No analyzer issues.
 - 4-year-old flow no longer shows `Quiz Whiz`.
+
+## Session Update - 2026-03-08 (Archetype Label Overlay Fix)
+
+### Scope Completed
+- Adjusted sprout/explorer archetype card labels so text no longer covers image artwork.
+
+### Changes
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+  - Reworked sprout/explorer archetype card layout:
+    - image area remains unobstructed
+    - archetype title moved to dedicated label strip under image
+    - selected checkmark remains in top-right image corner
+
+### Verification
+```bash
+flutter analyze lib/screens/wizard_steps/hero_creator_step.dart
+```
+
+### Result
+- PASS: No analyzer issues.
+- Archetype names no longer block key parts of the character art.
