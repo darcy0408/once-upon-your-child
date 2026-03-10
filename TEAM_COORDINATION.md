@@ -3897,3 +3897,27 @@ flutter analyze lib/settings_screen.dart
 ### Result
 - PASS: No analyzer issues.
 - Logo now links directly to `elevenlabs.io` per stated requirement.
+
+## Session Update - 2026-03-10 (Favorite Color Restoration for Avatar Outfit)
+
+### Scope Completed
+- Restored separate Favorite Color control in custom avatar UI.
+- Rewired payload so clothing color generation uses Favorite Color again.
+
+### Changes
+- `lib/custom_avatar_screen.dart`
+  - Added back `_favoriteColor` state (default `Blue`) and visual swatch options.
+  - Kept separate `Hair Color` control.
+  - Updated request payload:
+    - `hair_color` -> hair selection
+    - `favorite_color` -> favorite color selection (for outfit/cape prompting)
+  - Added visual picker labeled `Favorite Color (Clothes)`.
+
+### Verification
+```bash
+flutter analyze lib/custom_avatar_screen.dart
+```
+
+### Result
+- PASS: No analyzer issues.
+- Avatar clothing prompt input now correctly follows favorite color, not hair color.

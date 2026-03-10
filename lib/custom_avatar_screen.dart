@@ -32,6 +32,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
   String _gender = 'girl';
   String _eyeColor = 'Brown';
   String _hairColor = 'Brown';
+  String _favoriteColor = 'Blue';
 
   Uint8List? _imageBytes; // In-memory bytes — works on web + native
   bool _isGenerating = false;
@@ -45,6 +46,17 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
     'Red',
     'Grey',
     'Pink',
+  ];
+  final List<String> _favoriteColors = [
+    'Red',
+    'Blue',
+    'Green',
+    'Yellow',
+    'Purple',
+    'Pink',
+    'Orange',
+    'Teal',
+    'Gold',
   ];
   static const Map<String, Color> _eyeColorSwatches = {
     'Brown': Color(0xFF6D4C41),
@@ -60,6 +72,17 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
     'Red': Color(0xFFE57373),
     'Grey': Color(0xFFB0BEC5),
     'Pink': Color(0xFFF48FB1),
+  };
+  static const Map<String, Color> _favoriteColorSwatches = {
+    'Red': Color(0xFFE53935),
+    'Blue': Color(0xFF1E88E5),
+    'Green': Color(0xFF43A047),
+    'Yellow': Color(0xFFFDD835),
+    'Purple': Color(0xFF8E24AA),
+    'Pink': Color(0xFFD81B60),
+    'Orange': Color(0xFFFB8C00),
+    'Teal': Color(0xFF00897B),
+    'Gold': Color(0xFFFFD700),
   };
 
   @override
@@ -142,7 +165,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
         request.fields['gender'] = _gender;
         request.fields['eye_color'] = _eyeColor;
         request.fields['hair_color'] = _hairColor;
-        request.fields['favorite_color'] = _hairColor;
+        request.fields['favorite_color'] = _favoriteColor;
         debugPrint('📡 Sending custom avatar request to $url');
         final streamedResponse =
             await request.send().timeout(const Duration(minutes: 3));
@@ -663,6 +686,16 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen> {
                             selected: _hairColor,
                             onSelected: (value) =>
                                 setState(() => _hairColor = value),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildVisualColorPicker(
+                            title: 'Favorite Color (Clothes)',
+                            icon: Icons.auto_awesome_rounded,
+                            options: _favoriteColors,
+                            swatches: _favoriteColorSwatches,
+                            selected: _favoriteColor,
+                            onSelected: (value) =>
+                                setState(() => _favoriteColor = value),
                           ),
                         ],
                       ),
