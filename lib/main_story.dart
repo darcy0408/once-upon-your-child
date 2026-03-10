@@ -106,10 +106,12 @@ class _AppEntryPointState extends ConsumerState<_AppEntryPoint> {
   Future<void> _checkOnboarding() async {
     final age = await const ParentalConsentService().getRecordedAge();
     final prefs = await SharedPreferences.getInstance();
+    final savedName = (prefs.getString('user_name') ?? '').trim();
     if (!mounted) return;
     setState(() {
-      _onboardingDone = age != null;
-      _savedName = prefs.getString('user_name') ?? '';
+      // Require both age and name so the name step never gets skipped accidentally.
+      _onboardingDone = age != null && savedName.isNotEmpty;
+      _savedName = savedName;
     });
   }
 

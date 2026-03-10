@@ -2,7 +2,23 @@
 
 ---
 
+## Session Update - 2026-03-08 (Age UX Tier 1 Implementation)
+
+### Scope Completed
+- **Backend Age-Appropriateness Logic (Tier 1):**
+  - **Rhyme Time Backend (`P0-2`):** Implemented graduated poem forms (AABB, Ballad, Sonnet) based on user age in `story_service.py`.
+  - **Learn-to-Read Backend Guard (`P0-6`):** Added age guard in `story_tasks.py` to prevent LTR mode for ages 9+.
+- **Interactive Story Logic:**
+  - *Pending*: Moral Complexity and Co-Author framing.
+
+### Status
+- **Backend logic:** 🟡 Tier 1 completed; interactive logic pending.
+- **Frontend changes:** ⚪ Not started.
+
+---
+
 ## Session Update - 2026-03-07 (Wizard Stability + Mobile UX + Pet Pixar Flow)
+
 
 ### Scope Completed
 - **Welcome age gate simplification** (commit `e5ae864`):
@@ -3814,3 +3830,24 @@ flutter analyze lib/screens/wizard_steps/hero_creator_step.dart
 ### Result
 - PASS: No analyzer issues.
 - First page for age-4 now shows one unified name/listen control plus `That's me!`.
+
+## Session Update - 2026-03-09 (Startup Name Step Guard)
+
+### Scope Completed
+- Fixed startup onboarding gate so the name step is not skipped when name data is missing.
+
+### Changes
+- `lib/main_story.dart`
+  - `_AppEntryPointState._checkOnboarding()` now considers onboarding complete only if:
+    - recorded age exists, and
+    - saved `user_name` is non-empty.
+  - This ensures startup returns to onboarding (name -> age) when name was not persisted.
+
+### Verification
+```bash
+flutter analyze lib/main_story.dart
+```
+
+### Result
+- No new compile errors from this change.
+- Existing non-blocking lint/info warnings remain in `main_story.dart`.
