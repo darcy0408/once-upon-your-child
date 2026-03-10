@@ -3878,3 +3878,22 @@ flutter analyze lib/screens/welcome_screen.dart lib/screens/wizard_steps/hero_cr
 - PASS: No analyzer issues.
 - Returning users get a clearer "is this your character" selection flow.
 - Name audio interaction now supports one-tap "hear + answer" while preserving manual typing fallback.
+
+## Session Update - 2026-03-10 (ElevenLabs Logo Link Compliance)
+
+### Scope Completed
+- Updated ElevenLabs logo hyperlink target to meet partner requirement.
+
+### Changes
+- `lib/settings_screen.dart`
+  - Kept existing dark/light logo SVG swap from ElevenLabs CDN.
+  - Changed tap target URL from `https://elevenlabs.io/impact-program` to `https://elevenlabs.io`.
+
+### Verification
+```bash
+flutter analyze lib/settings_screen.dart
+```
+
+### Result
+- PASS: No analyzer issues.
+- Logo now links directly to `elevenlabs.io` per stated requirement.

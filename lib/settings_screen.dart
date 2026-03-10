@@ -797,7 +797,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         const SizedBox(height: AppSpacing.sm),
         InkWell(
-          onTap: () => launchUrl(Uri.parse('https://elevenlabs.io/impact-program')),
+          onTap: () => launchUrl(Uri.parse('https://elevenlabs.io')),
           child: Image.network(
             isDark
                 ? 'https://eleven-public-cdn.elevenlabs.io/payloadcms/csnjio02mx4-elevenlabs-logo-white.svg'
