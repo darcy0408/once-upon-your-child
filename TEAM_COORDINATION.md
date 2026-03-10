@@ -3851,3 +3851,30 @@ flutter analyze lib/main_story.dart
 ### Result
 - No new compile errors from this change.
 - Existing non-blocking lint/info warnings remain in `main_story.dart`.
+
+## Session Update - 2026-03-10 (Returning Character Prompt + Name Audio UX)
+
+### Scope Completed
+- Improved returning-user character selection wording.
+- Updated name-step audio button to speak and then listen for voice response.
+
+### Changes
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+  - Returning character page now uses clearer prompt copy:
+    - audio: "Welcome back! Is this your character?"
+    - subtitle: "Tap your character to continue."
+  - Each saved avatar card now asks: `Is this <Name>?`
+- `lib/screens/welcome_screen.dart`
+  - Added `_promptNameAndListen()` for the name step.
+  - Name audio button now says: `Hi, what's your name?` and then opens microphone listening (if speech is available).
+  - Updated early-age spoken prompt copy to match.
+
+### Verification
+```bash
+flutter analyze lib/screens/welcome_screen.dart lib/screens/wizard_steps/hero_creator_step.dart
+```
+
+### Result
+- PASS: No analyzer issues.
+- Returning users get a clearer "is this your character" selection flow.
+- Name audio interaction now supports one-tap "hear + answer" while preserving manual typing fallback.

@@ -28,6 +28,7 @@ import '../../widgets/avatar_gallery_selector.dart';
 import '../../widgets/image_mode_orb.dart';
 import '../../widgets/image_crystal_formation.dart';
 import '../../data/scenario_data.dart';
+import '../../character_traits_data.dart';
 
 /// Hero Creator — Step 1 of the story wizard.
 /// Restructured as a guided multi-page wizard (progressive disclosure).
@@ -264,6 +265,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   /// Plays shimmer chime + shows a brief star-burst particle overlay.
   void _triggerPageCelebration() {
+    final age = widget.wizardData.characterAge;
+    if (age >= 9) return; // Only for Sprout/Explorer
     AudioAmbienceService().playSfx('sounds/magical_shimmer.mp3');
     _showStarBurst();
   }
@@ -509,25 +512,29 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   // Page 0: Welcome / Returning User Choice
   Widget _buildPage0() {
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final ageBand = band.band;
     return Column(
       children: [
         const SizedBox(height: 20),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _audioPrompt("Welcome back!"),
+            _audioPrompt("Welcome back! Is this your character?"),
             const SizedBox(width: 8),
             Flexible(
               child: Text(
-                "Welcome back!",
-                style: GoogleFonts.cinzelDecorative(
-                  color: const Color(0xFFFFD700),
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
+                ageBand == AgeBand.creator ? "Welcome back" : "Welcome back!",
+                style: _bandTitleStyle(band, baseFontSize: 28),
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          "Tap your character to continue.",
+          style: GoogleFonts.fredoka(color: Colors.white70, fontSize: 14),
         ),
         const SizedBox(height: 30),
         Expanded(
@@ -556,6 +563,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Widget _buildCreateNewHeroButton() {
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final ageBand = band.band;
     return ElevatedButton(
       onPressed: _switchToNewCharacter,
       style: ElevatedButton.styleFrom(
@@ -572,11 +582,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           const Icon(Icons.add_circle_outline, size: 24),
           const SizedBox(width: 12),
           Text(
-            "Create a New Hero",
-            style: GoogleFonts.cinzelDecorative(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            ageBand == AgeBand.creator ? "Create a New Hero" : "Create a New Hero!",
+            style: _bandTitleStyle(band, baseFontSize: 18),
           ),
         ],
       ),
@@ -657,7 +664,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     final band =
                         Theme.of(context).extension<AgeBandThemeData>() ??
                             explorerTheme;
-                    return Text('Pick your hero style first!',
+                    final title = band.band == AgeBand.creator
+                        ? 'Select hero style'
+                        : 'Pick your hero style!';
+                    return Text(title,
                         style: _bandTitleStyle(band, baseFontSize: 22));
                   },
                 ),
@@ -848,12 +858,20 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   /// Companion selection grid — 7 magical creatures + saved friends + pet management.
   Widget _buildCompanionGrid() {
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Pick your adventure team:',
-          style: TextStyle(color: Colors.white70, fontSize: 14),
+        Text(
+          band.band == AgeBand.creator
+              ? 'Select your adventure team'
+              : 'Pick your adventure team:',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 14,
+            fontFamily: band.uiFontFamily,
+          ),
         ),
         const SizedBox(height: 12),
         // ── Saved characters as friends ──────────────────────────────────────
@@ -2242,12 +2260,26 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           widget.wizardData.characterName.isNotEmpty
               ? "HI ${widget.wizardData.characterName.toUpperCase()}!"
               : "HERO'S NAME",
-          style: GoogleFonts.cinzelDecorative(
-            color: const Color(0xFFFFE082).withAlpha(200),
-            fontSize: 14,
-            letterSpacing: 2.0,
-            fontWeight: FontWeight.w600,
-          ),
+          style: (band.band == AgeBand.creator)
+              ? GoogleFonts.sourceSans3(
+                  color: const Color(0xFFFFE082).withAlpha(200),
+                  fontSize: 14,
+                  letterSpacing: 1.5,
+                  fontWeight: FontWeight.w600,
+                )
+              : (band.band == AgeBand.adventurer)
+                  ? GoogleFonts.bitter(
+                      color: const Color(0xFFFFE082).withAlpha(200),
+                      fontSize: 14,
+                      letterSpacing: 1.5,
+                      fontWeight: FontWeight.w600,
+                    )
+                  : GoogleFonts.cinzelDecorative(
+                      color: const Color(0xFFFFE082).withAlpha(200),
+                      fontSize: 14,
+                      letterSpacing: 2.0,
+                      fontWeight: FontWeight.w600,
+                    ),
         ),
         const SizedBox(height: 6),
         _ThemedNameInput(
@@ -2357,7 +2389,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                         horizontal: 6,
                       ),
                       child: Text(
-                        a.name,
+                        a.nameForAge(widget.wizardData.characterAge),
                         textAlign: TextAlign.center,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -2447,7 +2479,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              a.name,
+                              a.nameForAge(widget.wizardData.characterAge),
                               textAlign: TextAlign.center,
                               style: GoogleFonts.fredoka(
                                   color: Colors.white,
@@ -2842,15 +2874,45 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   Widget _buildBriefPersonalitySliders() {
     final sliders = widget.wizardData.personalitySliders;
+    final age = widget.wizardData.characterAge;
+
+    // Helper to find the definition from our central data store
+    PersonalitySliderDefinition def(String key) =>
+        CharacterTraitsData.personalitySliders.firstWhere(
+          (s) => s.key == key,
+          orElse: () => CharacterTraitsData.personalitySliders.first,
+        );
+
     return Column(
       children: [
-        _buildBriefSlider('ENERGY RANGE', 'Calm', 'Active', 'expressiveness', sliders),
-        _buildBriefSlider('SOCIAL DYNAMIC', 'Reserved', 'Outgoing',
-            'sociability', sliders),
-        _buildBriefSlider('COGNITIVE STYLE', 'Logical', 'Imagination',
-            'problem_solving', sliders),
-        _buildBriefSlider('RISK PROFILE', 'Cautious', 'Adventurous', 'adventure',
-            sliders),
+        _buildBriefSlider(
+          'PSYCHOLOGICAL VITALITY',
+          def('expressiveness').leftLabelForAge(age),
+          def('expressiveness').rightLabelForAge(age),
+          'expressiveness',
+          sliders,
+        ),
+        _buildBriefSlider(
+          'SOCIAL ARCHITECTURE',
+          def('sociability').leftLabelForAge(age),
+          def('sociability').rightLabelForAge(age),
+          'sociability',
+          sliders,
+        ),
+        _buildBriefSlider(
+          'CONSTRUCTIVE LOGIC',
+          def('problem_solving').leftLabelForAge(age),
+          def('problem_solving').rightLabelForAge(age),
+          'problem_solving',
+          sliders,
+        ),
+        _buildBriefSlider(
+          'ADVENTURE TOLERANCE',
+          def('adventure').leftLabelForAge(age),
+          def('adventure').rightLabelForAge(age),
+          'adventure',
+          sliders,
+        ),
       ],
     );
   }
@@ -3113,6 +3175,15 @@ class _CharacterChoiceCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    "Is this ${character.name}?",
+                    style: GoogleFonts.fredoka(
+                      color: const Color(0xFFFFD700),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
                   Text(character.name,
                       style: GoogleFonts.cinzelDecorative(
                           color: Colors.white,
