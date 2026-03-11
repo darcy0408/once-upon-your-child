@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import '../../models.dart';
+import '../../services/app_tts_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pill_button.dart';
 
@@ -27,27 +27,16 @@ class CompanionSelectorStep extends StatefulWidget {
 class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
   final Set<String> _selectedCompanions = {};
   final bool _isLoading = false;
-  late FlutterTts _tts;
 
   @override
   void initState() {
     super.initState();
-    _tts = FlutterTts();
-    _initTts();
-    
     // Sync with existing wizard data
     _selectedCompanions.addAll(widget.wizardData.selectedCompanions);
   }
 
-  Future<void> _initTts() async {
-    await _tts.setLanguage("en-US");
-    await _tts.setPitch(1.0);
-    await _tts.setSpeechRate(0.5);
-  }
-
   @override
   void dispose() {
-    _tts.stop();
     super.dispose();
   }
 
@@ -199,7 +188,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
   Widget _audioPrompt(String text) {
     return IconButton(
       icon: const Icon(Icons.volume_up_rounded, color: Color(0xFFFFD700), size: 32),
-      onPressed: () => _tts.speak(text),
+      onPressed: () => AppTtsService.instance.speak(text),
     );
   }
 

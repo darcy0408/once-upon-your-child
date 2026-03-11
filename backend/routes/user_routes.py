@@ -274,5 +274,78 @@ def create_user_routes_blueprint(limiter=None):
             current_app.logger.exception('Failed to delete data for user %s', user_id)
             return jsonify({'error': 'Data deletion failed. Please try again or contact support.'}), 500
 
+    @user_routes.route('/api/user/<user_id>/export', methods=['GET'])
+    @require_auth
+    @require_owner('user_id')
+    @limiter.limit("5 per hour")
+    def export_user_data(user_id):
+        """
+        Export all user data (COPPA right to access).
+        Returns a JSON object containing the user's profile, characters,
+        stories, interactive stories, achievements, and consent records.
+        """
+        try:
+            from backend.models import (
+                InteractiveStory, StorySegment, StoryChoice,
+                InventoryItem, StoryState, UserAchievement, AchievementStats,
+            )
+
+            user = request.current_user
+
+            # Characters
+            characters = Character.query.filter_by(user_id=user_id).all()
+            characters_data = [c.to_dict() for c in characters]
+
+            # Stories
+            stories = Story.query.filter_by(user_id=user_id).all()
+            stories_data = [{
+                'id': s.id,
+                'title': s.title,
+                'theme': s.theme,
+                'created_at': s.created_at.isoformat() if s.created_at else None,
+            } for s in stories]
+
+            # Interactive Stories
+            interactive_stories = InteractiveStory.query.filter_by(user_id=user_id).all()
+            interactive_data = []
+            for ist in interactive_stories:
+                segments = StorySegment.query.filter_by(story_id=ist.id).all()
+                interactive_data.append({
+                    'id': ist.id,
+                    'title': getattr(ist, 'title', None),
+                    'created_at': ist.created_at.isoformat() if ist.created_at else None,
+                    'segments_count': len(segments),
+                })
+
+            # Consent records
+            consent_records = ConsentRecord.query.filter_by(user_id=user_id).all()
+            consent_data = [cr.to_dict() for cr in consent_records]
+
+            # Achievements
+            achievements = UserAchievement.query.filter_by(user_id=user_id).all()
+            achievements_data = [{
+                'id': a.id,
+                'achievement_type': getattr(a, 'achievement_type', None),
+                'earned_at': a.earned_at.isoformat() if getattr(a, 'earned_at', None) else None,
+            } for a in achievements]
+
+            export = {
+                'exported_at': datetime.now(timezone.utc).isoformat(),
+                'user_id': user_id,
+                'profile': user.to_dict(),
+                'characters': characters_data,
+                'stories': stories_data,
+                'interactive_stories': interactive_data,
+                'consent_records': consent_data,
+                'achievements': achievements_data,
+            }
+
+            response = jsonify(export)
+            response.headers['Content-Disposition'] = f'attachment; filename="storyweaver_export_{user_id[:8]}.json"'
+            return response
+        except Exception as e:
+            current_app.logger.exception('Failed to export data for %s', user_id)
+            return jsonify({'error': 'Data export failed'}), 500
+
     return user_routes
 

@@ -297,6 +297,7 @@ def test_unauthenticated_access_prevention(client):
         ('/api/user/any-id/age', 'PATCH'),
         ('/api/user/any-id/consent', 'POST'),
         ('/api/user/any-id/data', 'DELETE'),
+        ('/api/user/any-id/export', 'GET'),
         ('/admin/run-db-optimization', 'POST')
     ]
     
@@ -480,3 +481,37 @@ def test_coppa_delete_user_data(client, auth_headers, test_user, test_character)
     assert user.email.endswith('@deleted.local')
     assert user.password_hash == 'DELETED'
     assert user.declared_age is None
+
+
+def test_coppa_export_user_data(client, auth_headers, test_user, test_character):
+    """
+    Test COPPA right-to-access: GET /api/user/<id>/export
+    Should return a JSON object with all user data.
+    """
+    # Record consent so it appears in the export
+    client.post(
+        f'/api/user/{test_user.id}/consent',
+        data=json.dumps({'child_age': 9, 'consent_method': 'parent'}),
+        headers=auth_headers,
+    )
+
+    response = client.get(
+        f'/api/user/{test_user.id}/export',
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+
+    assert data['user_id'] == test_user.id
+    assert 'profile' in data
+    assert 'characters' in data
+    assert 'stories' in data
+    assert 'consent_records' in data
+    assert 'exported_at' in data
+
+    # Character should be in the export
+    assert len(data['characters']) >= 1
+    assert any(c['id'] == test_character.id for c in data['characters'])
+
+    # Consent should be in the export
+    assert len(data['consent_records']) >= 1

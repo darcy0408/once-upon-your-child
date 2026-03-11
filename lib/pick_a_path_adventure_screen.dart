@@ -2,9 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_tts/flutter_tts.dart';
-
 import 'models.dart';
+import 'services/app_tts_service.dart';
 import 'storage_service.dart';
 import 'services/interactive_story_analytics.dart';
 import 'services/interactive_story_service.dart';
@@ -74,7 +73,6 @@ class _PickAPathAdventureScreenState
   bool _storySaved = false;
   int _segmentsThisSession = 0;
   bool _sessionLimitReached = false;
-  FlutterTts? _tts;
   bool _ttsEnabled = false;
   bool _inventoryExpanded = false;
   bool _stateExpanded = false;
@@ -108,23 +106,18 @@ class _PickAPathAdventureScreenState
   void dispose() {
     _scrollController.dispose();
     _customChoiceController.dispose();
-    _tts?.stop();
+    AppTtsService.instance.stop();
     super.dispose();
   }
 
-  Future<void> _initTts() async {
-    _tts = FlutterTts();
-    await _tts!.setLanguage('en-US');
-    await _tts!.setSpeechRate(widget.character.age <= 5 ? 0.40 : 0.48);
-    await _tts!.setPitch(widget.character.age <= 5 ? 1.1 : 1.0);
+  void _initTts() {
     if (mounted) setState(() => _ttsEnabled = true);
   }
 
   void _speakSegment(String text) {
-    if (!_ttsEnabled || _tts == null) return;
-    _tts!.stop();
+    if (!_ttsEnabled) return;
     final clean = text.replaceAll(RegExp(r'\*+'), '').trim();
-    _tts!.speak(clean);
+    unawaited(AppTtsService.instance.speak(clean));
   }
 
   int get _targetSegmentCount {
@@ -642,7 +635,7 @@ class _PickAPathAdventureScreenState
               child: IconButton(
                 icon: const Icon(Icons.volume_off_rounded, color: Colors.deepPurple),
                 tooltip: 'Stop reading',
-                onPressed: () => _tts?.stop(),
+                onPressed: () => AppTtsService.instance.stop(),
               ),
             ),
           // Illustration

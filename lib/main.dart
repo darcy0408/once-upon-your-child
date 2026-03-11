@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'main_story.dart';
+import 'services/app_tts_service.dart';
 import 'services/isar_service.dart';
 import 'services/firebase_analytics_service.dart';
 import 'services/subscription_service.dart';
@@ -23,6 +24,7 @@ Future<void> main() async {
 
       await IsarService.getInstance();
       await StorageMigration.migrateFromSharedPreferences();
+      unawaited(AppTtsService.instance.init());
 
       // Initialize Firebase with graceful degradation
       // Skip Firebase on web debug builds to avoid window.dart assertion warnings

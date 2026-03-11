@@ -2,17 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 import '../providers/age_band_provider.dart';
-import '../providers/voice_preference_provider.dart';
+import '../services/app_tts_service.dart';
 import '../services/parental_consent_service.dart';
-import '../services/tts_api_service.dart';
 import '../theme/app_theme.dart';
 import 'parental_consent_screen.dart';
 import 'parent_controls_screen.dart';
@@ -36,8 +32,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   int? _selectedAge;
   bool _submitting = false;
 
-  final _tts = FlutterTts();
-  final _audioPlayer = AudioPlayer();
   final _speech = SpeechToText();
   bool _speechEnabled = false;
   bool _isListening = false;
@@ -77,10 +71,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   }
 
   Future<void> _initVoice() async {
-    await _tts.setLanguage("en-US");
-    await _tts.setSpeechRate(0.4);
-    await _tts.setPitch(1.1);
-    
     _speechEnabled = await _speech.initialize();
     if (mounted) {
       setState(() {});
@@ -88,19 +78,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     }
   }
 
-  Future<void> _speak(String text) async {
-    try {
-      final voiceId = ref.read(voicePreferenceNotifierProvider);
-      final mp3 = await TtsApiService.synthesize(text, voiceId: voiceId);
-      if (mp3 != null && mp3.isNotEmpty) {
-        await _audioPlayer.stop();
-        await _audioPlayer.play(BytesSource(mp3));
-        await _audioPlayer.onPlayerComplete.first
-            .timeout(const Duration(seconds: 15));
-        return;
-      }
-    } catch (_) {}
-    await _tts.speak(text);
+  Future<void> _speak(String text, {bool awaitCompletion = false}) async {
+    await AppTtsService.instance.speak(text, awaitCompletion: awaitCompletion);
   }
 
   Future<void> _promptNameAndListen() async {
@@ -135,9 +114,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   void dispose() {
     _nameController.dispose();
     _titleTimer?.cancel();
-    _tts.stop();
-    _audioPlayer.stop();
-    _audioPlayer.dispose();
+    AppTtsService.instance.stop();
     _speech.stop();
     super.dispose();
   }
@@ -158,8 +135,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
 
   void _advanceFromName() {
     if (_nameController.text.trim().isNotEmpty && _step == 1) {
-      _tts.stop();
-      _audioPlayer.stop();
+      AppTtsService.instance.stop();
       _speech.stop();
       setState(() => _step = 2);
       unawaited(_speak('How old are you? Tap your number!'));

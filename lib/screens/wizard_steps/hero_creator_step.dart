@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:audioplayers/audioplayers.dart';
+import '../../services/app_tts_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -84,7 +85,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   late TextEditingController _superpowerController;
   late TextEditingController _questController;
   late TextEditingController _wishController;
-  late FlutterTts _tts;
   bool _isPetAvatarGenerating = false;
   String? _petAvatarStatusMessage;
 
@@ -148,11 +148,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     _speech.initialize().then((available) {
       if (mounted) setState(() => _speechAvailable = available);
     });
-    _tts = FlutterTts();
-    _initTts().then((_) {
-      // Speak the landing page prompt for young children.
-      WidgetsBinding.instance.addPostFrameCallback((_) => _speakPagePrompt(_heroPage));
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _speakPagePrompt(_heroPage));
 
     AvatarGenerationState().addListener(_onAvatarStateChanged);
     ApiServiceManager.hasPremiumAccess().then((premium) {
@@ -183,11 +179,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     });
   }
 
-  Future<void> _initTts() async {
-    await _tts.setLanguage("en-US");
-    await _tts.setPitch(1.0);
-    await _tts.setSpeechRate(0.5);
-  }
 
   @override
   void dispose() {
@@ -200,7 +191,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
     _sparkleCtrl.dispose();
     _speech.stop();
-    _tts.stop();
+    AppTtsService.instance.stop();
     _heroPageController.dispose();
     AvatarGenerationState().removeListener(_onAvatarStateChanged);
     super.dispose();
@@ -2543,7 +2534,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       if (!available) {
         if (field == 'imagine') {
           unawaited(
-              _tts.speak('Microphone is unavailable. Please type your idea.'));
+              AppTtsService.instance.speak('Microphone is unavailable. Please type your idea.'));
         }
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -2560,13 +2551,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     }
 
     if (field == 'imagine') {
-      unawaited(_tts.speak('Tell me where your adventure takes place.'));
+      unawaited(AppTtsService.instance.speak('Tell me where your adventure takes place.'));
     } else if (field == 'name') {
       final name = widget.wizardData.characterName;
       if (name.isNotEmpty) {
-        unawaited(_tts.speak('What is the hero name for $name?'));
+        unawaited(AppTtsService.instance.speak('What is the hero name for $name?'));
       } else {
-        unawaited(_tts.speak('What is your hero\'s name?'));
+        unawaited(AppTtsService.instance.speak("What is your hero's name?"));
       }
     }
 
@@ -3146,7 +3137,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   /// Speaks a prompt only for young children (age ≤ 5 / sprout band).
   void _speakForSprout(String text) {
     if (widget.wizardData.characterAge > 5) return;
-    unawaited(_tts.speak(text));
+    unawaited(AppTtsService.instance.speak(text));
   }
 
   void _speakPagePrompt(int page) {
