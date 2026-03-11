@@ -26,6 +26,10 @@ class Environment {
       '$backendUrl/generate-interactive-story';
   static String get continueInteractiveStoryUrl =>
       '$backendUrl/continue-interactive-story';
+  static String get summarizeChapterUrl =>
+      '$backendUrl/chronicle/summarize-chapter';
+  static String get compressArcUrl =>
+      '$backendUrl/chronicle/compress-arc';
   static String get createCharacterUrl => '$backendUrl/create-character';
   static String get getCharactersUrl => '$backendUrl/get-characters';
 }

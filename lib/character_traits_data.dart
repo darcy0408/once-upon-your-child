@@ -37,6 +37,8 @@ class CharacterTraitsData {
       label: 'Organization & Planning',
       leftLabel: 'Tidy Planner',
       rightLabel: 'Messy Freestyle',
+      matureLeftLabel: 'Meticulous',
+      matureRightLabel: 'Spontaneous',
       helperText:
           'Do they love organizing and checklists, or go with the flow?',
       leftIcon: Icons.checklist,
@@ -47,6 +49,8 @@ class CharacterTraitsData {
       label: 'Voice Style',
       leftLabel: 'Bold Voice',
       rightLabel: 'Soft Voice',
+      matureLeftLabel: 'Assertive',
+      matureRightLabel: 'Reserved',
       helperText:
           'Do they speak up loudly or use gentle whispers?',
       leftIcon: Icons.campaign,
@@ -57,6 +61,8 @@ class CharacterTraitsData {
       label: 'Social Energy',
       leftLabel: 'Jump-Right-In',
       rightLabel: 'Warm-Up-First',
+      matureLeftLabel: 'Outgoing',
+      matureRightLabel: 'Introspective',
       helperText:
           'Do they dive into new friends or take time to feel comfy?',
       leftIcon: Icons.groups,
@@ -67,6 +73,8 @@ class CharacterTraitsData {
       label: 'Adventure Level',
       leftLabel: 'Let’s Explore!',
       rightLabel: 'Careful Steps',
+      matureLeftLabel: 'Bold Explorer',
+      matureRightLabel: 'Pragmatic',
       helperText:
           'Do they chase big quests or prefer safe paths?',
       leftIcon: Icons.explore,
@@ -77,6 +85,8 @@ class CharacterTraitsData {
       label: 'Energy Level',
       leftLabel: 'Mega Energy',
       rightLabel: 'Calm Breeze',
+      matureLeftLabel: 'Dynamic',
+      matureRightLabel: 'Serene',
       helperText:
           'Do they bounce like a rocket or move like a quiet cloud?',
       leftIcon: Icons.bolt,
@@ -87,6 +97,8 @@ class CharacterTraitsData {
       label: 'Feelings Expression',
       leftLabel: 'Heart-On-Sleeve',
       rightLabel: 'Quiet Feelings',
+      matureLeftLabel: 'Open',
+      matureRightLabel: 'Private',
       helperText:
           'Do they share feelings right away or keep them cozy inside?',
       leftIcon: Icons.favorite_border,
@@ -97,6 +109,8 @@ class CharacterTraitsData {
       label: 'Problem-Solving Style',
       leftLabel: 'Brainy Builder',
       rightLabel: 'Imagination Wiz',
+      matureLeftLabel: 'Analytical',
+      matureRightLabel: 'Intuitive',
       helperText:
           'Do they use logic blocks or big imagination sparks?',
       leftIcon: Icons.extension,
@@ -107,6 +121,8 @@ class CharacterTraitsData {
       label: 'Play Preference',
       leftLabel: 'Caring & Nurturing',
       rightLabel: 'Building & Action',
+      matureLeftLabel: 'Empathetic',
+      matureRightLabel: 'Strategic',
       helperText:
           'Do they love caring play or building and action adventures?',
       leftIcon: Icons.favorite,
@@ -129,6 +145,8 @@ class PersonalitySliderDefinition {
   final String label;
   final String leftLabel;
   final String rightLabel;
+  final String? matureLeftLabel;
+  final String? matureRightLabel;
   final String helperText;
   final IconData leftIcon;
   final IconData rightIcon;
@@ -138,26 +156,40 @@ class PersonalitySliderDefinition {
     required this.label,
     required this.leftLabel,
     required this.rightLabel,
+    this.matureLeftLabel,
+    this.matureRightLabel,
     required this.helperText,
     required this.leftIcon,
     required this.rightIcon,
   });
 
+  /// Get the left label appropriate for the given age.
+  String leftLabelForAge(int age) {
+    if (age >= 11 && matureLeftLabel != null) return matureLeftLabel!;
+    return leftLabel;
+  }
+
+  /// Get the right label appropriate for the given age.
+  String rightLabelForAge(int age) {
+    if (age >= 11 && matureRightLabel != null) return matureRightLabel!;
+    return rightLabel;
+  }
+
   /// Human-friendly description of a slider's current leaning.
-  String describeValue(num rawValue) {
+  String describeValue(num rawValue, {int age = 7}) {
     final value = rawValue.clamp(0, 100).toDouble();
     final delta = (value - 50).abs();
     if (delta <= 5) {
       return 'A mix of both styles';
     }
-    final direction = value > 50 ? rightLabel : leftLabel;
+    final direction = value > 50 ? rightLabelForAge(age) : leftLabelForAge(age);
     String qualifier;
     if (delta >= 30) {
-      qualifier = 'Totally loves';
+      qualifier = age >= 11 ? 'Strongly' : 'Totally loves';
     } else if (delta >= 15) {
-      qualifier = 'Leans toward';
+      qualifier = age >= 11 ? 'Generally' : 'Leans toward';
     } else {
-      qualifier = 'Slightly prefers';
+      qualifier = age >= 11 ? 'Slightly' : 'Slightly prefers';
     }
     return '$qualifier $direction';
   }

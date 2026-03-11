@@ -25,7 +25,6 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   bool _consentGiven = false;
   bool _allowPhotoAvatar = true;
   bool _submitting = false;
-
   @override
   Widget build(BuildContext context) {
     const textWhite = TextStyle(color: Colors.white);
@@ -228,6 +227,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
       ),
     );
   }
+
 
   Future<void> _submitConsent() async {
     setState(() => _submitting = true);

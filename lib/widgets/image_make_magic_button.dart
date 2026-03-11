@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
+import '../utils/motion_utils.dart';
+import '../theme/age_band_theme.dart';
 
 /// Image-based Make Magic Button using transparent PNG asset.
 ///
@@ -10,15 +12,17 @@ import 'dart:math' as math;
 ///   - Glow (shadow intensity oscillates)
 ///   - Press: swaps to _pressed asset, scales down, shadow shrinks
 class ImageMakeMagicButton extends StatefulWidget {
-  final String label;
+  final String? label;
   final VoidCallback onTap;
   final bool isEnabled;
+  final AgeBand? ageBand;
 
   const ImageMakeMagicButton({
     super.key,
-    this.label = 'Make Magic',
+    this.label,
     required this.onTap,
     this.isEnabled = true,
+    this.ageBand,
   });
 
   @override
@@ -105,7 +109,12 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
     return Semantics(
       button: true,
       enabled: widget.isEnabled,
-      label: widget.label,
+      label: widget.label ??
+          (widget.ageBand == AgeBand.adventurer
+              ? 'START ADVENTURE'
+              : widget.ageBand == AgeBand.creator
+                  ? 'CREATE STORY'
+                  : 'MAKE MAGIC'),
       hint: 'Start creating your magical story',
       child: GestureDetector(
         onTapDown: _onTapDown,
@@ -131,7 +140,8 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
 
             // Glow intensity
             final glowT = _glowController.value;
-            final glowIntensity = widget.isEnabled
+            final bool showParticles = MotionPrefs.showParticles(context);
+            final glowIntensity = (widget.isEnabled && showParticles)
                 ? 0.5 + 0.4 * math.sin(glowT * math.pi)
                 : 0.0;
 
@@ -183,7 +193,12 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
                           filterQuality: FilterQuality.high,
                           errorBuilder: (context, error, stackTrace) {
                             return _FallbackButton(
-                              label: widget.label,
+                              label: widget.label ??
+                                  (widget.ageBand == AgeBand.adventurer
+                                      ? 'START ADVENTURE'
+                                      : widget.ageBand == AgeBand.creator
+                                          ? 'CREATE STORY'
+                                          : 'MAKE MAGIC'),
                               width: buttonWidth,
                               isEnabled: widget.isEnabled,
                               isPressed: _isPressed,

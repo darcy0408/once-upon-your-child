@@ -23,6 +23,7 @@ import 'coloring_book_library_screen.dart';
 import 'customizable_avatar_widget.dart';
 import 'dialogs/upgrade_prompt_dialog.dart';
 import 'saved_stories_screen.dart';
+import 'screens/chronicles_list_screen.dart';
 import 'services/isar_service.dart';
 import 'services/offline_story_service.dart';
 import 'models/local/story_local.dart';
@@ -899,6 +900,27 @@ class _StoryScreenState extends State<StoryScreen> {
                   Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => const SavedStoriesScreen()));
                   break;
+                case 'my_chronicles':
+                  if (_selectedCharacter == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text(
+                              'Select a character first to view Chronicles.')),
+                    );
+                  } else if (_selectedCharacter!.age < 11) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text(
+                              'Living Chronicles are for readers aged 11 and up.')),
+                    );
+                  } else {
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => ChroniclesListScreen(
+                              character: _selectedCharacter!,
+                              userId: _userId ?? '',
+                            )));
+                  }
+                  break;
                 case 'group':
                   Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => const MultiCharacterScreen()));
@@ -942,6 +964,14 @@ class _StoryScreenState extends State<StoryScreen> {
                 child: ListTile(
                   leading: Icon(Icons.book),
                   title: Text('My Stories'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'my_chronicles',
+                child: ListTile(
+                  leading: Icon(Icons.menu_book),
+                  title: Text('My Chronicles'),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),

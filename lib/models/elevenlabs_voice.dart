@@ -18,8 +18,8 @@ class ElevenLabsVoice {
     this.ageHint = 'all ages',
   });
 
-  /// Default voice ID (Rachel — warm female, ideal for kids).
-  static const String defaultVoiceId = '21m00Tcm4TlvDq8ikWAM';
+  /// Default voice ID (Matilda — warm expressive narrator, best for kids' stories).
+  static const String defaultVoiceId = 'XrExE9yKIg1WjnnlVkGX';
 
   /// SharedPreferences key for persisted voice selection.
   static const String prefsKey = 'tts_voice_id';
@@ -34,19 +34,19 @@ class ElevenLabsVoice {
 
   static const List<ElevenLabsVoice> curated = [
     ElevenLabsVoice(
-      id: '21m00Tcm4TlvDq8ikWAM',
-      name: 'Rachel',
-      gender: 'female',
-      accent: 'American',
-      description: 'Warm and gentle — perfect for bedtime stories',
-      recommended: true,
-    ),
-    ElevenLabsVoice(
       id: 'XrExE9yKIg1WjnnlVkGX',
       name: 'Matilda',
       gender: 'female',
       accent: 'American',
-      description: 'Bright and friendly narrator kids love',
+      description: 'Warm, expressive storyteller — best for children\'s narration',
+      recommended: true,
+    ),
+    ElevenLabsVoice(
+      id: '21m00Tcm4TlvDq8ikWAM',
+      name: 'Rachel',
+      gender: 'female',
+      accent: 'American',
+      description: 'Calm and gentle — great for bedtime stories',
     ),
     ElevenLabsVoice(
       id: 'ThT5KcBeYPX3keUQqHPh',

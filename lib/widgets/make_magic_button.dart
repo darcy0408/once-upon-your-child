@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import '../theme/app_theme.dart';
+import '../theme/age_band_theme.dart';
+import '../utils/motion_utils.dart';
 
 /// MakeMagicButton - The primary CTA button with magical animations
 ///
@@ -13,17 +15,19 @@ import '../theme/app_theme.dart';
 /// - Gold border with purple gradient background
 /// - WCAG AAA accessible (88px height)
 class MakeMagicButton extends StatefulWidget {
-  final String label;
+  final String? label;
   final VoidCallback onTap;
   final bool isEnabled;
   final bool showSparkles;
+  final AgeBand? ageBand;
 
   const MakeMagicButton({
     super.key,
-    this.label = 'Make Magic',
+    this.label,
     required this.onTap,
     this.isEnabled = true,
     this.showSparkles = true,
+    this.ageBand,
   });
 
   @override
@@ -89,11 +93,20 @@ class _MakeMagicButtonState extends State<MakeMagicButton>
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final buttonWidth = math.min(screenWidth * 0.86, 360.0);
+    // Respect the system/app setting for particles, combining it with the widget's own prop
+    final bool _actualShowSparkles =
+        widget.showSparkles && MotionPrefs.showParticles(context);
+    final String actualLabel = widget.label ??
+        (widget.ageBand == AgeBand.adventurer
+            ? 'START ADVENTURE'
+            : widget.ageBand == AgeBand.creator
+                ? 'CREATE STORY'
+                : 'MAKE MAGIC');
 
     return Semantics(
       button: true,
       enabled: widget.isEnabled,
-      label: widget.label,
+      label: actualLabel,
       hint: 'Start creating your magical story',
       child: ScaleTransition(
         scale: widget.isEnabled ? _pulseAnimation : const AlwaysStoppedAnimation(1.0),
@@ -153,7 +166,7 @@ class _MakeMagicButtonState extends State<MakeMagicButton>
               alignment: Alignment.center,
               children: [
                 // Animated Sparkles (if enabled)
-                if (widget.showSparkles && widget.isEnabled) ...[
+                if (_actualShowSparkles && widget.isEnabled) ...[
                   const Positioned(
                     left: 20,
                     top: 15,
@@ -180,9 +193,8 @@ class _MakeMagicButtonState extends State<MakeMagicButton>
                     child: _SparkleIcon(size: 10),
                   ),
                 ],
-                // Button label with text shadow for "glow"
                 Text(
-                  widget.label,
+                  actualLabel,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: AppColors.textLight,
                         fontWeight: FontWeight.w900,

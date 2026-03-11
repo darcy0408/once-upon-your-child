@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -36,13 +35,9 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
   late String _loadingStatus;
   final StoryIllustrationService _illustrationService =
       StoryIllustrationService();
-  late FlutterTts _tts;
-
   @override
   void initState() {
     super.initState();
-    _tts = FlutterTts();
-    _initTts();
     if (widget.wizardData.characterAge >= 10) {
       _loadingStatus = 'Your adventure is being written...';
     } else if (widget.wizardData.characterAge >= 7) {
@@ -52,15 +47,8 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
     }
   }
 
-  Future<void> _initTts() async {
-    await _tts.setLanguage("en-US");
-    await _tts.setPitch(1.0);
-    await _tts.setSpeechRate(0.5);
-  }
-
   @override
   void dispose() {
-    _tts.stop();
     super.dispose();
   }
 
@@ -104,11 +92,6 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
       ? (ScenarioData.getById(widget.wizardData.selectedScenario!)?.title ??
           'Magical Adventure')
       : 'Magical Adventure';
-
-  Widget _audioPrompt(String text) => IconButton(
-      icon: const Icon(Icons.volume_up_rounded,
-          color: Color(0xFFFFD700), size: 32),
-      onPressed: () => _tts.speak(text));
 
   void _launchStoryCreation() async {
     if (!widget.wizardData.isComplete) {
@@ -339,12 +322,21 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
           : 'Pick a Path adventure';
     }
     if (data.rhymeTimeMode) {
+      if (data.characterAge >= 11) {
+        return 'Poetry';
+      }
       return band.band == AgeBand.sprout ? 'Rhyme story' : 'Rhyme Time story';
     }
     if (data.learningToReadMode) {
-      return band.band == AgeBand.sprout
-          ? 'Easy reader'
-          : 'Learn to Read story';
+      switch (band.band) {
+        case AgeBand.sprout:
+          return 'Easy reader';
+        case AgeBand.explorer:
+        case AgeBand.adventurer:
+          return 'Limerick Laughs story';
+        case AgeBand.creator:
+          return 'First Chapter';
+      }
     }
     if (data.includeIllustrations) {
       return band.band == AgeBand.creator
@@ -382,15 +374,31 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             vertical: band.space(AppSpacing.xl)),
         child: Column(
           children: [
-            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              _audioPrompt("Your adventure awaits!"),
-              SizedBox(width: band.space(8)),
-              Text("Your Adventure Awaits!",
-                  style: GoogleFonts.cinzelDecorative(
+            Text(
+              band.band == AgeBand.creator
+                  ? "Review Your Story Brief"
+                  : band.band == AgeBand.adventurer
+                      ? "Review Your Adventure"
+                      : "Your Adventure Awaits!",
+              textAlign: TextAlign.center,
+              style: (band.band == AgeBand.creator)
+                  ? GoogleFonts.sourceSans3(
                       color: const Color(0xFFFFD700),
                       fontSize: band.heading(22),
-                      fontWeight: FontWeight.bold))
-            ]),
+                      fontWeight: FontWeight.bold,
+                    )
+                  : (band.band == AgeBand.adventurer)
+                      ? GoogleFonts.bitter(
+                          color: const Color(0xFFFFD700),
+                          fontSize: band.heading(22),
+                          fontWeight: FontWeight.bold,
+                        )
+                      : GoogleFonts.cinzelDecorative(
+                          color: const Color(0xFFFFD700),
+                          fontSize: band.heading(22),
+                          fontWeight: FontWeight.bold,
+                        ),
+            ),
             SizedBox(height: band.space(24)),
             // ── Hero orb (avatar only, no overlapping circles) ───────────────
             SizedBox(
@@ -435,10 +443,23 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             if (data.characterName.isNotEmpty) ...[
               Text(
                 data.characterName,
-                style: GoogleFonts.cinzelDecorative(
-                    color: const Color(0xFFFFD700),
-                    fontSize: band.heading(16),
-                    fontWeight: FontWeight.bold),
+                style: (band.band == AgeBand.creator)
+                    ? GoogleFonts.sourceSans3(
+                        color: const Color(0xFFFFD700),
+                        fontSize: band.heading(16),
+                        fontWeight: FontWeight.bold,
+                      )
+                    : (band.band == AgeBand.adventurer)
+                        ? GoogleFonts.bitter(
+                            color: const Color(0xFFFFD700),
+                            fontSize: band.heading(16),
+                            fontWeight: FontWeight.bold,
+                          )
+                        : GoogleFonts.cinzelDecorative(
+                            color: const Color(0xFFFFD700),
+                            fontSize: band.heading(16),
+                            fontWeight: FontWeight.bold,
+                          ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: band.space(12)),
@@ -581,7 +602,11 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                         child: ImageMakeMagicButton(
                             onTap: _launchStoryCreation,
                             isEnabled: !_isGenerating && data.isComplete,
-                            label: 'MAKE MAGIC'))),
+                            label: band.band == AgeBand.creator
+                                ? 'CREATE STORY'
+                                : band.band == AgeBand.adventurer
+                                    ? 'START ADVENTURE'
+                                    : 'MAKE MAGIC'))),
             SizedBox(height: band.space(AppSpacing.xl)),
           ],
         ),

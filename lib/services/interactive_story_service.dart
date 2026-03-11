@@ -103,6 +103,7 @@ class InteractiveStoryService {
     List<String>? avoid,
     String? lifeChallenge,
     Map<String, int>? personalitySliders,
+    Map<String, dynamic>? chronicleContext,
   }) async {
     final headers = await ApiServiceManager.authHeaders();
     final uri = Uri.parse('$_baseUrl/generate-interactive-story');
@@ -123,6 +124,7 @@ class InteractiveStoryService {
             if (avoid != null && avoid.isNotEmpty) 'avoid': avoid,
             if (lifeChallenge != null) 'life_challenge': lifeChallenge,
             if (personalitySliders != null) 'personality_sliders': personalitySliders,
+            if (chronicleContext != null) 'chronicle_context': chronicleContext,
           }),
         )
         .timeout(const Duration(seconds: 30));

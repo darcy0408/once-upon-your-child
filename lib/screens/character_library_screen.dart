@@ -9,6 +9,7 @@ import '../theme/app_theme.dart';
 import '../config/environment.dart';
 import 'wizard_story_screen.dart';
 import 'character_editor_screen.dart';
+import 'chronicles_list_screen.dart';
 
 /// Character Library Screen
 ///
@@ -584,34 +585,70 @@ class _CharacterCard extends StatelessWidget {
           // Action buttons
           Padding(
             padding: const EdgeInsets.all(AppSpacing.sm),
-            child: Row(
+            child: Column(
               children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: onCreateStory,
-                    icon: const Icon(Icons.auto_stories, size: 16),
-                    label: const Text('Story', style: TextStyle(fontSize: 12)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.textLight,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: onCreateStory,
+                        icon: const Icon(Icons.auto_stories, size: 16),
+                        label: const Text('Story', style: TextStyle(fontSize: 12)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.textLight,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final userId = await ApiServiceManager().getUserId();
+                          if (userId == null) return;
+                          if (context.mounted) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChroniclesListScreen(
+                                  userId: userId,
+                                  character: character,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.history_edu, size: 16),
+                        label: const Text('Chronicle', style: TextStyle(fontSize: 12)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurple,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 4),
-                IconButton(
-                  onPressed: onEdit,
-                  icon: const Icon(Icons.edit_outlined),
-                  color: AppColors.primary,
-                  tooltip: 'Edit',
-                  iconSize: 20,
-                ),
-                IconButton(
-                  onPressed: onDelete,
-                  icon: const Icon(Icons.delete_outline),
-                  color: AppColors.error,
-                  tooltip: 'Delete',
-                  iconSize: 20,
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      onPressed: onEdit,
+                      icon: const Icon(Icons.edit_outlined),
+                      color: AppColors.primary,
+                      tooltip: 'Edit',
+                      iconSize: 20,
+                    ),
+                    IconButton(
+                      onPressed: onDelete,
+                      icon: const Icon(Icons.delete_outline),
+                      color: AppColors.error,
+                      tooltip: 'Delete',
+                      iconSize: 20,
+                    ),
+                  ],
                 ),
               ],
             ),

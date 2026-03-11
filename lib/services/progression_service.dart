@@ -10,6 +10,7 @@ class UserProgress {
   int storiesFavorited;
   int charactersCreated;
   int coloringPagesCompleted;
+  int wisdomGems;
   Set<String> unlockedFeatures;
   DateTime createdAt;
   DateTime? lastStoryCreatedAt;
@@ -20,6 +21,7 @@ class UserProgress {
     this.storiesFavorited = 0,
     this.charactersCreated = 0,
     this.coloringPagesCompleted = 0,
+    this.wisdomGems = 0,
     Set<String>? unlockedFeatures,
     DateTime? createdAt,
     this.lastStoryCreatedAt,
@@ -40,6 +42,7 @@ class UserProgress {
       'storiesFavorited': storiesFavorited,
       'charactersCreated': charactersCreated,
       'coloringPagesCompleted': coloringPagesCompleted,
+      'wisdomGems': wisdomGems,
       'unlockedFeatures': unlockedFeatures.toList(),
       'createdAt': createdAt.toIso8601String(),
       'lastStoryCreatedAt': lastStoryCreatedAt?.toIso8601String(),
@@ -53,6 +56,7 @@ class UserProgress {
       storiesFavorited: json['storiesFavorited'] as int? ?? 0,
       charactersCreated: json['charactersCreated'] as int? ?? 0,
       coloringPagesCompleted: json['coloringPagesCompleted'] as int? ?? 0,
+      wisdomGems: json['wisdomGems'] as int? ?? 0,
       unlockedFeatures: (json['unlockedFeatures'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toSet() ??
@@ -160,10 +164,21 @@ class ProgressionService {
   }
 
   /// Record that a story was created
-  Future<List<String>> incrementStoriesCreated() async {
+  Future<List<String>> incrementStoriesCreated(int age) async {
     final progress = await getUserProgress();
     progress.storiesCreated++;
     progress.lastStoryCreatedAt = DateTime.now();
+
+    // Age-graduated Wisdom Gem rewards
+    if (age < 5) {
+      progress.wisdomGems += 1; // Sprout
+    } else if (age < 8) {
+      progress.wisdomGems += 3; // Explorer
+    } else if (age < 12) {
+      progress.wisdomGems += 5; // Adventurer
+    } else {
+      progress.wisdomGems += 10; // Creator
+    }
 
     // Check for new unlocks
     final newUnlocks = checkForUnlocks(progress);
@@ -246,7 +261,7 @@ class ProgressionService {
       case UnlockableFeatures.customColors:
         return 'Custom Color Picker';
       case UnlockableFeatures.rhymeTimeMode:
-        return 'Rhyme Time Mode';
+        return 'Rhyme & Poetry Mode';
       case UnlockableFeatures.superheroMode:
         return 'Superhero Mode';
       case UnlockableFeatures.interactiveStories:

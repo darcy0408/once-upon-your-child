@@ -4,6 +4,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/image_continue_button.dart';
 import '../../widgets/feelings_quest_modal.dart';
 import '../../data/scenario_data.dart';
+import '../../character_traits_data.dart';
 
 const double _settingCardWidth = 220;
 
@@ -117,34 +118,84 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   Widget _buildSlider(String leftLabel, String rightLabel, String key,
       Map<String, int> sliders) {
     final value = sliders[key]?.toDouble() ?? 50.0;
+    final age = widget.wizardData.characterAge;
+    final isYoung = age <= 11;
+
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(leftLabel,
-                style:
-                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                style: TextStyle(
+                    fontSize: isYoung ? 13 : 12,
+                    fontWeight: isYoung ? FontWeight.bold : FontWeight.w500,
+                    color: isYoung ? AppColors.textDark : Colors.black87)),
             Text(rightLabel,
-                style:
-                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                style: TextStyle(
+                    fontSize: isYoung ? 13 : 12,
+                    fontWeight: isYoung ? FontWeight.bold : FontWeight.w500,
+                    color: isYoung ? AppColors.textDark : Colors.black87)),
           ],
         ),
-        Slider(
-          value: value,
-          min: 0,
-          max: 100,
-          divisions: 10,
-          activeColor: AppColors.primary,
-          inactiveColor: AppColors.primary.withValues(alpha: 0.2),
-          onChanged: (newValue) {
-            setState(() {
-              sliders[key] = newValue.round();
-            });
-          },
+        Row(
+          children: [
+            if (isYoung) ...[
+              Text(_sliderStartEmoji(key),
+                  style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 8),
+            ],
+            Expanded(
+              child: Slider(
+                value: value,
+                min: 0,
+                max: 100,
+                divisions: 10,
+                activeColor: AppColors.primary,
+                inactiveColor: AppColors.primary.withValues(alpha: 0.2),
+                onChanged: (newValue) {
+                  setState(() {
+                    sliders[key] = newValue.round();
+                  });
+                },
+              ),
+            ),
+            if (isYoung) ...[
+              const SizedBox(width: 8),
+              Text(_sliderEndEmoji(key), style: const TextStyle(fontSize: 22)),
+            ],
+          ],
         ),
       ],
     );
+  }
+
+  String _sliderStartEmoji(String traitKey) {
+    const map = {
+      'energy': '😴',
+      'sociability': '🙈',
+      'creativity': '📖',
+      'confidence': '🤫',
+      'empathy': '🤐',
+      'adventurousness': '🛋️',
+      'adventure': '🛋️',
+      'expressiveness': '😴',
+    };
+    return map[traitKey.toLowerCase()] ?? '😐';
+  }
+
+  String _sliderEndEmoji(String traitKey) {
+    const map = {
+      'energy': '⚡',
+      'sociability': '🎉',
+      'creativity': '🎨',
+      'confidence': '🦁',
+      'empathy': '💖',
+      'adventurousness': '🚀',
+      'adventure': '🚀',
+      'expressiveness': '⚡',
+    };
+    return map[traitKey.toLowerCase()] ?? '😊';
   }
 
   @override
@@ -422,30 +473,50 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             ],
           ),
           const SizedBox(height: 12),
-          _buildSlider(
-            'Cautious',
-            'Adventurous',
-            'adventurousness',
-            widget.wizardData.personalitySliders,
-          ),
-          _buildSlider(
-            'Quiet',
-            'Social',
-            'sociability',
-            widget.wizardData.personalitySliders,
-          ),
-          _buildSlider(
-            'Calm',
-            'Energetic',
-            'energy',
-            widget.wizardData.personalitySliders,
-          ),
-          _buildSlider(
-            'Serious',
-            'Silly',
-            'creativity',
-            widget.wizardData.personalitySliders,
-          ),
+          Builder(builder: (context) {
+            final age = widget.wizardData.characterAge;
+            final isExplorer = age >= 5 && age <= 7;
+            
+            // Unified definitions
+            PersonalitySliderDefinition def(String key) =>
+                CharacterTraitsData.personalitySliders.firstWhere((s) => s.key == key);
+
+            final dAdventure = def('adventure');
+            final dSociability = def('sociability');
+            final dExpressiveness = def('expressiveness');
+            final dCreativity = def('problem_solving');
+
+            return Column(
+              children: [
+                _buildSlider(
+                  dAdventure.leftLabelForAge(age),
+                  dAdventure.rightLabelForAge(age),
+                  'adventure',
+                  widget.wizardData.personalitySliders,
+                ),
+                _buildSlider(
+                  dSociability.leftLabelForAge(age),
+                  dSociability.rightLabelForAge(age),
+                  'sociability',
+                  widget.wizardData.personalitySliders,
+                ),
+                _buildSlider(
+                  dExpressiveness.leftLabelForAge(age),
+                  dExpressiveness.rightLabelForAge(age),
+                  'expressiveness',
+                  widget.wizardData.personalitySliders,
+                ),
+                // Only show 4th slider if older than Explorer band
+                if (!isExplorer)
+                  _buildSlider(
+                    dCreativity.leftLabelForAge(age),
+                    dCreativity.rightLabelForAge(age),
+                    'problem_solving',
+                    widget.wizardData.personalitySliders,
+                  ),
+              ],
+            );
+          }),
 
           const SizedBox(height: AppSpacing.lg),
 

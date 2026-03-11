@@ -6,10 +6,14 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models.dart';
 import '../models/local/character_local.dart';
+import '../models/local/chronicle_local.dart';
+import '../models/local/chapter_memory_local.dart';
 
 // Create a stub Isar type that matches the API surface we need
 class Isar {
   CharacterLocalsStub get characterLocals => CharacterLocalsStub();
+  ChronicleLocalsStub get chronicleLocals => ChronicleLocalsStub();
+  ChapterMemoryLocalsStub get chapterMemoryLocals => ChapterMemoryLocalsStub();
 
   Future<void> writeTxn(Future<void> Function() callback) async {
     await callback();
@@ -143,5 +147,213 @@ class IsarService {
 
   static Future<void> close() async {
     _isar = null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ChronicleLocal stubs
+// ---------------------------------------------------------------------------
+
+class ChronicleLocalsStub {
+  static const String _key = 'isar_chronicles';
+
+  ChronicleFilterStub filter() => ChronicleFilterStub();
+
+  Future<int> put(ChronicleLocal chronicle) async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<dynamic> list =
+        json.decode(prefs.getString(_key) ?? '[]') as List<dynamic>;
+
+    if (chronicle.id == 0) {
+      chronicle.id = DateTime.now().millisecondsSinceEpoch;
+    }
+    final idx = list.indexWhere((e) => e['id'] == chronicle.id);
+    final data = _toMap(chronicle);
+    if (idx >= 0) {
+      list[idx] = data;
+    } else {
+      list.add(data);
+    }
+    await prefs.setString(_key, json.encode(list));
+    return chronicle.id;
+  }
+
+  static Map<String, dynamic> _toMap(ChronicleLocal c) => {
+        'id': c.id,
+        'chronicleId': c.chronicleId,
+        'characterId': c.characterId,
+        'characterName': c.characterName,
+        'characterAge': c.characterAge,
+        'title': c.title,
+        'genre': c.genre,
+        'chapterCount': c.chapterCount,
+        'isActive': c.isActive,
+        'lastPlayedAt': c.lastPlayedAt.toIso8601String(),
+        'createdAt': c.createdAt.toIso8601String(),
+        'worldFactsJson': c.worldFactsJson,
+        'arcSummariesJson': c.arcSummariesJson,
+        'recentMemoriesJson': c.recentMemoriesJson,
+        'unresolvedThreadsJson': c.unresolvedThreadsJson,
+        'characterStateJson': c.characterStateJson,
+        'lastChapterEnding': c.lastChapterEnding,
+        'lastChoiceMade': c.lastChoiceMade,
+      };
+
+  static ChronicleLocal _fromMap(Map<String, dynamic> d) => ChronicleLocal()
+    ..id = d['id'] as int? ?? 0
+    ..chronicleId = d['chronicleId'] as String? ?? ''
+    ..characterId = d['characterId'] as String? ?? ''
+    ..characterName = d['characterName'] as String? ?? ''
+    ..characterAge = d['characterAge'] as int? ?? 0
+    ..title = d['title'] as String? ?? ''
+    ..genre = d['genre'] as String? ?? ''
+    ..chapterCount = d['chapterCount'] as int? ?? 0
+    ..isActive = d['isActive'] as bool? ?? true
+    ..lastPlayedAt = DateTime.tryParse(d['lastPlayedAt'] as String? ?? '') ?? DateTime.now()
+    ..createdAt = DateTime.tryParse(d['createdAt'] as String? ?? '') ?? DateTime.now()
+    ..worldFactsJson = d['worldFactsJson'] as String?
+    ..arcSummariesJson = d['arcSummariesJson'] as String?
+    ..recentMemoriesJson = d['recentMemoriesJson'] as String?
+    ..unresolvedThreadsJson = d['unresolvedThreadsJson'] as String?
+    ..characterStateJson = d['characterStateJson'] as String?
+    ..lastChapterEnding = d['lastChapterEnding'] as String?
+    ..lastChoiceMade = d['lastChoiceMade'] as String?;
+
+  static Future<List<ChronicleLocal>> _loadAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<dynamic> list =
+        json.decode(prefs.getString(_key) ?? '[]') as List<dynamic>;
+    return list.map((e) => _fromMap(e as Map<String, dynamic>)).toList();
+  }
+}
+
+class ChronicleFilterStub {
+  String? _characterId;
+  String? _chronicleId;
+  bool? _isActive;
+
+  ChronicleFilterStub characterIdEqualTo(String id) {
+    _characterId = id;
+    return this;
+  }
+
+  ChronicleFilterStub chronicleIdEqualTo(String id) {
+    _chronicleId = id;
+    return this;
+  }
+
+  ChronicleFilterStub and() => this;
+
+  ChronicleFilterStub isActiveEqualTo(bool v) {
+    _isActive = v;
+    return this;
+  }
+
+  ChronicleFilterStub sortByLastPlayedAtDesc() => this;
+
+  Future<List<ChronicleLocal>> findAll() async {
+    var list = await ChronicleLocalsStub._loadAll();
+    if (_characterId != null) {
+      list = list.where((c) => c.characterId == _characterId).toList();
+    }
+    if (_chronicleId != null) {
+      list = list.where((c) => c.chronicleId == _chronicleId).toList();
+    }
+    if (_isActive != null) {
+      list = list.where((c) => c.isActive == _isActive).toList();
+    }
+    list.sort((a, b) => b.lastPlayedAt.compareTo(a.lastPlayedAt));
+    return list;
+  }
+
+  Future<ChronicleLocal?> findFirst() async {
+    final list = await findAll();
+    return list.isEmpty ? null : list.first;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ChapterMemoryLocal stubs
+// ---------------------------------------------------------------------------
+
+class ChapterMemoryLocalsStub {
+  static const String _key = 'isar_chapter_memories';
+
+  ChapterMemoryFilterStub filter() => ChapterMemoryFilterStub();
+
+  Future<int> put(ChapterMemoryLocal m) async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<dynamic> list =
+        json.decode(prefs.getString(_key) ?? '[]') as List<dynamic>;
+
+    if (m.id == 0) {
+      m.id = DateTime.now().millisecondsSinceEpoch;
+    }
+    final idx = list.indexWhere((e) => e['id'] == m.id);
+    final data = _toMap(m);
+    if (idx >= 0) {
+      list[idx] = data;
+    } else {
+      list.add(data);
+    }
+    await prefs.setString(_key, json.encode(list));
+    return m.id;
+  }
+
+  static Map<String, dynamic> _toMap(ChapterMemoryLocal m) => {
+        'id': m.id,
+        'chronicleId': m.chronicleId,
+        'chapterNumber': m.chapterNumber,
+        'createdAt': m.createdAt.toIso8601String(),
+        'summaryBulletsJson': m.summaryBulletsJson,
+        'newWorldFactsJson': m.newWorldFactsJson,
+        'characterGrowthNote': m.characterGrowthNote,
+        'cliffhanger': m.cliffhanger,
+        'newThreadsJson': m.newThreadsJson,
+        'resolvedThreadsJson': m.resolvedThreadsJson,
+        'choiceMadeToStartChapter': m.choiceMadeToStartChapter,
+        'fullChapterText': m.fullChapterText,
+      };
+
+  static ChapterMemoryLocal _fromMap(Map<String, dynamic> d) =>
+      ChapterMemoryLocal()
+        ..id = d['id'] as int? ?? 0
+        ..chronicleId = d['chronicleId'] as String? ?? ''
+        ..chapterNumber = d['chapterNumber'] as int? ?? 0
+        ..createdAt = DateTime.tryParse(d['createdAt'] as String? ?? '') ?? DateTime.now()
+        ..summaryBulletsJson = d['summaryBulletsJson'] as String?
+        ..newWorldFactsJson = d['newWorldFactsJson'] as String?
+        ..characterGrowthNote = d['characterGrowthNote'] as String?
+        ..cliffhanger = d['cliffhanger'] as String?
+        ..newThreadsJson = d['newThreadsJson'] as String?
+        ..resolvedThreadsJson = d['resolvedThreadsJson'] as String?
+        ..choiceMadeToStartChapter = d['choiceMadeToStartChapter'] as String?
+        ..fullChapterText = d['fullChapterText'] as String?;
+
+  static Future<List<ChapterMemoryLocal>> _loadAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<dynamic> list =
+        json.decode(prefs.getString(_key) ?? '[]') as List<dynamic>;
+    return list.map((e) => _fromMap(e as Map<String, dynamic>)).toList();
+  }
+}
+
+class ChapterMemoryFilterStub {
+  String? _chronicleId;
+
+  ChapterMemoryFilterStub chronicleIdEqualTo(String id) {
+    _chronicleId = id;
+    return this;
+  }
+
+  ChapterMemoryFilterStub sortByChapterNumber() => this;
+
+  Future<List<ChapterMemoryLocal>> findAll() async {
+    var list = await ChapterMemoryLocalsStub._loadAll();
+    if (_chronicleId != null) {
+      list = list.where((m) => m.chronicleId == _chronicleId).toList();
+    }
+    list.sort((a, b) => a.chapterNumber.compareTo(b.chapterNumber));
+    return list;
   }
 }

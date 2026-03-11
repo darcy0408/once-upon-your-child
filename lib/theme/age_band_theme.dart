@@ -14,10 +14,10 @@ enum AgeBand {
   /// Ages 6-8: Magical purple, sparkles, readable labels (current default)
   explorer,
 
-  /// Ages 9-12: Deeper cosmic palette, book-like typography, "cool" factor
+  /// Ages 9-11: Deeper cosmic palette, book-like typography, "cool" factor
   adventurer,
 
-  /// Ages 13+: Clean, editorial, dark mode default, novel-app aesthetic
+  /// Ages 12+: Clean, editorial, dark mode default, novel-app aesthetic
   creator,
 }
 
@@ -25,7 +25,7 @@ enum AgeBand {
 AgeBand ageBandFromAge(int age) {
   if (age <= 5) return AgeBand.sprout;
   if (age <= 8) return AgeBand.explorer;
-  if (age <= 12) return AgeBand.adventurer;
+  if (age <= 11) return AgeBand.adventurer;
   return AgeBand.creator;
 }
 

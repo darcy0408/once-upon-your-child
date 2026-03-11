@@ -12,6 +12,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../theme/age_band_theme.dart';
 import '../data/mood_lantern_data.dart';
 import '../feelings_wheel_data.dart';
 
@@ -100,50 +101,54 @@ class _MoodLanternSelectorState extends State<MoodLanternSelector>
     return AnimatedBuilder(
       animation: _combinedAnimation,
       builder: (context, child) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Title
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                'Choose Your Story\'s Magic ✨',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF5D4037), // Warm brown
-                    ),
-                textAlign: TextAlign.center,
+        return SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Title
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Choose Your Story\'s Magic ✨',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF5D4037), // Warm brown
+                        fontSize: 20,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
               ),
-            ),
 
-            // Subtitle instruction
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Text(
-                'Tap a lantern to pick the feeling for your adventure',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF795548),
-                      fontStyle: FontStyle.italic,
-                    ),
-                textAlign: TextAlign.center,
+              // Subtitle instruction
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  'Tap a lantern to pick the feeling for your adventure',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF795548),
+                        fontStyle: FontStyle.italic,
+                        fontSize: 13,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
               ),
-            ),
 
-            // Lantern grid - no container box, just the lanterns
-            _LanternGrid(
-              selectedLanternId: _selectedLanternId,
-              glowIntensity: _glowAnimation.value,
-              idleIntensity: _idleAnimation.value,
-              onLanternTap: _selectLantern,
-              age: widget.age,
-            ),
+              // Lantern grid - no container box, just the lanterns
+              _LanternGrid(
+                selectedLanternId: _selectedLanternId,
+                glowIntensity: _glowAnimation.value,
+                idleIntensity: _idleAnimation.value,
+                onLanternTap: _selectLantern,
+                age: widget.age,
+              ),
 
-            // Selected lantern expanded description
-            if (_selectedLantern != null) ...[
-              const SizedBox(height: 16),
-              _MoodDescription(lantern: _selectedLantern!, age: widget.age),
+              // Selected lantern expanded description
+              if (_selectedLantern != null) ...[
+                const SizedBox(height: 16),
+                _MoodDescription(lantern: _selectedLantern!, age: widget.age),
+              ],
             ],
-          ],
+          ),
         );
       },
     );
@@ -197,14 +202,15 @@ class _LanternGrid extends StatelessWidget {
         return Wrap(
           alignment: WrapAlignment.center,
           spacing: spacing,
-          runSpacing: 24, // Staggered layout needs more vertical space
+          runSpacing: 16, // Reduced from 24 to save space
           children: kMoodLanterns.asMap().entries.map((entry) {
             final index = entry.key;
             final lantern = entry.value;
             final isSelected = selectedLanternId == lantern.id;
             
             // Floating effect: Stagger odd/even lanterns
-            final double topPadding = index.isEven ? 0.0 : 24.0;
+            // Reduced stagger from 24 to 16 for better vertical economy
+            final double topPadding = index.isEven ? 0.0 : 16.0;
 
             return Padding(
               padding: EdgeInsets.only(top: topPadding),
@@ -295,14 +301,18 @@ class _LanternWidget extends StatelessWidget {
         .withLightness(0.5)
         .toColor();
 
+    final band = ageBandFromAge(age);
+    final showEmojiAnchor = band == AgeBand.sprout || band == AgeBand.explorer;
+
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque, // Better hit testing
       child: Semantics(
         button: true,
         selected: isSelected,
         label: '${lantern.nameForAge(age)} lantern, ${lantern.storyMagicForAge(age)}',
         child: AnimatedScale(
-          scale: isSelected ? (size < 50 ? 1.05 : 1.08) : 1.0,
+          scale: isSelected ? (size < 50 ? 1.08 : 1.1) : 1.0, // Slightly more pronounced
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutBack,
           child: SizedBox(
@@ -328,11 +338,11 @@ class _LanternWidget extends StatelessWidget {
                             BoxShadow(
                               color: vividColor.withValues(
                                 alpha: isSelected
-                                    ? 0.6 * glowIntensity
-                                    : 0.25 * glowIntensity,
+                                    ? 0.7 * glowIntensity // Increased alpha
+                                    : 0.3 * glowIntensity,
                               ),
-                              blurRadius: isSelected ? (size < 50 ? 15 : 20) : 8,
-                              spreadRadius: isSelected ? (size < 50 ? 4 : 6) : 1,
+                              blurRadius: isSelected ? (size < 50 ? 18 : 24) : 10,
+                              spreadRadius: isSelected ? (size < 50 ? 5 : 8) : 2,
                             ),
                           ],
                         ),
@@ -340,7 +350,7 @@ class _LanternWidget extends StatelessWidget {
                       // Lantern image - use colorBlendMode for tinting if needed
                       AnimatedOpacity(
                         duration: const Duration(milliseconds: 200),
-                        opacity: isSelected ? 1.0 : 0.8,
+                        opacity: isSelected ? 1.0 : 0.85,
                         child: Image.asset(
                           lantern.imagePath,
                           width: size - 4,
@@ -356,8 +366,8 @@ class _LanternWidget extends StatelessWidget {
                                 shape: BoxShape.circle,
                                 gradient: RadialGradient(
                                   colors: [
-                                    vividColor.withValues(alpha: 0.9),
-                                    vividColor.withValues(alpha: 0.6),
+                                    vividColor.withValues(alpha: 0.95),
+                                    vividColor.withValues(alpha: 0.7),
                                   ],
                                 ),
                                 boxShadow: [
@@ -371,7 +381,7 @@ class _LanternWidget extends StatelessWidget {
                               child: Center(
                                 child: Text(
                                   lantern.emoji,
-                                  style: TextStyle(fontSize: size * 0.35),
+                                  style: TextStyle(fontSize: size * 0.45), // Larger fallback emoji
                                 ),
                               ),
                             );
@@ -387,7 +397,7 @@ class _LanternWidget extends StatelessWidget {
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: vividColor,
-                              width: size < 50 ? 2 : 2.5,
+                              width: size < 50 ? 2 : 3, // Slightly thicker border
                             ),
                           ),
                         ),
@@ -395,31 +405,45 @@ class _LanternWidget extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
+
+                // P2-2: Emoji anchors for ages 5-7 (Sprout/Explorer)
+                if (showEmojiAnchor)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Text(
+                      lantern.emoji,
+                      style: const TextStyle(fontSize: 18),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+
                 // Lantern name - always visible, smaller on narrow screens
                 Text(
                   lantern.nameForAge(age),
                   style: TextStyle(
-                    fontSize: size < 50 ? 9 : (isSelected ? 11 : 10),
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                    fontSize: size < 50 ? 9.5 : (isSelected ? 11.5 : 10.5),
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w700,
                     color: isSelected ? vividColor : const Color(0xFF5D4037),
                   ),
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
                 // Short magic description - hide on very small sizes
-                if (size >= 50)
+                if (size >= 48) // Lowered threshold slightly
                   Text(
                     _shortMagic,
                     style: TextStyle(
-                      fontSize: 8,
+                      fontSize: 8.5,
                       fontWeight: FontWeight.w400,
                       color: isSelected
-                          ? vividColor.withValues(alpha: 0.8)
+                          ? vividColor.withValues(alpha: 0.9)
                           : const Color(0xFF8D6E63),
                       fontStyle: FontStyle.italic,
                     ),
                     textAlign: TextAlign.center,
                     overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
               ],
             ),
