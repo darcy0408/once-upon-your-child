@@ -464,6 +464,7 @@ This prompt is designed for "Story Weaver," an app that transforms real-world im
                 return {
                     'id': avatar_id,
                     'image_base64': f"data:image/png;base64,{image_base64}",
+                    'seed': avatar_id,
                     'style': 'pixar-pet-custom',
                     'attributes': {
                         'pet_name': pet_name,
@@ -471,6 +472,7 @@ This prompt is designed for "Story Weaver," an app that transforms real-world im
                         'breed_description': breed_description,
                         'owner_favorite_color': owner_favorite_color
                     },
+                    'emotion_data': None,
                     'generated_at': datetime.now().isoformat(),
                     'generation_time_ms': generation_time_ms,
                     'version': 1

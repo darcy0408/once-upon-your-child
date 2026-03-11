@@ -29,6 +29,7 @@ import '../../widgets/image_mode_orb.dart';
 import '../../widgets/image_crystal_formation.dart';
 import '../../data/scenario_data.dart';
 import '../../character_traits_data.dart';
+import '../../widgets/feelings_quest_modal.dart';
 
 /// Hero Creator — Step 1 of the story wizard.
 /// Restructured as a guided multi-page wizard (progressive disclosure).
@@ -107,7 +108,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     if (widget.availableCharacters.isNotEmpty) {
       _heroPage = 0;
     } else {
-      _heroPage = 1;
+      // Onboarding already collected name+age, so jump straight to style setup.
+      _heroPage = (widget.wizardData.characterName.trim().isNotEmpty &&
+              widget.wizardData.characterAge >= 3)
+          ? 2
+          : 1;
     }
     _heroPageController = PageController(initialPage: _heroPage);
     _logPageView(_heroPage);
@@ -144,7 +149,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       if (mounted) setState(() => _speechAvailable = available);
     });
     _tts = FlutterTts();
-    _initTts();
+    _initTts().then((_) {
+      // Speak the landing page prompt for young children.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _speakPagePrompt(_heroPage));
+    });
 
     AvatarGenerationState().addListener(_onAvatarStateChanged);
     ApiServiceManager.hasPremiumAccess().then((premium) {
@@ -201,6 +209,18 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   @override
   void didUpdateWidget(covariant HeroCreatorStep oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (_nameController.text.trim().isEmpty &&
+        widget.wizardData.characterName.trim().isNotEmpty) {
+      _nameController.text = widget.wizardData.characterName;
+    }
+    if (_heroPage == 1 &&
+        widget.wizardData.characterName.trim().isNotEmpty &&
+        widget.wizardData.characterAge >= 3) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _heroPage != 1) return;
+        _jumpToSubStep(2);
+      });
+    }
     if (widget.requestedSubStep != null &&
         widget.subStepRequestNonce != oldWidget.subStepRequestNonce) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -219,6 +239,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           _generatedAvatar = state.completedAvatar;
           widget.wizardData.generatedAvatar = state.completedAvatar;
         });
+        _maybeAdvanceFromStylePage();
         _sparkleCtrl.forward(from: 0);
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('✨ Your avatar is ready!'),
@@ -250,6 +271,29 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     });
   }
 
+  Future<void> _openFeelingsQuest() async {
+    final age = widget.wizardData.characterAge <= 0
+        ? 8
+        : widget.wizardData.characterAge;
+    final result = await FeelingsQuestModal.show(context, childAge: age);
+    if (result != null && mounted) {
+      setState(() {
+        widget.wizardData.selectedEmotionChips = result;
+        widget.wizardData.selectedScenario = 'big_feelings_quest';
+      });
+    }
+  }
+
+  void _onSceneTap(String id) {
+    if (id == 'big_feelings_quest') {
+      _openFeelingsQuest();
+    } else {
+      setState(() => widget.wizardData.selectedScenario = id);
+    }
+    final label = _sceneLabel(id);
+    if (label != null) _speakForSprout(label);
+  }
+
   void _heroNextPage() {
     if (_heroPage < 5) {
       _triggerPageCelebration();
@@ -260,6 +304,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       setState(() => _heroPage++);
       _logPageView(_heroPage);
       _notifySubStep();
+      _speakPagePrompt(_heroPage);
     }
   }
 
@@ -405,11 +450,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         widget.wizardData.characterAge = 5;
       }
     });
+    // Read the archetype name aloud for young children.
+    _speakForSprout(archetype.nameForAge(widget.wizardData.characterAge));
 
     // Step flow on page 2:
-    // 1) Pick archetype first
-    // 2) Then pick/generate hero look
-    // 3) Auto-advance once both are selected
+    // 1) Pick avatar and archetype in any order.
+    // 2) Auto-advance once both are selected.
     if (_heroPage != 2) return;
     if (_hasAvatar) {
       _heroNextPage();
@@ -419,6 +465,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       if (!mounted || _heroPage != 2 || _hasAvatar) return;
       await _openAvatarCreationOptions();
     });
+  }
+
+  void _maybeAdvanceFromStylePage() {
+    if (!mounted || _heroPage != 2) return;
+    if (_hasAvatar && _selectedArchetypeId != null) {
+      _heroNextPage();
+    }
   }
 
   Future<bool> _saveCharacterDraft() async {
@@ -477,15 +530,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     }
   }
 
-  // ─── TTS Helper ─────────────────────────────────────────────────────────────
-  Widget _audioPrompt(String text) {
-    return IconButton(
-      icon: const Icon(Icons.volume_up_rounded,
-          color: Color(0xFFFFD700), size: 32),
-      onPressed: () => _tts.speak(text),
-    );
-  }
-
   // ─── Age-Band Title Style ────────────────────────────────────────────────────
   TextStyle _bandTitleStyle(AgeBandThemeData band, {double baseFontSize = 24}) {
     if (band.band == AgeBand.creator) {
@@ -518,18 +562,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     return Column(
       children: [
         const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _audioPrompt("Welcome back! Is this your character?"),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                ageBand == AgeBand.creator ? "Welcome back" : "Welcome back!",
-                style: _bandTitleStyle(band, baseFontSize: 28),
-              ),
-            ),
-          ],
+        Text(
+          ageBand == AgeBand.creator ? "Welcome back" : "Welcome back!",
+          textAlign: TextAlign.center,
+          style: _bandTitleStyle(band, baseFontSize: 28),
         ),
         const SizedBox(height: 6),
         Text(
@@ -606,18 +642,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               SizedBox(height: band.space(10)),
               if (!(widget.wizardData.characterAge <= 4 &&
                   ageBand == AgeBand.sprout))
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _audioPrompt("Who is your hero?"),
-                    SizedBox(width: band.space(8)),
-                    Flexible(
-                      child: Text(
-                        band.createCharacterLabel,
-                        style: _bandTitleStyle(band, baseFontSize: 24),
-                      ),
-                    ),
-                  ],
+                Text(
+                  band.createCharacterLabel,
+                  textAlign: TextAlign.center,
+                  style: _bandTitleStyle(band, baseFontSize: 24),
                 ),
               // Sprout: big colourful prompt to reinforce what to do
               if (ageBand == AgeBand.sprout) ...[
@@ -653,44 +681,51 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       child: Column(
         children: [
           const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _audioPrompt("Pick your hero style!"),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Builder(
-                  builder: (context) {
-                    final band =
-                        Theme.of(context).extension<AgeBandThemeData>() ??
-                            explorerTheme;
-                    final title = band.band == AgeBand.creator
-                        ? 'Select hero style'
-                        : 'Pick your hero style!';
-                    return Text(title,
-                        style: _bandTitleStyle(band, baseFontSize: 22));
-                  },
-                ),
-              ),
-            ],
+          Builder(
+            builder: (context) {
+              final band =
+                  Theme.of(context).extension<AgeBandThemeData>() ??
+                      explorerTheme;
+              final title = band.band == AgeBand.creator
+                  ? 'Character archetype'
+                  : band.band == AgeBand.adventurer
+                      ? 'Choose your hero type'
+                      : 'Pick your hero style!';
+              return Text(title,
+                  textAlign: TextAlign.center,
+                  style: _bandTitleStyle(band, baseFontSize: 22));
+            },
           ),
           const SizedBox(height: 12),
+          _buildAvatarLookCard(),
+          const SizedBox(height: 12),
+          Builder(builder: (context) {
+            final b =
+                Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+            if (b.band == AgeBand.sprout) return const SizedBox.shrink();
+            return const Text(
+              'Step 1: Pick your hero look.',
+              style: TextStyle(color: Colors.white70, fontSize: 12),
+              textAlign: TextAlign.center,
+            );
+          }),
+          const SizedBox(height: 14),
           _buildArchetypeCards(),
           const SizedBox(height: 20),
-          if (_selectedArchetypeId != null) ...[
-            _buildAvatarLookCard(),
-            const SizedBox(height: 12),
-            const Text(
-              'Now choose your hero look to continue.',
-              style: TextStyle(color: Colors.white70, fontSize: 12),
+          Builder(builder: (context) {
+            final b =
+                Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+            if (b.band == AgeBand.sprout) return const SizedBox.shrink();
+            return Text(
+              _hasAvatar
+                  ? (_selectedArchetypeId != null
+                      ? 'Great! Tap an archetype to continue.'
+                      : 'Step 2: Pick your hero type to continue.')
+                  : 'Pick your hero look first, then choose archetype.',
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
               textAlign: TextAlign.center,
-            ),
-          ] else
-            const Text(
-              'Pick one archetype to unlock character look creation.',
-              style: TextStyle(color: Colors.white70, fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
+            );
+          }),
           const SizedBox(height: 24),
         ],
       ),
@@ -817,28 +852,20 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final companionTitle = band.band == AgeBand.sprout
         ? 'Pick your buddies!'
-        : band.band == AgeBand.adventurer
-            ? 'Choose your companions'
-            : band.band == AgeBand.creator
-                ? 'Choose companions'
-                : "Who's coming with you?";
+        : band.band == AgeBand.explorer
+            ? 'Pick your friends!'
+            : band.band == AgeBand.adventurer
+                ? 'Choose your companions'
+                : 'Choose Your Companions';
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         children: [
           const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _audioPrompt("Who's coming with you?"),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  companionTitle,
-                  style: _bandTitleStyle(band, baseFontSize: 22),
-                ),
-              ),
-            ],
+          Text(
+            companionTitle,
+            textAlign: TextAlign.center,
+            style: _bandTitleStyle(band, baseFontSize: 22),
           ),
           const SizedBox(height: 16),
           _buildCompanionShowcase(),
@@ -863,17 +890,19 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          band.band == AgeBand.creator
-              ? 'Select your adventure team'
-              : 'Pick your adventure team:',
-          style: TextStyle(
-            color: Colors.white70,
-            fontSize: 14,
-            fontFamily: band.uiFontFamily,
+        if (band.band != AgeBand.sprout) ...[
+          Text(
+            band.band == AgeBand.creator
+                ? 'Select your adventure team'
+                : 'Pick your adventure team:',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              fontFamily: band.uiFontFamily,
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
+          const SizedBox(height: 12),
+        ],
         // ── Saved characters as friends ──────────────────────────────────────
         if (widget.availableCharacters.isNotEmpty) ...[
           const Text(
@@ -914,6 +943,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         _CompanionImageGrid(
           wizardData: widget.wizardData,
           onChanged: () => setState(() {}),
+          onCompanionTapped: widget.wizardData.characterAge <= 5
+              ? (name) => _speakForSprout(name)
+              : null,
         ),
         const SizedBox(height: 12),
         // ── Pet card (photo + name/species/color) ──────────────────────────────
@@ -1169,36 +1201,35 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
     final displayButtons = featuredButtons;
 
-    final labelFontSize = band.band == AgeBand.sprout
+    final labelFontSize = band.band == AgeBand.sprout ||
+            band.band == AgeBand.explorer
         ? 14.0
-        : band.band == AgeBand.explorer
-            ? 13.0
-            : 12.0;
+        : 12.0;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
           const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _audioPrompt("Where will your adventure happen?"),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  placeTitle,
-                  style: _bandTitleStyle(band, baseFontSize: 22),
-                ),
-              ),
-            ],
+          Text(
+            placeTitle,
+            textAlign: TextAlign.center,
+            style: _bandTitleStyle(band, baseFontSize: 22),
           ),
           const SizedBox(height: 4),
-          Text(
-            'Create your own world — or choose one below!',
-            style: GoogleFonts.fredoka(color: Colors.white70, fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
+          Builder(builder: (context) {
+            final b =
+                Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+            return Text(
+              b.band == AgeBand.sprout
+                  ? 'Tap a picture to pick your adventure!'
+                  : b.band == AgeBand.explorer
+                      ? 'Pick a world or make your own!'
+                      : 'Create your own world — or choose one below!',
+              style: GoogleFonts.fredoka(color: Colors.white70, fontSize: 14),
+              textAlign: TextAlign.center,
+            );
+          }),
           const SizedBox(height: 16),
 
           // ── HERO: Imagine It ────────────────────────────────────────────────
@@ -1229,11 +1260,19 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   child: Divider(color: Colors.white24, thickness: 1)),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  'or explore a ready-made world',
-                  style:
-                      GoogleFonts.fredoka(color: Colors.white54, fontSize: 13),
-                ),
+                child: Builder(builder: (context) {
+                  final b = Theme.of(context).extension<AgeBandThemeData>() ??
+                      explorerTheme;
+                  return Text(
+                    b.band == AgeBand.sprout
+                        ? 'or try one of these!'
+                        : b.band == AgeBand.explorer
+                            ? 'or try one of these worlds!'
+                            : 'or explore a ready-made world',
+                    style: GoogleFonts.fredoka(
+                        color: Colors.white54, fontSize: 13),
+                  );
+                }),
               ),
               const Expanded(
                   child: Divider(color: Colors.white24, thickness: 1)),
@@ -1258,10 +1297,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                         isSelected: widget.wizardData.selectedScenario ==
                             displayButtons[i].id,
                         labelFontSize: labelFontSize,
-                        onTap: () => setState(() {
-                          widget.wizardData.selectedScenario =
-                              displayButtons[i].id;
-                        }),
+                        onTap: () => _onSceneTap(displayButtons[i].id),
                       ),
                     ),
                   ),
@@ -1274,10 +1310,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                         isSelected: widget.wizardData.selectedScenario ==
                             displayButtons[i + 1].id,
                         labelFontSize: labelFontSize,
-                        onTap: () => setState(() {
-                          widget.wizardData.selectedScenario =
-                              displayButtons[i + 1].id;
-                        }),
+                        onTap: () => _onSceneTap(displayButtons[i + 1].id),
                       ),
                     ),
                   ),
@@ -1293,9 +1326,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 isSelected: widget.wizardData.selectedScenario ==
                     displayButtons.last.id,
                 labelFontSize: labelFontSize,
-                onTap: () => setState(() {
-                  widget.wizardData.selectedScenario = displayButtons.last.id;
-                }),
+                onTap: () => _onSceneTap(displayButtons.last.id),
               ),
             ),
           ] else
@@ -1313,9 +1344,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                         isSelected:
                             widget.wizardData.selectedScenario == btn.id,
                         labelFontSize: labelFontSize,
-                        onTap: () => setState(() {
-                          widget.wizardData.selectedScenario = btn.id;
-                        }),
+                        onTap: () => _onSceneTap(btn.id),
                       ))
                   .toList(),
             ),
@@ -1330,8 +1359,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Widget _buildImagineItInput() {
-    const imagineItPromptText = 'Where will your adventure take place? '
-        'For example, a floating cloud city, deep inside a volcano, or an underwater palace.';
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Container(
@@ -1368,12 +1395,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-                IconButton(
-                  tooltip: 'Read ideas aloud',
-                  icon: const Icon(Icons.volume_up_rounded,
-                      color: Color(0xFFFFD700), size: 24),
-                  onPressed: () => _tts.speak(imagineItPromptText),
                 ),
               ],
             ),
@@ -1507,18 +1528,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       child: Column(
         children: [
           SizedBox(height: band.space(10)),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _audioPrompt("What kind of story do you want?"),
-              SizedBox(width: band.space(8)),
-              Flexible(
-                child: Text(
-                  storyTitle,
-                  style: _bandTitleStyle(band, baseFontSize: 24),
-                ),
-              ),
-            ],
+          Text(
+            storyTitle,
+            textAlign: TextAlign.center,
+            style: _bandTitleStyle(band, baseFontSize: 24),
           ),
           SizedBox(height: band.space(24)),
           // Story mode selection — 2×2 grid
@@ -1728,21 +1741,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              _audioPrompt("Pick something special for your story!"),
-              SizedBox(width: band.space(4)),
-              Flexible(
-                child: Text(
-                  "Pick something special!",
-                  style: GoogleFonts.fredoka(
-                    color: Colors.white,
-                    fontSize: band.body(16),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            "Pick something special!",
+            style: GoogleFonts.fredoka(
+              color: Colors.white,
+              fontSize: band.body(16),
+              fontWeight: FontWeight.w600,
+            ),
           ),
           SizedBox(height: band.space(10)),
           GridView.builder(
@@ -1814,21 +1819,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              _audioPrompt("Anything special you want in your story?"),
-              SizedBox(width: band.space(4)),
-              Flexible(
-                child: Text(
-                  "Anything special you want?",
-                  style: GoogleFonts.fredoka(
-                    color: Colors.white,
-                    fontSize: band.body(16),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            "Anything special you want?",
+            style: GoogleFonts.fredoka(
+              color: Colors.white,
+              fontSize: band.body(16),
+              fontWeight: FontWeight.w600,
+            ),
           ),
           SizedBox(height: band.space(8)),
           Row(
@@ -2031,6 +2028,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             widget.wizardData.generatedAvatar = avatar;
           });
           Navigator.of(ctx).pop();
+          _maybeAdvanceFromStylePage();
         },
       ),
     );
@@ -2066,6 +2064,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       widget.wizardData.generatedAvatar = generated;
       widget.wizardData.customAvatarPath = null;
     });
+    _maybeAdvanceFromStylePage();
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -2395,7 +2394,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.fredoka(
                           color: Colors.white,
-                          fontSize: 14,
+                          fontSize: ageBand == AgeBand.sprout ? 18 : 14,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -2412,7 +2411,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     // Adventurer & Creator: horizontal list — image-dominant cards with name overlay.
     final showDescriptions =
         ageBand == AgeBand.adventurer || ageBand == AgeBand.creator;
-    final cardWidth = ageBand == AgeBand.creator ? 150.0 : 165.0;
+    const cardWidth = 165.0;
     const cardHeight = 220.0;
     return SizedBox(
       height: cardHeight,
@@ -2494,7 +2493,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
-                                    color: Colors.white70, fontSize: 10),
+                                    color: Colors.white70, fontSize: 12),
                               ),
                             ],
                           ],
@@ -2614,17 +2613,19 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final isTeen = bandData.band == AgeBand.creator;
 
-    return MagicStarCursor(
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF120226), Color(0xFF3D1166), Color(0xFF120226)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+    final showMagicCursor =
+        bandData.band == AgeBand.sprout || bandData.band == AgeBand.explorer;
+
+    Widget content = Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF120226), Color(0xFF3D1166), Color(0xFF120226)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
         ),
-        child: SafeArea(
-          child: Stack(
+      ),
+      child: SafeArea(
+        child: Stack(
             children: [
               if (isTeen)
                 _buildCreativeBrief()
@@ -2654,8 +2655,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             ],
           ),
         ),
-      ),
     );
+
+    if (showMagicCursor) {
+      return MagicStarCursor(child: content);
+    }
+    return content;
   }
 
   // ─── Creative Brief (Teen Flow) ─────────────────────────────────────────────
@@ -2847,7 +2852,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           children: CharacterArchetypes.all.map((archetype) {
             final isSelected = _selectedArchetypeId == archetype.name;
             return FilterChip(
-              label: Text(archetype.name.toUpperCase()),
+              label: Text(archetype.nameForAge(widget.wizardData.characterAge).toUpperCase()),
               selected: isSelected,
               onSelected: (_) => _selectArchetype(archetype),
               backgroundColor: Colors.white.withAlpha(10),
@@ -3135,6 +3140,35 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       return const AssetImage('assets/images/hero_placeholder.jpg');
     }
   }
+
+  // ─── Sprout TTS helpers ───────────────────────────────────────────────────
+
+  /// Speaks a prompt only for young children (age ≤ 5 / sprout band).
+  void _speakForSprout(String text) {
+    if (widget.wizardData.characterAge > 5) return;
+    unawaited(_tts.speak(text));
+  }
+
+  void _speakPagePrompt(int page) {
+    final prompt = switch (page) {
+      1 => "What is your hero's name? Tap the microphone to say it!",
+      2 => "Pick your hero look! Tap the picture you like.",
+      3 => "Tap your buddies to bring them along!",
+      4 => "Where should your adventure happen? Tap to pick!",
+      5 => "You are all set! Tap Make Magic!",
+      _ => null,
+    };
+    if (prompt != null) _speakForSprout(prompt);
+  }
+
+  String? _sceneLabel(String id) => switch (id) {
+        'safe_space' || 'imagine_it' => 'Imagine It!',
+        'vanishing_colors' => 'Rainbow Land!',
+        'crystal_cavern' => 'Crystal Cave!',
+        'volcano_dragons' => 'Dragon Friends!',
+        'big_feelings_quest' => 'My Big Feelings!',
+        _ => null,
+      };
 }
 
 // ─── Support Widgets ──────────────────────────────────────────────────────────
@@ -3149,6 +3183,7 @@ class _CharacterChoiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final avatarData = character.generatedAvatar?.imageBase64;
     return GestureDetector(
       onTap: onTap,
@@ -3184,11 +3219,23 @@ class _CharacterChoiceCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(character.name,
-                      style: GoogleFonts.cinzelDecorative(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold)),
+                  Text(
+                    character.name,
+                    style: band.band == AgeBand.creator
+                        ? GoogleFonts.sourceSans3(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold)
+                        : band.band == AgeBand.adventurer
+                            ? GoogleFonts.bitter(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold)
+                            : GoogleFonts.cinzelDecorative(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold),
+                  ),
                   Text("${character.age} years old • ${character.role}",
                       style:
                           const TextStyle(color: Colors.white70, fontSize: 14)),
@@ -3415,9 +3462,13 @@ const _companions = [
 class _CompanionImageGrid extends StatelessWidget {
   final WizardData wizardData;
   final VoidCallback onChanged;
+  final void Function(String name)? onCompanionTapped;
 
-  const _CompanionImageGrid(
-      {required this.wizardData, required this.onChanged});
+  const _CompanionImageGrid({
+    required this.wizardData,
+    required this.onChanged,
+    this.onCompanionTapped,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -3456,6 +3507,7 @@ class _CompanionImageGrid extends StatelessWidget {
             } else {
               wizardData.companionNames.add(c.name);
               wizardData.selectedCompanions.add(c.id);
+              onCompanionTapped?.call(c.name);
             }
             onChanged();
           },
@@ -3488,6 +3540,7 @@ class _CompanionImageGrid extends StatelessWidget {
               if (!wizardData.selectedCompanions.contains(petId)) {
                 wizardData.selectedCompanions.add(petId);
               }
+              onCompanionTapped?.call(petName);
             }
             onChanged();
           },
@@ -4467,6 +4520,9 @@ class _GenderImageButtonState extends State<_GenderImageButton> {
 
   @override
   Widget build(BuildContext context) {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final bool useDecorative =
+        band.band == AgeBand.sprout || band.band == AgeBand.explorer;
     final imageWidget = Image.asset(
       widget.assetPath,
       width: widget.width,
@@ -4532,17 +4588,31 @@ class _GenderImageButtonState extends State<_GenderImageButton> {
               const SizedBox(height: 10),
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 200),
-                style: GoogleFonts.cinzelDecorative(
-                  color: widget.isSelected
-                      ? const Color(0xFFFFD700)
-                      : Colors.white70,
-                  fontSize: 15,
-                  fontWeight:
-                      widget.isSelected ? FontWeight.bold : FontWeight.normal,
-                  shadows: widget.isSelected
-                      ? [const Shadow(color: Color(0xFFFFD700), blurRadius: 10)]
-                      : null,
-                ),
+                style: useDecorative
+                    ? GoogleFonts.cinzelDecorative(
+                        color: widget.isSelected
+                            ? const Color(0xFFFFD700)
+                            : Colors.white70,
+                        fontSize: 15,
+                        fontWeight: widget.isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        shadows: widget.isSelected
+                            ? [
+                                const Shadow(
+                                    color: Color(0xFFFFD700), blurRadius: 10)
+                              ]
+                            : null,
+                      )
+                    : GoogleFonts.sourceSans3(
+                        color: widget.isSelected
+                            ? const Color(0xFFFFD700)
+                            : Colors.white70,
+                        fontSize: 15,
+                        fontWeight: widget.isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
                 child: Text(widget.gender),
               ),
             ],
@@ -4613,6 +4683,9 @@ class _ThemedNameInputState extends State<_ThemedNameInput>
 
   @override
   Widget build(BuildContext context) {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final bool useDecorative =
+        band.band == AgeBand.sprout || band.band == AgeBand.explorer;
     return AnimatedBuilder(
       animation: _glowAnim,
       builder: (context, child) {
@@ -4654,21 +4727,32 @@ class _ThemedNameInputState extends State<_ThemedNameInput>
                 controller: widget.controller,
                 focusNode: widget.focusNode,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.cinzelDecorative(
-                  fontSize: widget.fontSize,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  shadows: const [
-                    Shadow(color: Color(0xFFFFD54F), blurRadius: 6)
-                  ],
-                ),
+                style: useDecorative
+                    ? GoogleFonts.cinzelDecorative(
+                        fontSize: widget.fontSize,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        shadows: const [
+                          Shadow(color: Color(0xFFFFD54F), blurRadius: 6)
+                        ],
+                      )
+                    : GoogleFonts.sourceSans3(
+                        fontSize: widget.fontSize,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
                 decoration: InputDecoration(
                   hintText: "Type your hero's name...",
-                  hintStyle: GoogleFonts.cinzelDecorative(
-                    color: const Color(0xFFFFE082).withAlpha(180),
-                    fontSize: widget.fontSize * 0.85,
-                    fontWeight: FontWeight.w400,
-                  ),
+                  hintStyle: useDecorative
+                      ? GoogleFonts.cinzelDecorative(
+                          color: const Color(0xFFFFE082).withAlpha(180),
+                          fontSize: widget.fontSize * 0.85,
+                          fontWeight: FontWeight.w400,
+                        )
+                      : TextStyle(
+                          color: Colors.white30,
+                          fontSize: widget.fontSize * 0.85,
+                        ),
                   border: InputBorder.none,
                   filled: false,
                 ),

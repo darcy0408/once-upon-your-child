@@ -15,6 +15,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:page_flip_builder/page_flip_builder.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'models/elevenlabs_voice.dart';
+import 'services/tts_api_service.dart';
 import 'story_reader_screen.dart';
 import 'services/isar_service.dart';
 import 'services/offline_story_service.dart';
@@ -141,6 +146,10 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   bool _isSubmittingFeedback = false;
   double _storyRating = 4.0;
 
+  FlutterTts? _tts;
+  AudioPlayer? _audioPlayer;
+  bool _ttsAutoEnabled = false;
+
   List<_InlineIllustration> _inlineIllustrations = [];
 
   /// True when the first page is a full-bleed illustration cover.
@@ -161,6 +170,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     return band != null &&
         (band.band == AgeBand.sprout || band.band == AgeBand.explorer);
   }
+
+  bool get _isReaderLayout => _effectiveAge >= 11;
 
   String get _analyticsStoryId =>
       widget.storyId ?? widget.title.hashCode.toString();
@@ -209,7 +220,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       case AgeBand.adventurer:
         return 'Reading Level: Middle Grade';
       case AgeBand.creator:
-        return 'Reading Level: Teen';
+        return 'Young Adult';
     }
   }
 
@@ -512,6 +523,33 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     if (widget.trackAnalytics) {
       _trackStoryView();
     }
+    if (_effectiveAge <= 7) {
+      _initAutoTts();
+    }
+  }
+
+  Future<void> _initAutoTts() async {
+    _tts = FlutterTts();
+    await _tts!.setLanguage("en-US");
+    await _tts!.setSpeechRate(0.45); // Slower for young listeners
+    await _tts!.setPitch(1.1);
+    _audioPlayer = AudioPlayer();
+    if (mounted) setState(() => _ttsAutoEnabled = true);
+  }
+
+  /// Narrate a story page — tries ElevenLabs first, falls back to on-device TTS.
+  Future<void> _speakPage(String text) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final voiceId = prefs.getString(ElevenLabsVoice.prefsKey);
+      final mp3 = await TtsApiService.synthesize(text, voiceId: voiceId);
+      if (mp3 != null && mp3.isNotEmpty) {
+        await _audioPlayer?.stop();
+        await _audioPlayer?.play(BytesSource(mp3));
+        return;
+      }
+    } catch (_) {}
+    await _tts?.speak(text);
   }
 
   void _decodeInlineIllustrations() {
@@ -541,6 +579,9 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   @override
   void dispose() {
     AudioAmbienceService().stopAmbience();
+    _tts?.stop();
+    _audioPlayer?.stop();
+    _audioPlayer?.dispose();
     _pageController.dispose();
     _feedbackController.dispose();
     super.dispose();
@@ -580,7 +621,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     }
 
     final newFeatureUnlocks =
-        await _progressionService.incrementStoriesCreated();
+        await _progressionService.incrementStoriesCreated(widget.characterAge ?? 8);
     if (mounted && newFeatureUnlocks.isNotEmpty) {
       // Disabled per user feedback
       // await UnlockCelebrationDialog.show(context, newFeatureUnlocks);
@@ -1658,9 +1699,89 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                     children: _buildStorySpans(_storyPages[textIndex]),
                   ),
                 ),
+              if (_ttsAutoEnabled)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Center(
+                    child: IconButton(
+                      icon: const Icon(Icons.volume_up_rounded,
+                          color: AppColors.gold, size: 36),
+                      onPressed: () => _speakPage(_storyPages[textIndex]),
+                      tooltip: 'Listen',
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildReaderView() {
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final bgColor = _highContrastMode ? Colors.black : const Color(0xFFFFF8E7);
+    final textColor = _highContrastMode ? Colors.white : const Color(0xFF2C3E50);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(band.radiusLg),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      margin: EdgeInsets.only(bottom: band.space(24)),
+      child: ListView.builder(
+        padding: EdgeInsets.symmetric(
+          horizontal: band.space(24),
+          vertical: band.space(32),
+        ),
+        itemCount: _totalPages,
+        itemBuilder: (context, index) {
+          if (_hasCoverIllustration && index == 0) {
+            final illustration = _inlineIllustrations.first;
+            return Column(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(band.radiusMd),
+                  child: Image.memory(
+                    illustration.bytes,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) =>
+                        _buildImageErrorPlaceholder(),
+                  ),
+                ),
+                SizedBox(height: band.space(32)),
+              ],
+            );
+          }
+
+          final textIndex = _hasCoverIllustration ? index - 1 : index;
+
+          if (textIndex >= _storyPages.length) {
+            return _buildEndOfStoryPage();
+          }
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: band.space(24)),
+            child: SelectableText.rich(
+              TextSpan(
+                style: GoogleFonts.merriweather(
+                  fontSize: 20 * _textScale,
+                  height: 1.8,
+                  color: textColor,
+                ),
+                children: _buildStorySpans(_storyPages[textIndex]),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -1743,37 +1864,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
               ),
               if (widget.wisdomGem.isNotEmpty) ...[
                 const SizedBox(height: 24),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  margin: const EdgeInsets.symmetric(horizontal: 24),
-                  decoration: BoxDecoration(
-                    color: AppColors.gold.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppColors.gold.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.auto_awesome,
-                          color: AppColors.gold, size: 28),
-                      const SizedBox(height: 8),
-                      Text(
-                        widget.wisdomGem,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.quicksand(
-                          fontSize: 18 * _textScale,
-                          fontWeight: FontWeight.w600,
-                          fontStyle: FontStyle.italic,
-                          color: _highContrastMode
-                              ? Colors.white
-                              : const Color(0xFF2C3E50),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildWisdomGem(),
               ],
               const SizedBox(height: 32),
               Text(
@@ -2005,6 +2096,158 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildWisdomGem() {
+    // Ages 3-7: Large, animated, prominent — full sparkle display
+    if (_effectiveAge <= 7) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        margin: const EdgeInsets.symmetric(horizontal: 24),
+        decoration: BoxDecoration(
+          color: AppColors.gold.withValues(alpha: 0.18),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppColors.gold.withValues(alpha: 0.6),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.gold.withValues(alpha: 0.25),
+              blurRadius: 16,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.auto_awesome, color: AppColors.gold, size: 40),
+            const SizedBox(height: 10),
+            Text(
+              widget.wisdomGem,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.quicksand(
+                fontSize: 22 * _textScale,
+                fontWeight: FontWeight.bold,
+                fontStyle: FontStyle.italic,
+                color:
+                    _highContrastMode ? Colors.white : const Color(0xFF2C3E50),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    // Ages 8-10: Discoverable — medium prominence, no animation, no glow
+    if (_effectiveAge <= 10) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        margin: const EdgeInsets.symmetric(horizontal: 24),
+        decoration: BoxDecoration(
+          color: AppColors.gold.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.auto_awesome, color: AppColors.gold, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              widget.wisdomGem,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.quicksand(
+                fontSize: 18 * _textScale,
+                fontWeight: FontWeight.w600,
+                fontStyle: FontStyle.italic,
+                color:
+                    _highContrastMode ? Colors.white : const Color(0xFF2C3E50),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    // Ages 11-13: Optional tap-to-reveal tile, labelled "Story Reflection"
+    if (_effectiveAge <= 13) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24),
+        decoration: BoxDecoration(
+          color: AppColors.gold.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
+        ),
+        child: ExpansionTile(
+          leading: const Icon(Icons.auto_awesome, color: AppColors.gold),
+          title: Text(
+            'Story Reflection',
+            style: GoogleFonts.quicksand(
+              fontSize: 16 * _textScale,
+              fontWeight: FontWeight.bold,
+              color: _highContrastMode ? Colors.white : const Color(0xFF2C3E50),
+            ),
+          ),
+          iconColor: AppColors.gold,
+          collapsedIconColor: AppColors.gold,
+          shape: const Border(),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              child: Text(
+                widget.wisdomGem,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.quicksand(
+                  fontSize: 16 * _textScale,
+                  fontWeight: FontWeight.w500,
+                  fontStyle: FontStyle.italic,
+                  color: _highContrastMode
+                      ? Colors.white70
+                      : const Color(0xFF2C3E50),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    // Ages 14+: Plain "Reflection" text, collapsed by default, minimal decoration
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      decoration: BoxDecoration(
+        color: AppColors.gold.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
+      ),
+      child: ExpansionTile(
+        leading: Icon(Icons.auto_awesome,
+            color: AppColors.gold.withValues(alpha: 0.6), size: 18),
+        title: Text(
+          'Reflection',
+          style: GoogleFonts.quicksand(
+            fontSize: 14 * _textScale,
+            fontWeight: FontWeight.w600,
+            color: _highContrastMode ? Colors.white70 : Colors.grey[600]!,
+          ),
+        ),
+        iconColor: AppColors.gold.withValues(alpha: 0.6),
+        collapsedIconColor: AppColors.gold.withValues(alpha: 0.4),
+        shape: const Border(),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+            child: Text(
+              widget.wisdomGem,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.quicksand(
+                fontSize: 14 * _textScale,
+                fontWeight: FontWeight.w400,
+                fontStyle: FontStyle.italic,
+                color: _highContrastMode ? Colors.white54 : Colors.grey[500]!,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -2310,11 +2553,13 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                           color: Colors.white))
                                   : Column(
                                       children: [
-                                        // Story Content - ENHANCED PAGE FLIP
+                                        // Story Content - ENHANCED PAGE FLIP OR READER VIEW
                                         Expanded(
                                           child: RepaintBoundary(
                                             key: _storyBoundaryKey,
-                                            child: Listener(
+                                            child: _isReaderLayout
+                                                ? _buildReaderView()
+                                                : Listener(
                                               onPointerDown: _onFlipStarted,
                                               onPointerMove: _onFlipUpdated,
                                               onPointerUp: _onFlipEnded,

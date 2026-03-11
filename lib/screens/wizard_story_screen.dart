@@ -10,6 +10,7 @@ import 'character_library_screen.dart';
 import 'feelings_garden_screen.dart';
 import 'wizard_steps/hero_creator_step.dart';
 import 'wizard_steps/magic_review_step.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service_manager.dart';
 
 /// WizardStoryScreen - Main 4-step wizard for creating magical stories
@@ -58,6 +59,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
     super.initState();
 
     _wizardData = widget.initialWizardData ?? WizardData();
+    _loadOnboardingName();
     if (widget.initialCharacter != null) {
       _initializeFromCharacter(widget.initialCharacter!);
       // If we have an initial character, skip Step 1 (Creation)
@@ -68,6 +70,18 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
     _pageController = PageController(initialPage: _currentStep);
 
     _loadSavedCharacters();
+  }
+
+  Future<void> _loadOnboardingName() async {
+    final prefs = await SharedPreferences.getInstance();
+    final name = prefs.getString('user_name');
+    if (name != null && name.isNotEmpty && _wizardData.characterName.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _wizardData.characterName = name;
+        });
+      }
+    }
   }
 
   Future<void> _loadSavedCharacters() async {
@@ -210,18 +224,18 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                                       ? const [
                                           'My Character',
                                           'My Companions',
-                                          'Setting',
-                                          'Begin'
+                                          'My Setting',
+                                          'Start Adventure'
                                         ]
                                       : band.band == AgeBand.creator
                                           ? const [
                                               'Character',
                                               'Companions',
                                               'Setting',
-                                              'Begin'
+                                              'Create Story'
                                             ]
                                           : const [
-                                              'Create Hero',
+                                              'Pick Hero',
                                               'Pick Team',
                                               'Pick Place',
                                               'Make Magic'
@@ -248,14 +262,12 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                         ),
                       ),
                     ),
-                    // Feelings Garden button
-                    IconButton(
-                      icon: const Icon(
-                        Icons.favorite,
-                        color: Colors.white,
-                      ),
-                      onPressed: () {
-                        Navigator.of(context).push(
+                    // Feelings Garden button — labeled for all child bands
+                    if (band.band != AgeBand.creator)
+                      _LabeledNavButton(
+                        icon: Icons.favorite,
+                        label: 'Feelings',
+                        onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) => FeelingsGardenScreen(
                               childAge: _wizardData.characterAge <= 0
@@ -263,28 +275,51 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                                   : _wizardData.characterAge,
                             ),
                           ),
-                        );
-                      },
-                      tooltip: 'Feelings Garden',
-                    ),
-                    // Character Library button
-                    IconButton(
-                      icon: const Icon(
-                        Icons.people,
-                        color: Colors.white,
-                      ),
-                      onPressed: () async {
-                        await Navigator.of(context).push(
+                        ),
+                      )
+                    else
+                      IconButton(
+                        icon: const Icon(Icons.favorite, color: Colors.white),
+                        onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) =>
-                                const CharacterLibraryScreen(),
+                            builder: (context) => FeelingsGardenScreen(
+                              childAge: _wizardData.characterAge <= 0
+                                  ? 8
+                                  : _wizardData.characterAge,
+                            ),
                           ),
-                        );
-                        // Reload characters after returning
-                        _loadSavedCharacters();
-                      },
-                      tooltip: 'My Characters',
-                    ),
+                        ),
+                        tooltip: 'Feelings Garden',
+                      ),
+                    // Character Library button — labeled for all child bands
+                    if (band.band != AgeBand.creator)
+                      _LabeledNavButton(
+                        icon: Icons.people,
+                        label: 'Heroes',
+                        onPressed: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const CharacterLibraryScreen(),
+                            ),
+                          );
+                          _loadSavedCharacters();
+                        },
+                      )
+                    else
+                      IconButton(
+                        icon: const Icon(Icons.people, color: Colors.white),
+                        onPressed: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const CharacterLibraryScreen(),
+                            ),
+                          );
+                          _loadSavedCharacters();
+                        },
+                        tooltip: 'My Characters',
+                      ),
                   ],
                 ),
               ),
@@ -324,6 +359,45 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Icon button with a small text label underneath — used for young age bands
+/// so children know what each button does without needing to read a tooltip.
+class _LabeledNavButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  const _LabeledNavButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white, size: 22),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );

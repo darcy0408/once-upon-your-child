@@ -2,13 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 import '../providers/age_band_provider.dart';
+import '../providers/voice_preference_provider.dart';
 import '../services/parental_consent_service.dart';
+import '../services/tts_api_service.dart';
 import '../theme/app_theme.dart';
 import 'parental_consent_screen.dart';
 import 'parent_controls_screen.dart';
@@ -33,6 +37,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   bool _submitting = false;
 
   final _tts = FlutterTts();
+  final _audioPlayer = AudioPlayer();
   final _speech = SpeechToText();
   bool _speechEnabled = false;
   bool _isListening = false;
@@ -65,7 +70,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     _initVoice();
     // Auto-advance from title to name after 2.5 s (tap also advances).
     _titleTimer = Timer(const Duration(milliseconds: 2500), () {
-      if (mounted && _step == 0) setState(() => _step = 1);
+      if (mounted && _step == 0) {
+        _enterNameStep();
+      }
     });
   }
 
@@ -75,19 +82,30 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     await _tts.setPitch(1.1);
     
     _speechEnabled = await _speech.initialize();
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {});
+      if (_step == 0) unawaited(_speak('Tap the star to start your adventure!'));
+    }
   }
 
   Future<void> _speak(String text) async {
+    try {
+      final voiceId = ref.read(voicePreferenceNotifierProvider);
+      final mp3 = await TtsApiService.synthesize(text, voiceId: voiceId);
+      if (mp3 != null && mp3.isNotEmpty) {
+        await _audioPlayer.stop();
+        await _audioPlayer.play(BytesSource(mp3));
+        await _audioPlayer.onPlayerComplete.first
+            .timeout(const Duration(seconds: 15));
+        return;
+      }
+    } catch (_) {}
     await _tts.speak(text);
   }
 
   Future<void> _promptNameAndListen() async {
     await _speak("Hi, what's your name?");
-    if (!_speechEnabled || _isListening) return;
-    // Give TTS a short head-start, then open speech capture.
-    await Future.delayed(const Duration(milliseconds: 650));
-    if (!mounted) return;
+    if (!_speechEnabled || _isListening || !mounted) return;
     await _listen();
   }
 
@@ -118,6 +136,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     _nameController.dispose();
     _titleTimer?.cancel();
     _tts.stop();
+    _audioPlayer.stop();
+    _audioPlayer.dispose();
     _speech.stop();
     super.dispose();
   }
@@ -126,23 +146,29 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
 
   void _advanceFromTitle() {
     _titleTimer?.cancel();
-    if (mounted && _step == 0) setState(() => _step = 1);
+    if (mounted && _step == 0) {
+      _enterNameStep();
+    }
+  }
+
+  void _enterNameStep() {
+    setState(() => _step = 1);
+    unawaited(_promptNameAndListen());
   }
 
   void _advanceFromName() {
     if (_nameController.text.trim().isNotEmpty && _step == 1) {
       _tts.stop();
+      _audioPlayer.stop();
       _speech.stop();
       setState(() => _step = 2);
+      unawaited(_speak('How old are you? Tap your number!'));
     }
   }
 
   void _onAgeSelected(int age) {
     if (_submitting) return;
     setState(() => _selectedAge = age);
-    if (age <= 4) {
-      _speak("Hi, what's your name?");
-    }
     _handleContinue();
   }
 
@@ -270,115 +296,68 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
       key: const ValueKey('name'),
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.auto_awesome, color: _goldColor, size: 48),
-        const SizedBox(height: AppSpacing.md),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              "What's your name?",
-              textAlign: TextAlign.center,
-              style: GoogleFonts.fredoka(
-                color: _goldColor,
-                fontSize: 28,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.volume_up, color: _goldColor),
-              onPressed: _promptNameAndListen,
-              tooltip: 'Hear and answer by voice',
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _nameController,
-                textCapitalization: TextCapitalization.words,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 24),
-                autofocus: true,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _advanceFromName(),
-                decoration: InputDecoration(
-                  hintText: 'Enter your name\u2026',
-                  hintStyle: const TextStyle(color: Colors.white38),
-                  filled: true,
-                  fillColor: Colors.white.withAlpha(15),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Colors.white24),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Colors.white24),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: _goldColor, width: 2),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        if (_speechEnabled) ...[
-          const SizedBox(height: AppSpacing.md),
-          GestureDetector(
-            onTap: _listen,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              decoration: BoxDecoration(
-                color: _isListening
-                    ? const Color(0xFF9E6CFF).withAlpha(200)
-                    : Colors.white.withAlpha(25),
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(
-                  color: _isListening
-                      ? const Color(0xFFE28EFF)
-                      : Colors.white30,
-                  width: 2,
-                ),
-                boxShadow: _isListening
-                    ? [
-                        BoxShadow(
-                          color: const Color(0xFF9E6CFF).withAlpha(120),
-                          blurRadius: 16,
-                          spreadRadius: 2,
-                        )
-                      ]
-                    : [],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    _isListening ? 'Listening... 🎤' : '🎤 Say your name!',
-                    style: GoogleFonts.fredoka(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+        TextField(
+          controller: _nameController,
+          textCapitalization: TextCapitalization.words,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.fredoka(
+            color: Colors.white,
+            fontSize: 26,
+            fontWeight: FontWeight.w500,
           ),
-        ],
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _advanceFromName(),
+          decoration: InputDecoration(
+            hintText: "What's your name?",
+            hintStyle: GoogleFonts.fredoka(
+              color: _goldColor.withAlpha(180),
+              fontSize: 26,
+              fontWeight: FontWeight.w500,
+            ),
+            filled: true,
+            fillColor: Colors.white.withAlpha(15),
+            contentPadding: const EdgeInsets.fromLTRB(20, 18, 8, 18),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: const BorderSide(color: Colors.white24),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: const BorderSide(color: Colors.white24),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: const BorderSide(color: _goldColor, width: 2),
+            ),
+            // Mic icon lives inside the field — no separate button needed
+            suffixIcon: _speechEnabled
+                ? AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: _isListening
+                          ? const Color(0xFF9E6CFF).withAlpha(200)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        _isListening
+                            ? Icons.mic_rounded
+                            : Icons.mic_none_rounded,
+                        color: _isListening
+                            ? Colors.white
+                            : Colors.white54,
+                        size: 28,
+                      ),
+                      tooltip: _isListening ? 'Listening…' : 'Say your name',
+                      onPressed: _listen,
+                    ),
+                  )
+                : null,
+          ),
+        ),
         const SizedBox(height: AppSpacing.lg),
         _PressableButton(
           onPressed: _advanceFromName,
@@ -397,16 +376,67 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                 ),
               ],
             ),
-            child: Text(
-              "That's me! \u2192",
-              style: GoogleFonts.fredoka(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.auto_awesome, color: _goldColor, size: 22),
+                const SizedBox(width: 8),
+                Text(
+                  "That's me!",
+                  style: GoogleFonts.fredoka(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
+        if (_speechEnabled) ...[
+          const SizedBox(height: 12),
+          _PressableButton(
+            onPressed: _listen,
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(32),
+                color: _isListening
+                    ? const Color(0xFF9E6CFF).withAlpha(220)
+                    : Colors.white.withAlpha(20),
+                border: Border.all(
+                  color: _isListening
+                      ? const Color(0xFF9E6CFF)
+                      : Colors.white38,
+                  width: 2,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _isListening
+                        ? Icons.mic_rounded
+                        : Icons.mic_none_rounded,
+                    color:
+                        _isListening ? Colors.white : Colors.white70,
+                    size: 30,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _isListening ? 'Listening…' : 'Tap to say your name',
+                    style: GoogleFonts.fredoka(
+                      color:
+                          _isListening ? Colors.white : Colors.white70,
+                      fontSize: 17,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

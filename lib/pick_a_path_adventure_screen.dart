@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 import 'models.dart';
 import 'storage_service.dart';
 import 'services/interactive_story_analytics.dart';
 import 'services/interactive_story_service.dart';
+import 'services/chronicle_service.dart';
 import 'subscription_service.dart';
 import 'theme/app_theme.dart';
 import 'package:story_weaver_app/widgets/app_button.dart';
@@ -30,6 +32,7 @@ class PickAPathAdventureScreen extends StatefulWidget {
     this.existingStoryId, // For resuming stories
     this.lifeChallenge,
     this.personalitySliders,
+    this.chronicleId, // Living Story Chronicle ID (null = normal story)
   });
 
   final String userId;
@@ -43,6 +46,7 @@ class PickAPathAdventureScreen extends StatefulWidget {
   final String? existingStoryId;
   final String? lifeChallenge;
   final Map<String, int>? personalitySliders;
+  final String? chronicleId;
 
   @override
   State<PickAPathAdventureScreen> createState() =>
@@ -68,11 +72,20 @@ class _PickAPathAdventureScreenState
   bool _isContinuing = false;
   bool _isSaving = false;
   bool _storySaved = false;
+  int _segmentsThisSession = 0;
+  bool _sessionLimitReached = false;
+  FlutterTts? _tts;
+  bool _ttsEnabled = false;
   bool _inventoryExpanded = false;
   bool _stateExpanded = false;
 
   String? _errorMessage;
   Future<void> Function()? _retryAction;
+
+  // Accumulated text for the current chapter (used for Chronicle summarization)
+  final StringBuffer _chapterTextBuffer = StringBuffer();
+
+  bool get _isChronicleMode => widget.chronicleId != null;
 
   // "Something Else" free-text choice state
   bool _showCustomInput = false;
@@ -81,6 +94,9 @@ class _PickAPathAdventureScreenState
   @override
   void initState() {
     super.initState();
+    if (widget.character.age <= 7) {
+      _initTts();
+    }
     if (widget.existingStoryId != null) {
       _resumeStory();
     } else {
@@ -92,7 +108,23 @@ class _PickAPathAdventureScreenState
   void dispose() {
     _scrollController.dispose();
     _customChoiceController.dispose();
+    _tts?.stop();
     super.dispose();
+  }
+
+  Future<void> _initTts() async {
+    _tts = FlutterTts();
+    await _tts!.setLanguage('en-US');
+    await _tts!.setSpeechRate(widget.character.age <= 5 ? 0.40 : 0.48);
+    await _tts!.setPitch(widget.character.age <= 5 ? 1.1 : 1.0);
+    if (mounted) setState(() => _ttsEnabled = true);
+  }
+
+  void _speakSegment(String text) {
+    if (!_ttsEnabled || _tts == null) return;
+    _tts!.stop();
+    final clean = text.replaceAll(RegExp(r'\*+'), '').trim();
+    _tts!.speak(clean);
   }
 
   int get _targetSegmentCount {
@@ -106,6 +138,17 @@ class _PickAPathAdventureScreenState
     }
   }
 
+  /// Max segments to show per sitting, based on age. Chronicle mode only.
+  /// Outside chronicle mode there is no limit.
+  int get _maxSegmentsPerSession {
+    if (!_isChronicleMode) return 9999;
+    final age = widget.character.age;
+    if (age <= 5) return 3; // ~5 minutes
+    if (age <= 7) return 5; // ~8 minutes
+    if (age <= 10) return 8; // ~15 minutes
+    return 9999; // Creator: no limit
+  }
+
   // Removed _progressText - now using StorybookProgressIndicator widget
 
   Future<void> _startNewStory() async {
@@ -116,6 +159,12 @@ class _PickAPathAdventureScreenState
     });
 
     try {
+      Map<String, dynamic>? chronicleContext;
+      if (_isChronicleMode) {
+        chronicleContext =
+            await ChronicleService.buildChapterStartPayload(widget.chronicleId!);
+      }
+
       final response = await _storyService.startInteractiveStory(
         userId: widget.userId,
         characterId: widget.character.id,
@@ -128,6 +177,7 @@ class _PickAPathAdventureScreenState
         avoid: widget.avoid,
         lifeChallenge: widget.lifeChallenge,
         personalitySliders: widget.personalitySliders,
+        chronicleContext: chronicleContext,
       );
 
       if (!mounted) return;
@@ -140,6 +190,11 @@ class _PickAPathAdventureScreenState
         _isCompleted = response.isCompleted;
         _isLoading = false;
       });
+      if (_ttsEnabled && _currentSegment != null) {
+        _speakSegment(_currentSegment!.content);
+      }
+
+      _chapterTextBuffer.write(_currentSegment?.content ?? '');
 
       unawaited(
         InteractiveStoryAnalytics.trackStoryStarted(
@@ -187,6 +242,9 @@ class _PickAPathAdventureScreenState
         _isCompleted = response.isCompleted;
         _isLoading = false;
       });
+      if (_ttsEnabled && _currentSegment != null) {
+        _speakSegment(_currentSegment!.content);
+      }
 
       _scrollToBottom();
     } on InteractiveStoryException catch (e) {
@@ -231,6 +289,16 @@ class _PickAPathAdventureScreenState
         _isCompleted = response.isCompleted;
         _isContinuing = false;
       });
+      if (_ttsEnabled && _currentSegment != null) {
+        _speakSegment(_currentSegment!.content);
+      }
+      _segmentsThisSession++;
+      if (_segmentsThisSession >= _maxSegmentsPerSession) {
+        setState(() => _sessionLimitReached = true);
+      }
+
+      _chapterTextBuffer.write('\n\n[Choice: ${choice.text}]\n\n');
+      _chapterTextBuffer.write(_currentSegment?.content ?? '');
 
       _scrollToBottom();
 
@@ -244,6 +312,9 @@ class _PickAPathAdventureScreenState
             wordCount: _currentSegment?.content.split(' ').length ?? 0,
           ),
         );
+        if (_isChronicleMode) {
+          _triggerChapterSummarization(choice.text);
+        }
       }
     } on InteractiveStoryException catch (e) {
       _handleError(e.message, () => _handleChoiceSelected(choice));
@@ -281,6 +352,16 @@ class _PickAPathAdventureScreenState
         _isCompleted = response.isCompleted;
         _isContinuing = false;
       });
+      if (_ttsEnabled && _currentSegment != null) {
+        _speakSegment(_currentSegment!.content);
+      }
+      _segmentsThisSession++;
+      if (_segmentsThisSession >= _maxSegmentsPerSession) {
+        setState(() => _sessionLimitReached = true);
+      }
+
+      _chapterTextBuffer.write('\n\n[Choice: $text]\n\n');
+      _chapterTextBuffer.write(_currentSegment?.content ?? '');
 
       _scrollToBottom();
 
@@ -294,6 +375,9 @@ class _PickAPathAdventureScreenState
             wordCount: _currentSegment?.content.split(' ').length ?? 0,
           ),
         );
+        if (_isChronicleMode) {
+          _triggerChapterSummarization(text);
+        }
       }
     } on InteractiveStoryException catch (e) {
       _handleError(e.message, () => _handleCustomChoice());
@@ -328,6 +412,16 @@ class _PickAPathAdventureScreenState
         _isCompleted = response.isCompleted;
         _isContinuing = false;
       });
+      if (_ttsEnabled && _currentSegment != null) {
+        _speakSegment(_currentSegment!.content);
+      }
+      _segmentsThisSession++;
+      if (_segmentsThisSession >= _maxSegmentsPerSession) {
+        setState(() => _sessionLimitReached = true);
+      }
+
+      _chapterTextBuffer.write('\n\n');
+      _chapterTextBuffer.write(_currentSegment?.content ?? '');
 
       _scrollToBottom();
 
@@ -338,15 +432,50 @@ class _PickAPathAdventureScreenState
             theme: widget.theme,
             choiceCount: _currentSegment?.segmentNumber ?? 0,
             segmentCount: _currentSegment?.segmentNumber ?? 0,
-            wordCount: _currentSegment?.wordCount ?? _currentSegment?.content.split(' ').length ?? 0,
+            wordCount: _currentSegment?.content.split(' ').length ?? 0,
           ),
         );
+        if (_isChronicleMode) {
+          _triggerChapterSummarization('');
+        }
       }
     } on InteractiveStoryException catch (e) {
       _handleError(e.message, _handleContinue);
     } catch (e) {
       _handleError('Unable to continue story: $e', _handleContinue);
     }
+  }
+
+  void _triggerChapterSummarization(String choiceMadeText) {
+    if (!_isChronicleMode || widget.chronicleId == null) return;
+
+    // Extract last 2 sentences from chapter text as the "ending"
+    final fullText = _chapterTextBuffer.toString();
+    final sentences = fullText
+        .split(RegExp(r'(?<=[.!?])\s+'))
+        .where((s) => s.trim().isNotEmpty)
+        .toList();
+    final lastTwo = sentences.length >= 2
+        ? sentences.sublist(sentences.length - 2).join(' ')
+        : (sentences.isNotEmpty ? sentences.last : '');
+
+    // Determine chapter number: chronicle.chapterCount + 1
+    // We use chapterCount from the chronicle; the service will increment after
+    unawaited(
+      ChronicleService.getChronicle(widget.chronicleId!).then((chronicle) {
+        final chapterNumber = (chronicle?.chapterCount ?? 0) + 1;
+        unawaited(
+          ChronicleService.handleChapterComplete(
+            chronicleId: widget.chronicleId!,
+            chapterNumber: chapterNumber,
+            chapterText: fullText,
+            characterName: widget.character.name,
+            lastChapterEnding: lastTwo,
+            choiceMadeToStart: choiceMadeText,
+          ),
+        );
+      }),
+    );
   }
 
   void _scrollToBottom() {
@@ -487,7 +616,9 @@ class _PickAPathAdventureScreenState
           ],
 
           // Choices, Continue, or completion
-          if (_isCompleted)
+          if (_sessionLimitReached && _isChronicleMode)
+            _buildSessionBreakSection()
+          else if (_isCompleted)
             _buildCompletionSection()
           else if (_currentSegment!.requiresChoice)
             _buildChoicesSection()
@@ -505,6 +636,15 @@ class _PickAPathAdventureScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (_ttsEnabled)
+            Align(
+              alignment: Alignment.topRight,
+              child: IconButton(
+                icon: const Icon(Icons.volume_off_rounded, color: Colors.deepPurple),
+                tooltip: 'Stop reading',
+                onPressed: () => _tts?.stop(),
+              ),
+            ),
           // Illustration
           if (_currentSegment!.imageUrl != null) ...[
             ClipRRect(
@@ -699,6 +839,268 @@ class _PickAPathAdventureScreenState
   }
 
   Widget _buildChoicesSection() {
+    if (_currentSegment!.choices.isEmpty) {
+      return const Center(child: Text('No choices available'));
+    }
+    return widget.character.age <= 7
+        ? _buildYoungChoicesSection()
+        : _buildStandardChoicesSection();
+  }
+
+  Widget _buildYoungChoicesSection() {
+    final isSprout = widget.character.age <= 5;
+    final isExplorer = widget.character.age <= 8 && !isSprout;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Center(
+          child: Column(
+            children: [
+              Text(
+                isSprout
+                    ? 'What should happen? 🎙️'
+                    : isExplorer
+                        ? 'What do you choose? 🎙️'
+                        : 'Say your choice or tap one!',
+                style: TextStyle(
+                  fontSize: isSprout ? 20 : 17,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              VoiceMicButton(
+                onResult: _handleVoiceResult,
+                hint: 'Say what happens next...',
+                disabled: _isContinuing,
+                size: isSprout ? 72 : 56,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        ..._currentSegment!.choices.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final choice = entry.value;
+          final gradients = [
+            [const Color(0xFF7B2FBE), const Color(0xFF9B59B6)],
+            [const Color(0xFF1A7A4A), const Color(0xFF27AE60)],
+            [const Color(0xFFB7410E), const Color(0xFFE74C3C)],
+          ];
+          final grad = gradients[idx % gradients.length];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14.0),
+            child: GestureDetector(
+              onTap: _isContinuing ? null : () => _handleChoiceSelected(choice),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: grad),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: grad[0].withValues(alpha: 0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  choice.text,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: isSprout ? 18 : 16,
+                    fontWeight: FontWeight.w700,
+                    height: 1.3,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          );
+        }),
+        const SizedBox(height: 8),
+        _buildYoungSomethingElse(),
+        if (isSprout) ...[
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: _isContinuing ? null : _showParentCopilotSheet,
+            icon: const Icon(Icons.family_restroom, color: Colors.orange),
+            label: const Text(
+              'Grown-up adds to the story...',
+              style: TextStyle(color: Colors.orange, fontSize: 14),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildYoungSomethingElse() {
+    final isSprout = widget.character.age <= 5;
+    if (_showCustomInput) {
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.deepPurple.withValues(alpha: 0.4)),
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.deepPurple.withValues(alpha: 0.05),
+        ),
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              _customChoiceController.text,
+              style: TextStyle(
+                fontSize: isSprout ? 18 : 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.deepPurple.shade700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => setState(() {
+                      _showCustomInput = false;
+                      _customChoiceController.clear();
+                    }),
+                    child: const Text('Try again'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isContinuing ? null : _handleCustomChoice,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      isSprout ? 'Yes! Do that! 🌟' : 'Use this!',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+    return GestureDetector(
+      onTap: _isContinuing ? null : () => setState(() => _showCustomInput = true),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.deepPurple.withValues(alpha: 0.5), width: 2),
+          borderRadius: BorderRadius.circular(20),
+          color: Colors.deepPurple.withValues(alpha: 0.04),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.mic_rounded, color: Colors.deepPurple, size: 28),
+            const SizedBox(width: 10),
+            Text(
+              isSprout ? 'My own idea! 💡' : 'Something else...',
+              style: const TextStyle(
+                color: Colors.deepPurple,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showParentCopilotSheet() {
+    final controller = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1E0538),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              '👨‍👧 Add to the story',
+              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Type something that happens next — it will appear in the story!',
+              style: TextStyle(color: Colors.white60, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              maxLines: 3,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'e.g. "Then Dad appeared with a magic map!"',
+                hintStyle: const TextStyle(color: Colors.white38),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.purple),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.purple),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                final text = controller.text.trim();
+                if (text.isNotEmpty) {
+                  Navigator.of(ctx).pop();
+                  _customChoiceController.text = text;
+                  _handleCustomChoice();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text(
+                'Add this to the story!',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Renamed copy of the original _buildChoicesSection — body is unchanged.
+  Widget _buildStandardChoicesSection() {
     // Safety check: ensure we have choices to display
     if (_currentSegment!.choices.isEmpty) {
       return const Center(
@@ -841,36 +1243,120 @@ class _PickAPathAdventureScreenState
   }
 
   Widget _buildCompletionSection() {
+    final age = widget.character.age;
+    final isChronicle = _isChronicleMode && widget.chronicleId != null;
+    final isSprout = age <= 5;
+
+    final String title = isChronicle
+        ? (isSprout
+            ? '🌟 Chapter done! Great job!'
+            : age <= 7
+                ? 'Chapter Complete! Amazing! 🎉'
+                : age <= 10
+                    ? 'Chapter Complete!'
+                    : 'Chapter Complete')
+        : (isSprout
+            ? 'The End! 🌈'
+            : age <= 7
+                ? 'Adventure Complete! 🎉'
+                : 'Adventure Complete!');
+
+    final String saveLabel = isChronicle
+        ? (isSprout
+            ? 'Save my story! ⭐'
+            : age <= 7
+                ? 'Save it!'
+                : 'Save & continue another day')
+        : (isSprout ? 'Keep this story! 📖' : 'Save to Library');
+
+    final String continueLabel = isSprout
+        ? 'Keep going! ➡️'
+        : age <= 7
+            ? 'Next chapter!'
+            : age <= 10
+                ? 'Start next chapter'
+                : 'Continue Chronicle';
+
     return Column(
       children: [
-        const Icon(
-          Icons.auto_awesome,
-          size: 64,
+        Icon(
+          isChronicle ? Icons.menu_book_rounded : Icons.auto_awesome,
+          size: isSprout ? 80 : 64,
           color: Colors.amber,
         ),
         const SizedBox(height: 16),
-        const Text(
-          'Adventure Complete!',
+        Text(
+          title,
+          style: TextStyle(fontSize: isSprout ? 28 : 24, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+        if (!_storySaved) ...[
+          AppButton.primary(
+            label: saveLabel,
+            onPressed: _isSaving ? null : _saveStory,
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (_storySaved) ...[
+          Text(
+            isSprout ? '✓ Saved! Great adventuring!' : '✓ Saved to your library!',
+            style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+          ),
+          if (isChronicle) ...[
+            const SizedBox(height: 12),
+            AppButton.secondary(
+              label: continueLabel,
+              onPressed: () {
+                Navigator.of(context).pop('chapter_complete');
+              },
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSessionBreakSection() {
+    final age = widget.character.age;
+    final isSprout = age <= 5;
+    return Column(
+      children: [
+        const SizedBox(height: 16),
+        Icon(
+          isSprout ? Icons.bedtime_rounded : Icons.bookmark_rounded,
+          size: isSprout ? 72 : 56,
+          color: Colors.amber,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          isSprout
+              ? 'Great adventuring! Time for a rest! 🌙'
+              : age <= 7
+                  ? 'Amazing! Your story is saved! Come back for more!'
+                  : 'Good stopping point. Your chronicle is saved.',
           style: TextStyle(
-            fontSize: 24,
+            fontSize: isSprout ? 22 : 18,
             fontWeight: FontWeight.bold,
           ),
           textAlign: TextAlign.center,
         ),
+        const SizedBox(height: 8),
+        Text(
+          isSprout
+              ? 'Your story will be waiting for you!'
+              : 'Continue whenever you\'re ready.',
+          style: TextStyle(fontSize: isSprout ? 18 : 14, color: Colors.grey[600]),
+          textAlign: TextAlign.center,
+        ),
         const SizedBox(height: 24),
-        if (!_storySaved)
-          AppButton.primary(
-            label: 'Save to Library',
-            onPressed: _isSaving ? null : _saveStory,
-          ),
-        if (_storySaved)
-          const Text(
-            '✓ Saved to your library!',
-            style: TextStyle(
-              color: Colors.green,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+        AppButton.primary(
+          label: isSprout ? 'All done! 🌟' : 'Save & finish for now',
+          onPressed: () {
+            _triggerChapterSummarization('');
+            Navigator.of(context).pop('chapter_complete');
+          },
+        ),
       ],
     );
   }

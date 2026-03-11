@@ -155,9 +155,9 @@ class ArchetypeCard extends StatelessWidget {
                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                          ),
                          child: Text(
-                            specialAbility, 
+                            specialAbility,
                             style: TextStyle(
-                              fontSize: 11, 
+                              fontSize: 13,
                               fontStyle: FontStyle.italic,
                               color: AppColors.textDark,
                             ),
@@ -172,7 +172,7 @@ class ArchetypeCard extends StatelessWidget {
                           child: Text(
                             'Tap to Select',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 13,
                               color: AppColors.textDark.withAlpha(128),
                               fontStyle: FontStyle.italic,
                             ),
@@ -233,6 +233,7 @@ class CharacterArchetypes {
     description: 'Commands wind and weather, brave explorer',
     traits: ['Brave', 'Curious', 'Determined'],
     specialAbility: 'Can command wind and weather to soar through storms',
+    matureName: 'Storm Vanguard',
     attributes: {
       'energy': 80,
       'sociability': 70,
@@ -250,6 +251,7 @@ class CharacterArchetypes {
     description: 'Solves tricky puzzles and brain teasers',
     traits: ['Smart', 'Modest', 'Curious'],
     specialAbility: 'Can solve any quiz, puzzle, or brain teaser with clever thinking',
+    matureName: 'Logic Architect',
     attributes: {
       'energy': 40,
       'sociability': 30,
@@ -267,6 +269,7 @@ class CharacterArchetypes {
     description: 'Magic paintbrush brings drawings to life',
     traits: ['Creative', 'Expressive', 'Imaginative'],
     specialAbility: 'Has a magic paintbrush that brings drawings to life',
+    matureName: 'Senior Architect',
     attributes: {
       'energy': 60,
       'sociability': 50,
@@ -284,6 +287,7 @@ class CharacterArchetypes {
     description: 'Senses emotions and heals broken spirits',
     traits: ['Caring', 'Patient', 'Loyal'],
     specialAbility: 'Can sense emotions and heal broken spirits with kindness',
+    matureName: 'Harmony Mediator',
     attributes: {
       'energy': 50,
       'sociability': 85,
@@ -301,6 +305,7 @@ class CharacterArchetypes {
     description: 'Moves faster than sound, leaves stardust trails',
     traits: ['Energetic', 'Fast', 'Determined'],
     specialAbility: 'Moves faster than sound and leaves trails of stardust',
+    matureName: 'Kinetic Specialist',
     attributes: {
       'energy': 95,
       'sociability': 75,
@@ -318,6 +323,7 @@ class CharacterArchetypes {
     description: 'Talks to animals and hears nature\'s secrets',
     traits: ['Kind', 'Observant', 'Gentle'],
     specialAbility: 'Can talk to animals and move unseen like a shadow',
+    matureName: 'Ecological Whisperer',
     attributes: {
       'energy': 35,
       'sociability': 25,
@@ -346,6 +352,7 @@ class ArchetypeData {
   final List<String> traits;
   final Map<String, int> attributes;
   final String specialAbility; // New: physics-defying power for adventures
+  final String? matureName;
 
   const ArchetypeData({
     this.icon,
@@ -355,7 +362,13 @@ class ArchetypeData {
     required this.traits,
     required this.attributes,
     required this.specialAbility,
+    this.matureName,
   });
+
+  String nameForAge(int age) {
+    if (age >= 12 && matureName != null) return matureName!;
+    return name;
+  }
 }
 
 /// Drum/slot-machine style spinning wheel for archetype selection.
