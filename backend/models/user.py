@@ -30,6 +30,10 @@ class User(db.Model):
     illustrations_generated_this_month = db.Column(db.Integer, default=0, nullable=False)
     usage_reset_date = db.Column(db.DateTime, nullable=True)  # When to reset monthly counters
 
+    # COPPA compliance
+    declared_age = db.Column(db.Integer, nullable=True)  # Age declared during onboarding
+    is_under_13 = db.Column(db.Boolean, default=False, nullable=False)  # COPPA flag
+
     # Relationships
     characters = db.relationship('Character', backref='user', lazy=True)
     stories = db.relationship('Story', backref='user', lazy=True)
@@ -59,5 +63,8 @@ class User(db.Model):
             'stories_generated_this_month': self.stories_generated_this_month,
             'illustrations_generated_this_month': self.illustrations_generated_this_month,
             'usage_reset_date': self.usage_reset_date.isoformat() if self.usage_reset_date else None,
+            # COPPA fields
+            'declared_age': self.declared_age,
+            'is_under_13': self.is_under_13,
             # Note: Never expose gemini_api_key_encrypted in API responses
         }

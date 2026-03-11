@@ -294,6 +294,9 @@ def test_unauthenticated_access_prevention(client):
         ('/task-status/any-task-id', 'GET'),
         ('/tts/synthesize', 'POST'),
         ('/api/user/any-id/usage-stats', 'GET'),
+        ('/api/user/any-id/age', 'PATCH'),
+        ('/api/user/any-id/consent', 'POST'),
+        ('/api/user/any-id/data', 'DELETE'),
         ('/admin/run-db-optimization', 'POST')
     ]
     
@@ -345,3 +348,135 @@ def test_task_status_ownership_check(client, auth_headers, other_auth_headers, m
     # User B (other_auth_headers) tries to read User A's task result
     response = client.get('/task-status/fake-task-id', headers=other_auth_headers)
     assert response.status_code == 403
+
+
+def test_mock_story_endpoint_available_in_testing(client):
+    """
+    In testing/non-production mode, /generate-story-mock should return 200.
+    """
+    payload = {
+        'character': 'TestHero',
+        'theme': 'Friendship'
+    }
+    response = client.post('/generate-story-mock',
+                           data=json.dumps(payload),
+                           content_type='application/json')
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['status'] == 'complete'
+
+
+def test_mock_story_endpoint_disabled_in_production(client, monkeypatch):
+    """
+    When RAILWAY_ENVIRONMENT=production, /generate-story-mock should return 404.
+    The is_production() helper reads this env var.
+    """
+    monkeypatch.setenv('RAILWAY_ENVIRONMENT', 'production')
+
+    payload = {
+        'character': 'TestHero',
+        'theme': 'Friendship'
+    }
+    response = client.post('/generate-story-mock',
+                           data=json.dumps(payload),
+                           content_type='application/json')
+    assert response.status_code == 404
+    data = response.get_json()
+    assert 'not available' in data.get('error', '').lower() or 'not available' in data.get('error', '').lower()
+
+
+# ============================================================================
+# COPPA COMPLIANCE TESTS
+# ============================================================================
+
+def test_coppa_record_consent(client, auth_headers, test_user):
+    """
+    Test that consent can be recorded server-side.
+    """
+    payload = {
+        'child_age': 7,
+        'consent_method': 'parent',
+        'parent_email': 'parent@example.com',
+        'allow_photo_avatar': True,
+    }
+    response = client.post(
+        f'/api/user/{test_user.id}/consent',
+        data=json.dumps(payload),
+        headers=auth_headers,
+    )
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data['success'] is True
+    assert data['consent']['child_age'] == 7
+    assert data['consent']['consent_method'] == 'parent'
+    assert data['consent']['parent_email'] == 'parent@example.com'
+
+    # Verify user age was updated
+    user = db.session.get(User, test_user.id)
+    assert user.declared_age == 7
+    assert user.is_under_13 is True
+
+
+def test_coppa_set_age(client, auth_headers, test_user):
+    """
+    Test that declared age can be set and COPPA flag auto-updates.
+    """
+    # Set age to under 13
+    response = client.patch(
+        f'/api/user/{test_user.id}/age',
+        data=json.dumps({'age': 10}),
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['declared_age'] == 10
+    assert data['is_under_13'] is True
+
+    # Set age to 13+
+    response = client.patch(
+        f'/api/user/{test_user.id}/age',
+        data=json.dumps({'age': 15}),
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['declared_age'] == 15
+    assert data['is_under_13'] is False
+
+
+def test_coppa_delete_user_data(client, auth_headers, test_user, test_character):
+    """
+    Test COPPA right-to-erasure: DELETE /api/user/<id>/data
+    Should delete all characters, stories, consent records and anonymize the user.
+    """
+    user_id = test_user.id
+
+    # Record some consent first so we can verify it's deleted
+    client.post(
+        f'/api/user/{user_id}/consent',
+        data=json.dumps({'child_age': 8, 'consent_method': 'parent'}),
+        headers=auth_headers,
+    )
+
+    # Verify character exists before deletion
+    assert db.session.get(Character, test_character.id) is not None
+
+    # Delete all data
+    response = client.delete(
+        f'/api/user/{user_id}/data',
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['success'] is True
+
+    # Verify character was deleted
+    assert db.session.get(Character, test_character.id) is None
+
+    # Verify user was anonymized
+    user = db.session.get(User, user_id)
+    assert user is not None  # Record still exists (anonymized)
+    assert user.username.startswith('deleted_')
+    assert user.email.endswith('@deleted.local')
+    assert user.password_hash == 'DELETED'
+    assert user.declared_age is None
