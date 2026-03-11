@@ -25,10 +25,10 @@ cryptography==46.0.5
 bcrypt==5.0.0
 
 # Error Monitoring
-sentry-sdk[flask]==2.53.0
+sentry-sdk[flask]==2.54.0
 
 # Payment Processing
-stripe==14.4.0
+stripe==14.4.1
 
 # JWT Authentication
 Flask-JWT-Extended==4.7.1
@@ -47,7 +47,7 @@ marshmallow==4.2.2
 # aiohttp==3.9.1
 
 # Caching (optional but useful)
-redis==7.2.1
+redis==7.3.0
 Flask-Caching==2.3.1
 
 # Task Queue
