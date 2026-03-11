@@ -75,6 +75,7 @@ class InteractiveAdventureService:
         world_bible: str = "",
         conflict_hook: str = "",
         sensory_palette: str = "",
+        chronicle_context: Optional[Dict] = None,
     ) -> Dict[str, Any]:
         """
         Create a new interactive adventure story with opening segment.
@@ -163,6 +164,7 @@ class InteractiveAdventureService:
             world_bible=world_bible,
             conflict_hook=conflict_hook,
             sensory_palette=sensory_palette,
+            chronicle_context=chronicle_context,
         )
 
         # Generate first segment

@@ -311,7 +311,12 @@ def create_story_blueprint(
         """
         A mock endpoint for development and UI testing.
         Returns a static story instantly without calling any AI model.
+        Disabled in production.
         """
+        # Gate: disable in production
+        if is_production_fn():
+            return jsonify({"error": "Not available in production"}), 404
+
         logger.info("Serving mock story for testing.")
         payload = request.get_json(silent=True) or {}
         character = payload.get("character", {})
@@ -438,6 +443,7 @@ def create_story_blueprint(
         world_bible = payload.get("worldBible", "")
         conflict_hook = payload.get("conflictHook", "")
         sensory_palette = payload.get("sensoryPalette", "")
+        chronicle_context = payload.get("chronicle_context")
 
         try:
             # Initialize service
@@ -459,6 +465,7 @@ def create_story_blueprint(
                 world_bible=world_bible,
                 conflict_hook=conflict_hook,
                 sensory_palette=sensory_palette,
+                chronicle_context=chronicle_context,
             )
 
             # Filter content
@@ -658,6 +665,7 @@ def create_story_blueprint(
             return jsonify({"error": str(e)}), 500
 
     @story_bp.route("/report-story", methods=["POST"])
+    @limiter.limit("5 per hour")
     def report_story():
         """Allow users to report inappropriate content."""
         data = request.get_json(silent=True) or {}

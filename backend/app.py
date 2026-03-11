@@ -418,6 +418,8 @@ def create_app(config_name):
                 'stories_generated_this_month':        'INTEGER DEFAULT 0 NOT NULL',
                 'illustrations_generated_this_month':  'INTEGER DEFAULT 0 NOT NULL',
                 'usage_reset_date':                    'TIMESTAMP',
+                'declared_age':                        'INTEGER',
+                'is_under_13':                         'BOOLEAN DEFAULT 0 NOT NULL',
             }
             with db.engine.connect() as _conn:
                 for col_name, col_def in pending_cols.items():
@@ -516,6 +518,7 @@ def create_app(config_name):
         from backend.routes.health_routes import create_health_blueprint
         from backend.routes.utility_routes import create_utility_blueprint
         from backend.routes.therapist_routes import create_therapist_blueprint
+        from backend.routes.chronicle_routes import create_chronicle_blueprint
     except ImportError:
         from routes.story_routes import create_story_blueprint
         from routes.character_routes import create_character_blueprint
@@ -525,6 +528,7 @@ def create_app(config_name):
         from routes.health_routes import create_health_blueprint
         from routes.utility_routes import create_utility_blueprint
         from routes.therapist_routes import create_therapist_blueprint
+        from routes.chronicle_routes import create_chronicle_blueprint
 
     story_bp = create_story_blueprint(
         limiter=limiter,
@@ -546,6 +550,7 @@ def create_app(config_name):
     health_bp = create_health_blueprint(logger=logger, api_key=api_key, app_version="1.0.2", gemini_model=GEMINI_MODEL)
     utility_bp = create_utility_blueprint(logger=logger, log_error=log_error, limiter=limiter)
     therapist_bp = create_therapist_blueprint(logger=logger, limiter=limiter)
+    chronicle_bp = create_chronicle_blueprint(api_key=api_key, limiter=limiter)
 
     app.register_blueprint(story_bp)
     app.register_blueprint(character_bp)
@@ -553,6 +558,7 @@ def create_app(config_name):
     app.register_blueprint(health_bp)
     app.register_blueprint(utility_bp)
     app.register_blueprint(therapist_bp)
+    app.register_blueprint(chronicle_bp)
     app.register_blueprint(avatar_bp, url_prefix='/avatar')
     app.register_blueprint(avatar_gallery_bp, url_prefix='/avatar/gallery')
 

@@ -128,11 +128,6 @@ class Config:
             "https://*.netlify.app",  # Allow Netlify preview deploys
         ]
 
-        # Always allow localhost dynamic ports (fixes CORS for Flutter run -d chrome random ports)
-        # Using regex to match any port on localhost or 127.0.0.1
-        base_origins.append(re.compile(r"^http://localhost:\d+$"))
-        base_origins.append(re.compile(r"^http://127\.0\.0\.1:\d+$"))
-
         # Add Railway frontend URL if available
         railway_frontend = os.environ.get('RAILWAY_FRONTEND_URL')
         if railway_frontend:
@@ -146,7 +141,11 @@ class Config:
 
         # Add localhost origins only in development
         # SECURITY: Never use "*" wildcard - use regex patterns instead
+        # SECURITY: Localhost regex patterns ONLY in dev to prevent production CORS bypass
         if os.environ.get('FLASK_ENV', 'production') in ['dev', 'development']:
+            # Allow any port on localhost/127.0.0.1 (Flutter run -d chrome uses random ports)
+            base_origins.append(re.compile(r"^http://localhost:\d+$"))
+            base_origins.append(re.compile(r"^http://127\.0\.0\.1:\d+$"))
             base_origins.extend([
                 "http://localhost:8080",
                 "http://127.0.0.1:8080",
@@ -162,8 +161,6 @@ class Config:
                 "http://127.0.0.1:5000",
                 "http://10.0.2.2:8080",
                 "http://10.0.2.2:5000",
-                # Regex patterns handle random Flutter web ports securely
-                # No wildcard "*" - that would allow any origin including malicious sites
             ])
 
         return base_origins

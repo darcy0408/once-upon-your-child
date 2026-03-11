@@ -243,7 +243,8 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             engine = AdvancedStoryEngine()
 
             # Use specialized prompts based on story mode flags
-            if learning_to_read_mode:
+            if learning_to_read_mode and age < 9:
+
                 logger.info(f"Using Learning to Read prompt (length: {story_length})")
                 age = kwargs.get("age", 5)
                 prompt = _build_learning_to_read_prompt(

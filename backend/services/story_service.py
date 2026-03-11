@@ -723,6 +723,8 @@ Of cookies — she'd do it again!                       (A)
 {{
   "title": "Story Title",
   "wisdom_gem": "A short, fun, rhyming encouragement — one line (e.g. 'When things go wrong, just sing a song!').",
+  "rhyme_scheme": "{rhyme_scheme_instruction}",
+
   "pages": [
     {{"text": "Limerick 1 — 5 lines, AABBA rhyme..."}},
     {{"text": "Limerick 2..."}},
@@ -771,10 +773,57 @@ def _build_rhyme_time_prompt(character_name, theme, age, character_details, comp
 
     # Age-appropriate instructions
     age_instruction = ""
+    rhyme_scheme_instruction = "Consistent AABB rhyme scheme."
+
     if age <= 5:
-        age_instruction = "Use simple, magical vocabulary. Focus on wonder and sensory delight."
+        age_instruction = (
+            "Write a full rhyming story. Use simple, magical vocabulary. "
+            "Focus on wonder and sensory delight. Very short sentences (4-6 words per line)."
+        )
+        rhyme_scheme_instruction = (
+            "Consistent AABB rhyme scheme. Very simple vocabulary (CVC words and sight words)."
+        )
+    elif age <= 8:
+        age_instruction = (
+            "Write a fun, bouncy rhyming story. Use playful rhythm. "
+            "Include a funny moment and a satisfying rhyming resolution."
+        )
+        rhyme_scheme_instruction = (
+            "Use AABBA limerick or simple AABB couplets. "
+            "Vary line lengths slightly for a bouncy feel."
+        )
+    elif age <= 10:
+        age_instruction = (
+            "Write a ballad-style rhyming story with a clear narrative arc. "
+            "Use ABCB (ballad) or rhyming couplets. Include vivid imagery and a twist. "
+            "No sing-song bouncy limericks — aim for genuine story tension."
+        )
+        rhyme_scheme_instruction = (
+            "Use ABCB ballad scheme or rhyming couplets (AABB). "
+            "Each stanza 4 lines. Build toward a satisfying climax."
+        )
     elif age >= 13:
-        age_instruction = "Avoid 'babyish' or condescending tones. Use sophisticated rhymes that explore identity, resilience, or complex friendships."
+        age_instruction = (
+            "Write a sophisticated poem — free verse or sonnet form. "
+            "Explore identity, resilience, or complex emotion. "
+            "Avoid sing-song rhymes; prefer slant rhyme or internal rhyme. "
+            "Write as literary fiction poetry, not a children's rhyme."
+        )
+        rhyme_scheme_instruction = (
+            "Free verse OR sonnet (14 lines, ABAB CDCD EFEF GG). "
+            "Prioritize emotional resonance over rigid rhyme. No limericks."
+        )
+    else:  # age 11-12
+        age_instruction = (
+            "Format as a narrative poem or epic ballad. Avoid babyish tones. "
+            "Explore themes like identity, resilience, or complex friendships. "
+            "Use vivid metaphor and internal rhyme. No limericks."
+        )
+        rhyme_scheme_instruction = (
+            "Use ABAB or ABCB narrative ballad form. 4-8 line stanzas. "
+            "Build dramatic tension and resolve it in the final stanza."
+        )
+
 
     companion_sections = []
     all_companion_names = []
@@ -823,7 +872,7 @@ Create a RHYME TIME story for {character_name} (age {age}).
 Theme: {theme}
 Tone: {age_instruction or 'Uplifting and fun'}
 Word Count: {word_range[0]}-{word_range[1]} words.
-Scheme: Consistent AABB or ABCB.
+Scheme: {rhyme_scheme_instruction}
 Requirements: Include a magical surprise and a coping moment. {character_name} is the hero.
 Companions: {comp_str} (MANDATORY Checklist: {mandatory_names_str} - EVERY name here MUST be in the story).
 Custom Requests: {custom_elements or 'None'} (CRITICAL: You MUST use the exact words from this request at least once each, verbatim, in the story).

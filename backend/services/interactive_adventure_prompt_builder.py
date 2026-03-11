@@ -63,7 +63,7 @@ class InteractiveAdventurePromptBuilder:
             },
             'stakes': 'nuanced emotions, deeper motivation, still clean',
             'suspense': 'mystery, social complexity',
-            'complexity': 'multi-layered consequences'
+            'complexity': 'multi-layered consequences and nuanced moral dilemmas'
         },
         '13-15': {
             'sentence_length': 'varied (8-20 words), identity/friendship themes',
@@ -211,7 +211,28 @@ SAFETY RULES:
 - **TONE (Teen)**: Avoid 'babyish' or condescending language. Use sophisticated, nuanced vocabulary. 
 - **THEMES**: Focus on identity, autonomy, moral complexity, and the internal journey. 
 - **ENGAGEMENT**: Choices should reflect social or internal dilemmas, not just physical actions.
+- **CO-AUTHORING**: Treat the reader as a creative partner. Respect their autonomy and provide deep, divergent plot branches.
 """
+
+    MORAL_COMPLEXITY_INSTRUCTION = """
+**MORAL COMPLEXITY GUIDE (Ages 11-13)**:
+- Choices must NOT have an obvious right answer. Each path should have a genuine trade-off.
+- Good example: Option A helps the hero's goal but disappoints a friend. Option B protects the friend but slows the mission.
+- Avoid: One clearly brave choice + one clearly cowardly choice.
+- Include: Social consequences, loyalty dilemmas, moments where being fair conflicts with being fast.
+- The hero may feel conflicted after choosing — reflect this briefly in the narrative before the next choice.
+- Minimum one line of internal monologue per scene showing the character weighing their decision.
+"""
+
+    CO_AUTHOR_INSTRUCTION = """
+**CO-AUTHOR MODE (Ages 15+)**:
+- Frame choices as narrative decisions: 'What does {name} decide?' not 'What do YOU do?'
+- The reader is a co-author shaping the protagonist's journey, not the protagonist themselves.
+- Choice text uses third-person: 'Have {name} confront the council' rather than 'Confront the council'.
+- Internal monologue is encouraged; let the protagonist reflect on the weight of each option.
+- Choices should reflect values, identity, and long-term consequences.
+"""
+
 
     @classmethod
     def get_age_band(cls, age: int) -> str:
@@ -266,7 +287,8 @@ SAFETY RULES:
         sensory_palette: Optional[str] = None,
         world_bible: str = "",
         life_challenge: Optional[str] = None,
-        personality_sliders: Optional[Dict[str, int]] = None
+        personality_sliders: Optional[Dict[str, int]] = None,
+        chronicle_context: Optional[Dict] = None,
     ) -> str:
         """
         Build the opening segment prompt for a new interactive adventure.
@@ -373,14 +395,20 @@ SAFETY RULES:
         tool_value = f"'{spark_tool}' {tool_instruction}" if spark_tool else 'None'
         tool_line = f"- **{tool_label}**: {tool_value}"
 
+        # Persona selection
+        persona = "Master Storyteller & World-Builder. You write Pick-A-Path adventures so vivid and immersive that readers forget they're reading — they *are* the hero, living every heartbeat of the story."
+        if age >= 15:
+            persona = f"Collaborative Creative Partner. You are co-authoring a sophisticated narrative with {child_name}. Respect their autonomy and creative agency. Treat them as a peer in the storytelling process, providing rich, complex branches for them to explore."
+
         prompt = f"""
-**PERSONA**: Master Storyteller & World-Builder. You write Pick-A-Path adventures so vivid and immersive that readers forget they're reading — they *are* the hero, living every heartbeat of the story.
+**PERSONA**: {persona}
 
 You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_name}{gender_text} (age {age}).
 - **THEME**: {theme} | **TONE**: {tone}
 - **CONFLICT**: {conflict_hook or 'A magical mystery needs solving.'}
 - **SENSORY PALETTE**: {final_sensory}
 {('- **WORLD BIBLE** (CRITICAL — follow this for setting consistency): ' + world_bible) if world_bible else ''}
+{cls._build_chronicle_block(chronicle_context) if chronicle_context else ''}
 {challenge_instruction}
 {virtue_instruction}
 - **HERO**: {child_name} (Special Ability: {special_ability}).
@@ -397,13 +425,15 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 
 **CRITICAL RULES**:
 - **AGE {age}**: Keep vocabulary and complexity appropriate for this age.
-- **POV**: ALWAYS use "you" (second-person). The hero's name is "{child_name}".
+- **POV**: {"Third-person for choices. Hero is " + child_name + ". Frame: What does " + child_name + " decide?" if age >= 15 else "ALWAYS use second-person (you). The hero is " + child_name + "."}
 - **WORD COUNT REQUIREMENT**: This INDIVIDUAL SEGMENT MUST be between {word_count[0]} and {word_count[1]} words.
 - **Companion Contract**: REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Companion MUST appear by name.
 - **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.
 - **Safety**: No violence/harm. Keep the tone warm, age-appropriate, and full of wonder.
 {cls.SAFETY_GUARDRAILS}
 {cls.TEEN_TONE_INSTRUCTION if age >= 15 else ""}
+{cls.MORAL_COMPLEXITY_INSTRUCTION if 11 <= age <= 13 else ""}
+{cls.CO_AUTHOR_INSTRUCTION.replace("{name}", child_name) if age >= 15 else ""}
 
 **Opening Segment 1/{path_depth}**:
 1. Begin with sensory details - natural storybook opening.
@@ -523,8 +553,13 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
             if life_challenge_ctx and not is_near_end and next_segment_number == 3 else ""
         )
 
+        # Persona selection
+        persona = "Master Storyteller & World-Builder. You write Pick-A-Path adventures so vivid and immersive that readers forget they're reading — they *are* the hero, living every heartbeat of the story."
+        if age >= 15:
+            persona = f"Collaborative Creative Partner. You are co-authoring a sophisticated narrative with {child_name}. Respect their autonomy and creative agency. Treat them as a peer in the storytelling process, providing rich, complex branches for them to explore."
+
         prompt = f"""
-**PERSONA**: Master Storyteller & World-Builder. You write Pick-A-Path adventures so vivid and immersive that readers forget they're reading — they *are* the hero, living every heartbeat of the story.
+**PERSONA**: {persona}
 
 You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {age}).
 
@@ -549,7 +584,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 
 **CRITICAL RULES**:
 - **AGE {age}**: Keep vocabulary and complexity appropriate for this age.
-- **POV**: ALWAYS use "you" (second-person). The hero's name is "{child_name}".
+- **POV**: {"Third-person for choices. Hero is " + child_name + ". Frame: What does " + child_name + " decide?" if age >= 15 else "ALWAYS use second-person (you). The hero is " + child_name + "."}
 - **WORD COUNT REQUIREMENT**: This INDIVIDUAL SEGMENT MUST be between {word_count[0]} and {word_count[1]} words.
 - **Companion Contract**: REQUIRED: 3+ distinct beats (actions/dialogue), 1 help, 1 bond. Companion MUST appear by name.
 - **Choices**: {choice_count} concrete options. NO passive options. Start with vivid verbs.{ending_instruction}
@@ -557,6 +592,8 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 - **Safety**: No violence/harm. Keep the tone warm, age-appropriate, and full of wonder.
 {cls.SAFETY_GUARDRAILS}
 {cls.TEEN_TONE_INSTRUCTION if age >= 15 else ""}
+{cls.MORAL_COMPLEXITY_INSTRUCTION if 11 <= age <= 13 else ""}
+{cls.CO_AUTHOR_INSTRUCTION.replace('{name}', child_name) if age >= 15 else ""}
 
 **JSON Output**:
 ```json
@@ -585,6 +622,51 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 ```
 {cls.IMMERSION_RULES}"""
         return prompt
+
+    @staticmethod
+    def _build_chronicle_block(ctx: Dict) -> str:
+        """Format the chronicle context block for injection into the opening prompt."""
+        if not ctx:
+            return ""
+        chapter_count = ctx.get("chapter_count", 0)
+        character_state = ctx.get("character_state", "No state recorded yet.")
+        world_facts = ctx.get("world_facts") or []
+        arc_summaries = ctx.get("arc_summaries") or []
+        recent_memories = ctx.get("recent_memories") or []
+        unresolved_threads = ctx.get("unresolved_threads") or []
+        last_chapter_ending = ctx.get("last_chapter_ending", "")
+
+        facts_str = "\n".join(f"  - {f}" for f in world_facts) if world_facts else "  None yet."
+        arcs_str = "\n".join(f"  {a}" for a in arc_summaries) if arc_summaries else "  None yet."
+
+        memories_lines = []
+        for i, mem in enumerate(recent_memories[-3:]):
+            ch = mem.get("chapter_number", "?")
+            bullets = mem.get("summary_bullets") or []
+            bullets_str = " ".join(f"[{b}]" for b in bullets[:3])
+            memories_lines.append(f"  Chapter {ch}: {bullets_str}")
+        memories_str = "\n".join(memories_lines) if memories_lines else "  No recent chapters yet."
+
+        threads_str = "\n".join(f"  - {t}" for t in unresolved_threads) if unresolved_threads else "  None open."
+
+        ending_line = (
+            f'\nLAST SESSION ENDED WITH: "{last_chapter_ending}"\nTHE NEXT CHAPTER MUST continue from exactly where this left off.'
+            if last_chapter_ending
+            else ""
+        )
+
+        return f"""
+**LIVING CHRONICLE (Chapters 1-{chapter_count} completed — treat this as absolute canon)**:
+CHARACTER STATE: {character_state}
+WORLD FACTS (established canon — never contradict these):
+{facts_str}
+STORY ARCS SO FAR:
+{arcs_str}
+RECENT CHAPTERS:
+{memories_str}
+OPEN STORY THREADS (must eventually resolve):
+{threads_str}{ending_line}
+"""
 
     @staticmethod
     def _build_companion_context(companions: Optional[List[Dict]]) -> str:

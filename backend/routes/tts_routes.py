@@ -97,6 +97,17 @@ def create_tts_blueprint(limiter, require_auth):
         if not text:
             return jsonify({"error": "text is required"}), 400
 
+        # Strip markdown/formatting before truncating so we don't waste
+        # the 5 000-char budget on asterisks and pound signs.
+        try:
+            from backend.elevenlabs_tts_service import clean_text_for_tts
+        except ImportError:
+            try:
+                from elevenlabs_tts_service import clean_text_for_tts
+            except ImportError:
+                clean_text_for_tts = lambda t: t  # noqa: E731
+        text = clean_text_for_tts(text)
+
         _, default_voice_id = _get_voice_list()
         voice_id = (data.get("voice_id") or "").strip() or default_voice_id
 
