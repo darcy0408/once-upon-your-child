@@ -29,11 +29,12 @@ We collect minimal data to provide Story Weaver:
             _buildSection(
               title: 'Children\'s Privacy (COPPA)',
               content: '''
-Story Weaver is designed for children. We comply with COPPA:
-- No personal data from children under 13 without parental consent
-- Parents/guardians must approve account creation
+Story Weaver is designed for users ages 3-18+. We comply with the Children's Online Privacy Protection Act (COPPA) as enforced by the FTC:
+- No personal data from children under 13 without verifiable parental consent
+- Parents/guardians must approve account creation for children under 13
 - We do not sell or share children's data
 - Parents can request deletion of their child's data at any time
+- Age is collected to provide age-appropriate content and to determine COPPA applicability
 ''',
             ),
             _buildSection(
@@ -49,9 +50,10 @@ Story Weaver is designed for children. We comply with COPPA:
             _buildSection(
               title: 'Third-Party Services',
               content: '''
-- Google Gemini AI: story generation (we avoid sending personal data)
-- Stripe: subscription and payment processing
+- Google Gemini AI: story and illustration generation (we do not send personal information; only fictional character details and story preferences)
+- Stripe: subscription and payment processing (PCI compliant)
 - Railway: secure hosting and infrastructure
+- Sentry: error monitoring (no personal data is included)
 ''',
             ),
             _buildSection(
@@ -77,7 +79,7 @@ Contact: privacy@storyweaver.app
             _buildSection(
               title: 'Updates to This Policy',
               content: '''
-Last updated: ${DateTime.now().toString().split(' ').first}
+Last updated: March 11, 2026
 We may update this policy. Changes will be posted here.
 ''',
             ),

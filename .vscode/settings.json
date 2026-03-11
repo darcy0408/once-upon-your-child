@@ -1,4 +1,4 @@
-{{
+{
   "files.watcherExclude": {
     "**/build/**": true,
     "**/.dart_tool/**": true,
@@ -10,7 +10,11 @@
     "**/.dart_tool/**": true,
     "**/.gradle/**": true,
     "**/node_modules/**": true
-  }
-}
-
+  },
+  "java.import.exclusions": [
+    "**/story_weaver_mvp/**",
+    "**/therapy_companion/**"
+  ],
+  "java.configuration.updateBuildConfiguration": "disabled",
+  "gradle.nestedProjects": false
 }

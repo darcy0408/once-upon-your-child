@@ -12,8 +12,7 @@
 // Self-contained: owns its own level/back-navigation state.
 // Reports selection via [onSelected] with a [FeelingSelection] result.
 //
-// Cloud images: assets/feelings_faces/clouds/{id}.png  (optional)
-// Face fallback: assets/feelings_faces/{id}.png → emoji
+// Cloud images: assets/feelings_faces/{id}.png  (optional, falls back to emoji)
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -449,7 +448,7 @@ class _CloudEmotionCardState extends State<CloudEmotionCard>
             SizedBox(
               height: cloudH,
               child: Image.asset(
-                'assets/feelings_faces/clouds/${widget.id}.png',
+                'assets/feelings_faces/${widget.id}.png',
                 height: cloudH,
                 fit: BoxFit.contain,
                 errorBuilder: (_, __, ___) => ClipPath(
