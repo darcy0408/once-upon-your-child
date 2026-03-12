@@ -27,6 +27,35 @@ dart analyze lib/screens/wizard_story_screen.dart lib/screens/bedtime_wizard_scr
 
 ---
 
+## Session Update - 2026-03-12 (Sprout Asset Generation Bundle)
+
+### Scope Completed
+
+- Normalized the local sprout asset generation helpers to match the actual output folder layout.
+- Prepared the generated sprout UI/companion/orb art bundle for commit.
+
+### Changes
+
+- `generate_age_band_assets.py`
+  - Switched the target output from `age_band_assets/toddlers` to `sprouts`.
+  - Updated UI output folder casing from `ui` to `UI` to match the generated files.
+- `remove_ui_backgrounds.py`
+  - Updated the transparency-processing target from `age_band_assets/toddlers` to `sprouts`.
+- `sprouts/UI/*`, `sprouts/companions/*`, `sprouts/orbs/*`
+  - Added generated sprout visual assets for UI chrome, companions, and progress orbs.
+
+### Verification
+
+```bash
+python -m py_compile generate_age_band_assets.py remove_ui_backgrounds.py
+```
+
+### Result
+
+- Scripts are aligned with the checked-in sprout asset directory structure.
+
+---
+
 ## Session Update - 2026-03-12 (Screen Time Controls Slice)
 
 ### Scope Completed
