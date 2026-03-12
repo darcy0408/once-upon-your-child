@@ -219,38 +219,42 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
           const SizedBox(height: 60),
           const Icon(Icons.auto_awesome, color: _goldColor, size: 64),
           const SizedBox(height: AppSpacing.md),
-          RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: 'Once Upon\n',
-                  style: GoogleFonts.cinzelDecorative(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: _goldColor,
-                    height: 1.3,
+          Semantics(
+            header: true,
+            label: 'Story Weaver. Welcome!',
+            child: RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: 'Once Upon\n',
+                    style: GoogleFonts.cinzelDecorative(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: _goldColor,
+                      height: 1.3,
+                    ),
                   ),
-                ),
-                TextSpan(
-                  text: 'YOUR',
-                  style: GoogleFonts.cinzelDecorative(
-                    fontSize: 38,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    height: 1.3,
+                  TextSpan(
+                    text: 'YOUR',
+                    style: GoogleFonts.cinzelDecorative(
+                      fontSize: 38,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      height: 1.3,
+                    ),
                   ),
-                ),
-                TextSpan(
-                  text: ' Child',
-                  style: GoogleFonts.cinzelDecorative(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: _goldColor,
-                    height: 1.3,
+                  TextSpan(
+                    text: ' Child',
+                    style: GoogleFonts.cinzelDecorative(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: _goldColor,
+                      height: 1.3,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -272,100 +276,108 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
       key: const ValueKey('name'),
       mainAxisSize: MainAxisSize.min,
       children: [
-        TextField(
-          controller: _nameController,
-          textCapitalization: TextCapitalization.words,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.fredoka(
-            color: Colors.white,
-            fontSize: 26,
-            fontWeight: FontWeight.w500,
-          ),
-          autofocus: true,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _advanceFromName(),
-          decoration: InputDecoration(
-            hintText: "What's your name?",
-            hintStyle: GoogleFonts.fredoka(
-              color: _goldColor.withAlpha(180),
+        Semantics(
+          label: "Enter your name",
+          textField: true,
+          child: TextField(
+            controller: _nameController,
+            textCapitalization: TextCapitalization.words,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.fredoka(
+              color: Colors.white,
               fontSize: 26,
               fontWeight: FontWeight.w500,
             ),
-            filled: true,
-            fillColor: Colors.white.withAlpha(15),
-            contentPadding: const EdgeInsets.fromLTRB(20, 18, 8, 18),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(20),
-              borderSide: const BorderSide(color: Colors.white24),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(20),
-              borderSide: const BorderSide(color: Colors.white24),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(20),
-              borderSide: const BorderSide(color: _goldColor, width: 2),
-            ),
-            // Mic icon lives inside the field — no separate button needed
-            suffixIcon: _speechEnabled
-                ? AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: _isListening
-                          ? const Color(0xFF9E6CFF).withAlpha(200)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        _isListening
-                            ? Icons.mic_rounded
-                            : Icons.mic_none_rounded,
+            autofocus: true,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _advanceFromName(),
+            decoration: InputDecoration(
+              hintText: "What's your name?",
+              hintStyle: GoogleFonts.fredoka(
+                color: _goldColor.withAlpha(180),
+                fontSize: 26,
+                fontWeight: FontWeight.w500,
+              ),
+              filled: true,
+              fillColor: Colors.white.withAlpha(15),
+              contentPadding: const EdgeInsets.fromLTRB(20, 18, 8, 18),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: const BorderSide(color: Colors.white24),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: const BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: const BorderSide(color: _goldColor, width: 2),
+              ),
+              // Mic icon lives inside the field — no separate button needed
+              suffixIcon: _speechEnabled
+                  ? AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
                         color: _isListening
-                            ? Colors.white
-                            : Colors.white54,
-                        size: 28,
+                            ? const Color(0xFF9E6CFF).withAlpha(200)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      tooltip: _isListening ? 'Listening…' : 'Say your name',
-                      onPressed: _listen,
-                    ),
-                  )
-                : null,
+                      child: IconButton(
+                        icon: Icon(
+                          _isListening
+                              ? Icons.mic_rounded
+                              : Icons.mic_none_rounded,
+                          color: _isListening
+                              ? Colors.white
+                              : Colors.white54,
+                          size: 28,
+                        ),
+                        tooltip: _isListening ? 'Listening…' : 'Say your name',
+                        onPressed: _listen,
+                      ),
+                    )
+                  : null,
+            ),
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
-        _PressableButton(
-          onPressed: _advanceFromName,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(32),
-              gradient: const LinearGradient(
-                colors: [Color(0xFF7B2FBE), Color(0xFF4A148C)],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF7B2FBE).withAlpha(100),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
+        Semantics(
+          button: true,
+          label: "Submit your name",
+          child: _PressableButton(
+            onPressed: _advanceFromName,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(32),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF7B2FBE), Color(0xFF4A148C)],
                 ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.auto_awesome, color: _goldColor, size: 22),
-                const SizedBox(width: 8),
-                Text(
-                  "That's me!",
-                  style: GoogleFonts.fredoka(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF7B2FBE).withAlpha(100),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
                   ),
-                ),
-              ],
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.auto_awesome, color: _goldColor, size: 22),
+                  const SizedBox(width: 8),
+                  Text(
+                    "That's me!",
+                    style: GoogleFonts.fredoka(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -567,48 +579,54 @@ class _AgeCircleState extends State<_AgeCircle> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown:
-          widget.onTap != null ? (_) => setState(() => _pressed = true) : null,
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap?.call();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.9 : (widget.selected ? 1.03 : 1.0),
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOutBack,
-        child: Container(
-          width: widget.size,
-          height: widget.size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF4A148C), Color(0xFF7B2FBE)],
+    return Semantics(
+      button: true,
+      selected: widget.selected,
+      label: 'Age ${widget.label}',
+      hint: widget.selected ? "Selected" : "Double tap to select",
+      child: GestureDetector(
+        onTapDown:
+            widget.onTap != null ? (_) => setState(() => _pressed = true) : null,
+        onTapUp: (_) {
+          setState(() => _pressed = false);
+          widget.onTap?.call();
+        },
+        onTapCancel: () => setState(() => _pressed = false),
+        child: AnimatedScale(
+          scale: _pressed ? 0.9 : (widget.selected ? 1.03 : 1.0),
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOutBack,
+          child: Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF4A148C), Color(0xFF7B2FBE)],
+              ),
+              border: widget.selected
+                  ? Border.all(color: _gold, width: 3)
+                  : Border.all(color: Colors.white24, width: 1.5),
+              boxShadow: widget.selected
+                  ? [
+                      BoxShadow(
+                        color: _gold.withAlpha(100),
+                        blurRadius: 16,
+                        spreadRadius: 2,
+                      )
+                    ]
+                  : [],
             ),
-            border: widget.selected
-                ? Border.all(color: _gold, width: 3)
-                : Border.all(color: Colors.white24, width: 1.5),
-            boxShadow: widget.selected
-                ? [
-                    BoxShadow(
-                      color: _gold.withAlpha(100),
-                      blurRadius: 16,
-                      spreadRadius: 2,
-                    )
-                  ]
-                : [],
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            widget.label,
-            style: TextStyle(
-              color: widget.selected ? _gold : Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: widget.label.length > 2 ? 10 : 14,
+            alignment: Alignment.center,
+            child: Text(
+              widget.label,
+              style: TextStyle(
+                color: widget.selected ? _gold : Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: widget.label.length > 2 ? 10 : 14,
+              ),
             ),
           ),
         ),
