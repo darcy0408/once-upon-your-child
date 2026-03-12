@@ -2,6 +2,45 @@
 
 ---
 
+## Session Update - 2026-03-12 (Screen Time Controls Slice)
+
+### Scope Completed
+
+- Implemented the first slice of `FEATURE_PLAN_SCREEN_TIME_AND_OFFLINE.md` for Feature A.
+- Added persistent parent-configurable screen-time settings, a daily usage tracker, a parent math-gated lock screen, and app-shell listeners.
+- Added the new controls to the Parent Controls UI.
+
+### Changes
+
+- `lib/services/parental_consent_service.dart`
+  - Added persistent settings for daily limit minutes and bedtime lockout hour/minute/enabled state.
+- `lib/services/screen_time_service.dart`
+  - Added singleton minute-based usage tracking with streams for wind-down, limit reached, and bedtime lockout.
+- `lib/screens/times_up_screen.dart`
+  - Added full-screen lockout UI with parent math gate and 15-minute unlock path.
+- `lib/main.dart`
+  - Started `ScreenTimeService` at app startup.
+  - Subscribed to screen-time events in `StoryWeaverApp` and routed them through global navigator/scaffold messenger keys.
+- `lib/main_story.dart`
+  - Added root `navigatorKey` and `scaffoldMessengerKey` so app-level screen-time events can show overlays and SnackBars safely.
+- `lib/screens/parent_controls_screen.dart`
+  - Added daily usage display, daily limit dropdown, bedtime lockout toggle, and bedtime time picker.
+- `FEATURE_PLAN_SCREEN_TIME_AND_OFFLINE.md`
+  - Added a status entry recording which Feature A tasks are complete and how they were verified.
+
+### Verification
+
+```bash
+dart analyze lib/services/parental_consent_service.dart lib/services/screen_time_service.dart lib/screens/times_up_screen.dart lib/main.dart lib/screens/parent_controls_screen.dart
+```
+
+### Result
+
+- PASS: new/changed screen-time files analyzed cleanly.
+- Note: `lib/main_story.dart` still has pre-existing warnings unrelated to this slice; they were left untouched to keep the change set scoped.
+
+---
+
 ## Session Update - 2026-03-12 (Accessibility & Bedtime Bugfix Plan Verification)
 
 ### Scope Completed

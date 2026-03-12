@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../services/parental_consent_service.dart';
+import '../services/screen_time_service.dart';
 import '../theme/app_theme.dart';
 import 'byok_setup_wizard.dart';
 
@@ -16,12 +17,35 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
   final _consentService = const ParentalConsentService();
   bool _allowPhotoAvatar = true;
   bool _loading = true;
+  int? _dailyLimitMinutes;
+  bool _bedtimeEnabled = false;
+  int _bedtimeHour = 20;
+  int _bedtimeMinute = 0;
+  int _todayUsage = 0;
 
   @override
   void initState() {
     super.initState();
-    _consentService.getAllowPhotoAvatar().then((v) {
-      if (mounted) setState(() { _allowPhotoAvatar = v; _loading = false; });
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final allowPhoto = await _consentService.getAllowPhotoAvatar();
+    final limit = await _consentService.getDailyLimitMinutes();
+    final bedtimeEnabled = await _consentService.isBedtimeLockoutEnabled();
+    final bedtime = await _consentService.getBedtimeLockout();
+    final usage = await ScreenTimeService.instance.getTodayUsageMinutes();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _allowPhotoAvatar = allowPhoto;
+      _dailyLimitMinutes = limit;
+      _bedtimeEnabled = bedtimeEnabled;
+      _bedtimeHour = bedtime.hour;
+      _bedtimeMinute = bedtime.minute;
+      _todayUsage = usage;
+      _loading = false;
     });
   }
 
@@ -47,7 +71,8 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
           ),
         ),
         child: _loading
-            ? const Center(child: CircularProgressIndicator(color: Colors.white))
+            ? const Center(
+                child: CircularProgressIndicator(color: Colors.white))
             : ListView(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 children: [
@@ -79,7 +104,8 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                   _ActionTile(
                     icon: Icons.vpn_key_rounded,
                     title: 'Set up your own API key',
-                    subtitle: 'Unlock premium AI illustrations & avatar generation',
+                    subtitle:
+                        'Unlock premium AI illustrations & avatar generation',
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const ByokSetupWizardScreen(),
@@ -87,11 +113,183 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
+                  const _SectionHeader(title: 'Screen Time'),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(20),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.today, color: Color(0xFFFFD700)),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            'Used today: $_todayUsage min'
+                            '${_dailyLimitMinutes != null ? " / $_dailyLimitMinutes min" : ""}',
+                            style: GoogleFonts.fredoka(
+                              color: Colors.white,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(20),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Daily limit',
+                            style: GoogleFonts.fredoka(
+                              color: Colors.white,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                        DropdownButtonHideUnderline(
+                          child: DropdownButton<int?>(
+                            value: _dailyLimitMinutes,
+                            dropdownColor: const Color(0xFF1E0A3C),
+                            style: GoogleFonts.fredoka(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                            items: const [
+                              DropdownMenuItem<int?>(
+                                value: null,
+                                child: Text('Unlimited'),
+                              ),
+                              DropdownMenuItem<int?>(
+                                value: 15,
+                                child: Text('15 min'),
+                              ),
+                              DropdownMenuItem<int?>(
+                                value: 30,
+                                child: Text('30 min'),
+                              ),
+                              DropdownMenuItem<int?>(
+                                value: 45,
+                                child: Text('45 min'),
+                              ),
+                              DropdownMenuItem<int?>(
+                                value: 60,
+                                child: Text('1 hour'),
+                              ),
+                              DropdownMenuItem<int?>(
+                                value: 90,
+                                child: Text('1.5 hours'),
+                              ),
+                              DropdownMenuItem<int?>(
+                                value: 120,
+                                child: Text('2 hours'),
+                              ),
+                            ],
+                            onChanged: (v) async {
+                              await _consentService.setDailyLimitMinutes(v);
+                              if (mounted) {
+                                setState(() => _dailyLimitMinutes = v);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _ControlTile(
+                    title: 'Bedtime lockout',
+                    subtitle: _bedtimeEnabled
+                        ? 'App locks at ${_bedtimeHour.toString().padLeft(2, '0')}:${_bedtimeMinute.toString().padLeft(2, '0')}. Tap the time to change it.'
+                        : 'When enabled, the app will lock after a set bedtime.',
+                    value: _bedtimeEnabled,
+                    onChanged: (v) async {
+                      await _consentService.setBedtimeLockout(
+                        enabled: v,
+                        hour: _bedtimeHour,
+                        minute: _bedtimeMinute,
+                      );
+                      if (mounted) {
+                        setState(() => _bedtimeEnabled = v);
+                      }
+                    },
+                  ),
+                  if (_bedtimeEnabled)
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.xs),
+                      child: GestureDetector(
+                        onTap: () async {
+                          final picked = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay(
+                              hour: _bedtimeHour,
+                              minute: _bedtimeMinute,
+                            ),
+                          );
+                          if (picked == null) {
+                            return;
+                          }
+                          await _consentService.setBedtimeLockout(
+                            enabled: true,
+                            hour: picked.hour,
+                            minute: picked.minute,
+                          );
+                          if (!mounted) {
+                            return;
+                          }
+                          setState(() {
+                            _bedtimeHour = picked.hour;
+                            _bedtimeMinute = picked.minute;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha(10),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.access_time,
+                                color: Color(0xFFFFD700),
+                                size: 20,
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              Text(
+                                'Bedtime: ${_bedtimeHour.toString().padLeft(2, '0')}:${_bedtimeMinute.toString().padLeft(2, '0')}',
+                                style: GoogleFonts.fredoka(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: AppSpacing.lg),
                   Text(
                     'More parental controls coming soon.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.fredoka(
-                        color: Colors.white38, fontSize: 13),
+                      color: Colors.white38,
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),
@@ -195,8 +393,8 @@ class _ActionTile extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           fontSize: 16)),
                   Text(subtitle,
-                      style: const TextStyle(
-                          color: Colors.white70, fontSize: 13)),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 13)),
                 ],
               ),
             ),

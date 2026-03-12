@@ -57,6 +57,10 @@ import 'settings_screen.dart' deferred as settings_screen;
 import 'screens/feelings_garden_screen.dart';
 // welcome_screen and wizard_story_screen imported at top of file
 
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
 class StoryCreatorApp extends ConsumerWidget {
   const StoryCreatorApp({super.key});
 
@@ -67,8 +71,12 @@ class StoryCreatorApp extends ConsumerWidget {
 
     return MaterialApp(
       title: Environment.appName,
+      navigatorKey: rootNavigatorKey,
+      scaffoldMessengerKey: rootScaffoldMessengerKey,
       theme: AppTheme.light(ageBand: ageBandTheme),
-      darkTheme: ageBandTheme.preferDarkMode ? AppTheme.light(ageBand: ageBandTheme) : null,
+      darkTheme: ageBandTheme.preferDarkMode
+          ? AppTheme.light(ageBand: ageBandTheme)
+          : null,
       home: const _AppEntryPoint(),
       routes: {
         '/subscription-success': (context) => const SubscriptionSuccessScreen(),
@@ -441,13 +449,14 @@ class _StoryScreenState extends State<StoryScreen> {
       if (!mounted) return false;
 
       final upgraded = await showPaywallGated<bool>(
-        context: context,
-        showActualPaywall: () => PaywallDialog.showStoryLimitDialog(
-          context,
-          remainingToday: remaining,
-          remainingMonth: remainingMonth,
-        ),
-      ) ?? false;
+            context: context,
+            showActualPaywall: () => PaywallDialog.showStoryLimitDialog(
+              context,
+              remainingToday: remaining,
+              remainingMonth: remainingMonth,
+            ),
+          ) ??
+          false;
       if (upgraded) {
         await _loadSubscriptionInfo();
       }
@@ -1003,157 +1012,159 @@ class _StoryScreenState extends State<StoryScreen> {
       ),
       body: Builder(
         builder: (context) {
-          final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+          final band =
+              Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
           return Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              band.gradientStart,
-              band.gradientMid,
-              band.gradientEnd,
-            ],
-          ),
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              FutureBuilder<GracePeriodStatus>(
-                future: GracePeriodService.getStatus(
-                    _currentSubscription?.tier.name ?? 'free'),
-                builder: (context, snapshot) {
-                  if (snapshot.hasData && snapshot.data!.isInGracePeriod) {
-                    if (!_loggedGraceBanner) {
-                      _loggedGraceBanner = true;
-                      GracePeriodAnalytics.bannerViewed(
-                        daysRemaining:
-                            snapshot.data!.daysRemainingInGracePeriod,
-                      );
-                    }
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: GracePeriodBanner(
-                        daysRemaining:
-                            snapshot.data!.daysRemainingInGracePeriod,
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (dialogContext) => AlertDialog(
-                              title: const Text('Grace Period'),
-                              content: Text(snapshot.data!.usageDescription),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.of(dialogContext).pop(),
-                                  child: const Text('Got it'),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  band.gradientStart,
+                  band.gradientMid,
+                  band.gradientEnd,
+                ],
               ),
-              if (_achievementSummary != null) ...[
-                _buildAchievementsOverviewCard(),
-                const SizedBox(height: 20),
-              ],
-              _buildSELPacksSection(),
-              const SizedBox(height: 20),
-              if (_childProfiles.length >= 2) ...[
-                _buildProfileSwitcher(),
-                const SizedBox(height: 16),
-              ],
-              _buildCharacterPortraitRow(),
-              const SizedBox(height: 40),
-              if ((_gracePeriodStatus?.shouldShowHardLimit ?? false))
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Material(
-                    elevation: 1,
-                    borderRadius: BorderRadius.circular(12),
-                    color: Colors.red.shade50,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () {
-                        showPaywallGated(
-                          context: context,
-                          showActualPaywall: () async {
-                            if (context.mounted) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const PremiumUpgradeScreen(),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  FutureBuilder<GracePeriodStatus>(
+                    future: GracePeriodService.getStatus(
+                        _currentSubscription?.tier.name ?? 'free'),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData && snapshot.data!.isInGracePeriod) {
+                        if (!_loggedGraceBanner) {
+                          _loggedGraceBanner = true;
+                          GracePeriodAnalytics.bannerViewed(
+                            daysRemaining:
+                                snapshot.data!.daysRemainingInGracePeriod,
+                          );
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: GracePeriodBanner(
+                            daysRemaining:
+                                snapshot.data!.daysRemainingInGracePeriod,
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (dialogContext) => AlertDialog(
+                                  title: const Text('Grace Period'),
+                                  content:
+                                      Text(snapshot.data!.usageDescription),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(dialogContext).pop(),
+                                      child: const Text('Got it'),
+                                    ),
+                                  ],
                                 ),
                               );
-                            }
-                            return null;
-                          },
+                            },
+                          ),
                         );
-                      },
-                      child: ListTile(
-                        leading: const Icon(Icons.lock, color: Colors.red),
-                        title: const Text(
-                          'Story limit reached',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text(
-                          'You\'ve hit this month\'s free limit. Tap to upgrade and keep creating stories.',
-                          style: TextStyle(color: Colors.red.shade700),
-                        ),
-                        trailing: const Icon(Icons.arrow_forward_ios,
-                            size: 16, color: Colors.red),
-                      ),
-                    ),
+                      }
+                      return const SizedBox.shrink();
+                    },
                   ),
-                ),
-              if (_isLoading) ...[
-                StoryGenerationProgress(
-                  currentPhase: _currentPhase,
-                  totalPhases: _totalPhases,
-                  funFact: _funFact,
-                ),
-              ] else ...[
-                AnimatedScale(
-                  duration: const Duration(milliseconds: 160),
-                  scale: _magicPulse ? 1.05 : 1.0,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.auto_awesome),
-                    onPressed:
-                        (_gracePeriodStatus?.shouldShowHardLimit ?? false)
-                            ? null
-                            : () {
-                                _onCreateButtonPressed();
+                  if (_achievementSummary != null) ...[
+                    _buildAchievementsOverviewCard(),
+                    const SizedBox(height: 20),
+                  ],
+                  _buildSELPacksSection(),
+                  const SizedBox(height: 20),
+                  if (_childProfiles.length >= 2) ...[
+                    _buildProfileSwitcher(),
+                    const SizedBox(height: 16),
+                  ],
+                  _buildCharacterPortraitRow(),
+                  const SizedBox(height: 40),
+                  if ((_gracePeriodStatus?.shouldShowHardLimit ?? false))
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Material(
+                        elevation: 1,
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.red.shade50,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
+                            showPaywallGated(
+                              context: context,
+                              showActualPaywall: () async {
+                                if (context.mounted) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const PremiumUpgradeScreen(),
+                                    ),
+                                  );
+                                }
+                                return null;
                               },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 18),
-                      textStyle: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                            );
+                          },
+                          child: ListTile(
+                            leading: const Icon(Icons.lock, color: Colors.red),
+                            title: const Text(
+                              'Story limit reached',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Text(
+                              'You\'ve hit this month\'s free limit. Tap to upgrade and keep creating stories.',
+                              style: TextStyle(color: Colors.red.shade700),
+                            ),
+                            trailing: const Icon(Icons.arrow_forward_ios,
+                                size: 16, color: Colors.red),
+                          ),
+                        ),
                       ),
-                      backgroundColor: Colors.deepPurpleAccent,
-                      shadowColor:
-                          Colors.deepPurpleAccent.withValues(alpha: 0.6),
-                      elevation: 6,
                     ),
-                    label: Text(_interactiveMode
-                        ? 'Start Interactive Story'
-                        : 'Make Magic'),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      );
+                  if (_isLoading) ...[
+                    StoryGenerationProgress(
+                      currentPhase: _currentPhase,
+                      totalPhases: _totalPhases,
+                      funFact: _funFact,
+                    ),
+                  ] else ...[
+                    AnimatedScale(
+                      duration: const Duration(milliseconds: 160),
+                      scale: _magicPulse ? 1.05 : 1.0,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.auto_awesome),
+                        onPressed:
+                            (_gracePeriodStatus?.shouldShowHardLimit ?? false)
+                                ? null
+                                : () {
+                                    _onCreateButtonPressed();
+                                  },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 16, horizontal: 18),
+                          textStyle: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          backgroundColor: Colors.deepPurpleAccent,
+                          shadowColor:
+                              Colors.deepPurpleAccent.withValues(alpha: 0.6),
+                          elevation: 6,
+                        ),
+                        label: Text(_interactiveMode
+                            ? 'Start Interactive Story'
+                            : 'Make Magic'),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
         },
       ),
     );
@@ -1201,7 +1212,9 @@ class _StoryScreenState extends State<StoryScreen> {
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 12),
           child: Text(
-            _characters.isEmpty ? 'Create your first hero!' : 'Choose your hero',
+            _characters.isEmpty
+                ? 'Create your first hero!'
+                : 'Choose your hero',
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -1218,32 +1231,33 @@ class _StoryScreenState extends State<StoryScreen> {
             children: [
               // Existing character cards
               ..._characters.map((character) => _CharacterPortraitCard(
-                character: character,
-                isSelected: _selectedCharacter?.id == character.id,
-                onTap: () {
-                  setState(() => _selectedCharacter = character);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => WizardStoryScreen(
-                        initialCharacter: character,
-                        availableCharacters: _characters,
-                      ),
-                    ),
-                  ).then((_) {
-                    _loadCharacters();
-                    _loadSubscriptionInfo();
-                  });
-                },
-                onQuickPlay: () => _showQuickStartSheet(character),
-              )),
+                    character: character,
+                    isSelected: _selectedCharacter?.id == character.id,
+                    onTap: () {
+                      setState(() => _selectedCharacter = character);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => WizardStoryScreen(
+                            initialCharacter: character,
+                            availableCharacters: _characters,
+                          ),
+                        ),
+                      ).then((_) {
+                        _loadCharacters();
+                        _loadSubscriptionInfo();
+                      });
+                    },
+                    onQuickPlay: () => _showQuickStartSheet(character),
+                  )),
               // "New Hero" card at the end
               _NewHeroCard(
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const WizardStoryScreen(initialStep: 0),
+                      builder: (context) =>
+                          const WizardStoryScreen(initialStep: 0),
                     ),
                   ).then((_) => _loadCharacters());
                 },
@@ -1683,15 +1697,13 @@ class _StoryScreenState extends State<StoryScreen> {
           child: Text(
             '📚 Story Packs',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  shadows: [
-                    const Shadow(
-                        color: Colors.black26,
-                        blurRadius: 4,
-                        offset: Offset(0, 2))
-                  ],
-                ),
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              shadows: [
+                const Shadow(
+                    color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))
+              ],
+            ),
           ),
         ),
         SizedBox(
@@ -1990,7 +2002,8 @@ class _StoryScreenState extends State<StoryScreen> {
   }
 
   void _showQuickStartSheet(Character character) {
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -2053,13 +2066,15 @@ class _StoryScreenState extends State<StoryScreen> {
                     duration: const Duration(milliseconds: 150),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(band.buttonRadiusBase),
+                      borderRadius:
+                          BorderRadius.circular(band.buttonRadiusBase),
                       border: Border.all(color: Colors.white30),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(theme['emoji']!, style: const TextStyle(fontSize: 32)),
+                        Text(theme['emoji']!,
+                            style: const TextStyle(fontSize: 32)),
                         const SizedBox(height: 4),
                         Text(
                           theme['label']!,
@@ -2132,94 +2147,96 @@ class _CharacterPortraitCard extends StatelessWidget {
       child: Stack(
         children: [
           AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 130,
-        margin: const EdgeInsets.only(right: 12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF6B3FA0), Color(0xFF3D1166)],
+            duration: const Duration(milliseconds: 200),
+            width: 130,
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF6B3FA0), Color(0xFF3D1166)],
+              ),
+              border: Border.all(
+                color: isSelected ? const Color(0xFFFFD700) : Colors.white24,
+                width: isSelected ? 2.5 : 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isSelected
+                      ? const Color(0xFFFFD700).withAlpha(80)
+                      : Colors.black.withAlpha(60),
+                  blurRadius: isSelected ? 12 : 6,
+                  spreadRadius: isSelected ? 2 : 0,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 12),
+                // Avatar circle
+                Container(
+                  width: 74,
+                  height: 74,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color:
+                          isSelected ? const Color(0xFFFFD700) : Colors.white30,
+                      width: 2,
+                    ),
+                  ),
+                  child: ClipOval(child: _AvatarImage(character: character)),
+                ),
+                const SizedBox(height: 10),
+                // Name
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    character.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                // Age / role badge
+                Text(
+                  'Age ${character.age}${character.role != null ? ' · ${character.role}' : ''}',
+                  style: const TextStyle(color: Colors.white60, fontSize: 11),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 10),
+                // CTA
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFFFFD700)
+                        : Colors.white.withAlpha(30),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '✨ Adventure',
+                    style: TextStyle(
+                      color: isSelected ? Colors.black87 : Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
           ),
-          border: Border.all(
-            color: isSelected ? const Color(0xFFFFD700) : Colors.white24,
-            width: isSelected ? 2.5 : 1.0,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: isSelected
-                  ? const Color(0xFFFFD700).withAlpha(80)
-                  : Colors.black.withAlpha(60),
-              blurRadius: isSelected ? 12 : 6,
-              spreadRadius: isSelected ? 2 : 0,
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(height: 12),
-            // Avatar circle
-            Container(
-              width: 74,
-              height: 74,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? const Color(0xFFFFD700) : Colors.white30,
-                  width: 2,
-                ),
-              ),
-              child: ClipOval(child: _AvatarImage(character: character)),
-            ),
-            const SizedBox(height: 10),
-            // Name
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                character.name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(height: 2),
-            // Age / role badge
-            Text(
-              'Age ${character.age}${character.role != null ? ' · ${character.role}' : ''}',
-              style: const TextStyle(color: Colors.white60, fontSize: 11),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 10),
-            // CTA
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? const Color(0xFFFFD700)
-                    : Colors.white.withAlpha(30),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '✨ Adventure',
-                style: TextStyle(
-                  color: isSelected ? Colors.black87 : Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
           // ⚡ Quick Play button overlay
           if (onQuickPlay != null)
             Positioned(
@@ -2253,10 +2270,16 @@ class _AvatarImage extends StatelessWidget {
     final generated = character.generatedAvatar;
     if (generated != null && generated.imageBase64.isNotEmpty) {
       final data = generated.imageBase64;
-      if (data.startsWith('assets/')) return Image.asset(data, fit: BoxFit.cover);
-      if (data.startsWith('http')) return Image.network(data, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder());
+      if (data.startsWith('assets/')) {
+        return Image.asset(data, fit: BoxFit.cover);
+      }
+      if (data.startsWith('http')) {
+        return Image.network(data,
+            fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder());
+      }
       try {
-        return Image.memory(base64Decode(data.split(',').last), fit: BoxFit.cover);
+        return Image.memory(base64Decode(data.split(',').last),
+            fit: BoxFit.cover);
       } catch (_) {}
     }
     if (character.avatar != null) {
@@ -2270,9 +2293,8 @@ class _AvatarImage extends StatelessWidget {
   }
 
   Widget _placeholder() {
-    final initials = character.name.isNotEmpty
-        ? character.name[0].toUpperCase()
-        : '?';
+    final initials =
+        character.name.isNotEmpty ? character.name[0].toUpperCase() : '?';
     return Container(
       color: const Color(0xFF3D1166),
       child: Center(
