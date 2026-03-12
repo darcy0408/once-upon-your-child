@@ -6,6 +6,7 @@ import '../../widgets/feelings_quest_modal.dart';
 import '../../data/scenario_data.dart';
 import '../../character_traits_data.dart';
 import '../../widgets/magic_ear_button.dart';
+import '../big_feelings_flow_screen.dart';
 
 const double _settingCardWidth = 220;
 
@@ -83,6 +84,14 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
     setState(() {
       _selectedScenario = scenarioId;
       widget.wizardData.selectedScenario = scenarioId;
+      if (scenarioId != 'big_feelings_quest') {
+        widget.wizardData.selectedFeeling = null;
+        widget.wizardData.selectedTrigger = null;
+        widget.wizardData.selectedBodySignal = null;
+        widget.wizardData.selectedCopingTool = null;
+        widget.wizardData.selectedRepairGoal = null;
+        widget.wizardData.selectedEmotionChips = [];
+      }
 
       // Auto-map therapeutic scenarios to life challenges
       final challengeMap = {
@@ -107,6 +116,20 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
     final age = widget.wizardData.characterAge <= 0
         ? 8
         : widget.wizardData.characterAge;
+    if (age <= 5) {
+      final result = await BigFeelingsFlowScreen.show(context);
+      if (result != null && mounted) {
+        setState(() {
+          widget.wizardData.selectedFeeling = result.feeling;
+          widget.wizardData.selectedTrigger = result.trigger;
+          widget.wizardData.selectedBodySignal = result.bodySignal;
+          widget.wizardData.selectedCopingTool = result.copingTool;
+          widget.wizardData.selectedEmotionChips = [result.feeling];
+        });
+        _selectScenario('big_feelings_quest');
+      }
+      return;
+    }
     final result = await FeelingsQuestModal.show(context, childAge: age);
     if (result != null && mounted) {
       setState(() {

@@ -2,6 +2,46 @@
 
 ---
 
+## Session Update - 2026-03-12 (Big Feelings V1 Preschool Setup Flow)
+
+### Scope Completed
+
+- Added the dedicated ages 3-5 Big Feelings setup flow described in the V1 plan.
+- Wired the Big Feelings scenario card to use the new preschool-first picker before entering story generation.
+- Kept the existing modal path for older age bands unchanged.
+
+### Changes
+
+- `lib/screens/big_feelings_flow_screen.dart`
+  - Added a new full-screen preschool flow for Big Feelings.
+  - Included four short steps:
+    - feeling
+    - what happened
+    - body signal
+    - helper choice
+  - Added V1 preschool options for:
+    - feelings: `Mad`, `Sad`, `Scared`
+    - triggers: wait / no / broken, lost / miss / left out, dark / loud / new
+    - body signals: hot face / tight tummy / stompy feet, tears / heavy tummy / droopy body, fast heart / shaky hands / hide close
+    - helpers: dragon breaths / ask for help / use words, squeeze hug / ask for help / quiet breath, hold hands / slow breath / ask for help
+- `lib/screens/wizard_steps/feeling_selection_step.dart`
+  - Routed ages 5 and under from the Big Feelings scenario card into `BigFeelingsFlowScreen.show(context)`.
+  - Stored the returned preschool selections in the new structured wizard fields.
+  - Kept `selectedEmotionChips` populated with the chosen feeling so older payload paths stay compatible.
+  - Added cleanup so switching away from `big_feelings_quest` clears the structured Big Feelings fields.
+
+### Verification
+
+```bash
+dart analyze lib/screens/big_feelings_flow_screen.dart lib/screens/wizard_steps/feeling_selection_step.dart lib/models/wizard_data.dart lib/screens/wizard_steps/wizard_data_mapper.dart
+```
+
+### Result
+
+- PASS: preschool Big Feelings setup flow analyzed cleanly.
+
+---
+
 ## Session Update - 2026-03-12 (Big Feelings V1 Data Model + Mapper)
 
 ### Scope Completed
