@@ -168,6 +168,85 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
     }
   }
 
+  void _showBedtimeSettingsDialog(BuildContext context) {
+    bool isInteractive = false;
+    double timerMinutes = 0; // 0 means off
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF2A1B4E),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: const Text(
+                'Bedtime Settings',
+                style: TextStyle(color: Colors.white),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SwitchListTile(
+                    title: const Text('Interactive Story', style: TextStyle(color: Colors.white)),
+                    subtitle: const Text('Child answers questions to shape the story.', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    value: isInteractive,
+                    activeColor: const Color(0xFFFFD700),
+                    onChanged: (val) => setDialogState(() => isInteractive = val),
+                  ),
+                  const Divider(color: Colors.white24),
+                  const Text('Sleep Timer', style: TextStyle(color: Colors.white)),
+                  Slider(
+                    value: timerMinutes,
+                    min: 0,
+                    max: 60,
+                    divisions: 6,
+                    activeColor: const Color(0xFFFFD700),
+                    inactiveColor: Colors.white24,
+                    label: timerMinutes == 0 ? 'Off' : '${timerMinutes.round()} min',
+                    onChanged: (val) => setDialogState(() => timerMinutes = val),
+                  ),
+                  Text(
+                    timerMinutes == 0 ? 'Timer is Off' : 'Story ends in ${timerMinutes.round()} minutes',
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFD700),
+                    foregroundColor: const Color(0xFF2A1B4E),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => BedtimeWizardScreen(
+                          childName: _wizardData.characterName,
+                          childAge: _wizardData.characterAge,
+                          isInteractive: isInteractive,
+                          timerMinutes: timerMinutes.round(),
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text('Start'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final band =
@@ -329,16 +408,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                         child: _LabeledNavButton(
                           icon: Icons.bedtime_outlined,
                           label: 'Bedtime',
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => BedtimeWizardScreen(
-                                  childName: _wizardData.characterName,
-                                  childAge: _wizardData.characterAge,
-                                ),
-                              ),
-                            );
-                          },
+                          onPressed: () => _showBedtimeSettingsDialog(context),
                         ),
                       )
                     else
@@ -347,16 +417,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                         label: 'Start bedtime story mode. Voice only, no screen needed.',
                         child: IconButton(
                           icon: const Icon(Icons.bedtime_outlined, color: Colors.white),
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => BedtimeWizardScreen(
-                                  childName: _wizardData.characterName,
-                                  childAge: _wizardData.characterAge,
-                                ),
-                              ),
-                            );
-                          },
+                          onPressed: () => _showBedtimeSettingsDialog(context),
                           tooltip: 'Bedtime Story Mode',
                         ),
                       ),

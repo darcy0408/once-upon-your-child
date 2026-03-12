@@ -12,11 +12,15 @@ import 'wizard_steps/wizard_data_mapper.dart';
 class BedtimeWizardScreen extends StatefulWidget {
   final String childName;
   final int childAge;
+  final bool isInteractive;
+  final int timerMinutes;
 
   const BedtimeWizardScreen({
     super.key,
     required this.childName,
     required this.childAge,
+    this.isInteractive = false,
+    this.timerMinutes = 0,
   });
 
   @override
@@ -53,8 +57,10 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
   String _statusText = '';
   bool _isListening = false;
   bool _isSpeaking = false;
+  bool _timerExpired = false;
 
   late AnimationController _orbController;
+  Timer? _sleepTimer;
 
   @override
   void initState() {
@@ -66,7 +72,23 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
 
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
+    if (widget.timerMinutes > 0) {
+      _sleepTimer = Timer(Duration(minutes: widget.timerMinutes), _handleSleepTimer);
+    }
+
     _initAndStart();
+  }
+
+  void _handleSleepTimer() async {
+    _timerExpired = true;
+    _sleepTimer?.cancel();
+    await _speech.stop();
+    await AppTtsService.instance.stop();
+    if (!mounted) return;
+    setState(() => _step = BedtimeStep.done);
+    await _speak("It's time for sleep now. Goodnight, ${widget.childName}. Sweet dreams.");
+    await Future.delayed(const Duration(seconds: 3));
+    if (mounted) Navigator.of(context).pop();
   }
 
   Future<void> _initAndStart() async {
@@ -76,6 +98,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
 
   @override
   void dispose() {
+    _sleepTimer?.cancel();
     _orbController.dispose();
     _speech.stop();
     AppTtsService.instance.stop();
@@ -294,50 +317,120 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     final requestData = WizardDataMapper.mapToStoryRequest(_wizardData);
 
     try {
-      final result = await ApiServiceManager.generateStory(
-          characterName: requestData['character'] ?? 'Hero',
-          age: requestData['age'] ?? 5,
-          theme: _settingChoice ?? 'Magical Adventure',
-          companion: requestData['companion'] ?? '',
-          characterDetails: requestData['characterDetails'],
-          currentFeeling: null,
-          additionalCharacters: null,
-          includeIllustrations: false,
-          rhymeTimeMode: false,
-          learningToReadMode: false,
-          companionPets: requestData['companion_pets'],
-          companionCharacters: requestData['companion_characters'],
-          storyLength: requestData['storyLength'] ?? 'standard',
-          customElements: requestData['customElements'] ?? '',
-          subscriptionTier: 'free',
-          onProgress: (status) {
-            if (mounted) setState(() => _statusText = status);
-          });
-
-      setState(() => _step = BedtimeStep.reading);
-
-      final paragraphs = result.storyText.split(RegExp(r'\n\n+'));
-      for (final paragraph in paragraphs) {
-        if (paragraph.trim().isEmpty) continue;
-        if (!mounted) return;
-        setState(() => _statusText = '...');
-        try {
-          await AppTtsService.instance.speak(
-            paragraph.trim(),
-            awaitCompletion: true,
-          );
-        } catch (_) {
-          // Continue reading even if one paragraph times out.
-        }
-        await Future.delayed(const Duration(milliseconds: 800));
+      if (widget.isInteractive) {
+        await _runInteractiveStoryLoop(requestData);
+      } else {
+        await _runRegularStory(requestData);
       }
-
-      _advance(BedtimeStep.done);
     } catch (e) {
       await _speak(
           "Oh no, something went wrong making the story. Let's try again tomorrow. Goodnight!");
       if (mounted) Navigator.of(context).pop();
     }
+  }
+
+  Future<void> _runRegularStory(Map<String, dynamic> requestData) async {
+    final result = await ApiServiceManager.generateStory(
+        characterName: requestData['character'] ?? 'Hero',
+        age: requestData['age'] ?? 5,
+        theme: _settingChoice ?? 'Magical Adventure',
+        companion: requestData['companion'] ?? '',
+        characterDetails: requestData['characterDetails'],
+        currentFeeling: null,
+        additionalCharacters: null,
+        includeIllustrations: false,
+        rhymeTimeMode: false,
+        learningToReadMode: false,
+        companionPets: requestData['companion_pets'],
+        companionCharacters: requestData['companion_characters'],
+        storyLength: requestData['storyLength'] ?? 'standard',
+        customElements: requestData['customElements'] ?? '',
+        subscriptionTier: 'free',
+        onProgress: (status) {
+          if (mounted) setState(() => _statusText = status);
+        });
+
+    setState(() => _step = BedtimeStep.reading);
+
+    final paragraphs = result.storyText.split(RegExp(r'\n\n+'));
+    for (final paragraph in paragraphs) {
+      if (_timerExpired) return;
+      if (paragraph.trim().isEmpty) continue;
+      if (!mounted) return;
+      setState(() => _statusText = '...');
+      try {
+        await AppTtsService.instance.speak(
+          paragraph.trim(),
+          awaitCompletion: true,
+        );
+      } catch (_) {}
+      await Future.delayed(const Duration(milliseconds: 800));
+    }
+
+    if (!_timerExpired) _advance(BedtimeStep.done);
+  }
+
+  Future<void> _runInteractiveStoryLoop(Map<String, dynamic> requestData) async {
+    setState(() => _step = BedtimeStep.reading);
+
+    final characterName = requestData['character'] ?? 'Hero';
+    final theme = _settingChoice ?? 'Magical Adventure';
+    final companion = requestData['companion'] ?? '';
+
+    Map<String, dynamic> currentSegment = await ApiServiceManager.generateInteractiveStory(
+      characterName: characterName,
+      age: requestData['age'] ?? 5,
+      theme: theme,
+      companion: companion,
+    );
+
+    int turnCount = 0;
+    const maxTurns = 5;
+
+    String storySoFar = "";
+    List<String> choicesMade = [];
+
+    while (turnCount < maxTurns && !_timerExpired) {
+      final text = currentSegment['text'] as String?;
+      final choicesRaw = currentSegment['choices'];
+      final isEnding = currentSegment['is_ending'] == true || turnCount == maxTurns - 1;
+
+      if (text != null && text.isNotEmpty) {
+        storySoFar += text + " ";
+        if (!mounted) return;
+        setState(() => _statusText = '...');
+        try {
+          await AppTtsService.instance.speak(text.trim(), awaitCompletion: true);
+        } catch (_) {}
+      }
+
+      if (isEnding || _timerExpired) break;
+
+      // Ask for choice
+      String question = "What do you want to do next?";
+      if (choicesRaw is List && choicesRaw.isNotEmpty) {
+        question = "Do you want to ${choicesRaw[0]}, or ${choicesRaw[1]}? Or something else?";
+      }
+
+      final answer = await _askQuestion(question);
+      if (_timerExpired) break;
+
+      final choice = answer.isNotEmpty ? answer : (choicesRaw is List && choicesRaw.isNotEmpty ? choicesRaw[0].toString() : 'Keep going!');
+      choicesMade.add(choice);
+
+      setState(() => _statusText = 'Generating next part...');
+      currentSegment = await ApiServiceManager.continueInteractiveStory(
+        characterName: characterName,
+        theme: theme,
+        choice: choice,
+        storySoFar: storySoFar,
+        choicesMade: choicesMade,
+      );
+
+      turnCount++;
+    }
+
+    if (!_timerExpired) _advance(BedtimeStep.done);
   }
 
   @override
