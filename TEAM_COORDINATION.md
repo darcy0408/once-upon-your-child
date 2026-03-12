@@ -2,6 +2,31 @@
 
 ---
 
+## Session Update - 2026-03-12 (Easy Reader Rhyme Quality Fix)
+
+### Scope Completed
+- **Root cause identified from user repro**: 4-year-old Easy Reader stories were not reliably rhyming despite mode expectation.
+- **LTR prompt hardening** (`backend/services/story_service.py`):
+  - Added explicit mandatory rhyme requirements for Learning-to-Read mode.
+  - Added couplet guidance for page pairings and child-hearable rhyme examples.
+  - Added `rhyme_scheme` field to the expected JSON output schema for LTR prompts.
+- **Runtime quality guard** (`backend/tasks/story_tasks.py`):
+  - Added rhyme-quality validator for LTR generations.
+  - Validation accepts either strong cross-page couplets or strong within-page sentence-end rhyme.
+  - Integrated into retry loop so non-rhyming LTR outputs receive corrective retry instructions.
+- **Regression tests added**:
+  - `backend/tests/test_custom_elements.py`: rhyme helper + LTR rhyme-quality tests.
+  - `backend/tests/unit/test_story_service.py`: LTR prompt assertions for age 4 and age 7 rhyme constraints.
+- **Verification**:
+  - Unit tests: `python -m pytest backend/tests/test_custom_elements.py backend/tests/unit/test_story_service.py -q` → passing.
+  - Local end-to-end check: generated new age-4 LTR sample from `/generate-story` and confirmed rhyming output after backend restart.
+
+### Status
+- **Easy Reader rhyme reliability:** 🟢 enforced in prompt + validated in generation loop
+- **Test coverage for this regression:** 🟢 added
+
+---
+
 ## Session Update - 2026-03-08 (Age UX Tier 1 Implementation)
 
 ### Scope Completed

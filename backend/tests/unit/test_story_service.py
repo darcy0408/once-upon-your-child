@@ -14,7 +14,12 @@ Tests cover:
 """
 
 import pytest
-from backend.services.story_service import AdvancedStoryEngine, _get_age_band, AGE_CONSTRAINTS
+from backend.services.story_service import (
+    AdvancedStoryEngine,
+    _get_age_band,
+    AGE_CONSTRAINTS,
+    _build_learning_to_read_prompt,
+)
 
 
 class TestAgeBandClassification:
@@ -672,3 +677,32 @@ class TestAgeConstraintsStructure:
             _, current_max = AGE_CONSTRAINTS[band]['regular']['medium']
             assert current_max > previous_max, f"Word count decreased at {band}"
             previous_max = current_max
+
+
+class TestLearningToReadPrompt:
+    """Test learning-to-read prompt constraints and rhyme requirements."""
+
+    def test_ltr_prompt_for_age_4_requires_rhyming_couplets(self):
+        prompt = _build_learning_to_read_prompt(
+            character_name="Luna",
+            theme="Magic",
+            age=4,
+            character_details={},
+            story_length="short",
+        )
+
+        assert "RHYME REQUIREMENT (MANDATORY)" in prompt
+        assert "pages 1&2 rhyme, 3&4 rhyme" in prompt
+        assert '"rhyme_scheme"' in prompt
+
+    def test_ltr_prompt_for_age_7_limerick_path_has_rhyme_scheme(self):
+        prompt = _build_learning_to_read_prompt(
+            character_name="Luna",
+            theme="Magic",
+            age=7,
+            character_details={},
+            story_length="short",
+        )
+
+        assert "AABBA rhyme scheme" in prompt
+        assert '"rhyme_scheme"' in prompt

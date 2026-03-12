@@ -622,6 +622,7 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
     num_pages = config['ltr'][length_key]
 
     # Graduate vocabulary and format based on age
+    rhyme_scheme_instruction = "Simple rhyming couplets across pages (AABB pairs by page endings)."
     if age <= 5:
         vocab_instruction = "CVC words (cat, hop, sun) and simple sight words only. No blends or silent letters."
         format_instruction = "Each page 1 short sentence."
@@ -634,6 +635,7 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
         # Older reluctant readers: funny connected limericks
         vocab_instruction = "Short, phonics-friendly words with fun bouncy sounds. Simple enough to decode, funny enough to want to."
         format_instruction = "Each page = one complete limerick (5 lines, AABBA rhyme scheme)."
+        rhyme_scheme_instruction = "AABBA limerick rhyme scheme on every page."
         use_limericks = True
 
     # Build companion context
@@ -740,6 +742,12 @@ Theme: {theme}
 Format: {num_pages} pages. {format_instruction}
 Vocabulary: {vocab_instruction}
 Requirements: Repeating frames, comforting rhythm, 1 moment where the hero discovers their own strength.
+RHYME REQUIREMENT (MANDATORY):
+- This mode MUST rhyme.
+- Use clear end rhymes, not slant rhymes.
+- For page endings, use couplets: pages 1&2 rhyme, 3&4 rhyme, 5&6 rhyme, etc.
+- End each page with a simple rhyming word children can hear (cat/hat, sun/fun, hop/top).
+- If odd number of pages, the final page can rhyme with the previous page.
 Companions: {comp_str} (MANDATORY Checklist: {mandatory_names_str} - EVERY name here MUST be in the story).
 Custom Requests: {custom_elements or 'None'} (CRITICAL: You MUST use the exact words from this request at least once each, verbatim, in the story).
 If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
@@ -748,6 +756,7 @@ If a custom request implies an action or relationship (e.g., "ride a dragon", "m
 {{
   "title": "Story Title",
   "wisdom_gem": "One short, warm encouraging phrase the child can repeat (e.g. 'Being kind makes magic happen').",
+  "rhyme_scheme": "{rhyme_scheme_instruction}",
   "pages": [
     {{"text": "Page text (1-2 sentences max)..."}},
     {{"text": "Page text..."}},

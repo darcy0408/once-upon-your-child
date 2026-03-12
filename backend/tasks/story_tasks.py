@@ -166,6 +166,85 @@ def _find_missing_custom_elements(required: list[str], story_text: str) -> list[
             missing.append(phrase)
     return missing
 
+
+def _extract_page_end_word(page_text: str) -> str:
+    """Extract the last meaningful word from a page for rhyme checks."""
+    if not page_text:
+        return ""
+    tokens = re.findall(r"[a-zA-Z']+", page_text.lower())
+    if not tokens:
+        return ""
+    return tokens[-1].strip("'")
+
+
+def _extract_sentence_end_words(page_text: str) -> list[str]:
+    """Extract sentence-ending words from a page."""
+    if not page_text:
+        return []
+    sentence_chunks = re.split(r"[.!?]+", page_text)
+    words: list[str] = []
+    for chunk in sentence_chunks:
+        tokens = re.findall(r"[a-zA-Z']+", chunk.lower())
+        if tokens:
+            words.append(tokens[-1].strip("'"))
+    return words
+
+
+def _rhyme_key(word: str) -> str:
+    """Get a simple phonetic-ish tail used for lightweight rhyme matching."""
+    clean = re.sub(r"[^a-z]", "", word.lower())
+    if len(clean) < 2:
+        return clean
+    if clean.endswith("e") and len(clean) > 3:
+        clean = clean[:-1]
+    # Use substring from last vowel to end (e.g., "cat" -> "at", "sun" -> "un")
+    match = re.search(r"[aeiouy][a-z]*$", clean)
+    if match:
+        return match.group(0)
+    return clean[-2:]
+
+
+def _words_rhyme(word_a: str, word_b: str) -> bool:
+    if not word_a or not word_b:
+        return False
+    key_a = _rhyme_key(word_a)
+    key_b = _rhyme_key(word_b)
+    return len(key_a) >= 2 and key_a == key_b
+
+
+def _is_ltr_rhyme_quality_ok(pages: list[str], min_pair_ratio: float = 0.6) -> bool:
+    """Check that LTR output has clear rhyming.
+
+    Accept either:
+    1) cross-page ending couplets (pages 1&2, 3&4, ...), or
+    2) strong within-page sentence-ending rhymes.
+    """
+    end_words = [_extract_page_end_word(page) for page in pages if page and page.strip()]
+    if len(end_words) < 2:
+        return False
+
+    pair_checks = 0
+    rhyme_hits = 0
+    for i in range(0, len(end_words) - 1, 2):
+        pair_checks += 1
+        if _words_rhyme(end_words[i], end_words[i + 1]):
+            rhyme_hits += 1
+
+    cross_page_ok = pair_checks > 0 and (rhyme_hits / pair_checks) >= min_pair_ratio
+
+    in_page_checks = 0
+    in_page_hits = 0
+    for page in pages:
+        sentence_end_words = _extract_sentence_end_words(page)
+        if len(sentence_end_words) < 2:
+            continue
+        in_page_checks += 1
+        if _words_rhyme(sentence_end_words[-2], sentence_end_words[-1]):
+            in_page_hits += 1
+
+    in_page_ok = in_page_checks > 0 and (in_page_hits / in_page_checks) >= min_pair_ratio
+    return cross_page_ok or in_page_ok
+
 @celery.task(bind=True, name="tasks.generate_story")
 def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -356,6 +435,14 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     is_clean = False
                     validation_error = f"Missing characters: {', '.join(missing_names)}"
 
+                # Rhyme validation for learning-to-read mode (easy reader).
+                # This keeps mode behavior aligned with user expectations.
+                is_rhyme_quality_ok = True
+                if learning_to_read_mode:
+                    is_rhyme_quality_ok = _is_ltr_rhyme_quality_ok(pages)
+                    if not is_rhyme_quality_ok:
+                        validation_error = "Learning-to-read story did not meet rhyme quality checks"
+
                 # Length Validation with dynamic thresholds
                 # LTR mode is measured in pages (not words), so skip word-count check.
                 is_long_enough = True
@@ -382,7 +469,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                         is_long_enough = False
                         validation_error = f"Story too short ({total_words} words, needed {min_words_threshold})"
                 
-                if is_clean and is_long_enough:
+                if is_clean and is_long_enough and is_rhyme_quality_ok:
                     logger.info("Story passed validation.")
                     break
                 else:
@@ -397,6 +484,12 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                                 prompt += "\n\nRETRY INSTRUCTION: The story MUST include these characters by name: " + ", ".join(missing_names)
                         if not is_long_enough:
                             prompt += f"\n\nRETRY INSTRUCTION: The story was too short ({total_words} words). Please expand descriptions, dialogue, and scenes to reach at least {min_words_threshold} words."
+                        if not is_rhyme_quality_ok:
+                            prompt += (
+                                "\n\nRETRY INSTRUCTION: This is LEARNING TO READ mode and MUST rhyme. "
+                                "Use strong end-rhyming couplets by page endings: pages 1&2 rhyme, 3&4 rhyme, 5&6 rhyme. "
+                                "Prefer simple child-hearable rhymes like cat/hat, sun/fun, hop/top."
+                            )
                     else:
                         logger.error("Max attempts reached. Returning best effort.")
 
