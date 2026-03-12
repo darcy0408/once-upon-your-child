@@ -2,6 +2,29 @@
 
 ---
 
+## Session Update - 2026-03-12 (Big Feelings V1 Interactive Route Coverage)
+
+### Scope Completed
+
+- Added API-level coverage for `/generate-interactive-story` to confirm `big_feelings_context` crosses the route layer and reaches `InteractiveAdventureService.create_story(...)`.
+
+### Changes
+
+- `backend/tests/integration/test_pick_a_path.py`
+  - Added a route test that posts `big_feelings_context` and asserts the mocked interactive service receives the exact same structure.
+
+### Verification
+
+```bash
+python -m pytest backend/tests/integration/test_pick_a_path.py -q
+```
+
+### Result
+
+- PASS: `backend/tests/integration/test_pick_a_path.py` -> `26 passed`
+
+---
+
 ## Session Update - 2026-03-12 (Big Feelings V1 Interactive Test Coverage)
 
 ### Scope Completed

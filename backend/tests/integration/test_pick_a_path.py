@@ -238,6 +238,38 @@ class TestGenerateInteractiveStoryAPI:
         call_kwargs = mock_interactive_service.create_story.call_args[1]
         assert call_kwargs["theme"] == "Adventure"
 
+    def test_create_interactive_story_passes_big_feelings_context(
+        self, client, auth_headers, test_character_fixture, mock_interactive_service
+    ):
+        """Route should pass big_feelings_context through to the interactive service unchanged."""
+        big_feelings_context = {
+            "current_feeling": {
+                "emotion_name": "Mad",
+                "physical_signs": "Hot face",
+            },
+            "trigger": "someone said no",
+            "body_signal": "Hot face",
+            "coping_tool": "Take a dragon breath",
+            "repair_goal": "Help fix it",
+            "parent_hidden_context": "trouble hearing no",
+        }
+
+        response = client.post(
+            "/generate-interactive-story",
+            headers=auth_headers,
+            json={
+                "character_id": test_character_fixture.id,
+                "theme": "Big Feelings",
+                "tone": "whimsical",
+                "length": "short",
+                "big_feelings_context": big_feelings_context,
+            },
+        )
+
+        assert response.status_code == 200
+        call_kwargs = mock_interactive_service.create_story.call_args[1]
+        assert call_kwargs["big_feelings_context"] == big_feelings_context
+
     def test_create_interactive_story_rhyme_mode_is_invalid(
         self, client, auth_headers, test_character_fixture
     ):
