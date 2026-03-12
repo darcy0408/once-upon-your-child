@@ -81,10 +81,10 @@ class FlavorConfig {
           ),
         );
       default:
-        // Use local backend when overridden (e.g. --dart-define=CUSTOM_BACKEND_URL=http://192.168.x.x:5000)
-        // Otherwise point at Railway so real-device testing works without network config.
-        const String devBackend =
-            'https://story-weaver-app-production.up.railway.app';
+        // Default to local backend for development.
+        // For real-device testing use:
+        //   --dart-define=CUSTOM_BACKEND_URL=https://story-weaver-app-production.up.railway.app
+        const String devBackend = 'http://localhost:5000';
 
         final backendUrl = customBackendOverride.isNotEmpty
             ? customBackendOverride

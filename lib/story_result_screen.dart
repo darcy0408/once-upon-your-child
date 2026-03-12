@@ -558,12 +558,14 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
 
     final decoded = <_InlineIllustration>[];
     for (final item in raw) {
-      final data = item['image_data'];
+      final data = item['image_data'] ?? item['imageUrl'];
       if (data is String && data.isNotEmpty) {
         try {
+          // Handle potential data URL prefix
+          final String base64Str = data.contains(',') ? data.split(',').last : data;
           decoded.add(
             _InlineIllustration(
-              bytes: base64Decode(data),
+              bytes: base64Decode(base64Str),
               prompt: item['prompt'] as String?,
             ),
           );

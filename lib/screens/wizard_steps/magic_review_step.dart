@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -18,19 +19,21 @@ import 'package:story_weaver_app/widgets/image_make_magic_button.dart';
 import 'package:story_weaver_app/data/scenario_data.dart';
 import 'package:story_weaver_app/data/companion_data.dart';
 import 'package:story_weaver_app/widgets/magical_float.dart';
+import 'package:story_weaver_app/providers/subscription_provider.dart';
+import 'package:story_weaver_app/subscription_models.dart';
 import 'wizard_data_mapper.dart';
 
 /// Step 4: Magic Review & Launch
 /// Updated with audio prompts and consistent magical typography.
-class MagicReviewStep extends StatefulWidget {
+class MagicReviewStep extends ConsumerStatefulWidget {
   final WizardData wizardData;
   final VoidCallback? onGoBack;
   const MagicReviewStep({super.key, required this.wizardData, this.onGoBack});
   @override
-  State<MagicReviewStep> createState() => _MagicReviewStepState();
+  ConsumerState<MagicReviewStep> createState() => _MagicReviewStepState();
 }
 
-class _MagicReviewStepState extends State<MagicReviewStep> {
+class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   bool _isGenerating = false;
   late String _loadingStatus;
   final StoryIllustrationService _illustrationService =
@@ -103,6 +106,21 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
     if (!mounted) return;
     // Silently check for a recent feelings journal entry (last 24 h) BEFORE showing the loader
     final currentFeeling = await FeelingsAmbientService.getRecentFeeling();
+
+    // Get subscription status and BYOK status
+    final subState = ref.read(subscriptionProvider);
+    final isPremium = subState.tier == 'premium' || subState.tier == 'family';
+    final subscription = UserSubscription(
+      tier: subState.tier == 'premium'
+          ? SubscriptionTier.premium
+          : (subState.tier == 'family'
+              ? SubscriptionTier.family
+              : SubscriptionTier.free),
+      isActive: subState.status == 'active',
+    );
+    final isUsingOwnKey = await ApiServiceManager.isUsingOwnApiKey();
+    final canGetIllustrations = isPremium || isUsingOwnKey;
+
     setState(() => _isGenerating = true);
     await Future<void>.delayed(const Duration(milliseconds: 80));
     if (!mounted) return;
@@ -142,6 +160,9 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
                   personalitySliders: widget.wizardData.personalitySliders)));
         }
       } else {
+        // Only request illustrations from backend if user is premium/BYOK
+        final shouldRequestIllustrations = widget.wizardData.includeIllustrations && canGetIllustrations;
+
         final result = await ApiServiceManager.generateStory(
             characterName: requestData['character'] ?? 'Hero',
             age: requestData['age'] ?? 5,
@@ -150,18 +171,20 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             characterDetails: requestData['characterDetails'],
             currentFeeling: requestData['currentFeeling'],
             additionalCharacters: requestData['additionalCharacters'],
-            includeIllustrations: widget.wizardData.includeIllustrations,
+            includeIllustrations: shouldRequestIllustrations,
             rhymeTimeMode: widget.wizardData.rhymeTimeMode,
             learningToReadMode: widget.wizardData.learningToReadMode,
             companionPets: requestData['companion_pets'],
             companionCharacters: requestData['companion_characters'],
             storyLength: requestData['storyLength'] ?? 'standard',
             customElements: requestData['customElements'] ?? '',
+            subscriptionTier: subscription.tier.name,
             onProgress: (status) {
               if (mounted) {
                 setState(() => _loadingStatus = status);
               }
             });
+        
         if (widget.wizardData.customAvatarPath != null) {
           try {
             final avatarFile = File(widget.wizardData.customAvatarPath!);
@@ -177,8 +200,11 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
             debugPrint('⚠️ Could not load custom avatar for illustration: $e');
           }
         }
+        
         List<Map<String, dynamic>> inlineIllustrations = result.illustrations;
+        // Only try to generate inline illustrations if user is premium/BYOK
         if (widget.wizardData.includeIllustrations &&
+            canGetIllustrations &&
             inlineIllustrations.isEmpty) {
           if (mounted) {
             setState(
@@ -189,30 +215,38 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
               storyTitle: result.title ?? 'My Magical Story',
               requestData: requestData);
         }
+        
         if (mounted) {
           await Navigator.of(context).push(MaterialPageRoute(
               builder: (context) => StoryResultScreen(
                   title: result.title ?? 'My Magical Story',
                   storyText: result.storyText,
                   wisdomGem: result.wisdomGem ?? 'You are magic!',
-                  characterName: requestData['characterName'] ??
-                      widget.wizardData.characterName,
-                  theme: requestData['theme'],
+                  characterName: widget.wizardData.characterName,
+                  theme: widget.wizardData.selectedScenario != null
+                      ? ScenarioData.getById(
+                              widget.wizardData.selectedScenario!)
+                          ?.title
+                      : 'Adventure',
+                  characterAge: requestData['age'] ?? widget.wizardData.characterAge,
                   characterId: widget.wizardData.characterId,
-                  characterAge: requestData['age'],
+                  isInteractive: false,
+                  isRhyming: widget.wizardData.rhymeTimeMode,
+                  isLearningToReadMode: widget.wizardData.learningToReadMode,
+                  achievementsService: AchievementService(),
+                  storyCreatedAt: DateTime.now(),
+                  trackStoryCreation: true,
+                  backendIllustrations: inlineIllustrations,
+                  subscription: subscription,
+                  asyncIllustrations: result.asyncIllustrations,
                   pages: result.pages,
                   adventureSteps: result.adventureSteps,
                   storyLengthHint: requestData['storyLength']?.toString() ??
                       widget.wizardData.storyLength,
-                  trackStoryCreation: true,
-                  trackAnalytics: true,
-                  achievementsService: AchievementService(),
-                  storyCreatedAt: DateTime.now(),
-                  isRhyming: widget.wizardData.rhymeTimeMode,
-                  isLearningToReadMode: widget.wizardData.learningToReadMode,
-                  backendIllustrations: inlineIllustrations,
-                  asyncIllustrations: result.asyncIllustrations,
                   companionAvatars: widget.wizardData.petAvatars)));
+          if (mounted) {
+            setState(() => _isGenerating = false);
+          }
         }
       }
     } catch (e) {
@@ -224,6 +258,7 @@ class _MagicReviewStepState extends State<MagicReviewStep> {
         userMessage = 'Story took too long.';
       }
       if (mounted) {
+        setState(() => _isGenerating = false);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('$userMessage\nTry again?'),
             backgroundColor: AppColors.error,

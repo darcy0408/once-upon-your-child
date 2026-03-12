@@ -19,15 +19,23 @@ const List<String> kWarmUpPhrases = [
   "Hi, what's your name?",
   "How old are you? Tap your number!",
   "What is your hero's name? Tap the microphone to say it!",
-  "Who is coming with you on your adventure?",
+  "Pick your hero look! Tap the picture you like.",
+  "Tap your buddies to bring them along!",
   "Where will your adventure take place?",
+  "Where should your adventure happen? Tap to pick!",
   "Tell me where your adventure takes place.",
   "What kind of story do you want?",
-  "What is your hero's name?",
-  "Microphone is unavailable. Please type your idea.",
-  "Choose a Travel Buddy",
-  "Who will join you on this adventure?",
+  "You are all set! Tap Make Magic!",
   "Your adventure is ready! Let's go!",
+  "Microphone is unavailable. Please type your idea.",
+  "Microphone is unavailable right now.",
+  "Say your companion name. For example, Whiskers.",
+  "Describe what your companion looks like.",
+  "Imagine It!",
+  "Rainbow Land!",
+  "Crystal Cave!",
+  "Dragon Friends!",
+  "My Big Feelings!",
 ];
 
 class AppTtsService {
@@ -53,10 +61,11 @@ class AppTtsService {
   Future<void> _prewarm(List<String> phrases) async {
     final voiceId = await _savedVoiceId();
     for (final phrase in phrases) {
-      if (_cache.containsKey(phrase)) continue;
+      final key = phrase.trim();
+      if (_cache.containsKey(key)) continue;
       try {
-        final mp3 = await TtsApiService.synthesize(phrase, voiceId: voiceId);
-        if (mp3 != null && mp3.isNotEmpty) _cache[phrase] = mp3;
+        final mp3 = await TtsApiService.synthesize(key, voiceId: voiceId);
+        if (mp3 != null && mp3.isNotEmpty) _cache[key] = mp3;
       } catch (_) {}
     }
   }
@@ -71,13 +80,14 @@ class AppTtsService {
     String? voiceId,
     bool awaitCompletion = false,
   }) async {
-    if (text.trim().isEmpty) return;
+    final cleanText = text.trim();
+    if (cleanText.isEmpty) return;
     try {
-      Uint8List? mp3 = _cache[text];
+      Uint8List? mp3 = _cache[cleanText];
       if (mp3 == null) {
         final id = voiceId ?? await _savedVoiceId();
-        mp3 = await TtsApiService.synthesize(text, voiceId: id);
-        if (mp3 != null && mp3.isNotEmpty) _cache[text] = mp3;
+        mp3 = await TtsApiService.synthesize(cleanText, voiceId: id);
+        if (mp3 != null && mp3.isNotEmpty) _cache[cleanText] = mp3;
       }
       if (mp3 != null && mp3.isNotEmpty) {
         await _player.stop();
