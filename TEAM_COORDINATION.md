@@ -2,6 +2,43 @@
 
 ---
 
+## Session Update - 2026-03-12 (Sprout Language Simplification for Ages 5 and Under)
+
+### Scope Completed
+
+- Audited child-facing labels and spoken prompts in the sprout (age 5 and under) flow.
+- Replaced several abstract or older-child terms with simpler language for 4-5 year olds.
+
+### Changes
+
+- `lib/data/scenario_data.dart`
+  - Renamed young scenario titles to simpler phrases:
+    - `Rainbow Land` -> `Rainbow World`
+    - `Crystal Cave` -> `Cave Full of Crystals`
+    - `Dragon Friends` -> `Friendly Dragons`
+    - `My Big Feelings` -> `Big Feelings`
+    - `Imagine It!` -> `Make One Up!`
+- `lib/services/app_tts_service.dart`
+  - Updated prewarmed sprout-facing prompt phrases to match the simpler wording used in the UI and voice flow.
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+  - Simplified sprout step titles, helper copy, spoken page prompts, scene labels, and the custom-world card copy.
+- `lib/screens/wizard_steps/feeling_selection_step.dart`
+  - Simplified the spoken scenario picker prompt for age 5 and under.
+- `lib/screens/bedtime_wizard_screen.dart`
+  - Simplified the bedtime world-selection prompt and returned simpler world names in fuzzy matching so bedtime speech also uses 4-5 year old language.
+
+### Verification
+
+```bash
+dart analyze lib/data/scenario_data.dart lib/services/app_tts_service.dart lib/screens/bedtime_wizard_screen.dart lib/screens/wizard_steps/feeling_selection_step.dart lib/screens/wizard_steps/hero_creator_step.dart
+```
+
+### Result
+
+- PASS: `No issues found!`
+
+---
+
 ## Session Update - 2026-03-12 (Bedtime Settings Cleanup)
 
 ### Scope Completed

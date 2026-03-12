@@ -21,7 +21,7 @@ const List<String> kWarmUpPhrases = [
   "Pick your hero look! Tap the picture you like.",
   "Tap your buddies to bring them along!",
   "Where will your adventure take place?",
-  "Where should your adventure happen? Tap to pick!",
+  "Where should we go? Tap the picture you want.",
   "Tell me where your adventure takes place.",
   "What kind of story do you want?",
   "You are all set! Tap Make Magic!",
@@ -30,11 +30,11 @@ const List<String> kWarmUpPhrases = [
   "Microphone is unavailable right now.",
   "Say your companion name. For example, Whiskers.",
   "Describe what your companion looks like.",
-  "Imagine It!",
-  "Rainbow Land!",
-  "Crystal Cave!",
-  "Dragon Friends!",
-  "My Big Feelings!",
+  "Make One Up!",
+  "Rainbow World!",
+  "Cave Full of Crystals!",
+  "Friendly Dragons!",
+  "Big Feelings!",
 
   // Avatar wizard — Sprout (3-5) step prompts
   "Are you a girl or a boy?",
@@ -49,7 +49,7 @@ const List<String> kWarmUpPhrases = [
   // Walk tier — Magic Ear full prompts
   "What is your hero's name? You can type it or tap the microphone to say it!",
   "Pick your hero's look! Swipe through the pictures and tap the one you like.",
-  "Choose your adventure! Swipe through the cards. You can pick Rainbow Land, Crystal Cave, Dragon Friends, or tap Imagine It to make your own!",
+  "Pick a place for your story! You can choose Rainbow World, Cave Full of Crystals, Friendly Dragons, or Make One Up!",
   "Pick your travel buddies! Tap a companion to bring them along. You can pick a tiny dragon, a wise owl, a shadow cat, a star dog, a magic unicorn, or a clever fox.",
   "Here is your story recipe! Check everything looks right, then tap Make Magic to start!",
 ];

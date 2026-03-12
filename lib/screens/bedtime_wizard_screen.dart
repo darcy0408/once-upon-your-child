@@ -73,7 +73,8 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
     if (widget.timerMinutes > 0) {
-      _sleepTimer = Timer(Duration(minutes: widget.timerMinutes), _handleSleepTimer);
+      _sleepTimer =
+          Timer(Duration(minutes: widget.timerMinutes), _handleSleepTimer);
     }
 
     _initAndStart();
@@ -86,7 +87,8 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     await AppTtsService.instance.stop();
     if (!mounted) return;
     setState(() => _step = BedtimeStep.done);
-    await _speak("It's time for sleep now. Goodnight, ${widget.childName}. Sweet dreams.");
+    await _speak(
+        "It's time for sleep now. Goodnight, ${widget.childName}. Sweet dreams.");
     await Future.delayed(const Duration(seconds: 3));
     if (mounted) Navigator.of(context).pop();
   }
@@ -133,7 +135,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
 
       case BedtimeStep.setting:
         final answer = await _askQuestion(
-          "Where will the adventure happen? A rainbow land, a crystal cave, a land of dragons, or somewhere you imagine?",
+          "Where should the story go? A rainbow world, a cave full of crystals, friendly dragons, or somewhere you make up?",
         );
         _settingChoice = _fuzzyMatchScenario(answer);
         _advance(BedtimeStep.feeling);
@@ -264,19 +266,19 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
   String _fuzzyMatchScenario(String input) {
     final lower = input.toLowerCase();
     if (lower.contains('rainbow')) {
-      return 'Rainbow Land';
+      return 'Rainbow World';
     }
     if (lower.contains('crystal') || lower.contains('cave')) {
-      return 'Crystal Cavern';
+      return 'Cave Full of Crystals';
     }
     if (lower.contains('dragon')) {
-      return 'Volcano Dragons';
+      return 'Friendly Dragons';
     }
     if (lower.contains('brave') || lower.contains('hero')) {
-      return 'Brave Friend';
+      return 'Making a New Friend';
     }
     if (lower.contains('feel') || lower.contains('emotion')) {
-      return 'Big Feelings Quest';
+      return 'Big Feelings';
     }
     if (lower.contains('forest') || lower.contains('magic')) {
       return 'Magical Forest';
@@ -370,14 +372,16 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     if (!_timerExpired) _advance(BedtimeStep.done);
   }
 
-  Future<void> _runInteractiveStoryLoop(Map<String, dynamic> requestData) async {
+  Future<void> _runInteractiveStoryLoop(
+      Map<String, dynamic> requestData) async {
     setState(() => _step = BedtimeStep.reading);
 
     final characterName = requestData['character'] ?? 'Hero';
     final theme = _settingChoice ?? 'Magical Adventure';
     final companion = requestData['companion'] ?? '';
 
-    Map<String, dynamic> currentSegment = await ApiServiceManager.generateInteractiveStory(
+    Map<String, dynamic> currentSegment =
+        await ApiServiceManager.generateInteractiveStory(
       characterName: characterName,
       age: requestData['age'] ?? 5,
       theme: theme,
@@ -393,14 +397,16 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     while (turnCount < maxTurns && !_timerExpired) {
       final text = currentSegment['text'] as String?;
       final choicesRaw = currentSegment['choices'];
-      final isEnding = currentSegment['is_ending'] == true || turnCount == maxTurns - 1;
+      final isEnding =
+          currentSegment['is_ending'] == true || turnCount == maxTurns - 1;
 
       if (text != null && text.isNotEmpty) {
         storySoFar += '$text ';
         if (!mounted) return;
         setState(() => _statusText = '...');
         try {
-          await AppTtsService.instance.speak(text.trim(), awaitCompletion: true);
+          await AppTtsService.instance
+              .speak(text.trim(), awaitCompletion: true);
         } catch (_) {}
       }
 
@@ -409,13 +415,18 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
       // Ask for choice
       String question = "What do you want to do next?";
       if (choicesRaw is List && choicesRaw.isNotEmpty) {
-        question = "Do you want to ${choicesRaw[0]}, or ${choicesRaw[1]}? Or something else?";
+        question =
+            "Do you want to ${choicesRaw[0]}, or ${choicesRaw[1]}? Or something else?";
       }
 
       final answer = await _askQuestion(question);
       if (_timerExpired) break;
 
-      final choice = answer.isNotEmpty ? answer : (choicesRaw is List && choicesRaw.isNotEmpty ? choicesRaw[0].toString() : 'Keep going!');
+      final choice = answer.isNotEmpty
+          ? answer
+          : (choicesRaw is List && choicesRaw.isNotEmpty
+              ? choicesRaw[0].toString()
+              : 'Keep going!');
       choicesMade.add(choice);
 
       setState(() => _statusText = 'Generating next part...');

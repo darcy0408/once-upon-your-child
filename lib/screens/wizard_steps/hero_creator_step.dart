@@ -1184,7 +1184,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         ? 'Setting'
         : band.band == AgeBand.adventurer
             ? 'Choose your setting'
-            : 'Where to adventure?';
+            : band.band == AgeBand.sprout
+                ? 'Where should we go?'
+                : 'Where to adventure?';
     final isImagineItSelected =
         widget.wizardData.selectedScenario == 'safe_space';
 
@@ -1247,7 +1249,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 explorerTheme;
             return Text(
               b.band == AgeBand.sprout
-                  ? 'Tap a picture to pick your adventure!'
+                  ? 'Tap a picture to pick where the story goes!'
                   : b.band == AgeBand.explorer
                       ? 'Pick a world or make your own!'
                       : 'Create your own world — or choose one below!',
@@ -1290,7 +1292,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                       explorerTheme;
                   return Text(
                     b.band == AgeBand.sprout
-                        ? 'or try one of these!'
+                        ? 'or pick one of these!'
                         : b.band == AgeBand.explorer
                             ? 'or try one of these worlds!'
                             : 'or explore a ready-made world',
@@ -3198,7 +3200,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       1 => "What is your hero's name? Tap the microphone to say it!",
       2 => "Pick your hero look! Tap the picture you like.",
       3 => "Tap your buddies to bring them along!",
-      4 => "Where should your adventure happen? Tap to pick!",
+      4 => "Where should we go? Tap the picture you want.",
       5 => "You are all set! Tap Make Magic!",
       _ => null,
     };
@@ -3206,11 +3208,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   String? _sceneLabel(String id) => switch (id) {
-        'safe_space' || 'imagine_it' => 'Imagine It!',
-        'vanishing_colors' => 'Rainbow Land!',
-        'crystal_cavern' => 'Crystal Cave!',
-        'volcano_dragons' => 'Dragon Friends!',
-        'big_feelings_quest' => 'My Big Feelings!',
+        'safe_space' || 'imagine_it' => 'Make One Up!',
+        'vanishing_colors' => 'Rainbow World!',
+        'crystal_cavern' => 'Cave Full of Crystals!',
+        'volcano_dragons' => 'Friendly Dragons!',
+        'big_feelings_quest' => 'Big Feelings!',
         _ => null,
       };
 }
@@ -4923,6 +4925,9 @@ class _ImagineItHeroCardState extends State<_ImagineItHeroCard>
 
   @override
   Widget build(BuildContext context) {
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final isSprout = band.band == AgeBand.sprout;
     final asset = _pressed
         ? 'assets/images/scenarios/imagine_it_btn_pressed.png'
         : 'assets/images/scenarios/imagine_it_btn.png';
@@ -4930,10 +4935,12 @@ class _ImagineItHeroCardState extends State<_ImagineItHeroCard>
     return Semantics(
       button: true,
       selected: widget.isSelected,
-      label: 'Imagine It — create your own world',
+      label: isSprout ? 'Make one up' : 'Imagine It — create your own world',
       hint: widget.isSelected
           ? 'Currently selected. Double tap to close the text field.'
-          : 'Double tap to open a text box and type your own scene idea.',
+          : isSprout
+              ? 'Double tap to tell us your own place.'
+              : 'Double tap to open a text box and type your own scene idea.',
       child: GestureDetector(
         onTapDown: (_) {
           HapticFeedback.mediumImpact();
@@ -4984,7 +4991,7 @@ class _ImagineItHeroCardState extends State<_ImagineItHeroCard>
                             color: const Color(0xFF2C1B47),
                             child: Center(
                               child: Text(
-                                'Imagine It ✨',
+                                isSprout ? 'Make One Up! ✨' : 'Imagine It ✨',
                                 style: GoogleFonts.fredoka(
                                     color: const Color(0xFFFFD700),
                                     fontSize: 22),
@@ -5012,7 +5019,7 @@ class _ImagineItHeroCardState extends State<_ImagineItHeroCard>
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                '✨  Imagine It',
+                                isSprout ? '✨  Make One Up!' : '✨  Imagine It',
                                 style: GoogleFonts.fredoka(
                                   color: const Color(0xFFFFD700),
                                   fontSize: 22,
@@ -5027,7 +5034,9 @@ class _ImagineItHeroCardState extends State<_ImagineItHeroCard>
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Describe any world you can dream up',
+                                isSprout
+                                    ? 'Tell us a place you want to visit'
+                                    : 'Describe any world you can dream up',
                                 style: GoogleFonts.fredoka(
                                   color: Colors.white.withAlpha(210),
                                   fontSize: 14,

@@ -60,8 +60,8 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
   void _resetMathGate() {
     final now = DateTime.now().millisecondsSinceEpoch;
-    _mathA = (now % 7) + 2;  // 2–8
-    _mathB = (now % 9) + 1;  // 1–9
+    _mathA = (now % 7) + 2; // 2–8
+    _mathB = (now % 9) + 1; // 1–9
     _mathController.clear();
     _mathGatePassed = false;
     _mathWrong = false;
@@ -205,9 +205,16 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   }
 
   String _buildScenarioSpokenText() {
-    final scenarioNames = _scenarios.map((s) => s.titleForAge(
-      widget.wizardData.characterAge <= 0 ? 5 : widget.wizardData.characterAge,
-    )).join(', ');
+    final scenarioNames = _scenarios
+        .map((s) => s.titleForAge(
+              widget.wizardData.characterAge <= 0
+                  ? 5
+                  : widget.wizardData.characterAge,
+            ))
+        .join(', ');
+    if (widget.wizardData.characterAge <= 5) {
+      return 'Pick a place for your story. You can choose $scenarioNames. Swipe through the pictures and tap the one you want!';
+    }
     return 'Choose your adventure! Where shall we go today? You can pick $scenarioNames. Swipe through the cards and tap the one you like!';
   }
 
@@ -252,7 +259,8 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                 Semantics(
                   button: true,
                   toggled: _showParentalInput,
-                  label: 'Guardian Mode. ${_showParentalInput ? "Open. Double tap to close" : "Closed. Double tap to open"}',
+                  label:
+                      'Guardian Mode. ${_showParentalInput ? "Open. Double tap to close" : "Closed. Double tap to open"}',
                   child: IconButton(
                     icon: Icon(
                       _showParentalInput ? Icons.close : Icons.shield_outlined,
@@ -460,7 +468,8 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
               return Semantics(
                 button: true,
                 selected: isSelected,
-                label: "$challenge. ${isSelected ? 'Selected' : 'Double tap to select'}",
+                label:
+                    "$challenge. ${isSelected ? 'Selected' : 'Double tap to select'}",
                 child: ChoiceChip(
                   label: Text(challenge),
                   selected: isSelected,
@@ -476,7 +485,8 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                     color: isSelected
                         ? AppColors.textDark
                         : AppColors.textDark.withValues(alpha: 0.8),
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                     fontSize: 13,
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -503,10 +513,11 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
           Builder(builder: (context) {
             final age = widget.wizardData.characterAge;
             final isExplorer = age >= 5 && age <= 7;
-            
+
             // Unified definitions
             PersonalitySliderDefinition def(String key) =>
-                CharacterTraitsData.personalitySliders.firstWhere((s) => s.key == key);
+                CharacterTraitsData.personalitySliders
+                    .firstWhere((s) => s.key == key);
 
             final dAdventure = def('adventure');
             final dSociability = def('sociability');
@@ -575,8 +586,8 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  borderSide:
-                      BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
+                  borderSide: BorderSide(
+                      color: AppColors.primary.withValues(alpha: 0.3)),
                 ),
                 contentPadding: const EdgeInsets.all(12),
               ),
@@ -621,7 +632,6 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
               ),
         ),
         const SizedBox(height: 16),
-
         if (!_mathGatePassed) ...[
           // Math gate
           Container(
@@ -629,8 +639,8 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.4)),
+              border:
+                  Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -654,7 +664,8 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                           decoration: InputDecoration(
                             hintText: 'Your answer…',
                             hintStyle: TextStyle(
-                                color: AppColors.textDark.withValues(alpha: 0.4),
+                                color:
+                                    AppColors.textDark.withValues(alpha: 0.4),
                                 fontSize: 14),
                             filled: true,
                             fillColor: AppColors.cream,
@@ -719,12 +730,9 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                         size: 16, color: AppColors.gold),
                     const SizedBox(width: 6),
                     Text('Story DNA Unlocked ✨',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(
-                                color: AppColors.gold,
-                                fontWeight: FontWeight.bold)),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.gold,
+                            fontWeight: FontWeight.bold)),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -755,19 +763,20 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                     return Semantics(
                       button: true,
                       selected: sel,
-                      label: "$ctx. ${sel ? 'Selected' : 'Double tap to select'}",
+                      label:
+                          "$ctx. ${sel ? 'Selected' : 'Double tap to select'}",
                       child: ChoiceChip(
                         label: Text(ctx),
                         selected: sel,
                         onSelected: (v) => setState(() =>
                             widget.wizardData.storyDnaContext = v ? ctx : null),
-                        selectedColor: AppColors.primary.withValues(alpha: 0.15),
+                        selectedColor:
+                            AppColors.primary.withValues(alpha: 0.15),
                         labelStyle: TextStyle(
                             fontSize: 12,
                             fontWeight:
                                 sel ? FontWeight.bold : FontWeight.normal),
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
                       ),
                     );
                   }).toList(),
@@ -798,20 +807,19 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                     return Semantics(
                       button: true,
                       selected: sel,
-                      label: "$outcome. ${sel ? 'Selected' : 'Double tap to select'}",
+                      label:
+                          "$outcome. ${sel ? 'Selected' : 'Double tap to select'}",
                       child: ChoiceChip(
                         label: Text(outcome),
                         selected: sel,
-                        onSelected: (v) => setState(() =>
-                            widget.wizardData.storyDnaOutcome =
-                                v ? outcome : null),
+                        onSelected: (v) => setState(() => widget
+                            .wizardData.storyDnaOutcome = v ? outcome : null),
                         selectedColor: AppColors.gold.withValues(alpha: 0.3),
                         labelStyle: TextStyle(
                             fontSize: 12,
                             fontWeight:
                                 sel ? FontWeight.bold : FontWeight.normal),
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
                       ),
                     );
                   }).toList(),
@@ -1023,9 +1031,8 @@ class _ScenarioCardWidget extends StatelessWidget {
                       title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: isSelected
-                                ? AppColors.textDark
-                                : Colors.white,
+                            color:
+                                isSelected ? AppColors.textDark : Colors.white,
                           ),
                       textAlign: TextAlign.center,
                       maxLines: 2,
