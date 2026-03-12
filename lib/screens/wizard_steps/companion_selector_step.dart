@@ -345,38 +345,43 @@ class _CompanionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white.withAlpha(20) : Colors.white.withAlpha(10),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: isSelected ? const Color(0xFFFFD700) : const Color(0xFFD4A0FF).withAlpha(80), width: isSelected ? 3 : 1.5),
-          boxShadow: isSelected ? [BoxShadow(color: const Color(0xFFFFD700).withAlpha(80), blurRadius: 20)] : null,
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildBackground(),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(companion.name, style: GoogleFonts.fredoka(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      Text(companion.description, style: GoogleFonts.quicksand(color: Colors.white.withAlpha(180), fontSize: 13, fontWeight: FontWeight.w500)),
-                    ],
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: 'Companion: ${companion.name}. ${companion.description}. ${isSelected ? 'Selected' : 'Double tap to select'}',
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.white.withAlpha(20) : Colors.white.withAlpha(10),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: isSelected ? const Color(0xFFFFD700) : const Color(0xFFD4A0FF).withAlpha(80), width: isSelected ? 3 : 1.5),
+            boxShadow: isSelected ? [BoxShadow(color: const Color(0xFFFFD700).withAlpha(80), blurRadius: 20)] : null,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildBackground(),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(companion.name, style: GoogleFonts.fredoka(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text(companion.description, style: GoogleFonts.quicksand(color: Colors.white.withAlpha(180), fontSize: 13, fontWeight: FontWeight.w500)),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-            if (isSelected) Positioned(top: 12, right: 12, child: Container(padding: const EdgeInsets.all(4), decoration: const BoxDecoration(color: Color(0xFFFFD700), shape: BoxShape.circle), child: const Icon(Icons.check, color: Color(0xFF3B2363), size: 20))),
-          ],
+                ],
+              ),
+              if (isSelected) Positioned(top: 12, right: 12, child: Container(padding: const EdgeInsets.all(4), decoration: const BoxDecoration(color: Color(0xFFFFD700), shape: BoxShape.circle), child: const Icon(Icons.check, color: Color(0xFF3B2363), size: 20))),
+            ],
+          ),
         ),
       ),
     );

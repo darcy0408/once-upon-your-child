@@ -2,22 +2,6 @@
 
 ---
 
-## Session Update - 2026-03-12 (Accessibility Enhancements & Screen Reader Support)
-
-### Scope Completed
-- **Standard Accessibility (Screen Readers):**
-  - Updated `_SceneImageButton` in `lib/screens/wizard_steps/hero_creator_step.dart` with explicit `Semantics` labels and hints for native screen readers.
-  - Updated `_ImagineItHeroCard` with `Semantics` hints indicating how to open the text field.
-  - Wrapped archetype selection `GestureDetector`s with `Semantics` to indicate role selection and state.
-- **Bedtime Audio Mode Strategy:**
-  - Defined a 3-step "Crawl, Walk, Run" strategy for building a purely voice-driven, conversational story generation mode tailored for blind children or screen-free bedtime use.
-
-### Status
-- **Wizard Accessibility (Crawl):** 🟢 Standard screen reader support added for key selection screens.
-- **Voice Guide (Walk / Run):** ⚪ Planned, pending implementation.
-
----
-
 ## Session Update - 2026-03-12 (Illustration Display & Tier-Aware Generation Fix)
 
 ### Scope Completed
@@ -38,6 +22,24 @@
 - **Wizard Stability:** 🟢 Compilation error resolved
 
 ---
+
+## Session Update - 2026-03-12 (Accessibility Enhancements & Screen Reader Support)
+
+### Scope Completed
+- **Standard Accessibility (Screen Readers):**
+  - Updated `_SceneImageButton` in `lib/screens/wizard_steps/hero_creator_step.dart` with explicit `Semantics` labels and hints for native screen readers.
+  - Updated `_ImagineItHeroCard` with `Semantics` hints indicating how to open the text field.
+  - Wrapped archetype selection `GestureDetector`s with `Semantics` to indicate role selection and state.
+- **Bedtime Audio Mode Strategy:**
+  - Defined a 3-step "Crawl, Walk, Run" strategy for building a purely voice-driven, conversational story generation mode tailored for blind children or screen-free bedtime use.
+
+### Status
+- **Wizard Accessibility (Crawl):** 🟢 Standard screen reader support added for key selection screens.
+- **Voice Guide (Walk / Run):** ⚪ Planned, pending implementation.
+
+---
+
+## Session Update - 2026-03-12 (ElevenLabs TTS Wizard Fix)
 
 ### Scope Completed
 - **Root cause identified**: Robotic on-device voice was playing during the "choose where your adventure takes place" step instead of the high-quality ElevenLabs voice.

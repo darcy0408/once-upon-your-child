@@ -939,16 +939,19 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget content = Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(band.radiusMd),
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: band.space(16),
-            vertical: band.space(14),
-          ),
+    Widget content = Semantics(
+      button: true,
+      label: 'Summary item: $label. Double tap to go back and edit.',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(band.radiusMd),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: band.space(16),
+              vertical: band.space(14),
+            ),
           decoration: BoxDecoration(
             color: Colors.white.withAlpha(35),
             borderRadius: BorderRadius.circular(band.radiusMd),
