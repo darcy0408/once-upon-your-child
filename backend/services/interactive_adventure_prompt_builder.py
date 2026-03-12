@@ -670,11 +670,14 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
             return ""
 
         feeling_label = str(emotion_name).strip().lower()
-        opening_line = (
-            f'"{child_name} felt so {feeling_label} when {trigger}."'
-            if trigger
-            else f'"{child_name} felt so {feeling_label}."'
-        )
+        pov_subject = "You" if age < 15 else child_name
+        body_subject = "Your" if age < 15 else f"{child_name}'s"
+        opening_parts = [f"{pov_subject} felt so {feeling_label}."]
+        if trigger:
+            opening_parts.append("Something happened that made the feeling big.")
+        if body_signal:
+            opening_parts.append(f"{body_subject} body clue was {str(body_signal).strip().lower()}.")
+        opening_line = '"' + " ".join(opening_parts) + '"'
 
         stage_rule = (
             "Start the very first lines by naming the feeling and body clue."
@@ -690,6 +693,9 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
   - One choice may be messy, but it must lead to a gentle repair chance instead of shame.
   - Use simple choices based on action, like breathe, ask for help, use words, or stomp and stop.
   - Keep the problem familiar and concrete.
+  - In the first paragraph, use 2-3 short sentences in this order: feeling, what happened, body clue.
+  - For mad stories, the first branch should contrast helper-now versus big reaction then stop; the next branch should offer repair.
+  - For sad or scared stories, keep the helper choices close to comfort, connection, and one tiny brave step.
 """
 
         lines = [
@@ -700,6 +706,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
         ]
         if trigger:
             lines.append(f"- Trigger: {trigger}")
+            lines.append("- Weave the trigger into the scene naturally instead of copying it as a stiff setup line.")
         if body_signal:
             lines.append(f"- Body clue to mention early: {body_signal}")
         if coping_tool:

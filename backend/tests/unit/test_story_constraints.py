@@ -84,10 +84,15 @@ class TestStoryConstraints:
         )
 
         assert 'BIG FEELINGS INTERACTIVE CONTEXT' in prompt
-        assert 'Opening style example: "Milo felt so mad when someone said no."' in prompt
+        assert (
+            'Opening style example: "You felt so mad. Something happened that made the feeling big. '
+            'Your body clue was hot face."'
+        ) in prompt
+        assert 'Weave the trigger into the scene naturally instead of copying it as a stiff setup line.' in prompt
         assert 'Take a dragon breath' in prompt
         assert 'Roar, then stop' in prompt
         assert 'PRESCHOOL PICK-A-PATH RULES' in prompt
+        assert 'For mad stories, the first branch should contrast helper-now versus big reaction then stop' in prompt
 
     def test_big_feelings_continuation_prompt_uses_repair_focused_choices(self):
         """Continuation prompt should keep the same feelings thread and repair-friendly choices."""

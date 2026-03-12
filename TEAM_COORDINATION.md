@@ -2,6 +2,34 @@
 
 ---
 
+## Session Update - 2026-03-12 (Big Feelings V1 Prompt Wording Tuning)
+
+### Scope Completed
+
+- Tuned the preschool Big Feelings interactive prompt wording from real sample outputs so opening examples read naturally across `mad`, `sad`, and `scared` cases.
+
+### Changes
+
+- `backend/services/interactive_adventure_prompt_builder.py`
+  - Reworked the opening style example to use short, natural sentence patterns instead of awkward `when ...` phrasing for fragment-style triggers.
+  - Added preschool-specific guidance for first-paragraph sentence order and clearer branch-shape expectations for anger, sadness, and fear.
+- `backend/tests/unit/test_story_constraints.py`
+  - Updated prompt-builder assertions to match the new opening example wording and branch guidance.
+
+### Verification
+
+```bash
+python -m pytest backend/tests/unit/test_story_constraints.py -q
+python -X utf8 -c "<sample prompt render>"
+```
+
+### Result
+
+- PASS: `backend/tests/unit/test_story_constraints.py` -> `8 passed`
+- PASS: UTF-8 sample prompt renders for preschool `mad`, `sad`, and `scared` now use natural opening-example guidance without awkward trigger phrasing.
+
+---
+
 ## Session Update - 2026-03-12 (Big Feelings V1 Interactive Route Coverage)
 
 ### Scope Completed
