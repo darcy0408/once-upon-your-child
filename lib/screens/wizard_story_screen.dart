@@ -12,6 +12,7 @@ import 'wizard_steps/hero_creator_step.dart';
 import 'wizard_steps/magic_review_step.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service_manager.dart';
+import 'bedtime_wizard_screen.dart';
 
 /// WizardStoryScreen - Main 4-step wizard for creating magical stories
 ///
@@ -319,6 +320,45 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                           _loadSavedCharacters();
                         },
                         tooltip: 'My Characters',
+                      ),
+                    // Bedtime Mode button
+                    if (band.band != AgeBand.creator)
+                      Semantics(
+                        button: true,
+                        label: 'Start bedtime story mode. Voice only, no screen needed.',
+                        child: _LabeledNavButton(
+                          icon: Icons.bedtime_outlined,
+                          label: 'Bedtime',
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => BedtimeWizardScreen(
+                                  childName: _wizardData.characterName,
+                                  childAge: _wizardData.characterAge,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    else
+                      Semantics(
+                        button: true,
+                        label: 'Start bedtime story mode. Voice only, no screen needed.',
+                        child: IconButton(
+                          icon: const Icon(Icons.bedtime_outlined, color: Colors.white),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => BedtimeWizardScreen(
+                                  childName: _wizardData.characterName,
+                                  childAge: _wizardData.characterAge,
+                                ),
+                              ),
+                            );
+                          },
+                          tooltip: 'Bedtime Story Mode',
+                        ),
                       ),
                   ],
                 ),

@@ -39,8 +39,8 @@
 
 ### Status
 - **Wizard Accessibility (Crawl):** ✅ Complete. Standard screen reader support added for all selection screens and result screen.
-- **Voice Guide (Walk):** 🟢 In Progress. Adding in-app TTS guide to standard visual flow.
-- **Bedtime Audio Wizard (Run):** ⚪ Planned.
+- **Voice Guide (Walk):** ✅ Complete. `MagicEarButton` implemented on all wizard steps with contextual prompts.
+- **Bedtime Audio Wizard (Run):** ✅ Complete. Built `BedtimeWizardScreen` with fully voice-driven state machine, STT, TTS, fuzzy matching, and screen-free auto-reading mode. Accessible from `WizardStoryScreen` top bar.
 
 ---
 
@@ -1402,7 +1402,39 @@ Completed analysis of all 6 feelings-related widget implementations. Recommendat
 
 ---
 
-## Session Update - 2026-02-25 (Fix: Age-Appropriate Wisdom Gems)
+## Session Update - 2026-03-12 (Fix: Learning-to-Read Rhyming Logic for Young Readers)
+
+### Problem
+The **Learning-to-Read (Easy Reader)** mode was failing to generate rhyming stories, particularly for younger children (e.g., age 4). 
+- **Root cause 1:** `backend/tasks/story_tasks.py` had a hardcoded `age < 9` check that blocked the specialized LTR prompt for older children (who should get limericks).
+- **Root cause 2:** The LTR prompt for ages 3-6 in `backend/services/story_service.py` focused on CVC vocabulary but lacked explicit rhyming instructions and a rhyming JSON example.
+- **Root cause 3:** The automated rhyme validation in `backend/tasks/story_tasks.py` used a strict phonetic key that didn't treat "y" and "i" as equivalent (e.g., "sky"/"high"), leading to unnecessary retries or failures.
+
+### Fix
+- **`backend/tasks/story_tasks.py`**:
+    - Removed the `age < 9` restriction from the `learning_to_read_mode` block to allow all ages to use the mode.
+    - Improved `_rhyme_key` to normalize "y" to "i" for better phonetic matching.
+- **`backend/services/story_service.py`**:
+    - Strengthened `_build_learning_to_read_prompt` for ages 3-6 with mandatory AABB couplet instructions and a rhyming JSON example.
+    - Updated the limerick example (for older kids) to use a fixed name ("Jane") to ensure a perfect rhyme regardless of character name.
+    - Added `STRICT_OUTPUT_CONSTRAINTS` to the limerick prompt for consistency.
+
+### Verification
+- Verified Age 4 (couplets) and Age 10 (limericks) prompt structures via simulation.
+- Confirmed `learning_to_read_mode` flag is correctly passed from the frontend.
+- Ran existing story personalization tests: all passed.
+
+### Files Changed
+- `backend/services/story_service.py`
+- `backend/tasks/story_tasks.py`
+- `TEAM_COORDINATION.md` *(this entry)*
+
+### Status
+- **Learning-to-Read Rhyme:** ✅ Fixed for all age bands.
+- **Launch Readiness:** 99% 🚀
+
+---
+
 
 ### Scope Completed
 

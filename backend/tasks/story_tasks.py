@@ -193,12 +193,13 @@ def _extract_sentence_end_words(page_text: str) -> list[str]:
 def _rhyme_key(word: str) -> str:
     """Get a simple phonetic-ish tail used for lightweight rhyme matching."""
     clean = re.sub(r"[^a-z]", "", word.lower())
+    clean = clean.replace("y", "i") # Normalize y to i for phonetic matching
     if len(clean) < 2:
         return clean
     if clean.endswith("e") and len(clean) > 3:
         clean = clean[:-1]
     # Use substring from last vowel to end (e.g., "cat" -> "at", "sun" -> "un")
-    match = re.search(r"[aeiouy][a-z]*$", clean)
+    match = re.search(r"[aeiou][a-z]*$", clean)
     if match:
         return match.group(0)
     return clean[-2:]
