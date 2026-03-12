@@ -2,6 +2,61 @@
 
 ---
 
+## Session Update - 2026-03-12 (Accessibility Enhancements & Screen Reader Support)
+
+### Scope Completed
+- **Standard Accessibility (Screen Readers):**
+  - Updated `_SceneImageButton` in `lib/screens/wizard_steps/hero_creator_step.dart` with explicit `Semantics` labels and hints for native screen readers.
+  - Updated `_ImagineItHeroCard` with `Semantics` hints indicating how to open the text field.
+  - Wrapped archetype selection `GestureDetector`s with `Semantics` to indicate role selection and state.
+- **Bedtime Audio Mode Strategy:**
+  - Defined a 3-step "Crawl, Walk, Run" strategy for building a purely voice-driven, conversational story generation mode tailored for blind children or screen-free bedtime use.
+
+### Status
+- **Wizard Accessibility (Crawl):** 🟢 Standard screen reader support added for key selection screens.
+- **Voice Guide (Walk / Run):** ⚪ Planned, pending implementation.
+
+---
+
+## Session Update - 2026-03-12 (Illustration Display & Tier-Aware Generation Fix)
+
+### Scope Completed
+- **Root cause identified**: Illustrations were successfully generating for premium/BYOK users but failing to display because the decoder was looking for `image_data` while the frontend provided `imageUrl` (with a data URL prefix). Additionally, free users were triggering generation but seeing nothing because the "Teaser" logic was suppressed by the presence of a (broken) illustration.
+- **Illustration Decoding Hardening** (`lib/story_result_screen.dart`):
+  - Updated `_decodeInlineIllustrations` to check for both `image_data` and `imageUrl` keys.
+  - Implemented data URL prefix stripping (e.g., `data:image/png;base64,`) to ensure robust base64 decoding.
+- **Tier-Aware Story Generation** (`lib/screens/wizard_steps/magic_review_step.dart`):
+  - Upgraded `MagicReviewStep` to a `ConsumerStatefulWidget` to reliably access subscription state.
+  - Implemented explicit entitlement checks (Premium tier or BYOK key) before triggering illustration generation.
+  - **Free Users**: Now explicitly skip illustration generation. This ensures `backendIllustrations` is empty, which correctly triggers the **Premium Teaser** UI in the story result screen.
+  - **Premium/BYOK Users**: Continue to generate and display illustrations as intended.
+- **Bug Fix**: Resolved a compilation error in `MagicReviewStep` where the `subscription` getter was missing from `SubscriptionState`. Updated to use `tier` and `status` fields directly.
+
+### Status
+- **Illustration Display:** 🟢 Robust decoding implemented and verified
+- **Tier Entitlements:** 🟢 Free users see teasers; Premium/BYOK see images
+- **Wizard Stability:** 🟢 Compilation error resolved
+
+---
+
+### Scope Completed
+- **Root cause identified**: Robotic on-device voice was playing during the "choose where your adventure takes place" step instead of the high-quality ElevenLabs voice.
+- **TTS Pre-warming Hardening** (`lib/services/app_tts_service.dart`):
+  - Updated `kWarmUpPhrases` to include all wizard-specific prompts and scene labels (e.g., "Dragon Friends!", "Crystal Cave!", "Imagine It!").
+  - Implemented cache key normalization (trimming whitespace) to prevent cache misses due to minor formatting differences.
+- **Frontend TTS Standardization** (`lib/screens/wizard_steps/hero_creator_step.dart`):
+  - Refactored `HeroCreatorStep` and the companion editor (`_PetCard`) to use the central `AppTtsService` exclusively.
+  - Removed redundant `FlutterTts` instances and `_speakPrompt` implementations in the companion step that were defaulting to the robotic system voice.
+  - Removed unused `flutter_tts` imports.
+- **Verification**:
+  - Confirmed that all strings used in `_speakPagePrompt` and scene labels match the pre-warmed `kWarmUpPhrases` exactly.
+
+### Status
+- **Wizard TTS Quality:** 🟢 Standardized on ElevenLabs for all prompts and labels
+- **Redundant TTS Engines:** 🟢 Removed
+
+---
+
 ## Session Update - 2026-03-12 (Easy Reader Rhyme Quality Fix)
 
 ### Scope Completed

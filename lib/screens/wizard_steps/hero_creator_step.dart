@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../../services/app_tts_service.dart';
 import 'package:http/http.dart' as http;
@@ -1562,18 +1561,15 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (data.characterAge > 4) ...[
-                    ImageModeOrb(
-                      modeType: 'pickpath',
-                      label: isCreator ? 'Choose Your Path' : 'Pick a Path',
-                      isActive: selectedMode == 'pickpath',
-                      onTap: () => setState(() => setStoryMode('pickpath')),
-                      primaryColor: const Color(0xFF9E6CFF),
-                      secondaryColor: const Color(0xFFFFB3E6),
-                    ),
-                  ],
-                  if (data.characterAge > 4 && data.characterAge < 9)
-                    const SizedBox(width: 24),
+                  ImageModeOrb(
+                    modeType: 'pickpath',
+                    label: isCreator ? 'Choose Your Path' : 'Pick a Path',
+                    isActive: selectedMode == 'pickpath',
+                    onTap: () => setState(() => setStoryMode('pickpath')),
+                    primaryColor: const Color(0xFF9E6CFF),
+                    secondaryColor: const Color(0xFFFFB3E6),
+                  ),
+                  if (data.characterAge < 9) const SizedBox(width: 24),
                   if (data.characterAge < 9) ...[
                     ImageModeOrb(
                       modeType: 'reading',
@@ -2311,9 +2307,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         itemBuilder: (context, index) {
           final a = archetypes[index];
           final isSelected = _selectedArchetypeId == a.name;
-          return GestureDetector(
-            onTap: () => _selectArchetype(a),
-            child: AnimatedContainer(
+          return Semantics(
+            button: true,
+            selected: isSelected,
+            label: 'Role: ${a.name}',
+            hint: isSelected 
+                ? 'Currently selected. Double tap to keep this role.' 
+                : 'Double tap to select this role for your hero.',
+            child: GestureDetector(
+              onTap: () => _selectArchetype(a),
+              child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
@@ -2412,9 +2415,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         itemBuilder: (context, index) {
           final a = archetypes[index];
           final isSelected = _selectedArchetypeId == a.name;
-          return GestureDetector(
-            onTap: () => _selectArchetype(a),
-            child: AnimatedContainer(
+          return Semantics(
+            button: true,
+            selected: isSelected,
+            label: 'Role: ${a.name}',
+            hint: isSelected 
+                ? 'Currently selected. Double tap to keep this role.' 
+                : 'Double tap to select this role for your hero.',
+            child: GestureDetector(
+              onTap: () => _selectArchetype(a),
+              child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),
               width: cardWidth,
               margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
@@ -3752,8 +3762,6 @@ class _PetCardState extends State<_PetCard> {
   final SpeechToText _speech = SpeechToText();
   bool _speechReady = false;
   String _listeningField = '';
-  FlutterTts? _tts;
-  final AudioPlayer _promptAudioPlayer = AudioPlayer();
 
   static const _speciesOptions = [
     'Human',
@@ -3810,8 +3818,6 @@ class _PetCardState extends State<_PetCard> {
   @override
   void dispose() {
     _speech.stop();
-    _tts?.stop();
-    _promptAudioPlayer.dispose();
     _nameCtrl.dispose();
     _colorCtrl.dispose();
     super.dispose();
@@ -3830,22 +3836,10 @@ class _PetCardState extends State<_PetCard> {
         setState(() => _listeningField = '');
       },
     );
-    _tts = FlutterTts();
-    await _tts!.setLanguage('en-US');
-    await _tts!.setPitch(1.0);
-    await _tts!.setSpeechRate(0.5);
   }
 
   Future<void> _speakPrompt(String text) async {
-    final mp3 = await TtsApiService.synthesize(text);
-    if (mp3 != null && mp3.isNotEmpty) {
-      await _promptAudioPlayer.stop();
-      await _promptAudioPlayer.play(BytesSource(mp3));
-      return;
-    }
-    if (_tts == null) return;
-    await _tts!.stop();
-    await _tts!.speak(text);
+    unawaited(AppTtsService.instance.speak(text));
   }
 
   Future<void> _toggleVoiceInput({
@@ -3854,7 +3848,7 @@ class _PetCardState extends State<_PetCard> {
     required String prompt,
   }) async {
     if (!_speechReady) {
-      await _speakPrompt('Microphone is unavailable right now.');
+      unawaited(AppTtsService.instance.speak('Microphone is unavailable right now.'));
       return;
     }
     if (_listeningField == fieldKey) {
@@ -3863,7 +3857,7 @@ class _PetCardState extends State<_PetCard> {
       return;
     }
 
-    await _speakPrompt(prompt);
+    unawaited(AppTtsService.instance.speak(prompt));
     if (mounted) setState(() => _listeningField = fieldKey);
 
     await _speech.listen(
@@ -4888,6 +4882,9 @@ class _ImagineItHeroCardState extends State<_ImagineItHeroCard>
       button: true,
       selected: widget.isSelected,
       label: 'Imagine It — create your own world',
+      hint: widget.isSelected 
+          ? 'Currently selected. Double tap to close the text field.' 
+          : 'Double tap to open a text box and type your own scene idea.',
       child: GestureDetector(
         onTapDown: (_) {
           HapticFeedback.mediumImpact();
@@ -5059,7 +5056,10 @@ class _SceneImageButtonState extends State<_SceneImageButton> {
     return Semantics(
       button: true,
       selected: widget.isSelected,
-      label: widget.data.label,
+      label: 'Scene: ${widget.data.label}',
+      hint: widget.isSelected 
+          ? 'Currently selected. Double tap to keep this scene.' 
+          : 'Double tap to choose this scene for your adventure.',
       child: GestureDetector(
         onTapDown: (_) {
           HapticFeedback.lightImpact();
