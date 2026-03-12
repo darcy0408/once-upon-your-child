@@ -2,6 +2,31 @@
 
 ---
 
+## Session Update - 2026-03-12 (Bedtime Settings Cleanup)
+
+### Scope Completed
+
+- Cleaned the remaining analyzer issues in the bedtime settings flow already present in the wizard/bedtime screens.
+
+### Changes
+
+- `lib/screens/wizard_story_screen.dart`
+  - Replaced deprecated `activeColor` with `activeThumbColor` in the bedtime settings dialog toggle.
+- `lib/screens/bedtime_wizard_screen.dart`
+  - Switched string concatenation in the interactive bedtime loop to interpolation to satisfy analyzer guidance.
+
+### Verification
+
+```bash
+dart analyze lib/screens/wizard_story_screen.dart lib/screens/bedtime_wizard_screen.dart
+```
+
+### Result
+
+- PASS: `No issues found!`
+
+---
+
 ## Session Update - 2026-03-12 (Screen Time Controls Slice)
 
 ### Scope Completed

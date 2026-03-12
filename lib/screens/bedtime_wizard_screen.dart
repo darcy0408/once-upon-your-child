@@ -396,7 +396,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
       final isEnding = currentSegment['is_ending'] == true || turnCount == maxTurns - 1;
 
       if (text != null && text.isNotEmpty) {
-        storySoFar += text + " ";
+        storySoFar += '$text ';
         if (!mounted) return;
         setState(() => _statusText = '...');
         try {

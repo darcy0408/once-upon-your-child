@@ -193,7 +193,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                     title: const Text('Interactive Story', style: TextStyle(color: Colors.white)),
                     subtitle: const Text('Child answers questions to shape the story.', style: TextStyle(color: Colors.white70, fontSize: 12)),
                     value: isInteractive,
-                    activeColor: const Color(0xFFFFD700),
+                    activeThumbColor: const Color(0xFFFFD700),
                     onChanged: (val) => setDialogState(() => isInteractive = val),
                   ),
                   const Divider(color: Colors.white24),
