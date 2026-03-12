@@ -1706,10 +1706,11 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                   padding: const EdgeInsets.only(top: 16),
                   child: Center(
                     child: IconButton(
+                      tooltip: 'Read page out loud',
                       icon: const Icon(Icons.volume_up_rounded,
                           color: AppColors.gold, size: 36),
                       onPressed: () => _speakPage(_storyPages[textIndex]),
-                      tooltip: 'Listen',
+                    ),
                     ),
                   ),
                 ),

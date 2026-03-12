@@ -119,9 +119,13 @@ class _VoiceMicButtonState extends State<VoiceMicButton>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        GestureDetector(
-          onTap: unavailable ? null : _toggleListening,
-          child: AnimatedBuilder(
+        Semantics(
+          button: true,
+          label: 'Voice microphone button. ${_listening ? "Currently recording. Double tap to stop." : "Double tap to start recording."}',
+          enabled: !unavailable,
+          child: GestureDetector(
+            onTap: unavailable ? null : _toggleListening,
+            child: AnimatedBuilder(
             animation: _pulse,
             builder: (context, child) => Transform.scale(
               scale: _listening ? _pulse.value : 1.0,
