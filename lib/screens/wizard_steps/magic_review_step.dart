@@ -143,26 +143,43 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
               personalitySliders: widget.wizardData.personalitySliders);
           await Navigator.of(context).push(MaterialPageRoute(
               builder: (context) => PickAPathAdventureScreen(
-                  userId: 'guest',
-                  character: character,
-                  theme: requestData['theme'] ?? 'Adventure',
-                  tone: 'whimsical',
-                  length: _mapStoryLength(widget.wizardData.storyLength),
-                  interests: widget.wizardData.selectedEmotionChips.isNotEmpty
-                      ? widget.wizardData.selectedEmotionChips
-                      : null,
-                  mustInclude: widget.wizardData.customElements.isNotEmpty
-                      ? [widget.wizardData.customElements]
-                      : null,
-                  avoid: widget.wizardData.fears.isNotEmpty
-                      ? widget.wizardData.fears
-                      : null,
-                  lifeChallenge: widget.wizardData.lifeChallenge,
-                  personalitySliders: widget.wizardData.personalitySliders)));
+                      userId: 'guest',
+                      character: character,
+                      theme: requestData['theme'] ?? 'Adventure',
+                      tone: 'whimsical',
+                      length: _mapStoryLength(widget.wizardData.storyLength),
+                      interests:
+                          widget.wizardData.selectedEmotionChips.isNotEmpty
+                              ? widget.wizardData.selectedEmotionChips
+                              : null,
+                      mustInclude: widget.wizardData.customElements.isNotEmpty
+                          ? [widget.wizardData.customElements]
+                          : null,
+                      avoid: widget.wizardData.fears.isNotEmpty
+                          ? widget.wizardData.fears
+                          : null,
+                      lifeChallenge: widget.wizardData.lifeChallenge,
+                      personalitySliders: widget.wizardData.personalitySliders,
+                      bigFeelingsContext: {
+                        if (requestData['currentFeeling'] != null)
+                          'current_feeling': requestData['currentFeeling'],
+                        if (requestData['feelingTrigger'] != null)
+                          'trigger': requestData['feelingTrigger'],
+                        if (requestData['bodySignal'] != null)
+                          'body_signal': requestData['bodySignal'],
+                        if (requestData['copingTool'] != null)
+                          'coping_tool': requestData['copingTool'],
+                        if (requestData['repairGoal'] != null)
+                          'repair_goal': requestData['repairGoal'],
+                        if (requestData['parentHiddenContext'] != null)
+                          'parent_hidden_context':
+                              requestData['parentHiddenContext'],
+                      })));
         }
       } else {
         // Only request illustrations from backend if user is premium/BYOK
-        final shouldRequestIllustrations = widget.wizardData.includeIllustrations && canGetIllustrations;
+        final shouldRequestIllustrations =
+            widget.wizardData.includeIllustrations && canGetIllustrations;
 
         final result = await ApiServiceManager.generateStory(
             characterName: requestData['character'] ?? 'Hero',
@@ -185,7 +202,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 setState(() => _loadingStatus = status);
               }
             });
-        
+
         if (widget.wizardData.customAvatarPath != null) {
           try {
             final avatarFile = File(widget.wizardData.customAvatarPath!);
@@ -201,7 +218,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             debugPrint('⚠️ Could not load custom avatar for illustration: $e');
           }
         }
-        
+
         List<Map<String, dynamic>> inlineIllustrations = result.illustrations;
         // Only try to generate inline illustrations if user is premium/BYOK
         if (widget.wizardData.includeIllustrations &&
@@ -216,7 +233,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
               storyTitle: result.title ?? 'My Magical Story',
               requestData: requestData);
         }
-        
+
         if (mounted) {
           await Navigator.of(context).push(MaterialPageRoute(
               builder: (context) => StoryResultScreen(
@@ -229,7 +246,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                               widget.wizardData.selectedScenario!)
                           ?.title
                       : 'Adventure',
-                  characterAge: requestData['age'] ?? widget.wizardData.characterAge,
+                  characterAge:
+                      requestData['age'] ?? widget.wizardData.characterAge,
                   characterId: widget.wizardData.characterId,
                   isInteractive: false,
                   isRhyming: widget.wizardData.rhymeTimeMode,
@@ -961,73 +979,74 @@ class _SummaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget content = Semantics(
-      button: true,
-      label: 'Summary item: $label. Double tap to go back and edit.',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(band.radiusMd),
-          child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: band.space(16),
-              vertical: band.space(14),
-            ),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(35),
+        button: true,
+        label: 'Summary item: $label. Double tap to go back and edit.',
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
             borderRadius: BorderRadius.circular(band.radiusMd),
-            border: Border.all(color: const Color(0xFFD4A0FF).withAlpha(80)),
-          ),
-          child: Row(
-            children: [
-              // Left accent bar
-              if (colorAccent != null)
-                Container(
-                  width: band.space(4),
-                  height: band.touchTarget(24),
-                  margin: EdgeInsets.only(right: band.space(12)),
-                  decoration: BoxDecoration(
-                    color: colorAccent,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-
-              // Leading Avatar or Icon
-              if (leadingAvatar != null) ...[
-                SizedBox(
-                  width: band.touchTarget(32),
-                  height: band.touchTarget(32),
-                  child: leadingAvatar!,
-                ),
-                SizedBox(width: band.space(12)),
-              ] else ...[
-                Icon(
-                  icon,
-                  color: const Color(0xFFFFD700),
-                  size: band.body(24),
-                ),
-                SizedBox(width: band.space(12)),
-              ],
-
-              Expanded(
-                child: Text(
-                  label,
-                  style:
-                      TextStyle(color: Colors.white, fontSize: band.body(16)),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                ),
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: band.space(16),
+                vertical: band.space(14),
               ),
-              if (onTap != null) ...[
-                SizedBox(width: band.space(8)),
-                Icon(Icons.edit_outlined,
-                    color: const Color(0xFFD4A0FF), size: band.body(18)),
-              ],
-            ],
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(35),
+                borderRadius: BorderRadius.circular(band.radiusMd),
+                border:
+                    Border.all(color: const Color(0xFFD4A0FF).withAlpha(80)),
+              ),
+              child: Row(
+                children: [
+                  // Left accent bar
+                  if (colorAccent != null)
+                    Container(
+                      width: band.space(4),
+                      height: band.touchTarget(24),
+                      margin: EdgeInsets.only(right: band.space(12)),
+                      decoration: BoxDecoration(
+                        color: colorAccent,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+
+                  // Leading Avatar or Icon
+                  if (leadingAvatar != null) ...[
+                    SizedBox(
+                      width: band.touchTarget(32),
+                      height: band.touchTarget(32),
+                      child: leadingAvatar!,
+                    ),
+                    SizedBox(width: band.space(12)),
+                  ] else ...[
+                    Icon(
+                      icon,
+                      color: const Color(0xFFFFD700),
+                      size: band.body(24),
+                    ),
+                    SizedBox(width: band.space(12)),
+                  ],
+
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                          color: Colors.white, fontSize: band.body(16)),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                  ),
+                  if (onTap != null) ...[
+                    SizedBox(width: band.space(8)),
+                    Icon(Icons.edit_outlined,
+                        color: const Color(0xFFD4A0FF), size: band.body(18)),
+                  ],
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
-    ));
+        ));
 
     if (isShimmering) {
       return _ShimmerWrapper(child: content);

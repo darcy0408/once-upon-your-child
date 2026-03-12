@@ -104,6 +104,7 @@ class InteractiveStoryService {
     String? lifeChallenge,
     Map<String, int>? personalitySliders,
     Map<String, dynamic>? chronicleContext,
+    Map<String, dynamic>? bigFeelingsContext,
   }) async {
     final headers = await ApiServiceManager.authHeaders();
     final uri = Uri.parse('$_baseUrl/generate-interactive-story');
@@ -118,13 +119,17 @@ class InteractiveStoryService {
             'tone': tone,
             'length': length,
             if (age != null) 'age': age,
-            if (interests != null && interests.isNotEmpty) 'interests': interests,
+            if (interests != null && interests.isNotEmpty)
+              'interests': interests,
             if (mustInclude != null && mustInclude.isNotEmpty)
               'must_include': mustInclude,
             if (avoid != null && avoid.isNotEmpty) 'avoid': avoid,
             if (lifeChallenge != null) 'life_challenge': lifeChallenge,
-            if (personalitySliders != null) 'personality_sliders': personalitySliders,
+            if (personalitySliders != null)
+              'personality_sliders': personalitySliders,
             if (chronicleContext != null) 'chronicle_context': chronicleContext,
+            if (bigFeelingsContext != null && bigFeelingsContext.isNotEmpty)
+              'big_feelings_context': bigFeelingsContext,
           }),
         )
         .timeout(const Duration(seconds: 30));

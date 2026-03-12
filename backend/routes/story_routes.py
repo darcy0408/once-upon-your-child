@@ -573,6 +573,7 @@ def create_story_blueprint(
         conflict_hook = payload.get("conflictHook", "")
         sensory_palette = payload.get("sensoryPalette", "")
         chronicle_context = payload.get("chronicle_context")
+        big_feelings_context = payload.get("big_feelings_context")
 
         try:
             # Initialize service
@@ -595,6 +596,7 @@ def create_story_blueprint(
                 conflict_hook=conflict_hook,
                 sensory_palette=sensory_palette,
                 chronicle_context=chronicle_context,
+                big_feelings_context=big_feelings_context,
             )
 
             # Filter content

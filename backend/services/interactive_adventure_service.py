@@ -76,6 +76,7 @@ class InteractiveAdventureService:
         conflict_hook: str = "",
         sensory_palette: str = "",
         chronicle_context: Optional[Dict] = None,
+        big_feelings_context: Optional[Dict] = None,
     ) -> Dict[str, Any]:
         """
         Create a new interactive adventure story with opening segment.
@@ -165,6 +166,7 @@ class InteractiveAdventureService:
             conflict_hook=conflict_hook,
             sensory_palette=sensory_palette,
             chronicle_context=chronicle_context,
+            big_feelings_context=big_feelings_context,
         )
 
         # Generate first segment
@@ -223,7 +225,10 @@ class InteractiveAdventureService:
             current_goal=state_data.get('goal'),
             key_clues=state_data.get('key_clues', []),
             companion_status=state_data.get('companion_status'),
-            time_pressure=state_data.get('time_pressure')
+            time_pressure=state_data.get('time_pressure'),
+            additional_state={
+                'big_feelings_context': big_feelings_context or {},
+            }
         )
         db.session.add(state)
 
@@ -547,7 +552,12 @@ class InteractiveAdventureService:
             'age': story.age,
             'world_bible': story.world_bible or '',
             'character': character_dict,
-            'companions': self._get_companions(story)
+            'companions': self._get_companions(story),
+            'big_feelings_context': (
+                (story.state.additional_state or {}).get('big_feelings_context', {})
+                if story.state and story.state.additional_state
+                else {}
+            ),
         }
 
     def _get_character_dict(self, story: InteractiveStory) -> Optional[Dict]:

@@ -289,6 +289,7 @@ SAFETY RULES:
         life_challenge: Optional[str] = None,
         personality_sliders: Optional[Dict[str, int]] = None,
         chronicle_context: Optional[Dict] = None,
+        big_feelings_context: Optional[Dict] = None,
     ) -> str:
         """
         Build the opening segment prompt for a new interactive adventure.
@@ -354,6 +355,13 @@ SAFETY RULES:
             else:
                 challenge_instruction = f"- **LIFE CHALLENGE**: The story must subtly reflect the challenge of '{life_challenge}'. The hero should learn to cope with this through the adventure, but keep it metaphorical and magical, not clinical."
 
+        feelings_instruction = cls._build_big_feelings_instruction(
+            big_feelings_context,
+            age=age,
+            child_name=child_name,
+            is_opening=True,
+        )
+
         # Age-specific impossible element suggestions - FOR INSPIRATION ONLY, DO NOT USE VERBATIM
         impossible_elements = {
             '3-4': 'riding a friendly cloud, talking to a flower, or jumping over a moonbeam.',
@@ -411,6 +419,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
 {cls._build_chronicle_block(chronicle_context) if chronicle_context else ''}
 {challenge_instruction}
 {virtue_instruction}
+{feelings_instruction}
 - **HERO**: {child_name} (Special Ability: {special_ability}).
 {personality_profile}
 {tool_line}
@@ -531,6 +540,13 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
                     "Model the virtue through action. The reader feels it, no character states it.\n"
                 )
 
+        continuation_feelings = cls._build_big_feelings_instruction(
+            story_context.get('big_feelings_context'),
+            age=age,
+            child_name=child_name,
+            is_opening=False,
+        )
+
         choice_templates = [
             '    {"id": "choice_1", "text": "First choice option (Action-oriented)"}',
             '    {"id": "choice_2", "text": "Second choice option (Action-oriented)"}'
@@ -575,6 +591,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 - **SENSORY PALETTE**: {final_sensory}
 {('- **WORLD BIBLE** (CRITICAL — follow this for setting consistency): ' + story_context.get('world_bible', '')) if story_context.get('world_bible') else ''}
 {continuation_virtue}
+{continuation_feelings}
 
 **STORY SO FAR (summary)**:
 {story_so_far or "No summary available."}
@@ -622,6 +639,77 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
 ```
 {cls.IMMERSION_RULES}"""
         return prompt
+
+    @staticmethod
+    def _build_big_feelings_instruction(
+        big_feelings_context: Optional[Dict[str, Any]],
+        *,
+        age: int,
+        child_name: str,
+        is_opening: bool,
+    ) -> str:
+        if not isinstance(big_feelings_context, dict) or not big_feelings_context:
+            return ""
+
+        current_feeling = big_feelings_context.get('current_feeling') or {}
+        emotion_name = (
+            current_feeling.get('emotion_name')
+            or current_feeling.get('core_emotion')
+            or current_feeling.get('secondary_emotion')
+            or current_feeling.get('tertiary_emotion')
+        )
+        trigger = big_feelings_context.get('trigger') or current_feeling.get('trigger')
+        body_signal = big_feelings_context.get('body_signal') or current_feeling.get('physical_signs')
+        coping_tool = big_feelings_context.get('coping_tool')
+        repair_goal = big_feelings_context.get('repair_goal')
+        parent_hidden_context = big_feelings_context.get('parent_hidden_context')
+
+        if not emotion_name:
+            return ""
+
+        feeling_label = str(emotion_name).strip().lower()
+        opening_line = (
+            f'"{child_name} felt so {feeling_label} when {trigger}."'
+            if trigger
+            else f'"{child_name} felt so {feeling_label}."'
+        )
+
+        stage_rule = (
+            "Start the very first lines by naming the feeling and body clue."
+            if is_opening
+            else "Keep reflecting the same feeling thread so the branches stay emotionally coherent."
+        )
+
+        preschool_rules = ""
+        if age <= 5:
+            preschool_rules = """
+- PRESCHOOL PICK-A-PATH RULES:
+  - Only present two clear choices.
+  - One choice may be messy, but it must lead to a gentle repair chance instead of shame.
+  - Use simple choices based on action, like breathe, ask for help, use words, or stomp and stop.
+  - Keep the problem familiar and concrete.
+"""
+
+        lines = [
+            "**BIG FEELINGS INTERACTIVE CONTEXT**:",
+            f"- Feeling: {emotion_name}",
+            f"- Opening style example: {opening_line}",
+            stage_rule,
+        ]
+        if trigger:
+            lines.append(f"- Trigger: {trigger}")
+        if body_signal:
+            lines.append(f"- Body clue to mention early: {body_signal}")
+        if coping_tool:
+            lines.append(f"- Helper/tool to thread through choices: {coping_tool}")
+        if repair_goal:
+            lines.append(f"- If the hero causes a bump, include this repair beat: {repair_goal}")
+        if parent_hidden_context:
+            lines.append(f"- Hidden parent context: {parent_hidden_context}")
+        lines.append("- Show that feelings are okay and choices shape what happens next.")
+        if preschool_rules:
+            lines.append(preschool_rules)
+        return "\n" + "\n".join(lines) + "\n"
 
     @staticmethod
     def _build_chronicle_block(ctx: Dict) -> str:

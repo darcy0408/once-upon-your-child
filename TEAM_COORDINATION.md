@@ -2,6 +2,58 @@
 
 ---
 
+## Session Update - 2026-03-12 (Big Feelings V1 Interactive Pick-a-Path Integration)
+
+### Scope Completed
+
+- Started the interactive Big Feelings slice so Pick-a-Path can use the preschool feeling setup instead of a generic theme-only request.
+- Passed the structured Big Feelings selections from the wizard into the interactive story start request.
+- Persisted that setup in interactive story state so continuation prompts can keep using the same emotional thread.
+
+### Changes
+
+- `lib/screens/wizard_steps/magic_review_step.dart`
+  - Added a `bigFeelingsContext` payload when launching `PickAPathAdventureScreen`.
+  - Included:
+    - `current_feeling`
+    - `trigger`
+    - `body_signal`
+    - `coping_tool`
+    - `repair_goal`
+    - `parent_hidden_context`
+- `lib/pick_a_path_adventure_screen.dart`
+  - Added `bigFeelingsContext` as an optional screen input.
+  - Forwarded it when starting a new interactive story.
+- `lib/services/interactive_story_service.dart`
+  - Added `big_feelings_context` to the `/generate-interactive-story` request body.
+- `backend/routes/story_routes.py`
+  - Accepted `big_feelings_context` from the interactive story request.
+- `backend/services/interactive_adventure_service.py`
+  - Passed Big Feelings context into the interactive prompt builder.
+  - Stored it in `StoryState.additional_state` so continuation requests keep the same setup.
+  - Exposed it again in `_build_story_context()` for continuation prompt building.
+- `backend/services/interactive_adventure_prompt_builder.py`
+  - Added Big Feelings-specific prompt injection for both opening and continuation segments.
+  - Opening segments now instruct the model to start from the selected feeling, trigger, body clue, and helper.
+  - Continuation segments now keep the same emotional thread active and preserve repair opportunities.
+  - Added preschool-specific branch rules:
+    - two clear choices
+    - no shame branch
+    - helper/action-oriented wording
+
+### Verification
+
+```bash
+dart analyze lib/services/interactive_story_service.dart lib/pick_a_path_adventure_screen.dart lib/screens/wizard_steps/magic_review_step.dart
+python -m py_compile backend/routes/story_routes.py backend/services/interactive_adventure_service.py backend/services/interactive_adventure_prompt_builder.py
+```
+
+### Result
+
+- PASS: interactive Big Feelings request + prompt integration analyzed and compiled cleanly.
+
+---
+
 ## Session Update - 2026-03-12 (Big Feelings V1 Prompt + Illustration Integration)
 
 ### Scope Completed

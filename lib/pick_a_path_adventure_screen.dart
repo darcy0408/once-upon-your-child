@@ -32,6 +32,7 @@ class PickAPathAdventureScreen extends StatefulWidget {
     this.lifeChallenge,
     this.personalitySliders,
     this.chronicleId, // Living Story Chronicle ID (null = normal story)
+    this.bigFeelingsContext,
   });
 
   final String userId;
@@ -46,17 +47,16 @@ class PickAPathAdventureScreen extends StatefulWidget {
   final String? lifeChallenge;
   final Map<String, int>? personalitySliders;
   final String? chronicleId;
+  final Map<String, dynamic>? bigFeelingsContext;
 
   @override
   State<PickAPathAdventureScreen> createState() =>
       _PickAPathAdventureScreenState();
 }
 
-class _PickAPathAdventureScreenState
-    extends State<PickAPathAdventureScreen> {
+class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
   final ScrollController _scrollController = ScrollController();
-  final InteractiveStoryService _storyService =
-      const InteractiveStoryService();
+  final InteractiveStoryService _storyService = const InteractiveStoryService();
   final StorageService _storageService = StorageService();
   final SubscriptionService _subscriptionService = SubscriptionService();
 
@@ -154,8 +154,8 @@ class _PickAPathAdventureScreenState
     try {
       Map<String, dynamic>? chronicleContext;
       if (_isChronicleMode) {
-        chronicleContext =
-            await ChronicleService.buildChapterStartPayload(widget.chronicleId!);
+        chronicleContext = await ChronicleService.buildChapterStartPayload(
+            widget.chronicleId!);
       }
 
       final response = await _storyService.startInteractiveStory(
@@ -171,6 +171,7 @@ class _PickAPathAdventureScreenState
         lifeChallenge: widget.lifeChallenge,
         personalitySliders: widget.personalitySliders,
         chronicleContext: chronicleContext,
+        bigFeelingsContext: widget.bigFeelingsContext,
       );
 
       if (!mounted) return;
@@ -223,8 +224,7 @@ class _PickAPathAdventureScreenState
     });
 
     try {
-      final response =
-          await _storyService.resumeStory(widget.existingStoryId!);
+      final response = await _storyService.resumeStory(widget.existingStoryId!);
 
       if (!mounted) return;
       setState(() {
@@ -312,14 +312,15 @@ class _PickAPathAdventureScreenState
     } on InteractiveStoryException catch (e) {
       _handleError(e.message, () => _handleChoiceSelected(choice));
     } catch (e) {
-      _handleError('Unable to continue story: $e',
-          () => _handleChoiceSelected(choice));
+      _handleError(
+          'Unable to continue story: $e', () => _handleChoiceSelected(choice));
     }
   }
 
   Future<void> _handleCustomChoice() async {
     final text = _customChoiceController.text.trim();
-    if (text.isEmpty || _isContinuing || _isCompleted || _storyId == null) return;
+    if (text.isEmpty || _isContinuing || _isCompleted || _storyId == null)
+      return;
 
     HapticFeedback.selectionClick();
     setState(() {
@@ -633,7 +634,8 @@ class _PickAPathAdventureScreenState
             Align(
               alignment: Alignment.topRight,
               child: IconButton(
-                icon: const Icon(Icons.volume_off_rounded, color: Colors.deepPurple),
+                icon: const Icon(Icons.volume_off_rounded,
+                    color: Colors.deepPurple),
                 tooltip: 'Stop reading',
                 onPressed: () => AppTtsService.instance.stop(),
               ),
@@ -647,14 +649,13 @@ class _PickAPathAdventureScreenState
                 width: double.infinity,
                 height: 200,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    Container(
-                      height: 200,
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: Icon(Icons.image_not_supported),
-                      ),
-                    ),
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 200,
+                  color: Colors.grey[300],
+                  child: const Center(
+                    child: Icon(Icons.image_not_supported),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -679,7 +680,8 @@ class _PickAPathAdventureScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            onTap: () => setState(() => _inventoryExpanded = !_inventoryExpanded),
+            onTap: () =>
+                setState(() => _inventoryExpanded = !_inventoryExpanded),
             child: Row(
               children: [
                 const Icon(Icons.backpack, size: 20),
@@ -692,9 +694,7 @@ class _PickAPathAdventureScreenState
                 ),
                 const Spacer(),
                 Icon(
-                  _inventoryExpanded
-                      ? Icons.expand_less
-                      : Icons.expand_more,
+                  _inventoryExpanded ? Icons.expand_less : Icons.expand_more,
                 ),
               ],
             ),
@@ -808,7 +808,8 @@ class _PickAPathAdventureScreenState
     StoryChoiceData? best;
     for (final choice in _currentSegment!.choices) {
       final choiceWords = choice.text.toLowerCase().split(RegExp(r'\s+'));
-      final hits = words.where((w) => w.length > 2 && choiceWords.contains(w)).length;
+      final hits =
+          words.where((w) => w.length > 2 && choiceWords.contains(w)).length;
       if (hits > bestScore) {
         bestScore = hits;
         best = choice;
@@ -886,7 +887,8 @@ class _PickAPathAdventureScreenState
             child: GestureDetector(
               onTap: _isContinuing ? null : () => _handleChoiceSelected(choice),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(colors: grad),
                   borderRadius: BorderRadius.circular(20),
@@ -990,11 +992,13 @@ class _PickAPathAdventureScreenState
       );
     }
     return GestureDetector(
-      onTap: _isContinuing ? null : () => setState(() => _showCustomInput = true),
+      onTap:
+          _isContinuing ? null : () => setState(() => _showCustomInput = true),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.deepPurple.withValues(alpha: 0.5), width: 2),
+          border: Border.all(
+              color: Colors.deepPurple.withValues(alpha: 0.5), width: 2),
           borderRadius: BorderRadius.circular(20),
           color: Colors.deepPurple.withValues(alpha: 0.04),
         ),
@@ -1039,7 +1043,10 @@ class _PickAPathAdventureScreenState
           children: [
             const Text(
               '👨‍👧 Add to the story',
-              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -1079,7 +1086,8 @@ class _PickAPathAdventureScreenState
                 backgroundColor: Colors.orange,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
               child: const Text(
                 'Add this to the story!',
@@ -1132,7 +1140,8 @@ class _PickAPathAdventureScreenState
             child: AppButton.primary(
               label: choice.text,
               // FIXED: Only disable during actual API call, not when displaying new segment
-              onPressed: _isContinuing ? null : () => _handleChoiceSelected(choice),
+              onPressed:
+                  _isContinuing ? null : () => _handleChoiceSelected(choice),
             ),
           );
         }),
@@ -1157,7 +1166,8 @@ class _PickAPathAdventureScreenState
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeOut,
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.deepPurple.withValues(alpha: 0.4)),
+              border:
+                  Border.all(color: Colors.deepPurple.withValues(alpha: 0.4)),
               borderRadius: BorderRadius.circular(12),
               color: Colors.deepPurple.withValues(alpha: 0.05),
             ),
@@ -1280,7 +1290,8 @@ class _PickAPathAdventureScreenState
         const SizedBox(height: 16),
         Text(
           title,
-          style: TextStyle(fontSize: isSprout ? 28 : 24, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              fontSize: isSprout ? 28 : 24, fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
@@ -1293,8 +1304,11 @@ class _PickAPathAdventureScreenState
         ],
         if (_storySaved) ...[
           Text(
-            isSprout ? '✓ Saved! Great adventuring!' : '✓ Saved to your library!',
-            style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+            isSprout
+                ? '✓ Saved! Great adventuring!'
+                : '✓ Saved to your library!',
+            style: const TextStyle(
+                color: Colors.green, fontWeight: FontWeight.bold),
           ),
           if (isChronicle) ...[
             const SizedBox(height: 12),
@@ -1339,7 +1353,8 @@ class _PickAPathAdventureScreenState
           isSprout
               ? 'Your story will be waiting for you!'
               : 'Continue whenever you\'re ready.',
-          style: TextStyle(fontSize: isSprout ? 18 : 14, color: Colors.grey[600]),
+          style:
+              TextStyle(fontSize: isSprout ? 18 : 14, color: Colors.grey[600]),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
