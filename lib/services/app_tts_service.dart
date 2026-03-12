@@ -4,9 +4,8 @@
 // Common short prompts are pre-fetched into an in-memory cache at startup so
 // they play instantly with no API latency.
 
-import 'dart:typed_data';
-
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -36,6 +35,16 @@ const List<String> kWarmUpPhrases = [
   "Crystal Cave!",
   "Dragon Friends!",
   "My Big Feelings!",
+
+  // Avatar wizard — Sprout (3-5) step prompts
+  "Are you a girl or a boy?",
+  "What color is your hair?",
+  "What color are your eyes?",
+  "What is your favorite color?",
+  "Let's take a photo of your face!",
+  "Your magical hero is ready!",
+  "Girl",
+  "Boy",
 
   // Walk tier — Magic Ear full prompts
   "What is your hero's name? You can type it or tap the microphone to say it!",
@@ -73,7 +82,9 @@ class AppTtsService {
       try {
         final mp3 = await TtsApiService.synthesize(key, voiceId: voiceId);
         if (mp3 != null && mp3.isNotEmpty) _cache[key] = mp3;
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('TTS prewarm failed for phrase: $e');
+      }
     }
   }
 
@@ -101,11 +112,13 @@ class AppTtsService {
         await _player.play(BytesSource(mp3));
         if (awaitCompletion) {
           await _player.onPlayerComplete.first
-              .timeout(const Duration(seconds: 30));
+              .timeout(const Duration(seconds: 120));
         }
         return;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('TTS ElevenLabs failed, falling back to device: $e');
+    }
     // On-device fallback
     if (_ready) await _fallback.speak(text);
   }

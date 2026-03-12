@@ -6,7 +6,6 @@ import '../services/app_tts_service.dart';
 import '../services/api_service_manager.dart';
 import '../models.dart';
 import 'wizard_steps/wizard_data_mapper.dart';
-import '../story_result_screen.dart';
 
 /// Voice-driven bedtime story wizard.
 /// Minimal screen — just a pulsing star and voice interaction.
@@ -25,15 +24,15 @@ class BedtimeWizardScreen extends StatefulWidget {
 }
 
 enum BedtimeStep {
-  greeting,       // "Hi [name]! Let's make a bedtime story!"
-  heroName,       // "What's your hero's name?" (may reuse child's name)
-  companion,      // "Who's coming with you?"
-  setting,        // "Where will your adventure happen?"
-  feeling,        // "What kind of story?"
-  confirm,        // "OK! [name] and [companion] in [setting]. Ready?"
-  generating,     // "Making your story now... close your eyes..."
-  reading,        // Reading the story aloud
-  done,           // "The end. Goodnight!"
+  greeting, // "Hi [name]! Let's make a bedtime story!"
+  heroName, // "What's your hero's name?" (may reuse child's name)
+  companion, // "Who's coming with you?"
+  setting, // "Where will your adventure happen?"
+  feeling, // "What kind of story?"
+  confirm, // "OK! [name] and [companion] in [setting]. Ready?"
+  generating, // "Making your story now... close your eyes..."
+  reading, // Reading the story aloud
+  done, // "The end. Goodnight!"
 }
 
 class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
@@ -126,7 +125,8 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         break;
 
       case BedtimeStep.confirm:
-        final summary = "$_heroName and $_companionChoice in $_settingChoice. A $_feelingChoice story.";
+        final summary =
+            "$_heroName and $_companionChoice in $_settingChoice. A $_feelingChoice story.";
         final answer = await _askQuestion(
           "Here's your story recipe: $summary. Shall I make it? Say yes, or tell me what to change.",
         );
@@ -176,8 +176,15 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
 
   Future<String> _askQuestion(String question) async {
     await _speak(question);
-    if (!_speechAvailable) return '';
-    return await _listen();
+    if (!_speechAvailable) {
+      await _speak("I can't hear you right now, so I'll pick for you!");
+      return '';
+    }
+    final answer = await _listen();
+    if (answer.isEmpty) {
+      await _speak("I didn't catch that, so I'll surprise you!");
+    }
+    return answer;
   }
 
   Future<String> _listen() async {
@@ -189,7 +196,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
       onResult: (result) {
         if (!mounted) return;
         setState(() => _statusText = '"${result.recognizedWords}"');
-        if (result.finalResult) {
+        if (result.finalResult && !completer.isCompleted) {
           completer.complete(result.recognizedWords);
         }
       },
@@ -221,16 +228,36 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     for (final entry in companions.entries) {
       if (lower.contains(entry.key)) return entry.value;
     }
+    for (final entry in companions.entries) {
+      if (entry.key.startsWith(lower.trim()) ||
+          lower.contains(
+              entry.key.substring(0, (entry.key.length * 0.6).ceil()))) {
+        return entry.value;
+      }
+    }
     return input.isNotEmpty ? input : 'a tiny dragon';
   }
 
   String _fuzzyMatchScenario(String input) {
     final lower = input.toLowerCase();
-    if (lower.contains('rainbow')) return 'Rainbow Land';
-    if (lower.contains('crystal') || lower.contains('cave')) return 'Crystal Cavern';
-    if (lower.contains('dragon')) return 'Volcano Dragons';
-    if (lower.contains('friend')) return 'Brave Friend';
-    if (lower.contains('feel')) return 'Big Feelings Quest';
+    if (lower.contains('rainbow')) {
+      return 'Rainbow Land';
+    }
+    if (lower.contains('crystal') || lower.contains('cave')) {
+      return 'Crystal Cavern';
+    }
+    if (lower.contains('dragon')) {
+      return 'Volcano Dragons';
+    }
+    if (lower.contains('brave') || lower.contains('hero')) {
+      return 'Brave Friend';
+    }
+    if (lower.contains('feel') || lower.contains('emotion')) {
+      return 'Big Feelings Quest';
+    }
+    if (lower.contains('forest') || lower.contains('magic')) {
+      return 'Magical Forest';
+    }
     return input.isNotEmpty ? input : 'Magical Forest';
   }
 
@@ -239,15 +266,22 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     if (lower.contains('brave') || lower.contains('adventure')) return 'brave';
     if (lower.contains('funny') || lower.contains('silly')) return 'funny';
     if (lower.contains('friend')) return 'friendship';
-    if (lower.contains('calm') || lower.contains('relax') || lower.contains('sleep')) return 'calming';
-    return 'calming'; 
+    if (lower.contains('calm') ||
+        lower.contains('relax') ||
+        lower.contains('sleep')) {
+      return 'calming';
+    }
+    return 'calming';
   }
 
   bool _isAffirmative(String input) {
     final lower = input.toLowerCase();
-    return lower.contains('yes') || lower.contains('yeah') ||
-           lower.contains('ok') || lower.contains('sure') ||
-           lower.contains('ready') || lower.isEmpty; 
+    return lower.contains('yes') ||
+        lower.contains('yeah') ||
+        lower.contains('ok') ||
+        lower.contains('sure') ||
+        lower.contains('ready') ||
+        lower.isEmpty;
   }
 
   Future<void> _generateAndReadStory() async {
@@ -256,30 +290,29 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     _wizardData.companionNames = [_companionChoice ?? 'a tiny dragon'];
     _wizardData.customElements = '$_feelingChoice story about $_settingChoice';
     _wizardData.storyLength = 'standard';
-    
+
     final requestData = WizardDataMapper.mapToStoryRequest(_wizardData);
 
     try {
       final result = await ApiServiceManager.generateStory(
-        characterName: requestData['character'] ?? 'Hero',
-        age: requestData['age'] ?? 5,
-        theme: _settingChoice ?? 'Magical Adventure',
-        companion: requestData['companion'] ?? '',
-        characterDetails: requestData['characterDetails'],
-        currentFeeling: null,
-        additionalCharacters: null,
-        includeIllustrations: false,
-        rhymeTimeMode: false,
-        learningToReadMode: false,
-        companionPets: requestData['companion_pets'],
-        companionCharacters: requestData['companion_characters'],
-        storyLength: requestData['storyLength'] ?? 'standard',
-        customElements: requestData['customElements'] ?? '',
-        subscriptionTier: 'free',
-        onProgress: (status) {
-           if (mounted) setState(() => _statusText = status);
-        }
-      );
+          characterName: requestData['character'] ?? 'Hero',
+          age: requestData['age'] ?? 5,
+          theme: _settingChoice ?? 'Magical Adventure',
+          companion: requestData['companion'] ?? '',
+          characterDetails: requestData['characterDetails'],
+          currentFeeling: null,
+          additionalCharacters: null,
+          includeIllustrations: false,
+          rhymeTimeMode: false,
+          learningToReadMode: false,
+          companionPets: requestData['companion_pets'],
+          companionCharacters: requestData['companion_characters'],
+          storyLength: requestData['storyLength'] ?? 'standard',
+          customElements: requestData['customElements'] ?? '',
+          subscriptionTier: 'free',
+          onProgress: (status) {
+            if (mounted) setState(() => _statusText = status);
+          });
 
       setState(() => _step = BedtimeStep.reading);
 
@@ -287,14 +320,22 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
       for (final paragraph in paragraphs) {
         if (paragraph.trim().isEmpty) continue;
         if (!mounted) return;
-        setState(() => _statusText = '...'); 
-        await AppTtsService.instance.speak(paragraph.trim(), awaitCompletion: true);
+        setState(() => _statusText = '...');
+        try {
+          await AppTtsService.instance.speak(
+            paragraph.trim(),
+            awaitCompletion: true,
+          );
+        } catch (_) {
+          // Continue reading even if one paragraph times out.
+        }
         await Future.delayed(const Duration(milliseconds: 800));
       }
 
       _advance(BedtimeStep.done);
     } catch (e) {
-      await _speak("Oh no, something went wrong making the story. Let's try again tomorrow. Goodnight!");
+      await _speak(
+          "Oh no, something went wrong making the story. Let's try again tomorrow. Goodnight!");
       if (mounted) Navigator.of(context).pop();
     }
   }
@@ -306,7 +347,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
       body: SafeArea(
         child: GestureDetector(
           onTap: () {
-            if (_step == BedtimeStep.done) {
+            if (_step == BedtimeStep.done && mounted) {
               Navigator.of(context).pop();
             }
           },
@@ -332,7 +373,8 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
                                   ? Colors.purple.withValues(alpha: opacity)
                                   : _isSpeaking
                                       ? Colors.amber.withValues(alpha: opacity)
-                                      : Colors.indigo.withValues(alpha: opacity * 0.5),
+                                      : Colors.indigo
+                                          .withValues(alpha: opacity * 0.5),
                               Colors.transparent,
                             ],
                           ),
@@ -350,9 +392,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
                     );
                   },
                 ),
-
                 const SizedBox(height: 40),
-
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 40),
                   child: Text(
@@ -367,11 +407,11 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-
                 const SizedBox(height: 60),
-
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () {
+                    if (mounted) Navigator.of(context).pop();
+                  },
                   child: Text(
                     'Exit Bedtime Mode',
                     style: TextStyle(

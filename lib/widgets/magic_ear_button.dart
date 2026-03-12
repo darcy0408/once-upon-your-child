@@ -41,7 +41,14 @@ class _MagicEarButtonState extends State<MagicEarButton>
     }
     setState(() => _isSpeaking = true);
     _pulseCtrl.repeat(reverse: true);
-    await AppTtsService.instance.speak(widget.spokenText, awaitCompletion: true);
+    try {
+      await AppTtsService.instance.speak(
+        widget.spokenText,
+        awaitCompletion: true,
+      );
+    } catch (_) {
+      // Stop the animation even if the audio layer times out.
+    }
     _pulseCtrl.stop();
     if (mounted) setState(() => _isSpeaking = false);
   }

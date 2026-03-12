@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
-import 'package:audioplayers/audioplayers.dart';
 import '../../services/app_tts_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -22,7 +21,6 @@ import '../../services/api_service_manager.dart';
 import '../../services/avatar_generation_state.dart';
 import '../../services/firebase_analytics_service.dart';
 import '../../services/audio_ambience_service.dart';
-import '../../services/tts_api_service.dart';
 import '../../config/environment.dart';
 import '../../widgets/avatar_gallery_selector.dart';
 import '../../widgets/image_mode_orb.dart';
@@ -148,7 +146,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     _speech.initialize().then((available) {
       if (mounted) setState(() => _speechAvailable = available);
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) => _speakPagePrompt(_heroPage));
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _speakPagePrompt(_heroPage));
 
     AvatarGenerationState().addListener(_onAvatarStateChanged);
     ApiServiceManager.hasPremiumAccess().then((premium) {
@@ -178,7 +177,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       widget.wizardData.characterAge = savedAge;
     });
   }
-
 
   @override
   void dispose() {
@@ -609,7 +607,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           const Icon(Icons.add_circle_outline, size: 24),
           const SizedBox(width: 12),
           Text(
-            ageBand == AgeBand.creator ? "Create a New Hero" : "Create a New Hero!",
+            ageBand == AgeBand.creator
+                ? "Create a New Hero"
+                : "Create a New Hero!",
             style: _bandTitleStyle(band, baseFontSize: 18),
           ),
         ],
@@ -637,7 +637,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const MagicEarButton(
-                      spokenText: "What is your hero's name? You can type it or tap the microphone to say it!",
+                      spokenText:
+                          "What is your hero's name? You can type it or tap the microphone to say it!",
                       size: 32,
                     ),
                     const SizedBox(width: 8),
@@ -655,7 +656,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const MagicEarButton(
-                      spokenText: "What is your hero's name? You can type it or tap the microphone to say it!",
+                      spokenText:
+                          "What is your hero's name? You can type it or tap the microphone to say it!",
                       size: 40,
                     ),
                     const SizedBox(width: 12),
@@ -696,9 +698,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           const SizedBox(height: 10),
           Builder(
             builder: (context) {
-              final band =
-                  Theme.of(context).extension<AgeBandThemeData>() ??
-                      explorerTheme;
+              final band = Theme.of(context).extension<AgeBandThemeData>() ??
+                  explorerTheme;
               final title = band.band == AgeBand.creator
                   ? 'Character archetype'
                   : band.band == AgeBand.adventurer
@@ -708,7 +709,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const MagicEarButton(
-                    spokenText: "Pick your hero's look! Swipe through the pictures and tap the one you like.",
+                    spokenText:
+                        "Pick your hero's look! Swipe through the pictures and tap the one you like.",
                     size: 32,
                   ),
                   const SizedBox(width: 8),
@@ -723,8 +725,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           _buildAvatarLookCard(),
           const SizedBox(height: 12),
           Builder(builder: (context) {
-            final b =
-                Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+            final b = Theme.of(context).extension<AgeBandThemeData>() ??
+                explorerTheme;
             if (b.band == AgeBand.sprout) return const SizedBox.shrink();
             return const Text(
               'Step 1: Pick your hero look.',
@@ -736,8 +738,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           _buildArchetypeCards(),
           const SizedBox(height: 20),
           Builder(builder: (context) {
-            final b =
-                Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+            final b = Theme.of(context).extension<AgeBandThemeData>() ??
+                explorerTheme;
             if (b.band == AgeBand.sprout) return const SizedBox.shrink();
             return Text(
               _hasAvatar
@@ -1224,10 +1226,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
     final displayButtons = featuredButtons;
 
-    final labelFontSize = band.band == AgeBand.sprout ||
-            band.band == AgeBand.explorer
-        ? 14.0
-        : 12.0;
+    final labelFontSize =
+        band.band == AgeBand.sprout || band.band == AgeBand.explorer
+            ? 14.0
+            : 12.0;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1241,8 +1243,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           ),
           const SizedBox(height: 4),
           Builder(builder: (context) {
-            final b =
-                Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+            final b = Theme.of(context).extension<AgeBandThemeData>() ??
+                explorerTheme;
             return Text(
               b.band == AgeBand.sprout
                   ? 'Tap a picture to pick your adventure!'
@@ -2251,8 +2253,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  onChanged: (v) =>
-                      setState(() => widget.wizardData.characterName = v.trim()),
+                  onChanged: (v) => setState(
+                      () => widget.wizardData.characterName = v.trim()),
                 ),
               ),
               IconButton(
@@ -2344,93 +2346,94 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             button: true,
             selected: isSelected,
             label: 'Role: ${a.name}',
-            hint: isSelected 
-                ? 'Currently selected. Double tap to keep this role.' 
+            hint: isSelected
+                ? 'Currently selected. Double tap to keep this role.'
                 : 'Double tap to select this role for your hero.',
             child: GestureDetector(
               onTap: () => _selectArchetype(a),
               child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: isSelected ? const Color(0xFFFFD700) : Colors.white24,
-                  width: isSelected ? 3 : 2,
+                duration: const Duration(milliseconds: 220),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color:
+                        isSelected ? const Color(0xFFFFD700) : Colors.white24,
+                    width: isSelected ? 3 : 2,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                              color: const Color(0xFFFFD700).withAlpha(100),
+                              blurRadius: 12)
+                        ]
+                      : [],
                 ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                            color: const Color(0xFFFFD700).withAlpha(100),
-                            blurRadius: 12)
-                      ]
-                    : [],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Container(color: const Color(0xFF1A0A2E)),
-                          if (a.imagePath != null)
-                            Image.asset(
-                              a.imagePath!,
-                              fit: BoxFit.contain,
-                              alignment: Alignment.center,
-                            )
-                          else
-                            Container(
-                              color: Colors.white10,
-                              child: Center(
-                                child: Text(
-                                  a.icon ?? '✨',
-                                  style: const TextStyle(fontSize: 72),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Container(color: const Color(0xFF1A0A2E)),
+                            if (a.imagePath != null)
+                              Image.asset(
+                                a.imagePath!,
+                                fit: BoxFit.contain,
+                                alignment: Alignment.center,
+                              )
+                            else
+                              Container(
+                                color: Colors.white10,
+                                child: Center(
+                                  child: Text(
+                                    a.icon ?? '✨',
+                                    style: const TextStyle(fontSize: 72),
+                                  ),
                                 ),
                               ),
-                            ),
-                          if (isSelected)
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: Container(
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFFFD700),
-                                  shape: BoxShape.circle,
+                            if (isSelected)
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: Container(
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFFFD700),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  padding: const EdgeInsets.all(3),
+                                  child: const Icon(Icons.check,
+                                      size: 16, color: Colors.black),
                                 ),
-                                padding: const EdgeInsets.all(3),
-                                child: const Icon(Icons.check,
-                                    size: 16, color: Colors.black),
                               ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      width: double.infinity,
-                      color: Colors.black.withAlpha(120),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 6,
-                        horizontal: 6,
-                      ),
-                      child: Text(
-                        a.nameForAge(widget.wizardData.characterAge),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.fredoka(
-                          color: Colors.white,
-                          fontSize: ageBand == AgeBand.sprout ? 18 : 14,
-                          fontWeight: FontWeight.bold,
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                      Container(
+                        width: double.infinity,
+                        color: Colors.black.withAlpha(120),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 6,
+                          horizontal: 6,
+                        ),
+                        child: Text(
+                          a.nameForAge(widget.wizardData.characterAge),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.fredoka(
+                            color: Colors.white,
+                            fontSize: ageBand == AgeBand.sprout ? 18 : 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
           );
         },
       );
@@ -2453,107 +2456,108 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             button: true,
             selected: isSelected,
             label: 'Role: ${a.name}',
-            hint: isSelected 
-                ? 'Currently selected. Double tap to keep this role.' 
+            hint: isSelected
+                ? 'Currently selected. Double tap to keep this role.'
                 : 'Double tap to select this role for your hero.',
             child: GestureDetector(
               onTap: () => _selectArchetype(a),
               child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              width: cardWidth,
-              margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: isSelected ? const Color(0xFFFFD700) : Colors.white24,
-                  width: isSelected ? 3 : 2,
+                duration: const Duration(milliseconds: 220),
+                width: cardWidth,
+                margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color:
+                        isSelected ? const Color(0xFFFFD700) : Colors.white24,
+                    width: isSelected ? 3 : 2,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                              color: const Color(0xFFFFD700).withAlpha(100),
+                              blurRadius: 12)
+                        ]
+                      : [],
                 ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                            color: const Color(0xFFFFD700).withAlpha(100),
-                            blurRadius: 12)
-                      ]
-                    : [],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Container(color: const Color(0xFF1A0A2E)),
-                    if (a.imagePath != null)
-                      Image.asset(a.imagePath!,
-                          fit: BoxFit.contain, alignment: Alignment.center)
-                    else
-                      Container(
-                        color: Colors.white10,
-                        child: Center(
-                            child: Text(a.icon ?? '✨',
-                                style: const TextStyle(fontSize: 64))),
-                      ),
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 6),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [
-                              Colors.black.withAlpha(210),
-                              Colors.transparent
-                            ],
-                          ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Container(color: const Color(0xFF1A0A2E)),
+                      if (a.imagePath != null)
+                        Image.asset(a.imagePath!,
+                            fit: BoxFit.contain, alignment: Alignment.center)
+                      else
+                        Container(
+                          color: Colors.white10,
+                          child: Center(
+                              child: Text(a.icon ?? '✨',
+                                  style: const TextStyle(fontSize: 64))),
                         ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              a.nameForAge(widget.wizardData.characterAge),
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.fredoka(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                            if (showDescriptions) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                a.description,
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                    color: Colors.white70, fontSize: 12),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (isSelected)
                       Positioned(
-                        top: 8,
-                        right: 8,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
                         child: Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFFD700),
-                            shape: BoxShape.circle,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8, horizontal: 6),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                Colors.black.withAlpha(210),
+                                Colors.transparent
+                              ],
+                            ),
                           ),
-                          padding: const EdgeInsets.all(3),
-                          child: const Icon(Icons.check,
-                              size: 16, color: Colors.black),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                a.nameForAge(widget.wizardData.characterAge),
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.fredoka(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              if (showDescriptions) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  a.description,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      color: Colors.white70, fontSize: 12),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
                       ),
-                  ],
+                      if (isSelected)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFFD700),
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(3),
+                            child: const Icon(Icons.check,
+                                size: 16, color: Colors.black),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
           );
         },
       ),
@@ -2578,8 +2582,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       setState(() => _speechAvailable = available);
       if (!available) {
         if (field == 'imagine') {
-          unawaited(
-              AppTtsService.instance.speak('Microphone is unavailable. Please type your idea.'));
+          unawaited(AppTtsService.instance
+              .speak('Microphone is unavailable. Please type your idea.'));
         }
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -2596,11 +2600,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     }
 
     if (field == 'imagine') {
-      unawaited(AppTtsService.instance.speak('Tell me where your adventure takes place.'));
+      unawaited(AppTtsService.instance
+          .speak('Tell me where your adventure takes place.'));
     } else if (field == 'name') {
       final name = widget.wizardData.characterName;
       if (name.isNotEmpty) {
-        unawaited(AppTtsService.instance.speak('What is the hero name for $name?'));
+        unawaited(
+            AppTtsService.instance.speak('What is the hero name for $name?'));
       } else {
         unawaited(AppTtsService.instance.speak("What is your hero's name?"));
       }
@@ -2662,35 +2668,35 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       ),
       child: SafeArea(
         child: Stack(
-            children: [
-              if (isTeen)
-                _buildCreativeBrief()
-              else
-                PageView(
-                  controller: _heroPageController,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    _buildPage0(),
-                    _buildPage1(),
-                    _buildPage2(),
-                    _buildPage3(),
-                    _buildPage4(),
-                    _buildPage5(),
-                  ],
+          children: [
+            if (isTeen)
+              _buildCreativeBrief()
+            else
+              PageView(
+                controller: _heroPageController,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _buildPage0(),
+                  _buildPage1(),
+                  _buildPage2(),
+                  _buildPage3(),
+                  _buildPage4(),
+                  _buildPage5(),
+                ],
+              ),
+            if (!isTeen && _heroPage > 0)
+              Positioned(
+                top: 10,
+                left: 10,
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white),
+                  onPressed: _heroPrevPage,
                 ),
-              if (!isTeen && _heroPage > 0)
-                Positioned(
-                  top: 10,
-                  left: 10,
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white),
-                    onPressed: _heroPrevPage,
-                  ),
-                ),
-            ],
-          ),
+              ),
+          ],
         ),
+      ),
     );
 
     if (showMagicCursor) {
@@ -2888,7 +2894,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           children: CharacterArchetypes.all.map((archetype) {
             final isSelected = _selectedArchetypeId == archetype.name;
             return FilterChip(
-              label: Text(archetype.nameForAge(widget.wizardData.characterAge).toUpperCase()),
+              label: Text(archetype
+                  .nameForAge(widget.wizardData.characterAge)
+                  .toUpperCase()),
               selected: isSelected,
               onSelected: (_) => _selectArchetype(archetype),
               backgroundColor: Colors.white.withAlpha(10),
@@ -3215,11 +3223,14 @@ class _CharacterChoiceCard extends StatelessWidget {
   final ImageProvider<Object> Function(String) getAvatarProvider;
 
   const _CharacterChoiceCard(
-      {required this.character, required this.onTap, required this.getAvatarProvider});
+      {required this.character,
+      required this.onTap,
+      required this.getAvatarProvider});
 
   @override
   Widget build(BuildContext context) {
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final avatarData = character.generatedAvatar?.imageBase64;
     return GestureDetector(
       onTap: onTap,
@@ -3883,7 +3894,8 @@ class _PetCardState extends State<_PetCard> {
     required String prompt,
   }) async {
     if (!_speechReady) {
-      unawaited(AppTtsService.instance.speak('Microphone is unavailable right now.'));
+      unawaited(
+          AppTtsService.instance.speak('Microphone is unavailable right now.'));
       return;
     }
     if (_listeningField == fieldKey) {
@@ -4540,7 +4552,8 @@ class _GenderImageButtonState extends State<_GenderImageButton> {
 
   @override
   Widget build(BuildContext context) {
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final bool useDecorative =
         band.band == AgeBand.sprout || band.band == AgeBand.explorer;
     final imageWidget = Image.asset(
@@ -4703,7 +4716,8 @@ class _ThemedNameInputState extends State<_ThemedNameInput>
 
   @override
   Widget build(BuildContext context) {
-    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final bool useDecorative =
         band.band == AgeBand.sprout || band.band == AgeBand.explorer;
     return AnimatedBuilder(
@@ -4917,8 +4931,8 @@ class _ImagineItHeroCardState extends State<_ImagineItHeroCard>
       button: true,
       selected: widget.isSelected,
       label: 'Imagine It — create your own world',
-      hint: widget.isSelected 
-          ? 'Currently selected. Double tap to close the text field.' 
+      hint: widget.isSelected
+          ? 'Currently selected. Double tap to close the text field.'
           : 'Double tap to open a text box and type your own scene idea.',
       child: GestureDetector(
         onTapDown: (_) {
@@ -5092,8 +5106,8 @@ class _SceneImageButtonState extends State<_SceneImageButton> {
       button: true,
       selected: widget.isSelected,
       label: 'Scene: ${widget.data.label}',
-      hint: widget.isSelected 
-          ? 'Currently selected. Double tap to keep this scene.' 
+      hint: widget.isSelected
+          ? 'Currently selected. Double tap to keep this scene.'
           : 'Double tap to choose this scene for your adventure.',
       child: GestureDetector(
         onTapDown: (_) {

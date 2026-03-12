@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models.dart';
-import '../../services/app_tts_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pill_button.dart';
 import '../../widgets/magic_ear_button.dart';
@@ -148,7 +147,9 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
         emoji: _getEmojiForSpecies(pet['species']),
         name: name,
         color: AppColors.primary,
-        greeting: pet['personality']?.isNotEmpty == true ? pet['personality']! : 'I am your ${pet['species']}!',
+        greeting: pet['personality']?.isNotEmpty == true
+            ? pet['personality']!
+            : 'I am your ${pet['species']}!',
         description: 'Your faithful ${pet['species']} companion',
         generatedAvatar: widget.wizardData.petAvatars[name],
       );
@@ -159,14 +160,22 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
 
   String _getEmojiForSpecies(String? species) {
     switch (species) {
-      case 'Dog': return '🐕';
-      case 'Cat': return '🐱';
-      case 'Bird': return '🐦';
-      case 'Hamster': return '🐹';
-      case 'Fish': return '🐠';
-      case 'Bunny': return '🐰';
-      case 'Reptile': return '🦎';
-      default: return '🐾';
+      case 'Dog':
+        return '🐕';
+      case 'Cat':
+        return '🐱';
+      case 'Bird':
+        return '🐦';
+      case 'Hamster':
+        return '🐹';
+      case 'Fish':
+        return '🐠';
+      case 'Bunny':
+        return '🐰';
+      case 'Reptile':
+        return '🦎';
+      default:
+        return '🐾';
     }
   }
 
@@ -179,8 +188,8 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
       } else {
         _selectedCompanions.add(companion.id);
         if (!widget.wizardData.selectedCompanions.contains(companion.id)) {
-            widget.wizardData.selectedCompanions.add(companion.id);
-            widget.wizardData.companionNames.add(companion.name);
+          widget.wizardData.selectedCompanions.add(companion.id);
+          widget.wizardData.companionNames.add(companion.name);
         }
       }
     });
@@ -237,7 +246,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             // 1. Saved Characters (Friends)
             if (_isLoading)
               const Center(child: CircularProgressIndicator())
-            else if (_savedCharacterCompanions.isNotEmpty) ...[ 
+            else if (_savedCharacterCompanions.isNotEmpty) ...[
               Text(
                 'Your Friends',
                 style: GoogleFonts.fredoka(
@@ -251,7 +260,8 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
                 physics: const NeverScrollableScrollPhysics(),
                 shrinkWrap: true,
                 itemCount: _savedCharacterCompanions.length,
-                separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.md),
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: AppSpacing.md),
                 itemBuilder: (context, index) {
                   final companion = _savedCharacterCompanions[index];
                   final isSelected = _selectedCompanions.contains(companion.id);
@@ -335,8 +345,15 @@ class Companion {
   final GeneratedAvatar? generatedAvatar;
 
   Companion({
-    required this.id, required this.emoji, required this.name, required this.color,
-    required this.greeting, this.description = '', this.imagePath, this.character, this.generatedAvatar,
+    required this.id,
+    required this.emoji,
+    required this.name,
+    required this.color,
+    required this.greeting,
+    this.description = '',
+    this.imagePath,
+    this.character,
+    this.generatedAvatar,
   });
 }
 
@@ -346,23 +363,40 @@ class _CompanionCard extends StatelessWidget {
   final VoidCallback onTap;
   final bool isMagical;
 
-  const _CompanionCard({required this.companion, required this.isSelected, required this.onTap, this.isMagical = false});
+  const _CompanionCard(
+      {required this.companion,
+      required this.isSelected,
+      required this.onTap,
+      this.isMagical = false});
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
       selected: isSelected,
-      label: 'Companion: ${companion.name}. ${companion.description}. ${isSelected ? 'Selected' : 'Double tap to select'}',
+      label:
+          'Companion: ${companion.name}. ${companion.description}. ${isSelected ? 'Selected' : 'Double tap to select'}',
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white.withAlpha(20) : Colors.white.withAlpha(10),
+            color: isSelected
+                ? Colors.white.withAlpha(20)
+                : Colors.white.withAlpha(10),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: isSelected ? const Color(0xFFFFD700) : const Color(0xFFD4A0FF).withAlpha(80), width: isSelected ? 3 : 1.5),
-            boxShadow: isSelected ? [BoxShadow(color: const Color(0xFFFFD700).withAlpha(80), blurRadius: 20)] : null,
+            border: Border.all(
+                color: isSelected
+                    ? const Color(0xFFFFD700)
+                    : const Color(0xFFD4A0FF).withAlpha(80),
+                width: isSelected ? 3 : 1.5),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                        color: const Color(0xFFFFD700).withAlpha(80),
+                        blurRadius: 20)
+                  ]
+                : null,
           ),
           clipBehavior: Clip.antiAlias,
           child: Stack(
@@ -376,15 +410,32 @@ class _CompanionCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(companion.name, style: GoogleFonts.fredoka(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text(companion.name,
+                            style: GoogleFonts.fredoka(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
-                        Text(companion.description, style: GoogleFonts.quicksand(color: Colors.white.withAlpha(180), fontSize: 13, fontWeight: FontWeight.w500)),
+                        Text(companion.description,
+                            style: GoogleFonts.quicksand(
+                                color: Colors.white.withAlpha(180),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500)),
                       ],
                     ),
                   ),
                 ],
               ),
-              if (isSelected) Positioned(top: 12, right: 12, child: Container(padding: const EdgeInsets.all(4), decoration: const BoxDecoration(color: Color(0xFFFFD700), shape: BoxShape.circle), child: const Icon(Icons.check, color: Color(0xFF3B2363), size: 20))),
+              if (isSelected)
+                Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                            color: Color(0xFFFFD700), shape: BoxShape.circle),
+                        child: const Icon(Icons.check,
+                            color: Color(0xFF3B2363), size: 20))),
             ],
           ),
         ),
@@ -394,14 +445,25 @@ class _CompanionCard extends StatelessWidget {
 
   Widget _buildBackground() {
     if (companion.generatedAvatar != null) {
-      return Image.memory(base64Decode(companion.generatedAvatar!.imageBase64.split(',').last), height: 120, fit: BoxFit.cover);
+      return Image.memory(
+          base64Decode(companion.generatedAvatar!.imageBase64.split(',').last),
+          height: 120,
+          fit: BoxFit.cover);
     }
     if (companion.character?.generatedAvatar != null) {
       final b64 = companion.character!.generatedAvatar!.imageBase64;
-      if (b64.startsWith('assets/')) return Image.asset(b64, height: 120, fit: BoxFit.cover);
-      return Image.memory(base64Decode(b64.split(',').last), height: 120, fit: BoxFit.cover);
+      if (b64.startsWith('assets/'))
+        return Image.asset(b64, height: 120, fit: BoxFit.cover);
+      return Image.memory(base64Decode(b64.split(',').last),
+          height: 120, fit: BoxFit.cover);
     }
-    if (companion.imagePath != null) return Image.asset(companion.imagePath!, height: 120, fit: BoxFit.cover);
-    return Container(height: 120, color: Colors.white.withAlpha(10), child: Center(child: Text(companion.emoji, style: const TextStyle(fontSize: 50))));
+    if (companion.imagePath != null)
+      return Image.asset(companion.imagePath!, height: 120, fit: BoxFit.cover);
+    return Container(
+        height: 120,
+        color: Colors.white.withAlpha(10),
+        child: Center(
+            child:
+                Text(companion.emoji, style: const TextStyle(fontSize: 50))));
   }
 }

@@ -2,6 +2,73 @@
 
 ---
 
+## Session Update - 2026-03-12 (Fix: Easy Reader Age 3–5 Rhyme Logic & Validation)
+
+### Scope Completed
+
+- Fixed the Age 3–5 (Sprout) branch of `_build_learning_to_read_prompt()` in `backend/services/story_service.py` as coordinated with the Dr. Seuss style agent.
+- Updated backend task logic to allow LTR mode for all ages.
+
+### Changes
+
+- **`backend/services/story_service.py`**:
+  - Strengthened age ≤ 5 prompt with mandatory AABB rhyme couplet instructions and a rhyming JSON example.
+  - Updated limerick example to use a fixed name ("Jane") to ensure perfect rhyming regardless of the character's name.
+- **`backend/tasks/story_tasks.py`**:
+  - Removed the `age < 9` restriction from the `learning_to_read_mode` block.
+  - Improved `_rhyme_key` to normalize "y" to "i" for better phonetic matching (e.g., "sky"/"high").
+
+### Status
+
+- **Easy Reader (Age 3–5):** 🟢 Explicit rhyme enforcement & examples added
+- **LTR Validation:** 🟢 Improved phonetic matching and age band support
+
+---
+
+## Session Update - 2026-03-12 (Custom Avatar Screen — Step-by-Step Wizard Redesign)
+
+### Problem
+
+The original `CustomAvatarScreen` was a single scrollable form. For young children (especially Sprout, ages 3–5) it felt like a data-entry form, required reading, and could not be completed independently.
+
+### Solution
+
+Full rewrite of `lib/custom_avatar_screen.dart` as a one-question-at-a-time wizard, fully adapted per age band.
+
+### Step Flow
+
+Gender → Hair Color → Eye Color → Favorite Color → Photo → Generate → Result
+
+### Age Band Adaptations
+
+| Band | Ages | Key Behaviours |
+| ---- | ---- | -------------- |
+| Sprout | 3–5 | Auto-advance on tap, auto-TTS on step enter, 88px swatch circles, big emoji gender cards, Nunito font, no text labels on swatches |
+| Explorer | 6–8 | 72px swatches with name labels, TTS button always visible, Quicksand font, Next button |
+| Adventurer | 9–11 | 62px swatches with labels, TTS button visible, Bitter font, Next button |
+| Creator | 12+ | 52px swatches, no TTS button, Source Sans font, compact layout |
+
+### Changes
+
+- `lib/custom_avatar_screen.dart` — complete rewrite
+  - `_AvatarStep` enum drives step routing; `_stepOrder` list controls sequence
+  - Fade + slide `AnimationController` between steps
+  - Animated pill-dot progress indicator in top bar
+  - Sprout: `_sproutAutoAdvance()` triggers 320ms after tap; TTS speaks selection name
+  - All bands except Creator: TTS "Read Aloud" volume button in top bar; Sprout auto-speaks on step enter
+  - Photo step: Sprout gets two large `_buildBigIconButton` cards; older bands get standard button row
+  - `_generateAvatar()` API logic fully preserved
+- `lib/services/app_tts_service.dart`
+  - Added Sprout avatar wizard phrases to `kWarmUpPhrases` for zero-latency playback
+
+### Status
+
+- **Avatar Wizard UX:** 🟢 Step-by-step, age-band-adapted, TTS-enabled
+- **Sprout (3–5):** 🟢 Fully self-guided — tap to advance, no reading required
+- **Analyzer:** 🟢 No issues
+
+---
+
 ## Session Update - 2026-03-12 (Easy Reader Dr. Seuss & Limerick Style Enforcement)
 
 ### Scope Completed
@@ -10,7 +77,7 @@
 - Another agent is handling the age ≤ 5 (3–5 year old) branch specifically.
 - Updated age 6 branch and the shared non-limerick prompt body to enforce Dr. Seuss style.
 
-### Changes
+### Easy Reader Prompt Changes
 
 - `backend/services/story_service.py`
   - **Age ≤ 6 branch** (`format_instruction`): Added explicit Dr. Seuss style — anapestic rhythm (da-da-DUM), playful repetition, AABB rhyme couplets; added fun sound words (whoosh, zippity, boing) to vocab.
