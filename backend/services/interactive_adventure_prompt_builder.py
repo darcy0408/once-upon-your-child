@@ -387,10 +387,11 @@ SAFETY RULES:
         final_sensory = sensory_palette or default_sensories.get(age_band, 'Bright colors, soft sounds.')
 
         # Pre-calculate choice templates
-        choice_templates = [
-            '    {"id": "choice_1", "text": "First choice option (Action-oriented)"}',
-            '    {"id": "choice_2", "text": "Second choice option (Action-oriented)"}'
-        ]
+        choice_templates = cls._build_choice_templates(
+            age=age,
+            big_feelings_context=big_feelings_context,
+            is_opening=True,
+        )
         choices_json = ",\n".join(choice_templates)
 
         # Dynamic Terminology for Teens
@@ -547,10 +548,11 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
             is_opening=False,
         )
 
-        choice_templates = [
-            '    {"id": "choice_1", "text": "First choice option (Action-oriented)"}',
-            '    {"id": "choice_2", "text": "Second choice option (Action-oriented)"}'
-        ]
+        choice_templates = cls._build_choice_templates(
+            age=age,
+            big_feelings_context=story_context.get('big_feelings_context'),
+            is_opening=False,
+        )
         choices_json = ",\n".join(choice_templates)
 
         next_segment_number = current_segment_number + 1
@@ -710,6 +712,101 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
         if preschool_rules:
             lines.append(preschool_rules)
         return "\n" + "\n".join(lines) + "\n"
+
+    @staticmethod
+    def _build_choice_templates(
+        *,
+        age: int,
+        big_feelings_context: Optional[Dict[str, Any]],
+        is_opening: bool,
+    ) -> List[str]:
+        if not isinstance(big_feelings_context, dict) or not big_feelings_context:
+            return [
+                '    {"id": "choice_1", "text": "First choice option (Action-oriented)"}',
+                '    {"id": "choice_2", "text": "Second choice option (Action-oriented)"}'
+            ]
+
+        current_feeling = big_feelings_context.get('current_feeling') or {}
+        emotion_name = (
+            current_feeling.get('emotion_name')
+            or current_feeling.get('core_emotion')
+            or current_feeling.get('secondary_emotion')
+            or current_feeling.get('tertiary_emotion')
+            or ''
+        )
+        coping_tool = str(big_feelings_context.get('coping_tool') or '').strip()
+        feeling = str(emotion_name).strip().lower()
+
+        def choice(text: str, idx: int) -> str:
+            return f'    {{"id": "choice_{idx}", "text": "{text}"}}'
+
+        if age <= 5:
+            if feeling in {'mad', 'angry'}:
+                if is_opening:
+                    options = [
+                        coping_tool or 'Take a dragon breath',
+                        'Roar, then stop',
+                    ]
+                else:
+                    options = [
+                        'Use gentle words',
+                        'Help fix it',
+                    ]
+            elif feeling in {'sad'}:
+                if is_opening:
+                    options = [
+                        coping_tool or 'Ask for a hug',
+                        'Tell someone you feel sad',
+                    ]
+                else:
+                    options = [
+                        'Take a quiet breath',
+                        'Try again with a friend',
+                    ]
+            elif feeling in {'scared', 'worried', 'anxious'}:
+                if is_opening:
+                    options = [
+                        coping_tool or 'Hold hands',
+                        'Take a slow breath',
+                    ]
+                else:
+                    options = [
+                        'Ask for help',
+                        'Take one tiny step',
+                    ]
+            elif feeling in {'frustrated'}:
+                options = [
+                    coping_tool or 'Ask for help',
+                    'Try again slowly',
+                ]
+            else:
+                options = [
+                    coping_tool or 'Take a breath',
+                    'Ask for help',
+                ]
+            return [choice(text, idx + 1) for idx, text in enumerate(options[:2])]
+
+        if feeling in {'mad', 'angry'}:
+            options = [
+                coping_tool or 'Take a breath first',
+                'Use calm words',
+            ]
+        elif feeling in {'sad'}:
+            options = [
+                coping_tool or 'Talk to someone safe',
+                'Take a quiet pause',
+            ]
+        elif feeling in {'scared', 'worried', 'anxious'}:
+            options = [
+                coping_tool or 'Ask for support',
+                'Take one brave step',
+            ]
+        else:
+            options = [
+                coping_tool or 'Pause and think',
+                'Try a different plan',
+            ]
+        return [choice(text, idx + 1) for idx, text in enumerate(options[:2])]
 
     @staticmethod
     def _build_chronicle_block(ctx: Dict) -> str:

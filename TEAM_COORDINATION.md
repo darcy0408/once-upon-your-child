@@ -2,6 +2,45 @@
 
 ---
 
+## Session Update - 2026-03-12 (Big Feelings V1 Preschool Choice Text Tuning)
+
+### Scope Completed
+
+- Tightened the preschool Big Feelings Pick-a-Path branch examples so the model sees concrete, therapeutic first-choice patterns instead of generic placeholders.
+
+### Changes
+
+- `backend/services/interactive_adventure_prompt_builder.py`
+  - Replaced generic choice template examples with Big Feelings-aware examples.
+  - Added feeling-specific preschool choice pairs for:
+    - `mad` / `angry`
+    - `sad`
+    - `scared` / `worried`
+    - `frustrated`
+  - Opening examples now favor choices like:
+    - `Take a dragon breath`
+    - `Roar, then stop`
+    - `Ask for a hug`
+    - `Hold hands`
+  - Continuation examples now favor choices like:
+    - `Use gentle words`
+    - `Help fix it`
+    - `Try again with a friend`
+    - `Take one tiny step`
+  - Kept non-Big-Feelings flows on the generic fallback template.
+
+### Verification
+
+```bash
+python -m py_compile backend/services/interactive_adventure_prompt_builder.py
+```
+
+### Result
+
+- PASS: preschool Big Feelings choice tuning compiles cleanly.
+
+---
+
 ## Session Update - 2026-03-12 (Big Feelings V1 Interactive Pick-a-Path Integration)
 
 ### Scope Completed
