@@ -2,6 +2,26 @@
 
 ---
 
+## Session Update - 2026-03-12 (Big Feelings Master Spec + Checklist)
+
+### Scope Completed
+
+- Merged the four parallel Big Feelings design outputs into one shared master specification.
+- Added an implementation checklist mapped to the current Flutter files so work can proceed in phases.
+
+### Changes
+
+- `BIG_FEELINGS_MASTER_SPEC.md`
+  - Added the unified product spec covering vision, shared schema, age-band matrix, V1 scope, hidden parent layer, prompt rules, UX requirements, and phased rollout.
+- `BIG_FEELINGS_IMPLEMENTATION_CHECKLIST.md`
+  - Added a file-by-file implementation checklist covering data model, ages 3-5 UI flow, story prompt integration, pick-a-path behavior, hidden parent controls, copy review, and validation.
+
+### Result
+
+- The Big Feelings work now has one repo-level source of truth for product/design and one implementation-oriented checklist for engineering follow-up.
+
+---
+
 ## Session Update - 2026-03-12 (Sprout Language Simplification for Ages 5 and Under)
 
 ### Scope Completed
