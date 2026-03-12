@@ -11,9 +11,12 @@ class WizardDataMapper {
     // 1. Map Age
     final int age = data.characterAge;
 
-    // 2. Map Emotion (Take the first one if multiple, or map simplified ones)
+    // 2. Map Emotion (prefer structured Big Feelings fields, fall back to chips)
     Map<String, dynamic>? currentFeeling;
-    if (data.selectedEmotionChips.isNotEmpty) {
+    if (data.selectedFeeling != null &&
+        data.selectedFeeling!.trim().isNotEmpty) {
+      currentFeeling = _mapStructuredFeeling(data);
+    } else if (data.selectedEmotionChips.isNotEmpty) {
       final chipLabel = data.selectedEmotionChips.first;
       currentFeeling = _mapChipToFeeling(chipLabel);
     }
@@ -56,10 +59,10 @@ class WizardDataMapper {
       // the backend gemini_image_generator reads camelCase at the avatar root level.
       final attrs = data.generatedAvatar!.attributes;
       final flatAvatar = Map<String, dynamic>.from(avatarJson)
-        ..['hairColor']  = attrs['hair_color'] ?? attrs['hairColor'] ?? ''
-        ..['hairStyle']  = attrs['hair_style'] ?? attrs['hairStyle'] ?? ''
-        ..['skinColor']  = attrs['skin_tone']  ?? attrs['skinTone']  ?? ''
-        ..['topType']    = attrs['outfit']      ?? attrs['topType']   ?? '';
+        ..['hairColor'] = attrs['hair_color'] ?? attrs['hairColor'] ?? ''
+        ..['hairStyle'] = attrs['hair_style'] ?? attrs['hairStyle'] ?? ''
+        ..['skinColor'] = attrs['skin_tone'] ?? attrs['skinTone'] ?? ''
+        ..['topType'] = attrs['outfit'] ?? attrs['topType'] ?? '';
       characterDetails['avatar'] = flatAvatar; // illustration backend key
 
       // Promote hair/skin to top-level if not already set by manual picks
@@ -73,14 +76,15 @@ class WizardDataMapper {
       }
       // Pass the generated image as a reference photo for illustration consistency
       if (data.generatedAvatar!.imageBase64.isNotEmpty) {
-        characterDetails['custom_avatar_base64'] = data.generatedAvatar!.imageBase64;
+        characterDetails['custom_avatar_base64'] =
+            data.generatedAvatar!.imageBase64;
       }
     }
 
     // 4. Map Scenario to Theme and new Fields
     String theme = 'Magical Adventure';
-    String conflictHook = '';  // Default to empty string instead of null
-    String sensoryPalette = '';  // Default to empty string instead of null
+    String conflictHook = ''; // Default to empty string instead of null
+    String sensoryPalette = ''; // Default to empty string instead of null
     String worldBible = '';
 
     if (data.selectedScenario != null) {
@@ -121,29 +125,33 @@ class WizardDataMapper {
         // Check if it's one of our special Power-Pairing companions and pass their full details/ability
         final companionData = _getCompanionData(companionName);
         if (companionData != null) {
-           companionsOther.add({
-             'name': companionData.name,
-             'description': companionData.description,
-             'signaturePower': companionData.signaturePower,
-             'powerConstraint': companionData.powerConstraint,
-             'sensoryTell': companionData.sensoryTell,
-           });
+          companionsOther.add({
+            'name': companionData.name,
+            'description': companionData.description,
+            'signaturePower': companionData.signaturePower,
+            'powerConstraint': companionData.powerConstraint,
+            'sensoryTell': companionData.sensoryTell,
+          });
         } else {
-           // Standard friend/sibling
-           companionsOther.add({'name': companionName});
+          // Standard friend/sibling
+          companionsOther.add({'name': companionName});
         }
       }
     }
 
     // 5. Map Mood Physics based on emotion
     Map<String, dynamic>? moodPhysics;
-    if (data.selectedEmotionChips.isNotEmpty) {
+    if (data.selectedFeeling != null &&
+        data.selectedFeeling!.trim().isNotEmpty) {
+      moodPhysics = _mapMoodToPhysics(data.selectedFeeling!);
+    } else if (data.selectedEmotionChips.isNotEmpty) {
       moodPhysics = _mapMoodToPhysics(data.selectedEmotionChips.first);
     }
 
     // 6. Merge hero superpower into character strengths (Feature 3)
     if (data.heroSuperpower != null) {
-      final strengths = List<String>.from(characterDetails['strengths'] as List);
+      final strengths =
+          List<String>.from(characterDetails['strengths'] as List);
       if (!strengths.contains(data.heroSuperpower!)) {
         strengths.insert(0, data.heroSuperpower!);
       }
@@ -181,6 +189,21 @@ class WizardDataMapper {
       'characterDetails': characterDetails,
       'currentFeeling': currentFeeling,
       'moodPhysics': moodPhysics,
+      if (data.selectedTrigger != null &&
+          data.selectedTrigger!.trim().isNotEmpty)
+        'feelingTrigger': data.selectedTrigger!.trim(),
+      if (data.selectedBodySignal != null &&
+          data.selectedBodySignal!.trim().isNotEmpty)
+        'bodySignal': data.selectedBodySignal!.trim(),
+      if (data.selectedCopingTool != null &&
+          data.selectedCopingTool!.trim().isNotEmpty)
+        'copingTool': data.selectedCopingTool!.trim(),
+      if (data.selectedRepairGoal != null &&
+          data.selectedRepairGoal!.trim().isNotEmpty)
+        'repairGoal': data.selectedRepairGoal!.trim(),
+      if (data.parentHiddenContext != null &&
+          data.parentHiddenContext!.trim().isNotEmpty)
+        'parentHiddenContext': data.parentHiddenContext!.trim(),
       'customElements': [
         if (data.selectedGenre != null) 'Genre: ${data.selectedGenre}',
         if (data.customElements.isNotEmpty) data.customElements,
@@ -193,13 +216,105 @@ class WizardDataMapper {
       'includeIllustrations': data.includeIllustrations,
       // Resolved lifeChallenge: Guardian Mode takes priority over Superpower Quest
       'lifeChallenge': data.lifeChallenge ??
-          (data.heroQuest != null ? _questToLifeChallenge(data.heroQuest!) : null),
+          (data.heroQuest != null
+              ? _questToLifeChallenge(data.heroQuest!)
+              : null),
       // Story DNA: parent-authored therapeutic context (Feature 4)
       if (therapeuticPrompt != null) 'therapeutic_prompt': therapeuticPrompt,
     };
   }
 
+  static Map<String, dynamic> _mapStructuredFeeling(WizardData data) {
+    final emotionName = _normalizeFeelingName(data.selectedFeeling!);
+    final emotionEmoji = _emojiForFeeling(emotionName);
+    final description = _descriptionForFeeling(emotionName);
+    final coping = <String>{
+      if (data.selectedCopingTool != null &&
+          data.selectedCopingTool!.trim().isNotEmpty)
+        data.selectedCopingTool!.trim(),
+      ..._defaultCopingForFeeling(emotionName),
+    }.toList();
 
+    return {
+      'emotion_name': emotionName,
+      'emotion_emoji': emotionEmoji,
+      'emotion_description': description,
+      'intensity': 3,
+      'physical_signs': data.selectedBodySignal?.trim().isNotEmpty == true
+          ? data.selectedBodySignal!.trim()
+          : 'Feeling it in the body',
+      'coping_strategies': coping,
+      if (data.selectedTrigger != null &&
+          data.selectedTrigger!.trim().isNotEmpty)
+        'trigger': data.selectedTrigger!.trim(),
+      if (data.selectedRepairGoal != null &&
+          data.selectedRepairGoal!.trim().isNotEmpty)
+        'repair_goal': data.selectedRepairGoal!.trim(),
+    };
+  }
+
+  static String _normalizeFeelingName(String rawFeeling) {
+    switch (rawFeeling.trim().toLowerCase()) {
+      case 'mad':
+      case 'angry':
+        return 'Mad';
+      case 'sad':
+        return 'Sad';
+      case 'scared':
+      case 'worried':
+      case 'anxious':
+        return 'Scared';
+      case 'frustrated':
+        return 'Frustrated';
+      default:
+        return rawFeeling.trim().isEmpty ? 'Happy' : rawFeeling.trim();
+    }
+  }
+
+  static String _emojiForFeeling(String feeling) {
+    switch (feeling.toLowerCase()) {
+      case 'mad':
+        return '😠';
+      case 'sad':
+        return '😢';
+      case 'scared':
+        return '😨';
+      case 'frustrated':
+        return '😤';
+      default:
+        return '😊';
+    }
+  }
+
+  static String _descriptionForFeeling(String feeling) {
+    switch (feeling.toLowerCase()) {
+      case 'mad':
+        return 'Feeling really upset and full of big energy';
+      case 'sad':
+        return 'Feeling hurt, heavy, or like crying';
+      case 'scared':
+        return 'Feeling worried, shaky, or unsure';
+      case 'frustrated':
+        return 'Feeling stuck when something is hard or not working';
+      default:
+        return 'Feeling something important in the body';
+    }
+  }
+
+  static List<String> _defaultCopingForFeeling(String feeling) {
+    switch (feeling.toLowerCase()) {
+      case 'mad':
+        return ['Take a dragon breath', 'Ask for help', 'Use gentle words'];
+      case 'sad':
+        return ['Get a hug', 'Talk to someone safe', 'Take a quiet breath'];
+      case 'scared':
+        return ['Hold a grown-up hand', 'Take a slow breath', 'Ask for help'];
+      case 'frustrated':
+        return ['Try again', 'Ask for help', 'Take a break'];
+      default:
+        return ['Take a breath', 'Ask for help'];
+    }
+  }
 
   static Map<String, dynamic> _mapChipToFeeling(String chipLabel) {
     // defaults
@@ -210,23 +325,31 @@ class WizardDataMapper {
 
     // Map simplified chips to complex FeelingWheelData
     // Chips: Shining Bright, Being Brave, Making Friends, Calm Moments, Creative Ideas, Feeling Happy/Sad/Mad
-    
+
     if (chipLabel.contains('Sad')) {
       emotionName = 'Sad';
       emotionEmoji = '😢';
       final details = FeelingDetails.forFeeling(const SelectedFeeling(
-        core: 'Sad', secondary: 'Sad', tertiary: 'Sad', 
-        emoji: '😢', eyeType: '', mouthType: '', color:  Color(0xFF6495ED)
-      ));
+          core: 'Sad',
+          secondary: 'Sad',
+          tertiary: 'Sad',
+          emoji: '😢',
+          eyeType: '',
+          mouthType: '',
+          color: Color(0xFF6495ED)));
       description = details.description;
       coping = details.coping;
     } else if (chipLabel.contains('Mad')) {
       emotionName = 'Mad';
       emotionEmoji = '😠';
       final details = FeelingDetails.forFeeling(const SelectedFeeling(
-        core: 'Angry', secondary: 'Mad', tertiary: 'Mad',
-        emoji: '😠', eyeType: '', mouthType: '', color: Color(0xFFFF6B6B)
-      ));
+          core: 'Angry',
+          secondary: 'Mad',
+          tertiary: 'Mad',
+          emoji: '😠',
+          eyeType: '',
+          mouthType: '',
+          color: Color(0xFFFF6B6B)));
       description = details.description;
       coping = details.coping;
     } else if (chipLabel.contains('Brave')) {
@@ -245,7 +368,7 @@ class WizardDataMapper {
       description = 'Wanting to make something new';
       coping = ['Draw', 'Build', 'Imagine'];
     }
-    
+
     return {
       'emotion_name': emotionName,
       'emotion_emoji': emotionEmoji,
@@ -257,9 +380,7 @@ class WizardDataMapper {
   }
 
   static Map<String, dynamic> _mapArchetypeToDetails(
-    String? archetypeId, 
-    Map<String, int> sliders
-  ) {
+      String? archetypeId, Map<String, int> sliders) {
     final Map<String, dynamic> details = {
       'personality_sliders': sliders,
       'strengths': <String>[],
@@ -269,39 +390,51 @@ class WizardDataMapper {
     if (archetypeId != null) {
       // Find the full archetype data to get the special ability
       try {
-        // We import CharacterArchetypes from archetype_card.dart. 
+        // We import CharacterArchetypes from archetype_card.dart.
         // Note: Ideally this data should be shared cleanly, but for now we search by name.
         // We access CharacterArchetypes.all to find the match.
         // Since we can't import the widget file easily here without circular depends if not careful,
         // we'll use a local lookup or assume the caller passed it.
         // Actually, we can import it. Let's rely on the string matching logic for now
         // but enhance it to pass the specific ability if we can.
-        
+
         // Specific mapping logic based on the new names
-        if (archetypeId.contains('Storm Rider') || archetypeId.contains('Adventurer')) {
+        if (archetypeId.contains('Storm Rider') ||
+            archetypeId.contains('Adventurer')) {
           details['strengths'] = ['Bravery', 'Curiosity'];
           details['interests'] = ['Exploring', 'Maps', 'Nature'];
-          details['specialAbility'] = 'Can command wind and weather to soar through storms';
-        } else if (archetypeId.contains('Quiz-Whiz') || archetypeId.contains('Thinker')) {
-           details['strengths'] = ['Problem solving', 'Focus'];
-           details['interests'] = ['Quizzes', 'Brain teasers', 'Science'];
-           details['specialAbility'] = 'Can solve any quiz, puzzle, or brain teaser with clever thinking';
-        } else if (archetypeId.contains('Master Creator') || archetypeId.contains('Artist')) {
-           details['strengths'] = ['Creativity', 'Vision'];
-           details['interests'] = ['Painting', 'Colors', 'Music'];
-           details['specialAbility'] = 'Has a magic paintbrush that brings drawings to life';
-        } else if (archetypeId.contains('Heart Healer') || archetypeId.contains('Helper')) {
-           details['strengths'] = ['Kindness', 'Empathy'];
-           details['interests'] = ['Animals', 'Helping friends'];
-           details['specialAbility'] = 'Can sense emotions and heal broken spirits with kindness';
-        } else if (archetypeId.contains('Lightning Runner') || archetypeId.contains('Athlete')) {
-           details['strengths'] = ['Energy', 'Teamwork'];
-           details['interests'] = ['Sports', 'Running', 'Games'];
-           details['specialAbility'] = 'Moves faster than sound and leaves trails of stardust';
-        } else if (archetypeId.contains('Animal Whisperer') || archetypeId.contains('Shy')) {
-           details['strengths'] = ['Kindness', 'Nature Magic']; 
-           details['interests'] = ['Animals', 'Nature', 'Secrets'];
-           details['specialAbility'] = 'Can talk to animals and move unseen like a shadow';
+          details['specialAbility'] =
+              'Can command wind and weather to soar through storms';
+        } else if (archetypeId.contains('Quiz-Whiz') ||
+            archetypeId.contains('Thinker')) {
+          details['strengths'] = ['Problem solving', 'Focus'];
+          details['interests'] = ['Quizzes', 'Brain teasers', 'Science'];
+          details['specialAbility'] =
+              'Can solve any quiz, puzzle, or brain teaser with clever thinking';
+        } else if (archetypeId.contains('Master Creator') ||
+            archetypeId.contains('Artist')) {
+          details['strengths'] = ['Creativity', 'Vision'];
+          details['interests'] = ['Painting', 'Colors', 'Music'];
+          details['specialAbility'] =
+              'Has a magic paintbrush that brings drawings to life';
+        } else if (archetypeId.contains('Heart Healer') ||
+            archetypeId.contains('Helper')) {
+          details['strengths'] = ['Kindness', 'Empathy'];
+          details['interests'] = ['Animals', 'Helping friends'];
+          details['specialAbility'] =
+              'Can sense emotions and heal broken spirits with kindness';
+        } else if (archetypeId.contains('Lightning Runner') ||
+            archetypeId.contains('Athlete')) {
+          details['strengths'] = ['Energy', 'Teamwork'];
+          details['interests'] = ['Sports', 'Running', 'Games'];
+          details['specialAbility'] =
+              'Moves faster than sound and leaves trails of stardust';
+        } else if (archetypeId.contains('Animal Whisperer') ||
+            archetypeId.contains('Shy')) {
+          details['strengths'] = ['Kindness', 'Nature Magic'];
+          details['interests'] = ['Animals', 'Nature', 'Secrets'];
+          details['specialAbility'] =
+              'Can talk to animals and move unseen like a shadow';
         }
       } catch (e) {
         debugPrint('Error mapping archetype details: $e');
@@ -310,10 +443,10 @@ class WizardDataMapper {
     return details;
   }
 
-
   static CompanionData? _getCompanionData(String name) {
     try {
-      return magicCompanions.firstWhere((c) => name.contains(c.id) || name.contains(c.name));
+      return magicCompanions
+          .firstWhere((c) => name.contains(c.id) || name.contains(c.name));
     } catch (e) {
       return null;
     }
@@ -326,7 +459,8 @@ class WizardDataMapper {
         physics = moodPhysicsRules.firstWhere((r) => r.id == 'blue');
       } else if (chipLabel.contains('Mad') || chipLabel.contains('Stormy')) {
         physics = moodPhysicsRules.firstWhere((r) => r.id == 'stormy');
-      } else if (chipLabel.contains('Creative') || chipLabel.contains('Inspired')) {
+      } else if (chipLabel.contains('Creative') ||
+          chipLabel.contains('Inspired')) {
         physics = moodPhysicsRules.firstWhere((r) => r.id == 'creative');
       } else if (chipLabel.contains('Calm') || chipLabel.contains('Peaceful')) {
         physics = moodPhysicsRules.firstWhere((r) => r.id == 'peaceful');

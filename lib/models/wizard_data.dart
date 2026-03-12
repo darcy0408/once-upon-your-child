@@ -21,7 +21,8 @@ class WizardData {
   String selectedSkinTone = '';
   String selectedOutfit = '';
   GeneratedAvatar? generatedAvatar; // AI-generated avatar
-  String? customAvatarPath; // Path to a custom avatar image (local file) for story illustrations
+  String?
+      customAvatarPath; // Path to a custom avatar image (local file) for story illustrations
 
   // Advanced character features
   List<String> fears = [];
@@ -30,13 +31,20 @@ class WizardData {
 
   // Custom Pets & Additional Characters
   List<Map<String, String>> pets = [];
-  Map<String, GeneratedAvatar> petAvatars = {}; // AI-generated magical pet avatars
-  Map<String, String> petPhotos = {};           // Real pet photos: name → base64 jpeg
+  Map<String, GeneratedAvatar> petAvatars =
+      {}; // AI-generated magical pet avatars
+  Map<String, String> petPhotos = {}; // Real pet photos: name → base64 jpeg
   List<String> additionalCharacters = [];
 
   // Step 2: Feeling Selection
   String? selectedScenario;
   List<String> selectedEmotionChips = [];
+  String? selectedFeeling;
+  String? selectedTrigger;
+  String? selectedBodySignal;
+  String? selectedCopingTool;
+  String? selectedRepairGoal;
+  String? parentHiddenContext;
   String? parentalNote;
 
   // Step 3: Companion Selector
@@ -49,21 +57,23 @@ class WizardData {
   bool interactiveMode = false;
   bool includeIllustrations = true; // Default to true
   String storyLength = 'standard'; // Options: 'quick', 'standard', 'epic'
-  String customElements = ''; // Free-form text: "What do you want in your story?"
+  String customElements =
+      ''; // Free-form text: "What do you want in your story?"
   String? selectedGenre; // e.g. 'mystery', 'comedy', null = no genre
   String? selectedSparkTool;
-  
+
   // Guardian Mode / Therapeutic Features
   String? lifeChallenge;
 
   // Feature 4: Story DNA (parent-authored context behind math gate)
-  String? storyDnaContext;  // "What's in their world?" chip
-  String? storyDnaOutcome;  // "What magic would help most?" chip
-  String? storyDnaAvoid;    // "Any words/topics to avoid?" free text
+  String? storyDnaContext; // "What's in their world?" chip
+  String? storyDnaOutcome; // "What magic would help most?" chip
+  String? storyDnaAvoid; // "Any words/topics to avoid?" free text
 
   // Feature 3: Superpower Profile (child-facing — narrative therapy externalization)
   String? heroSuperpower; // e.g. "Kindness Magic"
-  String? heroQuest;      // e.g. "Making new friends" — maps silently to lifeChallenge
+  String?
+      heroQuest; // e.g. "Making new friends" — maps silently to lifeChallenge
 
   // Helper methods
   bool get isStep1Complete =>
@@ -73,8 +83,7 @@ class WizardData {
 
   bool get isStep3Complete => true; // selectedCompanions is optional
 
-  bool get isComplete =>
-      isStep1Complete && isStep3Complete;
+  bool get isComplete => isStep1Complete && isStep3Complete;
 
   Map<String, dynamic> toJson() {
     return {
@@ -90,15 +99,23 @@ class WizardData {
         'skin': selectedSkinTone,
         'outfit': selectedOutfit,
       },
-      if (generatedAvatar != null) 'generated_avatar': generatedAvatar!.toJson(),
+      if (generatedAvatar != null)
+        'generated_avatar': generatedAvatar!.toJson(),
       'fears': fears,
       'strengths': strengths,
       'comfortItem': comfortItem,
       'pets': pets,
-      'petAvatars': petAvatars.map((key, value) => MapEntry(key, value.toJson())),
+      'petAvatars':
+          petAvatars.map((key, value) => MapEntry(key, value.toJson())),
       'additionalCharacters': additionalCharacters,
       'scenario': selectedScenario,
       'emotions': selectedEmotionChips,
+      'selectedFeeling': selectedFeeling,
+      'selectedTrigger': selectedTrigger,
+      'selectedBodySignal': selectedBodySignal,
+      'selectedCopingTool': selectedCopingTool,
+      'selectedRepairGoal': selectedRepairGoal,
+      'parentHiddenContext': parentHiddenContext,
       'parentalNote': parentalNote,
       'companions': selectedCompanions,
       'companionNames': companionNames,

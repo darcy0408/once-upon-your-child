@@ -2,6 +2,41 @@
 
 ---
 
+## Session Update - 2026-03-12 (Big Feelings V1 Data Model + Mapper)
+
+### Scope Completed
+
+- Implemented the first engineering slice for Big Feelings V1 by adding structured fields to the shared wizard state and mapping them into the story payload.
+- Kept the older emotion-chip flow working as a fallback so this change does not break existing generation paths.
+
+### Changes
+
+- `lib/models/wizard_data.dart`
+  - Added structured Big Feelings fields:
+    - `selectedFeeling`
+    - `selectedTrigger`
+    - `selectedBodySignal`
+    - `selectedCopingTool`
+    - `selectedRepairGoal`
+    - `parentHiddenContext`
+  - Added the new fields to `toJson()`.
+- `lib/screens/wizard_steps/wizard_data_mapper.dart`
+  - Updated `mapToStoryRequest()` to prefer the new structured Big Feelings fields over `selectedEmotionChips`.
+  - Added payload keys for trigger, body signal, coping tool, repair goal, and hidden parent context.
+  - Added structured feeling normalization/helpers so the prompt layer can receive stable preschool-focused emotion data while remaining backward-compatible.
+
+### Verification
+
+```bash
+dart analyze lib/models/wizard_data.dart lib/screens/wizard_steps/wizard_data_mapper.dart
+```
+
+### Result
+
+- PASS: `No issues found!`
+
+---
+
 ## Session Update - 2026-03-12 (Big Feelings Master Spec + Checklist)
 
 ### Scope Completed
