@@ -625,11 +625,11 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
     rhyme_scheme_instruction = "Simple rhyming couplets across pages (AABB pairs by page endings)."
     if age <= 5:
         vocab_instruction = "CVC words (cat, hop, sun) and simple sight words only. No blends or silent letters."
-        format_instruction = "Each page 1 short sentence."
+        format_instruction = "Each page 1 short sentence. Mandatory: End of Page 1 must rhyme with end of Page 2 (AA), Page 3 with Page 4 (BB), and so on."
         use_limericks = False
     elif age <= 6:
         vocab_instruction = "Simple sight words plus basic blends (st, fl, br) and digraphs (ch, sh, th). Occasional 2-syllable words."
-        format_instruction = "Each page 1-2 sentences."
+        format_instruction = "Each page 1-2 sentences. Mandatory: End of Page 1 must rhyme with end of Page 2 (AA), Page 3 with Page 4 (BB), and so on."
         use_limericks = False
     else:
         # Older reluctant readers: funny connected limericks
@@ -714,11 +714,11 @@ Custom Requests: {custom_elements or 'None'} (CRITICAL: include these verbatim s
 - Each limerick must feel complete on its own AND connect to the one before and after.
 
 **Example limerick format**:
-There once was a girl named {character_name},         (A)
-Who set off to find a lost plane,                      (A)
-   She tumbled down steep,                            (B)
-   But landed in a heap,                              (B)
-Of cookies — she'd do it again!                       (A)
+There once was a girl named Jane,         (A)
+Who set off to find a lost plane,         (A)
+   She tumbled down steep,                (B)
+   But landed in a heap,                  (B)
+Of cookies — she'd do it again!           (A)
 
 {SAFETY_GUARDRAILS}
 **OUTPUT FORMAT**: Strictly return valid JSON:
@@ -733,7 +733,8 @@ Of cookies — she'd do it again!                       (A)
     ...
   ]
 }}
-Each page is exactly one limerick. Return {num_pages} pages total.
+Each page is exactly one limerick. Return {num_pages} pages total. No extra keys. No prose outside the JSON.
+{STRICT_OUTPUT_CONSTRAINTS}
 """
     else:
         return f"""
@@ -758,12 +759,13 @@ If a custom request implies an action or relationship (e.g., "ride a dragon", "m
   "wisdom_gem": "One short, warm encouraging phrase the child can repeat (e.g. 'Being kind makes magic happen').",
   "rhyme_scheme": "{rhyme_scheme_instruction}",
   "pages": [
-    {{"text": "Page text (1-2 sentences max)..."}},
-    {{"text": "Page text..."}},
+    {{"text": "Page 1: [Simple sentence ending in word A]"}},
+    {{"text": "Page 2: [Simple sentence ending in word that RHYMES with A]"}},
     ...
   ]
 }}
-Return EXACTLY {num_pages} page objects. No extra keys. No prose outside the JSON.
+Return EXACTLY {num_pages} page objects. Use AABB couplets (Page 1 rhymes with Page 2, Page 3 with Page 4).
+No extra keys. No prose outside the JSON.
 {STRICT_OUTPUT_CONSTRAINTS}"""
 
 
