@@ -149,7 +149,7 @@ class _VoiceMicButtonState extends State<VoiceMicButton>
               ),
             ),
           ),
-        ),
+        )),
         const SizedBox(height: 6),
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),

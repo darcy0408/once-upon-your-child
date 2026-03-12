@@ -1711,7 +1711,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                           color: AppColors.gold, size: 36),
                       onPressed: () => _speakPage(_storyPages[textIndex]),
                     ),
-                    ),
                   ),
                 ),
             ],

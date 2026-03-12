@@ -1027,7 +1027,7 @@ class _SummaryRow extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
 
     if (isShimmering) {
       return _ShimmerWrapper(child: content);
