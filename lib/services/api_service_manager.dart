@@ -1043,17 +1043,25 @@ class ApiServiceManager {
     final emotionEmoji = currentFeeling['emotion_emoji'] as String?;
     final emotionDescription = currentFeeling['emotion_description'] as String?;
     final intensity = currentFeeling['intensity'] as int?;
-    final whatHappened = currentFeeling['what_happened'] as String?;
+    final whatHappened = (currentFeeling['what_happened'] ??
+        currentFeeling['trigger']) as String?;
     final physicalSigns = currentFeeling['physical_signs'] as String?;
     final copingStrategies =
         currentFeeling['coping_strategies'] as List<dynamic>?;
+    final repairGoal = currentFeeling['repair_goal'] as String?;
 
-    final String startExample1 = useSecondPerson
-        ? '"You woke up feeling $emotionName today..."'
-        : '"$characterName woke up feeling $emotionName today..."';
+    final String directFeeling = emotionName?.toLowerCase() ?? 'big';
+    final String startExample1 =
+        whatHappened != null && whatHappened.trim().isNotEmpty
+            ? (useSecondPerson
+                ? '"You felt so $directFeeling when $whatHappened."'
+                : '"$characterName felt so $directFeeling when $whatHappened."')
+            : (useSecondPerson
+                ? '"You felt so $directFeeling."'
+                : '"$characterName felt so $directFeeling."');
     final String startExample2 = useSecondPerson
-        ? '"You were feeling $emotionName because..."'
-        : '"$characterName was feeling $emotionName because..."';
+        ? '"Your body could feel it right away."'
+        : '"$characterName could feel it in their body right away."';
 
     // Build FEELINGS-CENTERED opening (PRIORITY #1)
     String feelingsSection = '';
@@ -1090,6 +1098,7 @@ ${copingStrategies?.map((s) => '   - $s').join('\n') ?? ''}
 5. By the end, $characterName should feel better about the $emotionName feeling - not making it disappear, but learning to work with it
 6. Validate the emotion: "$emotionName is a normal, okay feeling to have"
 7. Show that feelings come and go, and we can handle them
+${repairGoal != null && repairGoal.trim().isNotEmpty ? "8. If the feeling causes a social bump, include this repair beat: $repairGoal\n" : ""}${age <= 5 ? '9. For ages 5 and under, use very simple words like mad, sad, and scared. Keep the trigger child-sized and concrete.\n' : ''}
 
 This is a FEELINGS-FIRST story. The emotion is the main character's journey.
 ''';

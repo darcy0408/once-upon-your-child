@@ -2,6 +2,51 @@
 
 ---
 
+## Session Update - 2026-03-12 (Big Feelings V1 Prompt + Illustration Integration)
+
+### Scope Completed
+
+- Started step 3 of the Big Feelings V1 plan by wiring the preschool selections into story prompt generation.
+- Updated both the backend and the client-side fallback prompt path so `feeling`, `trigger`, `body clue`, `helper`, and repair context now influence the opening and emotional arc.
+- Tightened preschool illustration styling so generated Big Feelings scenes stay softer and more aligned with the app's child-facing look.
+
+### Changes
+
+- `backend/routes/story_routes.py`
+  - Added structured Big Feelings prompt assembly from `current_feeling` plus the preschool fields already sent by the wizard.
+  - Included child-facing feeling context in the backend `feelings_prompt`.
+  - Augmented `therapeutic_prompt` with hidden parent context and repair goal when present.
+- `backend/services/story_service.py`
+  - Added a real `feelings_prompt` injection path to the main prompt builder.
+  - Added preschool-focused rules for feelings-first stories:
+    - name the feeling early
+    - use simple words
+    - keep the trigger concrete
+    - include repair without shame
+  - Added `mad` as a direct virtue-map keyword so anger stories reliably anchor to pause/repair behavior.
+- `lib/services/api_service_manager.dart`
+  - Updated the BYOK/local therapeutic prompt builder to read structured Big Feelings fields already present in `currentFeeling`.
+  - Changed the opening guidance to prefer direct starts like `"<name> felt so mad when..."`.
+  - Added repair guidance and preschool wording rules to the local prompt path.
+- `backend/gemini_image_generator.py`
+  - Tuned ages 3-5 illustration guidance toward softer rounded storybook animation and clearer emotional readability.
+- `backend/replicate_image_generator.py`
+  - Tuned the age <= 5 style modifier toward warm rounded storybook animation instead of a generic cartoon prompt.
+
+### Verification
+
+```bash
+dart analyze lib/services/api_service_manager.dart
+python -m py_compile backend/routes/story_routes.py backend/services/story_service.py backend/gemini_image_generator.py backend/replicate_image_generator.py
+```
+
+### Result
+
+- PASS: targeted Dart analysis is clean.
+- PASS: updated Python prompt/image files compile cleanly.
+
+---
+
 ## Session Update - 2026-03-12 (Big Feelings V1 Preschool Setup Flow)
 
 ### Scope Completed

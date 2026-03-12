@@ -125,7 +125,7 @@ class GeminiImageGenerator:
             return []
         # Determine detail level based on age
         if age <= 5:
-            detail_level = "simple, bold shapes with minimal details, cartoonish and fun"
+            detail_level = "soft rounded shapes, expressive faces, warm glowing colors, simple readable scenes, toy-like 3D storybook charm"
             age_descriptor = "young children (ages 3-5)"
         elif age <= 11:
             detail_level = "balanced details with fun elements, engaging and colorful"
@@ -216,6 +216,7 @@ Visual requirements:
 - Show characters in action, expressing emotions appropriately
 - Include diverse, inclusive representations
 - Age-appropriate content for {age_descriptor}
+- For ages 3-5, prefer warm rounded storybook animation, soft edges, clear emotional readability, and zero harsh or scary visual elements
 - Dynamic composition with balanced elements
 - Professional illustration quality
 - No text or words in the image

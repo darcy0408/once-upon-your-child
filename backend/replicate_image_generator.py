@@ -147,7 +147,7 @@ class ReplicateImageGenerator:
 
         # Age-appropriate style adjustments
         if age <= 5:
-            style_modifier = "simple, colorful, cartoon style"
+            style_modifier = "warm rounded 3D storybook animation, soft lighting, clear facial expressions, child-safe emotional scene"
         elif age <= 11:
             style_modifier = "vibrant children's book illustration"
         else:

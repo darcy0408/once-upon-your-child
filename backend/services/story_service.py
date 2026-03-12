@@ -141,6 +141,7 @@ VIRTUE_MAP = {
     'feeling':             ('self-awareness',     'The protagonist names their feeling aloud or in thought before reacting — slowing the impulse loop by one breath.'),
     'regulation':          ('patience',           'The protagonist pauses at the moment of highest frustration, chooses a slower path, and the story shows the downstream payoff of that pause.'),
     'anger':               ('patience',           'The protagonist pauses at the moment of highest frustration, chooses a slower path, and the story shows the downstream payoff of that pause.'),
+    'mad':                 ('patience',           'The protagonist pauses at the moment of highest frustration, chooses a slower path, and the story shows the downstream payoff of that pause.'),
     'anxiety':             ('courage',            'The protagonist tries the scary thing anyway — not fearlessly, but with the fear fully present. Show the physical sensation and the decision to act through it.'),
     'fear':                ('courage',            'The protagonist tries the scary thing anyway — not fearlessly, but with the fear fully present. Show the physical sensation and the decision to act through it.'),
     'scared':              ('courage',            'The protagonist tries the scary thing anyway — not fearlessly, but with the fear fully present. Show the physical sensation and the decision to act through it.'),
@@ -188,6 +189,35 @@ def _get_virtue_instruction(therapeutic_prompt: str, age: int) -> str:
                 "The child lives it vicariously — no character announces the lesson.\n"
             )
     return ""
+
+
+def _build_feelings_instruction(feelings_prompt: str | None, age: int, theme: str) -> str:
+    if not feelings_prompt:
+        return ""
+
+    preschool_rules = ""
+    if age <= 5:
+        preschool_rules = """
+- PRESCHOOL BIG FEELINGS RULES:
+  - Use feeling words a 4-5 year old knows: mad, sad, scared, frustrated.
+  - Put the feeling in the first line.
+  - Keep the trigger concrete and familiar.
+  - If the hero makes a hurtful choice, include one gentle repair beat such as saying sorry, helping fix it, or checking on a friend.
+  - Never shame the feeling. The feeling is okay; the next choice matters.
+"""
+
+    theme_rule = ""
+    if "big feeling" in (theme or "").lower():
+        theme_rule = "\n- This is a feelings-first theme. The emotional journey is the main plot engine."
+
+    return f"""
+**FEELINGS-FIRST GUIDANCE**:
+{feelings_prompt}{theme_rule}
+- Open by naming the feeling and the body clue immediately.
+- Let the coping action change what happens next inside the plot.
+- End with safety, reconnection, or relief rather than a lecture.
+{preschool_rules}
+"""
 
 
 def _get_age_band(age: int) -> str:
@@ -376,6 +406,7 @@ class AdvancedStoryEngine:
 
         # Derive invisible virtue instruction from therapeutic_prompt
         virtue_instruction = _get_virtue_instruction(therapeutic_prompt, age)
+        feelings_instruction = _build_feelings_instruction(feelings_prompt, age, theme)
 
         return f"""
 **PERSONA**: Master Storyteller & World-Builder. You write adventures so vivid and immersive that readers forget they're reading — they *are* the hero, living every heartbeat of the story.
@@ -398,6 +429,7 @@ You are a MASTER STORYTELLER creating a {story_length} adventure for {character}
 - **CUSTOM REQUESTS**: {custom_elements or 'None'} (CRITICAL: You MUST use the exact words from this request at least once each, verbatim, in the story).
   If a custom request implies an action or relationship (e.g., "ride a dragon", "make friends"), include it as a concrete scene or outcome, not just a mention.
 {mood_rules}
+{feelings_instruction}
 {virtue_instruction}
 **WRITING GUIDELINES**:
 - **Tone**: {config['notes']}

@@ -36,6 +36,141 @@ def _looks_like_base64_image(value: str) -> bool:
     return re.fullmatch(r"[A-Za-z0-9+/=\s]+", stripped) is not None
 
 
+def _clean_prompt_value(value):
+    if value is None:
+        return None
+    cleaned = str(value).strip()
+    return cleaned or None
+
+
+def _normalize_feeling_label(label: str | None) -> str | None:
+    if not label:
+        return None
+    lowered = label.strip().lower()
+    if lowered in {"mad", "angry"}:
+        return "mad"
+    if lowered in {"sad"}:
+        return "sad"
+    if lowered in {"scared", "worried", "anxious"}:
+        return "scared"
+    if lowered in {"frustrated"}:
+        return "frustrated"
+    return lowered
+
+
+def _build_feelings_prompt_text(payload: dict) -> str | None:
+    current_feeling = payload.get("current_feeling")
+    if not isinstance(current_feeling, dict):
+        return payload.get("feelings_prompt")
+
+    emotion_name = _clean_prompt_value(current_feeling.get("emotion_name"))
+    emotion_description = _clean_prompt_value(current_feeling.get("emotion_description"))
+    trigger = (
+        _clean_prompt_value(current_feeling.get("what_happened"))
+        or _clean_prompt_value(current_feeling.get("trigger"))
+        or _clean_prompt_value(payload.get("feelingTrigger"))
+    )
+    body_signal = (
+        _clean_prompt_value(current_feeling.get("physical_signs"))
+        or _clean_prompt_value(payload.get("bodySignal"))
+    )
+    coping_strategies = current_feeling.get("coping_strategies", [])
+    coping_tool = _clean_prompt_value(payload.get("copingTool"))
+    repair_goal = _clean_prompt_value(payload.get("repairGoal"))
+    parent_hidden_context = _clean_prompt_value(payload.get("parentHiddenContext"))
+    age = payload.get("age") or payload.get("character_age") or 5
+
+    if not emotion_name:
+        return payload.get("feelings_prompt")
+
+    coping_lines = []
+    if isinstance(coping_strategies, list):
+        coping_lines.extend(
+            str(strategy).strip()
+            for strategy in coping_strategies
+            if str(strategy).strip()
+        )
+    if coping_tool and coping_tool not in coping_lines:
+        coping_lines.insert(0, coping_tool)
+
+    feeling_label = _normalize_feeling_label(emotion_name) or emotion_name.lower()
+    opening_example = f"The hero felt so {feeling_label}."
+    if trigger:
+        opening_example = f"The hero felt so {feeling_label} when {trigger.lower()}."
+
+    lines = [
+        "BIG FEELINGS STORY SETUP:",
+        f"- Feeling: {emotion_name}",
+    ]
+    if emotion_description:
+        lines.append(f"- Feeling meaning: {emotion_description}")
+    if trigger:
+        lines.append(f"- What happened: {trigger}")
+    if body_signal:
+        lines.append(f"- Body clue: {body_signal}")
+    if coping_lines:
+        lines.append(f"- Helper to model: {', '.join(coping_lines)}")
+    if repair_goal:
+        lines.append(f"- Repair beat to include: {repair_goal}")
+    if parent_hidden_context:
+        lines.append(f"- Hidden parent context: {parent_hidden_context}")
+
+    lines.extend(
+        [
+            "",
+            "STORY RULES:",
+            f"1. Open by naming the feeling in the first lines, like: \"{opening_example}\"",
+            "2. Keep the problem child-sized and concrete.",
+            "3. Validate the feeling without shaming it or trying to erase it.",
+            "4. Show the body clue early and naturally.",
+            "5. Let the helper action change what happens next.",
+            "6. If the hero makes a messy choice, include a gentle repair and reconnect moment.",
+        ]
+    )
+
+    try:
+        numeric_age = int(age)
+    except (TypeError, ValueError):
+        numeric_age = 5
+
+    if numeric_age <= 5:
+        lines.extend(
+            [
+                "7. Use very simple feeling words: mad, sad, scared, frustrated.",
+                "8. Use short concrete sentences and warm reassuring imagery only.",
+            ]
+        )
+
+    return "\n".join(lines)
+
+
+def _augment_therapeutic_prompt(payload: dict, base_prompt: str) -> str:
+    parts = [base_prompt.strip()] if isinstance(base_prompt, str) and base_prompt.strip() else []
+
+    current_feeling = payload.get("current_feeling")
+    if isinstance(current_feeling, dict):
+        emotion_name = _clean_prompt_value(current_feeling.get("emotion_name"))
+        normalized = _normalize_feeling_label(emotion_name)
+        if normalized == "mad":
+            parts.append("Emotion focus: anger and calming without shame.")
+        elif normalized == "scared":
+            parts.append("Emotion focus: fear/anxiety and feeling safe enough to take one small step.")
+        elif normalized == "sad":
+            parts.append("Emotion focus: sadness, comfort, and connection.")
+        elif normalized == "frustrated":
+            parts.append("Emotion focus: frustration, trying again, and asking for help.")
+
+    for key, label in (
+        ("repairGoal", "Repair goal"),
+        ("parentHiddenContext", "Hidden parent context"),
+    ):
+        value = _clean_prompt_value(payload.get(key))
+        if value:
+            parts.append(f"{label}: {value}")
+
+    return " | ".join(parts)
+
+
 def _run_sync_story_task_with_timeout(task_kwargs, sync_story_timeout):
     executor = ThreadPoolExecutor(max_workers=1)
     # Important: use current generate_story_task which might be mocked in tests
@@ -119,16 +254,7 @@ def create_story_blueprint(
             return jsonify({"error": "character_id or character is required"}), 400
 
         # Extract current_feeling and convert to feelings_prompt if provided
-        current_feeling = payload.get("current_feeling")
-        feelings_prompt_text = None
-        if current_feeling and isinstance(current_feeling, dict):
-            emotion_name = current_feeling.get("emotion_name", "")
-            emotion_description = current_feeling.get("emotion_description", "")
-            coping_strategies = current_feeling.get("coping_strategies", [])
-            if emotion_name:
-                feelings_prompt_text = f"The child is feeling {emotion_name}. {emotion_description}"
-                if coping_strategies:
-                    feelings_prompt_text += f" Coping strategies: {', '.join(coping_strategies)}"
+        feelings_prompt_text = _build_feelings_prompt_text(payload)
 
         # Extract character_details to get additional_characters if available
         character_details = payload.get("character_details") or {}
@@ -167,7 +293,10 @@ def create_story_blueprint(
             "sensory_palette": payload.get("sensoryPalette"), # NEW: Atmosphere
             "world_bible": payload.get("worldBible", ""), # World consistency guide
             "custom_elements": payload.get("customElements", ""), # NEW: Free-form custom story requests
-            "therapeutic_prompt": payload.get("therapeutic_prompt", ""),
+            "therapeutic_prompt": _augment_therapeutic_prompt(
+                payload,
+                payload.get("therapeutic_prompt", ""),
+            ),
             "feelings_prompt": feelings_prompt_text or payload.get("feelings_prompt"),
             "story_length": payload.get("story_length", "standard"),
             "age": resolved_age,
