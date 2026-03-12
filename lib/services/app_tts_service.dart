@@ -36,6 +36,13 @@ const List<String> kWarmUpPhrases = [
   "Crystal Cave!",
   "Dragon Friends!",
   "My Big Feelings!",
+
+  // Walk tier — Magic Ear full prompts
+  "What is your hero's name? You can type it or tap the microphone to say it!",
+  "Pick your hero's look! Swipe through the pictures and tap the one you like.",
+  "Choose your adventure! Swipe through the cards. You can pick Rainbow Land, Crystal Cave, Dragon Friends, or tap Imagine It to make your own!",
+  "Pick your travel buddies! Tap a companion to bring them along. You can pick a tiny dragon, a wise owl, a shadow cat, a star dog, a magic unicorn, or a clever fox.",
+  "Here is your story recipe! Check everything looks right, then tap Make Magic to start!",
 ];
 
 class AppTtsService {

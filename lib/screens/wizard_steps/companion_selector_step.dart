@@ -5,6 +5,7 @@ import '../../models.dart';
 import '../../services/app_tts_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pill_button.dart';
+import '../../widgets/magic_ear_button.dart';
 
 /// Step 3: The Adventure Team Selector
 /// Updated with audio prompts and consistent typography for young children.
@@ -185,11 +186,15 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
     });
   }
 
-  Widget _audioPrompt(String text) {
-    return IconButton(
-      icon: const Icon(Icons.volume_up_rounded, color: Color(0xFFFFD700), size: 32),
-      onPressed: () => AppTtsService.instance.speak(text),
+  Widget _audioPrompt() {
+    return MagicEarButton(
+      spokenText: _buildCompanionSpokenText(),
     );
+  }
+
+  String _buildCompanionSpokenText() {
+    final names = _magicalCompanions.map((c) => c.name).join(', ');
+    return 'Pick your travel buddies! Tap a companion to bring them along. You can choose $names.';
   }
 
   @override
@@ -204,7 +209,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _audioPrompt("Choose a travel buddy"),
+                _audioPrompt(),
                 const SizedBox(width: 8),
                 Text(
                   'Choose a Travel Buddy',

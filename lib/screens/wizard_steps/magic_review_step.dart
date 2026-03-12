@@ -22,6 +22,7 @@ import 'package:story_weaver_app/widgets/magical_float.dart';
 import 'package:story_weaver_app/providers/subscription_provider.dart';
 import 'package:story_weaver_app/subscription_models.dart';
 import 'wizard_data_mapper.dart';
+import '../../widgets/magic_ear_button.dart';
 
 /// Step 4: Magic Review & Launch
 /// Updated with audio prompts and consistent magical typography.
@@ -392,6 +393,16 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     }
   }
 
+  String _buildReviewSpokenText() {
+    final wd = widget.wizardData;
+    final hero = wd.characterName.isEmpty ? 'your hero' : wd.characterName;
+    final scenario = wd.selectedScenario ?? 'a magical place';
+    final companions = wd.companionNames.isEmpty
+        ? 'no companions yet'
+        : wd.companionNames.join(' and ');
+    return 'Here is your story recipe! $hero is adventuring in $scenario with $companions. Check everything looks right, then tap Make Magic to start!';
+  }
+
   @override
   Widget build(BuildContext context) {
     final data = widget.wizardData;
@@ -409,30 +420,40 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             vertical: band.space(AppSpacing.xl)),
         child: Column(
           children: [
-            Text(
-              band.band == AgeBand.creator
-                  ? "Review Your Story Brief"
-                  : band.band == AgeBand.adventurer
-                      ? "Review Your Adventure"
-                      : "Your Adventure Awaits!",
-              textAlign: TextAlign.center,
-              style: (band.band == AgeBand.creator)
-                  ? GoogleFonts.sourceSans3(
-                      color: const Color(0xFFFFD700),
-                      fontSize: band.heading(22),
-                      fontWeight: FontWeight.bold,
-                    )
-                  : (band.band == AgeBand.adventurer)
-                      ? GoogleFonts.bitter(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                MagicEarButton(
+                  spokenText: _buildReviewSpokenText(),
+                  size: 32,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  band.band == AgeBand.creator
+                      ? "Review Your Story Brief"
+                      : band.band == AgeBand.adventurer
+                          ? "Review Your Adventure"
+                          : "Your Adventure Awaits!",
+                  textAlign: TextAlign.center,
+                  style: (band.band == AgeBand.creator)
+                      ? GoogleFonts.sourceSans3(
                           color: const Color(0xFFFFD700),
                           fontSize: band.heading(22),
                           fontWeight: FontWeight.bold,
                         )
-                      : GoogleFonts.cinzelDecorative(
-                          color: const Color(0xFFFFD700),
-                          fontSize: band.heading(22),
-                          fontWeight: FontWeight.bold,
-                        ),
+                      : (band.band == AgeBand.adventurer)
+                          ? GoogleFonts.bitter(
+                              color: const Color(0xFFFFD700),
+                              fontSize: band.heading(22),
+                              fontWeight: FontWeight.bold,
+                            )
+                          : GoogleFonts.cinzelDecorative(
+                              color: const Color(0xFFFFD700),
+                              fontSize: band.heading(22),
+                              fontWeight: FontWeight.bold,
+                            ),
+                ),
+              ],
             ),
             SizedBox(height: band.space(24)),
             // ── Hero orb (avatar only, no overlapping circles) ───────────────

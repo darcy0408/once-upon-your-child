@@ -5,6 +5,7 @@ import '../../widgets/image_continue_button.dart';
 import '../../widgets/feelings_quest_modal.dart';
 import '../../data/scenario_data.dart';
 import '../../character_traits_data.dart';
+import '../../widgets/magic_ear_button.dart';
 
 const double _settingCardWidth = 220;
 
@@ -203,6 +204,13 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
     return map[traitKey.toLowerCase()] ?? '😊';
   }
 
+  String _buildScenarioSpokenText() {
+    final scenarioNames = _scenarios.map((s) => s.titleForAge(
+      widget.wizardData.characterAge <= 0 ? 5 : widget.wizardData.characterAge,
+    )).join(', ');
+    return 'Choose your adventure! Where shall we go today? You can pick $scenarioNames. Swipe through the cards and tap the one you like!';
+  }
+
   @override
   void dispose() {
     _parentalNoteController.dispose();
@@ -226,6 +234,10 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             // Title with parental gear icon
             Row(
               children: [
+                MagicEarButton(
+                  spokenText: _buildScenarioSpokenText(),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Choose Your Adventure!',

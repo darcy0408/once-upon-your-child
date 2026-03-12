@@ -30,6 +30,7 @@ import '../../widgets/image_crystal_formation.dart';
 import '../../data/scenario_data.dart';
 import '../../character_traits_data.dart';
 import '../../widgets/feelings_quest_modal.dart';
+import '../../widgets/magic_ear_button.dart';
 
 /// Hero Creator — Step 1 of the story wizard.
 /// Restructured as a guided multi-page wizard (progressive disclosure).
@@ -632,25 +633,47 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               SizedBox(height: band.space(10)),
               if (!(widget.wizardData.characterAge <= 4 &&
                   ageBand == AgeBand.sprout))
-                Text(
-                  band.createCharacterLabel,
-                  textAlign: TextAlign.center,
-                  style: _bandTitleStyle(band, baseFontSize: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const MagicEarButton(
+                      spokenText: "What is your hero's name? You can type it or tap the microphone to say it!",
+                      size: 32,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      band.createCharacterLabel,
+                      textAlign: TextAlign.center,
+                      style: _bandTitleStyle(band, baseFontSize: 24),
+                    ),
+                  ],
                 ),
               // Sprout: big colourful prompt to reinforce what to do
               if (ageBand == AgeBand.sprout) ...[
                 SizedBox(height: band.space(8)),
-                Text(
-                  "What is your hero's name?",
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.fredoka(
-                    fontSize: band.heading(28),
-                    color: const Color(0xFFFFD700),
-                    fontWeight: FontWeight.bold,
-                    shadows: const [
-                      Shadow(color: Color(0xFFFF6B35), blurRadius: 12)
-                    ],
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const MagicEarButton(
+                      spokenText: "What is your hero's name? You can type it or tap the microphone to say it!",
+                      size: 40,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        "What is your hero's name?",
+                        textAlign: TextAlign.left,
+                        style: GoogleFonts.fredoka(
+                          fontSize: band.heading(28),
+                          color: const Color(0xFFFFD700),
+                          fontWeight: FontWeight.bold,
+                          shadows: const [
+                            Shadow(color: Color(0xFFFF6B35), blurRadius: 12)
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
               SizedBox(height: band.space(20)),
@@ -681,9 +704,19 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   : band.band == AgeBand.adventurer
                       ? 'Choose your hero type'
                       : 'Pick your hero style!';
-              return Text(title,
-                  textAlign: TextAlign.center,
-                  style: _bandTitleStyle(band, baseFontSize: 22));
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const MagicEarButton(
+                    spokenText: "Pick your hero's look! Swipe through the pictures and tap the one you like.",
+                    size: 32,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(title,
+                      textAlign: TextAlign.center,
+                      style: _bandTitleStyle(band, baseFontSize: 22)),
+                ],
+              );
             },
           ),
           const SizedBox(height: 12),
@@ -2397,6 +2430,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 ),
               ),
             ),
+          ),
           );
         },
       );
@@ -2519,6 +2553,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 ),
               ),
             ),
+          ),
           );
         },
       ),

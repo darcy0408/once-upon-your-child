@@ -26,16 +26,21 @@
 ## Session Update - 2026-03-12 (Accessibility Enhancements & Screen Reader Support)
 
 ### Scope Completed
-- **Standard Accessibility (Screen Readers):**
-  - Updated `_SceneImageButton` in `lib/screens/wizard_steps/hero_creator_step.dart` with explicit `Semantics` labels and hints for native screen readers.
-  - Updated `_ImagineItHeroCard` with `Semantics` hints indicating how to open the text field.
-  - Wrapped archetype selection `GestureDetector`s with `Semantics` to indicate role selection and state.
+- **Standard Accessibility (Screen Readers - "Crawl" Phase Complete):**
+  - Updated `_SceneImageButton` and `_ImagineItHeroCard` in `lib/screens/wizard_steps/hero_creator_step.dart` with explicit `Semantics` labels and hints.
+  - Wrapped archetype selection `GestureDetector`s with `Semantics`.
+  - Added full Semantics to `lib/screens/welcome_screen.dart` for age bubbles, name text field, and buttons.
+  - Updated `lib/screens/wizard_steps/feeling_selection_step.dart` to make life challenge chips, Guardian Mode toggle, Story DNA inputs, and math gate screen-reader friendly.
+  - Added semantic wrappers to `lib/screens/wizard_steps/companion_selector_step.dart` and `lib/screens/wizard_steps/magic_review_step.dart`.
+  - Added clear tooltip to TTS button in `lib/story_result_screen.dart`.
+  - Made the dynamic `voice_mic_button.dart` accessible with state-aware Semantics labels.
 - **Bedtime Audio Mode Strategy:**
   - Defined a 3-step "Crawl, Walk, Run" strategy for building a purely voice-driven, conversational story generation mode tailored for blind children or screen-free bedtime use.
 
 ### Status
-- **Wizard Accessibility (Crawl):** 🟢 Standard screen reader support added for key selection screens.
-- **Voice Guide (Walk / Run):** ⚪ Planned, pending implementation.
+- **Wizard Accessibility (Crawl):** ✅ Complete. Standard screen reader support added for all selection screens and result screen.
+- **Voice Guide (Walk):** 🟢 In Progress. Adding in-app TTS guide to standard visual flow.
+- **Bedtime Audio Wizard (Run):** ⚪ Planned.
 
 ---
 
