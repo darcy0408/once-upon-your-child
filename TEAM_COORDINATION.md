@@ -2,6 +2,36 @@
 
 ---
 
+## Session Update - 2026-03-12 (Big Feelings V1 Interactive Test Coverage)
+
+### Scope Completed
+
+- Added focused backend unit coverage for the new Big Feelings interactive prompt behavior and context persistence.
+
+### Changes
+
+- `backend/tests/unit/test_story_constraints.py`
+  - Added prompt-builder assertions covering:
+    - preschool Big Feelings opening prompt wiring
+    - continuation prompt repair-oriented choices
+    - non-Big-Feelings fallback choice templates
+- `backend/tests/unit/test_interactive_adventure_service.py`
+  - Added a service-level test confirming `big_feelings_context` is persisted into `StoryState.additional_state` during interactive story creation.
+
+### Verification
+
+```bash
+python -m pytest backend/tests/unit/test_story_constraints.py -q
+python -m pytest backend/tests/unit/test_interactive_adventure_service.py -q
+```
+
+### Result
+
+- PASS: `backend/tests/unit/test_story_constraints.py` -> `8 passed`
+- PASS: `backend/tests/unit/test_interactive_adventure_service.py` -> `5 passed`
+
+---
+
 ## Session Update - 2026-03-12 (Big Feelings V1 Preschool Choice Text Tuning)
 
 ### Scope Completed

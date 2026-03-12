@@ -176,3 +176,57 @@ def test_continue_story_already_completed(app, interactive_service, test_user):
         # Cleanup
         db.session.delete(story)
         db.session.commit()
+
+
+def test_create_story_persists_big_feelings_context_in_state(
+    app, interactive_service, test_user, test_character, mock_genai_client
+):
+    """Big Feelings interactive setup should be stored in story state for continuation prompts."""
+    mock_response = MagicMock()
+    mock_response.text = json.dumps({
+        'title': 'Milo and the Big Breeze',
+        'content': 'Milo felt so mad when someone said no.',
+        'is_ending': False,
+        'inventory': [],
+        'story_state': {
+            'location': 'Playroom',
+            'goal': 'Feel better',
+            'key_clues': ['hot face'],
+            'companion_status': 'close by'
+        },
+        'choices': [
+            {'id': 'choice_1', 'text': 'Take a dragon breath'},
+            {'id': 'choice_2', 'text': 'Roar, then stop'}
+        ],
+        'image_description': 'A warm playroom with a child taking a calming breath'
+    })
+    mock_genai_client.models.generate_content.return_value = mock_response
+
+    with app.app_context():
+        db.session.merge(test_user)
+        db.session.merge(test_character)
+        db.session.commit()
+
+        result = interactive_service.create_story(
+            user_id=test_user.id,
+            character_id=test_character.id,
+            theme='Big Feelings',
+            tone='whimsical',
+            length='short',
+            big_feelings_context={
+                'current_feeling': {'emotion_name': 'Mad'},
+                'trigger': 'someone said no',
+                'body_signal': 'Hot face',
+                'coping_tool': 'Take a dragon breath',
+                'repair_goal': 'Help fix it',
+            },
+        )
+
+        story = db.session.get(InteractiveStory, result['story_id'])
+        assert story is not None
+        assert story.state is not None
+        assert story.state.additional_state['big_feelings_context']['trigger'] == 'someone said no'
+        assert story.state.additional_state['big_feelings_context']['coping_tool'] == 'Take a dragon breath'
+
+        db.session.delete(story)
+        db.session.commit()

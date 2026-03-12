@@ -62,3 +62,76 @@ class TestStoryConstraints:
         with pytest.raises(ValueError):
             validate_story_length('invalid_length')
 
+    def test_big_feelings_opening_prompt_uses_preschool_context(self):
+        """Opening prompt should include preschool big-feelings guidance and concrete choice examples."""
+        prompt = InteractiveAdventurePromptBuilder.build_opening_prompt(
+            child_name='Milo',
+            age=5,
+            length='short',
+            theme='Big Feelings',
+            tone='whimsical',
+            life_challenge='Handling Big Feelings',
+            big_feelings_context={
+                'current_feeling': {
+                    'emotion_name': 'Mad',
+                    'physical_signs': 'Hot face',
+                },
+                'trigger': 'someone said no',
+                'body_signal': 'Hot face',
+                'coping_tool': 'Take a dragon breath',
+                'repair_goal': 'Help fix it',
+            },
+        )
+
+        assert 'BIG FEELINGS INTERACTIVE CONTEXT' in prompt
+        assert 'Opening style example: "Milo felt so mad when someone said no."' in prompt
+        assert 'Take a dragon breath' in prompt
+        assert 'Roar, then stop' in prompt
+        assert 'PRESCHOOL PICK-A-PATH RULES' in prompt
+
+    def test_big_feelings_continuation_prompt_uses_repair_focused_choices(self):
+        """Continuation prompt should keep the same feelings thread and repair-friendly choices."""
+        prompt = InteractiveAdventurePromptBuilder.build_continuation_prompt(
+            story_context={
+                'title': 'Milo and the Red Storm',
+                'theme': 'Big Feelings',
+                'tone': 'whimsical',
+                'length': 'short',
+                'age': 5,
+                'character': {'name': 'Milo'},
+                'companions': [],
+                'big_feelings_context': {
+                    'current_feeling': {
+                        'emotion_name': 'Mad',
+                        'physical_signs': 'Hot face',
+                    },
+                    'trigger': 'someone said no',
+                    'body_signal': 'Hot face',
+                    'coping_tool': 'Take a dragon breath',
+                    'repair_goal': 'Help fix it',
+                },
+            },
+            selected_choice='Take a dragon breath',
+            current_segment_number=1,
+            inventory=[],
+            story_state={},
+            story_so_far='Milo felt so mad when someone said no.',
+        )
+
+        assert 'Keep reflecting the same feeling thread' in prompt
+        assert 'Use gentle words' in prompt
+        assert 'Help fix it' in prompt
+        assert 'If the hero causes a bump, include this repair beat: Help fix it' in prompt
+
+    def test_non_big_feelings_prompt_keeps_generic_choice_templates(self):
+        """Non-feelings stories should still use generic fallback choice template guidance."""
+        prompt = InteractiveAdventurePromptBuilder.build_opening_prompt(
+            child_name='Ava',
+            age=8,
+            length='short',
+            theme='Adventure',
+            tone='whimsical',
+        )
+
+        assert 'First choice option (Action-oriented)' in prompt
+        assert 'Second choice option (Action-oriented)' in prompt
