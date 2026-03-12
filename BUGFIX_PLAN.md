@@ -1,5 +1,13 @@
 # Accessibility & Bedtime Mode Bugfix Plan
 
+## Status Update - 2026-03-12
+
+- Verified that Tasks 1-10 are now present in the current working tree.
+- The only additional code cleanup needed during this pass was removing two analyzer style infos from `lib/screens/wizard_steps/companion_selector_step.dart`.
+- Verification completed with:
+  - `dart analyze lib/screens/bedtime_wizard_screen.dart lib/widgets/magic_ear_button.dart lib/services/app_tts_service.dart lib/screens/wizard_steps/companion_selector_step.dart lib/screens/wizard_steps/hero_creator_step.dart`
+  - Result: `No issues found!`
+
 This plan fixes all issues identified in the code review of the Crawl/Walk/Run accessibility phases. Each task is self-contained with exact file paths, line numbers, and copy-pasteable code. Complete them in order.
 
 ---

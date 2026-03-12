@@ -452,13 +452,15 @@ class _CompanionCard extends StatelessWidget {
     }
     if (companion.character?.generatedAvatar != null) {
       final b64 = companion.character!.generatedAvatar!.imageBase64;
-      if (b64.startsWith('assets/'))
+      if (b64.startsWith('assets/')) {
         return Image.asset(b64, height: 120, fit: BoxFit.cover);
+      }
       return Image.memory(base64Decode(b64.split(',').last),
           height: 120, fit: BoxFit.cover);
     }
-    if (companion.imagePath != null)
+    if (companion.imagePath != null) {
       return Image.asset(companion.imagePath!, height: 120, fit: BoxFit.cover);
+    }
     return Container(
         height: 120,
         color: Colors.white.withAlpha(10),
