@@ -2,6 +2,37 @@
 
 ---
 
+## Session Update - 2026-03-12 (Easy Reader Dr. Seuss & Limerick Style Enforcement)
+
+### Scope Completed
+
+- Audited `_build_learning_to_read_prompt()` in `backend/services/story_service.py` for all age groups.
+- Another agent is handling the age ≤ 5 (3–5 year old) branch specifically.
+- Updated age 6 branch and the shared non-limerick prompt body to enforce Dr. Seuss style.
+
+### Changes
+
+- `backend/services/story_service.py`
+  - **Age ≤ 6 branch** (`format_instruction`): Added explicit Dr. Seuss style — anapestic rhythm (da-da-DUM), playful repetition, AABB rhyme couplets; added fun sound words (whoosh, zippity, boing) to vocab.
+  - **Non-limerick prompt body** (ages ≤ 6): Opening line now reads "in the style of Dr. Seuss — bouncy anapestic rhythm, playful made-up sound words, joyful repetition, and clear AABB end-rhymes." Added a `Style:` line referencing *The Cat in the Hat* and *Hop on Pop*.
+  - **Age 7+ branch**: No changes — AABBA limerick format with "Captain Underpants energy" was already correctly enforced.
+
+### Age Group Summary (Easy Reader mode)
+
+| Age | Style |
+| --- | ----- |
+| 3–5 | Dr. Seuss AABB couplets, CVC words (other agent) |
+| 6 | Dr. Seuss AABB couplets, blends + fun sound words ✅ updated |
+| 7+ | AABBA limericks, phonics-friendly, funny narrative ✅ already correct |
+
+### Status
+
+- **Easy Reader rhyming:** 🟢 All age groups now have explicit rhyme enforcement
+- **Dr. Seuss style (younger):** 🟢 Age 6 branch updated; age 3–5 handled separately
+- **Limericks (older):** 🟢 Age 7+ unchanged, already correct
+
+---
+
 ## Session Update - 2026-03-12 (Illustration Display & Tier-Aware Generation Fix)
 
 ### Scope Completed

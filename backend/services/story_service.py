@@ -628,8 +628,8 @@ def _build_learning_to_read_prompt(character_name, theme, age, character_details
         format_instruction = "Each page 1 short sentence. Mandatory: End of Page 1 must rhyme with end of Page 2 (AA), Page 3 with Page 4 (BB), and so on."
         use_limericks = False
     elif age <= 6:
-        vocab_instruction = "Simple sight words plus basic blends (st, fl, br) and digraphs (ch, sh, th). Occasional 2-syllable words."
-        format_instruction = "Each page 1-2 sentences. Mandatory: End of Page 1 must rhyme with end of Page 2 (AA), Page 3 with Page 4 (BB), and so on."
+        vocab_instruction = "Simple sight words plus basic blends (st, fl, br) and digraphs (ch, sh, th). Occasional 2-syllable words. Fun sound words (whoosh, zippity, boing) encouraged."
+        format_instruction = "Each page 1-2 short bouncy sentences in Dr. Seuss style — anapestic rhythm (da-da-DUM), playful repetition, and AABB rhyme couplets. Mandatory: End of Page 1 must rhyme with end of Page 2 (AA), Page 3 with Page 4 (BB), and so on."
         use_limericks = False
     else:
         # Older reluctant readers: funny connected limericks
@@ -738,15 +738,15 @@ Each page is exactly one limerick. Return {num_pages} pages total. No extra keys
 """
     else:
         return f"""
-Create a LEARN TO READ story for {character_name} (age {age}).
+Create a LEARN TO READ story for {character_name} (age {age}) in the style of Dr. Seuss — bouncy anapestic rhythm, playful made-up sound words, joyful repetition, and clear AABB end-rhymes.
 Theme: {theme}
 Format: {num_pages} pages. {format_instruction}
 Vocabulary: {vocab_instruction}
-Requirements: Repeating frames, comforting rhythm, 1 moment where the hero discovers their own strength.
+Style: Dr. Seuss. Think "The Cat in the Hat" or "Hop on Pop" — short punchy lines, fun rhythm you can clap to, silly energy, and every page ending in a satisfying rhyme.
+Requirements: Repeating frames (e.g. "And then... and then..."), comforting rhythm, 1 moment where the hero discovers their own strength.
 RHYME REQUIREMENT (MANDATORY):
-- This mode MUST rhyme.
-- Use clear end rhymes, not slant rhymes.
-- For page endings, use couplets: pages 1&2 rhyme, 3&4 rhyme, 5&6 rhyme, etc.
+- Every page MUST end with a clear rhyming word — no slant rhymes.
+- Pages pair as couplets: pages 1&2 rhyme, 3&4 rhyme, 5&6 rhyme, etc.
 - End each page with a simple rhyming word children can hear (cat/hat, sun/fun, hop/top).
 - If odd number of pages, the final page can rhyme with the previous page.
 Companions: {comp_str} (MANDATORY Checklist: {mandatory_names_str} - EVERY name here MUST be in the story).
