@@ -127,6 +127,10 @@ class TestStoryConstraints:
         assert 'Use gentle words' in prompt
         assert 'Help fix it' in prompt
         assert 'If the hero causes a bump, include this repair beat: Help fix it' in prompt
+        assert (
+            'For mad continuations, if the big reaction affects someone else or the room, '
+            'the very next beat should move toward repair'
+        ) in prompt
 
     def test_non_big_feelings_prompt_keeps_generic_choice_templates(self):
         """Non-feelings stories should still use generic fallback choice template guidance."""

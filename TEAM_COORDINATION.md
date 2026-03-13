@@ -2,6 +2,28 @@
 
 ---
 
+## Session Update - 2026-03-12 (Big Feelings V1 Angry Repair Tuning)
+
+### Scope Completed
+- Strengthened the preschool `mad` continuation prompt so messy anger branches more explicitly push toward check-in, apology, gentle words, or helping fix the problem.
+
+### Changes
+- `backend/services/interactive_adventure_prompt_builder.py`
+  - Added a continuation-only repair instruction for `mad` / `angry` feelings that tells the model to move the next beat toward repair if the reaction affects someone else or the room.
+- `backend/tests/unit/test_story_constraints.py`
+  - Added an assertion covering the new angry continuation repair guidance.
+
+### Verification
+```bash
+python -m pytest backend/tests/unit/test_story_constraints.py -q
+```
+
+### Result
+- PASS: `backend/tests/unit/test_story_constraints.py` -> `8 passed`
+- LIVE CHECK BLOCKED: current Gemini story-generation key in `backend/.env` is expired, so live continuation verification could not be completed from this shell
+
+---
+
 ## Session Update - 2026-03-12 (Big Feelings V1 Manual Prompt QA Harness)
 
 ### Scope Completed

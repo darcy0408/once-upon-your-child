@@ -684,6 +684,13 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
             if is_opening
             else "Keep reflecting the same feeling thread so the branches stay emotionally coherent."
         )
+        feeling_specific_rule = ""
+        if feeling_label in {"mad", "angry"} and not is_opening:
+            feeling_specific_rule = (
+                "- For mad continuations, if the big reaction affects someone else or the room, "
+                "the very next beat should move toward repair: check on them, say sorry, use gentle words, "
+                "or help fix what happened."
+            )
 
         preschool_rules = ""
         if age <= 5:
@@ -716,6 +723,8 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
         if parent_hidden_context:
             lines.append(f"- Hidden parent context: {parent_hidden_context}")
         lines.append("- Show that feelings are okay and choices shape what happens next.")
+        if feeling_specific_rule:
+            lines.append(feeling_specific_rule)
         if preschool_rules:
             lines.append(preschool_rules)
         return "\n" + "\n".join(lines) + "\n"
