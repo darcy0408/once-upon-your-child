@@ -2,6 +2,28 @@
 
 ---
 
+## Session Update - 2026-03-12 (Big Feelings V1 Manual Prompt QA Harness)
+
+### Scope Completed
+- Added a focused local review harness for preschool Big Feelings interactive prompts so `mad`, `sad`, and `scared` cases can be checked end to end without relying on live model output.
+
+### Changes
+- `backend/tests/manual_big_feelings_prompt_review.py`
+  - Added a script that renders opening and continuation prompts for preschool `mad`, `sad`, and `scared` stories.
+  - Extracts the exact opening-example, trigger/body/helper guidance, repair instruction, and choice labels for quick manual QA.
+
+### Verification
+```bash
+python -X utf8 backend/tests/manual_big_feelings_prompt_review.py
+python -m py_compile backend/tests/manual_big_feelings_prompt_review.py
+```
+
+### Result
+- PASS: local prompt-only review confirms coherent preschool choice sets for `mad`, `sad`, and `scared`
+- NOTE: true live story generation was not run in this shell because no `GEMINI_API_KEY` or `OPENROUTER_API_KEY` is currently available
+
+---
+
 ## Session Update - 2026-03-12 (Early Reader Asset Generation)
 
 ### Scope Completed
