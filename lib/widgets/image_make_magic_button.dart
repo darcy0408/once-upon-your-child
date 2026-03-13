@@ -38,9 +38,19 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
   // Press feedback
   bool _isPressed = false;
 
-  static const _assetNormal = 'assets/images/ui/clean/make_magic_button.png';
-  static const _assetPressed =
-      'assets/images/ui/clean/make_magic_button_pressed.png';
+  String get _assetNormal {
+    if (widget.ageBand == AgeBand.sprout) {
+      return 'assets/images/ui/sprout/make_magic_normal.png';
+    }
+    return 'assets/images/ui/clean/make_magic_button.png';
+  }
+
+  String get _assetPressed {
+    if (widget.ageBand == AgeBand.sprout) {
+      return 'assets/images/ui/sprout/make_magic_normal_clicked.png';
+    }
+    return 'assets/images/ui/clean/make_magic_button_pressed.png';
+  }
 
   @override
   void initState() {

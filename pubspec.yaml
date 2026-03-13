@@ -99,6 +99,7 @@ flutter:
   assets:
     - assets/images/
     - assets/images/ui/
+    - assets/images/ui/sprout/
     - assets/images/ui/clean/
     - assets/images/ui/glassy/
     - assets/images/archetypes/

@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
+import '../theme/age_band_theme.dart';
 
 /// Image-based Continue Button using the Codex-generated PNG asset.
 /// Mirrors the pulsing/glow behaviour of [ImageMakeMagicButton].
 class ImageContinueButton extends StatefulWidget {
   final VoidCallback onTap;
   final bool isEnabled;
+  final AgeBand? ageBand;
 
   const ImageContinueButton({
     super.key,
     required this.onTap,
     this.isEnabled = true,
+    this.ageBand,
   });
 
   @override
@@ -22,6 +25,7 @@ class _ImageContinueButtonState extends State<ImageContinueButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  bool _isPressed = false;
 
   @override
   void initState() {
@@ -58,10 +62,33 @@ class _ImageContinueButtonState extends State<ImageContinueButton>
     widget.onTap();
   }
 
+  void _onTapDown(TapDownDetails _) {
+    if (!widget.isEnabled) return;
+    setState(() => _isPressed = true);
+  }
+
+  void _onTapUp(TapUpDetails _) {
+    if (!widget.isEnabled) return;
+    setState(() => _isPressed = false);
+    _handleTap();
+  }
+
+  void _onTapCancel() {
+    if (_isPressed) setState(() => _isPressed = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final buttonWidth = math.min(screenWidth * 0.72, 300.0);
+
+    final isSprout = widget.ageBand == AgeBand.sprout;
+    final normalAsset = isSprout 
+        ? 'assets/images/ui/sprout/continue_button.png'
+        : 'assets/images/ui/continue_btn_codex.png';
+    final pressedAsset = isSprout
+        ? 'assets/images/ui/sprout/continue_button_clicked.png'
+        : 'assets/images/ui/continue_btn_pressed.png';
 
     return Semantics(
       button: true,
@@ -73,7 +100,9 @@ class _ImageContinueButtonState extends State<ImageContinueButton>
             ? _pulseAnimation
             : const AlwaysStoppedAnimation(1.0),
         child: GestureDetector(
-          onTap: _handleTap,
+          onTapDown: _onTapDown,
+          onTapUp: _onTapUp,
+          onTapCancel: _onTapCancel,
           child: SizedBox(
             width: buttonWidth,
             height: 72,
@@ -105,7 +134,7 @@ class _ImageContinueButtonState extends State<ImageContinueButton>
                 Opacity(
                   opacity: widget.isEnabled ? 1.0 : 0.45,
                   child: Image.asset(
-                    'assets/images/ui/continue_btn_codex.png',
+                    _isPressed ? pressedAsset : normalAsset,
                     width: buttonWidth,
                     height: 72,
                     fit: BoxFit.contain,
