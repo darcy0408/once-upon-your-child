@@ -44,7 +44,7 @@ class InteractiveAdventureService:
         self._client = genai.Client(api_key=self.api_key)
 
         # Use Gemini model with JSON mode support
-        self._model_name = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
+        self._model_name = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
         logger.info(f"Initializing Interactive Adventure Service with model: {self._model_name}")
         # JSON mode config — cap tokens to avoid over-generation (fastest safe limit
         # that still covers the largest age band's per-segment word count + JSON overhead)

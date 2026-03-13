@@ -61,7 +61,7 @@ def create_utility_blueprint(logger, log_error, limiter=None):
     def debug_gemini():
         """Debug endpoint to test Gemini text generation"""
         api_key = os.getenv("GEMINI_API_KEY")
-        model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         
         status = {
             "api_key_configured": bool(api_key),

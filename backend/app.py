@@ -329,7 +329,7 @@ def create_app(config_name):
     init_request_logging(app, logger)
 
     # Gemini setup
-    GEMINI_MODEL = app.config.get("GEMINI_MODEL", "gemini-2.0-flash")
+    GEMINI_MODEL = app.config.get("GEMINI_MODEL", "gemini-2.5-flash")
     api_key = None if testing_mode else app.config.get("GEMINI_API_KEY")
     gemini_client = None
     print(f"DEBUG: GEMINI_MODEL set to {GEMINI_MODEL}")

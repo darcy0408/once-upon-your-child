@@ -2,6 +2,32 @@
 
 ---
 
+## Session Update - 2026-03-12 (Gemini Model Default Refresh)
+
+### Scope Completed
+- Updated backend Gemini text-generation defaults from the retired `gemini-2.0-flash` line to `gemini-2.5-flash` so live story generation can continue using a current model.
+
+### Changes
+- `backend/config/__init__.py`
+- `backend/app.py`
+- `backend/routes/utility_routes.py`
+- `backend/services/story_generation_service.py`
+- `backend/services/interactive_adventure_service.py`
+- `backend/services/chronicle_prompt_service.py`
+- `backend/verify_key.py`
+  - Updated default Gemini model fallbacks to `gemini-2.5-flash`
+
+### Verification
+```bash
+python -m py_compile backend/app.py backend/config/__init__.py backend/routes/utility_routes.py backend/services/story_generation_service.py backend/services/interactive_adventure_service.py backend/services/chronicle_prompt_service.py backend/verify_key.py
+```
+
+### Result
+- PASS: backend files compile cleanly with the updated default model
+- LIVE CHECK NOTE: the retired-model error is resolved, but live interactive continuation requests are currently failing on malformed JSON responses from the model, which points to parser hardening as the next backend task
+
+---
+
 ## Session Update - 2026-03-12 (Big Feelings V1 Angry Repair Tuning)
 
 ### Scope Completed

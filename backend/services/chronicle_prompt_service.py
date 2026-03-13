@@ -31,7 +31,7 @@ class ChroniclePromptService:
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY not set")
         self._client = genai.Client(api_key=self.api_key)
-        self._model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        self._model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         self._json_config = types.GenerateContentConfig(
             response_mime_type="application/json",
             max_output_tokens=1000,

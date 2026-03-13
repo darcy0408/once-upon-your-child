@@ -7,7 +7,7 @@ load_dotenv()
 
 def verify_setup():
     api_key = os.getenv('GEMINI_API_KEY')
-    model_name = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
+    model_name = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
     
     print(f"--- Verifying Setup for {model_name} ---")
     if not api_key:
