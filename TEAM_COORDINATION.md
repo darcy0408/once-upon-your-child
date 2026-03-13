@@ -2,6 +2,26 @@
 
 ---
 
+## Session Update - 2026-03-12 (Diverse Character Selection Carousel)
+
+### Scope Completed
+- **Diverse Character Selection:** Replaced the static two-option (boy/girl) hero selection with a dynamic `PageView` carousel for the Sprouts age band.
+- **Improved Representation:** Integrated 10 distinct character assets (Asian, Black, Hispanic, South Asian, and original) for both boys and girls.
+- **Dynamic Data Mapping:** Selection now automatically updates `characterGender` and `selectedSkinTone` in `WizardData` to ensure the AI generates a matching hero in the story.
+
+### Changes
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+  - Added `_SproutHeroChoice` model and a list of all 10 diverse character assets.
+  - Implemented `_buildSproutCharacterCarousel` with centering scale effects and pagination dots.
+  - Updated `_buildGenderPicker` to dynamically swap to the carousel when in the Sprout age band.
+  - Added `_sproutCarouselController` lifecycle management (init/dispose).
+
+### Result
+- **Hero Creator:** ✅ SUCCESS. Kids can now swipe through a diverse range of characters to find the one that represents them best.
+- **UI Polish:** ✅ SUCCESS. Carousel includes smooth scaling animations and visual indicators for current selection.
+
+---
+
 ## Session Update - 2026-03-13 (Parent Hidden Big Feelings Controls)
 
 ### Scope Completed
