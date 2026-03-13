@@ -15,6 +15,44 @@ class ParentControlsScreen extends StatefulWidget {
 
 class _ParentControlsScreenState extends State<ParentControlsScreen> {
   final _consentService = const ParentalConsentService();
+  static const _bigFeelingsContextOptions = [
+    (
+      value: 'trouble hearing no',
+      label: 'Trouble hearing no',
+      emoji: '🚫',
+      description: 'Helps stories practice hearing no without exploding.',
+    ),
+    (
+      value: 'friendship hurt',
+      label: 'Friendship hurt',
+      emoji: '💔',
+      description: 'Shapes stories around hurt feelings and reconnecting.',
+    ),
+    (
+      value: 'bedtime worry',
+      label: 'Bedtime worry',
+      emoji: '🌙',
+      description: 'Steers stories toward dark-room comfort and bedtime bravery.',
+    ),
+    (
+      value: 'sibling conflict',
+      label: 'Sibling conflict',
+      emoji: '🧒',
+      description: 'Supports sharing, repair, and calming around sibling friction.',
+    ),
+    (
+      value: 'hard transitions',
+      label: 'Hard transitions',
+      emoji: '🔄',
+      description: 'Supports moving between activities with less overwhelm.',
+    ),
+    (
+      value: 'meltdown when stuck',
+      label: 'Meltdown when stuck',
+      emoji: '🧩',
+      description: 'Helps stories model staying with hard things and trying again.',
+    ),
+  ];
   bool _allowPhotoAvatar = true;
   bool _loading = true;
   int? _dailyLimitMinutes;
@@ -22,6 +60,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
   int _bedtimeHour = 20;
   int _bedtimeMinute = 0;
   int _todayUsage = 0;
+  String? _bigFeelingsHiddenContext;
 
   @override
   void initState() {
@@ -35,6 +74,8 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
     final bedtimeEnabled = await _consentService.isBedtimeLockoutEnabled();
     final bedtime = await _consentService.getBedtimeLockout();
     final usage = await ScreenTimeService.instance.getTodayUsageMinutes();
+    final bigFeelingsHiddenContext =
+        await _consentService.getBigFeelingsParentHiddenContext();
     if (!mounted) {
       return;
     }
@@ -45,6 +86,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       _bedtimeHour = bedtime.hour;
       _bedtimeMinute = bedtime.minute;
       _todayUsage = usage;
+      _bigFeelingsHiddenContext = bigFeelingsHiddenContext;
       _loading = false;
     });
   }
@@ -282,6 +324,115 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                         ),
                       ),
                     ),
+                  const SizedBox(height: AppSpacing.lg),
+                  const _SectionHeader(title: 'Big Feelings'),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: Text(
+                      'Pick one hidden real-life struggle to quietly guide Big Feelings stories. '
+                      'Children will not see this setting directly.',
+                      style: GoogleFonts.fredoka(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('None'),
+                        selected: _bigFeelingsHiddenContext == null,
+                        selectedColor: const Color(0xFFFFD76A),
+                        backgroundColor: Colors.white,
+                        labelStyle: TextStyle(
+                          color: _bigFeelingsHiddenContext == null
+                              ? const Color(0xFF1A0E3A)
+                              : const Color(0xFF2E2158),
+                          fontWeight: _bigFeelingsHiddenContext == null
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
+                        onSelected: (_) async {
+                          await _consentService
+                              .setBigFeelingsParentHiddenContext(null);
+                          if (mounted) {
+                            setState(() => _bigFeelingsHiddenContext = null);
+                          }
+                        },
+                      ),
+                      for (final option in _bigFeelingsContextOptions)
+                        ChoiceChip(
+                          key: ValueKey(
+                            'parent_big_feelings_context_${option.value}',
+                          ),
+                          avatar: Text(option.emoji),
+                          label: Text(option.label),
+                          selected: _bigFeelingsHiddenContext == option.value,
+                          selectedColor: const Color(0xFFFFD76A),
+                          backgroundColor: Colors.white,
+                          labelStyle: TextStyle(
+                            color: _bigFeelingsHiddenContext == option.value
+                                ? const Color(0xFF1A0E3A)
+                                : const Color(0xFF2E2158),
+                            fontWeight:
+                                _bigFeelingsHiddenContext == option.value
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                          ),
+                          onSelected: (_) async {
+                            final nextValue =
+                                _bigFeelingsHiddenContext == option.value
+                                    ? null
+                                    : option.value;
+                            await _consentService
+                                .setBigFeelingsParentHiddenContext(nextValue);
+                            if (mounted) {
+                              setState(
+                                () => _bigFeelingsHiddenContext = nextValue,
+                              );
+                            }
+                          },
+                        ),
+                    ],
+                  ),
+                  if (_bigFeelingsHiddenContext != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(16),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.shield_moon_rounded,
+                            color: Color(0xFFFFD700),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Text(
+                              _bigFeelingsContextOptions
+                                      .firstWhere(
+                                        (option) =>
+                                            option.value ==
+                                            _bigFeelingsHiddenContext,
+                                      )
+                                      .description,
+                              style: GoogleFonts.fredoka(
+                                color: Colors.white70,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: AppSpacing.lg),
                   Text(
                     'More parental controls coming soon.',

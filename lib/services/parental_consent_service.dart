@@ -13,6 +13,8 @@ class ParentalConsentService {
   static const _keyBedtimeLockoutHour = 'screen_time_bedtime_hour';
   static const _keyBedtimeLockoutMinute = 'screen_time_bedtime_minute';
   static const _keyBedtimeLockoutEnabled = 'screen_time_bedtime_enabled';
+  static const _keyBigFeelingsParentHiddenContext =
+      'big_feelings_parent_hidden_context';
 
   Future<bool> getAllowPhotoAvatar() async {
     final prefs = await SharedPreferences.getInstance();
@@ -95,5 +97,24 @@ class ParentalConsentService {
     await prefs.setBool(_keyBedtimeLockoutEnabled, enabled);
     await prefs.setInt(_keyBedtimeLockoutHour, hour);
     await prefs.setInt(_keyBedtimeLockoutMinute, minute);
+  }
+
+  Future<String?> getBigFeelingsParentHiddenContext() async {
+    final prefs = await SharedPreferences.getInstance();
+    final value = prefs.getString(_keyBigFeelingsParentHiddenContext)?.trim();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return value;
+  }
+
+  Future<void> setBigFeelingsParentHiddenContext(String? value) async {
+    final prefs = await SharedPreferences.getInstance();
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      await prefs.remove(_keyBigFeelingsParentHiddenContext);
+      return;
+    }
+    await prefs.setString(_keyBigFeelingsParentHiddenContext, trimmed);
   }
 }

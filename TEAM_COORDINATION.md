@@ -2,6 +2,35 @@
 
 ---
 
+## Session Update - 2026-03-13 (Parent Hidden Big Feelings Controls)
+
+### Scope Completed
+- Added a parent-controls entry point for hidden Big Feelings context so a caregiver can quietly steer story generation toward one current real-life struggle.
+
+### Changes
+- `lib/services/parental_consent_service.dart`
+  - Added get/set helpers for the shared `big_feelings_parent_hidden_context` preference.
+- `lib/screens/parent_controls_screen.dart`
+  - Added a new **Big Feelings** section with hidden-context chips for:
+    - trouble hearing no
+    - friendship hurt
+    - bedtime worry
+    - sibling conflict
+    - hard transitions
+    - meltdown when stuck
+  - Added a short private description card for the currently selected context.
+  - Wired the controls through `ParentalConsentService` so the existing preschool Big Feelings flow can pick up the same stored value without exposing it to the child.
+
+### Verification
+```bash
+dart analyze lib/screens/parent_controls_screen.dart lib/services/parental_consent_service.dart
+```
+
+### Result
+- Pending analyzer completion in local environment; no code issues surfaced during patching.
+
+---
+
 ## Session Update - 2026-03-13 (Adventurer Asset Completion)
 
 ### Scope Completed
