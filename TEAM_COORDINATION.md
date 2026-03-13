@@ -2,6 +2,41 @@
 
 ---
 
+## Session Update - 2026-03-13 (Hidden Parent Context Validation Bundle)
+
+### Scope Completed
+- Locked down the hidden Big Feelings parent-context path with a dedicated parent-controls widget test and a concrete end-to-end validation bundle.
+
+### Automated Validation Path
+1. Parent selects a hidden Big Feelings context in Parent Controls.
+2. Big Feelings flow reads or persists the same `big_feelings_parent_hidden_context` value.
+3. Story-generation payload includes `parentHiddenContext`.
+
+### Changes
+- `test/widgets/parent_controls_screen_test.dart`
+  - Added coverage that Parent Controls loads a persisted hidden context.
+  - Added coverage that selecting a hidden context chip writes the shared preference used by the Big Feelings flow.
+
+### Verification
+```bash
+flutter test test/widgets/parent_controls_screen_test.dart
+flutter test test/widgets/big_feelings_flow_screen_test.dart
+flutter test test/integration/story_creation_flow_test.dart
+```
+
+### Result
+- PASS: `test/widgets/parent_controls_screen_test.dart` -> `2 passed`
+- PASS: `test/widgets/big_feelings_flow_screen_test.dart` -> `2 passed`
+- PASS: `test/integration/story_creation_flow_test.dart` -> `7 passed`
+
+### Manual End-to-End Check
+1. Open Parent Controls and choose one hidden Big Feelings context.
+2. Start a Big Feelings story and confirm the same context is retained.
+3. Generate one normal story and one Pick-a-Path story.
+4. Verify the story tone/trigger/repair beat reflects the selected hidden context.
+
+---
+
 ## Session Update - 2026-03-12 (Diverse Character Selection Carousel)
 
 ### Scope Completed
