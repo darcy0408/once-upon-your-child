@@ -76,8 +76,14 @@ def _build_feelings_prompt_text(payload: dict) -> str | None:
     )
     coping_strategies = current_feeling.get("coping_strategies", [])
     coping_tool = _clean_prompt_value(payload.get("copingTool"))
-    repair_goal = _clean_prompt_value(payload.get("repairGoal"))
-    parent_hidden_context = _clean_prompt_value(payload.get("parentHiddenContext"))
+    repair_goal = (
+        _clean_prompt_value(current_feeling.get("repair_goal"))
+        or _clean_prompt_value(payload.get("repairGoal"))
+    )
+    parent_hidden_context = (
+        _clean_prompt_value(current_feeling.get("parent_hidden_context"))
+        or _clean_prompt_value(payload.get("parentHiddenContext"))
+    )
     age = payload.get("age") or payload.get("character_age") or 5
 
     if not emotion_name:
@@ -165,6 +171,9 @@ def _augment_therapeutic_prompt(payload: dict, base_prompt: str) -> str:
         ("parentHiddenContext", "Hidden parent context"),
     ):
         value = _clean_prompt_value(payload.get(key))
+        if not value and isinstance(current_feeling, dict):
+            nested_key = "repair_goal" if key == "repairGoal" else "parent_hidden_context"
+            value = _clean_prompt_value(current_feeling.get(nested_key))
         if value:
             parts.append(f"{label}: {value}")
 

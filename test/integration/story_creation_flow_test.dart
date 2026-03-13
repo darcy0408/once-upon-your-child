@@ -70,6 +70,41 @@ void main() {
       expect(story.storyText, 'Group adventure');
     });
 
+    test('forwards big feelings hidden context fields in payload', () async {
+      final mockClient = MockClient((request) async {
+        expect(request.url.path, contains('generate-story'));
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['feelingTrigger'], 'Someone said no');
+        expect(body['bodySignal'], 'Hot face');
+        expect(body['copingTool'], 'Take a dragon breath');
+        expect(body['repairGoal'], 'Help fix it');
+        expect(body['parentHiddenContext'], 'trouble hearing no');
+        return http.Response(
+            jsonEncode({
+              'story': {'story_text': 'Big feelings story'}
+            }),
+            200);
+      });
+
+      final story = await ApiServiceManager.generateStory(
+        characterName: 'Milo',
+        theme: 'Big Feelings',
+        age: 5,
+        currentFeeling: const {
+          'emotion_name': 'Mad',
+          'physical_signs': 'Hot face',
+        },
+        feelingTrigger: 'Someone said no',
+        bodySignal: 'Hot face',
+        copingTool: 'Take a dragon breath',
+        repairGoal: 'Help fix it',
+        parentHiddenContext: 'trouble hearing no',
+        client: mockClient,
+      );
+
+      expect(story.storyText, 'Big feelings story');
+    });
+
     test('retries failed backend calls before succeeding', () async {
       int attempts = 0;
       final mockClient = MockClient((request) async {

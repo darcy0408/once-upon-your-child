@@ -546,6 +546,11 @@ class ApiServiceManager {
     bool includeIllustrations = false,
     String subscriptionTier = 'free',
     Map<String, dynamic>? currentFeeling,
+    String? feelingTrigger,
+    String? bodySignal,
+    String? copingTool,
+    String? repairGoal,
+    String? parentHiddenContext,
     Map<String, dynamic>? characterEvolution,
     http.Client? client,
     int maxAttempts = 3,
@@ -582,6 +587,11 @@ class ApiServiceManager {
         userId: userId,
         userApiKey: userApiKey,
         currentFeeling: currentFeeling,
+        feelingTrigger: feelingTrigger,
+        bodySignal: bodySignal,
+        copingTool: copingTool,
+        repairGoal: repairGoal,
+        parentHiddenContext: parentHiddenContext,
         characterEvolution: characterEvolution,
         client: effectiveClient,
         maxAttempts: maxAttempts,
@@ -606,6 +616,11 @@ class ApiServiceManager {
       learningToReadMode: learningToReadMode,
       includeIllustrations: includeIllustrations,
       currentFeeling: currentFeeling,
+      feelingTrigger: feelingTrigger,
+      bodySignal: bodySignal,
+      copingTool: copingTool,
+      repairGoal: repairGoal,
+      parentHiddenContext: parentHiddenContext,
       characterEvolution: characterEvolution,
       companionPets: companionPets,
       companionCharacters: companionCharacters,
@@ -686,6 +701,11 @@ class ApiServiceManager {
     bool learningToReadMode = false,
     bool includeIllustrations = false,
     Map<String, dynamic>? currentFeeling,
+    String? feelingTrigger,
+    String? bodySignal,
+    String? copingTool,
+    String? repairGoal,
+    String? parentHiddenContext,
     Map<String, dynamic>? characterEvolution,
     List<Map<String, dynamic>>? companionPets,
     List<dynamic>? companionCharacters,
@@ -714,6 +734,11 @@ class ApiServiceManager {
       additionalCharacters: additionalCharacters,
       learningToReadMode: learningToReadMode,
       currentFeeling: currentFeeling,
+      feelingTrigger: feelingTrigger,
+      bodySignal: bodySignal,
+      copingTool: copingTool,
+      repairGoal: repairGoal,
+      parentHiddenContext: parentHiddenContext,
       characterEvolution: characterEvolution,
       companionPets: companionPets,
       companionCharacters: companionCharacters,
@@ -782,6 +807,11 @@ class ApiServiceManager {
     required String userId,
     String? userApiKey,
     Map<String, dynamic>? currentFeeling,
+    String? feelingTrigger,
+    String? bodySignal,
+    String? copingTool,
+    String? repairGoal,
+    String? parentHiddenContext,
     Map<String, dynamic>? characterEvolution,
     http.Client? client,
     required int maxAttempts,
@@ -812,6 +842,11 @@ class ApiServiceManager {
           userId: userId,
           userApiKey: userApiKey,
           currentFeeling: currentFeeling,
+          feelingTrigger: feelingTrigger,
+          bodySignal: bodySignal,
+          copingTool: copingTool,
+          repairGoal: repairGoal,
+          parentHiddenContext: parentHiddenContext,
           characterEvolution: characterEvolution,
           client: client,
           requestTimeout: requestTimeout,
@@ -855,6 +890,11 @@ class ApiServiceManager {
     required String userId,
     String? userApiKey,
     Map<String, dynamic>? currentFeeling,
+    String? feelingTrigger,
+    String? bodySignal,
+    String? copingTool,
+    String? repairGoal,
+    String? parentHiddenContext,
     Map<String, dynamic>? characterEvolution,
     http.Client? client,
     required Duration requestTimeout,
@@ -876,6 +916,11 @@ class ApiServiceManager {
       'rhyme_time_mode': rhymeTimeMode,
       'learning_to_read_mode': learningToReadMode,
       'current_feeling': currentFeeling,
+      'feelingTrigger': feelingTrigger,
+      'bodySignal': bodySignal,
+      'copingTool': copingTool,
+      'repairGoal': repairGoal,
+      'parentHiddenContext': parentHiddenContext,
       'character_evolution': characterEvolution,
       'additional_characters': additionalCharacters,
       'include_illustrations': includeIllustrations,
@@ -1025,6 +1070,11 @@ class ApiServiceManager {
     required int age,
     required String lengthGuideline,
     required Map<String, dynamic> currentFeeling,
+    String? feelingTrigger,
+    String? bodySignal,
+    String? copingTool,
+    String? repairGoal,
+    String? parentHiddenContext,
     String? companion,
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
@@ -1043,12 +1093,24 @@ class ApiServiceManager {
     final emotionEmoji = currentFeeling['emotion_emoji'] as String?;
     final emotionDescription = currentFeeling['emotion_description'] as String?;
     final intensity = currentFeeling['intensity'] as int?;
-    final whatHappened = (currentFeeling['what_happened'] ??
-        currentFeeling['trigger']) as String?;
-    final physicalSigns = currentFeeling['physical_signs'] as String?;
+    final whatHappened = ((currentFeeling['what_happened'] ??
+            currentFeeling['trigger']) as String?) ??
+        feelingTrigger;
+    final physicalSigns =
+        (currentFeeling['physical_signs'] as String?) ?? bodySignal;
     final copingStrategies =
         currentFeeling['coping_strategies'] as List<dynamic>?;
-    final repairGoal = currentFeeling['repair_goal'] as String?;
+    final resolvedCopingStrategies = <String>[
+      if (copingTool != null && copingTool.trim().isNotEmpty) copingTool.trim(),
+      ...?copingStrategies
+          ?.map((s) => s.toString())
+          .where((s) => s.trim().isNotEmpty),
+    ];
+    final resolvedRepairGoal =
+        (currentFeeling['repair_goal'] as String?) ?? repairGoal;
+    final resolvedParentHiddenContext =
+        (currentFeeling['parent_hidden_context'] as String?) ??
+            parentHiddenContext;
 
     final String directFeeling = emotionName?.toLowerCase() ?? 'big';
     final String startExample1 =
@@ -1094,11 +1156,11 @@ CRITICAL THERAPEUTIC REQUIREMENTS:
 2. The story MUST help $characterName understand and work through this EXACT feeling
 3. Show $characterName experiencing the physical sensations: $physicalSigns
 4. Have $characterName use these coping strategies naturally in the story:
-${copingStrategies?.map((s) => '   - $s').join('\n') ?? ''}
+${resolvedCopingStrategies.map((s) => '   - $s').join('\n')}
 5. By the end, $characterName should feel better about the $emotionName feeling - not making it disappear, but learning to work with it
 6. Validate the emotion: "$emotionName is a normal, okay feeling to have"
 7. Show that feelings come and go, and we can handle them
-${repairGoal != null && repairGoal.trim().isNotEmpty ? "8. If the feeling causes a social bump, include this repair beat: $repairGoal\n" : ""}${age <= 5 ? '9. For ages 5 and under, use very simple words like mad, sad, and scared. Keep the trigger child-sized and concrete.\n' : ''}
+${resolvedRepairGoal != null && resolvedRepairGoal.trim().isNotEmpty ? "8. If the feeling causes a social bump, include this repair beat: $resolvedRepairGoal\n" : ""}${resolvedParentHiddenContext != null && resolvedParentHiddenContext.trim().isNotEmpty ? "9. Hidden parent context: $resolvedParentHiddenContext\n" : ""}${age <= 5 ? '10. For ages 5 and under, use very simple words like mad, sad, and scared. Keep the trigger child-sized and concrete.\n' : ''}
 
 This is a FEELINGS-FIRST story. The emotion is the main character's journey.
 ''';
@@ -1535,6 +1597,11 @@ Create the rhyming learning-to-read story about $characterName now:
     List<String>? additionalCharacters,
     bool learningToReadMode = false,
     Map<String, dynamic>? currentFeeling,
+    String? feelingTrigger,
+    String? bodySignal,
+    String? copingTool,
+    String? repairGoal,
+    String? parentHiddenContext,
     Map<String, dynamic>? characterEvolution,
     List<Map<String, dynamic>>? companionPets,
     List<dynamic>? companionCharacters,
@@ -1603,6 +1670,11 @@ Create the rhyming learning-to-read story about $characterName now:
         age: age,
         lengthGuideline: lengthGuideline,
         currentFeeling: currentFeeling,
+        feelingTrigger: feelingTrigger,
+        bodySignal: bodySignal,
+        copingTool: copingTool,
+        repairGoal: repairGoal,
+        parentHiddenContext: parentHiddenContext,
         companion: companion,
         characterDetails: characterDetails,
         additionalCharacters: effectiveAdditionalChars,

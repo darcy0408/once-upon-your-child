@@ -250,6 +250,9 @@ class WizardDataMapper {
       if (data.selectedRepairGoal != null &&
           data.selectedRepairGoal!.trim().isNotEmpty)
         'repair_goal': data.selectedRepairGoal!.trim(),
+      if (data.parentHiddenContext != null &&
+          data.parentHiddenContext!.trim().isNotEmpty)
+        'parent_hidden_context': data.parentHiddenContext!.trim(),
     };
   }
 

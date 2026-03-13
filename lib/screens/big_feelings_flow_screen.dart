@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/app_theme.dart';
 
@@ -9,23 +10,35 @@ class BigFeelingsFlowResult {
     required this.trigger,
     required this.bodySignal,
     required this.copingTool,
+    this.parentHiddenContext,
   });
 
   final String feeling;
   final String trigger;
   final String bodySignal;
   final String copingTool;
+  final String? parentHiddenContext;
 }
 
 class BigFeelingsFlowScreen extends StatefulWidget {
-  const BigFeelingsFlowScreen({super.key});
+  const BigFeelingsFlowScreen({
+    super.key,
+    this.initialParentHiddenContext,
+  });
 
-  static Future<BigFeelingsFlowResult?> show(BuildContext context) {
+  final String? initialParentHiddenContext;
+
+  static Future<BigFeelingsFlowResult?> show(
+    BuildContext context, {
+    String? initialParentHiddenContext,
+  }) {
     return Navigator.of(context, rootNavigator: true)
         .push<BigFeelingsFlowResult>(
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (_) => const BigFeelingsFlowScreen(),
+        builder: (_) => BigFeelingsFlowScreen(
+          initialParentHiddenContext: initialParentHiddenContext,
+        ),
       ),
     );
   }
@@ -35,6 +48,8 @@ class BigFeelingsFlowScreen extends StatefulWidget {
 }
 
 class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
+  static const _parentHiddenContextPrefsKey =
+      'big_feelings_parent_hidden_context';
   static const _feelings = [
     _ChoiceOption(
       value: 'Mad',
@@ -114,10 +129,74 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
     ],
   };
 
+  static const _realLifeStruggleOptions = [
+    _ChoiceOption(
+      value: 'trouble hearing no',
+      label: 'Trouble hearing no',
+      emoji: '🚫',
+    ),
+    _ChoiceOption(
+      value: 'friendship hurt',
+      label: 'Friendship hurt',
+      emoji: '💔',
+    ),
+    _ChoiceOption(
+      value: 'bedtime worry',
+      label: 'Bedtime worry',
+      emoji: '🌙',
+    ),
+    _ChoiceOption(
+      value: 'sibling conflict',
+      label: 'Sibling conflict',
+      emoji: '🧒',
+    ),
+    _ChoiceOption(
+      value: 'hard transitions',
+      label: 'Hard transitions',
+      emoji: '🔄',
+    ),
+    _ChoiceOption(
+      value: 'meltdown when stuck',
+      label: 'Meltdown when stuck',
+      emoji: '🧩',
+    ),
+  ];
+
   int _step = 0;
   String? _feeling;
   String? _trigger;
   String? _bodySignal;
+  bool _showParentControls = false;
+  String? _parentHiddenContext;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadParentHiddenContext();
+  }
+
+  Future<void> _loadParentHiddenContext() async {
+    final prefs = await SharedPreferences.getInstance();
+    final persistedValue = prefs.getString(_parentHiddenContextPrefsKey);
+    final initialValue = widget.initialParentHiddenContext;
+    final resolvedValue =
+        (initialValue != null && initialValue.trim().isNotEmpty)
+            ? initialValue.trim()
+            : persistedValue;
+    if (!mounted || resolvedValue == null || resolvedValue.isEmpty) {
+      return;
+    }
+    setState(() => _parentHiddenContext = resolvedValue);
+  }
+
+  Future<void> _persistParentHiddenContext(String? value) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (value == null || value.trim().isEmpty) {
+      await prefs.remove(_parentHiddenContextPrefsKey);
+      return;
+    }
+    await prefs.setString(_parentHiddenContextPrefsKey, value.trim());
+  }
 
   void _goBack() {
     if (_step == 0) {
@@ -157,8 +236,18 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
         trigger: _trigger!,
         bodySignal: _bodySignal!,
         copingTool: copingTool,
+        parentHiddenContext: _parentHiddenContext,
       ),
     );
+  }
+
+  void _toggleParentControls() {
+    setState(() => _showParentControls = !_showParentControls);
+  }
+
+  Future<void> _selectParentHiddenContext(String? value) async {
+    setState(() => _parentHiddenContext = value);
+    await _persistParentHiddenContext(value);
   }
 
   @override
@@ -200,7 +289,18 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  IconButton(
+                    onPressed: _toggleParentControls,
+                    tooltip: 'Parent context',
+                    icon: Icon(
+                      _showParentControls
+                          ? Icons.shield
+                          : Icons.shield_outlined,
+                      color: _parentHiddenContext != null
+                          ? const Color(0xFFFFD76A)
+                          : Colors.white70,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
@@ -211,6 +311,21 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
                   color: Colors.white70,
                   fontSize: 15,
                 ),
+              ),
+              AnimatedCrossFade(
+                firstChild: const SizedBox.shrink(),
+                secondChild: Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.md),
+                  child: _ParentHiddenContextCard(
+                    options: _realLifeStruggleOptions,
+                    selectedValue: _parentHiddenContext,
+                    onSelected: _selectParentHiddenContext,
+                  ),
+                ),
+                crossFadeState: _showParentControls
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                duration: const Duration(milliseconds: 180),
               ),
               const SizedBox(height: AppSpacing.xl),
               Expanded(
@@ -276,6 +391,78 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
       default:
         return 'Pick what could help right now.';
     }
+  }
+}
+
+class _ParentHiddenContextCard extends StatelessWidget {
+  const _ParentHiddenContextCard({
+    required this.options,
+    required this.selectedValue,
+    required this.onSelected,
+  });
+
+  final List<_ChoiceOption> options;
+  final String? selectedValue;
+  final ValueChanged<String?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: Colors.white24, width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Parent hidden context',
+            style: GoogleFonts.fredoka(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Real-life struggle',
+            style: GoogleFonts.fredoka(
+              color: Colors.white70,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              for (final option in options)
+                ChoiceChip(
+                  key: ValueKey('big_feelings_parent_context_${option.value}'),
+                  avatar: Text(option.emoji),
+                  label: Text(option.label),
+                  selected: selectedValue == option.value,
+                  selectedColor: const Color(0xFFFFD76A),
+                  backgroundColor: Colors.white,
+                  labelStyle: TextStyle(
+                    color: selectedValue == option.value
+                        ? const Color(0xFF1A0E3A)
+                        : const Color(0xFF2E2158),
+                    fontWeight: selectedValue == option.value
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                  ),
+                  onSelected: (_) => onSelected(
+                    selectedValue == option.value ? null : option.value,
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 

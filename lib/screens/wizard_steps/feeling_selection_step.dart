@@ -90,6 +90,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
         widget.wizardData.selectedBodySignal = null;
         widget.wizardData.selectedCopingTool = null;
         widget.wizardData.selectedRepairGoal = null;
+        widget.wizardData.parentHiddenContext = null;
         widget.wizardData.selectedEmotionChips = [];
       }
 
@@ -117,13 +118,17 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
         ? 8
         : widget.wizardData.characterAge;
     if (age <= 5) {
-      final result = await BigFeelingsFlowScreen.show(context);
+      final result = await BigFeelingsFlowScreen.show(
+        context,
+        initialParentHiddenContext: widget.wizardData.parentHiddenContext,
+      );
       if (result != null && mounted) {
         setState(() {
           widget.wizardData.selectedFeeling = result.feeling;
           widget.wizardData.selectedTrigger = result.trigger;
           widget.wizardData.selectedBodySignal = result.bodySignal;
           widget.wizardData.selectedCopingTool = result.copingTool;
+          widget.wizardData.parentHiddenContext = result.parentHiddenContext;
           widget.wizardData.selectedEmotionChips = [result.feeling];
         });
         _selectScenario('big_feelings_quest');
