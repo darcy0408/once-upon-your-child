@@ -5,6 +5,7 @@ with inventory, state tracking, and illustrations.
 """
 import json
 import logging
+import re
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -51,7 +52,8 @@ class InteractiveAdventureService:
         self._json_config = types.GenerateContentConfig(
             response_mime_type='application/json',
             max_output_tokens=1200,
-            temperature=0.85,
+            temperature=0.4,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
         )
 
         # Initialize image generator (using Replicate for actual image generation)
@@ -433,14 +435,14 @@ class InteractiveAdventureService:
                 )
 
                 if response and hasattr(response, 'text') and response.text:
-                    segment_data = json.loads(response.text)
+                    segment_data = self._parse_segment_response(response.text)
                     logger.info("Segment generated successfully")
                     return segment_data
                 elif response and hasattr(response, 'candidates') and response.candidates:
                     candidate = response.candidates[0]
                     if hasattr(candidate, 'content') and candidate.content.parts:
                         text = candidate.content.parts[0].text
-                        segment_data = json.loads(text)
+                        segment_data = self._parse_segment_response(text)
                         logger.info("Segment generated from candidates")
                         return segment_data
 
@@ -474,6 +476,43 @@ class InteractiveAdventureService:
                 raise
 
         raise RuntimeError("Failed to generate segment after multiple retries")
+
+    @staticmethod
+    def _parse_segment_response(raw_text: str) -> Dict[str, Any]:
+        """Parse Gemini JSON output with minimal cleanup for common formatting issues."""
+        clean_text = (raw_text or "").strip()
+        if not clean_text:
+            raise json.JSONDecodeError("Empty segment response", clean_text, 0)
+
+        # Strip markdown wrappers some models still add around JSON payloads.
+        clean_text = re.sub(r"^\s*```(?:json)?\s*\n?", "", clean_text, flags=re.IGNORECASE)
+        clean_text = re.sub(r"\n?\s*```\s*$", "", clean_text, flags=re.IGNORECASE)
+        clean_text = re.sub(r"^\s*\*\*\s*", "", clean_text)
+        clean_text = re.sub(r"\s*\*\*\s*$", "", clean_text)
+
+        candidates = [clean_text]
+
+        json_start = clean_text.find('{')
+        json_end = clean_text.rfind('}')
+        if json_start >= 0 and json_end > json_start:
+            candidates.append(clean_text[json_start:json_end + 1])
+
+        # Common Gemini failure mode: trailing commas before } or ]
+        candidates.extend(
+            re.sub(r",(\s*[}\]])", r"\1", candidate)
+            for candidate in list(candidates)
+        )
+
+        last_error: json.JSONDecodeError | None = None
+        for candidate in candidates:
+            try:
+                return json.loads(candidate)
+            except json.JSONDecodeError as exc:
+                last_error = exc
+
+        if last_error is not None:
+            raise last_error
+        raise json.JSONDecodeError("Unable to parse segment response", clean_text, 0)
 
     def _create_segment_record(
         self,

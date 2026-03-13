@@ -2,6 +2,35 @@
 
 ---
 
+## Session Update - 2026-03-13 (Interactive JSON Recovery + Gemini 2.5 Thinking Fix)
+
+### Scope Completed
+- Hardened the interactive story service against malformed Gemini JSON and fixed the `gemini-2.5-flash` truncation issue for live interactive segments.
+
+### Changes
+- `backend/services/interactive_adventure_service.py`
+  - Added response cleanup for fenced JSON, sliced JSON bodies, and trailing commas before parsing interactive segment payloads.
+  - Lowered JSON-mode temperature for more stable structured output.
+  - Disabled Gemini 2.5 thinking in the interactive JSON config with `thinking_budget=0` so hidden reasoning tokens no longer consume the output budget and truncate the payload at the opening fields.
+- `backend/tests/unit/test_interactive_adventure_service.py`
+  - Added coverage for trailing-comma JSON recovery in `_generate_segment_with_retry(...)`.
+
+### Verification
+```bash
+python -m pytest backend/tests/unit/test_interactive_adventure_service.py -q
+python -m py_compile backend/services/interactive_adventure_service.py backend/tests/unit/test_interactive_adventure_service.py
+python -X utf8 -c "<live mad continuation via InteractiveAdventureService._generate_segment_with_retry(...)>"
+```
+
+### Result
+- PASS: `backend/tests/unit/test_interactive_adventure_service.py` -> `6 passed`
+- PASS: live `mad` continuation returned a full segment instead of truncating
+- Live repair choices after the messy anger branch now came back as:
+  - `Say sorry to Pip`
+  - `Help pick up the blocks`
+
+---
+
 ## Session Update - 2026-03-12 (Gemini Model Default Refresh)
 
 ### Scope Completed

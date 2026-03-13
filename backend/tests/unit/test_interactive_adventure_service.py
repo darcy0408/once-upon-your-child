@@ -230,3 +230,35 @@ def test_create_story_persists_big_feelings_context_in_state(
 
         db.session.delete(story)
         db.session.commit()
+
+
+def test_generate_segment_with_retry_repairs_trailing_commas(
+    interactive_service, mock_genai_client
+):
+    """Interactive segment parsing should recover from common trailing-comma JSON issues."""
+    mock_response = MagicMock()
+    mock_response.text = """```json
+{
+  "title": "The Repair Path",
+  "content": "You take a breath and check on Pip.",
+  "is_ending": false,
+  "inventory": [],
+  "story_state": {
+    "location": "Playroom",
+    "goal": "Help Pip feel better",
+    "key_clues": [],
+    "companion_status": "Pip feels calmer",
+  },
+  "choices": [
+    {"id": "choice_1", "text": "Say sorry"},
+    {"id": "choice_2", "text": "Help fix it"},
+  ],
+}
+```"""
+    mock_genai_client.models.generate_content.return_value = mock_response
+
+    data = interactive_service._generate_segment_with_retry("prompt")
+
+    assert data["title"] == "The Repair Path"
+    assert data["choices"][0]["text"] == "Say sorry"
+    assert data["choices"][1]["text"] == "Help fix it"
