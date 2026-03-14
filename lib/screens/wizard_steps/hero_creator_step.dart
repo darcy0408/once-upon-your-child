@@ -100,6 +100,105 @@ const List<_SproutHeroChoice> _sproutHeroChoices = [
       skinTone: 'South Asian'),
 ];
 
+const List<_SproutHeroChoice> _explorerHeroChoices = [
+  _SproutHeroChoice(
+      gender: 'Boy',
+      assetPath: 'assets/images/ui/explorer/boy_character_black.png',
+      label: 'Hero',
+      skinTone: 'Black'),
+  _SproutHeroChoice(
+      gender: 'Boy',
+      assetPath: 'assets/images/ui/explorer/boy_character_asian.png',
+      label: 'Hero',
+      skinTone: 'Asian'),
+  _SproutHeroChoice(
+      gender: 'Boy',
+      assetPath: 'assets/images/ui/explorer/boy_character_hispanic.png',
+      label: 'Hero',
+      skinTone: 'Hispanic'),
+  _SproutHeroChoice(
+      gender: 'Boy',
+      assetPath: 'assets/images/ui/explorer/boy_character_south_asian.png',
+      label: 'Hero',
+      skinTone: 'South Asian'),
+  _SproutHeroChoice(
+      gender: 'Girl',
+      assetPath: 'assets/images/ui/explorer/girl_character_black.png',
+      label: 'Heroine',
+      skinTone: 'Black'),
+  _SproutHeroChoice(
+      gender: 'Girl',
+      assetPath: 'assets/images/ui/explorer/girl_character_asian.png',
+      label: 'Heroine',
+      skinTone: 'Asian'),
+  _SproutHeroChoice(
+      gender: 'Girl',
+      assetPath: 'assets/images/ui/explorer/girl_character_hispanic.png',
+      label: 'Heroine',
+      skinTone: 'Hispanic'),
+  _SproutHeroChoice(
+      gender: 'Girl',
+      assetPath: 'assets/images/ui/explorer/girl_character_south_asian.png',
+      label: 'Heroine',
+      skinTone: 'South Asian'),
+];
+
+const List<_SproutHeroChoice> _adventurerHeroChoices = [
+  _SproutHeroChoice(
+      gender: 'Androgynous',
+      assetPath: 'assets/images/ui/adventurer/hero_white.png',
+      label: 'Adventurer',
+      skinTone: 'Light'),
+  _SproutHeroChoice(
+      gender: 'Androgynous',
+      assetPath: 'assets/images/ui/adventurer/hero_black.png',
+      label: 'Adventurer',
+      skinTone: 'Black'),
+  _SproutHeroChoice(
+      gender: 'Androgynous',
+      assetPath: 'assets/images/ui/adventurer/hero_asian.png',
+      label: 'Adventurer',
+      skinTone: 'Asian'),
+  _SproutHeroChoice(
+      gender: 'Androgynous',
+      assetPath: 'assets/images/ui/adventurer/hero_hispanic.png',
+      label: 'Adventurer',
+      skinTone: 'Hispanic'),
+  _SproutHeroChoice(
+      gender: 'Androgynous',
+      assetPath: 'assets/images/ui/adventurer/hero_south_asian.png',
+      label: 'Adventurer',
+      skinTone: 'South Asian'),
+];
+
+const List<_SproutHeroChoice> _creatorHeroChoices = [
+  _SproutHeroChoice(
+      gender: 'Non-binary',
+      assetPath: 'assets/images/ui/creator/creator_white.png',
+      label: 'Creator',
+      skinTone: 'Light'),
+  _SproutHeroChoice(
+      gender: 'Non-binary',
+      assetPath: 'assets/images/ui/creator/creator_black.png',
+      label: 'Creator',
+      skinTone: 'Black'),
+  _SproutHeroChoice(
+      gender: 'Non-binary',
+      assetPath: 'assets/images/ui/creator/creator_asian.png',
+      label: 'Creator',
+      skinTone: 'Asian'),
+  _SproutHeroChoice(
+      gender: 'Non-binary',
+      assetPath: 'assets/images/ui/creator/creator_hispanic.png',
+      label: 'Creator',
+      skinTone: 'Hispanic'),
+  _SproutHeroChoice(
+      gender: 'Non-binary',
+      assetPath: 'assets/images/ui/creator/creator_south_asian.png',
+      label: 'Creator',
+      skinTone: 'South Asian'),
+];
+
 /// Hero Creator — Step 1 of the story wizard.
 /// Restructured as a guided multi-page wizard (progressive disclosure).
 class HeroCreatorStep extends StatefulWidget {
@@ -186,12 +285,20 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     _heroPageController = PageController(initialPage: _heroPage);
     _logPageView(_heroPage);
 
-    int initialSproutIndex = 5; // Default to Girl Original
-    if (widget.wizardData.characterGender == 'Boy') {
-      initialSproutIndex = 0;
+    final band = ageBandFromAge(widget.wizardData.characterAge);
+    int initialCarouselIndex = 0;
+    
+    if (band == AgeBand.sprout) {
+      initialCarouselIndex = widget.wizardData.characterGender == 'Boy' ? 0 : 5;
+    } else if (band == AgeBand.explorer) {
+      initialCarouselIndex = widget.wizardData.characterGender == 'Boy' ? 0 : 4;
+    } else {
+      // Adventurer/Creator: search by skin tone if possible, else 0
+      initialCarouselIndex = 0;
     }
+
     _sproutCarouselController = PageController(
-      initialPage: initialSproutIndex,
+      initialPage: initialCarouselIndex,
       viewportFraction: 0.75,
     );
 
@@ -2199,88 +2306,36 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Widget _buildGenderPicker() {
-    final band =
-        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    if (band.band == AgeBand.sprout) {
-      return _buildSproutCharacterCarousel();
-    }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 300;
-        final spacing = isNarrow ? 16.0 : 28.0;
-        final availableWidth =
-            isNarrow ? constraints.maxWidth : constraints.maxWidth - spacing;
-        final btnW = (availableWidth / (isNarrow ? 1 : 2)).clamp(90.0, 180.0);
-        final btnH = btnW * 1.35;
-        if (isNarrow) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _GenderImageButton(
-                gender: 'Boy',
-                assetPath: 'assets/images/ui/boy_avatar_button.webp',
-                isSelected: widget.wizardData.characterGender == 'Boy',
-                width: btnW,
-                height: btnH,
-                onTap: () => _handleGenderSelection('Boy'),
-              ),
-              SizedBox(height: spacing),
-              _GenderImageButton(
-                gender: 'Girl',
-                assetPath: 'assets/images/ui/girl_avatar_button.webp',
-                isSelected: widget.wizardData.characterGender == 'Girl',
-                width: btnW,
-                height: btnH,
-                onTap: () => _handleGenderSelection('Girl'),
-              ),
-            ],
-          );
-        }
-
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _GenderImageButton(
-              gender: 'Boy',
-              assetPath: 'assets/images/ui/boy_avatar_button.webp',
-              isSelected: widget.wizardData.characterGender == 'Boy',
-              width: btnW,
-              height: btnH,
-              onTap: () => _handleGenderSelection('Boy'),
-            ),
-            SizedBox(width: spacing),
-            _GenderImageButton(
-              gender: 'Girl',
-              assetPath: 'assets/images/ui/girl_avatar_button.webp',
-              isSelected: widget.wizardData.characterGender == 'Girl',
-              width: btnW,
-              height: btnH,
-              onTap: () => _handleGenderSelection('Girl'),
-            ),
-          ],
-        );
-      },
-    );
+    return _buildHeroCharacterCarousel();
   }
 
-  Widget _buildSproutCharacterCarousel() {
+  Widget _buildHeroCharacterCarousel() {
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final choices = band.band == AgeBand.sprout
+        ? _sproutHeroChoices
+        : band.band == AgeBand.explorer
+            ? _explorerHeroChoices
+            : band.band == AgeBand.adventurer
+                ? _adventurerHeroChoices
+                : _creatorHeroChoices;
+
     return Column(
       children: [
         SizedBox(
           height: 280,
           child: PageView.builder(
             controller: _sproutCarouselController,
-            itemCount: _sproutHeroChoices.length,
+            itemCount: choices.length,
             onPageChanged: (index) {
-              final choice = _sproutHeroChoices[index];
+              final choice = choices[index];
               setState(() {
                 widget.wizardData.characterGender = choice.gender;
                 widget.wizardData.selectedSkinTone = choice.skinTone;
               });
             },
             itemBuilder: (context, index) {
-              final choice = _sproutHeroChoices[index];
+              final choice = choices[index];
               final isSelected =
                   widget.wizardData.characterGender == choice.gender &&
                       widget.wizardData.selectedSkinTone == choice.skinTone;
@@ -2327,7 +2382,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(_sproutHeroChoices.length, (index) {
+          children: List.generate(choices.length, (index) {
             return AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -2336,9 +2391,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: widget.wizardData.selectedSkinTone ==
-                            _sproutHeroChoices[index].skinTone &&
+                            choices[index].skinTone &&
                         widget.wizardData.characterGender ==
-                            _sproutHeroChoices[index].gender
+                            choices[index].gender
                     ? const Color(0xFFFFD700)
                     : Colors.white24,
               ),

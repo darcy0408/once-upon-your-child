@@ -39,17 +39,33 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
   bool _isPressed = false;
 
   String get _assetNormal {
-    if (widget.ageBand == AgeBand.sprout) {
-      return 'assets/images/ui/sprout/make_magic_normal.png';
+    switch (widget.ageBand) {
+      case AgeBand.sprout:
+        return 'assets/images/ui/sprout/make_magic_normal.png';
+      case AgeBand.explorer:
+        return 'assets/images/ui/explorer/make_magic_normal.png';
+      case AgeBand.adventurer:
+        return 'assets/images/ui/adventurer/make_magic_normal.png';
+      case AgeBand.creator:
+        return 'assets/images/ui/creator/make_magic_normal.png';
+      default:
+        return 'assets/images/ui/clean/make_magic_button.png';
     }
-    return 'assets/images/ui/clean/make_magic_button.png';
   }
 
   String get _assetPressed {
-    if (widget.ageBand == AgeBand.sprout) {
-      return 'assets/images/ui/sprout/make_magic_normal_clicked.png';
+    switch (widget.ageBand) {
+      case AgeBand.sprout:
+        return 'assets/images/ui/sprout/make_magic_normal_clicked.png';
+      case AgeBand.explorer:
+        return 'assets/images/ui/explorer/make_magic_normal_clicked.png';
+      case AgeBand.adventurer:
+        return 'assets/images/ui/adventurer/make_magic_normal_clicked.png';
+      case AgeBand.creator:
+        return 'assets/images/ui/creator/make_magic_normal_clicked.png';
+      default:
+        return 'assets/images/ui/clean/make_magic_button_pressed.png';
     }
-    return 'assets/images/ui/clean/make_magic_button_pressed.png';
   }
 
   @override

@@ -100,6 +100,9 @@ flutter:
     - assets/images/
     - assets/images/ui/
     - assets/images/ui/sprout/
+    - assets/images/ui/explorer/
+    - assets/images/ui/adventurer/
+    - assets/images/ui/creator/
     - assets/images/ui/clean/
     - assets/images/ui/glassy/
     - assets/images/archetypes/
