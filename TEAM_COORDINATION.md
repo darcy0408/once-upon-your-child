@@ -2,6 +2,26 @@
 
 ---
 
+## Session Update - 2026-03-14 (Parent Controls Copy Tightening)
+
+### Scope Completed
+- Tightened the adult-facing copy in the Parent Controls **Big Feelings** section so the feature reads more like a private setup tool and less like child-facing helper text.
+
+### Changes
+- `lib/screens/parent_controls_screen.dart`
+  - Rewrote the Big Feelings section intro to clarify that the setting shapes prompts behind the scenes and is not shown directly to the child.
+  - Tightened the descriptions for each hidden context option to be more concrete and parent-facing.
+
+### Verification
+```bash
+dart analyze lib/screens/parent_controls_screen.dart
+```
+
+### Result
+- Pending analyzer completion in the local environment.
+
+---
+
 ## Session Update - 2026-03-13 (Phase 3 Test Suite Stabilization & LTR Expansion)
 
 ### Scope Completed

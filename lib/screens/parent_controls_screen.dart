@@ -20,37 +20,37 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       value: 'trouble hearing no',
       label: 'Trouble hearing no',
       emoji: '🚫',
-      description: 'Helps stories practice hearing no without exploding.',
+      description: 'Use stories to practice hearing no, calming down, and recovering without a blowup.',
     ),
     (
       value: 'friendship hurt',
       label: 'Friendship hurt',
       emoji: '💔',
-      description: 'Shapes stories around hurt feelings and reconnecting.',
+      description: 'Steer stories toward hurt feelings, repair, and reconnecting with another child.',
     ),
     (
       value: 'bedtime worry',
       label: 'Bedtime worry',
       emoji: '🌙',
-      description: 'Steers stories toward dark-room comfort and bedtime bravery.',
+      description: 'Shape stories around nighttime fear, comfort, and small brave bedtime steps.',
     ),
     (
       value: 'sibling conflict',
       label: 'Sibling conflict',
       emoji: '🧒',
-      description: 'Supports sharing, repair, and calming around sibling friction.',
+      description: 'Focus stories on sibling friction, shared space, repair, and calmer re-entry.',
     ),
     (
       value: 'hard transitions',
       label: 'Hard transitions',
       emoji: '🔄',
-      description: 'Supports moving between activities with less overwhelm.',
+      description: 'Support transitions between activities with less resistance, panic, or overwhelm.',
     ),
     (
       value: 'meltdown when stuck',
       label: 'Meltdown when stuck',
       emoji: '🧩',
-      description: 'Helps stories model staying with hard things and trying again.',
+      description: 'Use stories to model frustration tolerance, help-seeking, and trying again after getting stuck.',
     ),
   ];
   bool _allowPhotoAvatar = true;
@@ -329,8 +329,8 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                     child: Text(
-                      'Pick one hidden real-life struggle to quietly guide Big Feelings stories. '
-                      'Children will not see this setting directly.',
+                      'Choose one private story focus for Big Feelings. '
+                      'It will shape prompts behind the scenes, but it will not be shown directly to your child.',
                       style: GoogleFonts.fredoka(
                         color: Colors.white70,
                         fontSize: 14,
