@@ -2,6 +2,59 @@
 
 ---
 
+## Session Update - 2026-03-13 (Phase 3 Test Suite Stabilization & LTR Expansion)
+
+### Scope Completed
+- **Phase 3 Test Suite:** Stabilized the automated test suite (`automated_test_suite.py`) to achieve 100% pass rate (12/12 tests).
+- **Easy Reader (LTR) Expansion:** Expanded Learning-to-Read constraints to older age bands (13+) to prevent backend errors when the mode is selected for older users.
+
+### Changes
+- `automated_test_suite.py`
+  - Added JWT authentication using `dev-secret-key` to fix 401 Unauthorized errors.
+  - Increased `TEST_TIMEOUT` to 120 seconds to accommodate slow LLM responses during bulk testing.
+  - Updated result logging to include story previews.
+- `backend/services/story_service.py`
+  - Added `ltr` configuration (10-14 pages) to `AGE_CONSTRAINTS` for `13-15`, `15-18`, and `adult` age bands.
+- `AUTOMATED_TEST_RESULTS.json`
+  - Updated with the latest 100% success rate results.
+
+### Status
+- **Phase 3 Custom Elements:** 🟢 100% Verified (12/12 passed)
+- **Easy Reader Mode:** 🟢 Fully supported across all age bands
+
+---
+
+## Session Update - 2026-03-14 (Avatar Wizard UX Polish — Sprout Welcome Screen)
+
+### Scope Completed
+
+Five UX improvements to `lib/custom_avatar_screen.dart` based on review of the step-wizard design, optimising specifically for the Sprout (3–5) age band.
+
+### Avatar Wizard Changes
+
+- `lib/custom_avatar_screen.dart`
+  - **Sprout welcome/choice screen** (`_AvatarStep.sproutWelcome`): First screen for Sprout band offers two big cards — "Pick a ready hero!" (routes to premade gallery) and "Make one that looks like me! — Ask a grown-up to help" (enters the wizard). Includes a "Read it to me!" TTS button and auto-speaks greeting on entry.
+  - **`onOpenGallery` callback parameter**: nullable `VoidCallback`; when provided, the welcome screen shows the gallery option. Safe for non-Sprout bands (callback not passed, step not included in order).
+  - **Auto-advance delay**: increased from 320ms → 600ms so the elastic-pop animation completes before advancing.
+  - **Elastic-pop selection animation**: `TweenAnimationBuilder` with `Curves.elasticOut` on gender emoji and color swatches — gives satisfying tactile feedback on tap.
+  - **"Ask a grown-up" banner** on the photo step for Sprout band.
+  - **Sprout favourite color subset**: removed Gold and Teal (not recognisable crayon colors for 3–5 year-olds); Sprout sees Red, Blue, Green, Yellow, Purple, Pink, Orange only.
+  - **Name greeting**: "Hi [Name]!" shown on step headers for Explorer/Adventurer/Creator bands; Sprout greeting appears on the welcome screen.
+- `lib/screens/wizard_steps/hero_creator_step.dart`
+  - `_openCustomAvatarScreen()`: passes `onOpenGallery: _openAvatarGallery` so the Sprout welcome screen can route back to the premade gallery.
+
+### Sprout Flow (3–5)
+
+Welcome (pick gallery OR start wizard) → Gender → Hair → Eye → Favourite Color → Photo → Generate → Result
+
+Each step auto-advances 600ms after tap; TTS speaks every question and selection name.
+
+### Analyzer
+
+- No issues.
+
+---
+
 ## Session Update - 2026-03-14 (Hidden Parent Context Live Story Validation)
 
 ### Scope Completed

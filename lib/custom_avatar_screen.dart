@@ -14,17 +14,24 @@ import 'theme/age_band_theme.dart';
 import 'theme/app_theme.dart';
 
 // ── Step definitions ─────────────────────────────────────────────────────────
-enum _AvatarStep { gender, hairColor, eyeColor, favoriteColor, photo }
+// sproutWelcome is only included in the step order for Sprout (3-5) band.
+enum _AvatarStep { sproutWelcome, gender, hairColor, eyeColor, favoriteColor, photo }
 
 // ── Main screen ──────────────────────────────────────────────────────────────
 class CustomAvatarScreen extends StatefulWidget {
   final String? initialName;
   final int? initialAge;
 
+  /// Sprout-only: called when the child taps "Pick a ready hero" on the
+  /// welcome step so the parent screen can open the avatar gallery instead.
+  /// When null, the welcome step's gallery option is hidden.
+  final VoidCallback? onOpenGallery;
+
   const CustomAvatarScreen({
     super.key,
     this.initialName,
     this.initialAge,
+    this.onOpenGallery,
   });
 
   @override
@@ -33,8 +40,9 @@ class CustomAvatarScreen extends StatefulWidget {
 
 class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     with SingleTickerProviderStateMixin {
-  // Step navigation
-  _AvatarStep _step = _AvatarStep.gender;
+  // Step navigation — order built in initState based on age band
+  late final List<_AvatarStep> _stepOrder;
+  late _AvatarStep _step;
 
   // Selections
   String _gender = 'girl';
@@ -54,6 +62,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
 
   // ── Age band helpers ────────────────────────────────────────────────────────
   int get _age => widget.initialAge ?? 7;
+  String get _name =>
+      (widget.initialName?.trim().isNotEmpty == true) ? widget.initialName! : '';
   AgeBand get _ageBand => ageBandFromAge(_age);
   AgeBandThemeData get _bt => themeForBand(_ageBand);
   bool get _isSprout => _ageBand == AgeBand.sprout;
@@ -61,11 +71,15 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   bool get _isCreator => _ageBand == AgeBand.creator;
 
   // ── Color data ──────────────────────────────────────────────────────────────
-  static const _eyeColors = ['Brown', 'Blue', 'Green', 'Hazel', 'Grey'];
-  static const _hairColors = ['Black', 'Brown', 'Blonde', 'Red', 'Grey', 'Pink'];
-  static const _favoriteColors = [
+  // Sprout: skip Gold/Teal — not intuitive crayon colors for 3-5 year-olds
+  static const _sproutFavoriteColors = [
+    'Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Pink', 'Orange'
+  ];
+  static const _allFavoriteColors = [
     'Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Pink', 'Orange', 'Teal', 'Gold'
   ];
+  static const _eyeColors = ['Brown', 'Blue', 'Green', 'Hazel', 'Grey'];
+  static const _hairColors = ['Black', 'Brown', 'Blonde', 'Red', 'Grey', 'Pink'];
 
   static const Map<String, Color> _eyeSwatches = {
     'Brown': Color(0xFF6D4C41),
@@ -98,6 +112,26 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   @override
   void initState() {
     super.initState();
+
+    // Sprout gets a welcome/choice screen first; everyone else starts at gender
+    _stepOrder = _isSprout
+        ? [
+            _AvatarStep.sproutWelcome,
+            _AvatarStep.gender,
+            _AvatarStep.hairColor,
+            _AvatarStep.eyeColor,
+            _AvatarStep.favoriteColor,
+            _AvatarStep.photo,
+          ]
+        : [
+            _AvatarStep.gender,
+            _AvatarStep.hairColor,
+            _AvatarStep.eyeColor,
+            _AvatarStep.favoriteColor,
+            _AvatarStep.photo,
+          ];
+    _step = _stepOrder.first;
+
     _animCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -109,7 +143,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     ).animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut));
     _animCtrl.forward();
 
-    // Sprout: auto-speak the first question
+    // Sprout: auto-speak the welcome prompt
     if (_isSprout) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _speakPrompt());
     }
@@ -126,19 +160,22 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     AppTtsService.instance.speak(_question(_step));
   }
 
-  // Age-band-adapted question text per step
   String _question(_AvatarStep step) {
     switch (_ageBand) {
       case AgeBand.sprout:
-        return const {
+        final greeting = _name.isNotEmpty ? 'Hi $_name! ' : 'Hi! ';
+        return {
+          _AvatarStep.sproutWelcome:
+              '${greeting}Do you want to pick a ready-made hero, or make one that looks like you with a grown-up?',
           _AvatarStep.gender: 'Are you a girl or a boy?',
           _AvatarStep.hairColor: 'What color is your hair?',
           _AvatarStep.eyeColor: 'What color are your eyes?',
           _AvatarStep.favoriteColor: 'What is your favorite color?',
-          _AvatarStep.photo: "Let's take a photo of your face!",
+          _AvatarStep.photo: "Now ask a grown-up to take a picture of your face!",
         }[step]!;
       case AgeBand.explorer:
-        return const {
+        return {
+          _AvatarStep.sproutWelcome: '',
           _AvatarStep.gender: 'Choose your hero\'s style!',
           _AvatarStep.hairColor: 'Pick your hair color!',
           _AvatarStep.eyeColor: 'Pick your eye color!',
@@ -146,7 +183,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
           _AvatarStep.photo: 'Add a photo so we can paint your face!',
         }[step]!;
       case AgeBand.adventurer:
-        return const {
+        return {
+          _AvatarStep.sproutWelcome: '',
           _AvatarStep.gender: 'Choose your character\'s style',
           _AvatarStep.hairColor: 'Select your hair color',
           _AvatarStep.eyeColor: 'Select your eye color',
@@ -154,7 +192,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
           _AvatarStep.photo: 'Add a reference photo',
         }[step]!;
       case AgeBand.creator:
-        return const {
+        return {
+          _AvatarStep.sproutWelcome: '',
           _AvatarStep.gender: 'Character style',
           _AvatarStep.hairColor: 'Hair color',
           _AvatarStep.eyeColor: 'Eye color',
@@ -166,7 +205,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
 
   String _subtitle(_AvatarStep step) {
     if (_isSprout || _isCreator) return '';
-    return const {
+    return {
+      _AvatarStep.sproutWelcome: '',
       _AvatarStep.gender: 'Your hero will look just like you!',
       _AvatarStep.hairColor: 'Tap the color that matches yours',
       _AvatarStep.eyeColor: 'Tap the color that matches yours',
@@ -176,16 +216,11 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   }
 
   // ── Step navigation ─────────────────────────────────────────────────────────
-  static const _stepOrder = [
-    _AvatarStep.gender,
-    _AvatarStep.hairColor,
-    _AvatarStep.eyeColor,
-    _AvatarStep.favoriteColor,
-    _AvatarStep.photo,
-  ];
-
   int get _stepIndex => _stepOrder.indexOf(_step);
   bool get _isLastStep => _step == _AvatarStep.photo;
+  // Progress dots only show for steps after sproutWelcome
+  List<_AvatarStep> get _progressSteps =>
+      _stepOrder.where((s) => s != _AvatarStep.sproutWelcome).toList();
 
   Future<void> _goForward() async {
     if (_isLastStep) {
@@ -212,9 +247,9 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     }
   }
 
-  // Auto-advance for Sprout (short delay so selection animation plays)
+  // Auto-advance for Sprout (600ms so the pulse animation has time to play)
   void _sproutAutoAdvance() {
-    Timer(const Duration(milliseconds: 320), () {
+    Timer(const Duration(milliseconds: 600), () {
       if (mounted) _goForward();
     });
   }
@@ -249,7 +284,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
           SnackBar(
             content: Text(
               _isSprout
-                  ? 'Please take a photo first!'
+                  ? 'Ask a grown-up to take a photo first!'
                   : 'Please add a photo to continue.',
             ),
           ),
@@ -327,9 +362,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
       if (mounted) {
         setState(() => _isGenerating = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text(e.toString().replaceFirst('Exception: ', ''))),
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
         );
       }
     }
@@ -355,6 +388,11 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
 
   // ── Wizard shell ────────────────────────────────────────────────────────────
   Widget _buildWizardView() {
+    // Sprout welcome step takes over the full screen
+    if (_step == _AvatarStep.sproutWelcome) {
+      return _buildSproutWelcomeView();
+    }
+
     return Column(
       children: [
         _buildTopBar(),
@@ -374,9 +412,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
                     _buildStepHeader(),
                     SizedBox(height: _isSprout ? 24 : 16),
                     Expanded(child: _buildStepContent()),
-                    // Sprout auto-advances on color/gender steps;
-                    // Next button only shown on the photo step for sprout,
-                    // or every step for older bands.
+                    // Sprout auto-advances on color/gender taps;
+                    // Next button only needed on the photo step for Sprout.
                     if (!_isSprout || _step == _AvatarStep.photo)
                       _buildNextButton(),
                     const SizedBox(height: 12),
@@ -387,6 +424,147 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
           ),
         ),
       ],
+    );
+  }
+
+  // ── Sprout welcome / choice screen ─────────────────────────────────────────
+  Widget _buildSproutWelcomeView() {
+    final greeting = _name.isNotEmpty ? 'Hi $_name! 👋' : 'Hi there! 👋';
+    return FadeTransition(
+      opacity: _fadeAnim,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          children: [
+            // Back / close
+            Align(
+              alignment: Alignment.centerLeft,
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close_rounded,
+                    color: Colors.white, size: 28),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Greeting
+            Text(
+              greeting,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.nunito(
+                fontSize: 34,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'How do you want your hero to look?',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.nunito(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withAlpha(210),
+              ),
+            ),
+            const Spacer(),
+            // Option A: Pick a premade hero
+            if (widget.onOpenGallery != null)
+              _buildWelcomeChoice(
+                emoji: '⭐',
+                topLine: 'Pick a ready hero!',
+                bottomLine: 'Choose from lots of cool characters',
+                color: const Color(0xFF5F4BDB),
+                onTap: () {
+                  Navigator.pop(context);
+                  widget.onOpenGallery!();
+                },
+              ),
+            const SizedBox(height: 20),
+            // Option B: Make one with a grown-up
+            _buildWelcomeChoice(
+              emoji: '📸',
+              topLine: 'Make one that looks like me!',
+              bottomLine: 'Ask a grown-up to help',
+              color: const Color(0xFF7A3FC8),
+              onTap: _goForward,
+            ),
+            const Spacer(),
+            // TTS replay button
+            TextButton.icon(
+              onPressed: _speakPrompt,
+              icon: Icon(Icons.volume_up_rounded,
+                  color: _bt.accent, size: 26),
+              label: Text(
+                'Read it to me!',
+                style: GoogleFonts.nunito(
+                  color: _bt.accent,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWelcomeChoice({
+    required String emoji,
+    required String topLine,
+    required String bottomLine,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(_bt.cardRadiusBase),
+          color: color,
+          boxShadow: [
+            BoxShadow(
+              color: color.withAlpha(120),
+              blurRadius: 18,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 44)),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    topLine,
+                    style: GoogleFonts.nunito(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    bottomLine,
+                    style: GoogleFonts.nunito(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withAlpha(200),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded,
+                color: Colors.white60, size: 20),
+          ],
+        ),
+      ),
     );
   }
 
@@ -405,7 +583,6 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
             ),
           ),
           Expanded(child: _buildProgressDots()),
-          // TTS: always visible for sprout/explorer, hidden for creator
           if (!_isCreator)
             IconButton(
               onPressed: _speakPrompt,
@@ -422,18 +599,19 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   }
 
   Widget _buildProgressDots() {
+    // Dots track the main wizard steps (not the sprout welcome screen)
+    final steps = _progressSteps;
+    final activeIndex = steps.indexOf(_step).clamp(0, steps.length - 1);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(_stepOrder.length, (i) {
-        final active = i == _stepIndex;
-        final done = i < _stepIndex;
-        final dotW = active ? (_isSprout ? 26.0 : 20.0) : (_isSprout ? 14.0 : 10.0);
-        final dotH = _isSprout ? 14.0 : 10.0;
+      children: List.generate(steps.length, (i) {
+        final active = i == activeIndex;
+        final done = i < activeIndex;
         return AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           margin: const EdgeInsets.symmetric(horizontal: 3),
-          width: dotW,
-          height: dotH,
+          width: active ? (_isSprout ? 26.0 : 20.0) : (_isSprout ? 14.0 : 10.0),
+          height: _isSprout ? 14.0 : 10.0,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
             color: done
@@ -447,17 +625,30 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     );
   }
 
-  // ── Step header (question + optional subtitle) ──────────────────────────────
+  // ── Step header ─────────────────────────────────────────────────────────────
   Widget _buildStepHeader() {
     final q = _question(_step);
     final sub = _subtitle(_step);
+
+    // Name greeting shown above the question for all bands
+    final nameGreeting = _name.isNotEmpty && !_isSprout
+        ? Text(
+            'Hi $_name!',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.quicksand(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: _bt.accent.withAlpha(210),
+            ),
+          )
+        : null;
 
     if (_isSprout) {
       return Text(
         q,
         textAlign: TextAlign.center,
         style: GoogleFonts.nunito(
-          fontSize: 30,
+          fontSize: 28,
           fontWeight: FontWeight.w900,
           color: Colors.white,
           height: 1.2,
@@ -467,6 +658,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
 
     return Column(
       children: [
+        if (nameGreeting != null) ...[nameGreeting, const SizedBox(height: 4)],
         Text(
           q,
           textAlign: TextAlign.center,
@@ -501,6 +693,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   // ── Step content router ─────────────────────────────────────────────────────
   Widget _buildStepContent() {
     switch (_step) {
+      case _AvatarStep.sproutWelcome:
+        return const SizedBox(); // handled above
       case _AvatarStep.gender:
         return _buildGenderStep();
       case _AvatarStep.hairColor:
@@ -531,7 +725,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
         );
       case _AvatarStep.favoriteColor:
         return _buildColorStep(
-          colors: _favoriteColors,
+          colors: _isSprout ? _sproutFavoriteColors : _allFavoriteColors,
           swatches: _favoriteSwatches,
           selected: _favoriteColor,
           onSelect: (v) {
@@ -557,10 +751,10 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _buildGenderCard(
-                value: 'girl', emoji: '👧', label: 'Girl', w: halfW, h: cardH),
-            _buildGenderCard(
-                value: 'boy', emoji: '👦', label: 'Boy', w: halfW, h: cardH),
+            _buildGenderCard(value: 'girl', emoji: '👧', label: 'Girl',
+                w: halfW, h: cardH),
+            _buildGenderCard(value: 'boy', emoji: '👦', label: 'Boy',
+                w: halfW, h: cardH),
           ],
         );
       },
@@ -589,50 +783,42 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
         height: h,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(_bt.cardRadiusBase),
-          color: sel
-              ? _bt.primary.withAlpha(160)
-              : Colors.white.withAlpha(22),
+          color: sel ? _bt.primary.withAlpha(160) : Colors.white.withAlpha(22),
           border: Border.all(
             color: sel ? _bt.accent : Colors.white.withAlpha(55),
             width: sel ? 3 : 1.5,
           ),
           boxShadow: sel
-              ? [
-                  BoxShadow(
-                    color: _bt.accent.withAlpha(90),
-                    blurRadius: 22,
-                    spreadRadius: 2,
-                  ),
-                ]
+              ? [BoxShadow(color: _bt.accent.withAlpha(90), blurRadius: 22, spreadRadius: 2)]
               : [],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(emoji,
-                style: TextStyle(fontSize: _isSprout ? 72 : 52)),
+            // Pulse-scale the emoji when selected
+            TweenAnimationBuilder<double>(
+              key: ValueKey('$value-$sel'),
+              tween: Tween(begin: sel ? 0.7 : 1.0, end: 1.0),
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.elasticOut,
+              builder: (_, scale, child) =>
+                  Transform.scale(scale: scale, child: child),
+              child: Text(emoji,
+                  style: TextStyle(fontSize: _isSprout ? 72 : 52)),
+            ),
             SizedBox(height: _isSprout ? 12 : 8),
             Text(
               label,
               style: _isSprout
                   ? GoogleFonts.nunito(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                    )
+                      fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white)
                   : GoogleFonts.quicksand(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
+                      fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white),
             ),
             if (sel) ...[
               SizedBox(height: _isSprout ? 10 : 6),
-              Icon(
-                Icons.check_circle_rounded,
-                color: _bt.accent,
-                size: _isSprout ? 32 : 22,
-              ),
+              Icon(Icons.check_circle_rounded, color: _bt.accent,
+                  size: _isSprout ? 32 : 22),
             ],
           ],
         ),
@@ -647,7 +833,6 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     required String selected,
     required ValueChanged<String> onSelect,
   }) {
-    // Swatch sizing per age band
     final swatchSize = _isSprout
         ? 88.0
         : _isExplorer
@@ -663,46 +848,53 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
         runSpacing: _isSprout ? 20 : 14,
         alignment: WrapAlignment.center,
         children: colors.map((name) {
-          final isSelected = name == selected;
+          final isSel = name == selected;
           final color = swatches[name] ?? Colors.white;
           return GestureDetector(
             onTap: () => onSelect(name),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: swatchSize,
-                  height: swatchSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: color,
-                    border: Border.all(
-                      color: isSelected
-                          ? _bt.accent
-                          : Colors.white.withAlpha(70),
-                      width: isSelected ? 4.0 : 2.0,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: isSelected
-                            ? color.withAlpha(150)
-                            : Colors.black.withAlpha(35),
-                        blurRadius: isSelected ? 18 : 6,
-                        spreadRadius: isSelected ? 2 : 0,
+                // Elastic pop-scale when selected
+                TweenAnimationBuilder<double>(
+                  key: ValueKey('$name-$isSel'),
+                  tween: Tween(begin: isSel ? 0.7 : 1.0, end: 1.0),
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.elasticOut,
+                  builder: (_, scale, child) =>
+                      Transform.scale(scale: scale, child: child),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: swatchSize,
+                    height: swatchSize,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: color,
+                      border: Border.all(
+                        color: isSel ? _bt.accent : Colors.white.withAlpha(70),
+                        width: isSel ? 4.0 : 2.0,
                       ),
-                    ],
+                      boxShadow: [
+                        BoxShadow(
+                          color: isSel
+                              ? color.withAlpha(160)
+                              : Colors.black.withAlpha(35),
+                          blurRadius: isSel ? 20 : 6,
+                          spreadRadius: isSel ? 3 : 0,
+                        ),
+                      ],
+                    ),
+                    child: isSel
+                        ? Icon(
+                            Icons.check_rounded,
+                            color: Colors.white,
+                            size: swatchSize * 0.44,
+                            shadows: const [
+                              Shadow(color: Colors.black54, blurRadius: 4)
+                            ],
+                          )
+                        : null,
                   ),
-                  child: isSelected
-                      ? Icon(
-                          Icons.check_rounded,
-                          color: Colors.white,
-                          size: swatchSize * 0.44,
-                          shadows: const [
-                            Shadow(color: Colors.black54, blurRadius: 4)
-                          ],
-                        )
-                      : null,
                 ),
                 if (showLabel) ...[
                   const SizedBox(height: 5),
@@ -710,12 +902,10 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
                     name,
                     style: GoogleFonts.quicksand(
                       fontSize: _isCreator ? 12 : 13,
-                      fontWeight: isSelected
-                          ? FontWeight.w800
-                          : FontWeight.w500,
-                      color: isSelected
-                          ? Colors.white
-                          : Colors.white.withAlpha(170),
+                      fontWeight:
+                          isSel ? FontWeight.w800 : FontWeight.w500,
+                      color:
+                          isSel ? Colors.white : Colors.white.withAlpha(170),
                     ),
                   ),
                 ],
@@ -739,15 +929,9 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
           height: previewSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(
-              color: _bt.accent.withAlpha(200),
-              width: 3,
-            ),
+            border: Border.all(color: _bt.accent.withAlpha(200), width: 3),
             boxShadow: [
-              BoxShadow(
-                color: _bt.accent.withAlpha(55),
-                blurRadius: 22,
-              ),
+              BoxShadow(color: _bt.accent.withAlpha(55), blurRadius: 22)
             ],
           ),
           clipBehavior: Clip.antiAlias,
@@ -770,17 +954,44 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
                           ? GoogleFonts.nunito(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
-                              color: Colors.white.withAlpha(220),
-                            )
+                              color: Colors.white.withAlpha(220))
                           : GoogleFonts.quicksand(
                               fontSize: 14,
-                              color: Colors.white.withAlpha(180),
-                            ),
+                              color: Colors.white.withAlpha(180)),
                     ),
                   ],
                 ),
         ),
-        SizedBox(height: _isSprout ? 28 : 20),
+        SizedBox(height: _isSprout ? 16 : 20),
+        // Sprout: "ask a grown-up" note
+        if (_isSprout)
+          Container(
+            margin: const EdgeInsets.only(bottom: 20),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Colors.white.withAlpha(22),
+              border: Border.all(color: _bt.accent.withAlpha(100)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('🧑', style: const TextStyle(fontSize: 24)),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    'Ask a grown-up to help take your photo!',
+                    style: GoogleFonts.nunito(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         // Camera / upload buttons
         if (_isSprout) ...[
           Row(
@@ -861,7 +1072,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     );
   }
 
-  // Sprout-style big icon button (used on photo step)
+  // Sprout-style big icon button
   Widget _buildBigIconButton({
     required IconData icon,
     required String label,
@@ -917,7 +1128,8 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
           backgroundColor: _bt.primary,
           foregroundColor: Colors.white,
           disabledBackgroundColor: Colors.white24,
-          padding: EdgeInsets.symmetric(vertical: _isSprout ? 18 : 14),
+          padding:
+              EdgeInsets.symmetric(vertical: _isSprout ? 18 : 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(_bt.buttonRadiusBase),
           ),
@@ -930,13 +1142,9 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
               label,
               style: _isSprout
                   ? GoogleFonts.nunito(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                    )
+                      fontSize: 22, fontWeight: FontWeight.w900)
                   : GoogleFonts.quicksand(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
+                      fontSize: 18, fontWeight: FontWeight.w700),
             ),
             if (!_isLastStep) ...[
               const SizedBox(width: 8),
@@ -969,13 +1177,11 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
                 ? GoogleFonts.nunito(
                     color: Colors.white,
                     fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                  )
+                    fontWeight: FontWeight.w900)
                 : GoogleFonts.fredoka(
                     color: Colors.white,
                     fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
+                    fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Text(
@@ -1005,13 +1211,11 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
                 ? GoogleFonts.nunito(
                     fontSize: 30,
                     fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                  )
+                    color: Colors.white)
                 : GoogleFonts.cinzelDecorative(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                    color: Colors.white),
           ),
           const SizedBox(height: 20),
           Container(
@@ -1021,10 +1225,9 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
               border: Border.all(color: _bt.accent, width: 2.5),
               boxShadow: [
                 BoxShadow(
-                  color: _bt.accent.withAlpha(80),
-                  blurRadius: 22,
-                  spreadRadius: 2,
-                ),
+                    color: _bt.accent.withAlpha(80),
+                    blurRadius: 22,
+                    spreadRadius: 2),
               ],
             ),
             clipBehavior: Clip.antiAlias,
@@ -1051,9 +1254,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
               _isSprout ? 'Use this hero!' : 'Use This Avatar',
               style: _isSprout
                   ? GoogleFonts.nunito(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                    )
+                      fontSize: 20, fontWeight: FontWeight.w900)
                   : null,
             ),
             style: ElevatedButton.styleFrom(
@@ -1071,7 +1272,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
           TextButton(
             onPressed: () => setState(() {
               _generatedImageBase64 = null;
-              _step = _AvatarStep.gender;
+              _step = _stepOrder.first;
             }),
             child: Text(
               _isSprout ? 'Make a new one' : 'Start over',

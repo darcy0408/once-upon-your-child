@@ -2146,6 +2146,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         builder: (_) => CustomAvatarScreen(
           initialName: widget.wizardData.characterName,
           initialAge: widget.wizardData.characterAge,
+          // Sprout welcome screen: "Pick a ready hero" routes here instead
+          onOpenGallery: _openAvatarGallery,
         ),
         fullscreenDialog: true,
       ),
