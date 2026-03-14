@@ -2,6 +2,28 @@
 
 ---
 
+## Session Update - 2026-03-14 (Hidden Parent Context Live Story Validation)
+
+### Scope Completed
+- Ran a live manual validation pass for one normal Big Feelings story and one interactive Big Feelings continuation using the hidden parent context `trouble hearing no`.
+
+### Live Result
+- **Normal story path**
+  - The generated story opened with `Milo felt so mad when Pip said no`.
+  - The story naturally modeled the configured helper with a dragon breath.
+  - The hidden context was reflected in the trigger rather than being exposed explicitly to the child.
+- **Interactive story path**
+  - The continuation kept the anger thread and showed the messy branch consequence (`The blocks tumbled on the floor. You made a big noise.`).
+  - Repair-oriented choices came back as:
+    - `Say sorry for the noise`
+    - `Help Pip pick up the blocks`
+
+### Assessment
+- The hidden parent context is now influencing actual story content in both normal and interactive Big Feelings generation.
+- The context is staying hidden from the child while still shaping the trigger and repair beats.
+
+---
+
 ## Session Update - 2026-03-13 (Creator Asset Completion & Full Youth Coverage)
 
 ### Scope Completed
