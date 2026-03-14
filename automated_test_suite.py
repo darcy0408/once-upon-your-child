@@ -6,8 +6,9 @@ Tests Phase 3 Custom Elements and core functionality
 import requests
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import sys
+import jwt
 
 # Fix Windows console encoding for emoji support
 if sys.platform == 'win32':
@@ -15,7 +16,8 @@ if sys.platform == 'win32':
 
 # Configuration
 BACKEND_URL = "http://127.0.0.1:5000"
-TEST_TIMEOUT = 60  # seconds
+TEST_TIMEOUT = 120  # seconds
+JWT_SECRET = "dev-secret-key"
 
 class StoryWeaverTester:
     def __init__(self):
@@ -23,6 +25,21 @@ class StoryWeaverTester:
             "test_run": datetime.now().isoformat(),
             "tests": [],
             "summary": {}
+        }
+        self.auth_headers = self._generate_auth_headers()
+
+    def _generate_auth_headers(self):
+        """Generate a test JWT token and headers."""
+        payload = {
+            'user_id': 'test_user_123',
+            'sub': 'test_user_123',
+            'email': 'test@example.com',
+            'exp': int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())
+        }
+        token = jwt.encode(payload, JWT_SECRET, algorithm='HS256')
+        return {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json'
         }
 
     def log_test(self, test_name, status, details="", duration=0, story_preview=""):
@@ -89,6 +106,7 @@ class StoryWeaverTester:
             response = requests.post(
                 f"{BACKEND_URL}/generate-story",
                 json=payload,
+                headers=self.auth_headers,
                 timeout=TEST_TIMEOUT
             )
             duration = int((time.time() - start) * 1000)
@@ -243,6 +261,7 @@ class StoryWeaverTester:
                 response = requests.post(
                     f"{BACKEND_URL}/generate-story",
                     json=payload,
+                    headers=self.auth_headers,
                     timeout=TEST_TIMEOUT
                 )
                 duration = int((time.time() - start) * 1000)

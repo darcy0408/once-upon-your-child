@@ -67,6 +67,7 @@ AGE_CONSTRAINTS = {
     '13-15': {
         'regular': {'short': (1600, 2200), 'medium': (2400, 3400), 'long': (3400, 4500)},
         'rhyme': {'short': (500, 600), 'medium': (600, 750), 'long': (750, 850)},
+        'ltr': {'short': 10, 'medium': 12, 'long': 14},
         'notes': (
             'POV: Third-person limited OR close first-person; the introspective voice must feel earned, not performative. '
             'Sentences: Fully varied — fragments allowed for impact; sentence rhythm is a craft choice. '
@@ -79,6 +80,7 @@ AGE_CONSTRAINTS = {
     '15-18': {
         'regular': {'short': (2000, 2800), 'medium': (3000, 4200), 'long': (4200, 6000)},
         'rhyme': {'short': (600, 800), 'medium': (800, 900), 'long': (900, 1000)},
+        'ltr': {'short': 10, 'medium': 12, 'long': 14},
         'notes': (
             'POV: First-person encouraged, or tight third-person with a distinct narrative voice — the narrator has a personality. '
             'Sentences: Literary rhythm — alternate fragments with long, flowing sentences; prose style is part of the storytelling. '
@@ -91,6 +93,7 @@ AGE_CONSTRAINTS = {
     'adult': {
         'regular': {'short': (2000, 3000), 'medium': (3200, 5200), 'long': (5200, 7800)},
         'rhyme': {'short': (650, 850), 'medium': (850, 950), 'long': (950, 1000)},
+        'ltr': {'short': 10, 'medium': 12, 'long': 14},
         'notes': (
             'POV: Any — first-person, third-person limited, or close third — the choice should feel intentional. '
             'Sentences: Literary cadence and rhythm are craft decisions; prose should feel authored, not generated. '
