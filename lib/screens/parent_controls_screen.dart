@@ -20,37 +20,72 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       value: 'trouble hearing no',
       label: 'Trouble hearing no',
       emoji: '🚫',
-      description: 'Use stories to practice hearing no, calming down, and recovering without a blowup.',
+      description:
+          'Use stories to practice hearing no, calming down, and recovering without a blowup.',
     ),
     (
       value: 'friendship hurt',
       label: 'Friendship hurt',
       emoji: '💔',
-      description: 'Steer stories toward hurt feelings, repair, and reconnecting with another child.',
+      description:
+          'Steer stories toward hurt feelings, repair, and reconnecting with another child.',
     ),
     (
       value: 'bedtime worry',
       label: 'Bedtime worry',
       emoji: '🌙',
-      description: 'Shape stories around nighttime fear, comfort, and small brave bedtime steps.',
+      description:
+          'Shape stories around nighttime fear, comfort, and small brave bedtime steps.',
     ),
     (
       value: 'sibling conflict',
       label: 'Sibling conflict',
       emoji: '🧒',
-      description: 'Focus stories on sibling friction, shared space, repair, and calmer re-entry.',
+      description:
+          'Focus stories on sibling friction, shared space, repair, and calmer re-entry.',
     ),
     (
       value: 'hard transitions',
       label: 'Hard transitions',
       emoji: '🔄',
-      description: 'Support transitions between activities with less resistance, panic, or overwhelm.',
+      description:
+          'Support transitions between activities with less resistance, panic, or overwhelm.',
     ),
     (
       value: 'meltdown when stuck',
       label: 'Meltdown when stuck',
       emoji: '🧩',
-      description: 'Use stories to model frustration tolerance, help-seeking, and trying again after getting stuck.',
+      description:
+          'Use stories to model frustration tolerance, help-seeking, and trying again after getting stuck.',
+    ),
+  ];
+  static const _bigFeelingsRepairOptions = [
+    (
+      value: 'Say sorry',
+      label: 'Say sorry',
+      emoji: '🫶',
+      description:
+          'Guides stories toward naming the bump and apologizing simply.',
+    ),
+    (
+      value: 'Help fix it',
+      label: 'Help fix',
+      emoji: '🛠️',
+      description:
+          'Pushes the story toward rebuilding, cleaning up, or making things right.',
+    ),
+    (
+      value: 'Use gentle words',
+      label: 'Gentle words',
+      emoji: '💬',
+      description: 'Encourages softer re-entry after yelling or grabbing.',
+    ),
+    (
+      value: 'Try again',
+      label: 'Try again',
+      emoji: '🔁',
+      description:
+          'Keeps the repair beat focused on a fresh start without shame.',
     ),
   ];
   bool _allowPhotoAvatar = true;
@@ -61,6 +96,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
   int _bedtimeMinute = 0;
   int _todayUsage = 0;
   String? _bigFeelingsHiddenContext;
+  String? _bigFeelingsRepairGoal;
 
   @override
   void initState() {
@@ -76,6 +112,8 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
     final usage = await ScreenTimeService.instance.getTodayUsageMinutes();
     final bigFeelingsHiddenContext =
         await _consentService.getBigFeelingsParentHiddenContext();
+    final bigFeelingsRepairGoal =
+        await _consentService.getBigFeelingsRepairGoal();
     if (!mounted) {
       return;
     }
@@ -87,6 +125,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
       _bedtimeMinute = bedtime.minute;
       _todayUsage = usage;
       _bigFeelingsHiddenContext = bigFeelingsHiddenContext;
+      _bigFeelingsRepairGoal = bigFeelingsRepairGoal;
       _loading = false;
     });
   }
@@ -397,6 +436,107 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                         ),
                     ],
                   ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    'Choose one private repair goal to steer how the story reconnects after a bump.',
+                    style: GoogleFonts.fredoka(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('None'),
+                        selected: _bigFeelingsRepairGoal == null,
+                        selectedColor: const Color(0xFFFFD76A),
+                        backgroundColor: Colors.white,
+                        labelStyle: TextStyle(
+                          color: _bigFeelingsRepairGoal == null
+                              ? const Color(0xFF1A0E3A)
+                              : const Color(0xFF2E2158),
+                          fontWeight: _bigFeelingsRepairGoal == null
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
+                        onSelected: (_) async {
+                          await _consentService.setBigFeelingsRepairGoal(null);
+                          if (mounted) {
+                            setState(() => _bigFeelingsRepairGoal = null);
+                          }
+                        },
+                      ),
+                      for (final option in _bigFeelingsRepairOptions)
+                        ChoiceChip(
+                          key: ValueKey(
+                            'parent_big_feelings_repair_goal_${option.value}',
+                          ),
+                          avatar: Text(option.emoji),
+                          label: Text(option.label),
+                          selected: _bigFeelingsRepairGoal == option.value,
+                          selectedColor: const Color(0xFFFFD76A),
+                          backgroundColor: Colors.white,
+                          labelStyle: TextStyle(
+                            color: _bigFeelingsRepairGoal == option.value
+                                ? const Color(0xFF1A0E3A)
+                                : const Color(0xFF2E2158),
+                            fontWeight: _bigFeelingsRepairGoal == option.value
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                          onSelected: (_) async {
+                            final nextValue =
+                                _bigFeelingsRepairGoal == option.value
+                                    ? null
+                                    : option.value;
+                            await _consentService
+                                .setBigFeelingsRepairGoal(nextValue);
+                            if (mounted) {
+                              setState(
+                                  () => _bigFeelingsRepairGoal = nextValue);
+                            }
+                          },
+                        ),
+                    ],
+                  ),
+                  if (_bigFeelingsRepairGoal != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(16),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.handshake_rounded,
+                            color: Color(0xFFFFD700),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Text(
+                              _bigFeelingsRepairOptions
+                                  .firstWhere(
+                                    (option) =>
+                                        option.value == _bigFeelingsRepairGoal,
+                                  )
+                                  .description,
+                              style: GoogleFonts.fredoka(
+                                color: Colors.white70,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   if (_bigFeelingsHiddenContext != null) ...[
                     const SizedBox(height: AppSpacing.sm),
                     Container(
@@ -417,12 +557,12 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                           Expanded(
                             child: Text(
                               _bigFeelingsContextOptions
-                                      .firstWhere(
-                                        (option) =>
-                                            option.value ==
-                                            _bigFeelingsHiddenContext,
-                                      )
-                                      .description,
+                                  .firstWhere(
+                                    (option) =>
+                                        option.value ==
+                                        _bigFeelingsHiddenContext,
+                                  )
+                                  .description,
                               style: GoogleFonts.fredoka(
                                 color: Colors.white70,
                                 fontSize: 13,

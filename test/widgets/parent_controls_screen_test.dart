@@ -22,6 +22,7 @@ void main() {
   testWidgets('loads persisted hidden big feelings context', (tester) async {
     SharedPreferences.setMockInitialValues({
       'big_feelings_parent_hidden_context': 'bedtime worry',
+      'big_feelings_repair_goal': 'Help fix it',
     });
 
     await tester.pumpWidget(buildSubject());
@@ -35,6 +36,14 @@ void main() {
     );
 
     expect(bedtimeChip.selected, isTrue);
+
+    final repairChip = tester.widget<ChoiceChip>(
+      find.byKey(
+        const ValueKey('parent_big_feelings_repair_goal_Help fix it'),
+      ),
+    );
+
+    expect(repairChip.selected, isTrue);
   });
 
   testWidgets('persists selected hidden big feelings context', (tester) async {
@@ -55,6 +64,27 @@ void main() {
     expect(
       prefs.getString('big_feelings_parent_hidden_context'),
       'sibling conflict',
+    );
+  });
+
+  testWidgets('persists selected big feelings repair goal', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.pumpWidget(buildSubject());
+    await tester.pumpAndSettle();
+    await revealBigFeelingsSection(tester);
+
+    await tester.tap(
+      find.byKey(
+        const ValueKey('parent_big_feelings_repair_goal_Use gentle words'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(
+      prefs.getString('big_feelings_repair_goal'),
+      'Use gentle words',
     );
   });
 }

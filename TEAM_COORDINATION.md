@@ -2,6 +2,43 @@
 
 ---
 
+## Session Update - 2026-03-14 (Big Feelings Shared Repair Goal Controls)
+
+### Scope Completed
+- Added shared parent-level `repair goal` controls for Big Feelings so caregivers can set the reconnect target once and have it carry into the preschool Big Feelings flow.
+
+### Changes
+- `lib/services/parental_consent_service.dart`
+  - Added persisted get/set helpers for `big_feelings_repair_goal`.
+- `lib/screens/parent_controls_screen.dart`
+  - Added a new Big Feelings repair-goal section with chips for:
+    - Say sorry
+    - Help fix it
+    - Use gentle words
+    - Try again
+  - Added a private description card for the selected repair goal.
+- `lib/screens/big_feelings_flow_screen.dart`
+  - Added loading/persistence for the shared repair goal.
+  - Added repair-goal chips to the hidden parent controls inside the preschool flow.
+  - Returned the selected repair goal in `BigFeelingsFlowResult`.
+- `lib/screens/wizard_steps/feeling_selection_step.dart`
+  - Passed the saved repair goal into the Big Feelings flow and stored the returned value in `WizardData.selectedRepairGoal`.
+- `test/widgets/parent_controls_screen_test.dart`
+  - Added coverage for persisted repair-goal selection in the shared parent controls screen.
+- `test/widgets/big_feelings_flow_screen_test.dart`
+  - Added coverage for repair-goal persistence and reload inside the preschool Big Feelings flow.
+
+### Verification
+```bash
+flutter test test/widgets/parent_controls_screen_test.dart
+flutter test test/widgets/big_feelings_flow_screen_test.dart
+```
+
+### Result
+- Shared parent repair-goal setup now persists and preloads correctly in both the parent controls surface and the in-flow hidden parent controls.
+
+---
+
 ## Session Update - 2026-03-14 (Parent Controls Copy Tightening)
 
 ### Scope Completed
