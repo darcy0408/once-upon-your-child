@@ -278,6 +278,38 @@ def _celery_runs_eagerly() -> bool:
         return False
 
 
+def _cache_task_owner(cache, task_id: str, user_id: str) -> None:
+    if not task_id or not user_id:
+        return
+    try:
+        cache.set(f"task-owner:{task_id}", str(user_id), timeout=60 * 60 * 24)
+    except Exception:
+        logger.warning("Failed to cache task owner for %s", task_id, exc_info=True)
+
+
+def _resolve_task_owner(cache, task_id: str, task) -> str | None:
+    if not task_id:
+        return None
+
+    try:
+        cached_owner = cache.get(f"task-owner:{task_id}")
+    except Exception:
+        cached_owner = None
+
+    if cached_owner:
+        return str(cached_owner)
+
+    info = getattr(task, "info", None)
+    if isinstance(info, dict) and info.get("user_id"):
+        return str(info["user_id"])
+
+    result = getattr(task, "result", None)
+    if isinstance(result, dict) and result.get("user_id"):
+        return str(result["user_id"])
+
+    return None
+
+
 def create_story_blueprint(
     limiter,
     cache,
@@ -457,6 +489,7 @@ def create_story_blueprint(
                 )
             try:
                 task = generate_story_task.delay(**task_kwargs)
+                _cache_task_owner(cache, task.id, user_id)
                 return (
                     jsonify(
                         {
@@ -501,6 +534,7 @@ def create_story_blueprint(
                 ), 500
             try:
                 task = generate_story_task.delay(**task_kwargs)
+                _cache_task_owner(cache, task.id, user_id)
                 return (
                     jsonify(
                         {
@@ -586,6 +620,25 @@ def create_story_blueprint(
     @require_auth
     def get_task_status(task_id):
         task = celery.AsyncResult(task_id)
+        task_owner_id = _resolve_task_owner(cache, task_id, task)
+
+        # Security: verify resource ownership
+        if task_owner_id and str(task_owner_id) != str(request.current_user.id):
+            logger.warning(
+                "IDOR attempt: User %s tried to access task %s owned by %s",
+                request.current_user.id,
+                task_id,
+                task_owner_id,
+            )
+            return jsonify({"error": "Access denied"}), 403
+
+        if task_owner_id is None and task.state in {"PENDING", "PROCESSING"}:
+            logger.warning(
+                "Task %s has no owner metadata; refusing to disclose state to user %s",
+                task_id,
+                request.current_user.id,
+            )
+            return jsonify({"error": "Task not found"}), 404
 
         if task.state == "PENDING":
             response = {
@@ -601,11 +654,6 @@ def create_story_blueprint(
             }
         elif task.state == "SUCCESS":
             result = task.result or {}
-            # Ownership check: verify the task belongs to the requesting user
-            task_user_id = result.get("user_id")
-            if task_user_id and str(task_user_id) != str(request.current_user.id):
-                logger.warning(f"IDOR attempt: User {request.current_user.id} tried to access task {task_id} owned by {task_user_id}")
-                return jsonify({"error": "Access denied"}), 403
             response = {
                 "status": "complete",
                 "result": result,
