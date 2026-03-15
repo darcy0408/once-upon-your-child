@@ -6,6 +6,8 @@ following the Interactive Children's Adventure Story Weaver specification.
 import json
 from typing import Dict, List, Optional, Any
 
+from backend.services.story_service import transform_parent_context_to_story_guidance
+
 
 class InteractiveAdventurePromptBuilder:
     """
@@ -664,8 +666,11 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
         body_signal = big_feelings_context.get('body_signal') or current_feeling.get('physical_signs')
         coping_tool = big_feelings_context.get('coping_tool')
         repair_goal = big_feelings_context.get('repair_goal')
-        parent_hidden_context = big_feelings_context.get('parent_hidden_context')
+        transformed_guidance = transform_parent_context_to_story_guidance(big_feelings_context)
+        story_guidance = transformed_guidance.get('story_guidance')
 
+        if not emotion_name:
+            emotion_name = transformed_guidance.get('feeling')
         if not emotion_name:
             return ""
 
@@ -756,8 +761,8 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
             lines.append(f"- Helper/tool to thread through choices: {coping_tool}")
         if repair_goal:
             lines.append(f"- If the hero causes a bump, include this repair beat: {repair_goal}")
-        if parent_hidden_context:
-            lines.append(f"- Hidden parent context: {parent_hidden_context}")
+        if story_guidance:
+            lines.append(f"- Parent-guided hidden scaffolding: {story_guidance}")
         lines.append("- Show that feelings are okay and choices shape what happens next.")
         if feeling_specific_rule:
             lines.append(feeling_specific_rule)

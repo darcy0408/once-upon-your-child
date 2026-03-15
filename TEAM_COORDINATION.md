@@ -2,6 +2,40 @@
 
 ---
 
+## Session Update - 2026-03-14 (Pet Avatar Fallback Provider)
+
+### Scope Completed
+- Added a resilient fallback chain for pet magical avatar generation when the Gemini pet-image path fails or is unavailable.
+- Preserved the original uploaded pet photo as a final fallback instead of failing the feature outright.
+- Surfaced provider/debug metadata through the pet avatar API response and updated Flutter clients to treat partial success correctly.
+
+### Changes
+- `backend/services/avatar_generation_service.py`:
+  - Wrapped the Gemini pet-avatar call in structured fallback handling.
+  - Added prompt-based text-to-image fallback using inferred pet type/color, e.g. `Pixar-style magical cat, black and white fur, sparkly eyes, transparent PNG background, 512x512`.
+  - Added normalized pet-avatar response metadata: `provider_used` and `transformation_applied`.
+  - Added final original-photo fallback with MIME detection and `style='pet-photo-original'`.
+- `backend/routes/avatar_routes.py`:
+  - Returns `200` when a transformed avatar is produced.
+  - Returns `206` when the original pet photo is returned as fallback.
+  - Includes top-level `provider_used` and `transformation_applied` in the response for debugging.
+- `lib/screens/wizard_steps/hero_creator_step.dart`:
+  - Handles `206` as a usable fallback instead of an error.
+  - Shows: `We kept your pet's real photo — magical transformation is temporarily unavailable`.
+  - Continues displaying the pet image normally.
+- `lib/screens/wizard_steps/custom_pet_avatar_screen.dart`:
+  - Updated to accept the same `206` partial-success response.
+- Tests:
+  - `backend/tests/unit/test_pet_avatar.py`: added unit coverage for Gemini failure activating the text-to-image fallback.
+  - `backend/tests/integration/test_pet_avatar_api.py`: added API coverage for the `206` original-photo fallback response.
+
+### Verification
+- Ran `python -m pytest backend/tests/unit/test_pet_avatar.py backend/tests/integration/test_pet_avatar_api.py -q`
+- Result: `7 passed`
+- Ran `dart format` on the touched Flutter files.
+
+---
+
 ## Session Update - 2026-03-14 (Gemini Config Verification Checklist)
 
 ### Scope Completed
