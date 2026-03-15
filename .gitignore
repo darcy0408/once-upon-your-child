@@ -172,3 +172,4 @@ CONTENT_QUALITY_REPORT_*.md
 
 # Golden test failure artifacts
 test/goldens/failures/
+tmp_big_feelings_live.json
