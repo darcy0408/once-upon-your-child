@@ -2,6 +2,41 @@
 
 ---
 
+## Session Update - 2026-03-14 (Universal Diverse Characters & Tactile UI Feedback)
+
+### Scope Completed
+- **Diverse Character Expansion:**
+  - Generated 18 new Pixar-style character assets to ensure representation across all age bands.
+  - Added Asian, Black, Hispanic, and South Asian variants for Early Readers (6-8), Adventurers (9-11), and Creators (12+).
+- **Universal Character Carousel:**
+  - Replaced static gender buttons with a smooth, swipeable `PageView` carousel for **all** age bands.
+  - Selection now automatically updates both `characterGender` and `selectedSkinTone` in `WizardData`, ensuring high-fidelity AI story generation that matches the user's visual choice.
+- **Tactile UI Feedback (Universal):**
+  - Expanded the "Bigger & Brighter" button logic to all age bands.
+  - Created and integrated "clicked" textures for "Continue" and "Make Magic" buttons for Explorers, Adventurers, and Creators.
+- **Project Structure & Asset Management:**
+  - Reorganized UI assets into age-specific directories (`explorer`, `adventurer`, `creator`).
+  - Updated `pubspec.yaml` and widget logic to dynamically load textures based on the active age band.
+
+### Changes
+- `lib/screens/wizard_steps/hero_creator_step.dart`:
+  - Added diverse character data sets for all age bands.
+  - Replaced static gender picker with `_buildHeroCharacterCarousel`.
+  - Wired carousel to update `characterGender` and `selectedSkinTone`.
+- `lib/widgets/image_continue_button.dart` & `lib/widgets/image_make_magic_button.dart`:
+  - Made widgets age-band aware to load corresponding "normal" and "clicked" PNG textures.
+- `pubspec.yaml`:
+  - Registered new age-specific asset directories.
+- `assets/images/ui/`:
+  - Created `explorer/`, `adventurer/`, and `creator/` directories with full asset sets.
+
+### Result
+- **Diversity:** ✅ 100% COMPLETE. Every child now has a hero that looks like them across all app modes.
+- **UI Feel:** ✅ SUCCESS. Buttons now provide satisfying physical feedback globally.
+- **Stability:** ✅ PASS. Fixed missing imports and ensured clean compilation.
+
+---
+
 ## Session Update - 2026-03-14 (Pet Magical Transformation Failure Diagnosis)
 
 ### Scope Completed
