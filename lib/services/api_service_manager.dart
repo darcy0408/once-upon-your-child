@@ -538,6 +538,7 @@ class ApiServiceManager {
     required String characterName,
     required String theme,
     required int age,
+    String? childProfileId,
     String? companion,
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
@@ -569,7 +570,10 @@ class ApiServiceManager {
     final http.Client? effectiveClient = client ?? _testClient;
 
     final bool needsBackendForFeatures =
-        includeIllustrations || learningToReadMode;
+        includeIllustrations ||
+        learningToReadMode ||
+        currentFeeling != null ||
+        (childProfileId != null && childProfileId.trim().isNotEmpty);
 
     if (!useOwnKey || needsBackendForFeatures) {
       final userApiKey = useOwnKey ? await getUserApiKey() : null;
@@ -577,6 +581,7 @@ class ApiServiceManager {
         characterName: characterName,
         theme: theme,
         age: age,
+        childProfileId: childProfileId,
         companion: companion,
         characterDetails: characterDetails,
         additionalCharacters: additionalCharacters,
@@ -609,6 +614,7 @@ class ApiServiceManager {
       characterName: characterName,
       theme: theme,
       age: age,
+      childProfileId: childProfileId,
       companion: companion,
       characterDetails: characterDetails,
       additionalCharacters: additionalCharacters,
@@ -797,6 +803,7 @@ class ApiServiceManager {
     required String characterName,
     required String theme,
     required int age,
+    String? childProfileId,
     String? companion,
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
@@ -832,6 +839,7 @@ class ApiServiceManager {
           characterName: characterName,
           theme: theme,
           age: age,
+          childProfileId: childProfileId,
           companion: companion,
           characterDetails: characterDetails,
           additionalCharacters: additionalCharacters,
@@ -880,6 +888,7 @@ class ApiServiceManager {
     required String characterName,
     required String theme,
     required int age,
+    String? childProfileId,
     String? companion,
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,
@@ -910,6 +919,7 @@ class ApiServiceManager {
     final body = {
       'character': characterName.isNotEmpty ? characterName : 'Hero',
       'theme': theme,
+      'child_profile_id': childProfileId,
       'companion': companion,
       'character_age': age,
       'character_details': characterDetails,
@@ -1108,9 +1118,6 @@ class ApiServiceManager {
     ];
     final resolvedRepairGoal =
         (currentFeeling['repair_goal'] as String?) ?? repairGoal;
-    final resolvedParentHiddenContext =
-        (currentFeeling['parent_hidden_context'] as String?) ??
-            parentHiddenContext;
 
     final String directFeeling = emotionName?.toLowerCase() ?? 'big';
     final String startExample1 =
@@ -1160,7 +1167,7 @@ ${resolvedCopingStrategies.map((s) => '   - $s').join('\n')}
 5. By the end, $characterName should feel better about the $emotionName feeling - not making it disappear, but learning to work with it
 6. Validate the emotion: "$emotionName is a normal, okay feeling to have"
 7. Show that feelings come and go, and we can handle them
-${resolvedRepairGoal != null && resolvedRepairGoal.trim().isNotEmpty ? "8. If the feeling causes a social bump, include this repair beat: $resolvedRepairGoal\n" : ""}${resolvedParentHiddenContext != null && resolvedParentHiddenContext.trim().isNotEmpty ? "9. Hidden parent context: $resolvedParentHiddenContext\n" : ""}${age <= 5 ? '10. For ages 5 and under, use very simple words like mad, sad, and scared. Keep the trigger child-sized and concrete.\n' : ''}
+${resolvedRepairGoal != null && resolvedRepairGoal.trim().isNotEmpty ? "8. If the feeling causes a social bump, include this repair beat: $resolvedRepairGoal\n" : ""}${age <= 5 ? '9. For ages 5 and under, use very simple words like mad, sad, and scared. Keep the trigger child-sized and concrete.\n' : ''}
 
 This is a FEELINGS-FIRST story. The emotion is the main character's journey.
 ''';
