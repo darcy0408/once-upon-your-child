@@ -2,6 +2,46 @@
 
 ---
 
+## Session Update - 2026-03-15 (Production Smoke Test Coverage)
+
+### Scope Completed
+- Added a production-targeted smoke test module for the live Railway backend.
+- Verified the actual auth implementation used by the backend is in `backend/routes/utility_routes.py`, not `backend/routes/auth_routes.py`.
+- Covered the critical live flows for health, auth rejection, anonymous auth bootstrap, character CRUD, and story generation.
+
+### Changes
+- `backend/tests/smoke/test_production_smoke.py`
+  - Added a standalone smoke suite that defaults to `https://story-weaver-app-production.up.railway.app`.
+  - Supports `SMOKE_TEST_API_KEY`, `SMOKE_TEST_TOKEN`, or `SMOKE_TEST_JWT` when provided.
+  - Falls back to `/auth/anonymous` when no env token is set.
+  - Exercises:
+    - `/health`
+    - `/health/detailed`
+    - unauthenticated access rejection for `/generate-story` and `/get-characters`
+    - invalid token rejection
+    - CORS preflight on `/health`
+    - authenticated character CRUD via `/create-character`, `/characters/<id>`, and `/get-characters`
+    - authenticated story generation via `/generate-story`
+  - Cleans up created characters after the CRUD flow.
+
+### Verification
+- `python -m py_compile backend/tests/smoke/test_production_smoke.py`
+  - Result: pass
+- `python -m pytest backend/tests/smoke/test_production_smoke.py -q`
+  - Result: `8 passed, 2 failed`
+
+### Production Findings
+- `GET /this-route-does-not-exist`
+  - Returned `500` instead of the expected `404`.
+- `POST /generate-story`
+  - Returned `500` with `{"details":"No module named 'rredis'","error":"Story generation failed completely"}` during the live smoke run.
+
+### Follow-Up
+- Fix the production 404/error-handler path so unknown routes do not raise `500`.
+- Fix the production story-generation dependency/config issue involving missing module `rredis`.
+
+---
+
 ## Session Update - 2026-03-15 (Authorization Ownership Audit)
 
 ### Scope Completed
