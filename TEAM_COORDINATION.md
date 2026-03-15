@@ -34,6 +34,33 @@
 
 ---
 
+## Session Update - 2026-03-14 (Big Feelings Hidden Parent Layer Direction Clarified)
+
+### Product Direction
+- Hidden Big Feelings guidance should remain parent-only and persistent.
+- Parent input is meant to be entered once in a private surface and quietly influence later Big Feelings stories.
+- The child should never see:
+  - raw issue text
+  - hidden labels
+  - a review summary of hidden parent context
+
+### Agreed Boundaries
+- Do not surface hidden context on the child-visible magic review step.
+- Prefer parent-only storage in `ParentControlsScreen` over requiring a parent to configure settings inside the child flow.
+- Future hidden inputs should support:
+  - real-life struggle
+  - repair goal
+  - optional short freeform parent note
+
+### Follow-Up Implication
+- The in-flow parent controls in `big_feelings_flow_screen.dart` are now a candidate for later cleanup or de-emphasis once the parent-only note path is implemented.
+
+### Status
+- Direction captured for future implementation.
+- No code changes in this step.
+
+---
+
 ## Session Update - 2026-03-14 (Adolescent Asset Completion & High-Fidelity Milestone)
 
 ### Scope Completed
