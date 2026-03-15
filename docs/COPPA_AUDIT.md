@@ -59,8 +59,12 @@ The following gaps were identified in the current Privacy Policy:
 ## Overall Assessment
 **Status:** ⚠️ **Good faith compliance — launchable with known gap**
 
-The high-risk issues (no backend consent sync, no deletion UI, unnamed third parties, no Notice to Parents) have been resolved. One known gap remains: strict "verifiable" parental consent (checkbox is not FTC-verifiable). This is a deliberate pragmatic decision given the app's low-risk profile (no ads, no data monetization, minimal collection, educational purpose). A $0.50 Stripe micro-charge verification is planned for v1.1.
+The high-risk issues (no backend consent sync, no deletion UI, unnamed third parties, no Notice to Parents) have been resolved. One known gap remains: strict "verifiable" parental consent (checkbox is not FTC-verifiable). This is a deliberate pragmatic decision given the app's low-risk profile (no ads, no data monetization, minimal collection, educational purpose).
 
 **Remaining open items:**
 - Operator physical address and phone number still needed in Privacy Policy (lower priority)
-- v1.1: Stripe micro-charge as optional verifiable consent upgrade
+- v1.1: Add verifiable consent — offer parents a choice of two methods:
+  1. **SMS OTP** — parent enters phone number, receives a one-time code, enters it in-app. Proves they control a real phone. Requires Twilio or similar (~$0.0075/SMS). One-time setup only, never asked again.
+  2. **$0.50 Stripe micro-charge** — parent taps to authorize a nominal charge via Stripe (already integrated). FTC-recognized verifiable method. Can be refunded or kept as nominal fee.
+
+  Both options shown on the consent screen; parent picks whichever is easier. Either one satisfies "verifiable" under COPPA. Implementation: new `VerifyConsentScreen` with method picker → Twilio/Stripe call → backend records `verified: true` on consent record.
