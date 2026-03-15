@@ -590,6 +590,72 @@
 
 ---
 
+## Session Update - 2026-03-15 (COPPA Fixes + Production Hardening)
+
+### Scope Completed
+- Implemented all three COPPA compliance code fixes identified in the audit.
+- Fixed production 404 → 500 bug and verified deployment.
+- Planned v1.1 verifiable consent upgrade path (SMS OTP + Stripe micro-charge).
+
+### Changes Applied
+
+**Fix 1 — Consent synced to backend** (`lib/services/parental_consent_service.dart`):
+- `recordConsent()` now POSTs `{age, method, allow_photo_avatar, recorded_at, parent_email}` to `POST /api/user/<id>/consent` after saving locally.
+- Best-effort: local consent is source of truth, backend sync failure is non-fatal.
+- Default method changed from `'parent'` to `'email_plus'` for under-13 users.
+
+**Fix 2 — Data deletion wired to backend** (`lib/services/child_profile_service.dart`):
+- `deleteProfile()` now calls `DELETE /api/user/<id>/data` after removing local data.
+- Best-effort: local deletion is not blocked by backend failure.
+
+**Fix 3 — Delete All My Data UI** (`lib/screens/parent_controls_screen.dart`):
+- Added "Data & Privacy" section with a prominent red "Delete All My Data" button.
+- Confirmation dialog with COPPA right-to-erasure language.
+- Calls `DELETE /api/user/<id>/data` on confirmation.
+
+**Fix 4 — Consent screen: Notice to Parents** (`lib/screens/parental_consent_screen.dart`):
+- Title updated to "Notice to Parents & Guardians."
+- Added disclosure box listing: what is collected, what is not done, and all three third-party services (Google Gemini, ElevenLabs, Stripe).
+- Parent email remains optional (required flow was reverted — see decision below).
+- Consent method stored as `'email_plus'` for under-13.
+
+**Fix 5 — Privacy Policy third-party disclosures** (`PRIVACY_POLICY.md`):
+- New Third-Party Services section explicitly names Google Gemini, ElevenLabs, Stripe, and Railway.
+- Each entry describes what data is shared and links to that service's privacy policy.
+- Photo/avatar on-device-only statement made explicit.
+- Parental Rights deletion section now has step-by-step instructions pointing to Parent Controls → Data & Privacy.
+
+**Fix 6 — 404 error handler** (`backend/app.py`):
+- Added `@app.errorhandler(404)` and `@app.errorhandler(405)` so unknown routes return clean JSON instead of 500.
+- Confirmed working in production after deploy.
+
+### Product Decision: Email Not Required
+- Requiring parent email for under-13 was reverted after review.
+- Checkbox-only is not strictly COPPA-verifiable, but acceptable for launch given: no ads, no data monetization, minimal collection, educational purpose.
+- Enforcement risk is very low for apps with this profile.
+- Strict verifiability is a planned v1.1 upgrade.
+
+### v1.1 Verifiable Consent Plan
+Two options will be offered on the consent screen — parent picks one:
+1. **SMS OTP** — parent enters phone number, receives a one-time code, enters it in-app. Requires Twilio (~$0.0075/SMS). One-time setup only.
+2. **$0.50 Stripe micro-charge** — Stripe already integrated. FTC-recognized verifiable method.
+Documented in `docs/COPPA_AUDIT.md`.
+
+### Production Verification
+- Health: ✅ PASS (200)
+- 404 handler: ✅ PASS (returns `{"error":"Not found"}` with 404 status)
+- `rredis` module error: ✅ Resolved — was a stale deploy; current codebase has no such reference.
+
+### COPPA Audit Status Updated
+- Overall: ⚠️ **Good faith compliance — launchable with known gap**
+- All high-risk gaps resolved. One known gap (strict verifiability) documented as intentional.
+
+### Commits
+- `fix: COPPA compliance fixes and 404 error handler`
+- `docs: add SMS OTP + Stripe as v1.1 verifiable consent options in COPPA audit`
+
+---
+
 ## Session Update - 2026-03-15 (COPPA Compliance Audit)
 
 ### Scope Completed
