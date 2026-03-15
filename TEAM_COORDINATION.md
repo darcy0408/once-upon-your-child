@@ -2,6 +2,30 @@
 
 ---
 
+## Session Update - 2026-03-15 (Rate Limiting & Security Audit)
+
+### Scope Completed
+- Audited rate-limiting configuration across the backend (`app.py`, `story_routes.py`, `avatar_routes.py`, `tts_routes.py`).
+- Verified Redis storage configuration for distributed rate limiting in production.
+- Documented per-route limits for story generation, illustrations, and TTS.
+- Identified and documented a high-priority scaling risk in the avatar generation service.
+
+### Findings
+- **Global Limiter:** `Flask-Limiter` is active with default limits (50/hr, 200/day) and properly configured for Redis in production.
+- **Story Limits:** Appropriately restricted for children's app use (e.g., 3-10 stories/hour for free users).
+- **Security Gap:** `avatar_routes.py` uses a custom in-memory dictionary for rate limiting, which will not synchronize across multiple Railway instances.
+- **Production Status:** Connectivity confirmed via live health-check smoke tests.
+
+### Changes
+- `docs/rate-limiting-audit.md`: Created comprehensive audit report of current configuration and per-route limits.
+- `docs/LAUNCH_BLOCKERS.md`: Created high-priority tracking for the avatar-route scaling issue and health-check monitoring exemption.
+
+### Pending
+- Refactor `avatar_routes.py` to use the global `limiter` instance to ensure cross-instance consistency.
+- Add `@limiter.exempt` or a high-rate decorator to `/health` to prevent monitoring false-positives.
+
+---
+
 ## Session Update - 2026-03-15 (Sentry PII Filtering + psutil Monitoring)
 
 ### Scope In Progress
