@@ -166,3 +166,27 @@
 ### Next Steps
 - Begin Age Band 6: Older Adolescent (15-18).
 - Maintain High-Fidelity Cinematic style with increasing atmospheric maturity.
+
+---
+
+## Session Update - 2026-03-14 (Pet Magical Avatar — Three-Bug Fix)
+
+### Pet Avatar Scope Completed
+
+- Fixed the pet photo → magical companion avatar pipeline which was silently failing.
+
+### Pet Avatar Root Causes Fixed
+
+1. **Hardcoded favorite color** (`hero_creator_step.dart` line 1310): `owner_favorite_color` was always `'gold'` regardless of the wizard selection. Now uses `widget.wizardData.favoriteColor.toLowerCase()`.
+2. **Hardcoded JPEG MIME type** (`backend/gemini_image_generator.py`): `types.Part.from_bytes` always sent `mime_type="image/jpeg"` even for PNG uploads, causing Gemini to reject or misread the image. Added `_detect_mime_type()` helper that inspects magic bytes to select the correct type (PNG, JPEG, GIF, WebP).
+3. **No fallback chain** (`backend/services/avatar_generation_service.py`): `generate_pet_avatar()` only tried Gemini — when Gemini was unavailable the entire feature failed with no recovery. Added a text-only fallback using `self.fallback_generator.generate_character_avatar()` that generates a stylised pet portrait from description alone.
+
+### Files Changed
+- `lib/screens/wizard_steps/hero_creator_step.dart`: Use `wizardData.favoriteColor` instead of hardcoded `'gold'`.
+- `backend/gemini_image_generator.py`: Added `_detect_mime_type()` module-level helper; `generate_pet_avatar()` now detects MIME from photo bytes.
+- `backend/services/avatar_generation_service.py`: Added text-only fallback in `generate_pet_avatar()` when Gemini image generation fails.
+
+### Result
+- **Color fidelity:** ✅ Pet collar now reflects child's actual favorite color.
+- **PNG photo support:** ✅ PNG pet photos no longer rejected by Gemini.
+- **Resilience:** ✅ Feature degrades gracefully to text-only generation rather than failing completely when Gemini is unavailable.

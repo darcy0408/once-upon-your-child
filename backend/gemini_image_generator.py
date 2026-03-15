@@ -15,6 +15,20 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 
+
+def _detect_mime_type(data: bytes) -> str:
+    """Detect image MIME type from magic bytes."""
+    if data[:8] == b'\x89PNG\r\n\x1a\n':
+        return "image/png"
+    if data[:3] == b'\xff\xd8\xff':
+        return "image/jpeg"
+    if data[:6] in (b'GIF87a', b'GIF89a'):
+        return "image/gif"
+    if data[:4] == b'RIFF' and data[8:12] == b'WEBP':
+        return "image/webp"
+    return "image/jpeg"  # fallback
+
+
 class GeminiImageGenerator:
     def __init__(self, api_key=None):
         """Initialize with Gemini API key"""
@@ -656,9 +670,10 @@ MANDATORY REQUIREMENTS:
             
             logger.info(f"Generating magical pet avatar for {pet_name} ({species}) using reference photo")
             
+            mime_type = _detect_mime_type(photo_bytes)
             contents = [
                 prompt,
-                types.Part.from_bytes(data=photo_bytes, mime_type="image/jpeg")
+                types.Part.from_bytes(data=photo_bytes, mime_type=mime_type)
             ]
             
             # Call Gemini

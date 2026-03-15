@@ -490,8 +490,54 @@ This prompt is designed for "Story Weaver," an app that transforms real-world im
                 raise Exception("No image generated for pet avatar")
 
         except Exception as e:
-            logger.error(f"Pet avatar generation failed: {e}")
-            raise Exception(f"Pet avatar generation failed: {str(e)}")
+            logger.error(f"Pet avatar generation failed with primary generator: {e}")
+
+        # Fallback: text-only character avatar generation (no reference photo)
+        if self.fallback_generator is not None:
+            try:
+                logger.info("Retrying pet avatar with text-only fallback generator")
+                fallback_prompt = (
+                    f"Magical Pixar-style 3D animated portrait of {pet_name}, a {species}. "
+                    f"Appearance: {breed_description}. "
+                    f"Wearing a magical collar in {owner_favorite_color}. "
+                    "Whimsical storybook forest background with glowing mushrooms. "
+                    "Soft cinematic lighting, children's book illustration style."
+                )
+                results = self.fallback_generator.generate_character_avatar(
+                    prompt=fallback_prompt,
+                    character_name=pet_name,
+                    age=6,
+                    style='pixar',
+                    num_images=1,
+                )
+                if results and len(results) > 0:
+                    image_base64 = results[0].get('image_data')
+                    if image_base64:
+                        if image_base64.startswith("data:image"):
+                            image_base64 = image_base64.split(",", 1)[1]
+                        avatar_id = str(uuid.uuid4())
+                        end_time = datetime.now()
+                        generation_time_ms = int((end_time - start_time).total_seconds() * 1000)
+                        return {
+                            'id': avatar_id,
+                            'image_base64': f"data:image/png;base64,{image_base64}",
+                            'seed': avatar_id,
+                            'style': 'pixar-pet-fallback',
+                            'attributes': {
+                                'pet_name': pet_name,
+                                'species': species,
+                                'breed_description': breed_description,
+                                'owner_favorite_color': owner_favorite_color
+                            },
+                            'emotion_data': None,
+                            'generated_at': datetime.now().isoformat(),
+                            'generation_time_ms': generation_time_ms,
+                            'version': 1
+                        }
+            except Exception as fallback_err:
+                logger.error(f"Pet avatar fallback also failed: {fallback_err}")
+
+        raise Exception("Pet avatar generation failed: Gemini unavailable and no fallback succeeded")
 
     def generate_avatar(
         self,

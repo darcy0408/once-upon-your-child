@@ -1307,7 +1307,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       request.fields['species'] = species;
       request.fields['breed_description'] =
           looksDescription.trim().isEmpty ? species : looksDescription;
-      request.fields['owner_favorite_color'] = 'gold';
+      request.fields['owner_favorite_color'] =
+          widget.wizardData.favoriteColor.toLowerCase();
 
       final headers = await ApiServiceManager.authHeaders();
       headers.forEach((key, value) {
