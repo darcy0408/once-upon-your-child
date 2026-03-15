@@ -2,6 +2,50 @@
 
 ---
 
+## Session Update - 2026-03-15 (Authorization Ownership Audit)
+
+### Scope Completed
+- Audited protected backend endpoints for ownership enforcement with focus on character CRUD, parent hidden context, interactive story retrieval, and task polling.
+- Verified the active auth model uses custom `require_auth` middleware that decodes JWTs and attaches `request.current_user`.
+- Added focused authorization tests for cross-user access attempts and token rejection cases.
+- Documented the protected route audit in `docs/authorization-audit.md`.
+
+### Critical Fix
+- `backend/routes/story_routes.py`
+  - Fixed `GET /task-status/<task_id>` so ownership is enforced for pending and processing task states, not only completed tasks.
+  - Added cached task-owner tracking when async story tasks are created.
+  - Added `# Security: verify resource ownership` at the enforcement point.
+
+### Verified Protected Endpoints
+- `backend/routes/character_routes.py`
+  - Confirmed `/get-characters` filters by `request.current_user.id`.
+  - Confirmed `GET/PUT/PATCH/DELETE /characters/<char_id>` enforce ownership before returning or mutating records.
+  - Confirmed `GET/PUT /child-profiles/<profile_id>/parent-hidden-context` are scoped by `user_id + child_profile_id`.
+- `backend/routes/story_routes.py`
+  - Confirmed `POST /generate-story` validates `character_id` ownership.
+  - Confirmed `POST /generate-interactive-story` validates `character_id` ownership.
+  - Confirmed `POST /continue-interactive-story` enforces `InteractiveStory.user_id`.
+  - Confirmed `GET /interactive-story/<story_id>` enforces `InteractiveStory.user_id`.
+  - Confirmed `GET /interactive-story/<story_id>/resume` enforces `InteractiveStory.user_id`.
+
+### Changes
+- `backend/routes/story_routes.py`
+- `backend/tests/security/test_authorization.py`
+- `docs/authorization-audit.md`
+
+### Verification
+- `python -m pytest backend/tests/security/test_authorization.py -q`
+  - Result: `17 passed`
+- `python -m pytest backend/tests/api/test_character_routes.py -q`
+  - Result: `25 passed`
+- `python -m pytest backend/tests/integration/test_pick_a_path.py -q`
+  - Result: `26 passed`
+
+### Commit
+- `security: add authorization ownership checks and IDOR prevention tests`
+
+---
+
 ## Session Update - 2026-03-14 (Hidden Parent Layer Implementation)
 
 ### Scope Completed
@@ -442,6 +486,34 @@
 ### Next Steps
 - Begin final age band: Adult.
 - Final review of all age-band directories.
+
+---
+
+## Session Update - 2026-03-15 (COPPA Compliance Audit)
+
+### Scope Completed
+- Performed a comprehensive audit of the app for COPPA compliance.
+- Analyzed data collection points: `WizardData`, `HeroCreatorStep`, `ParentControlsScreen`, and backend models (`User`, `Character`, `ConsentRecord`, `ParentHiddenContext`).
+- Reviewed `PRIVACY_POLICY.md` for required disclosures and parental rights.
+- Evaluated parental consent mechanisms and data deletion flows.
+- Documented findings, gaps, and recommended fixes in `docs/COPPA_AUDIT.md`.
+
+### Key Findings
+- **Verifiable Parental Consent:** ❌ **FAIL**. The current checkbox method for under-13 users is not "verifiable" under COPPA.
+- **Data Synchronization:** ❌ **FAIL**. Parental consent and data deletion (right to erasure) are handled locally via `SharedPreferences` but not synchronized with the backend `ConsentRecord` or deletion endpoints.
+- **Third-Party Disclosures:** ❌ **FAIL**. The Privacy Policy does not explicitly name Google Gemini, ElevenLabs, or Stripe as service providers receiving child data.
+- **Operator Info:** ⚠️ **NEEDS WORK**. Lacks a physical address and phone number.
+- **Data Deletion UI:** ⚠️ **NEEDS WORK**. No user-facing "Delete All My Data" button exists in the Parent Controls screen.
+
+### Status
+- **Overall Assessment:** 🛑 **Needs fixes first** (Not safe to launch).
+- **Audit Report:** Finalized in `docs/COPPA_AUDIT.md`.
+
+### Next Steps (Recommended)
+1.  **Verifiable Consent:** Implement a COPPA-compliant verification method (e.g., $0.50 credit card transaction or email-plus-plus).
+2.  **Sync Logic:** Update `ParentalConsentService.dart` and `ChildProfileService.dart` to call backend COPPA endpoints (`/api/user/<id>/consent` and `/api/user/<id>/data`).
+3.  **Policy Update:** Revise `PRIVACY_POLICY.md` to include specific third-party disclosures and full operator contact information.
+4.  **UI Update:** Add a "Delete All Data" action to `ParentControlsScreen.dart`.
 
 ---
 
