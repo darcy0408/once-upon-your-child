@@ -88,6 +88,26 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 # Global image generator instance
 image_generator = None
 
+
+def before_send(event, hint):
+    """Strip request payloads and obvious auth data before sending events to Sentry."""
+    request_data = event.get("request")
+    if isinstance(request_data, dict):
+        if "data" in request_data:
+            request_data["data"] = "[Filtered]"
+        headers = request_data.get("headers")
+        if isinstance(headers, dict):
+            for header_name in ("Authorization", "Cookie", "X-API-Key"):
+                if header_name in headers:
+                    headers[header_name] = "[Filtered]"
+        if "query_string" in request_data:
+            request_data["query_string"] = "[Filtered]"
+
+    if "user" in event:
+        event["user"] = {"id": "[Filtered]"}
+
+    return event
+
 def create_app(config_name):
     print(f"=== Creating Flask app with config: {config_name} ===")
     print(f"=== Available configs: {list(config_by_name.keys())} ===")
@@ -106,12 +126,14 @@ def create_app(config_name):
     if sentry_dsn and config_name != 'testing':
         print(f"=== Initializing Sentry (Env: {config_name}) ===")
         try:
+            sentry_environment = config_name or os.getenv('FLASK_ENV', 'production')
             sentry_sdk.init(
                 dsn=sentry_dsn,
                 integrations=[FlaskIntegration()],
-                # sample 10% in prod, 100% in dev
-                traces_sample_rate=0.1 if config_name == 'production' else 1.0,
-                environment=config_name
+                traces_sample_rate=0.1 if sentry_environment in ('prod', 'production') else 0.2,
+                profiles_sample_rate=0.0,
+                environment=sentry_environment,
+                before_send=before_send,
             )
         except Exception as e:
             print(f"WARNING: Sentry initialization failed: {e}")

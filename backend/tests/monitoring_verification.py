@@ -62,6 +62,8 @@ def test_sentry_init_production():
                 assert call_args['dsn'] == 'https://fake@sentry.io/123'
                 assert call_args['environment'] == 'production'
                 assert call_args['traces_sample_rate'] == 0.1
+                assert call_args['profiles_sample_rate'] == 0.0
+                assert call_args['before_send'] is not None
 
 
 def test_sentry_skip_testing():

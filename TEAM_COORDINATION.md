@@ -2,6 +2,43 @@
 
 ---
 
+## Session Update - 2026-03-15 (Sentry PII Filtering + psutil Monitoring)
+
+### Scope In Progress
+- Auditing the deployed-backend readiness for Sentry on Railway and tightening the app-side config for production use.
+- Adding `psutil` so `/health/detailed` can report real memory usage instead of the current fallback note.
+- Keeping this coordination log current during the change so the next handoff has the exact Sentry/ops context.
+
+### Findings So Far
+- `backend/app.py` already initializes Sentry with `SENTRY_DSN`, `FlaskIntegration()`, and a production trace sample rate of `0.1`.
+- The existing Sentry init path did **not** include a `before_send` scrubber, so request bodies could be forwarded without an explicit COPPA-safe filter.
+- `backend/.env.example` already documents `SENTRY_DSN`.
+- `backend/routes/health_routes.py` already contains a `try: import psutil` branch for `/health/detailed`; installing the package should activate real memory metrics without route changes.
+
+### Changes Applied
+- `backend/app.py`
+  - Added a `before_send` hook that filters request bodies, query strings, and common auth headers before Sentry export.
+  - Explicitly sets `environment` from the normalized app config name so Sentry cleanly distinguishes production from development.
+  - Explicitly sets `profiles_sample_rate=0.0` so profiling behavior is controlled rather than implicit.
+  - Keeps trace sampling at production-safe rates (`0.1` in prod, reduced non-prod sampling instead of `1.0`).
+- `backend/requirements.txt`
+  - Added `psutil>=5.9.0`.
+- `backend/tests/monitoring_verification.py`
+  - Extended the Sentry init assertion coverage for `before_send` and `profiles_sample_rate`.
+
+### Pending
+- Run targeted verification for the Sentry config test and health-contract path.
+- Commit only the ops-related files plus this log entry; do not include unrelated worktree changes.
+
+### Verification Update
+- `python -m pytest backend/tests/monitoring_verification.py -q`
+  - First run caught an environment-selection mismatch caused by `.env` state overriding an explicit production app config.
+  - Updated Sentry environment selection to prefer the normalized `create_app(config_name)` value, then re-ran.
+- `python -m pytest backend/tests/test_api_contracts.py -q -k health_detailed`
+  - Health detailed contract passed, confirming the route shape remains valid.
+
+---
+
 ## Session Update - 2026-03-15 (Production Smoke Test Coverage)
 
 ### Scope Completed
