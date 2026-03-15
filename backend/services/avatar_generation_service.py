@@ -437,6 +437,15 @@ This prompt is designed for "Story Weaver," an app that transforms real-world im
 
         logger.info(f"Generating magical pet avatar for {pet_name} ({species})")
 
+        if self.image_generator is None:
+            raise Exception(
+                "Pet avatar generation is not configured. Gemini image generation is unavailable."
+            )
+        if not hasattr(self.image_generator, "generate_pet_avatar"):
+            raise Exception(
+                "Pet avatar generation is unsupported by the configured image provider."
+            )
+
         try:
             results = self.image_generator.generate_pet_avatar(
                 photo_bytes=photo_bytes,

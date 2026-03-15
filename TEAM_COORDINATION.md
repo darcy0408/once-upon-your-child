@@ -2,6 +2,28 @@
 
 ---
 
+## Session Update - 2026-03-14 (Pet Magical Transformation Failure Diagnosis)
+
+### Scope Completed
+- Traced the pet photo flow from Flutter UI to the `/avatar/generate-pet-avatar` backend route.
+- Confirmed the main wizard was swallowing backend failures behind a generic "Magical transform unavailable" message.
+- Identified that pet avatar generation depends on the Gemini pet-image path and does not have the broader fallback behavior used by human custom avatars.
+- Fixed the standalone custom pet avatar screen to send auth headers to the protected avatar endpoint.
+
+### Changes
+- `lib/screens/wizard_steps/hero_creator_step.dart`: Preserve the raw pet photo fallback but surface the backend error message instead of always showing the generic unavailable toast.
+- `lib/screens/wizard_steps/custom_pet_avatar_screen.dart`: Added authenticated request headers for the pet avatar generation call.
+- `backend/services/avatar_generation_service.py`: Added explicit provider/configuration errors when pet avatar generation is unavailable or unsupported by the configured image provider.
+
+### Observed Risk
+- Pet avatar generation still relies on Gemini-specific support. If Gemini is unavailable, misconfigured, or blocked, pet magical transformation will still fail until a supported fallback provider is added.
+
+### Next Steps
+- Check the deployed backend secret/config state for the active Gemini image provider.
+- If pet photo transformation needs higher reliability, add a real pet-avatar fallback provider rather than relying on generic text-to-image fallbacks.
+
+---
+
 ## Session Update - 2026-03-14 (Parent Settings Placement Decision)
 
 ### Scope Completed

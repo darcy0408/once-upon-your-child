@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 import '../../models.dart';
 import '../../config/environment.dart';
+import '../../services/api_service_manager.dart';
 import '../../theme/app_theme.dart';
 
 class CustomPetAvatarScreen extends StatefulWidget {
@@ -98,6 +99,12 @@ class _CustomPetAvatarScreenState extends State<CustomPetAvatarScreen> {
       request.fields['species'] = widget.species;
       request.fields['breed_description'] = widget.breedDescription;
       request.fields['owner_favorite_color'] = widget.ownerFavoriteColor;
+      final headers = await ApiServiceManager.authHeaders();
+      headers.forEach((key, value) {
+        if (key.toLowerCase() != 'content-type') {
+          request.headers[key] = value;
+        }
+      });
 
       debugPrint('📡 Sending custom pet avatar request to $url');
       final streamedResponse = await request.send().timeout(const Duration(minutes: 3));

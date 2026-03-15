@@ -1262,7 +1262,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       });
     }
 
-    final success = await _generateMagicalPetAvatar(
+    final petAvatarError = await _generateMagicalPetAvatar(
       petName: pet['name'] ?? _defaultPetNameForIndex(targetIndex),
       species: pet['species'] ?? 'Dog',
       looksDescription: pet['color'] ?? 'cute and friendly',
@@ -1271,11 +1271,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
 
     if (!mounted) return;
+    final success = petAvatarError == null;
     setState(() {
       _isPetAvatarGenerating = false;
       _petAvatarStatusMessage = success
           ? '✨ Magical pet avatar ready!'
-          : 'Photo saved. Magical transform unavailable right now.';
+          : petAvatarError!;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1286,7 +1287,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
-  Future<bool> _generateMagicalPetAvatar({
+  Future<String?> _generateMagicalPetAvatar({
     required String petName,
     required String species,
     required String looksDescription,
@@ -1317,21 +1318,40 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
       final streamed = await request.send().timeout(const Duration(minutes: 3));
       final response = await http.Response.fromStream(streamed);
-      if (response.statusCode != 200) return false;
+      if (response.statusCode != 200) {
+        try {
+          final body = jsonDecode(response.body) as Map<String, dynamic>;
+          final message = body['message']?.toString().trim();
+          if (message != null && message.isNotEmpty) {
+            return message;
+          }
+        } catch (_) {}
+        return 'Photo saved, but magical transform is unavailable right now.';
+      }
       final body = jsonDecode(response.body) as Map<String, dynamic>;
-      if (body['status'] != 'success') return false;
+      if (body['status'] != 'success') {
+        final message = body['message']?.toString().trim();
+        if (message != null && message.isNotEmpty) {
+          return message;
+        }
+        return 'Photo saved, but magical transform is unavailable right now.';
+      }
       final avatarJson = body['avatar'] as Map<String, dynamic>?;
-      if (avatarJson == null) return false;
+      if (avatarJson == null) {
+        return 'Photo saved, but pet avatar generation returned no image.';
+      }
 
       final generated = GeneratedAvatar.fromJson(avatarJson);
-      if (!mounted) return false;
+      if (!mounted) return 'Photo saved.';
       setState(() {
         widget.wizardData.petAvatars[petName] = generated;
       });
-      return true;
-    } catch (_) {
+      return null;
+    } catch (e) {
       // Keep raw pet photo fallback if generation is unavailable.
-      return false;
+      final message = e.toString().replaceFirst('Exception: ', '').trim();
+      if (message.isNotEmpty) return message;
+      return 'Photo saved, but magical transform is unavailable right now.';
     }
   }
 
