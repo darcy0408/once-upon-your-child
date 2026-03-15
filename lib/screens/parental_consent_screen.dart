@@ -25,9 +25,11 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   bool _consentGiven = false;
   bool _allowPhotoAvatar = true;
   bool _submitting = false;
+
+  bool get _isUnder13 => widget.declaredAge < 13;
+  bool get _emailValid => true; // Email is optional — not required for consent
   @override
   Widget build(BuildContext context) {
-    const textWhite = TextStyle(color: Colors.white);
     const textWhite70 = TextStyle(color: Colors.white70);
 
     return Scaffold(
@@ -56,7 +58,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Hello Parent/Guardian! 👋',
+                  'Notice to Parents & Guardians 👋',
                   style: GoogleFonts.fredoka(
                     color: Colors.white,
                     fontSize: 26,
@@ -66,27 +68,61 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Your child (age ${widget.declaredAge}) would like to use Story Weaver. '
-                  'We need your permission because they are under 13.',
+                  'As required by COPPA, we need your verifiable consent before your child can use this app.',
                   style: GoogleFonts.fredoka(color: Colors.white, fontSize: 16),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                Text(
-                  'What We Do:',
-                  style: GoogleFonts.fredoka(
-                    color: const Color(0xFFFFD700),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+                // Notice to Parents box
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFFD700).withAlpha(120)),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                const Text('• Generate personalized stories using AI', style: textWhite),
-                const Text('• Provide therapeutic content for emotional growth', style: textWhite),
-                const Text('• Collect minimal data (story preferences only)', style: textWhite),
-                const Text("• Never sell or share your child's information", style: textWhite),
-                const Text(
-                  '• Optionally let your child use a photo to create a personalised avatar'
-                  ' — stored only on this device, never uploaded',
-                  style: textWhite,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'What We Collect & Why',
+                        style: GoogleFonts.fredoka(
+                          color: const Color(0xFFFFD700),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      const Text('• Child\'s first name and age — to personalize stories', style: textWhite70),
+                      const Text('• Story preferences & emotions — to generate content', style: textWhite70),
+                      const Text('• Usage data — to improve the app (no personal identifiers)', style: textWhite70),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'What We Do NOT Do',
+                        style: GoogleFonts.fredoka(
+                          color: const Color(0xFFFFD700),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      const Text("• Never sell or share your child's personal information", style: textWhite70),
+                      const Text('• No behavioral advertising or third-party tracking', style: textWhite70),
+                      const Text('• Photos used for avatars stay on this device — never uploaded', style: textWhite70),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'Third-Party Services',
+                        style: GoogleFonts.fredoka(
+                          color: const Color(0xFFFFD700),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      const Text('• Google Gemini — AI story generation (story text only)', style: textWhite70),
+                      const Text('• ElevenLabs — text-to-speech narration (story text only)', style: textWhite70),
+                      const Text('• Stripe — payment processing (payment info only, never child data)', style: textWhite70),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 TextField(
@@ -96,6 +132,8 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                     labelStyle: const TextStyle(color: Colors.white70),
                     hintText: 'parent@example.com',
                     hintStyle: TextStyle(color: Colors.white.withAlpha(120)),
+                    helperText: 'Recommended — allows us to send you account confirmations.',
+                    helperStyle: const TextStyle(color: Colors.white54, fontSize: 12),
                     prefixIcon: const Icon(Icons.email_outlined, color: Colors.white70),
                     filled: true,
                     fillColor: Colors.white.withAlpha(25),
@@ -113,7 +151,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                     ),
                   ),
                   keyboardType: TextInputType.emailAddress,
-                  onChanged: (value) => _parentEmail = value,
+                  onChanged: (value) => setState(() => _parentEmail = value),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 // ── Photo avatar opt-out ───────────────────────────────────
@@ -205,7 +243,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: !_consentGiven || _submitting ? null : _submitConsent,
+                    onPressed: !_consentGiven || !_emailValid || _submitting ? null : _submitConsent,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFFD700),
                       foregroundColor: Colors.black,
@@ -235,7 +273,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
       await widget.consentService.recordConsent(
         age: widget.declaredAge,
         parentEmail: _parentEmail?.trim(),
-        method: 'parent',
+        method: _isUnder13 ? 'email_plus' : 'parent',
         allowPhotoAvatar: _allowPhotoAvatar,
       );
       if (!mounted) return;

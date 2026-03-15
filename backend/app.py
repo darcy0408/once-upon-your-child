@@ -596,6 +596,14 @@ def create_app(config_name):
     tts_bp = create_tts_blueprint(limiter=limiter, require_auth=_require_auth)
     app.register_blueprint(tts_bp)
 
+    @app.errorhandler(404)
+    def not_found(e):
+        return jsonify({"error": "Not found", "message": "The requested endpoint does not exist."}), 404
+
+    @app.errorhandler(405)
+    def method_not_allowed(e):
+        return jsonify({"error": "Method not allowed", "message": str(e)}), 405
+
     @app.errorhandler(500)
     def internal_server_error(e):
         logger.error(f"Internal Server Error: {str(e)}")

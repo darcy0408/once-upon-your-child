@@ -61,7 +61,7 @@ We do NOT sell, trade, or rent personal information to third parties. We may sha
 - **With explicit parental consent** for therapeutic collaboration
 - **Legal requirements** to ensure child safety
 - **Emergency situations** where immediate help is needed
-- **Service providers** who help operate the platform (under strict contracts)
+- **Named service providers** (Google Gemini, ElevenLabs, Stripe, Railway) as described in the Third-Party Services section below — each under contractual data protection obligations
 
 ## Children's Privacy
 
@@ -78,7 +78,7 @@ Parents and guardians have complete control over their child's data:
 
 - **Access**: View all data collected about their child
 - **Correction**: Update or correct information
-- **Deletion**: Request complete removal of data
+- **Deletion**: Request complete removal of data. To delete your child's data: open the app → tap the menu → **Parent Controls** → scroll to **Data & Privacy** → tap **Delete All My Data**. This immediately and permanently removes all profiles, stories, and associated data from our servers. You may also email privacy@storyweaver.app to request deletion.
 - **Export**: Download their child's therapeutic progress
 - **Consent**: Control sharing and third-party access
 
@@ -121,11 +121,14 @@ We use minimal tracking for app functionality:
 
 ## Third-Party Services
 
-We may integrate with trusted therapeutic partners:
+Story Weaver uses the following third-party service providers. We share only the minimum data required for each service to function:
 
-- **Clinical validation partners**: To ensure therapeutic effectiveness
-- **Educational institutions**: For research and improvement
-- **Emergency services**: For crisis resource integration
+- **Google Gemini** (AI story generation) — Story text and character details are sent to Google's Gemini API to generate personalized stories. No child name, email, or account information is sent. Google's privacy policy applies to this processing: [policies.google.com/privacy](https://policies.google.com/privacy)
+- **ElevenLabs** (text-to-speech narration) — Generated story text is sent to ElevenLabs to produce audio narration. No personal identifying information is included. ElevenLabs' privacy policy applies: [elevenlabs.io/privacy](https://elevenlabs.io/privacy)
+- **Stripe** (payment processing) — If you subscribe or add a payment method, payment information is handled directly by Stripe. Story Weaver never stores your full card details. Stripe's privacy policy applies: [stripe.com/privacy](https://stripe.com/privacy)
+- **Railway** (cloud infrastructure) — All app data (profiles, stories, preferences) is stored on secure servers provided by Railway. Data is stored in the United States.
+
+**Photos used for character avatars are processed entirely on your device and are never uploaded to our servers or shared with any third party.**
 
 ## Changes to This Policy
 

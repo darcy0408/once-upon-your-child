@@ -180,6 +180,7 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
   ];
   bool _allowPhotoAvatar = true;
   bool _loading = true;
+  bool _deletingData = false;
   int? _dailyLimitMinutes;
   bool _bedtimeEnabled = false;
   int _bedtimeHour = 20;
@@ -695,18 +696,117 @@ class _ParentControlsScreenState extends State<ParentControlsScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    'More parental controls coming soon.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.fredoka(
-                      color: Colors.white38,
-                      fontSize: 13,
+                  const _SectionHeader(title: 'Data & Privacy'),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.red.withAlpha(25),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.red.withAlpha(80)),
+                    ),
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Delete All My Data',
+                          style: GoogleFonts.fredoka(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          'Permanently removes your child\'s profile, stories, and all associated data from our servers. '
+                          'You may exercise this right at any time under COPPA.',
+                          style: GoogleFonts.fredoka(
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _deletingData ? null : _deleteAllData,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red.shade700,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: _deletingData
+                                ? const SizedBox(
+                                    height: 18,
+                                    width: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    'Delete All My Data',
+                                    style: GoogleFonts.fredoka(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.lg),
                 ],
               ),
       ),
     );
+  }
+
+  Future<void> _deleteAllData() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete All Data?'),
+        content: const Text(
+          'This will permanently delete your child\'s profile, stories, and all associated data '
+          'from our servers. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete Everything'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _deletingData = true);
+    try {
+      final userId = await _api.getUserId();
+      if (userId != null) {
+        await _api.delete('/api/user/$userId/data');
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('All data deleted successfully.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not delete data: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _deletingData = false);
+    }
   }
 
   Widget _buildChoiceGroup({

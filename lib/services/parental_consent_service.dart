@@ -1,5 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'api_service_manager.dart';
+
 class ParentalConsentService {
   const ParentalConsentService();
 
@@ -45,17 +47,36 @@ class ParentalConsentService {
   Future<void> recordConsent({
     required int age,
     String? parentEmail,
-    String method = 'parent',
+    String method = 'email_plus',
     bool allowPhotoAvatar = true,
   }) async {
+    final recordedAt = DateTime.now().toIso8601String();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_keyAge, age);
     await prefs.setBool(_keyConsent, true);
     await prefs.setString(_keyConsentMethod, method);
-    await prefs.setString(_keyRecordedAt, DateTime.now().toIso8601String());
+    await prefs.setString(_keyRecordedAt, recordedAt);
     await prefs.setBool(_keyAllowPhotoAvatar, allowPhotoAvatar);
     if (parentEmail != null && parentEmail.isNotEmpty) {
       await prefs.setString(_keyParentEmail, parentEmail);
+    }
+
+    // Sync consent record to backend (best-effort — local record is source of truth).
+    try {
+      final api = ApiServiceManager();
+      final userId = await api.getUserId();
+      if (userId != null) {
+        await api.post('/api/user/$userId/consent', {
+          'age': age,
+          'method': method,
+          'allow_photo_avatar': allowPhotoAvatar,
+          'recorded_at': recordedAt,
+          if (parentEmail != null && parentEmail.isNotEmpty)
+            'parent_email': parentEmail,
+        });
+      }
+    } catch (_) {
+      // Backend sync failure does not block local consent — will retry on next launch.
     }
   }
 

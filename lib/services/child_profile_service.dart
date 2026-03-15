@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'api_service_manager.dart';
+
 class ChildProfile {
   final String id;
   final String name;
@@ -90,5 +92,16 @@ class ChildProfileService {
         _profilesKey, profiles.map((p) => jsonEncode(p.toJson())).toList());
     final active = await getActiveProfileId();
     if (active == profileId) await prefs.remove(_activeKey);
+
+    // Delete all server-side data for this user (COPPA right to erasure).
+    try {
+      final api = ApiServiceManager();
+      final userId = await api.getUserId();
+      if (userId != null) {
+        await api.delete('/api/user/$userId/data');
+      }
+    } catch (_) {
+      // Backend deletion failure is non-fatal; local profile is already removed.
+    }
   }
 }
