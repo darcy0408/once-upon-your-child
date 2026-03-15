@@ -33,4 +33,4 @@ def process_transparency(target_dir_name):
             print(f"  ❌ Failed {img_path.name}: {e}")
 
 if __name__ == "__main__":
-    process_transparency('age_band_assets/creators')
+    process_transparency('age_band_assets/adolescents')
