@@ -2,6 +2,38 @@
 
 ---
 
+## Session Update - 2026-03-14 (Hidden Parent Layer / Shared Emotion Engine Spec)
+
+### Scope Completed
+- Produced a concrete product/design spec for the hidden parent-controlled layer attached to the big-feelings/repair story theme.
+- Defined a shared backend data model covering:
+  - `feeling`
+  - `trigger`
+  - `body_signal`
+  - `coping_tool`
+  - `repair_goal`
+  - `parent_hidden_context`
+- Specified how hidden parent context should flow into standard story generation and pick-a-path without surfacing parent language in child flow.
+- Documented privacy and COPPA-safe handling guidance, including minimization, retention, and visibility rules.
+- Confirmed the architecture approach: one backend structure across all age bands, with age differences handled in UI copy, choice complexity, and tone.
+
+### Changes
+- `HIDDEN_PARENT_LAYER_SPEC.md`: Added detailed product/design spec for hidden parent controls and the shared emotion engine.
+- `TEAM_COORDINATION.md`: Logged the spec work for handoff visibility.
+
+### Constraints Preserved
+- Child should not feel watched, analyzed, or lectured.
+- Parent controls remain invisible in child flow.
+- Theme remains one of the existing story themes, not a separate mode.
+- Focus stays on naming feelings, calming without repression, and repair after mistakes.
+
+### Next Steps
+- Convert the spec into controlled vocabulary lists for each structured field.
+- Define prompt transformation rules from hidden parent input to child-safe story instructions.
+- Break implementation into backend payload, prompt builder, and age-band copy tickets.
+
+---
+
 ## Session Update - 2026-03-14 (Adolescent Asset Completion & High-Fidelity Milestone)
 
 ### Scope Completed
