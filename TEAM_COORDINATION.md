@@ -2,6 +2,29 @@
 
 ---
 
+## Session Update - 2026-03-14 (Parent Settings Placement Decision)
+
+### Scope Completed
+- Logged the product decision that optional hidden Big Feelings parent settings should be discoverable during parental permission/setup rather than relying on the in-flow shield alone.
+
+### Decision
+- **Primary placement:** parental consent / setup flow under an optional parent settings section.
+- **Secondary placement:** Parent Controls screen for later editing.
+- **Shortcut only:** keep the Big Feelings shield reveal as a convenience path, not the main discovery path.
+
+### Reasoning
+- Parents are already in a setup mindset while granting permission.
+- This makes the feature discoverable without surfacing it in the child experience.
+- It keeps the child flow cleaner and avoids making the shield carry too much responsibility.
+
+### Next Implementation Note
+- When this is built, add an optional/collapsible parent-settings block in the parental consent flow that includes:
+  - avatar/photo permission
+  - screen time / bedtime
+  - hidden Big Feelings story focus
+
+---
+
 ## Session Update - 2026-03-14 (Hidden Parent Layer / Shared Emotion Engine Spec)
 
 ### Scope Completed
