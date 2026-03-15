@@ -2,6 +2,46 @@
 
 ---
 
+## Session Update - 2026-03-14 (Big Feelings Ages 6-8 Variant)
+
+### Scope Completed
+- Added a dedicated `6-8` Big Feelings prompt path for interactive stories while preserving the existing preschool branch.
+- Extended the Big Feelings picker vocabulary for ages `6-8` to use the spec starter feelings:
+  - `angry`
+  - `worried`
+  - `sad`
+  - `frustrated`
+  - `embarrassed`
+  - `excited`
+- Wired the `6-8` UI flow to persist the more specific selected feeling so the backend prompt can use richer emotional language.
+- Added unit coverage to verify that age `7` Big Feelings prompts use the new tone, vocabulary, and 3-choice structure.
+
+### Changes
+- `backend/services/interactive_adventure_prompt_builder.py`:
+  - Added `AGES 6-8 BIG FEELINGS RULES`.
+  - Added age-aware `6-8` Big Feelings choice templates with clear emotional consequences and brief repair paths.
+  - Matched prompt `choice_count` to the actual Big Feelings choice template count.
+- `lib/feelings_wheel_data.dart`:
+  - Added a dedicated `6-8` Big Feelings starter list and child-friendly secondary vocabulary.
+- `lib/widgets/feelings_cloud_picker.dart`:
+  - Loads the `6-8` Big Feelings starter list for that age band.
+- `lib/screens/wizard_steps/feeling_selection_step.dart`:
+  - Stores the more specific `6-8` feeling selection into `selectedFeeling`.
+- `lib/screens/wizard_steps/hero_creator_step.dart`:
+  - Mirrored the same `6-8` Big Feelings selection behavior in the alternate entry point.
+- `lib/screens/wizard_steps/wizard_data_mapper.dart`:
+  - Expanded feeling normalization, descriptions, and coping defaults for `worried`, `embarrassed`, `excited`, and related `6-8` variants.
+- `backend/tests/unit/test_story_constraints.py`
+- `backend/tests/unit/test_story_age_appropriateness_suite.py`
+
+### Verification
+- `python -m pytest backend/tests/unit/test_story_constraints.py backend/tests/unit/test_story_age_appropriateness_suite.py`
+  - Result: `37 passed`
+- `flutter analyze` on the touched Dart files
+  - Result: no new errors; one existing warning remained in `hero_creator_step.dart`
+
+---
+
 ## Session Update - 2026-03-14 (Universal Diverse Characters & Tactile UI Feedback)
 
 ### Scope Completed
@@ -158,14 +198,40 @@
 - **Adventurer (8-10):** 100% Complete (31 assets).
 - **Creator (11-13):** 100% Complete (31 assets).
 - **Adolescent (13-15):** 100% Complete (33 assets).
+- **Older Adolescent (15-18):** Script updated for full asset set (43+ assets).
 
 ### Changes
 - `age_band_assets/adolescents/`: Finalized directory for 13-15 age band.
-- `TEAM_COORDINATION.md`: Updated with Adolescent completion.
+- `generate_older_adolescent_assets.py`: Updated to include diverse character variants, "clicked" UI textures, and atmospheric "Upper-YA" 3D style prompts.
+- `TEAM_COORDINATION.md`: Updated with Older Adolescent progress.
 
 ### Next Steps
-- Begin Age Band 6: Older Adolescent (15-18).
-- Maintain High-Fidelity Cinematic style with increasing atmospheric maturity.
+- Run `generate_older_adolescent_assets.py` to finalize the 15-18 age band.
+- Begin final age band: Adult.
+
+---
+
+## Session Update - 2026-03-14 (Older Adolescent Asset Preparation)
+
+### Scope Completed
+- **Older Adolescent (Age 15-18) Asset Scripting:**
+  - Updated `generate_older_adolescent_assets.py` to generate the full set of required assets (43+ files).
+  - **Style Evolution:** Defined "Upper-YA High-Fidelity Cinematic 3D" style with moodier chiaroscuro lighting, platinum/obsidian accents, and realistic late-teen proportions.
+  - **Diversity Expansion:** Added 10 character variants (5 boy, 5 girl) covering Caucasian, Asian, Black, Hispanic, and South Asian ethnicities.
+  - **Tactile UI:** Added `continue_button_clicked.png` and `make_magic_normal_clicked.png` to match the new global tactile feedback standard.
+  - **Mythic Companions:** Prompts updated to reflect more mature, "mythic" versions of the core companions (e.g., "majestic shadow lynx", "formidable iron golem").
+
+### Status
+- **Sprout (2-4):** 100% Complete.
+- **Early Reader (5-7):** 100% Complete.
+- **Adventurer (8-10):** 100% Complete.
+- **Creator (11-13):** 100% Complete.
+- **Adolescent (13-15):** 100% Complete.
+- **Older Adolescent (15-18):** Scripting COMPLETE, pending generation.
+
+### Next Steps
+- Generate assets for Older Adolescent band.
+- Prepare Adult (18+) asset script using a "Refined Fine-Art Cinematic" style.
 
 ---
 
@@ -190,3 +256,33 @@
 - **Color fidelity:** ✅ Pet collar now reflects child's actual favorite color.
 - **PNG photo support:** ✅ PNG pet photos no longer rejected by Gemini.
 - **Resilience:** ✅ Feature degrades gracefully to text-only generation rather than failing completely when Gemini is unavailable.
+
+---
+
+## Session Update - 2026-03-14 (Big Feelings Older Kids Backend Variants)
+
+### Scope Completed
+- Added older-kid Big Feelings backend prompt variants for ages 9-12 and 13-15 without refactoring the existing preschool or 6-8 paths.
+- Extended interactive choice templates so ages 10 and 14 now receive age-band-specific Big Feelings options with three believable social-response choices.
+- Added unit coverage for the new age bands in the existing Big Feelings prompt test suites.
+
+### Changes
+- `backend/services/interactive_adventure_prompt_builder.py`:
+  - Added `AGES 9-12 BIG FEELINGS RULES` covering precise feeling vocabulary, socially real pressure/fallout, regaining choice, and brave-but-untidy repair.
+  - Added `AGES 13-15 BIG FEELINGS RULES` covering friend-group dynamics, identity pressure, digital-life fallout, higher nuance, and non-moralizing repair.
+  - Added corresponding opening-choice branches for ages 9-12 and 13-15 so outcomes shift in believable social ways while preserving child/teen agency.
+- `backend/tests/unit/test_story_constraints.py`:
+  - Added direct assertions for age 10 and age 14 Big Feelings prompt markers and choice text.
+- `backend/tests/unit/test_story_age_appropriateness_suite.py`:
+  - Expanded the prompt progression matrix to include ages 10 and 14.
+
+### Constraints Preserved
+- The emotion is not framed as the problem; the pressure, misunderstanding, impulse, or fallout is.
+- Calming is framed as regaining choice, not shutting emotion down.
+- Repair remains brave and credible, not tidy or mandatory.
+- Adults may steady the scene, but the child/teen protagonist retains agency.
+- No refactor of existing prompt paths.
+
+### Verification
+- `python -m pytest backend/tests/unit/test_story_constraints.py backend/tests/unit/test_story_age_appropriateness_suite.py -q`
+- Result: `41 passed`

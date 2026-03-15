@@ -300,7 +300,6 @@ SAFETY RULES:
         # Calculate PER-SEGMENT word count
         word_count = cls._calculate_per_segment_word_count(age_band, length)
         
-        choice_count = cls.CHOICE_COUNTS.get(length, 2)
         path_depth = cls.PATH_DEPTHS[age_band].get(length, 10)
 
         # Build companion context
@@ -392,6 +391,7 @@ SAFETY RULES:
             big_feelings_context=big_feelings_context,
             is_opening=True,
         )
+        choice_count = len(choice_templates)
         choices_json = ",\n".join(choice_templates)
 
         # Dynamic Terminology for Teens
@@ -503,7 +503,6 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
         # Calculate PER-SEGMENT word count
         word_count = cls._calculate_per_segment_word_count(age_band, length)
         
-        choice_count = cls.CHOICE_COUNTS.get(length, 2)
         path_depth = cls.PATH_DEPTHS[age_band].get(length, 10)
 
         child_name = character.get('name', 'Hero')
@@ -553,6 +552,7 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
             big_feelings_context=story_context.get('big_feelings_context'),
             is_opening=False,
         )
+        choice_count = len(choice_templates)
         choices_json = ",\n".join(choice_templates)
 
         next_segment_number = current_segment_number + 1
@@ -704,6 +704,42 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
   - For mad stories, the first branch should contrast helper-now versus big reaction then stop; the next branch should offer repair.
   - For sad or scared stories, keep the helper choices close to comfort, connection, and one tiny brave step.
 """
+        ages_6_to_8_rules = ""
+        if 6 <= age <= 8:
+            ages_6_to_8_rules = """
+- AGES 6-8 BIG FEELINGS RULES:
+  - Use richer feeling words than preschool, but keep them child-friendly and never clinical.
+  - Keep the tone supportive and warm, with simple cause-and-effect the child can track.
+  - Opening choices should include 2-3 active options: a fast reaction, a steadying move, and a connection/help option when it fits.
+  - Show the emotional consequence of each choice quickly and clearly.
+  - Calming strategies should feel natural in the scene, not scripted like a lesson.
+  - If repair is needed, keep it brief, brave, and believable.
+  - Let the feeling change shape or size; do not make it disappear on command.
+"""
+        ages_9_to_12_rules = ""
+        if 9 <= age <= 12:
+            ages_9_to_12_rules = """
+- AGES 9-12 BIG FEELINGS RULES:
+  - Use precise feeling words such as humiliated, overwhelmed, resentful, or conflicted when they fit the scene.
+  - Keep the tone emotionally intelligent and socially real, never therapeutic-sounding.
+  - The emotion is not the problem; the pressure, misunderstanding, impulse, or fallout is the problem.
+  - Calming should read as regaining choice, not shutting the feeling down.
+  - Pick-a-path choices should change the social outcome in believable ways.
+  - Repair should feel brave and credible, not neat or instant.
+  - Adults can steady the scene, but the child still makes the key choice.
+"""
+        ages_13_to_15_rules = ""
+        if 13 <= age <= 15:
+            ages_13_to_15_rules = """
+- AGES 13-15 BIG FEELINGS RULES:
+  - Keep the same grounded Big Feelings principles, but raise the social complexity to friend groups, identity pressure, and digital life.
+  - Use higher emotional nuance and room for mixed motives without moralizing.
+  - The emotion is not the problem; the real problem is the pressure, misunderstanding, impulse, or fallout around it.
+  - Calming should restore choice and clarity, not perform emotional shutdown.
+  - Repair may require vulnerability and is never framed as easy, tidy, or guaranteed to work.
+  - Choices should feel credible to a teen social world: public response, private truth, strategic distance, or partial repair.
+  - Avoid lecturing language from peers or adults; support can steady the scene without taking away agency.
+"""
 
         lines = [
             "**BIG FEELINGS INTERACTIVE CONTEXT**:",
@@ -727,6 +763,12 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
             lines.append(feeling_specific_rule)
         if preschool_rules:
             lines.append(preschool_rules)
+        if ages_6_to_8_rules:
+            lines.append(ages_6_to_8_rules)
+        if ages_9_to_12_rules:
+            lines.append(ages_9_to_12_rules)
+        if ages_13_to_15_rules:
+            lines.append(ages_13_to_15_rules)
         return "\n" + "\n".join(lines) + "\n"
 
     @staticmethod
@@ -801,6 +843,215 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
                     'Ask for help',
                 ]
             return [choice(text, idx + 1) for idx, text in enumerate(options[:2])]
+
+        if 6 <= age <= 8:
+            if feeling in {'mad', 'angry', 'annoyed', 'irritated', 'furious', 'hurt-mad', 'left-out mad'}:
+                if is_opening:
+                    options = [
+                        'Stomp ahead and grab your spot back',
+                        coping_tool or 'Step aside and take three dragon breaths',
+                        'Say what happened in a steady voice',
+                    ]
+                else:
+                    options = [
+                        'Use clear words about what felt unfair',
+                        coping_tool or 'Loosen your fists and slow your breath',
+                        'Check on the other kid and try a quick repair',
+                    ]
+            elif feeling in {'worried', 'nervous', 'uneasy', 'shaky', 'jumpy', 'scared', 'unsure', 'what-if-y'}:
+                if is_opening:
+                    options = [
+                        'Blurt that this feels too hard',
+                        coping_tool or 'Look for three safe things and breathe slowly',
+                        'Ask what the first step is',
+                    ]
+                else:
+                    options = [
+                        'Try one small step now',
+                        coping_tool or 'Hold still long enough for one calm breath',
+                        'Tell someone what feels confusing',
+                    ]
+            elif feeling in {'sad', 'lonely', 'disappointed', 'left out', 'gloomy', 'hurt', 'heavy', 'teary'}:
+                if is_opening:
+                    options = [
+                        'Hide away with the heavy feeling',
+                        coping_tool or 'Take a quiet breath and notice who feels safe',
+                        'Tell someone what hurt',
+                    ]
+                else:
+                    options = [
+                        'Try the next small part of the adventure',
+                        coping_tool or 'Let the feeling settle while you breathe',
+                        'Reconnect with someone who can help',
+                    ]
+            elif feeling in {'frustrated', 'stuck', 'bothered', 'mixed up', 'overwhelmed', 'impatient', 'ready-to-pop', 'trying-so-hard'}:
+                if is_opening:
+                    options = [
+                        'Groan and shove the problem away',
+                        coping_tool or 'Shake out the stuck sparks and reset',
+                        'Say what is not working yet',
+                    ]
+                else:
+                    options = [
+                        'Try one smaller step',
+                        coping_tool or 'Take a restart minute',
+                        'Ask for one clue or a different plan',
+                    ]
+            elif feeling in {'embarrassed', 'awkward', 'silly-in-a-bad-way', 'exposed', 'red-faced', 'wish-i-could-hide'}:
+                if is_opening:
+                    options = [
+                        'Hide or snap before anyone notices more',
+                        coping_tool or 'Take one breath and steady your face',
+                        'Tell the truth about the mistake',
+                    ]
+                else:
+                    options = [
+                        'Try again with calmer words',
+                        coping_tool or 'Let your cheeks cool while you breathe',
+                        'Ask for a do-over and keep going',
+                    ]
+            elif feeling in {'excited', 'bouncy', 'hyper', 'proud', 'can’t-wait', 'buzzy', "can't-wait"}:
+                if is_opening:
+                    options = [
+                        'Rush in so fast the plan gets messy',
+                        coping_tool or 'Bounce once, then slow down enough to think',
+                        'Tell someone your big idea first',
+                    ]
+                else:
+                    options = [
+                        'Use the energy on the next smart step',
+                        coping_tool or 'Slow your body so your brain can catch up',
+                        'Work with someone so the fun keeps going',
+                    ]
+            else:
+                options = [
+                    'React fast before the feeling gets bigger',
+                    coping_tool or 'Pause long enough to steady yourself',
+                    'Tell someone what is going on',
+                ]
+            return [choice(text, idx + 1) for idx, text in enumerate(options[:3])]
+
+        if 9 <= age <= 12:
+            if feeling in {'mad', 'angry', 'annoyed', 'irritated', 'furious', 'resentful', 'wronged', 'defensive', 'heated'}:
+                if is_opening:
+                    options = [
+                        'Call it out in front of everyone',
+                        coping_tool or 'Step back long enough to get your next move on purpose',
+                        'Pull one person aside and say what felt unfair',
+                    ]
+                else:
+                    options = [
+                        'Name the pressure without pretending you are fine',
+                        coping_tool or 'Buy yourself a beat so you can choose, not explode',
+                        'Try a brave repair without demanding instant forgiveness',
+                    ]
+            elif feeling in {'worried', 'nervous', 'uneasy', 'tense', 'overwhelmed', 'on edge', 'apprehensive', 'panicked', 'exposed'}:
+                if is_opening:
+                    options = [
+                        'Pretend it does not matter and shut down',
+                        coping_tool or 'Take a pause that helps you think clearly again',
+                        'Ask one steady person what is actually going on',
+                    ]
+                else:
+                    options = [
+                        'Take one clear next step before your thoughts spiral further',
+                        coping_tool or 'Regroup until you can choose with intention',
+                        'Tell the truth about what feels too big right now',
+                    ]
+            elif feeling in {'sad', 'lonely', 'disappointed', 'left out', 'hurt', 'heavy', 'ashamed', 'humiliated', 'discouraged', 'heartsick', 'isolated', 'replaced'}:
+                if is_opening:
+                    options = [
+                        'Disappear before anyone can read your face',
+                        coping_tool or 'Give yourself a minute to steady without pretending it does not hurt',
+                        'Tell one person what happened instead of carrying it alone',
+                    ]
+                else:
+                    options = [
+                        'Say the true thing, even if your voice shakes',
+                        coping_tool or 'Stay with the feeling long enough to pick your next move',
+                        'Try a repair or reconnection that leaves room for distance',
+                    ]
+            elif feeling in {'frustrated', 'stuck', 'bothered', 'mixed up', 'conflicted', 'torn', 'scrambled', 'overstimulated', 'uncertain', 'suspicious'}:
+                if is_opening:
+                    options = [
+                        'Push harder and make the conflict bigger',
+                        coping_tool or 'Reset long enough to sort out what is actually bothering you',
+                        'Say which part feels off before the pressure keeps building',
+                    ]
+                else:
+                    options = [
+                        'Pick one smaller move you can stand behind',
+                        coping_tool or 'Slow the scene down until you can choose clearly',
+                        'Ask for a different plan without pretending nothing happened',
+                    ]
+            else:
+                options = [
+                    'React in the moment and deal with the fallout later',
+                    coping_tool or 'Pause until you have a real choice again',
+                    'Tell one honest version of what is going on',
+                ]
+            return [choice(text, idx + 1) for idx, text in enumerate(options[:3])]
+
+        if 13 <= age <= 15:
+            if feeling in {'mad', 'angry', 'annoyed', 'irritated', 'furious', 'resentful', 'wronged', 'defensive', 'heated'}:
+                if is_opening:
+                    options = [
+                        'Fire back where everyone can see it',
+                        coping_tool or 'Take space until you can decide what response you actually want',
+                        'Message or pull aside the person who matters most and say what crossed the line',
+                    ]
+                else:
+                    options = [
+                        'State the impact without pretending the feeling is gone',
+                        coping_tool or 'Regain enough control to choose the next move on purpose',
+                        'Attempt a direct repair or boundary, knowing it may stay awkward',
+                    ]
+            elif feeling in {'worried', 'nervous', 'uneasy', 'tense', 'overwhelmed', 'on edge', 'apprehensive', 'panicked', 'exposed'}:
+                if is_opening:
+                    options = [
+                        'Ghost the situation before it can get worse',
+                        coping_tool or 'Step out of the noise long enough to think clearly again',
+                        'Ask one trusted person what is true instead of guessing from the group chat',
+                    ]
+                else:
+                    options = [
+                        'Do the next honest thing before the pressure mutates further',
+                        coping_tool or 'Take back enough choice to decide what matters now',
+                        'Say out loud what part of this is actually too much',
+                    ]
+            elif feeling in {'sad', 'lonely', 'disappointed', 'left out', 'hurt', 'heavy', 'ashamed', 'humiliated', 'discouraged', 'heartsick', 'isolated', 'replaced'}:
+                if is_opening:
+                    options = [
+                        'Act like you do not care and go cold',
+                        coping_tool or 'Get yourself steady without forcing the feeling underground',
+                        'Tell one person the real version before the story spreads',
+                    ]
+                else:
+                    options = [
+                        'Say the vulnerable truth, even if it does not fix everything',
+                        coping_tool or 'Wait until you can respond without erasing yourself',
+                        'Choose partial repair, distance, or a new ally instead of fake harmony',
+                    ]
+            elif feeling in {'frustrated', 'stuck', 'bothered', 'mixed up', 'conflicted', 'torn', 'scrambled', 'overstimulated', 'uncertain', 'suspicious'}:
+                if is_opening:
+                    options = [
+                        'Double down and let the misunderstanding harden',
+                        coping_tool or 'Pause until you can tell the difference between pressure and fact',
+                        'Ask a direct question before the story writes itself',
+                    ]
+                else:
+                    options = [
+                        'Make one choice that matches your actual values',
+                        coping_tool or 'Stay with the discomfort long enough to pick a clean next move',
+                        'Try a blunt but respectful truth instead of another performance',
+                    ]
+            else:
+                options = [
+                    'React fast and protect your image first',
+                    coping_tool or 'Take enough space to choose instead of performing',
+                    'Tell the truth to one person who can handle it',
+                ]
+            return [choice(text, idx + 1) for idx, text in enumerate(options[:3])]
 
         if feeling in {'mad', 'angry'}:
             options = [

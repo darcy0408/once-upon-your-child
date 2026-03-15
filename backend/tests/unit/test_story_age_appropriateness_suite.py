@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from backend.services.interactive_adventure_prompt_builder import InteractiveAdventurePromptBuilder
 from backend.services.story_service import (
     AGE_CONSTRAINTS,
     AdvancedStoryEngine,
@@ -326,3 +327,83 @@ class TestStoryGenerationRoutingAndValidation:
         assert story_generator.call_count == 2
         assert _is_ltr_rhyme_quality_ok(result["story"]["pages"])
         assert result["story"]["learning_to_read_mode"] is True
+
+
+class TestBigFeelingsPromptAgeCalibration:
+    @pytest.mark.parametrize(
+        ("age", "expected_markers", "forbidden_markers"),
+        [
+            pytest.param(
+                5,
+                ["PRESCHOOL PICK-A-PATH RULES", '"id": "choice_2"'],
+                ["AGES 6-8 BIG FEELINGS RULES", '"id": "choice_3"'],
+                id="age5_big_feelings_keeps_preschool_branch",
+            ),
+            pytest.param(
+                7,
+                ["AGES 6-8 BIG FEELINGS RULES", "supportive and warm", '"id": "choice_3"'],
+                ["PRESCHOOL PICK-A-PATH RULES"],
+                id="age7_big_feelings_uses_6_to_8_branch",
+            ),
+            pytest.param(
+                10,
+                ["AGES 9-12 BIG FEELINGS RULES", "regaining choice", '"id": "choice_3"'],
+                ["AGES 13-15 BIG FEELINGS RULES", "PRESCHOOL PICK-A-PATH RULES"],
+                id="age10_big_feelings_uses_9_to_12_branch",
+            ),
+            pytest.param(
+                14,
+                ["AGES 13-15 BIG FEELINGS RULES", "digital life", '"id": "choice_3"'],
+                ["AGES 9-12 BIG FEELINGS RULES", "PRESCHOOL PICK-A-PATH RULES"],
+                id="age14_big_feelings_uses_13_to_15_branch",
+            ),
+        ],
+    )
+    def test_big_feelings_prompt_progression(self, age, expected_markers, forbidden_markers):
+        prompt = InteractiveAdventurePromptBuilder.build_opening_prompt(
+            child_name="Avery",
+            age=age,
+            length="short",
+            theme="Big Feelings",
+            tone="warm",
+            life_challenge="Handling Big Feelings",
+            big_feelings_context={
+                "current_feeling": {
+                    "emotion_name": (
+                        "Embarrassed" if age == 7
+                        else "Overwhelmed" if age == 10
+                        else "Humiliated" if age == 14
+                        else "Mad"
+                    ),
+                    "physical_signs": (
+                        "Warm cheeks" if age == 7
+                        else "Buzzing hands" if age == 10
+                        else "Hot face and locked jaw" if age == 14
+                        else "Hot face"
+                    ),
+                },
+                "trigger": (
+                    "someone laughed at my mistake" if age in {7, 5}
+                    else "my friend group switched plans without telling me" if age == 10
+                    else "a screenshot of my message got passed around"
+                ),
+                "body_signal": (
+                    "Warm cheeks" if age == 7
+                    else "Buzzing hands" if age == 10
+                    else "Hot face and locked jaw" if age == 14
+                    else "Hot face"
+                ),
+                "coping_tool": (
+                    "Take one breath and steady your face" if age == 7
+                    else "Step back by the wall and get your next move on purpose" if age == 10
+                    else "Take space until you can decide what response you actually want" if age == 14
+                    else "Take a dragon breath"
+                ),
+                "repair_goal": "Ask for a do-over",
+            },
+        )
+
+        for marker in expected_markers:
+            assert marker in prompt
+        for marker in forbidden_markers:
+            assert marker not in prompt

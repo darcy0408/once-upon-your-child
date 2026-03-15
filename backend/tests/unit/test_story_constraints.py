@@ -132,6 +132,102 @@ class TestStoryConstraints:
             'the very next beat should move toward repair'
         ) in prompt
 
+    def test_big_feelings_age7_prompt_uses_richer_vocabulary_and_three_choice_pattern(self):
+        """Ages 6-8 should use the newer Big Feelings guidance instead of preschool rules."""
+        prompt = InteractiveAdventurePromptBuilder.build_opening_prompt(
+            child_name='Jae',
+            age=7,
+            length='short',
+            theme='Big Feelings',
+            tone='warm',
+            life_challenge='Handling Big Feelings',
+            big_feelings_context={
+                'current_feeling': {
+                    'emotion_name': 'Frustrated',
+                    'physical_signs': 'Tight shoulders',
+                },
+                'trigger': 'my plan did not work',
+                'body_signal': 'Tight shoulders',
+                'coping_tool': 'Shake out the stuck sparks',
+                'repair_goal': 'Help clean up the mess',
+            },
+        )
+
+        assert 'AGES 6-8 BIG FEELINGS RULES' in prompt
+        assert 'Use richer feeling words than preschool' in prompt
+        assert 'supportive and warm, with simple cause-and-effect' in prompt
+        assert 'Calming strategies should feel natural in the scene, not scripted like a lesson.' in prompt
+        assert 'If repair is needed, keep it brief, brave, and believable.' in prompt
+        assert 'Shake out the stuck sparks' in prompt
+        assert 'Groan and shove the problem away' in prompt
+        assert 'Say what is not working yet' in prompt
+        assert '"id": "choice_3"' in prompt
+        assert 'PRESCHOOL PICK-A-PATH RULES' not in prompt
+
+    def test_big_feelings_age10_prompt_uses_older_kid_socially_real_guidance(self):
+        """Ages 9-12 should shift to socially real pressure, choice, and repair guidance."""
+        prompt = InteractiveAdventurePromptBuilder.build_opening_prompt(
+            child_name='Nia',
+            age=10,
+            length='short',
+            theme='Big Feelings',
+            tone='warm',
+            life_challenge='Handling Big Feelings',
+            big_feelings_context={
+                'current_feeling': {
+                    'emotion_name': 'Overwhelmed',
+                    'physical_signs': 'Buzzing hands',
+                },
+                'trigger': 'my friend group switched plans without telling me',
+                'body_signal': 'Buzzing hands',
+                'coping_tool': 'Step back by the wall and get your next move on purpose',
+                'repair_goal': 'Tell the truth without blowing up the group',
+            },
+        )
+
+        assert 'AGES 9-12 BIG FEELINGS RULES' in prompt
+        assert 'Use precise feeling words such as humiliated, overwhelmed, resentful, or conflicted when they fit the scene.' in prompt
+        assert 'The emotion is not the problem; the pressure, misunderstanding, impulse, or fallout is the problem.' in prompt
+        assert 'Calming should read as regaining choice, not shutting the feeling down.' in prompt
+        assert 'Repair should feel brave and credible, not neat or instant.' in prompt
+        assert 'Adults can steady the scene, but the child still makes the key choice.' in prompt
+        assert 'Pretend it does not matter and shut down' in prompt
+        assert 'Ask one steady person what is actually going on' in prompt
+        assert '"id": "choice_3"' in prompt
+        assert 'AGES 13-15 BIG FEELINGS RULES' not in prompt
+
+    def test_big_feelings_age14_prompt_uses_teen_nuance_without_moralizing(self):
+        """Ages 13-15 should use the teen social-complexity branch and credible repair choices."""
+        prompt = InteractiveAdventurePromptBuilder.build_opening_prompt(
+            child_name='Cam',
+            age=14,
+            length='short',
+            theme='Big Feelings',
+            tone='warm',
+            life_challenge='Handling Big Feelings',
+            big_feelings_context={
+                'current_feeling': {
+                    'emotion_name': 'Humiliated',
+                    'physical_signs': 'A hot face and a locked jaw',
+                },
+                'trigger': 'a screenshot of my message got passed around',
+                'body_signal': 'A hot face and a locked jaw',
+                'coping_tool': 'Take space until you can decide what response you actually want',
+                'repair_goal': 'Say what crossed the line and what happens next',
+            },
+        )
+
+        assert 'AGES 13-15 BIG FEELINGS RULES' in prompt
+        assert 'friend groups, identity pressure, and digital life' in prompt
+        assert 'Use higher emotional nuance and room for mixed motives without moralizing.' in prompt
+        assert 'Calming should restore choice and clarity, not perform emotional shutdown.' in prompt
+        assert 'Repair may require vulnerability and is never framed as easy, tidy, or guaranteed to work.' in prompt
+        assert 'Avoid lecturing language from peers or adults; support can steady the scene without taking away agency.' in prompt
+        assert 'Act like you do not care and go cold' in prompt
+        assert 'Tell one person the real version before the story spreads' in prompt
+        assert '"id": "choice_3"' in prompt
+        assert 'AGES 9-12 BIG FEELINGS RULES' not in prompt
+
     def test_non_big_feelings_prompt_keeps_generic_choice_templates(self):
         """Non-feelings stories should still use generic fallback choice template guidance."""
         prompt = InteractiveAdventurePromptBuilder.build_opening_prompt(
