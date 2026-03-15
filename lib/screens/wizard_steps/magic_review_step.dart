@@ -11,6 +11,7 @@ import 'package:story_weaver_app/story_result_screen.dart';
 import 'package:story_weaver_app/story_illustration_service.dart';
 import 'package:story_weaver_app/pick_a_path_adventure_screen.dart';
 import 'package:story_weaver_app/models.dart';
+import 'package:story_weaver_app/services/child_profile_service.dart';
 import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/theme/app_theme.dart';
 import 'package:story_weaver_app/widgets/magic_orb.dart';
@@ -128,6 +129,11 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     try {
       await _saveCharacterIfNeeded();
       final requestData = WizardDataMapper.mapToStoryRequest(widget.wizardData);
+      final activeChildProfileId =
+          await ChildProfileService().getActiveProfileId();
+      if (activeChildProfileId != null && activeChildProfileId.isNotEmpty) {
+        requestData['childProfileId'] = activeChildProfileId;
+      }
       if (currentFeeling != null) {
         requestData['currentFeeling'] = currentFeeling.toJson();
       }
@@ -161,6 +167,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                       lifeChallenge: widget.wizardData.lifeChallenge,
                       personalitySliders: widget.wizardData.personalitySliders,
                       bigFeelingsContext: {
+                        if (requestData['childProfileId'] != null)
+                          'child_profile_id': requestData['childProfileId'],
                         if (requestData['currentFeeling'] != null)
                           'current_feeling': requestData['currentFeeling'],
                         if (requestData['feelingTrigger'] != null)
@@ -171,9 +179,6 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                           'coping_tool': requestData['copingTool'],
                         if (requestData['repairGoal'] != null)
                           'repair_goal': requestData['repairGoal'],
-                        if (requestData['parentHiddenContext'] != null)
-                          'parent_hidden_context':
-                              requestData['parentHiddenContext'],
                       })));
         }
       } else {
@@ -185,6 +190,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             characterName: requestData['character'] ?? 'Hero',
             age: requestData['age'] ?? 5,
             theme: requestData['theme'] ?? 'Magical Adventure',
+            childProfileId: requestData['childProfileId']?.toString(),
             companion: requestData['companion'] ?? '',
             characterDetails: requestData['characterDetails'],
             currentFeeling: requestData['currentFeeling'],

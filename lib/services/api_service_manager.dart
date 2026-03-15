@@ -569,8 +569,7 @@ class ApiServiceManager {
         (subscriptionTier.isEmpty ? 'free' : subscriptionTier).toLowerCase();
     final http.Client? effectiveClient = client ?? _testClient;
 
-    final bool needsBackendForFeatures =
-        includeIllustrations ||
+    final bool needsBackendForFeatures = includeIllustrations ||
         learningToReadMode ||
         currentFeeling != null ||
         (childProfileId != null && childProfileId.trim().isNotEmpty);
@@ -700,6 +699,7 @@ class ApiServiceManager {
     required String characterName,
     required String theme,
     required int age,
+    String? childProfileId,
     String? companion,
     Map<String, dynamic>? characterDetails,
     List<String>? additionalCharacters,

@@ -19,6 +19,7 @@ from backend.services.story_service import (
     _get_age_band,
     AGE_CONSTRAINTS,
     _build_learning_to_read_prompt,
+    transform_parent_context_to_story_guidance,
 )
 
 
@@ -706,3 +707,27 @@ class TestLearningToReadPrompt:
 
         assert "AABBA rhyme scheme" in prompt
         assert '"rhyme_scheme"' in prompt
+
+
+class TestParentContextTransformation:
+    def test_transform_parent_context_abstracts_raw_language(self):
+        guidance = transform_parent_context_to_story_guidance({
+            'feeling': 'Angry',
+            'trigger': 'hitting sister after hearing no',
+            'body_signal': 'hot face',
+            'coping_tool': 'dragon breaths',
+            'repair_goal': 'help fix what happened',
+            'parent_hidden_context': 'meltdown after yelling at brother',
+        })
+
+        story_guidance = guidance['story_guidance'].lower()
+        assert guidance['feeling'] == 'Angry'
+        assert 'hitting sister' not in story_guidance
+        assert 'yelling at brother' not in story_guidance
+        assert 'quick impulses' in story_guidance
+        assert 'loud words when feelings spill over' in story_guidance
+        assert 'dragon breaths' in story_guidance
+        assert 'help fix what happened' in story_guidance
+
+    def test_transform_parent_context_returns_empty_for_missing_data(self):
+        assert transform_parent_context_to_story_guidance(None) == {}

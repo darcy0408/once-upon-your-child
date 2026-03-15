@@ -278,3 +278,60 @@ def test_delete_character_not_found_returns_404(client, auth_headers, test_user)
 
     assert response.status_code == 404
     assert response.get_json()["error"] == "Character not found"
+
+
+def test_parent_hidden_context_round_trip(client, auth_headers, test_user):
+    payload = {
+        "feeling": "frustrated",
+        "trigger": "a limit is set",
+        "body_signal": "a hot face",
+        "coping_tool": "dragon breaths",
+        "repair_goal": "help fix what happened",
+        "parent_hidden_context": "keep it general and private",
+    }
+
+    save_response = client.put(
+        "/child-profiles/profile-1/parent-hidden-context",
+        json=payload,
+        headers=auth_headers,
+    )
+
+    assert save_response.status_code == 200
+    saved = save_response.get_json()["parent_hidden_context"]
+    assert saved["child_profile_id"] == "profile-1"
+    assert saved["feeling"] == "frustrated"
+
+    get_response = client.get(
+        "/child-profiles/profile-1/parent-hidden-context",
+        headers=auth_headers,
+    )
+
+    assert get_response.status_code == 200
+    fetched = get_response.get_json()["parent_hidden_context"]
+    assert fetched["trigger"] == "a limit is set"
+    assert fetched["repair_goal"] == "help fix what happened"
+
+
+def test_parent_hidden_context_requires_auth(client):
+    response = client.get("/child-profiles/profile-1/parent-hidden-context")
+
+    assert response.status_code == 401
+    assert response.get_json()["error"] == "Authentication required"
+
+
+def test_parent_hidden_context_rejects_pii_in_note(client, auth_headers, test_user):
+    response = client.put(
+        "/child-profiles/profile-1/parent-hidden-context",
+        json={
+            "feeling": "frustrated",
+            "trigger": "a limit is set",
+            "body_signal": "a hot face",
+            "coping_tool": "dragon breaths",
+            "repair_goal": "help fix what happened",
+            "parent_hidden_context": "email me at parent@example.com",
+        },
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 400
+    assert "disallowed personal information" in response.get_json()["error"]

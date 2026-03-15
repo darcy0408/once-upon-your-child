@@ -2,6 +2,55 @@
 
 ---
 
+## Session Update - 2026-03-14 (Hidden Parent Layer Implementation)
+
+### Scope Completed
+- Added a backend `ParentHiddenContext` model keyed by `user_id + child_profile_id` to store private Big Feelings guidance outside story history.
+- Added authenticated read/write API endpoints for parent-hidden context at `/child-profiles/<profile_id>/parent-hidden-context`.
+- Replaced raw parent-context prompt injection with a child-safe transformation layer for standard and interactive Big Feelings generation.
+- Wired the Parent Controls screen to the new backend endpoint with a collapsible `Big Feelings Guidance` section using controlled choice chips plus an optional freeform note.
+- Removed the remaining parent-only hidden-context controls from the child Big Feelings flow and stopped passing raw parent-hidden context through the wizard request mapper.
+
+### Changes
+- `backend/models/parent_hidden_context.py`
+  - Added the new persistence model with required structured fields plus optional `parent_hidden_context` note.
+- `backend/routes/character_routes.py`
+  - Added protected `GET` / `PUT` endpoints for profile-scoped parent hidden context.
+  - Added basic PII rejection for note payloads.
+- `backend/routes/story_routes.py`
+  - Resolves saved hidden context by `child_profile_id` during Big Feelings story generation.
+  - Uses transformed child-safe guidance instead of raw parent language.
+  - Merges saved parent guidance into interactive Big Feelings requests.
+- `backend/services/story_service.py`
+  - Added `transform_parent_context_to_story_guidance(parent_context)`.
+  - Abstracts unsafe/raw phrases like hitting, yelling, sibling-specific incidents into child-safe scaffolding.
+- `backend/services/interactive_adventure_prompt_builder.py`
+  - Switched Big Feelings interactive prompt construction to use transformed guidance instead of raw hidden parent text.
+- `lib/screens/parent_controls_screen.dart`
+  - Replaced local-only Big Feelings settings with backend-backed profile-specific guidance controls.
+- `lib/screens/wizard_steps/magic_review_step.dart`
+  - Passes `childProfileId` for backend resolution and stops sending raw `parent_hidden_context` into pick-a-path requests.
+- `lib/services/api_service_manager.dart`
+  - Routes story generation through the backend when profile-scoped Big Feelings context is involved.
+  - Stops embedding raw hidden parent context in the direct therapeutic prompt builder.
+- `lib/screens/big_feelings_flow_screen.dart`
+  - Removed the parent-only hidden-context and repair-goal UI from child flow.
+- `lib/screens/wizard_steps/feeling_selection_step.dart`
+  - Stopped reading/writing parent-only hidden-context values in the child flow.
+- `lib/screens/wizard_steps/wizard_data_mapper.dart`
+  - Removed raw `parentHiddenContext` forwarding from wizard request mapping.
+- Tests:
+  - `backend/tests/api/test_character_routes.py`
+  - `backend/tests/unit/test_story_service.py`
+
+### Verification
+- `python -m pytest tests/unit/test_story_service.py tests/api/test_character_routes.py -q`
+  - Result: `79 passed`
+- `dart analyze lib/screens/parent_controls_screen.dart lib/screens/big_feelings_flow_screen.dart lib/screens/wizard_steps/feeling_selection_step.dart lib/screens/wizard_steps/magic_review_step.dart lib/screens/wizard_steps/wizard_data_mapper.dart lib/services/api_service_manager.dart`
+  - Result: `No issues found!`
+
+---
+
 ## Session Update - 2026-03-14 (Pet Avatar Fallback Provider)
 
 ### Scope Completed

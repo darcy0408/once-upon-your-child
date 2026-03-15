@@ -201,9 +201,6 @@ class WizardDataMapper {
       if (data.selectedRepairGoal != null &&
           data.selectedRepairGoal!.trim().isNotEmpty)
         'repairGoal': data.selectedRepairGoal!.trim(),
-      if (data.parentHiddenContext != null &&
-          data.parentHiddenContext!.trim().isNotEmpty)
-        'parentHiddenContext': data.parentHiddenContext!.trim(),
       'customElements': [
         if (data.selectedGenre != null) 'Genre: ${data.selectedGenre}',
         if (data.customElements.isNotEmpty) data.customElements,
@@ -250,9 +247,6 @@ class WizardDataMapper {
       if (data.selectedRepairGoal != null &&
           data.selectedRepairGoal!.trim().isNotEmpty)
         'repair_goal': data.selectedRepairGoal!.trim(),
-      if (data.parentHiddenContext != null &&
-          data.parentHiddenContext!.trim().isNotEmpty)
-        'parent_hidden_context': data.parentHiddenContext!.trim(),
     };
   }
 
@@ -366,9 +360,17 @@ class WizardDataMapper {
       case 'frustrated':
         return ['Try again', 'Ask for help', 'Take a break'];
       case 'embarrassed':
-        return ['Take one steady breath', 'Ask for a do-over', 'Tell the truth simply'];
+        return [
+          'Take one steady breath',
+          'Ask for a do-over',
+          'Tell the truth simply'
+        ];
       case 'excited':
-        return ['Take one settling breath', 'Tell someone your idea', 'Slow down enough to choose'];
+        return [
+          'Take one settling breath',
+          'Tell someone your idea',
+          'Slow down enough to choose'
+        ];
       default:
         return ['Take a breath', 'Ask for help'];
     }
@@ -419,21 +421,33 @@ class WizardDataMapper {
       emotionName = 'Worried';
       emotionEmoji = '😟';
       description = 'Feeling jumpy, shaky, or full of what-if thoughts';
-      coping = ['Spot three safe things', 'Take a slow breath', 'Ask one true question'];
+      coping = [
+        'Spot three safe things',
+        'Take a slow breath',
+        'Ask one true question'
+      ];
     } else if (normalizedChip.contains('frustrated') ||
         normalizedChip.contains('stuck') ||
         normalizedChip.contains('overwhelmed')) {
       emotionName = 'Frustrated';
       emotionEmoji = '😤';
       description = 'Feeling stuck, bothered, or like the problem is too much';
-      coping = ['Shake out the stuck sparks', 'Take a restart minute', 'Ask for one clue'];
+      coping = [
+        'Shake out the stuck sparks',
+        'Take a restart minute',
+        'Ask for one clue'
+      ];
     } else if (normalizedChip.contains('embarrassed') ||
         normalizedChip.contains('awkward') ||
         normalizedChip.contains('red-faced')) {
       emotionName = 'Embarrassed';
       emotionEmoji = '😳';
       description = 'Feeling awkward, exposed, or like you want to hide';
-      coping = ['Take one steady breath', 'Tell the truth simply', 'Ask for a do-over'];
+      coping = [
+        'Take one steady breath',
+        'Tell the truth simply',
+        'Ask for a do-over'
+      ];
     } else if (normalizedChip.contains('excited') ||
         normalizedChip.contains('bouncy') ||
         normalizedChip.contains('hyper') ||
@@ -441,7 +455,11 @@ class WizardDataMapper {
       emotionName = 'Excited';
       emotionEmoji = '🤩';
       description = 'Feeling buzzy, bouncy, or very ready for something big';
-      coping = ['Bounce once, then pause', 'Tell someone your idea', 'Slow down enough to think'];
+      coping = [
+        'Bounce once, then pause',
+        'Tell someone your idea',
+        'Slow down enough to think'
+      ];
     } else if (normalizedChip.contains('brave')) {
       emotionName = 'Scared'; // Needs bravery
       emotionEmoji = '😨';

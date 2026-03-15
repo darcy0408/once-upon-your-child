@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/app_theme.dart';
 
@@ -10,41 +9,23 @@ class BigFeelingsFlowResult {
     required this.trigger,
     required this.bodySignal,
     required this.copingTool,
-    this.parentHiddenContext,
-    this.repairGoal,
   });
 
   final String feeling;
   final String trigger;
   final String bodySignal;
   final String copingTool;
-  final String? parentHiddenContext;
-  final String? repairGoal;
 }
 
 class BigFeelingsFlowScreen extends StatefulWidget {
-  const BigFeelingsFlowScreen({
-    super.key,
-    this.initialParentHiddenContext,
-    this.initialRepairGoal,
-  });
+  const BigFeelingsFlowScreen({super.key});
 
-  final String? initialParentHiddenContext;
-  final String? initialRepairGoal;
-
-  static Future<BigFeelingsFlowResult?> show(
-    BuildContext context, {
-    String? initialParentHiddenContext,
-    String? initialRepairGoal,
-  }) {
+  static Future<BigFeelingsFlowResult?> show(BuildContext context) {
     return Navigator.of(context, rootNavigator: true)
         .push<BigFeelingsFlowResult>(
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (_) => BigFeelingsFlowScreen(
-          initialParentHiddenContext: initialParentHiddenContext,
-          initialRepairGoal: initialRepairGoal,
-        ),
+        builder: (_) => const BigFeelingsFlowScreen(),
       ),
     );
   }
@@ -54,9 +35,6 @@ class BigFeelingsFlowScreen extends StatefulWidget {
 }
 
 class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
-  static const _parentHiddenContextPrefsKey =
-      'big_feelings_parent_hidden_context';
-  static const _repairGoalPrefsKey = 'big_feelings_repair_goal';
   static const _feelings = [
     _ChoiceOption(
       value: 'Mad',
@@ -136,106 +114,14 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
     ],
   };
 
-  static const _realLifeStruggleOptions = [
-    _ChoiceOption(
-      value: 'trouble hearing no',
-      label: 'Trouble hearing no',
-      emoji: '🚫',
-    ),
-    _ChoiceOption(
-      value: 'friendship hurt',
-      label: 'Friendship hurt',
-      emoji: '💔',
-    ),
-    _ChoiceOption(
-      value: 'bedtime worry',
-      label: 'Bedtime worry',
-      emoji: '🌙',
-    ),
-    _ChoiceOption(
-      value: 'sibling conflict',
-      label: 'Sibling conflict',
-      emoji: '🧒',
-    ),
-    _ChoiceOption(
-      value: 'hard transitions',
-      label: 'Hard transitions',
-      emoji: '🔄',
-    ),
-    _ChoiceOption(
-      value: 'meltdown when stuck',
-      label: 'Meltdown when stuck',
-      emoji: '🧩',
-    ),
-  ];
-
-  static const _repairGoalOptions = [
-    _ChoiceOption(value: 'Say sorry', label: 'Say sorry', emoji: '🫶'),
-    _ChoiceOption(value: 'Help fix it', label: 'Help fix', emoji: '🛠️'),
-    _ChoiceOption(
-        value: 'Use gentle words', label: 'Gentle words', emoji: '💬'),
-    _ChoiceOption(value: 'Try again', label: 'Try again', emoji: '🔁'),
-  ];
-
   int _step = 0;
   String? _feeling;
   String? _trigger;
   String? _bodySignal;
-  bool _showParentControls = false;
-  String? _parentHiddenContext;
-  String? _repairGoal;
 
   @override
   void initState() {
     super.initState();
-    _loadParentHiddenContext();
-    _loadRepairGoal();
-  }
-
-  Future<void> _loadParentHiddenContext() async {
-    final prefs = await SharedPreferences.getInstance();
-    final persistedValue = prefs.getString(_parentHiddenContextPrefsKey);
-    final initialValue = widget.initialParentHiddenContext;
-    final resolvedValue =
-        (initialValue != null && initialValue.trim().isNotEmpty)
-            ? initialValue.trim()
-            : persistedValue;
-    if (!mounted || resolvedValue == null || resolvedValue.isEmpty) {
-      return;
-    }
-    setState(() => _parentHiddenContext = resolvedValue);
-  }
-
-  Future<void> _persistParentHiddenContext(String? value) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (value == null || value.trim().isEmpty) {
-      await prefs.remove(_parentHiddenContextPrefsKey);
-      return;
-    }
-    await prefs.setString(_parentHiddenContextPrefsKey, value.trim());
-  }
-
-  Future<void> _loadRepairGoal() async {
-    final prefs = await SharedPreferences.getInstance();
-    final persistedValue = prefs.getString(_repairGoalPrefsKey);
-    final initialValue = widget.initialRepairGoal;
-    final resolvedValue =
-        (initialValue != null && initialValue.trim().isNotEmpty)
-            ? initialValue.trim()
-            : persistedValue;
-    if (!mounted || resolvedValue == null || resolvedValue.isEmpty) {
-      return;
-    }
-    setState(() => _repairGoal = resolvedValue);
-  }
-
-  Future<void> _persistRepairGoal(String? value) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (value == null || value.trim().isEmpty) {
-      await prefs.remove(_repairGoalPrefsKey);
-      return;
-    }
-    await prefs.setString(_repairGoalPrefsKey, value.trim());
   }
 
   void _goBack() {
@@ -276,24 +162,8 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
         trigger: _trigger!,
         bodySignal: _bodySignal!,
         copingTool: copingTool,
-        parentHiddenContext: _parentHiddenContext,
-        repairGoal: _repairGoal,
       ),
     );
-  }
-
-  void _toggleParentControls() {
-    setState(() => _showParentControls = !_showParentControls);
-  }
-
-  Future<void> _selectParentHiddenContext(String? value) async {
-    setState(() => _parentHiddenContext = value);
-    await _persistParentHiddenContext(value);
-  }
-
-  Future<void> _selectRepairGoal(String? value) async {
-    setState(() => _repairGoal = value);
-    await _persistRepairGoal(value);
   }
 
   @override
@@ -304,9 +174,6 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
       2 => _bodyOptions[_feeling] ?? const <_ChoiceOption>[],
       _ => _helperOptions[_feeling] ?? const <_ChoiceOption>[],
     };
-    final subtitleSpacing = _showParentControls ? AppSpacing.sm : AppSpacing.md;
-    final gridTopSpacing = _showParentControls ? AppSpacing.lg : AppSpacing.xl;
-
     return Scaffold(
       backgroundColor: const Color(0xFF1A0E3A),
       body: SafeArea(
@@ -337,21 +204,10 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
                       ),
                     ),
                   ),
-                  IconButton(
-                    onPressed: _toggleParentControls,
-                    tooltip: 'Parent context',
-                    icon: Icon(
-                      _showParentControls
-                          ? Icons.shield
-                          : Icons.shield_outlined,
-                      color: _parentHiddenContext != null
-                          ? const Color(0xFFFFD76A)
-                          : Colors.white70,
-                    ),
-                  ),
+                  const SizedBox(width: 48),
                 ],
               ),
-              SizedBox(height: subtitleSpacing),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 _subtitleForStep(),
                 textAlign: TextAlign.center,
@@ -360,25 +216,7 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
                   fontSize: 15,
                 ),
               ),
-              AnimatedCrossFade(
-                firstChild: const SizedBox.shrink(),
-                secondChild: Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.md),
-                  child: _ParentHiddenContextCard(
-                    contextOptions: _realLifeStruggleOptions,
-                    selectedContextValue: _parentHiddenContext,
-                    onContextSelected: _selectParentHiddenContext,
-                    repairOptions: _repairGoalOptions,
-                    selectedRepairValue: _repairGoal,
-                    onRepairSelected: _selectRepairGoal,
-                  ),
-                ),
-                crossFadeState: _showParentControls
-                    ? CrossFadeState.showSecond
-                    : CrossFadeState.showFirst,
-                duration: const Duration(milliseconds: 180),
-              ),
-              SizedBox(height: gridTopSpacing),
+              const SizedBox(height: AppSpacing.xl),
               Expanded(
                 child: GridView.builder(
                   itemCount: options.length,
@@ -442,119 +280,6 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
       default:
         return 'Pick what could help right now.';
     }
-  }
-}
-
-class _ParentHiddenContextCard extends StatelessWidget {
-  const _ParentHiddenContextCard({
-    required this.contextOptions,
-    required this.selectedContextValue,
-    required this.onContextSelected,
-    required this.repairOptions,
-    required this.selectedRepairValue,
-    required this.onRepairSelected,
-  });
-
-  final List<_ChoiceOption> contextOptions;
-  final String? selectedContextValue;
-  final ValueChanged<String?> onContextSelected;
-  final List<_ChoiceOption> repairOptions;
-  final String? selectedRepairValue;
-  final ValueChanged<String?> onRepairSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: Colors.white24, width: 2),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Parent hidden context',
-            style: GoogleFonts.fredoka(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Real-life struggle',
-            style: GoogleFonts.fredoka(
-              color: Colors.white70,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              for (final option in contextOptions)
-                ChoiceChip(
-                  key: ValueKey('big_feelings_parent_context_${option.value}'),
-                  avatar: Text(option.emoji),
-                  label: Text(option.label),
-                  selected: selectedContextValue == option.value,
-                  selectedColor: const Color(0xFFFFD76A),
-                  backgroundColor: Colors.white,
-                  labelStyle: TextStyle(
-                    color: selectedContextValue == option.value
-                        ? const Color(0xFF1A0E3A)
-                        : const Color(0xFF2E2158),
-                    fontWeight: selectedContextValue == option.value
-                        ? FontWeight.w700
-                        : FontWeight.w500,
-                  ),
-                  onSelected: (_) => onContextSelected(
-                    selectedContextValue == option.value ? null : option.value,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            'Repair goal',
-            style: GoogleFonts.fredoka(
-              color: Colors.white70,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              for (final option in repairOptions)
-                ChoiceChip(
-                  key: ValueKey('big_feelings_repair_goal_${option.value}'),
-                  avatar: Text(option.emoji),
-                  label: Text(option.label),
-                  selected: selectedRepairValue == option.value,
-                  selectedColor: const Color(0xFFFFD76A),
-                  backgroundColor: Colors.white,
-                  labelStyle: TextStyle(
-                    color: selectedRepairValue == option.value
-                        ? const Color(0xFF1A0E3A)
-                        : const Color(0xFF2E2158),
-                    fontWeight: selectedRepairValue == option.value
-                        ? FontWeight.w700
-                        : FontWeight.w500,
-                  ),
-                  onSelected: (_) => onRepairSelected(
-                    selectedRepairValue == option.value ? null : option.value,
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
   }
 }
 
