@@ -118,6 +118,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
     final age = widget.wizardData.characterAge <= 0
         ? 8
         : widget.wizardData.characterAge;
+    final usesAges6To8Vocabulary = age >= 6 && age <= 8;
     if (age <= 5) {
       final result = await BigFeelingsFlowScreen.show(
         context,
@@ -142,6 +143,9 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
     if (result != null && mounted) {
       setState(() {
         widget.wizardData.selectedEmotionChips = result;
+        if (usesAges6To8Vocabulary && result.isNotEmpty) {
+          widget.wizardData.selectedFeeling = result.last;
+        }
       });
       _selectScenario('big_feelings_quest');
     }

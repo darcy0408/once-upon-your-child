@@ -252,10 +252,16 @@ def generate_pet_avatar():
 
             logger.info(f"Pet avatar generated successfully: {avatar_data['id']}")
 
+            provider_used = avatar_data.get('provider_used')
+            transformation_applied = avatar_data.get('transformation_applied', True)
+            status_code = 200 if transformation_applied else 206
+
             return jsonify({
                 'status': 'success',
-                'avatar': avatar_data
-            }), 200
+                'avatar': avatar_data,
+                'provider_used': provider_used,
+                'transformation_applied': transformation_applied,
+            }), status_code
 
         except Exception as e:
             logger.error(f"Pet avatar generation failed: {e}")

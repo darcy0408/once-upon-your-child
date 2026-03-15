@@ -100,6 +100,14 @@ const List<_SproutHeroChoice> _sproutHeroChoices = [
       skinTone: 'South Asian'),
 ];
 
+class _PetAvatarGenerationResult {
+  final String? message;
+  final bool isError;
+
+  const _PetAvatarGenerationResult.success([this.message]) : isError = false;
+  const _PetAvatarGenerationResult.error(this.message) : isError = true;
+}
+
 const List<_SproutHeroChoice> _explorerHeroChoices = [
   _SproutHeroChoice(
       gender: 'Boy',
@@ -287,7 +295,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
     final band = ageBandFromAge(widget.wizardData.characterAge);
     int initialCarouselIndex = 0;
-    
+
     if (band == AgeBand.sprout) {
       initialCarouselIndex = widget.wizardData.characterGender == 'Boy' ? 0 : 5;
     } else if (band == AgeBand.explorer) {
@@ -452,10 +460,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final age = widget.wizardData.characterAge <= 0
         ? 8
         : widget.wizardData.characterAge;
+    final usesAges6To8Vocabulary = age >= 6 && age <= 8;
     final result = await FeelingsQuestModal.show(context, childAge: age);
     if (result != null && mounted) {
       setState(() {
         widget.wizardData.selectedEmotionChips = result;
+        if (usesAges6To8Vocabulary && result.isNotEmpty) {
+          widget.wizardData.selectedFeeling = result.last;
+        }
         widget.wizardData.selectedScenario = 'big_feelings_quest';
       });
     }
@@ -1262,7 +1274,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       });
     }
 
-    final petAvatarError = await _generateMagicalPetAvatar(
+    final petAvatarResult = await _generateMagicalPetAvatar(
       petName: pet['name'] ?? _defaultPetNameForIndex(targetIndex),
       species: pet['species'] ?? 'Dog',
       looksDescription: pet['color'] ?? 'cute and friendly',
@@ -1271,12 +1283,13 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
 
     if (!mounted) return;
-    final success = petAvatarError == null;
+    final success = !petAvatarResult.isError;
     setState(() {
       _isPetAvatarGenerating = false;
-      _petAvatarStatusMessage = success
-          ? '✨ Magical pet avatar ready!'
-          : petAvatarError!;
+      _petAvatarStatusMessage = petAvatarResult.message ??
+          (success
+              ? '✨ Magical pet avatar ready!'
+              : 'Photo saved, but magical transform is unavailable right now.');
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1287,7 +1300,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
-  Future<String?> _generateMagicalPetAvatar({
+  Future<_PetAvatarGenerationResult> _generateMagicalPetAvatar({
     required String petName,
     required String species,
     required String looksDescription,
@@ -1319,40 +1332,55 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
       final streamed = await request.send().timeout(const Duration(minutes: 3));
       final response = await http.Response.fromStream(streamed);
-      if (response.statusCode != 200) {
+      if (response.statusCode != 200 && response.statusCode != 206) {
         try {
           final body = jsonDecode(response.body) as Map<String, dynamic>;
           final message = body['message']?.toString().trim();
           if (message != null && message.isNotEmpty) {
-            return message;
+            return _PetAvatarGenerationResult.error(message);
           }
         } catch (_) {}
-        return 'Photo saved, but magical transform is unavailable right now.';
+        return const _PetAvatarGenerationResult.error(
+          'Photo saved, but magical transform is unavailable right now.',
+        );
       }
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       if (body['status'] != 'success') {
         final message = body['message']?.toString().trim();
         if (message != null && message.isNotEmpty) {
-          return message;
+          return _PetAvatarGenerationResult.error(message);
         }
-        return 'Photo saved, but magical transform is unavailable right now.';
+        return const _PetAvatarGenerationResult.error(
+          'Photo saved, but magical transform is unavailable right now.',
+        );
       }
       final avatarJson = body['avatar'] as Map<String, dynamic>?;
       if (avatarJson == null) {
-        return 'Photo saved, but pet avatar generation returned no image.';
+        return const _PetAvatarGenerationResult.error(
+          'Photo saved, but pet avatar generation returned no image.',
+        );
       }
 
       final generated = GeneratedAvatar.fromJson(avatarJson);
-      if (!mounted) return 'Photo saved.';
+      if (!mounted) return const _PetAvatarGenerationResult.success();
       setState(() {
         widget.wizardData.petAvatars[petName] = generated;
       });
-      return null;
+      if (response.statusCode == 206) {
+        return const _PetAvatarGenerationResult.success(
+          "We kept your pet's real photo — magical transformation is temporarily unavailable",
+        );
+      }
+      return const _PetAvatarGenerationResult.success();
     } catch (e) {
       // Keep raw pet photo fallback if generation is unavailable.
       final message = e.toString().replaceFirst('Exception: ', '').trim();
-      if (message.isNotEmpty) return message;
-      return 'Photo saved, but magical transform is unavailable right now.';
+      if (message.isNotEmpty) {
+        return _PetAvatarGenerationResult.error(message);
+      }
+      return const _PetAvatarGenerationResult.error(
+        'Photo saved, but magical transform is unavailable right now.',
+      );
     }
   }
 

@@ -260,15 +260,48 @@ class WizardDataMapper {
     switch (rawFeeling.trim().toLowerCase()) {
       case 'mad':
       case 'angry':
-        return 'Mad';
+      case 'annoyed':
+      case 'irritated':
+      case 'furious':
+      case 'hurt-mad':
+      case 'left-out mad':
+        return 'Angry';
       case 'sad':
         return 'Sad';
-      case 'scared':
       case 'worried':
+      case 'nervous':
+      case 'uneasy':
+      case 'shaky':
+      case 'jumpy':
+      case 'unsure':
+      case 'what-if-y':
+        return 'Worried';
+      case 'scared':
       case 'anxious':
         return 'Scared';
       case 'frustrated':
+      case 'stuck':
+      case 'bothered':
+      case 'mixed up':
+      case 'overwhelmed':
+      case 'impatient':
+      case 'ready-to-pop':
+      case 'trying-so-hard':
         return 'Frustrated';
+      case 'embarrassed':
+      case 'awkward':
+      case 'red-faced':
+      case 'wish-i-could-hide':
+      case 'exposed':
+        return 'Embarrassed';
+      case 'excited':
+      case 'bouncy':
+      case 'hyper':
+      case 'proud':
+      case "can't-wait":
+      case 'can’t-wait':
+      case 'buzzy':
+        return 'Excited';
       default:
         return rawFeeling.trim().isEmpty ? 'Happy' : rawFeeling.trim();
     }
@@ -276,14 +309,20 @@ class WizardDataMapper {
 
   static String _emojiForFeeling(String feeling) {
     switch (feeling.toLowerCase()) {
-      case 'mad':
+      case 'angry':
         return '😠';
       case 'sad':
         return '😢';
+      case 'worried':
+        return '😟';
       case 'scared':
         return '😨';
       case 'frustrated':
         return '😤';
+      case 'embarrassed':
+        return '😳';
+      case 'excited':
+        return '🤩';
       default:
         return '😊';
     }
@@ -291,14 +330,20 @@ class WizardDataMapper {
 
   static String _descriptionForFeeling(String feeling) {
     switch (feeling.toLowerCase()) {
-      case 'mad':
+      case 'angry':
         return 'Feeling really upset and full of big energy';
       case 'sad':
         return 'Feeling hurt, heavy, or like crying';
+      case 'worried':
+        return 'Feeling jumpy, unsure, or full of what-if thoughts';
       case 'scared':
         return 'Feeling worried, shaky, or unsure';
       case 'frustrated':
         return 'Feeling stuck when something is hard or not working';
+      case 'embarrassed':
+        return 'Feeling red-faced, awkward, or like you want to hide';
+      case 'excited':
+        return 'Feeling buzzy, bouncy, or very ready for what comes next';
       default:
         return 'Feeling something important in the body';
     }
@@ -306,20 +351,31 @@ class WizardDataMapper {
 
   static List<String> _defaultCopingForFeeling(String feeling) {
     switch (feeling.toLowerCase()) {
-      case 'mad':
+      case 'angry':
         return ['Take a dragon breath', 'Ask for help', 'Use gentle words'];
       case 'sad':
         return ['Get a hug', 'Talk to someone safe', 'Take a quiet breath'];
+      case 'worried':
+        return [
+          'Spot three safe things',
+          'Take a slow breath',
+          'Ask what the first step is'
+        ];
       case 'scared':
         return ['Hold a grown-up hand', 'Take a slow breath', 'Ask for help'];
       case 'frustrated':
         return ['Try again', 'Ask for help', 'Take a break'];
+      case 'embarrassed':
+        return ['Take one steady breath', 'Ask for a do-over', 'Tell the truth simply'];
+      case 'excited':
+        return ['Take one settling breath', 'Tell someone your idea', 'Slow down enough to choose'];
       default:
         return ['Take a breath', 'Ask for help'];
     }
   }
 
   static Map<String, dynamic> _mapChipToFeeling(String chipLabel) {
+    final normalizedChip = chipLabel.trim().toLowerCase();
     // defaults
     String emotionName = 'Happy';
     String emotionEmoji = '😊';
@@ -329,7 +385,7 @@ class WizardDataMapper {
     // Map simplified chips to complex FeelingWheelData
     // Chips: Shining Bright, Being Brave, Making Friends, Calm Moments, Creative Ideas, Feeling Happy/Sad/Mad
 
-    if (chipLabel.contains('Sad')) {
+    if (normalizedChip.contains('sad')) {
       emotionName = 'Sad';
       emotionEmoji = '😢';
       final details = FeelingDetails.forFeeling(const SelectedFeeling(
@@ -342,8 +398,10 @@ class WizardDataMapper {
           color: Color(0xFF6495ED)));
       description = details.description;
       coping = details.coping;
-    } else if (chipLabel.contains('Mad')) {
-      emotionName = 'Mad';
+    } else if (normalizedChip.contains('angry') ||
+        normalizedChip.contains('mad') ||
+        normalizedChip.contains('annoyed')) {
+      emotionName = 'Angry';
       emotionEmoji = '😠';
       final details = FeelingDetails.forFeeling(const SelectedFeeling(
           core: 'Angry',
@@ -355,17 +413,46 @@ class WizardDataMapper {
           color: Color(0xFFFF6B6B)));
       description = details.description;
       coping = details.coping;
-    } else if (chipLabel.contains('Brave')) {
+    } else if (normalizedChip.contains('worried') ||
+        normalizedChip.contains('nervous') ||
+        normalizedChip.contains('uneasy')) {
+      emotionName = 'Worried';
+      emotionEmoji = '😟';
+      description = 'Feeling jumpy, shaky, or full of what-if thoughts';
+      coping = ['Spot three safe things', 'Take a slow breath', 'Ask one true question'];
+    } else if (normalizedChip.contains('frustrated') ||
+        normalizedChip.contains('stuck') ||
+        normalizedChip.contains('overwhelmed')) {
+      emotionName = 'Frustrated';
+      emotionEmoji = '😤';
+      description = 'Feeling stuck, bothered, or like the problem is too much';
+      coping = ['Shake out the stuck sparks', 'Take a restart minute', 'Ask for one clue'];
+    } else if (normalizedChip.contains('embarrassed') ||
+        normalizedChip.contains('awkward') ||
+        normalizedChip.contains('red-faced')) {
+      emotionName = 'Embarrassed';
+      emotionEmoji = '😳';
+      description = 'Feeling awkward, exposed, or like you want to hide';
+      coping = ['Take one steady breath', 'Tell the truth simply', 'Ask for a do-over'];
+    } else if (normalizedChip.contains('excited') ||
+        normalizedChip.contains('bouncy') ||
+        normalizedChip.contains('hyper') ||
+        normalizedChip.contains('proud')) {
+      emotionName = 'Excited';
+      emotionEmoji = '🤩';
+      description = 'Feeling buzzy, bouncy, or very ready for something big';
+      coping = ['Bounce once, then pause', 'Tell someone your idea', 'Slow down enough to think'];
+    } else if (normalizedChip.contains('brave')) {
       emotionName = 'Scared'; // Needs bravery
       emotionEmoji = '😨';
       description = 'Feeling a bit scared but ready to be brave';
       coping = ['Take a deep breath', 'Stand tall', 'Remember you are strong'];
-    } else if (chipLabel.contains('Calm')) {
+    } else if (normalizedChip.contains('calm')) {
       emotionName = 'Calm';
       emotionEmoji = '😌';
       description = 'Feeling peaceful and relaxed';
       coping = ['Breathe slowly', 'Close eyes', 'Listen to nature'];
-    } else if (chipLabel.contains('Creative')) {
+    } else if (normalizedChip.contains('creative')) {
       emotionName = 'Inspired';
       emotionEmoji = '🎨';
       description = 'Wanting to make something new';

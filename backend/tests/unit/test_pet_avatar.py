@@ -88,3 +88,45 @@ def test_avatar_service_pet_generation_logic():
     assert kwargs['breed_description'] == 'Small white maltese'
     assert kwargs['owner_favorite_color'] == 'Purple'
     assert "Magical Pet Avatar Creator v1" in kwargs['prompt']
+
+
+def test_avatar_service_pet_generation_falls_back_when_gemini_fails():
+    """Gemini pet failures should trigger the configured text-to-image fallback."""
+    from backend.services.avatar_generation_service import AvatarGenerationService
+
+    primary = MagicMock()
+    primary.generate_pet_avatar.side_effect = RuntimeError("Gemini unavailable")
+
+    fallback = MagicMock()
+    fallback.generate_character_avatar.return_value = [
+        {'image_data': 'ZmFrZS1mYWxsYmFjay1pbWFnZQ=='}
+    ]
+
+    service = AvatarGenerationService(
+        image_generator=primary,
+        fallback_generator=fallback,
+    )
+
+    result = service.generate_pet_avatar(
+        pet_name="Luna",
+        species="Cat",
+        breed_description="Black and white tuxedo cat",
+        owner_favorite_color="Purple",
+        photo_bytes=b"fakebytes",
+    )
+
+    assert result['style'] == 'pixar-pet-fallback'
+    assert result['provider_used'] == 'magicmock'
+    assert result['transformation_applied'] is True
+    assert result['image_base64'].startswith('data:image/png;base64,')
+
+    fallback.generate_character_avatar.assert_called_once()
+    _, kwargs = fallback.generate_character_avatar.call_args
+    assert kwargs['character_name'] == 'Luna'
+    assert kwargs['style'] == 'pixar'
+    assert kwargs['age'] == 6
+    assert kwargs['num_images'] == 1
+    assert kwargs['prompt'] == (
+        'Pixar-style magical cat, black and white fur, '
+        'sparkly eyes, transparent PNG background, 512x512'
+    )

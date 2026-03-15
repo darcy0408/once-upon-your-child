@@ -4,6 +4,7 @@ from .character import Character
 from .achievement import UserAchievement, AchievementStats
 from .story import Story
 from .consent_record import ConsentRecord
+from .parent_hidden_context import ParentHiddenContext
 from .interactive_story import (
     InteractiveStory,
     StorySegment,

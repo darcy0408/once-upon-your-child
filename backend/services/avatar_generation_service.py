@@ -367,6 +367,99 @@ Maintain the character's facial features while converting them into a vibrant no
 
         return None
 
+    def _build_pet_avatar_response(
+        self,
+        *,
+        image_base64: str,
+        pet_name: str,
+        species: str,
+        breed_description: str,
+        owner_favorite_color: str,
+        style: str,
+        start_time: datetime,
+        provider_used: str,
+        transformation_applied: bool,
+    ) -> Dict:
+        """Build a normalized pet avatar payload."""
+        avatar_id = str(uuid.uuid4())
+        generation_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
+
+        return {
+            'id': avatar_id,
+            'image_base64': image_base64,
+            'seed': avatar_id,
+            'style': style,
+            'attributes': {
+                'pet_name': pet_name,
+                'species': species,
+                'breed_description': breed_description,
+                'owner_favorite_color': owner_favorite_color,
+            },
+            'emotion_data': None,
+            'generated_at': datetime.now().isoformat(),
+            'generation_time_ms': generation_time_ms,
+            'version': 1,
+            'provider_used': provider_used,
+            'transformation_applied': transformation_applied,
+        }
+
+    def _detect_image_mime_type(self, image_bytes: bytes) -> str:
+        """Best-effort MIME type detection for returning the original photo."""
+        if image_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
+            return "image/png"
+        if image_bytes.startswith(b"\xff\xd8\xff"):
+            return "image/jpeg"
+        if image_bytes.startswith(b"RIFF") and image_bytes[8:12] == b"WEBP":
+            return "image/webp"
+        if image_bytes.startswith((b"GIF87a", b"GIF89a")):
+            return "image/gif"
+        return "image/jpeg"
+
+    def _extract_pet_color(self, species: str, breed_description: str) -> str:
+        """Infer a color phrase for the text-only pet fallback prompt."""
+        description = f"{species} {breed_description}".lower()
+        color_patterns = [
+            "black and white",
+            "brown and white",
+            "gray and white",
+            "orange and white",
+            "tan and white",
+            "golden",
+            "ginger",
+            "calico",
+            "tuxedo",
+            "tabby",
+            "black",
+            "white",
+            "brown",
+            "gray",
+            "grey",
+            "orange",
+            "tan",
+            "cream",
+            "gold",
+            "red",
+            "blue",
+        ]
+        for pattern in color_patterns:
+            if pattern in description:
+                return "gray" if pattern == "grey" else pattern
+        return "multicolored"
+
+    def _build_pet_text_fallback_prompt(self, species: str, breed_description: str) -> str:
+        """Build a text-to-image fallback prompt when photo-to-avatar fails."""
+        pet_type = (species or "pet").strip().lower()
+        pet_color = self._extract_pet_color(species, breed_description)
+        texture = "fur"
+        if any(word in pet_type for word in ("bird", "parrot", "cockatiel", "canary", "chicken", "duck")):
+            texture = "feathers"
+        elif any(word in pet_type for word in ("fish", "goldfish", "betta", "koi")):
+            texture = "scales"
+        return (
+            f"Pixar-style magical {pet_type}, {pet_color} {texture}, "
+            "sparkly eyes, transparent PNG background, 512x512"
+        )
+
     def generate_pet_avatar(
         self,
         pet_name: str,
@@ -436,73 +529,47 @@ This prompt is designed for "Story Weaver," an app that transforms real-world im
         )
 
         logger.info(f"Generating magical pet avatar for {pet_name} ({species})")
+        primary_error = None
 
         if self.image_generator is None:
-            raise Exception(
-                "Pet avatar generation is not configured. Gemini image generation is unavailable."
-            )
-        if not hasattr(self.image_generator, "generate_pet_avatar"):
-            raise Exception(
-                "Pet avatar generation is unsupported by the configured image provider."
-            )
-
-        try:
-            results = self.image_generator.generate_pet_avatar(
-                photo_bytes=photo_bytes,
-                species=species,
-                breed_description=breed_description,
-                owner_favorite_color=owner_favorite_color,
-                pet_name=pet_name,
-                num_images=1,
-                prompt=prompt
-            )
-
-            if results and len(results) > 0:
-                result = results[0]
-                image_base64 = result.get('image_data')
-                
-                # Check for "data:image" prefix and clean up
-                if image_base64 and "," in image_base64:
-                    image_base64 = image_base64.split(",", 1)[1]
-                
-                # Build response
-                avatar_id = str(uuid.uuid4())
-                end_time = datetime.now()
-                generation_time_ms = int((end_time - start_time).total_seconds() * 1000)
-
-                return {
-                    'id': avatar_id,
-                    'image_base64': f"data:image/png;base64,{image_base64}",
-                    'seed': avatar_id,
-                    'style': 'pixar-pet-custom',
-                    'attributes': {
-                        'pet_name': pet_name,
-                        'species': species,
-                        'breed_description': breed_description,
-                        'owner_favorite_color': owner_favorite_color
-                    },
-                    'emotion_data': None,
-                    'generated_at': datetime.now().isoformat(),
-                    'generation_time_ms': generation_time_ms,
-                    'version': 1
-                }
-            else:
+            logger.warning("Pet avatar primary provider unavailable: Gemini image generation is not configured")
+            primary_error = Exception("Gemini image generation is unavailable")
+        elif not hasattr(self.image_generator, "generate_pet_avatar"):
+            logger.warning("Pet avatar primary provider unavailable: configured generator does not support pet avatars")
+            primary_error = Exception("Configured image provider does not support pet avatars")
+        else:
+            try:
+                results = self.image_generator.generate_pet_avatar(
+                    photo_bytes=photo_bytes,
+                    species=species,
+                    breed_description=breed_description,
+                    owner_favorite_color=owner_favorite_color,
+                    pet_name=pet_name,
+                    num_images=1,
+                    prompt=prompt
+                )
+                image_base64 = self._extract_base64_from_results(results)
+                if image_base64:
+                    return self._build_pet_avatar_response(
+                        image_base64=f"data:image/png;base64,{image_base64}",
+                        pet_name=pet_name,
+                        species=species,
+                        breed_description=breed_description,
+                        owner_favorite_color=owner_favorite_color,
+                        style='pixar-pet-custom',
+                        start_time=start_time,
+                        provider_used='gemini',
+                        transformation_applied=True,
+                    )
                 raise Exception("No image generated for pet avatar")
+            except Exception as e:
+                primary_error = e
+                logger.error(f"Pet avatar generation failed with primary generator: {e}")
 
-        except Exception as e:
-            logger.error(f"Pet avatar generation failed with primary generator: {e}")
-
-        # Fallback: text-only character avatar generation (no reference photo)
         if self.fallback_generator is not None:
             try:
-                logger.info("Retrying pet avatar with text-only fallback generator")
-                fallback_prompt = (
-                    f"Magical Pixar-style 3D animated portrait of {pet_name}, a {species}. "
-                    f"Appearance: {breed_description}. "
-                    f"Wearing a magical collar in {owner_favorite_color}. "
-                    "Whimsical storybook forest background with glowing mushrooms. "
-                    "Soft cinematic lighting, children's book illustration style."
-                )
+                logger.info("Retrying pet avatar with text-to-image fallback generator")
+                fallback_prompt = self._build_pet_text_fallback_prompt(species, breed_description)
                 results = self.fallback_generator.generate_character_avatar(
                     prompt=fallback_prompt,
                     character_name=pet_name,
@@ -510,34 +577,42 @@ This prompt is designed for "Story Weaver," an app that transforms real-world im
                     style='pixar',
                     num_images=1,
                 )
-                if results and len(results) > 0:
-                    image_base64 = results[0].get('image_data')
-                    if image_base64:
-                        if image_base64.startswith("data:image"):
-                            image_base64 = image_base64.split(",", 1)[1]
-                        avatar_id = str(uuid.uuid4())
-                        end_time = datetime.now()
-                        generation_time_ms = int((end_time - start_time).total_seconds() * 1000)
-                        return {
-                            'id': avatar_id,
-                            'image_base64': f"data:image/png;base64,{image_base64}",
-                            'seed': avatar_id,
-                            'style': 'pixar-pet-fallback',
-                            'attributes': {
-                                'pet_name': pet_name,
-                                'species': species,
-                                'breed_description': breed_description,
-                                'owner_favorite_color': owner_favorite_color
-                            },
-                            'emotion_data': None,
-                            'generated_at': datetime.now().isoformat(),
-                            'generation_time_ms': generation_time_ms,
-                            'version': 1
-                        }
+                image_base64 = self._extract_base64_from_results(results)
+                if image_base64:
+                    provider_used = getattr(self.fallback_generator, "__class__", type("x", (), {})).__name__
+                    provider_used = re.sub(r"ImageGenerator$", "", provider_used).lower() or "fallback"
+                    return self._build_pet_avatar_response(
+                        image_base64=f"data:image/png;base64,{image_base64}",
+                        pet_name=pet_name,
+                        species=species,
+                        breed_description=breed_description,
+                        owner_favorite_color=owner_favorite_color,
+                        style='pixar-pet-fallback',
+                        start_time=start_time,
+                        provider_used=provider_used,
+                        transformation_applied=True,
+                    )
+                raise Exception("No image generated by fallback provider")
             except Exception as fallback_err:
                 logger.error(f"Pet avatar fallback also failed: {fallback_err}")
 
-        raise Exception("Pet avatar generation failed: Gemini unavailable and no fallback succeeded")
+        original_photo_base64 = base64.b64encode(photo_bytes).decode("utf-8")
+        original_photo_mime = self._detect_image_mime_type(photo_bytes)
+        if primary_error is not None:
+            logger.warning("Returning original pet photo because pet avatar transformation failed: %s", primary_error)
+        else:
+            logger.warning("Returning original pet photo because no pet avatar provider is available")
+        return self._build_pet_avatar_response(
+            image_base64=f"data:{original_photo_mime};base64,{original_photo_base64}",
+            pet_name=pet_name,
+            species=species,
+            breed_description=breed_description,
+            owner_favorite_color=owner_favorite_color,
+            style='pet-photo-original',
+            start_time=start_time,
+            provider_used='original-photo',
+            transformation_applied=False,
+        )
 
     def generate_avatar(
         self,

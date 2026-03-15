@@ -84,16 +84,20 @@ class _CustomPetAvatarScreenState extends State<CustomPetAvatarScreen> {
 
       var request = http.MultipartRequest('POST', url);
       if (kIsWeb) {
-        final bytes = _selectedImageBytes ?? await _selectedImage!.readAsBytes();
+        final bytes =
+            _selectedImageBytes ?? await _selectedImage!.readAsBytes();
         request.files.add(
           http.MultipartFile.fromBytes(
             'photo',
             bytes,
-            filename: _selectedImage!.name.isNotEmpty ? _selectedImage!.name : 'pet_photo.png',
+            filename: _selectedImage!.name.isNotEmpty
+                ? _selectedImage!.name
+                : 'pet_photo.png',
           ),
         );
       } else {
-        request.files.add(await http.MultipartFile.fromPath('photo', _selectedImage!.path));
+        request.files.add(
+            await http.MultipartFile.fromPath('photo', _selectedImage!.path));
       }
       request.fields['pet_name'] = widget.petName;
       request.fields['species'] = widget.species;
@@ -107,17 +111,18 @@ class _CustomPetAvatarScreenState extends State<CustomPetAvatarScreen> {
       });
 
       debugPrint('📡 Sending custom pet avatar request to $url');
-      final streamedResponse = await request.send().timeout(const Duration(minutes: 3));
+      final streamedResponse =
+          await request.send().timeout(const Duration(minutes: 3));
       final response = await http.Response.fromStream(streamedResponse);
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 206) {
         final data = json.decode(response.body);
         if (data['status'] == 'success') {
           final avatarData = data['avatar'];
           final imageBase64 = avatarData['image_base64'] as String;
 
           final localPath = await _saveImageLocally(imageBase64);
-          
+
           if (mounted) {
             setState(() {
               _generatedAvatarData = GeneratedAvatar.fromJson(avatarData);
@@ -125,7 +130,13 @@ class _CustomPetAvatarScreenState extends State<CustomPetAvatarScreen> {
               _isGenerating = false;
             });
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Magical Pet Avatar Created! ✨')),
+              SnackBar(
+                content: Text(
+                  response.statusCode == 206
+                      ? "We kept your pet's real photo — magical transformation is temporarily unavailable"
+                      : 'Magical Pet Avatar Created! ✨',
+                ),
+              ),
             );
           }
         } else {
@@ -225,7 +236,8 @@ class _CustomPetAvatarScreenState extends State<CustomPetAvatarScreen> {
         foregroundColor: Colors.white,
       ),
       body: Container(
-        decoration: const BoxDecoration(gradient: AppGradients.magicalBackground),
+        decoration:
+            const BoxDecoration(gradient: AppGradients.magicalBackground),
         child: Stack(
           children: [
             Positioned(
@@ -299,8 +311,8 @@ class _CustomPetAvatarScreenState extends State<CustomPetAvatarScreen> {
                                       image: _selectedImageProvider()!,
                                       fit: BoxFit.cover,
                                     )
-                                : null,
-                          ),
+                                  : null,
+                            ),
                             child: _selectedImage == null
                                 ? Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -344,7 +356,8 @@ class _CustomPetAvatarScreenState extends State<CustomPetAvatarScreen> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: ElevatedButton.icon(
-                                onPressed: _isGenerating ? null : _pickFromGallery,
+                                onPressed:
+                                    _isGenerating ? null : _pickFromGallery,
                                 icon: const Icon(Icons.photo_library_rounded),
                                 label: const Text('Gallery'),
                                 style: ElevatedButton.styleFrom(
@@ -365,7 +378,8 @@ class _CustomPetAvatarScreenState extends State<CustomPetAvatarScreen> {
                   if (_isGenerating)
                     Column(
                       children: [
-                        const CircularProgressIndicator(color: Color(0xFFFFD700)),
+                        const CircularProgressIndicator(
+                            color: Color(0xFFFFD700)),
                         const SizedBox(height: 16),
                         Text(
                           'Weaving pet magic...',
@@ -384,7 +398,8 @@ class _CustomPetAvatarScreenState extends State<CustomPetAvatarScreen> {
                           height: 300,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0xFFFFD700), width: 2),
+                            border: Border.all(
+                                color: const Color(0xFFFFD700), width: 2),
                             image: DecorationImage(
                               image: _generatedImageProvider()!,
                               fit: BoxFit.contain,
@@ -401,7 +416,8 @@ class _CustomPetAvatarScreenState extends State<CustomPetAvatarScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF208D62),
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 15, horizontal: 30),
                           ),
                         ),
                       ],

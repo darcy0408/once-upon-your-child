@@ -33,6 +33,7 @@ try:
     # Import models in dependency order (Story and Character first, then User which references them)
     from backend.models.story import Story
     from backend.models.character import Character
+    from backend.models.parent_hidden_context import ParentHiddenContext
     from backend.models.achievement import UserAchievement, AchievementStats
     from backend.models.user import User
     from backend.models.therapist_client import TherapistClient
@@ -58,6 +59,7 @@ except ImportError:
     from celery_config import celery
     from models.story import Story
     from models.character import Character
+    from models.parent_hidden_context import ParentHiddenContext
     from models.achievement import UserAchievement, AchievementStats
     from models.user import User
     from models.therapist_client import TherapistClient

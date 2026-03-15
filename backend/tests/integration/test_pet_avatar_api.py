@@ -83,3 +83,46 @@ def test_pet_avatar_api_missing_fields(client, auth_headers):
     json_resp = response.get_json()
     assert json_resp['error_code'] == 'MISSING_DATA'
     assert 'required' in json_resp['message']
+
+
+def test_pet_avatar_api_returns_partial_success_for_original_photo_fallback(client, auth_headers):
+    """Returning the original pet photo should surface as HTTP 206 with provider metadata."""
+    with patch('backend.services.avatar_generation_service.AvatarGenerationService.generate_pet_avatar') as mock_gen:
+        mock_gen.return_value = {
+            'id': 'pet-original-123',
+            'image_base64': 'data:image/jpeg;base64,YmFzZTY0ZGF0YQ==',
+            'style': 'pet-photo-original',
+            'attributes': {
+                'pet_name': 'Luna',
+                'species': 'Cat',
+                'breed_description': 'Black and white tuxedo',
+                'owner_favorite_color': 'Purple'
+            },
+            'generated_at': '2026-03-14T12:00:00',
+            'generation_time_ms': 120,
+            'version': 1,
+            'provider_used': 'original-photo',
+            'transformation_applied': False,
+        }
+
+        data = {
+            'photo': (BytesIO(b"fake-image-bytes"), 'pet.jpg'),
+            'pet_name': 'Luna',
+            'species': 'Cat',
+            'breed_description': 'Black and white tuxedo',
+            'owner_favorite_color': 'Purple'
+        }
+
+        response = client.post(
+            '/avatar/generate-pet-avatar',
+            data=data,
+            headers=auth_headers,
+            content_type='multipart/form-data'
+        )
+
+        assert response.status_code == 206
+        json_resp = response.get_json()
+        assert json_resp['status'] == 'success'
+        assert json_resp['provider_used'] == 'original-photo'
+        assert json_resp['transformation_applied'] is False
+        assert json_resp['avatar']['style'] == 'pet-photo-original'

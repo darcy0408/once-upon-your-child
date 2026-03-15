@@ -13,10 +13,11 @@ from ..celery_config import celery
 from ..gemini_image_generator import GeminiImageGenerator
 from ..tasks.story_tasks import generate_story_task
 from ..models.user import User
-from ..models import Character
+from ..models import Character, ParentHiddenContext
 from ..database import db
 from ..middleware.auth import require_auth
 from ..services.interactive_adventure_service import InteractiveAdventureService
+from ..services.story_service import transform_parent_context_to_story_guidance
 from ..utils.validators import (
     validate_age,
     validate_num_images,
@@ -58,10 +59,88 @@ def _normalize_feeling_label(label: str | None) -> str | None:
     return lowered
 
 
-def _build_feelings_prompt_text(payload: dict) -> str | None:
+def _is_big_feelings_request(payload: dict, theme: str | None = None) -> bool:
+    theme_value = (theme or payload.get("theme") or "").strip().lower()
+    if theme_value in {
+        "big feelings quest",
+        "reset and repair",
+        "heart helper adventure",
+        "after the moment",
+    }:
+        return True
+    return any(
+        payload.get(key)
+        for key in (
+            "current_feeling",
+            "feelings_prompt",
+            "feelingTrigger",
+            "bodySignal",
+            "copingTool",
+            "repairGoal",
+            "child_profile_id",
+        )
+    )
+
+
+def _serialize_parent_hidden_context(
+    context: ParentHiddenContext | dict | None,
+) -> dict | None:
+    if context is None:
+        return None
+    if isinstance(context, ParentHiddenContext):
+        return context.to_dict()
+    if isinstance(context, dict):
+        return {
+            "feeling": _clean_prompt_value(context.get("feeling")),
+            "trigger": _clean_prompt_value(context.get("trigger")),
+            "body_signal": _clean_prompt_value(context.get("body_signal")),
+            "coping_tool": _clean_prompt_value(context.get("coping_tool")),
+            "repair_goal": _clean_prompt_value(context.get("repair_goal")),
+            "parent_hidden_context": _clean_prompt_value(
+                context.get("parent_hidden_context")
+            ),
+        }
+    return None
+
+
+def _resolve_parent_hidden_context(user_id: str, child_profile_id: str | None):
+    profile_id = _clean_prompt_value(child_profile_id)
+    if not profile_id:
+        return None
+    return ParentHiddenContext.query.filter_by(
+        user_id=user_id,
+        child_profile_id=profile_id,
+    ).first()
+
+
+def _merge_big_feelings_context(
+    payload_context: dict | None,
+    saved_context: ParentHiddenContext | dict | None,
+) -> dict | None:
+    result = dict(payload_context) if isinstance(payload_context, dict) else {}
+    serialized = _serialize_parent_hidden_context(saved_context) or {}
+    for key in (
+        "feeling",
+        "trigger",
+        "body_signal",
+        "coping_tool",
+        "repair_goal",
+        "parent_hidden_context",
+    ):
+        if not _clean_prompt_value(result.get(key)):
+            value = _clean_prompt_value(serialized.get(key))
+            if value:
+                result[key] = value
+    return result or None
+
+
+def _build_feelings_prompt_text(
+    payload: dict,
+    transformed_guidance: dict | None = None,
+) -> str | None:
     current_feeling = payload.get("current_feeling")
     if not isinstance(current_feeling, dict):
-        return payload.get("feelings_prompt")
+        current_feeling = {}
 
     emotion_name = _clean_prompt_value(current_feeling.get("emotion_name"))
     emotion_description = _clean_prompt_value(current_feeling.get("emotion_description"))
@@ -69,23 +148,27 @@ def _build_feelings_prompt_text(payload: dict) -> str | None:
         _clean_prompt_value(current_feeling.get("what_happened"))
         or _clean_prompt_value(current_feeling.get("trigger"))
         or _clean_prompt_value(payload.get("feelingTrigger"))
+        or _clean_prompt_value((transformed_guidance or {}).get("trigger"))
     )
     body_signal = (
         _clean_prompt_value(current_feeling.get("physical_signs"))
         or _clean_prompt_value(payload.get("bodySignal"))
+        or _clean_prompt_value((transformed_guidance or {}).get("body_signal"))
     )
     coping_strategies = current_feeling.get("coping_strategies", [])
     coping_tool = _clean_prompt_value(payload.get("copingTool"))
     repair_goal = (
         _clean_prompt_value(current_feeling.get("repair_goal"))
         or _clean_prompt_value(payload.get("repairGoal"))
+        or _clean_prompt_value((transformed_guidance or {}).get("repair_goal"))
     )
-    parent_hidden_context = (
-        _clean_prompt_value(current_feeling.get("parent_hidden_context"))
-        or _clean_prompt_value(payload.get("parentHiddenContext"))
-    )
+    story_guidance = _clean_prompt_value((transformed_guidance or {}).get("story_guidance"))
     age = payload.get("age") or payload.get("character_age") or 5
 
+    if not emotion_name:
+        emotion_name = _clean_prompt_value((transformed_guidance or {}).get("feeling"))
+    if not emotion_name and story_guidance:
+        emotion_name = "big feelings"
     if not emotion_name:
         return payload.get("feelings_prompt")
 
@@ -118,8 +201,8 @@ def _build_feelings_prompt_text(payload: dict) -> str | None:
         lines.append(f"- Helper to model: {', '.join(coping_lines)}")
     if repair_goal:
         lines.append(f"- Repair beat to include: {repair_goal}")
-    if parent_hidden_context:
-        lines.append(f"- Hidden parent context: {parent_hidden_context}")
+    if story_guidance:
+        lines.append(f"- Parent-guided story scaffolding: {story_guidance}")
 
     lines.extend(
         [
@@ -150,7 +233,11 @@ def _build_feelings_prompt_text(payload: dict) -> str | None:
     return "\n".join(lines)
 
 
-def _augment_therapeutic_prompt(payload: dict, base_prompt: str) -> str:
+def _augment_therapeutic_prompt(
+    payload: dict,
+    base_prompt: str,
+    transformed_guidance: dict | None = None,
+) -> str:
     parts = [base_prompt.strip()] if isinstance(base_prompt, str) and base_prompt.strip() else []
 
     current_feeling = payload.get("current_feeling")
@@ -166,16 +253,9 @@ def _augment_therapeutic_prompt(payload: dict, base_prompt: str) -> str:
         elif normalized == "frustrated":
             parts.append("Emotion focus: frustration, trying again, and asking for help.")
 
-    for key, label in (
-        ("repairGoal", "Repair goal"),
-        ("parentHiddenContext", "Hidden parent context"),
-    ):
-        value = _clean_prompt_value(payload.get(key))
-        if not value and isinstance(current_feeling, dict):
-            nested_key = "repair_goal" if key == "repairGoal" else "parent_hidden_context"
-            value = _clean_prompt_value(current_feeling.get(nested_key))
-        if value:
-            parts.append(f"{label}: {value}")
+    guidance_line = _clean_prompt_value((transformed_guidance or {}).get("story_guidance"))
+    if guidance_line:
+        parts.append(f"Parent-guided Big Feelings scaffolding: {guidance_line}")
 
     return " | ".join(parts)
 
@@ -262,8 +342,22 @@ def create_story_blueprint(
         if not character_id and not payload.get("character"):
             return jsonify({"error": "character_id or character is required"}), 400
 
+        saved_parent_context = None
+        transformed_parent_guidance = None
+        if _is_big_feelings_request(payload, theme):
+            saved_parent_context = _resolve_parent_hidden_context(
+                user_id,
+                payload.get("child_profile_id"),
+            )
+            transformed_parent_guidance = transform_parent_context_to_story_guidance(
+                _serialize_parent_hidden_context(saved_parent_context)
+            )
+
         # Extract current_feeling and convert to feelings_prompt if provided
-        feelings_prompt_text = _build_feelings_prompt_text(payload)
+        feelings_prompt_text = _build_feelings_prompt_text(
+            payload,
+            transformed_parent_guidance,
+        )
 
         # Extract character_details to get additional_characters if available
         character_details = payload.get("character_details") or {}
@@ -305,6 +399,7 @@ def create_story_blueprint(
             "therapeutic_prompt": _augment_therapeutic_prompt(
                 payload,
                 payload.get("therapeutic_prompt", ""),
+                transformed_parent_guidance,
             ),
             "feelings_prompt": feelings_prompt_text or payload.get("feelings_prompt"),
             "story_length": payload.get("story_length", "standard"),
@@ -583,6 +678,15 @@ def create_story_blueprint(
         sensory_palette = payload.get("sensoryPalette", "")
         chronicle_context = payload.get("chronicle_context")
         big_feelings_context = payload.get("big_feelings_context")
+        if isinstance(big_feelings_context, dict):
+            saved_parent_context = _resolve_parent_hidden_context(
+                user_id,
+                big_feelings_context.get("child_profile_id"),
+            )
+            big_feelings_context = _merge_big_feelings_context(
+                big_feelings_context,
+                saved_parent_context,
+            )
 
         try:
             # Initialize service

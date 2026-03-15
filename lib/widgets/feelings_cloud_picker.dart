@@ -198,6 +198,7 @@ class FeelingsCloudPickerState extends State<FeelingsCloudPicker> {
                 ),
               _ => _CoreGrid(
                   key: const ValueKey('core'),
+                  childAge: widget.childAge,
                   onPick: _pickCore,
                 ),
             },
@@ -275,12 +276,13 @@ class _Breadcrumb extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _CoreGrid extends StatelessWidget {
+  final int childAge;
   final void Function(CoreEmotion) onPick;
-  const _CoreGrid({super.key, required this.onPick});
+  const _CoreGrid({super.key, required this.childAge, required this.onPick});
 
   @override
   Widget build(BuildContext context) {
-    final cores = FeelingsWheelData.coreEmotions;
+    final cores = FeelingsWheelData.coreEmotionsForAge(childAge);
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

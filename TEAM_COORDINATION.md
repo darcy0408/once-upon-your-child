@@ -2,6 +2,30 @@
 
 ---
 
+## Session Update - 2026-03-14 (Gemini Config Verification Checklist)
+
+### Scope Completed
+- Traced how the backend selects image providers in `backend/app.py`.
+- Verified Gemini image generation requirements in `backend/gemini_image_generator.py` and config defaults in `backend/config/__init__.py` plus `backend/.env.example`.
+- Checked GitHub deployment workflows to confirm Gemini secrets are not injected by Actions and must exist in Railway environment config.
+- Documented current fallback behavior for human custom avatars, pet avatars, and story illustrations.
+- Verified that `/health` and `/health/detailed` only report Gemini configuration presence, not live Gemini connectivity.
+
+### Changes
+- `docs/gemini-config-verification.md`: Added a deployment verification checklist covering required env vars, local/prod verification steps, common failure modes, current fallback behavior, and a recommendation for a live Gemini health probe.
+- `TEAM_COORDINATION.md`: Logged the Gemini configuration verification findings for handoff visibility.
+
+### Key Findings
+- `OPENROUTER_API_KEY` takes precedence over Gemini for the global image generator, so deployed image behavior may not actually be using Gemini even when `GEMINI_API_KEY` is present.
+- The Gemini image model is hard-coded to `gemini-2.0-flash-preview-image-generation`, while `GEMINI_MODEL` controls text-generation paths.
+- Story illustration failures often degrade to HTTP `200` with an empty `illustrations` list instead of surfacing a hard error.
+- Current health monitoring is insufficient to prove Gemini image generation is working in production.
+
+### Recommendation
+- Add a production-safe live Gemini probe, ideally covering both the configured text model and the hard-coded image model, and point monitoring at that probe instead of relying only on `/health`.
+
+---
+
 ## Session Update - 2026-03-14 (Big Feelings Ages 6-8 Variant)
 
 ### Scope Completed

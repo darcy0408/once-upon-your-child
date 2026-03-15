@@ -71,31 +71,35 @@ def main():
     base_dir = Path(f"age_band_assets/{age_band}")
     
     # UPPER-YA CINEMATIC STYLE BASE (15-18)
-    style_base = "Upper-YA high-fidelity cinematic 3D digital illustration. Moody chiaroscuro lighting, photorealistic 3D textures, atmospheric perspective, subsurface scattering, platinum and obsidian accents. Realistic late-teen proportions."
+    # Style: High-Fidelity Cinematic 3D but with MORE atmospheric maturity — moodier lighting, more realistic proportions, slightly more complex environments.
+    style_base = "Upper-YA high-fidelity cinematic 3D digital illustration. Moody chiaroscuro lighting, photorealistic 3D textures, atmospheric perspective, subsurface scattering, platinum and obsidian accents. Realistic late-teen proportions. Sophisticated and mature tone."
 
     assets = [
-        # UI
+        # UI Elements
         ("ui", "name_input_frame.png", f"{style_base} A premium minimal 3D crystalline interface frame, thin etched platinum edges, subtle inner white glow. Smoked obsidian glass center.", "PNG", True),
         ("ui", "make_magic_normal.png", f"{style_base} A wide sleek 3D button, smoked glass to deep obsidian gradient. Refined platinum crystalline border. Sharp white sans-serif 3D text START JOURNEY. Minimalist quill symbol.", "PNG", True),
+        ("ui", "make_magic_normal_clicked.png", f"{style_base} Same as the START JOURNEY button but compressed, platinum glow radiating outwards, background gradient shifting to a brighter silver.", "PNG", True),
         ("ui", "make_magic_pressed.png", f"{style_base} Same as START JOURNEY button but physically depressed, platinum glow intensifying on edges, smoked glass darkening.", "PNG", True),
         ("ui", "continue_button.png", f"{style_base} A premium 3D rounded button, deep obsidian face, thin platinum border. Right-pointing angular platinum arrow icon.", "PNG", True),
+        ("ui", "continue_button_clicked.png", f"{style_base} Same as the obsidian continue button but physically depressed, platinum border glowing intensely, face showing subtle motion blur.", "PNG", True),
         
-        # GENDER / CHARACTER BASE
-        ("ui", "boy_character.png", f"{style_base} A 17-year-old boy with intense thoughtful eyes, stylized dark hair, wearing a premium minimal tech-wear jacket. Realistic late-adolescent proportions.", "PNG", True),
-        ("ui", "girl_character.png", f"{style_base} A 17-year-old girl with resolute eyes, hair tied back, wearing a premium minimal adventure-ready high-collar jacket. Realistic late-adolescent proportions.", "PNG", True),
+        # GENDER / CHARACTER BASE (Diverse variants for 15-18)
+        ("ui", "boy_character.png", f"{style_base} A 17-year-old Caucasian boy with intense thoughtful eyes, stylized dark hair, wearing a premium minimal tech-wear jacket. Realistic late-adolescent proportions.", "PNG", True),
+        ("ui", "boy_character_asian.png", f"{style_base} A 17-year-old East Asian boy with intense thoughtful eyes, stylized dark hair, wearing a premium minimal tech-wear jacket. Realistic late-adolescent proportions.", "PNG", True),
+        ("ui", "boy_character_black.png", f"{style_base} A 17-year-old Black boy with intense thoughtful eyes, short faded natural hair, wearing a premium minimal tech-wear jacket. Realistic late-adolescent proportions.", "PNG", True),
+        ("ui", "boy_character_hispanic.png", f"{style_base} A 17-year-old Hispanic boy with intense thoughtful eyes, wavy dark hair, wearing a premium minimal tech-wear jacket. Realistic late-adolescent proportions.", "PNG", True),
+        ("ui", "boy_character_south_asian.png", f"{style_base} A 17-year-old South Asian boy with intense thoughtful eyes, dark hair, wearing a premium minimal tech-wear jacket. Realistic late-adolescent proportions.", "PNG", True),
+
+        ("ui", "girl_character.png", f"{style_base} A 17-year-old Caucasian girl with resolute eyes, hair tied back, wearing a premium minimal adventure-ready high-collar jacket. Realistic late-adolescent proportions.", "PNG", True),
+        ("ui", "girl_character_asian.png", f"{style_base} A 17-year-old East Asian girl with resolute eyes, straight dark hair, wearing a premium minimal adventure-ready high-collar jacket. Realistic late-adolescent proportions.", "PNG", True),
+        ("ui", "girl_character_black.png", f"{style_base} A 17-year-old Black girl with resolute eyes, braided hair, wearing a premium minimal adventure-ready high-collar jacket. Realistic late-adolescent proportions.", "PNG", True),
+        ("ui", "girl_character_hispanic.png", f"{style_base} A 17-year-old Hispanic girl with resolute eyes, wavy dark hair, wearing a premium minimal adventure-ready high-collar jacket. Realistic late-adolescent proportions.", "PNG", True),
+        ("ui", "girl_character_south_asian.png", f"{style_base} A 17-year-old South Asian girl with resolute eyes, long dark hair, wearing a premium minimal adventure-ready high-collar jacket. Realistic late-adolescent proportions.", "PNG", True),
 
         # ORBS
         ("orbs", "progress_idle.png", f"{style_base} A sophisticated 3D circular orb, matte obsidian, thin muted platinum crystalline ring. Faint pin-prick of light at center.", "PNG", True),
         ("orbs", "progress_active.png", f"{style_base} A sophisticated 3D circular orb, obsidian to electric platinum gradient. Luminous crystalline ring with intense inner glow. Internal energy filaments.", "PNG", True),
         ("orbs", "progress_done.png", f"{style_base} A sophisticated 3D circular orb, rich platinum fill, high inner radiance. Minimalist geometric checkmark symbol.", "PNG", True),
-
-        # ARCHETYPES (Diverse, Upper-YA Cinematic Scenes)
-        ("archetypes", "brave_hero.jpg", f"{style_base} A Caucasian teen hero in sleek obsidian energy armor, holding a glowing white-hot energy blade. Standing on a dramatic storm-swept cliffside at night with crashing waves.", "JPEG", False),
-        ("archetypes", "kind_healer.jpg", f"{style_base} A Hispanic teen healer in flowing robes with glowing silver runes, emitting an ethereal silver healing mist. Standing in a majestic bioluminescent crystal sanctuary.", "JPEG", False),
-        ("archetypes", "clever_inventor.jpg", f"{style_base} A South Asian teen inventor with shoulder-length wavy hair, wearing a refined utility vest, surrounded by complex 3D holographic light-arrays in a dark high-tech studio.", "JPEG", False),
-        ("archetypes", "speedy_explorer.jpg", f"{style_base} A Black teen explorer in sophisticated detailed gear, holding a glowing neon pulse-map. Standing in a vast alien desert under three massive moons at dusk.", "JPEG", False),
-        ("archetypes", "mighty_guardian.jpg", f"{style_base} A Middle Eastern teen guardian in sleek protective dark armor with a glowing silver wolf-head emblem, holding a massive translucent energy shield before a celestial gateway.", "JPEG", False),
-        ("archetypes", "gentle_dreamer.jpg", f"{style_base} An East Asian teen dreamer seated cross-legged in zero-gravity, surrounded by floating luminous digital scrolls in a vibrant cosmic nebula garden.", "JPEG", False),
 
         # FEELINGS (Diverse, Mature 3D Faces)
         ("feelings", "happy.png", f"{style_base} A diverse late-teen face, subtle sophisticated 3D smile. Platinum-silver gradient background. Minimalist geometric sun symbol.", "PNG", True),
@@ -112,6 +116,14 @@ def main():
         ("companions", "iron_golem.png", f"{style_base} A massive high-fidelity 3D golem, smooth matte obsidian stone and silver crystal joints. Formidable protective pose.", "PNG", True),
         ("companions", "storm_hawk.png", f"{style_base} A massive high-fidelity 3D storm hawk, metallic silver-black feathers, wingtips crackling with white electrical energy. Commanding pose.", "PNG", True),
         ("companions", "void_sprite.png", f"{style_base} A small high-fidelity 3D ethereal sprite, translucent silver body containing visible nebula clouds, sharp iridescent wings.", "PNG", True),
+
+        # ARCHETYPES (Diverse, Upper-YA Cinematic Scenes)
+        ("archetypes", "brave_hero.jpg", f"{style_base} A Caucasian teen hero in sleek obsidian energy armor, holding a glowing white-hot energy blade. Standing on a dramatic storm-swept cliffside at night with crashing waves.", "JPEG", False),
+        ("archetypes", "kind_healer.jpg", f"{style_base} A Hispanic teen healer in flowing robes with glowing silver runes, emitting an ethereal silver healing mist. Standing in a majestic bioluminescent crystal sanctuary.", "JPEG", False),
+        ("archetypes", "clever_inventor.jpg", f"{style_base} A South Asian teen inventor with shoulder-length wavy hair, wearing a refined utility vest, surrounded by complex 3D holographic light-arrays in a dark high-tech studio.", "JPEG", False),
+        ("archetypes", "speedy_explorer.jpg", f"{style_base} A Black teen explorer in sophisticated detailed gear, holding a glowing neon pulse-map. Standing in a vast alien desert under three massive moons at dusk.", "JPEG", False),
+        ("archetypes", "mighty_guardian.jpg", f"{style_base} A Middle Eastern teen guardian in sleek protective dark armor with a glowing silver wolf-head emblem, holding a massive translucent energy shield before a celestial gateway.", "JPEG", False),
+        ("archetypes", "gentle_dreamer.jpg", f"{style_base} An East Asian teen dreamer seated cross-legged in zero-gravity, surrounded by floating luminous digital scrolls in a vibrant cosmic nebula garden.", "JPEG", False),
 
         # SCENE CARDS
         ("scenes", "ruined_citadel.jpg", f"{style_base} Crumbling ancient 3D citadel at deep twilight, majestic architecture, bioluminescent flora, warm amber light from interior halls. Epic scale.", "JPEG", False),

@@ -3,6 +3,7 @@ import random
 import re
 import json
 import time
+from typing import Any
 from google.api_core import exceptions as google_exceptions
 from .avatar_to_prompt_helper import AvatarToPromptHelper
 from ..utils.validators import validate_age, validate_story_length
@@ -221,6 +222,125 @@ def _build_feelings_instruction(feelings_prompt: str | None, age: int, theme: st
 - End with safety, reconnection, or relief rather than a lecture.
 {preschool_rules}
 """
+
+
+def _normalize_parent_context_value(value: Any) -> str | None:
+    if value is None:
+        return None
+    cleaned = str(value).strip()
+    return cleaned or None
+
+
+def _abstract_parent_phrase(value: str | None) -> str | None:
+    if not value:
+        return None
+
+    sanitized = value.lower().strip()
+    replacements = [
+        (r"\bhitting\b|\bhit\b|\bpunching\b|\bpunch\b|\bkicking\b|\bkick\b|\bbiting\b|\bbite\b|\bshoving\b|\bpush(?:ing)?\b|\bgrabbing\b|\bgrab\b", "has quick impulses when upset"),
+        (r"\byelling\b|\byelled\b|\bscreaming\b|\bscreamed\b", "uses loud words when feelings spill over"),
+        (r"\bmeltdown\b|\bmeltdowns\b", "gets overwhelmed fast"),
+        (r"\bshutdown\b|\bshuts down\b", "pulls inward when feelings get big"),
+        (r"\brefus(?:e|ing)\b|\bwon't\b|\bwill not\b", "has a hard time with change or limits"),
+        (r"\bhearing no\b|\bsaid no\b|\bno\b", "has a hard time when a limit is set"),
+        (r"\bstuck\b", "feels trapped when something is not working"),
+        (r"\bsister\b|\bbrother\b|\bsibling\b", "a sibling"),
+        (r"\bfriend\b|\bfriends\b", "another child"),
+        (r"\bbedtime\b", "nighttime"),
+        (r"\bschool\b|\bclass\b|\bteacher\b", "a busy group setting"),
+        (r"\btransition(?:s)?\b", "a change between activities"),
+    ]
+
+    for pattern, replacement in replacements:
+        sanitized = re.sub(pattern, replacement, sanitized)
+
+    sanitized = re.sub(r"\b(my|their|the)\s+(mom|dad|mother|father|teacher|babysitter)\b", "a grown-up", sanitized)
+    sanitized = re.sub(r"\b[A-Z][a-z]+\b", "", sanitized)
+    sanitized = re.sub(r"[^a-z0-9 ,.'-]", " ", sanitized)
+    sanitized = re.sub(r"\s+", " ", sanitized).strip(" ,.-")
+
+    if not sanitized:
+        return None
+
+    return sanitized[:140]
+
+
+def transform_parent_context_to_story_guidance(parent_context: dict | None) -> dict[str, Any]:
+    """Translate private parent context into child-safe story guidance."""
+    if not isinstance(parent_context, dict):
+        return {}
+
+    feeling = _normalize_parent_context_value(parent_context.get("feeling"))
+    trigger = _normalize_parent_context_value(parent_context.get("trigger"))
+    body_signal = _normalize_parent_context_value(parent_context.get("body_signal"))
+    coping_tool = _normalize_parent_context_value(parent_context.get("coping_tool"))
+    repair_goal = _normalize_parent_context_value(parent_context.get("repair_goal"))
+    private_note = _normalize_parent_context_value(
+        parent_context.get("parent_hidden_context")
+    )
+
+    feeling_guidance = (
+        f"Help the character notice and name feeling {feeling.lower()} in a gentle, child-safe way."
+        if feeling
+        else None
+    )
+
+    trigger_phrase = _abstract_parent_phrase(trigger)
+    trigger_guidance = (
+        f"The challenge should come from a familiar moment where the character {trigger_phrase}."
+        if trigger_phrase
+        else None
+    )
+
+    body_guidance = (
+        f"Mirror this body cue early in the story: {body_signal.lower()}."
+        if body_signal
+        else None
+    )
+
+    coping_guidance = (
+        f"Model this calming tool as a natural source of support: {coping_tool.lower()}."
+        if coping_tool
+        else None
+    )
+
+    repair_guidance = (
+        f"Guide the ending toward repair that feels warm and realistic: {repair_goal.lower()}."
+        if repair_goal
+        else None
+    )
+
+    note_phrase = _abstract_parent_phrase(private_note)
+    note_guidance = (
+        f"Use a metaphor-first setup and keep the story private and indirect around moments where the character {note_phrase}."
+        if note_phrase
+        else None
+    )
+
+    lines = [
+        line
+        for line in [
+            feeling_guidance,
+            trigger_guidance,
+            body_guidance,
+            coping_guidance,
+            repair_guidance,
+            note_guidance,
+            "Never retell an exact real-life incident or use parent-facing language.",
+            "Keep the emotional arc focused on noticing, calming, and making things better without shame.",
+        ]
+        if line
+    ]
+
+    return {
+        "feeling": feeling,
+        "trigger": trigger_phrase,
+        "body_signal": body_signal,
+        "coping_tool": coping_tool,
+        "repair_goal": repair_goal,
+        "story_guidance": " ".join(lines),
+        "prompt_lines": lines,
+    }
 
 
 def _get_age_band(age: int) -> str:
