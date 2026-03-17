@@ -561,6 +561,8 @@ class ApiServiceManager {
     List<dynamic>? companionCharacters,
     String storyLength = 'standard',
     String customElements = '', // NEW: Custom elements
+    bool bedtimeMode = false,
+    String bedtimeMood = 'calming',
     void Function(String)? onProgress,
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
@@ -604,7 +606,9 @@ class ApiServiceManager {
         companionPets: companionPets,
         companionCharacters: companionCharacters,
         storyLength: storyLength,
-        customElements: customElements, // Pass custom elements
+        customElements: customElements,
+        bedtimeMode: bedtimeMode,
+        bedtimeMood: bedtimeMood,
         onProgress: onProgress,
       );
     }
@@ -630,7 +634,9 @@ class ApiServiceManager {
       companionPets: companionPets,
       companionCharacters: companionCharacters,
       storyLength: storyLength,
-      customElements: customElements, // Pass custom elements
+      customElements: customElements,
+      bedtimeMode: bedtimeMode,
+      bedtimeMood: bedtimeMood,
     );
   }
 
@@ -717,6 +723,8 @@ class ApiServiceManager {
     List<dynamic>? companionCharacters,
     String storyLength = 'standard',
     String customElements = '',
+    bool bedtimeMode = false,
+    String bedtimeMood = 'calming',
   }) async {
     final apiKey = await getUserApiKey();
     if (apiKey == null) {
@@ -730,27 +738,39 @@ class ApiServiceManager {
       apiKey: apiKey,
     );
 
-    // Build the prompt (matching backend logic)
-    final prompt = _buildStoryPrompt(
-      characterName: characterName,
-      theme: theme,
-      age: age,
-      companion: companion,
-      characterDetails: characterDetails,
-      additionalCharacters: additionalCharacters,
-      learningToReadMode: learningToReadMode,
-      currentFeeling: currentFeeling,
-      feelingTrigger: feelingTrigger,
-      bodySignal: bodySignal,
-      copingTool: copingTool,
-      repairGoal: repairGoal,
-      parentHiddenContext: parentHiddenContext,
-      characterEvolution: characterEvolution,
-      companionPets: companionPets,
-      companionCharacters: companionCharacters,
-      storyLength: storyLength,
-      customElements: customElements,
-    );
+    // Build the prompt — use bedtime-specific builder when in bedtime mode.
+    final prompt = bedtimeMode
+        ? _buildBedtimePrompt(
+            characterName: characterName,
+            theme: theme,
+            age: age,
+            mood: bedtimeMood,
+            companion: companion,
+            additionalCharacters: additionalCharacters,
+            companionPets: companionPets,
+            companionCharacters: companionCharacters,
+            storyLength: storyLength,
+          )
+        : _buildStoryPrompt(
+            characterName: characterName,
+            theme: theme,
+            age: age,
+            companion: companion,
+            characterDetails: characterDetails,
+            additionalCharacters: additionalCharacters,
+            learningToReadMode: learningToReadMode,
+            currentFeeling: currentFeeling,
+            feelingTrigger: feelingTrigger,
+            bodySignal: bodySignal,
+            copingTool: copingTool,
+            repairGoal: repairGoal,
+            parentHiddenContext: parentHiddenContext,
+            characterEvolution: characterEvolution,
+            companionPets: companionPets,
+            companionCharacters: companionCharacters,
+            storyLength: storyLength,
+            customElements: customElements,
+          );
 
     try {
       final response = await model.generateContent([Content.text(prompt)]);
@@ -828,6 +848,8 @@ class ApiServiceManager {
     List<dynamic>? companionCharacters,
     required String storyLength,
     String customElements = '',
+    bool bedtimeMode = false,
+    String bedtimeMood = 'calming',
     void Function(String)? onProgress,
   }) async {
     var attempts = 0;
@@ -862,6 +884,8 @@ class ApiServiceManager {
           companionCharacters: companionCharacters,
           storyLength: storyLength,
           customElements: customElements,
+          bedtimeMode: bedtimeMode,
+          bedtimeMood: bedtimeMood,
           onProgress: onProgress,
         );
       } catch (error, stackTrace) {
@@ -911,6 +935,8 @@ class ApiServiceManager {
     List<dynamic>? companionCharacters,
     required String storyLength,
     String customElements = '',
+    bool bedtimeMode = false,
+    String bedtimeMood = 'calming',
     void Function(String)? onProgress,
   }) async {
     final httpClient = client ?? _testClient ?? http.Client();
@@ -939,7 +965,9 @@ class ApiServiceManager {
       'companion_pets': companionPets,
       'companion_characters': companionCharacters,
       'story_length': storyLength,
-      'customElements': customElements, // Pass custom elements
+      'customElements': customElements,
+      'bedtime_mode': bedtimeMode,
+      'bedtime_mood': bedtimeMood,
     };
     if (userApiKey != null && userApiKey.isNotEmpty) {
       body['user_api_key'] = userApiKey;
@@ -1342,6 +1370,123 @@ ADVENTURE REPORT
 $ageInstructions
 SAFETY: Keep content gentle, avoid violence/scares; keep tone warm and supportive.
 Maintain plain text (no markdown fences).''';
+  }
+
+  static const _bedtimeSettingDescriptions = <String, String>{
+    'Rainbow World':
+        'a shimmering realm where the sky holds soft arcs of rose and gold, gentle streams of liquid light wind between velvet hills, and cloud creatures drift on warm honeysuckle breezes',
+    'Cave of Crystals':
+        'a vast underground grotto lit by glowing crystals of rose, blue, and amber whose walls hum a low peaceful note — every echo returns as a soft musical chord',
+    'Cave Full of Crystals':
+        'a vast underground grotto lit by glowing crystals of rose, blue, and amber whose walls hum a low peaceful note — every echo returns as a soft musical chord',
+    'Friendly Dragons':
+        'a warm valley where gentle dragons curl in cosy nests, their slow steady breath filling the air with the scent of cinnamon and sending up wisps of soft golden smoke',
+    'Making a New Friend':
+        'a sun-warmed village at the edge of a silvery wood, where doorways glow with warm lamplight and the cobblestones stay warm even after sunset',
+    'Big Feelings':
+        'a quiet hilltop garden where the wind is always gentle and a great ancient tree spreads wide warm branches that seem to listen without saying a word',
+    'Magical Forest':
+        'a moonlit forest where silver-leafed trees hum a low steady song, fireflies trace slow spirals through the air, and the moss underfoot is deep and impossibly soft',
+    'Enchanted Ocean':
+        'a calm warm sea under a sky full of stars, where bioluminescent creatures drift like living lanterns and the waves make a slow rhythmic shushing sound',
+    'Dreamy Clouds':
+        'soft billowy cloudscapes high above the sleeping world, where cloud creatures make homes from moonlight and every step springs gently underfoot like the best pillow imaginable',
+  };
+
+  static String _buildBedtimePrompt({
+    required String characterName,
+    required String theme,
+    required int age,
+    String mood = 'calming',
+    String? companion,
+    List<String>? additionalCharacters,
+    List<Map<String, dynamic>>? companionPets,
+    List<dynamic>? companionCharacters,
+    String storyLength = 'standard',
+  }) {
+    // Word count targets for bedtime — shorter than adventure stories.
+    final (int minWords, int maxWords) = switch (age) {
+      <= 4  => storyLength == 'short' ? (180, 260)  : (260, 380),
+      <= 7  => storyLength == 'short' ? (300, 420)  : (420, 580),
+      <= 10 => storyLength == 'short' ? (480, 650)  : (650, 900),
+      <= 13 => storyLength == 'short' ? (650, 850)  : (850, 1100),
+      _     => storyLength == 'short' ? (750, 950)  : (950, 1250),
+    };
+
+    final worldDesc = _bedtimeSettingDescriptions[theme] ?? theme;
+
+    // All heroes — protagonist + siblings/friends listening.
+    final allHeroes = <String>[characterName, ...?additionalCharacters];
+    final heroesStr = allHeroes.length == 1
+        ? allHeroes.first
+        : '${allHeroes.sublist(0, allHeroes.length - 1).join(', ')} and ${allHeroes.last}';
+
+    // Companions (magical creatures / friends).
+    final compParts = <String>[];
+    for (final p in companionPets ?? []) {
+      final name = p['name'] as String?;
+      final species = p['species'] as String?;
+      if (name != null) compParts.add(species != null ? '$name the $species' : name);
+    }
+    for (final c in companionCharacters ?? []) {
+      final name = c is Map ? c['name'] as String? : c?.toString();
+      if (name != null && name.isNotEmpty) compParts.add(name);
+    }
+    if (compParts.isEmpty && companion != null && companion.isNotEmpty) {
+      compParts.add(companion);
+    }
+    final compStr = compParts.isEmpty ? 'None' : compParts.join(', ');
+
+    final allMandatory = [...allHeroes, ...compParts];
+    final mandatoryStr = allMandatory.join(', ');
+
+    final moodHint = switch (mood.toLowerCase()) {
+      'brave'      => 'gently brave — the challenge is real but never frightening, resolved with warmth and quiet confidence',
+      'funny'      => 'softly funny — gentle wordplay and cosy silliness, nothing rowdy or over-stimulating',
+      'friendship' => 'warm and connective — the bond between the heroes is the heart of every scene',
+      _            => 'deeply peaceful and soothing — every sentence should slow the listener\'s breathing',
+    };
+
+    return '''You are a master bedtime storyteller. Create a magical, soothing bedtime story.
+
+HEROES (ALL MUST APPEAR BY NAME): $heroesStr
+Every hero listed above MUST have at least one warm, meaningful moment in the story. Use their names naturally and often.
+
+MAGICAL COMPANIONS: $compStr
+(Mandatory — every name here MUST appear: $mandatoryStr)
+
+SETTING: $worldDesc
+
+MOOD: $moodHint
+
+AUDIENCE AGE: $age years old
+
+WORD COUNT: $minWords–$maxWords words total.
+
+━━━ BEDTIME STORY RULES (MANDATORY) ━━━
+
+1. SOOTHING PACING — each scene lingers on soft textures, gentle sounds, and warmth. No rushed action.
+2. ALL HEROES PRESENT — $mandatoryStr must all appear and do something meaningful.
+3. COZY EMOTIONAL LANDING — ends with everyone safe, snug, drifting toward sleep. No cliffhangers.
+4. AUDIO-FIRST PROSE — no bold text, no bullet points, no markdown. Rich sensory language beautiful when read aloud.
+5. REDUCED STIMULATION — no chases, battles, or scary moments. Gentle challenges, gentle resolutions.
+6. CALM MAGIC — things glow softly, float gently, hum quietly. Nothing explodes, races, or shocks.
+7. SLEEP TRANSITION — weave in natural sleep cues: sky deepening to indigo, stars appearing, characters yawning and finding a perfect warm place to rest.
+8. WISDOM GEM — end with one short warm phrase the child can carry into sleep.
+
+OUTPUT FORMAT — return ONLY valid JSON, no prose outside it:
+{
+  "title": "Story Title",
+  "wisdom_gem": "One short warm phrase for the child to carry into sleep.",
+  "pages": [
+    {"text": "First page prose..."},
+    {"text": "Second page prose..."},
+    ...
+  ]
+}
+
+Each page should be 2–4 sentences. Do NOT include page numbers inside the text.
+No extra keys. No prose outside the JSON.''';
   }
 
   static String _buildAdventurePrompt({

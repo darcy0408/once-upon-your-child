@@ -17,7 +17,7 @@ from backend.models.user import User
 from backend.services.story_generation_service import StoryGenerationService
 from backend.services.openrouter_story_generator import OpenRouterStoryGenerator
 from google.api_core import exceptions as google_exceptions
-from backend.services.story_service import AdvancedStoryEngine, _safe_extract_title_and_gem, _build_learning_to_read_prompt, _build_rhyme_time_prompt
+from backend.services.story_service import AdvancedStoryEngine, _safe_extract_title_and_gem, _build_learning_to_read_prompt, _build_rhyme_time_prompt, _build_bedtime_prompt
 
 logger = get_task_logger(__name__)
 MAX_CUSTOM_ELEMENTS = 5
@@ -266,6 +266,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         include_illustrations = kwargs.get("include_illustrations", False)
         rhyme_time_mode = kwargs.get("rhyme_time_mode", False)
         learning_to_read_mode = kwargs.get("learning_to_read_mode", False)
+        bedtime_mode = kwargs.get("bedtime_mode", False)
         story_length = kwargs.get("story_length", "standard")  # 'quick', 'standard', or 'epic' (legacy)
         story_duration = kwargs.get("story_duration")  # NEW: '5_minutes' or '10_minutes'
         age = kwargs.get("age", 5)  # User's age
@@ -323,7 +324,21 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             engine = AdvancedStoryEngine()
 
             # Use specialized prompts based on story mode flags
-            if learning_to_read_mode:
+            if bedtime_mode:
+                logger.info(f"Using Bedtime prompt (length: {story_length})")
+                extra_chars = kwargs.get("additional_characters") or char_details.get("additionalCharacters")
+                prompt = _build_bedtime_prompt(
+                    character_name=character_name,
+                    age=age,
+                    theme=theme,
+                    mood=kwargs.get("bedtime_mood", "calming"),
+                    all_listeners=extra_chars,
+                    companion=companion,
+                    companion_pets=companion_pets,
+                    companion_characters=companion_character_details,
+                    story_length=story_length,
+                )
+            elif learning_to_read_mode:
 
                 logger.info(f"Using Learning to Read prompt (length: {story_length})")
                 prompt = _build_learning_to_read_prompt(

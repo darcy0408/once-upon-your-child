@@ -1057,3 +1057,205 @@ If a custom request implies an action or relationship (e.g., "ride a dragon", "m
 }}
 No prose outside the JSON.
 """
+
+
+# Rich world descriptions for bedtime settings — evoke sensory calm, not excitement.
+_BEDTIME_SETTINGS = {
+    'rainbow world': (
+        'a shimmering realm where the sky holds soft arcs of rose and gold, '
+        'gentle streams of liquid light wind between velvet hills, and friendly cloud '
+        'creatures drift on warm breezes that smell of honeysuckle'
+    ),
+    'cave of crystals': (
+        'a vast underground grotto lit by glowing crystals of rose, blue, and amber — '
+        'the walls hum a low, peaceful note and every echo returns as a soft musical chord'
+    ),
+    'cave full of crystals': (
+        'a vast underground grotto lit by glowing crystals of rose, blue, and amber — '
+        'the walls hum a low, peaceful note and every echo returns as a soft musical chord'
+    ),
+    'friendly dragons': (
+        'a warm valley where gentle dragons curl in cosy nests, their slow steady breath '
+        'filling the air with the scent of cinnamon and sending up wisps of soft golden smoke'
+    ),
+    'making a new friend': (
+        'a sun-warmed village at the edge of a silvery wood, where doorways glow with '
+        'lamplight and the cobblestones are warm underfoot even in the evening'
+    ),
+    'big feelings': (
+        'a quiet hilltop garden where the wind is always gentle and a great ancient tree '
+        'spreads wide warm branches — branches that seem to listen without saying a word'
+    ),
+    'magical forest': (
+        'a moonlit forest where silver-leafed trees hum a low steady song, fireflies '
+        'trace slow spirals through the air, and the moss underfoot is deep and impossibly soft'
+    ),
+    'enchanted ocean': (
+        'a calm warm sea under a sky full of stars, where bioluminescent creatures drift '
+        'like living lanterns and the waves make a slow, rhythmic shushing sound'
+    ),
+    'dreamy clouds': (
+        'soft, billowy cloudscapes high above the sleeping world, where cloud creatures '
+        'make homes from moonlight and every step springs gently underfoot like the best pillow'
+    ),
+}
+
+# Bedtime word-count targets — shorter than adventure stories so children drift off gently.
+_BEDTIME_WORD_RANGES = {
+    '3-4':  {'short': (180, 260),  'medium': (260, 380),  'long': (380, 500)},
+    '5-7':  {'short': (300, 420),  'medium': (420, 580),  'long': (580, 750)},
+    '8-10': {'short': (480, 650),  'medium': (650, 900),  'long': (900, 1150)},
+    '11-13':{'short': (650, 850),  'medium': (850, 1100), 'long': (1100, 1400)},
+    '13-15':{'short': (750, 950),  'medium': (950, 1250), 'long': (1250, 1600)},
+    '15-18':{'short': (800, 1050), 'medium': (1050, 1400),'long': (1400, 1800)},
+    'adult':{'short': (800, 1100), 'medium': (1100, 1500),'long': (1500, 2000)},
+}
+
+
+def _build_bedtime_prompt(
+    character_name,
+    age,
+    theme,
+    mood='calming',
+    all_listeners=None,
+    companion=None,
+    companion_pets=None,
+    companion_characters=None,
+    extra_characters=None,
+    story_length='standard',
+):
+    """
+    Build a high-quality bedtime story prompt.
+
+    Enforces soothing pacing, sleepy sensory language, cozy emotional landing,
+    reduced stimulation, and explicit inclusion of every named listener.
+    """
+    band = _get_age_band(age)
+    length_key = 'medium'
+    if story_length in ('short', 'quick'):
+        length_key = 'short'
+    elif story_length in ('long', 'epic'):
+        length_key = 'long'
+
+    word_range = _BEDTIME_WORD_RANGES.get(band, _BEDTIME_WORD_RANGES['5-7'])[length_key]
+    age_notes = AGE_CONSTRAINTS.get(band, AGE_CONSTRAINTS['5-7'])['notes']
+
+    # World description — use rich setting or fall back to the raw theme string.
+    world_desc = _BEDTIME_SETTINGS.get(theme.lower().strip(), theme)
+
+    # Build the full hero roster.
+    all_heroes = [character_name]
+    if all_listeners:
+        for name in all_listeners:
+            n = (name.get('name') if isinstance(name, dict) else str(name)).strip()
+            if n and n not in all_heroes:
+                all_heroes.append(n)
+
+    # Build companion section.
+    companion_sections = []
+    all_companion_names = []
+
+    def _add_companion(name, label=None):
+        if not name:
+            return
+        companion_sections.append(label or name)
+        all_companion_names.append(name)
+
+    if companion_pets:
+        for p in companion_pets:
+            if isinstance(p, dict):
+                _add_companion(p.get('name'), f"{p.get('name')} the {p.get('species', 'pet')}" if p.get('species') else p.get('name'))
+            elif p:
+                _add_companion(str(p))
+    if companion_characters:
+        for c in companion_characters:
+            if isinstance(c, dict):
+                _add_companion(c.get('name'))
+            elif c:
+                _add_companion(str(c))
+    if extra_characters:
+        for c in extra_characters:
+            if isinstance(c, dict):
+                _add_companion(c.get('name'))
+            elif c:
+                _add_companion(str(c))
+    if companion and not companion_sections:
+        _add_companion(str(companion))
+
+    comp_str = ', '.join(companion_sections) if companion_sections else 'None'
+    mandatory_comp_str = ', '.join(all_companion_names) if all_companion_names else 'None'
+
+    heroes_str = ' and '.join(all_heroes)
+    all_mandatory = all_heroes + all_companion_names
+    mandatory_all_str = ', '.join(all_mandatory)
+
+    # Mood-specific tone hint.
+    mood_hints = {
+        'calming':    'deeply peaceful and soothing — every sentence should slow the reader\'s breathing',
+        'brave':      'gently brave — the challenge is real but never frightening, resolved with warmth and confidence',
+        'funny':      'softly funny — gentle wordplay and cosy silliness, nothing rowdy or stimulating',
+        'friendship': 'warm and connective — the bond between the heroes is the heart of every scene',
+    }
+    tone_hint = mood_hints.get(mood.lower().strip(), mood_hints['calming'])
+
+    return f"""You are a master bedtime storyteller. Create a magical, soothing bedtime story for the following listeners:
+
+HEROES (ALL MUST APPEAR BY NAME): {heroes_str}
+Every hero listed above MUST have at least one meaningful moment in the story. Use their names warmly and naturally.
+
+MAGICAL COMPANIONS: {comp_str}
+(Mandatory checklist — every name MUST appear: {mandatory_comp_str})
+
+SETTING: {world_desc}
+
+MOOD: {tone_hint}
+
+AUDIENCE AGE: {age} years old
+AGE CALIBRATION: {age_notes}
+
+WORD COUNT: {word_range[0]}–{word_range[1]} words total across all pages.
+
+━━━ BEDTIME STORY RULES (MANDATORY) ━━━
+
+1. SOOTHING PACING
+   Each scene lingers on textures, soft sounds, and warmth. No rushed action. Every paragraph should feel like a slow exhale.
+
+2. ALL HEROES PRESENT
+   {mandatory_all_str} — every single name here MUST appear and DO something meaningful. Siblings and friends must feel genuinely included, not just mentioned.
+
+3. COZY EMOTIONAL LANDING
+   The story ends with everyone safe, snug, and drifting toward sleep — no unresolved tension, no cliffhangers.
+
+4. AUDIO-FIRST WRITING
+   Write pure flowing prose. No bold text, no bullet points, no markdown. Rich sensory language that sounds beautiful when read aloud in a quiet room.
+
+5. REDUCED STIMULATION
+   No chases, battles, loud noises, or scary moments. Challenges are gentle and resolved with kindness or cleverness — never with urgency or danger.
+
+6. MAGICAL BUT CALM
+   Magic in this story is peaceful: things glow softly, float gently, hum quietly, feel warm. Nothing explodes, races, or shocks.
+
+7. SLEEP TRANSITION
+   Weave in natural sleep cues as the story progresses — the sky darkening to deep indigo, stars appearing one by one, characters feeling their eyelids grow pleasantly heavy, yawning, finding the perfect warm spot to rest. The final pages should feel like the edge of a dream.
+
+8. WISDOM GEM
+   End with one short, warm phrase the child can carry into sleep (e.g. "You are brave, you are kind, and you are loved").
+
+{SAFETY_GUARDRAILS}
+{STRICT_OUTPUT_CONSTRAINTS}
+
+**OUTPUT FORMAT** — return ONLY valid JSON, no prose outside it:
+{{
+  "title": "Story Title",
+  "wisdom_gem": "One short, warm phrase for the child to carry into sleep.",
+  "pages": [
+    {{"text": "First page prose..."}},
+    {{"text": "Second page prose..."}},
+    ...
+  ]
+}}
+
+Each page should be 2–4 sentences — short enough for a parent to read in one slow breath.
+Do not include page numbers or labels inside the text field.
+No extra keys. No prose outside the JSON.
+"""

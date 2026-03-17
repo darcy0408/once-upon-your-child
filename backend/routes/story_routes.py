@@ -419,6 +419,8 @@ def create_story_blueprint(
             "async_illustrations": payload.get("async_illustrations", False),
             "rhyme_time_mode": payload.get("rhyme_time_mode", False),
             "learning_to_read_mode": payload.get("learning_to_read_mode", False),
+            "bedtime_mode": payload.get("bedtime_mode", False),
+            "bedtime_mood": payload.get("bedtime_mood", "calming"),
             "companion": payload.get("companion") or payload.get("companion_name"),  # Legacy support
             "companion_pets": companion_pets,  # NEW: List of pet companions with species
             "companion_characters": companion_characters,  # NEW: List of character companions
