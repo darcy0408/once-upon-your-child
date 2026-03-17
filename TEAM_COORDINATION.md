@@ -701,3 +701,43 @@ Documented in `docs/COPPA_AUDIT.md`.
 ### Next Steps
 - Final audit of the entire ge_band_assets/ directory.
 - Prepare for integration into the Flutter application's main ssets/ folder.
+
+---
+
+## Session Update - 2026-03-17 (Bedtime Story Mode — Backend + BYOK Service Layer)
+
+### Bedtime Mode Scope Completed
+
+- Designed and implemented a dedicated bedtime story pipeline across backend and BYOK frontend path.
+- Both backend and direct-Gemini (BYOK) paths now produce high-quality, soothing bedtime stories.
+- Multiple listeners (siblings/friends) are supported — all named heroes appear and act in the story.
+
+### Architecture
+
+- `bedtime_mode: true` flag routes generation to `_build_bedtime_prompt()` instead of the standard adventure engine.
+- `bedtime_mood` param (calming / brave / funny / friendship) tunes the tone instruction.
+- BYOK path branches to `_buildBedtimePrompt()` (Dart) which matches backend quality.
+
+### Bedtime Quality Rules (Enforced in Both Prompts)
+
+1. Soothing pacing — lingers on soft textures and warmth
+2. All heroes present by name — siblings/friends must have meaningful moments
+3. Cozy emotional landing — ends with everyone safe and drifting to sleep
+4. Audio-first prose — no markdown, rich sensory language
+5. Reduced stimulation — no chases, battles, or cliffhangers
+6. Calm magic — things glow/float/hum softly
+7. Sleep transition arc — sky darkens, stars appear, characters grow pleasantly sleepy
+8. Wisdom gem to close
+
+### Files Changed (Committed f7239fd)
+
+- `backend/services/story_service.py`: `_build_bedtime_prompt()`, `_BEDTIME_SETTINGS`, `_BEDTIME_WORD_RANGES`
+- `backend/tasks/story_tasks.py`: route `bedtime_mode`; accept `bedtime_mood`
+- `backend/routes/story_routes.py`: accept `bedtime_mode` and `bedtime_mood`
+- `lib/services/api_service_manager.dart`: `bedtimeMode`/`bedtimeMood` end-to-end; `_buildBedtimePrompt()` for BYOK path
+
+### Outstanding Tasks (Delegated — see TASK_PROMPTS.md)
+
+- BW-1: Update `bedtime_wizard_screen.dart` — listeners step + wire bedtimeMode
+- BW-2: Add BYOK key gate at wizard entry
+- BW-3: Story duration picker — 10 / 15 / 20 minute runtime targets
