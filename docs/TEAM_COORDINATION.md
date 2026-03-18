@@ -2,6 +2,26 @@
 
 ---
 
+## Session Update - 2026-03-18 (Android Build Fix — Java Version)
+
+### Scope Completed
+- Diagnosed and fixed a recurring Android build failure blocking local development.
+
+### Findings
+- **Error:** `Unsupported class file major version 69` in Gradle semantic analysis phase.
+- **Root cause:** System `java` on PATH resolves to **JDK 25** (class file version 69). Gradle 8.14 (specified in `gradle-wrapper.properties`) does not support Java 25.
+- **JDK inventory:** Two JDKs present — `C:\Program Files\Java\jdk-21` and `jdk-25`. Android Studio's bundled JBR was also Java 25.
+- `JAVA_HOME` was unset, so Gradle inherited the system Java (25) rather than an explicitly configured version.
+
+### Changes
+- `android/gradle.properties`
+  - Added `org.gradle.java.home=C:\\Program Files\\Java\\jdk-21` to pin Gradle to JDK 21 (LTS) without affecting the system-wide Java environment.
+
+### No Pending Items
+- Build should be clean on next `flutter clean && flutter build apk` or Android Studio rebuild.
+
+---
+
 ## Session Update - 2026-03-15 (Rate Limiting & Security Audit)
 
 ### Scope Completed
