@@ -28,17 +28,19 @@ class BedtimeWizardScreen extends StatefulWidget {
 }
 
 enum BedtimeStep {
-  greeting, // "Hi [name]! Let's make a bedtime story!"
-  heroName, // "What's your hero's name?" (may reuse child's name)
-  companion, // "Who's coming with you?"
-  listeners, // "Are any brothers, sisters, or friends listening too?"
-  setting, // "Where will your adventure happen?"
-  feeling, // "What kind of story?"
-  duration, // "How long should the story be?"
-  confirm, // "OK! [name] and [companion] in [setting]. Ready?"
+  byokSetup,  // No API key — show parent setup card
+  greeting,   // "Hi [name]! Let's make a bedtime story!"
+  age,        // "How old are you?" (only asked if age unknown)
+  heroName,   // "What's your hero's name?"
+  companion,  // "Who's coming with you?"
+  listeners,  // "Are any brothers, sisters, or friends listening too?"
+  setting,    // "Where will your adventure happen?"
+  feeling,    // "What kind of story?"
+  duration,   // "How long should the story be?"
+  confirm,    // "OK! Ready?"
   generating, // "Making your story now... close your eyes..."
-  reading, // Reading the story aloud
-  done, // "The end. Goodnight!"
+  reading,    // Reading the story aloud
+  done,       // "The end. Goodnight!"
 }
 
 class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
@@ -54,6 +56,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
   String? _companionChoice;
   List<String> _listenerNames = [];
   String? _settingChoice;
+  int _resolvedAge = 0; // 0 = not yet set
   String? _feelingChoice;
   int _storyDurationMinutes = 15;
 
@@ -99,14 +102,14 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
 
   Future<void> _initAndStart() async {
     _speechAvailable = await _speech.initialize();
+    _resolvedAge = widget.childAge > 0 ? widget.childAge : 0;
     final hasKey = await ApiServiceManager.isUsingOwnApiKey();
     if (!hasKey && mounted) {
+      setState(() => _step = BedtimeStep.byokSetup);
       await _speak(
-        "To use bedtime stories, a parent needs to add a Gemini API key in Settings first. Goodnight!",
+        "Bedtime stories need a free Gemini API key. A parent can set one up in Settings — it only takes a minute!",
       );
-      await Future.delayed(const Duration(seconds: 4));
-      if (mounted) Navigator.of(context).pop();
-      return;
+      return; // Stay on the byokSetup screen; parent taps Settings or Exit
     }
     await _runStep();
   }
@@ -123,11 +126,23 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
 
   Future<void> _runStep() async {
     switch (_step) {
+      case BedtimeStep.byokSetup:
+        break; // handled in build() — parent must tap Settings or Exit
+
       case BedtimeStep.greeting:
         await _speakAndAdvance(
           "Hi ${widget.childName}! Let's make a magical bedtime story together. Just talk to me!",
-          BedtimeStep.heroName,
+          _resolvedAge > 0 ? BedtimeStep.heroName : BedtimeStep.age,
         );
+        break;
+
+      case BedtimeStep.age:
+        final ageAnswer = await _askQuestion(
+          "How old are you? Say a number like five, seven, or ten.",
+        );
+        final parsed = _parseAge(ageAnswer);
+        _resolvedAge = parsed > 0 ? parsed : 8; // default to 8 if unparseable
+        _advance(BedtimeStep.heroName);
         break;
 
       case BedtimeStep.heroName:
@@ -361,6 +376,25 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     return parts.take(5).toList();
   }
 
+  int _parseAge(String input) {
+    final wordToNum = {
+      'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6,
+      'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10, 'eleven': 11,
+      'twelve': 12, 'thirteen': 13, 'fourteen': 14, 'fifteen': 15,
+      'sixteen': 16, 'seventeen': 17, 'eighteen': 18,
+    };
+    final lower = input.toLowerCase();
+    for (final entry in wordToNum.entries) {
+      if (lower.contains(entry.key)) return entry.value;
+    }
+    final digits = RegExp(r'\d+').firstMatch(input);
+    if (digits != null) {
+      final n = int.tryParse(digits.group(0)!);
+      if (n != null && n >= 2 && n <= 18) return n;
+    }
+    return 0;
+  }
+
   int _matchDurationMinutes(String input) {
     final lower = input.toLowerCase();
     if (lower.contains('20') || lower.contains('twenty')) return 20;
@@ -376,7 +410,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
 
   Future<void> _generateAndReadStory() async {
     _wizardData.characterName = _heroName ?? widget.childName;
-    _wizardData.characterAge = widget.childAge;
+    _wizardData.characterAge = _resolvedAge > 0 ? _resolvedAge : widget.childAge;
     _wizardData.companionNames = [_companionChoice ?? 'a tiny dragon'];
     _wizardData.customElements = '$_feelingChoice story about $_settingChoice';
     _wizardData.storyLength = 'standard';
@@ -520,8 +554,83 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     if (!_timerExpired) _advance(BedtimeStep.done);
   }
 
+  Widget _buildByokSetupCard(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0D0B2E),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Icon(Icons.nights_stay_rounded, color: Colors.amber, size: 56),
+              const SizedBox(height: 20),
+              const Text(
+                'Set Up Bedtime Stories',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.07),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Bedtime stories play without a screen — your child just listens. '
+                      'This uses a free Gemini AI key that you add once and never need to touch again.',
+                      style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+                    ),
+                    SizedBox(height: 14),
+                    Text('How to get your free key:', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    SizedBox(height: 8),
+                    _SetupStep(number: '1', text: 'Visit aistudio.google.com (free Google account)'),
+                    _SetupStep(number: '2', text: 'Click "Get API key" → "Create API key"'),
+                    _SetupStep(number: '3', text: 'Copy the key'),
+                    _SetupStep(number: '4', text: 'Open Settings in this app and paste it under "Gemini API Key"'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Go back so parent can open Settings
+                },
+                icon: const Icon(Icons.settings),
+                label: const Text('Go to Settings'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFD700),
+                  foregroundColor: const Color(0xFF0D0B2E),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Not now', style: TextStyle(color: Colors.white38)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_step == BedtimeStep.byokSetup) return _buildByokSetupCard(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFF0D0B2E), // Deep night sky
       body: SafeArea(
@@ -632,6 +741,46 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SetupStep extends StatelessWidget {
+  final String number;
+  final String text;
+  const _SetupStep({required this.number, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            margin: const EdgeInsets.only(right: 10, top: 1),
+            decoration: const BoxDecoration(
+              color: Color(0xFFFFD700),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                number,
+                style: const TextStyle(
+                  color: Color(0xFF0D0B2E),
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(text, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
+          ),
+        ],
       ),
     );
   }
