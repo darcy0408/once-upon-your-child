@@ -741,3 +741,37 @@ Documented in `docs/COPPA_AUDIT.md`.
 - BW-1: Update `bedtime_wizard_screen.dart` — listeners step + wire bedtimeMode
 - BW-2: Add BYOK key gate at wizard entry
 - BW-3: Story duration picker — 10 / 15 / 20 minute runtime targets
+
+---
+
+## Session Update - 2026-03-17 (Bedtime Wizard — Frontend Complete, committed 64192e3)
+
+### Completed (delegated to Codex, reviewed and committed by Claude)
+
+All three outstanding BW tasks from TASK_PROMPTS.md are done.
+
+**BW-1 — Listeners step**
+- Added `BedtimeStep.listeners` to enum (between companion and setting)
+- Voice asks: "Are any brothers, sisters, or friends listening tonight? Say their names, or say 'just me'."
+- `_parseListenerNames()` splits on "and"/commas, capitalises, caps at 5 names
+- `_listenerNames` passed as `additionalCharacters` to `generateStory()` → all siblings/friends appear in story by name
+
+**BW-2 — BYOK gate**
+- `_initAndStart()` now calls `ApiServiceManager.isUsingOwnApiKey()` before the wizard begins
+- If no key: TTS speaks parent guidance and exits gracefully instead of failing mid-story
+
+**BW-3 — Duration picker**
+- Voice step: "How long? Ten, fifteen, or twenty minutes?"
+- On-screen tap chips (10/15/20 min) as visual fallback during the duration step
+- `bedtimeDurationMinutes` wired through to `generateStory()` → backend `_build_bedtime_prompt()` overrides word count using ~130 wpm narration math
+
+### Full Bedtime Feature Status: ✅ COMPLETE
+
+End-to-end flow:
+1. Parent launches bedtime mode (age already set from profile)
+2. BYOK key check — exit with guidance if missing
+3. Voice wizard: hero name → companion → who's listening → setting → mood → duration → confirm
+4. Backend routes `bedtime_mode: true` to `_build_bedtime_prompt()` with all listeners, duration-calibrated word count, soothing rules
+5. TTS reads story aloud; sleep timer can cut it short with a goodnight message
+
+### flutter analyze result: No issues found
