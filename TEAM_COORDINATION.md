@@ -12,3 +12,10 @@
 - Completed: `cd backend && python tests/story_load_thresholds.py` passes with the new `concurrency_ramp_c16` checks.
 - Completed: manual Flask test-client verification shows `/generate-story` responses now include `story._perf`, and `backend.tasks.story_tasks` emits `perf phase=` debug lines for prompt build, AI call, validation, and total task.
 - Next: real-provider baseline remains gated behind `--real-api` / `RUN_REAL_API_TESTS=true` and was not executed because `GEMINI_API_KEY` is not set in this environment.
+- Completed: illustration/count wiring and coloring follow-up fixes are now present in the Flutter layer:
+  - `magic_review_step.dart` fallback illustration generation now forwards companion data, carries `customElements` into `sceneRequirements`, and uses subscription-based counts (`family=2`, `premium/free=1`).
+  - `story_illustration_service.dart` now supports `sceneRequirements` and folds those requirements into the scene description sent to `/generate-illustrations`.
+  - `story_result_screen.dart` now forwards companion data into `generateColoringPagesFromStory(...)` and appends `customElements` to coloring scene prompts.
+  - `ColoringSettingsDialog` now exposes a real 1-5 page picker instead of hardcoding a single page.
+- Coordination note: there are two coordination logs in the repo right now (`TEAM_COORDINATION.md` at repo root and `docs/TEAM_COORDINATION.md`). This thread has updated both at different points; prefer keeping the root file current for active handoff unless the docs copy is explicitly needed.
+- Verification gap: targeted analyzer runs for the touched Dart files were attempted, but both `flutter analyze` and `dart analyze` timed out in this environment before returning diagnostics, so only code inspection and repo-state verification were completed here.
