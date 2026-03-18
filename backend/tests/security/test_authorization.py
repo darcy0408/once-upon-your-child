@@ -1,6 +1,7 @@
 import jwt
 import pytest
 from datetime import datetime, timedelta, timezone
+from flask_jwt_extended import create_access_token
 
 from backend.database import db
 from backend.models import Character, ParentHiddenContext, User
@@ -256,3 +257,185 @@ def test_user_a_cannot_poll_user_b_task_status(client, auth_headers, monkeypatch
 
     assert response.status_code == 403
     assert response.get_json()["error"] == "Access denied"
+
+
+def _jwt_extended_headers(app, user: User) -> dict[str, str]:
+    with app.app_context():
+        token = create_access_token(identity=user.id)
+    return {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+
+
+@pytest.fixture
+def therapist_auth_headers(therapist_user):
+    return _auth_headers_for_user(therapist_user)
+
+
+@pytest.fixture
+def other_therapist(app):
+    with app.app_context():
+        user = User(
+            id="therapist_user_789",
+            username="othertherapist",
+            email="other-therapist@example.com",
+            password_hash="hashed_password",
+            subscription_tier="free",
+            role="therapist",
+        )
+        db.session.add(user)
+        db.session.commit()
+        yield user
+
+
+@pytest.fixture
+def other_therapist_headers(other_therapist):
+    return _auth_headers_for_user(other_therapist)
+
+
+def test_api_key_set_requires_auth(client):
+    response = client.post("/api/user/settings/api-key", json={"api_key": "AIza" + ("a" * 35)})
+
+    assert response.status_code == 401
+
+
+def test_api_key_set_own_key_succeeds(client, auth_headers, mocker, app, test_user):
+    mocker.patch("backend.routes.api_key_routes.test_gemini_api_key", return_value=(True, None))
+    mocker.patch("backend.routes.api_key_routes.encrypt_api_key", return_value="encrypted-key")
+    response = client.post("/api/user/settings/api-key", json={"api_key": "AIza" + ("a" * 35)}, headers=auth_headers)
+
+    assert response.status_code == 200
+    with app.app_context():
+        user = db.session.get(User, test_user.id)
+        assert user.has_byok is True
+
+
+def test_api_key_cross_user_blocked(client, auth_headers, mocker, app, test_user, other_user):
+    mocker.patch("backend.routes.api_key_routes.test_gemini_api_key", return_value=(True, None))
+    mocker.patch("backend.routes.api_key_routes.encrypt_api_key", return_value="encrypted-key")
+    headers = {**auth_headers, "X-User-ID": other_user.id}
+    response = client.post("/api/user/settings/api-key", json={"api_key": "AIza" + ("a" * 35)}, headers=headers)
+
+    assert response.status_code == 200
+    with app.app_context():
+        assert db.session.get(User, test_user.id).has_byok is True
+        assert db.session.get(User, other_user.id).has_byok is False
+
+
+def test_api_key_delete_requires_auth(client):
+    response = client.delete("/api/user/settings/api-key")
+
+    assert response.status_code == 401
+
+
+def test_api_key_usage_requires_auth(client):
+    response = client.get("/api/user/usage")
+
+    assert response.status_code == 401
+
+
+def test_api_key_usage_cross_user_blocked(client, auth_headers, app, test_user, other_user):
+    with app.app_context():
+        db.session.get(User, test_user.id).stories_generated_this_month = 1
+        db.session.get(User, other_user.id).stories_generated_this_month = 9
+        db.session.commit()
+    response = client.get("/api/user/usage", headers={**auth_headers, "X-User-ID": other_user.id})
+
+    assert response.status_code == 200
+    assert response.get_json()["stories"]["used"] == 1
+
+
+def test_generate_illustrations_requires_auth(client):
+    response = client.post("/generate-illustrations", json={"scene_description": "A bright field"})
+
+    assert response.status_code == 401
+
+
+def test_generate_illustrations_cross_character_blocked(client, auth_headers, app, other_user):
+    with app.app_context():
+        db.session.add(Character(id="char-illus-other", user_id=other_user.id, name="Other", age=8))
+        db.session.commit()
+    response = client.post(
+        "/generate-story",
+        json={"character_id": "char-illus-other", "theme": "Adventure", "include_illustrations": True},
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 403
+
+
+def test_generate_coloring_pages_requires_auth(client):
+    response = client.post("/generate-coloring-pages", json={"scene_description": "A calm castle"})
+
+    assert response.status_code == 401
+
+
+def test_therapist_client_list_requires_therapist_role(client, auth_headers):
+    response = client.get("/therapist/clients", headers=auth_headers)
+
+    assert response.status_code == 403
+
+
+def test_therapist_cannot_access_other_therapists_clients(
+    client, therapist_auth_headers, other_therapist_headers, test_user
+):
+    create_response = client.post(
+        "/therapist/clients",
+        json={"child_user_id": test_user.id, "child_display_name": "Client A"},
+        headers=therapist_auth_headers,
+    )
+    response = client.get(
+        f"/therapist/clients/{create_response.get_json()['id']}/progress",
+        headers=other_therapist_headers,
+    )
+
+    assert create_response.status_code == 201
+    assert response.status_code in (403, 404)
+
+
+def test_therapist_cannot_delete_other_therapists_client(
+    client, therapist_auth_headers, other_therapist_headers, test_user
+):
+    create_response = client.post(
+        "/therapist/clients",
+        json={"child_user_id": test_user.id, "child_display_name": "Client A"},
+        headers=therapist_auth_headers,
+    )
+    response = client.delete(
+        f"/therapist/clients/{create_response.get_json()['id']}",
+        headers=other_therapist_headers,
+    )
+
+    assert create_response.status_code == 201
+    assert response.status_code in (403, 404)
+
+
+def test_achievement_data_requires_auth(client):
+    response = client.get("/achievement/data")
+
+    assert response.status_code == 401
+
+
+def test_achievement_sync_requires_auth(client):
+    response = client.post("/achievement/sync", json={"achievements": [], "stats": {}})
+
+    assert response.status_code == 401
+
+
+def test_achievement_data_scoped_to_current_user(client, app, test_user, other_user):
+    from backend.models import AchievementStats, UserAchievement
+
+    user_headers = _jwt_extended_headers(app, test_user)
+    other_headers = _jwt_extended_headers(app, other_user)
+    create_response = client.post("/achievement/record/story", json={"theme": "Adventure"}, headers=user_headers)
+    response = client.get("/achievement/data", headers=other_headers)
+
+    assert create_response.status_code == 200
+    assert response.status_code == 200
+    assert response.get_json()["stats"]["total_stories"] == 0
+    assert not response.get_json()["achievements"]
+    with app.app_context():
+        UserAchievement.query.delete()
+        AchievementStats.query.delete()
+        db.session.commit()

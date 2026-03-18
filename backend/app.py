@@ -510,11 +510,13 @@ def create_app(config_name):
 
     try:
         from backend.analytics_routes import create_analytics_blueprint
+        from backend.routes.api_key_routes import create_api_key_blueprint
         from backend.routes.achievement_routes import create_achievement_blueprint
         from backend.routes.subscription_routes import create_subscription_blueprint
         from backend.routes.user_routes import create_user_routes_blueprint
     except ImportError:
         from analytics_routes import create_analytics_blueprint
+        from routes.api_key_routes import create_api_key_blueprint
         from routes.achievement_routes import create_achievement_blueprint
         from routes.subscription_routes import create_subscription_blueprint
         from routes.user_routes import create_user_routes_blueprint
@@ -532,6 +534,8 @@ def create_app(config_name):
     app.register_blueprint(subscription_bp)
     user_routes = create_user_routes_blueprint(limiter=limiter)
     app.register_blueprint(user_routes)
+    api_key_bp = create_api_key_blueprint(limiter=limiter)
+    app.register_blueprint(api_key_bp)
 
     try:
         from backend.routes.story_routes import create_story_blueprint

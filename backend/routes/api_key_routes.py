@@ -7,32 +7,18 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 from ..database import db
-from ..models.user import User
 from ..encryption_utils import (
     encrypt_api_key,
     decrypt_api_key,
     validate_gemini_api_key_format,
     test_gemini_api_key
 )
+try:
+    from backend.middleware.auth import require_auth
+except ImportError:
+    from middleware.auth import require_auth
 
 logger = logging.getLogger(__name__)
-
-
-def get_user_from_request():
-    """
-    Extract user ID from request and fetch user from database.
-    For now, we'll use X-User-ID header (same as existing pattern in app.py).
-    In production, this should be replaced with proper JWT authentication.
-    """
-    user_id = request.headers.get('X-User-ID')
-    if not user_id:
-        return None, ("User authentication required. Please provide X-User-ID header.", 401)
-
-    user = User.query.filter_by(id=user_id).first()
-    if not user:
-        return None, ("User not found.", 404)
-
-    return user, None
 
 
 def create_api_key_blueprint(limiter=None):
@@ -40,6 +26,7 @@ def create_api_key_blueprint(limiter=None):
     api_key_routes = Blueprint('api_key_routes', __name__)
 
     @api_key_routes.route('/api/user/settings/api-key', methods=['POST'])
+    @require_auth
     @limiter.limit("5 per hour")  # Strict limit on API key saves
     def save_api_key():
         """
@@ -58,10 +45,7 @@ def create_api_key_blueprint(limiter=None):
             }
         """
         try:
-            # Get authenticated user
-            user, error_response = get_user_from_request()
-            if error_response:
-                return jsonify({"error": error_response[0]}), error_response[1]
+            user = request.current_user
 
             # Parse request
             data = request.get_json(silent=True) or {}
@@ -120,6 +104,7 @@ def create_api_key_blueprint(limiter=None):
             return jsonify({"error": "Failed to save API key", "details": str(e)}), 500
 
     @api_key_routes.route('/api/user/settings/api-key', methods=['DELETE'])
+    @require_auth
     @limiter.limit("10 per hour")  # Limit on API key removal
     def remove_api_key():
         """
@@ -133,10 +118,7 @@ def create_api_key_blueprint(limiter=None):
             }
         """
         try:
-            # Get authenticated user
-            user, error_response = get_user_from_request()
-            if error_response:
-                return jsonify({"error": error_response[0]}), error_response[1]
+            user = request.current_user
 
             # Remove API key
             user.gemini_api_key_encrypted = None
@@ -211,6 +193,7 @@ def create_api_key_blueprint(limiter=None):
             }), 500
 
     @api_key_routes.route('/api/user/usage', methods=['GET'])
+    @require_auth
     @limiter.limit("60 per minute")  # Higher limit for usage checks
     def get_usage():
         """
@@ -233,10 +216,7 @@ def create_api_key_blueprint(limiter=None):
             }
         """
         try:
-            # Get authenticated user
-            user, error_response = get_user_from_request()
-            if error_response:
-                return jsonify({"error": error_response[0]}), error_response[1]
+            user = request.current_user
 
             # Determine tier
             if user.has_byok:
