@@ -2,6 +2,30 @@
 
 ---
 
+## Session Update - 2026-03-18 (Backend Cold Start Fix + Antigravity Plan)
+
+### Scope Completed
+- Identified and fixed the root cause of the 200+ second backend cold start on Windows.
+- Created a comprehensive Antigravity context document for UI task delegation.
+
+### Findings
+- `backend/services/story_service.py` had an unused `from google.api_core import exceptions` import at module level.
+- On Windows with Malwarebytes active, this import triggered a full AV scan of the Google package tree: **208 seconds** for `google.api_core`, **66 seconds** for `google.genai`.
+- The import was unused — `google_exceptions` was never referenced anywhere in `story_service.py`.
+- The same import in `backend/tasks/story_tasks.py` **is** used (quota error handling) and was left in place. Since Celery tasks are loaded lazily (only when dispatched), this does not affect web server startup.
+
+### Changes
+- `backend/services/story_service.py`
+  - Removed unused `from google.api_core import exceptions as google_exceptions`.
+- `docs/ANTIGRAVITY_CONTEXT.md`
+  - Created paste-ready context document for Antigravity (VS Code fork). Contains project overview, age band system, full file map, 7 concrete UI tasks, Dart conventions, and run instructions.
+
+### Verification
+- Confirmed `google_exceptions` has zero references in `story_service.py` after removal.
+- Confirmed all other `google.api_core` imports in the codebase are inside `.venv` (third-party packages) or `story_tasks.py` (legitimate, lazy-loaded).
+
+---
+
 ## Session Update - 2026-03-18 (Illustration Count Entitlement)
 
 ### Scope Completed
