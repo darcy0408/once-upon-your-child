@@ -908,3 +908,38 @@ Confirmed via Codex audit:
 - Restore a real page-count choice in `ColoringSettingsDialog` if multi-page printable coloring books are still intended.
 - Pass companions from `story_result_screen.dart` into `generateColoringPagesFromStory(...)`.
 - Centralize illustration-count entitlement logic so the product behavior matches the pricing/UX copy.
+
+---
+
+## Session Update - 2026-03-18 (Local Git Hook Failure Diagnosis)
+
+### Scope Completed
+- Investigated why a docs-only commit required `--no-verify`.
+- Traced the failure to local Git hook execution on this Windows machine rather than to repo code or hook logic.
+- Applied the lowest-risk local unblock so normal commits can proceed again.
+
+### Findings
+- `.git/hooks/pre-commit` existed and contained only:
+  - `#!/bin/sh`
+  - `exit 0`
+- The hook itself was not performing linting, tests, formatting, or policy checks.
+- Directly invoking `C:\Program Files\Git\usr\bin\sh.exe` reproduced the same failure seen during commit:
+  - `fatal error - couldn't create signal pipe, Win32 error 5`
+- Conclusion:
+  - the broken component is the local Git-for-Windows `sh.exe` hook runtime on this machine
+  - the repository hook content was not the cause
+
+### Local Fix Applied
+- Renamed the no-op local hook:
+  - `.git/hooks/pre-commit` -> `.git/hooks/pre-commit.disabled`
+- Verified that commits now work normally without `--no-verify`.
+
+### Verification
+- Ran:
+  - `git commit --allow-empty -m "test: verify hooks disabled"`
+- Result:
+  - commit succeeded: `e6d2ebe`
+
+### Notes
+- This is a local environment fix, not a shared repo fix.
+- If real hooks are needed later, the underlying Git-for-Windows shell/runtime issue should be repaired or Git should be reinstalled.
