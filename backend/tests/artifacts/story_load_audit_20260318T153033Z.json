@@ -1,0 +1,468 @@
+{
+  "timestamp_utc": "2026-03-18T15:30:31.632823+00:00",
+  "notes": {
+    "target_endpoint": "/generate-story",
+    "mode": "local flask test client with mocked task behaviors plus optional real-provider probes",
+    "real_api_enabled": false,
+    "reset_check_app_config": "testing(rate-limit-enabled)"
+  },
+  "scenarios": {
+    "sync_fast_path": {
+      "total_requests": 24,
+      "concurrency": 6,
+      "status_counts": {
+        "401": 24
+      },
+      "error_count": 24,
+      "latency_ms": {
+        "min": 0.7,
+        "p50": 0.83,
+        "p95": 37.24,
+        "p99": 38.1,
+        "max": 38.21,
+        "mean": 8.29
+      },
+      "sample_errors": [
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        }
+      ],
+      "sample_body_status": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    "timeout_async_fallback": {
+      "total_requests": 16,
+      "concurrency": 4,
+      "status_counts": {
+        "401": 16
+      },
+      "error_count": 16,
+      "latency_ms": {
+        "min": 0.81,
+        "p50": 1.06,
+        "p95": 1.8,
+        "p99": 1.87,
+        "max": 1.89,
+        "mean": 1.13
+      },
+      "sample_errors": [
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        }
+      ],
+      "sample_body_status": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    "quota_error_429": {
+      "total_requests": 12,
+      "concurrency": 4,
+      "status_counts": {
+        "401": 12
+      },
+      "error_count": 12,
+      "latency_ms": {
+        "min": 0.79,
+        "p50": 1.05,
+        "p95": 1.7,
+        "p99": 1.76,
+        "max": 1.78,
+        "mean": 1.13
+      },
+      "sample_errors": [
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        }
+      ],
+      "sample_body_status": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    "concurrency_ramp_c1": {
+      "total_requests": 24,
+      "concurrency": 1,
+      "status_counts": {
+        "401": 24
+      },
+      "error_count": 24,
+      "latency_ms": {
+        "min": 0.71,
+        "p50": 0.86,
+        "p95": 1.38,
+        "p99": 1.88,
+        "max": 2.03,
+        "mean": 0.93
+      },
+      "sample_errors": [
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        }
+      ],
+      "sample_body_status": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    "concurrency_ramp_c4": {
+      "total_requests": 24,
+      "concurrency": 4,
+      "status_counts": {
+        "401": 24
+      },
+      "error_count": 24,
+      "latency_ms": {
+        "min": 0.74,
+        "p50": 0.9,
+        "p95": 1.25,
+        "p99": 1.78,
+        "max": 1.93,
+        "mean": 0.95
+      },
+      "sample_errors": [
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        }
+      ],
+      "sample_body_status": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    "concurrency_ramp_c8": {
+      "total_requests": 24,
+      "concurrency": 8,
+      "status_counts": {
+        "401": 24
+      },
+      "error_count": 24,
+      "latency_ms": {
+        "min": 0.84,
+        "p50": 0.97,
+        "p95": 1.76,
+        "p99": 1.84,
+        "max": 1.84,
+        "mean": 1.07
+      },
+      "sample_errors": [
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        }
+      ],
+      "sample_body_status": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    "concurrency_ramp_c16": {
+      "total_requests": 24,
+      "concurrency": 16,
+      "status_counts": {
+        "401": 24
+      },
+      "error_count": 24,
+      "latency_ms": {
+        "min": 0.8,
+        "p50": 1.01,
+        "p95": 2.26,
+        "p99": 3.14,
+        "max": 3.38,
+        "mean": 1.26
+      },
+      "sample_errors": [
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        }
+      ],
+      "sample_body_status": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    "concurrency_ramp_c32": {
+      "total_requests": 24,
+      "concurrency": 32,
+      "status_counts": {
+        "401": 24
+      },
+      "error_count": 24,
+      "latency_ms": {
+        "min": 0.74,
+        "p50": 0.95,
+        "p95": 1.68,
+        "p99": 2.05,
+        "max": 2.16,
+        "mean": 1.08
+      },
+      "sample_errors": [
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        },
+        {
+          "status_code": 401,
+          "error": "Authentication required",
+          "message": null
+        }
+      ],
+      "sample_body_status": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  },
+  "reset_check": {
+    "initial_statuses": [
+      200,
+      200,
+      429
+    ],
+    "after_wait_status": 200,
+    "first_headers": {
+      "X-RateLimit-Limit": "2",
+      "X-RateLimit-Remaining": "1",
+      "X-RateLimit-Reset": "1773847834"
+    },
+    "third_error": "Rate limit exceeded",
+    "after_wait_error": null
+  },
+  "fallback_switchover": {
+    "status_code": 401,
+    "body_status": null,
+    "latency_ms": 1.97,
+    "perf": {},
+    "provider_sequence": [],
+    "summary_line": "fallback_switchover: total=2ms provider_sequence=unknown"
+  },
+  "concurrency_ramp": {
+    "rows": [
+      {
+        "concurrency": 1,
+        "p95_ms": 1.38,
+        "mean_ms": 0.93,
+        "errors": 24
+      },
+      {
+        "concurrency": 4,
+        "p95_ms": 1.25,
+        "mean_ms": 0.95,
+        "errors": 24
+      },
+      {
+        "concurrency": 8,
+        "p95_ms": 1.76,
+        "mean_ms": 1.07,
+        "errors": 24
+      },
+      {
+        "concurrency": 16,
+        "p95_ms": 2.26,
+        "mean_ms": 1.26,
+        "errors": 24
+      },
+      {
+        "concurrency": 32,
+        "p95_ms": 1.68,
+        "mean_ms": 1.08,
+        "errors": 24
+      }
+    ]
+  }
+}

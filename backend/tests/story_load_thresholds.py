@@ -18,13 +18,31 @@ DEFAULT_AUDIT_PATH = "backend/tests/artifacts/story_load_audit_latest.json"
 DEFAULT_SUMMARY_PATH = "backend/tests/artifacts/story_load_threshold_summary.md"
 
 
+def _resolve_path(path: Path) -> Path:
+    if path.exists():
+        return path
+    repo_relative = Path(__file__).resolve().parents[2] / path
+    if repo_relative.exists():
+        return repo_relative
+    backend_relative = Path(__file__).resolve().parents[1] / path.name
+    if backend_relative.exists():
+        return backend_relative
+    tests_artifact_fallback = Path(__file__).resolve().parent / "artifacts" / path.name
+    if tests_artifact_fallback.exists():
+        return tests_artifact_fallback
+    return path
+
+
 def _load_json(path: Path) -> dict:
+    path = _resolve_path(path)
     if not path.exists():
         raise FileNotFoundError(f"Audit artifact not found: {path}")
     return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _get_metric(report: dict, scenario: str, metric: str) -> float:
+    if metric == "errors":
+        return float(report["scenarios"][scenario].get("error_count", 0))
     return float(report["scenarios"][scenario]["latency_ms"][metric])
 
 
@@ -36,11 +54,28 @@ def _build_checks(report: dict) -> List[str]:
         ("sync_fast_path", "mean", 300.0, "<="),
         ("timeout_async_fallback", "p95", 200.0, "<="),
         ("quota_error_429", "p95", 250.0, "<="),
+        ("concurrency_ramp_c16", "p95", 1000.0, "<="),
+        ("concurrency_ramp_c16", "errors", 0.0, "=="),
     ]
+
+    if os.getenv("RUN_REAL_API_TESTS", "").strip().lower() == "true":
+        real_provider = report.get("scenarios", {}).get("real_provider_baseline")
+        if real_provider and not real_provider.get("skipped"):
+            checks.extend(
+                [
+                    ("real_provider_baseline", "p95", 45000.0, "<="),
+                    ("real_provider_baseline", "mean", 20000.0, "<="),
+                    ("real_provider_baseline", "p50", 15000.0, "<="),
+                ]
+            )
 
     for scenario, metric, threshold, op in checks:
         value = _get_metric(report, scenario, metric)
         if op == "<=" and value > threshold:
+            failures.append(
+                f"{scenario}.{metric}={value} breached threshold {op} {threshold}"
+            )
+        if op == "==" and value != threshold:
             failures.append(
                 f"{scenario}.{metric}={value} breached threshold {op} {threshold}"
             )
@@ -65,6 +100,7 @@ def _build_checks(report: dict) -> List[str]:
 
 
 def _write_summary(summary_path: Path, report: dict, failures: List[str]) -> None:
+    summary_path = _resolve_path(summary_path)
     lines = [
         "# Story Load Threshold Check",
         "",

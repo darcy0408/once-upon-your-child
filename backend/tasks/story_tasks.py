@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import traceback
 import uuid
 from typing import Any, Dict
@@ -54,6 +55,81 @@ def _fallback_story(theme: str, character_name: str | dict, companion: str = Non
     return story
 
 
+def _classify_provider_failure(exc: Exception | None = None, message: str | None = None) -> str:
+    raw_text = ""
+    if exc is not None:
+        raw_text = str(exc).strip()
+    elif message:
+        raw_text = str(message).strip()
+
+    lowered = raw_text.lower()
+    if isinstance(exc, google_exceptions.ResourceExhausted) or "quota" in lowered or "resourceexhausted" in lowered:
+        return "429"
+    if "401" in lowered or "unauthorized" in lowered or "invalid api key" in lowered or "api key not valid" in lowered:
+        return "401"
+    if "openrouter_api_key not set" in lowered:
+        return "no_key"
+    if "timeout" in lowered:
+        return "timeout"
+    if not raw_text:
+        return "unknown"
+    return raw_text.splitlines()[0][:80]
+
+
+def _generate_story_text_with_metadata(
+    prompt: str,
+    theme: str,
+    character_name: str,
+    companion: str = None,
+) -> tuple[str, str, list[str]]:
+    provider_sequence: list[str] = []
+
+    try:
+        logger.info("Attempting story generation with primary service (Gemini)...")
+        gemini_generator = StoryGenerationService()
+        story_text = gemini_generator.generate_story(prompt)
+        if story_text and not story_text.startswith("Sorry"):
+            logger.info("Successfully generated story with primary service.")
+            provider_sequence.append("gemini(success)")
+            return story_text, "gemini", provider_sequence
+
+        logger.warning("Primary service returned a 'Sorry' message.")
+        provider_sequence.append(
+            f"gemini(fail:{_classify_provider_failure(message=story_text)})"
+        )
+    except google_exceptions.ResourceExhausted as exc:
+        logger.warning("Primary service (Gemini) is rate-limited. Falling back to OpenRouter.")
+        provider_sequence.append(f"gemini(fail:{_classify_provider_failure(exc=exc)})")
+    except Exception as exc:
+        logger.exception("Primary service (Gemini) failed with an unexpected error.")
+        provider_sequence.append(f"gemini(fail:{_classify_provider_failure(exc=exc)})")
+
+    if os.getenv("OPENROUTER_API_KEY"):
+        try:
+            logger.info("Attempting story generation with fallback service (OpenRouter)...")
+            openrouter_generator = OpenRouterStoryGenerator()
+            story_text = openrouter_generator.generate_story(prompt)
+            if story_text and not story_text.startswith("Sorry"):
+                logger.info("Successfully generated story with fallback service.")
+                provider_sequence.append("openrouter(success)")
+                return story_text, "openrouter", provider_sequence
+
+            logger.warning("Fallback service returned a 'Sorry' message.")
+            provider_sequence.append(
+                f"openrouter(fail:{_classify_provider_failure(message=story_text)})"
+            )
+        except Exception as exc:
+            logger.exception("Fallback service (OpenRouter) also failed.")
+            provider_sequence.append(f"openrouter(fail:{_classify_provider_failure(exc=exc)})")
+    else:
+        logger.warning("OPENROUTER_API_KEY not set. Cannot use fallback service.")
+        provider_sequence.append("openrouter(fail:no_key)")
+
+    logger.warning("All story generation providers failed. Returning local static fallback.")
+    provider_sequence.append("static")
+    return _fallback_story(theme, character_name, companion), "static", provider_sequence
+
+
 
 def _generate_story_text(prompt: str, theme: str, character_name: str, companion: str = None) -> str:
     """
@@ -62,50 +138,13 @@ def _generate_story_text(prompt: str, theme: str, character_name: str, companion
     2. On rate limit error, fall back to a free OpenRouter model.
     3. If all else fails, use a local static story.
     """
-    try:
-        # 1. Try primary service (Gemini)
-        logger.info("Attempting story generation with primary service (Gemini)...")
-        gemini_generator = StoryGenerationService()
-        story_text = gemini_generator.generate_story(prompt)
-        # The retry logic is now inside the service, but we still check the output
-        if story_text and not story_text.startswith("Sorry"):
-            logger.info("Successfully generated story with primary service.")
-            return story_text
-        logger.warning("Primary service returned a 'Sorry' message.")
-        # Fall back to OpenRouter if available, even when Gemini fails unexpectedly.
-        if os.getenv("OPENROUTER_API_KEY"):
-            try:
-                logger.info("Attempting story generation with fallback service (OpenRouter)...")
-                openrouter_generator = OpenRouterStoryGenerator()
-                story_text = openrouter_generator.generate_story(prompt)
-                if story_text and not story_text.startswith("Sorry"):
-                    logger.info("Successfully generated story with fallback service.")
-                    return story_text
-                logger.warning("Fallback service returned a 'Sorry' message.")
-            except Exception:
-                logger.exception("Fallback service (OpenRouter) also failed.")
-    except google_exceptions.ResourceExhausted:
-        # 2. On rate limit, fall back to secondary service (OpenRouter)
-        logger.warning("Primary service (Gemini) is rate-limited. Falling back to OpenRouter.")
-        try:
-            if os.getenv("OPENROUTER_API_KEY"):
-                logger.info("Attempting story generation with fallback service (OpenRouter)...")
-                openrouter_generator = OpenRouterStoryGenerator()
-                story_text = openrouter_generator.generate_story(prompt)
-                if story_text and not story_text.startswith("Sorry"):
-                    logger.info("Successfully generated story with fallback service.")
-                    return story_text
-                logger.warning("Fallback service returned a 'Sorry' message.")
-            else:
-                logger.warning("OPENROUTER_API_KEY not set. Cannot use fallback service.")
-        except Exception:
-            logger.exception("Fallback service (OpenRouter) also failed.")
-    except Exception:
-        logger.exception("Primary service (Gemini) failed with an unexpected error.")
-
-    # 3. If all services fail, raise an exception to notify frontend
-    logger.error("All story generation services failed.")
-    raise Exception("Story generation failed. Please check backend logs or API keys.")
+    story_text, _provider_name, _provider_sequence = _generate_story_text_with_metadata(
+        prompt,
+        theme,
+        character_name,
+        companion,
+    )
+    return story_text
 
 def _normalize_text_for_match(text: str) -> str:
     text = text.lower()
@@ -260,6 +299,13 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         character: Optional character name fallback when no ID is provided
     """
     with get_flask_app().app_context():
+        total_task_start = time.perf_counter()
+        prompt_build_ms = 0.0
+        ai_call_ms = 0.0
+        validation_ms = 0.0
+        provider_name = "unknown"
+        validation_attempts = 0
+        provider_sequence: list[str] = []
         character_id = kwargs.get("character_id")
         theme = kwargs.get("theme") or "Adventure"
         user_id = kwargs.get("user_id") or "anonymous"
@@ -323,6 +369,8 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
 
             engine = AdvancedStoryEngine()
 
+            prompt_build_start = time.perf_counter()
+
             # Use specialized prompts based on story mode flags
             if bedtime_mode:
                 logger.info(f"Using Bedtime prompt (length: {story_length})")
@@ -337,6 +385,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     companion_pets=companion_pets,
                     companion_characters=companion_character_details,
                     story_length=story_length,
+                    duration_minutes=kwargs.get("bedtime_duration_minutes"),
                 )
             elif learning_to_read_mode:
 
@@ -390,6 +439,8 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     story_duration=story_duration,  # NEW: Duration-based generation
                     age=age,   # NEW: Pass age for calibration
                 )
+            prompt_build_ms = (time.perf_counter() - prompt_build_start) * 1000.0
+            logger.debug("perf phase=prompt_build ms=%.1f", prompt_build_ms)
 
             logger.info(f"Companion Pets: {companion_pets}")
             logger.info(f"Companion Character Details: {companion_character_details}")
@@ -416,11 +467,26 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
             # Story generation with validation and retry logic
             max_attempts = 3
             attempt = 0
+            validation_loop_start = time.perf_counter()
             while attempt < max_attempts:
                 attempt += 1
+                validation_attempts = attempt
                 logger.info(f"Generation attempt {attempt}/{max_attempts}")
-                
-                story_text = _generate_story_text(prompt, theme, character_name, companion)
+
+                ai_call_start = time.perf_counter()
+                story_text, provider_name, provider_sequence = _generate_story_text_with_metadata(
+                    prompt,
+                    theme,
+                    character_name,
+                    companion,
+                )
+                attempt_ai_call_ms = (time.perf_counter() - ai_call_start) * 1000.0
+                ai_call_ms += attempt_ai_call_ms
+                logger.debug(
+                    "perf phase=ai_call provider=%s ms=%.1f",
+                    provider_name,
+                    attempt_ai_call_ms,
+                )
                 title, wisdom_gem, story_body, pages, post_story = _safe_extract_title_and_gem(story_text, theme)
                 
                 # Validation Logic (Content Sanitizer)
@@ -507,6 +573,9 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                             )
                     else:
                         logger.error("Max attempts reached. Returning best effort.")
+            validation_loop_ms = (time.perf_counter() - validation_loop_start) * 1000.0
+            validation_ms = max(validation_loop_ms - ai_call_ms, 0.0)
+            logger.debug("perf phase=validation ms=%.1f", validation_ms)
 
             # NEW: Page-based story structure for duration-based generation
             adventure_steps = []
@@ -586,6 +655,8 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
 
             # Generate a unique ID for the story
             story_id = str(uuid.uuid4())
+            total_ms = (time.perf_counter() - total_task_start) * 1000.0
+            logger.debug("perf phase=total_task ms=%.1f", total_ms)
 
             return {
                 "status": "complete",
@@ -606,6 +677,15 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     "validation_issues": validation_issues,
                     "story_duration": story_duration,
                     "adventure_report": post_story.get("adventure_report", {}),
+                    "_perf": {
+                        "prompt_build_ms": round(prompt_build_ms),
+                        "ai_call_ms": round(ai_call_ms),
+                        "validation_ms": round(validation_ms),
+                        "total_ms": round(total_ms),
+                        "provider": provider_name,
+                        "provider_sequence": provider_sequence,
+                        "validation_attempts": validation_attempts,
+                    },
                 },
                 "user_id": str(user_id),
             }
@@ -613,6 +693,8 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
         except Exception as exc:
             db.session.rollback()
             error_msg = str(exc)
+            total_ms = (time.perf_counter() - total_task_start) * 1000.0
+            logger.debug("perf phase=total_task ms=%.1f", total_ms)
             logger.error("generate_story_task failed: %s", error_msg, exc_info=True)
             try:
                 self.update_state(

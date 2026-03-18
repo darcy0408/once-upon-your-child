@@ -10,6 +10,16 @@ from ..utils.validators import validate_age, validate_story_length
 
 logger = logging.getLogger(__name__)
 
+# Approximate words per minute for narrated children's audio.
+_NARRATION_WPM = 130
+
+
+def _duration_minutes_to_word_range(minutes: int) -> tuple[int, int]:
+    """Convert a desired runtime in minutes to a target word-count range."""
+    target = minutes * _NARRATION_WPM
+    return (int(target * 0.85), int(target * 1.15))
+
+
 # Master constraint table from Story Weaver Coverage v2
 # Capped Rhyme Time at 600-800 max to maintain AI quality.
 AGE_CONSTRAINTS = {
@@ -1123,6 +1133,7 @@ def _build_bedtime_prompt(
     companion_characters=None,
     extra_characters=None,
     story_length='standard',
+    duration_minutes: int | None = None,
 ):
     """
     Build a high-quality bedtime story prompt.
@@ -1137,7 +1148,13 @@ def _build_bedtime_prompt(
     elif story_length in ('long', 'epic'):
         length_key = 'long'
 
-    word_range = _BEDTIME_WORD_RANGES.get(band, _BEDTIME_WORD_RANGES['5-7'])[length_key]
+    if duration_minutes and duration_minutes > 0:
+        word_range = _duration_minutes_to_word_range(duration_minutes)
+    else:
+        word_range = _BEDTIME_WORD_RANGES.get(
+            band,
+            _BEDTIME_WORD_RANGES['5-7'],
+        )[length_key]
     age_notes = AGE_CONSTRAINTS.get(band, AGE_CONSTRAINTS['5-7'])['notes']
 
     # World description — use rich setting or fall back to the raw theme string.
