@@ -23,6 +23,8 @@ class WizardData {
   GeneratedAvatar? generatedAvatar; // AI-generated avatar
   String?
       customAvatarPath; // Path to a custom avatar image (local file) for story illustrations
+  String?
+      selectedCharacterAssetPath; // Flutter asset path of the preset character PNG picked in the carousel
 
   // Advanced character features
   List<String> fears = [];

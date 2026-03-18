@@ -200,6 +200,24 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
           _AvatarStep.favoriteColor: 'Outfit color',
           _AvatarStep.photo: 'Reference photo',
         }[step]!;
+      case AgeBand.adolescent:
+        return {
+          _AvatarStep.sproutWelcome: '',
+          _AvatarStep.gender: 'Character style',
+          _AvatarStep.hairColor: 'Hair color',
+          _AvatarStep.eyeColor: 'Eye color',
+          _AvatarStep.favoriteColor: 'Outfit color',
+          _AvatarStep.photo: 'Reference photo',
+        }[step]!;
+      case AgeBand.adult:
+        return {
+          _AvatarStep.sproutWelcome: '',
+          _AvatarStep.gender: 'Character style',
+          _AvatarStep.hairColor: 'Hair color',
+          _AvatarStep.eyeColor: 'Eye color',
+          _AvatarStep.favoriteColor: 'Outfit color',
+          _AvatarStep.photo: 'Reference photo',
+        }[step]!;
     }
   }
 

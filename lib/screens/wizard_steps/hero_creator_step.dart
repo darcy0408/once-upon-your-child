@@ -721,7 +721,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   // ─── Age-Band Title Style ────────────────────────────────────────────────────
   TextStyle _bandTitleStyle(AgeBandThemeData band, {double baseFontSize = 24}) {
-    if (band.band == AgeBand.creator) {
+    if (band.band.isMature) {
       return GoogleFonts.sourceSans3(
         color: const Color(0xFFFFD700),
         fontSize: baseFontSize * band.headingScale,
@@ -1754,6 +1754,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       case AgeBand.adventurer:
         return 'Limerick Laughs';
       case AgeBand.creator:
+      case AgeBand.adolescent:
+      case AgeBand.adult:
         return 'First Chapter';
     }
   }
@@ -1763,7 +1765,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final data = widget.wizardData;
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    final isCreator = band.band == AgeBand.creator;
+    final isCreator = band.band.isMature;
     String selectedMode = 'tales';
     if (data.interactiveMode) {
       selectedMode = 'pickpath';
@@ -2381,6 +2383,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               setState(() {
                 widget.wizardData.characterGender = choice.gender;
                 widget.wizardData.selectedSkinTone = choice.skinTone;
+                widget.wizardData.selectedCharacterAssetPath = choice.assetPath;
               });
             },
             itemBuilder: (context, index) {
@@ -2421,6 +2424,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   height: 240,
                   onTap: () {
                     widget.wizardData.selectedSkinTone = choice.skinTone;
+                    widget.wizardData.selectedCharacterAssetPath = choice.assetPath;
                     _handleGenderSelection(choice.gender);
                   },
                 ),
@@ -2464,7 +2468,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     final nameFontSize = band.headingScale * 20;
     final isSproutFour = widget.wizardData.characterAge <= 4;
 
-    if (band.band == AgeBand.creator) {
+    if (band.band.isMature) {
       return TextField(
         controller: _nameController,
         focusNode: _nameFocusNode,
@@ -2657,9 +2661,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                           fit: StackFit.expand,
                           children: [
                             Container(color: const Color(0xFF1A0A2E)),
-                            if (a.imagePath != null)
+                            if (a.imagePathForBand(ageBand) != null)
                               Image.asset(
-                                a.imagePath!,
+                                a.imagePathForBand(ageBand)!,
                                 fit: BoxFit.contain,
                                 alignment: Alignment.center,
                               )
@@ -2766,8 +2770,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     fit: StackFit.expand,
                     children: [
                       Container(color: const Color(0xFF1A0A2E)),
-                      if (a.imagePath != null)
-                        Image.asset(a.imagePath!,
+                      if (a.imagePathForBand(ageBand) != null)
+                        Image.asset(a.imagePathForBand(ageBand)!,
                             fit: BoxFit.contain, alignment: Alignment.center)
                       else
                         Container(
@@ -2933,7 +2937,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   Widget build(BuildContext context) {
     final bandData =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    final isTeen = bandData.band == AgeBand.creator;
+    final isTeen = bandData.band.isMature;
 
     final showMagicCursor =
         bandData.band == AgeBand.sprout || bandData.band == AgeBand.explorer;

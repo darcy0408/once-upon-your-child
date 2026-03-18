@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'magical_float.dart';
+import '../theme/age_band_theme.dart';
 
 /// Image-based Progress Orb using transparent PNG assets
 class ImageProgressOrb extends StatefulWidget {
@@ -21,13 +22,15 @@ class ImageProgressOrb extends StatefulWidget {
 class _ImageProgressOrbState extends State<ImageProgressOrb>
     with SingleTickerProviderStateMixin {
   late AnimationController _shimmerController;
-  String get _orbAssetPath {
+  String _orbAssetPathForBand(AgeBand band) {
+    final bandName = band.name; // 'sprout', 'explorer', etc.
     final isDoneIcon = widget.icon == Icons.check_rounded ||
         widget.icon == Icons.check ||
         widget.icon == Icons.check_circle;
-    return isDoneIcon
-        ? 'assets/images/ui/clean/progress_done_orb.png'
-        : 'assets/images/ui/clean/progress_active_orb.png';
+    if (isDoneIcon) {
+      return 'assets/images/orbs/$bandName/progress_done.png';
+    }
+    return 'assets/images/orbs/$bandName/progress_active.png';
   }
 
   @override
@@ -49,6 +52,8 @@ class _ImageProgressOrbState extends State<ImageProgressOrb>
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final base = widget.size ?? (screenWidth / 8.0).clamp(48.0, 66.0);
+    final band = Theme.of(context).extension<AgeBandThemeData>()?.band ?? AgeBand.explorer;
+    final orbAsset = _orbAssetPathForBand(band);
     final glowSize = base + (base * 0.18);
     return MagicalFloat(
       distance: 3.0,
@@ -104,7 +109,7 @@ class _ImageProgressOrbState extends State<ImageProgressOrb>
               ),
               child: ClipOval(
                 child: Image.asset(
-                  _orbAssetPath,
+                  orbAsset,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(

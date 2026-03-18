@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../theme/age_band_theme.dart';
 
 /// ArchetypeCard - Displays character archetype templates
 ///
@@ -234,6 +235,8 @@ class CharacterArchetypes {
     traits: ['Brave', 'Curious', 'Determined'],
     specialAbility: 'Can command wind and weather to soar through storms',
     matureName: 'Storm Vanguard',
+    sproutImageId: 'storm_rider',
+    bandImageId: 'brave_hero',
     attributes: {
       'energy': 80,
       'sociability': 70,
@@ -252,6 +255,8 @@ class CharacterArchetypes {
     traits: ['Smart', 'Modest', 'Curious'],
     specialAbility: 'Can solve any quiz, puzzle, or brain teaser with clever thinking',
     matureName: 'Logic Architect',
+    sproutImageId: 'quiz_whiz',
+    bandImageId: 'clever_inventor',
     attributes: {
       'energy': 40,
       'sociability': 30,
@@ -270,6 +275,8 @@ class CharacterArchetypes {
     traits: ['Creative', 'Expressive', 'Imaginative'],
     specialAbility: 'Has a magic paintbrush that brings drawings to life',
     matureName: 'Senior Architect',
+    sproutImageId: 'master_creator',
+    bandImageId: 'gentle_dreamer',
     attributes: {
       'energy': 60,
       'sociability': 50,
@@ -288,6 +295,8 @@ class CharacterArchetypes {
     traits: ['Caring', 'Patient', 'Loyal'],
     specialAbility: 'Can sense emotions and heal broken spirits with kindness',
     matureName: 'Harmony Mediator',
+    sproutImageId: 'heart_healer',
+    bandImageId: 'kind_healer',
     attributes: {
       'energy': 50,
       'sociability': 85,
@@ -306,6 +315,8 @@ class CharacterArchetypes {
     traits: ['Energetic', 'Fast', 'Determined'],
     specialAbility: 'Moves faster than sound and leaves trails of stardust',
     matureName: 'Kinetic Specialist',
+    sproutImageId: 'lightning_runner',
+    bandImageId: 'speedy_explorer',
     attributes: {
       'energy': 95,
       'sociability': 75,
@@ -324,6 +335,8 @@ class CharacterArchetypes {
     traits: ['Kind', 'Observant', 'Gentle'],
     specialAbility: 'Can talk to animals and move unseen like a shadow',
     matureName: 'Ecological Whisperer',
+    sproutImageId: 'animal_whisperer',
+    bandImageId: 'mighty_guardian',
     attributes: {
       'energy': 35,
       'sociability': 25,
@@ -353,6 +366,8 @@ class ArchetypeData {
   final Map<String, int> attributes;
   final String specialAbility; // New: physics-defying power for adventures
   final String? matureName;
+  final String? sproutImageId; // filename (no ext) in assets/images/archetypes/sprout/
+  final String? bandImageId;   // filename (no ext) in assets/images/archetypes/{band}/
 
   const ArchetypeData({
     this.icon,
@@ -363,11 +378,23 @@ class ArchetypeData {
     required this.attributes,
     required this.specialAbility,
     this.matureName,
+    this.sproutImageId,
+    this.bandImageId,
   });
 
   String nameForAge(int age) {
     if (age >= 12 && matureName != null) return matureName!;
     return name;
+  }
+
+  String? imagePathForBand(AgeBand band) {
+    if (band == AgeBand.sprout && sproutImageId != null) {
+      return 'assets/images/archetypes/sprout/$sproutImageId.jpg';
+    }
+    if (bandImageId != null) {
+      return 'assets/images/archetypes/${band.name}/$bandImageId.jpg';
+    }
+    return imagePath; // fall back to old framed PNG
   }
 }
 

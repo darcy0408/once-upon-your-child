@@ -39,6 +39,8 @@ class AppBottomNavigationBar extends StatelessWidget {
         break;
       case AgeBand.adventurer:
       case AgeBand.creator:
+      case AgeBand.adolescent:
+      case AgeBand.adult:
         iconSize = 26 * bandTheme.bodyScale;
         break;
     }
@@ -74,6 +76,22 @@ class AppBottomNavigationBar extends StatelessWidget {
         tabConfigs = [
           _TabConfig(Icons.auto_stories, 'Stories'),
           _TabConfig(Icons.psychology, 'Feelings'),
+          _TabConfig(Icons.library_books, 'Library'),
+          _TabConfig(Icons.settings, 'Settings'),
+        ];
+        break;
+      case AgeBand.adolescent:
+        tabConfigs = [
+          _TabConfig(Icons.auto_stories, 'Stories'),
+          _TabConfig(Icons.psychology, 'Inner Map'),
+          _TabConfig(Icons.library_books, 'Library'),
+          _TabConfig(Icons.settings, 'Settings'),
+        ];
+        break;
+      case AgeBand.adult:
+        tabConfigs = [
+          _TabConfig(Icons.auto_stories, 'Stories'),
+          _TabConfig(Icons.psychology, 'Landscape'),
           _TabConfig(Icons.library_books, 'Library'),
           _TabConfig(Icons.settings, 'Settings'),
         ];

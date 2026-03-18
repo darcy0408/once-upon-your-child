@@ -563,6 +563,7 @@ class ApiServiceManager {
     String customElements = '', // NEW: Custom elements
     bool bedtimeMode = false,
     String bedtimeMood = 'calming',
+    int? bedtimeDurationMinutes,
     void Function(String)? onProgress,
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
@@ -609,6 +610,7 @@ class ApiServiceManager {
         customElements: customElements,
         bedtimeMode: bedtimeMode,
         bedtimeMood: bedtimeMood,
+        bedtimeDurationMinutes: bedtimeDurationMinutes,
         onProgress: onProgress,
       );
     }
@@ -637,6 +639,7 @@ class ApiServiceManager {
       customElements: customElements,
       bedtimeMode: bedtimeMode,
       bedtimeMood: bedtimeMood,
+      bedtimeDurationMinutes: bedtimeDurationMinutes,
     );
   }
 
@@ -725,6 +728,7 @@ class ApiServiceManager {
     String customElements = '',
     bool bedtimeMode = false,
     String bedtimeMood = 'calming',
+    int? bedtimeDurationMinutes,
   }) async {
     final apiKey = await getUserApiKey();
     if (apiKey == null) {
@@ -750,6 +754,7 @@ class ApiServiceManager {
             companionPets: companionPets,
             companionCharacters: companionCharacters,
             storyLength: storyLength,
+            durationMinutes: bedtimeDurationMinutes,
           )
         : _buildStoryPrompt(
             characterName: characterName,
@@ -850,6 +855,7 @@ class ApiServiceManager {
     String customElements = '',
     bool bedtimeMode = false,
     String bedtimeMood = 'calming',
+    int? bedtimeDurationMinutes,
     void Function(String)? onProgress,
   }) async {
     var attempts = 0;
@@ -886,6 +892,7 @@ class ApiServiceManager {
           customElements: customElements,
           bedtimeMode: bedtimeMode,
           bedtimeMood: bedtimeMood,
+          bedtimeDurationMinutes: bedtimeDurationMinutes,
           onProgress: onProgress,
         );
       } catch (error, stackTrace) {
@@ -937,6 +944,7 @@ class ApiServiceManager {
     String customElements = '',
     bool bedtimeMode = false,
     String bedtimeMood = 'calming',
+    int? bedtimeDurationMinutes,
     void Function(String)? onProgress,
   }) async {
     final httpClient = client ?? _testClient ?? http.Client();
@@ -968,6 +976,7 @@ class ApiServiceManager {
       'customElements': customElements,
       'bedtime_mode': bedtimeMode,
       'bedtime_mood': bedtimeMood,
+      'bedtime_duration_minutes': bedtimeDurationMinutes,
     };
     if (userApiKey != null && userApiKey.isNotEmpty) {
       body['user_api_key'] = userApiKey;
@@ -1403,15 +1412,19 @@ Maintain plain text (no markdown fences).''';
     List<Map<String, dynamic>>? companionPets,
     List<dynamic>? companionCharacters,
     String storyLength = 'standard',
+    int? durationMinutes,
   }) {
     // Word count targets for bedtime — shorter than adventure stories.
-    final (int minWords, int maxWords) = switch (age) {
-      <= 4  => storyLength == 'short' ? (180, 260)  : (260, 380),
-      <= 7  => storyLength == 'short' ? (300, 420)  : (420, 580),
-      <= 10 => storyLength == 'short' ? (480, 650)  : (650, 900),
-      <= 13 => storyLength == 'short' ? (650, 850)  : (850, 1100),
-      _     => storyLength == 'short' ? (750, 950)  : (950, 1250),
-    };
+    final (int minWords, int maxWords) =
+        durationMinutes != null && durationMinutes > 0
+            ? ((durationMinutes * 110), (durationMinutes * 150))
+            : switch (age) {
+                <= 4 => storyLength == 'short' ? (180, 260) : (260, 380),
+                <= 7 => storyLength == 'short' ? (300, 420) : (420, 580),
+                <= 10 => storyLength == 'short' ? (480, 650) : (650, 900),
+                <= 13 => storyLength == 'short' ? (650, 850) : (850, 1100),
+                _ => storyLength == 'short' ? (750, 950) : (950, 1250),
+              };
 
     final worldDesc = _bedtimeSettingDescriptions[theme] ?? theme;
 

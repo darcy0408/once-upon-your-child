@@ -1,3 +1,5 @@
+import '../theme/age_band_theme.dart';
+
 class ScenarioCard {
   final String id;
   final String emoji;
@@ -65,6 +67,21 @@ class ScenarioCard {
     if (age <= 6 && youngWorldBible != null) return youngWorldBible!;
     if (age >= 10 && matureWorldBible != null) return matureWorldBible!;
     return worldBible;
+  }
+
+  /// Get the scenario title appropriate for the current age band.
+  String titleForBand(AgeBand band) {
+    switch (band) {
+      case AgeBand.sprout:
+      case AgeBand.explorer:
+        return youngTitle ?? title;
+      case AgeBand.adventurer:
+        return title;
+      case AgeBand.creator:
+      case AgeBand.adolescent:
+      case AgeBand.adult:
+        return matureTitle ?? title;
+    }
   }
 }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/age_band_theme.dart';
 import '../../widgets/pill_button.dart';
 import '../../widgets/magic_ear_button.dart';
 
@@ -74,71 +75,251 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
   }
 
   List<Companion> get _magicalCompanions {
-    final defaultCompanions = [
-      Companion(
-        id: 'dragon',
-        emoji: '🐉',
-        name: 'a tiny dragon',
-        color: AppColors.dragonOrange,
-        greeting: 'I\'m ready to help!',
-        description: '✨ Breathes rainbow fire that reveals hidden paths',
-        imagePath: 'assets/images/companions/dragon.jpg',
-      ),
-      Companion(
-        id: 'owl',
-        emoji: '🦉',
-        name: 'a wise owl',
-        color: AppColors.owlBlue,
-        greeting: 'Let\'s be wise together!',
-        description: '✨ Can see through time to show what will happen',
-        imagePath: 'assets/images/companions/owl.jpg',
-      ),
-      Companion(
-        id: 'cat',
-        emoji: '🐱',
-        name: 'a shadow cat',
-        color: AppColors.catPurple,
-        greeting: 'Meow! I\'m ready!',
-        description: '✨ Walks through walls and brings things from dreams',
-        imagePath: 'assets/images/companions/cat.jpg',
-      ),
-      Companion(
-        id: 'dog',
-        emoji: '🐕',
-        name: 'a star dog',
-        color: AppColors.dogBrown,
-        greeting: 'I\'ll be your best friend!',
-        description: '✨ Barks constellations into existence to guide the way',
-        imagePath: 'assets/images/companions/dog.jpg',
-      ),
-      Companion(
-        id: 'unicorn',
-        emoji: '🦄',
-        name: 'a magic unicorn',
-        color: AppColors.primaryLight,
-        greeting: 'Let\'s make magic!',
-        description: '✨ Creates bridges made of starlight and moonbeams',
-        imagePath: 'assets/images/companions/unicorn.jpg',
-      ),
-      Companion(
-        id: 'fox',
-        emoji: '🦊',
-        name: 'a clever fox',
-        color: AppColors.gold,
-        greeting: 'Ready for clever fun!',
-        description: '✨ Transforms into any shape to solve impossible puzzles',
-        imagePath: 'assets/images/companions/fox.jpg',
-      ),
-      Companion(
-        id: 'robin',
-        emoji: '🐦',
-        name: 'a rockin\' robin',
-        color: AppColors.dragonOrange,
-        greeting: 'Let\'s rock and roll!',
-        description: '✨ Plays magical music that makes everyone dance with joy',
-        imagePath: 'assets/images/companions/robin.jpg',
-      ),
-    ];
+    final band = Theme.of(context).extension<AgeBandThemeData>()?.band ?? AgeBand.explorer;
+
+    final List<Companion> defaultCompanions;
+    switch (band) {
+      case AgeBand.sprout:
+        defaultCompanions = [
+          Companion(
+            id: 'fluffy_dragon',
+            emoji: '🐉',
+            name: 'Fluffy Dragon',
+            color: const Color(0xFFFF7043),
+            greeting: 'Rawr! I love hugs!',
+            description: 'A soft fluff-ball dragon who loves warm hugs and tiny roars',
+            imagePath: 'assets/images/companions/sprout/fluffy_dragon.png',
+          ),
+          Companion(
+            id: 'magic_bunny',
+            emoji: '🐰',
+            name: 'Magic Bunny',
+            color: const Color(0xFFEC407A),
+            greeting: 'Hop hop! Let\'s go!',
+            description: 'A magical bunny that hops through moonbeams and rainbow puddles',
+            imagePath: 'assets/images/companions/sprout/magic_bunny.png',
+          ),
+          Companion(
+            id: 'shining_puppy',
+            emoji: '🐕',
+            name: 'Shining Puppy',
+            color: const Color(0xFFFFCA28),
+            greeting: 'Woof! I\'ll keep you safe!',
+            description: 'A glowing puppy whose tail lights up the darkest places',
+            imagePath: 'assets/images/companions/sprout/shining_puppy.png',
+          ),
+          Companion(
+            id: 'tiny_fairy',
+            emoji: '🧚',
+            name: 'Tiny Fairy',
+            color: const Color(0xFFAB47BC),
+            greeting: 'Twinkling hellos!',
+            description: 'A tiny fairy who sprinkles dream dust and grants small wishes',
+            imagePath: 'assets/images/companions/sprout/tiny_fairy.png',
+          ),
+        ];
+        break;
+      case AgeBand.explorer:
+        defaultCompanions = [
+          Companion(
+            id: 'ember_dragon',
+            emoji: '🐉',
+            name: 'Ember Dragon',
+            color: const Color(0xFFFF7043),
+            greeting: 'Ready to explore!',
+            description: '✨ Breathes rainbow fire that reveals hidden magical paths',
+            imagePath: 'assets/images/companions/explorer/ember_dragon.png',
+          ),
+          Companion(
+            id: 'moon_owl',
+            emoji: '🦉',
+            name: 'Moon Owl',
+            color: const Color(0xFF5C6BC0),
+            greeting: 'Let\'s be wise together!',
+            description: '✨ Sees the future shimmering in moonlight reflections',
+            imagePath: 'assets/images/companions/explorer/moon_owl.png',
+          ),
+          Companion(
+            id: 'bloom_sprite',
+            emoji: '🌸',
+            name: 'Bloom Sprite',
+            color: const Color(0xFF66BB6A),
+            greeting: 'Let\'s make things grow!',
+            description: '✨ Makes flowers bloom and turns sadness into gardens',
+            imagePath: 'assets/images/companions/explorer/bloom_sprite.png',
+          ),
+          Companion(
+            id: 'star_fox',
+            emoji: '🦊',
+            name: 'Star Fox',
+            color: const Color(0xFFFFCA28),
+            greeting: 'Let\'s find adventure!',
+            description: '✨ Leaves trails of stardust that guide the way home',
+            imagePath: 'assets/images/companions/explorer/star_fox.png',
+          ),
+        ];
+        break;
+      case AgeBand.adventurer:
+        defaultCompanions = [
+          Companion(
+            id: 'storm_hawk',
+            emoji: '🦅',
+            name: 'Storm Hawk',
+            color: const Color(0xFF42A5F5),
+            greeting: 'The sky\'s the limit.',
+            description: 'Rides lightning and scouts from impossible heights',
+            imagePath: 'assets/images/companions/adventurer/storm_hawk.png',
+          ),
+          Companion(
+            id: 'shadow_lynx',
+            emoji: '🐱',
+            name: 'Shadow Lynx',
+            color: const Color(0xFF7E57C2),
+            greeting: 'I move unseen.',
+            description: 'Slips through shadows and unravels hidden truths',
+            imagePath: 'assets/images/companions/adventurer/shadow_lynx.png',
+          ),
+          Companion(
+            id: 'iron_golem',
+            emoji: '🤖',
+            name: 'Iron Golem',
+            color: const Color(0xFF78909C),
+            greeting: 'I stand with you.',
+            description: 'Ancient guardian of forgotten knowledge and unbreakable loyalty',
+            imagePath: 'assets/images/companions/adventurer/iron_golem.png',
+          ),
+          Companion(
+            id: 'void_sprite',
+            emoji: '✨',
+            name: 'Void Sprite',
+            color: const Color(0xFFE040FB),
+            greeting: 'Reality is negotiable.',
+            description: 'Bridges worlds and reads the fabric of reality itself',
+            imagePath: 'assets/images/companions/adventurer/void_sprite.png',
+          ),
+        ];
+        break;
+      case AgeBand.creator:
+        defaultCompanions = [
+          Companion(
+            id: 'storm_hawk',
+            emoji: '🦅',
+            name: 'Storm Hawk',
+            color: const Color(0xFF42A5F5),
+            greeting: 'The sky\'s the limit.',
+            description: 'Rides lightning and scouts from impossible heights',
+            imagePath: 'assets/images/companions/creator/storm_hawk.png',
+          ),
+          Companion(
+            id: 'shadow_lynx',
+            emoji: '🐱',
+            name: 'Shadow Lynx',
+            color: const Color(0xFF7E57C2),
+            greeting: 'I move unseen.',
+            description: 'Slips through shadows and unravels hidden truths',
+            imagePath: 'assets/images/companions/creator/shadow_lynx.png',
+          ),
+          Companion(
+            id: 'iron_golem',
+            emoji: '🤖',
+            name: 'Iron Golem',
+            color: const Color(0xFF78909C),
+            greeting: 'I stand with you.',
+            description: 'Ancient guardian of forgotten knowledge and unbreakable loyalty',
+            imagePath: 'assets/images/companions/creator/iron_golem.png',
+          ),
+          Companion(
+            id: 'void_sprite',
+            emoji: '✨',
+            name: 'Void Sprite',
+            color: const Color(0xFFE040FB),
+            greeting: 'Reality is negotiable.',
+            description: 'Bridges worlds and reads the fabric of reality itself',
+            imagePath: 'assets/images/companions/creator/void_sprite.png',
+          ),
+        ];
+        break;
+      case AgeBand.adolescent:
+        defaultCompanions = [
+          Companion(
+            id: 'storm_hawk',
+            emoji: '🦅',
+            name: 'Storm Hawk',
+            color: const Color(0xFF42A5F5),
+            greeting: 'The sky\'s the limit.',
+            description: 'Rides lightning and scouts from impossible heights',
+            imagePath: 'assets/images/companions/adolescent/storm_hawk.png',
+          ),
+          Companion(
+            id: 'shadow_lynx',
+            emoji: '🐱',
+            name: 'Shadow Lynx',
+            color: const Color(0xFF7E57C2),
+            greeting: 'I move unseen.',
+            description: 'Slips through shadows and unravels hidden truths',
+            imagePath: 'assets/images/companions/adolescent/shadow_lynx.png',
+          ),
+          Companion(
+            id: 'iron_golem',
+            emoji: '🤖',
+            name: 'Iron Golem',
+            color: const Color(0xFF78909C),
+            greeting: 'I stand with you.',
+            description: 'Ancient guardian of forgotten knowledge and unbreakable loyalty',
+            imagePath: 'assets/images/companions/adolescent/iron_golem.png',
+          ),
+          Companion(
+            id: 'void_sprite',
+            emoji: '✨',
+            name: 'Void Sprite',
+            color: const Color(0xFFE040FB),
+            greeting: 'Reality is negotiable.',
+            description: 'Bridges worlds and reads the fabric of reality itself',
+            imagePath: 'assets/images/companions/adolescent/void_sprite.png',
+          ),
+        ];
+        break;
+      case AgeBand.adult:
+        defaultCompanions = [
+          Companion(
+            id: 'storm_hawk',
+            emoji: '🦅',
+            name: 'Storm Hawk',
+            color: const Color(0xFF42A5F5),
+            greeting: 'The sky\'s the limit.',
+            description: 'Rides lightning and scouts from impossible heights',
+            imagePath: 'assets/images/companions/adult/storm_hawk.png',
+          ),
+          Companion(
+            id: 'shadow_lynx',
+            emoji: '🐱',
+            name: 'Shadow Lynx',
+            color: const Color(0xFF7E57C2),
+            greeting: 'I move unseen.',
+            description: 'Slips through shadows and unravels hidden truths',
+            imagePath: 'assets/images/companions/adult/shadow_lynx.png',
+          ),
+          Companion(
+            id: 'iron_golem',
+            emoji: '🤖',
+            name: 'Iron Golem',
+            color: const Color(0xFF78909C),
+            greeting: 'I stand with you.',
+            description: 'Ancient guardian of forgotten knowledge and unbreakable loyalty',
+            imagePath: 'assets/images/companions/adult/iron_golem.png',
+          ),
+          Companion(
+            id: 'void_sprite',
+            emoji: '✨',
+            name: 'Void Sprite',
+            color: const Color(0xFFE040FB),
+            greeting: 'Reality is negotiable.',
+            description: 'Bridges worlds and reads the fabric of reality itself',
+            imagePath: 'assets/images/companions/adult/void_sprite.png',
+          ),
+        ];
+        break;
+    }
 
     final customPets = widget.wizardData.pets.map((pet) {
       final name = pet['name']!;

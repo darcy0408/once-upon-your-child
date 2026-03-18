@@ -48,6 +48,10 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
         return 'assets/images/ui/adventurer/make_magic_normal.png';
       case AgeBand.creator:
         return 'assets/images/ui/creator/make_magic_normal.png';
+      case AgeBand.adolescent:
+        return 'assets/images/ui/adolescent/make_magic_normal.png';
+      case AgeBand.adult:
+        return 'assets/images/ui/adult/make_magic_normal.png';
       default:
         return 'assets/images/ui/clean/make_magic_button.png';
     }
@@ -63,6 +67,10 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
         return 'assets/images/ui/adventurer/make_magic_normal_clicked.png';
       case AgeBand.creator:
         return 'assets/images/ui/creator/make_magic_normal_clicked.png';
+      case AgeBand.adolescent:
+        return 'assets/images/ui/adolescent/make_magic_normal_clicked.png';
+      case AgeBand.adult:
+        return 'assets/images/ui/adult/make_magic_normal_clicked.png';
       default:
         return 'assets/images/ui/clean/make_magic_button_pressed.png';
     }

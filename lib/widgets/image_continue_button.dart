@@ -82,7 +82,7 @@ class _ImageContinueButtonState extends State<ImageContinueButton>
     final screenWidth = MediaQuery.of(context).size.width;
     final buttonWidth = math.min(screenWidth * 0.72, 300.0);
 
-    final normalAsset = widget.ageBand == AgeBand.sprout 
+    final normalAsset = widget.ageBand == AgeBand.sprout
         ? 'assets/images/ui/sprout/continue_button.png'
         : widget.ageBand == AgeBand.explorer
             ? 'assets/images/ui/explorer/continue_button.png'
@@ -90,7 +90,11 @@ class _ImageContinueButtonState extends State<ImageContinueButton>
                 ? 'assets/images/ui/adventurer/continue_button.png'
                 : widget.ageBand == AgeBand.creator
                     ? 'assets/images/ui/creator/continue_button.png'
-                    : 'assets/images/ui/continue_btn_codex.png';
+                    : widget.ageBand == AgeBand.adolescent
+                        ? 'assets/images/ui/adolescent/continue_button.png'
+                        : widget.ageBand == AgeBand.adult
+                            ? 'assets/images/ui/adult/continue_button.png'
+                            : 'assets/images/ui/continue_btn_codex.png';
     final pressedAsset = widget.ageBand == AgeBand.sprout
         ? 'assets/images/ui/sprout/continue_button_clicked.png'
         : widget.ageBand == AgeBand.explorer
@@ -99,7 +103,11 @@ class _ImageContinueButtonState extends State<ImageContinueButton>
                 ? 'assets/images/ui/adventurer/continue_button_clicked.png'
                 : widget.ageBand == AgeBand.creator
                     ? 'assets/images/ui/creator/continue_button_clicked.png'
-                    : 'assets/images/ui/continue_btn_pressed.png';
+                    : widget.ageBand == AgeBand.adolescent
+                        ? 'assets/images/ui/adolescent/continue_button_clicked.png'
+                        : widget.ageBand == AgeBand.adult
+                            ? 'assets/images/ui/adult/continue_button_clicked.png'
+                            : 'assets/images/ui/continue_btn_pressed.png';
 
     return Semantics(
       button: true,

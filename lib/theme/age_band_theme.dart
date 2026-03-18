@@ -3,12 +3,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// The 4 visual age bands that drive the entire UI personality.
+/// The 6 visual age bands that drive the entire UI personality.
 ///
 /// Each band adapts colors, typography, spacing, animation intensity,
 /// and label language to match the developmental stage of the user.
 enum AgeBand {
-  /// Ages 3-5: Warm, bubbly, illustration-heavy, minimal text
+  /// Ages 2-5: Warm, bubbly, illustration-heavy, minimal text
   sprout,
 
   /// Ages 6-8: Magical purple, sparkles, readable labels (current default)
@@ -17,8 +17,14 @@ enum AgeBand {
   /// Ages 9-11: Deeper cosmic palette, book-like typography, "cool" factor
   adventurer,
 
-  /// Ages 12+: Clean, editorial, dark mode default, novel-app aesthetic
+  /// Ages 12-14: Clean, editorial, dark mode default, novel-app aesthetic
   creator,
+
+  /// Ages 15-17: Cinematic dark, teal accent, direct language
+  adolescent,
+
+  /// Ages 18+: Refined minimal dark, warm amber accent, adult-appropriate
+  adult,
 }
 
 /// Resolves an age (in years) to the appropriate visual band.
@@ -26,7 +32,9 @@ AgeBand ageBandFromAge(int age) {
   if (age <= 5) return AgeBand.sprout;
   if (age <= 8) return AgeBand.explorer;
   if (age <= 11) return AgeBand.adventurer;
-  return AgeBand.creator;
+  if (age <= 14) return AgeBand.creator;
+  if (age <= 17) return AgeBand.adolescent;
+  return AgeBand.adult;
 }
 
 /// All visual parameters that vary per age band.
@@ -397,6 +405,80 @@ const creatorTheme = AgeBandThemeData(
   feelingsPrompt: 'What mood fits your story?',
 );
 
+/// Adolescent (ages 15-17): Cinematic charcoal-black, electric teal accent,
+/// direct no-nonsense language. Matches the moody adolescent character art.
+const adolescentTheme = AgeBandThemeData(
+  band: AgeBand.adolescent,
+  // Cinematic dark with electric teal
+  primary: Color(0xFF00838F), // Deep teal
+  primaryLight: Color(0xFF26C6DA), // Bright cyan
+  primaryDark: Color(0xFF005662), // Very deep teal
+  gradientStart: Color(0xFF070B14), // Near-black blue
+  gradientMid: Color(0xFF0D1520), // Very dark blue
+  gradientEnd: Color(0xFF0A1018), // Near-black
+  accent: Color(0xFF00BCD4), // Cyan
+  accentLight: Color(0xFF80DEEA),
+  surface: Color(0xFF121E2B), // Dark blue-gray
+  textOnDark: Color(0xFFE0F7FA), // Light cyan-white
+  textOnLight: Color(0xFF1A2332),
+  uiFontFamily: 'SourceSansPro',
+  storyFontFamily: 'Merriweather',
+  headingScale: 0.88,
+  bodyScale: 0.88,
+  buttonRadiusBase: 6.0,
+  cardRadiusBase: 10.0,
+  touchTargetMin: 52.0,
+  spacingScale: 0.88,
+  sparkleIntensity: 0.0,
+  showParticles: false,
+  preferDarkMode: true,
+  createCharacterLabel: 'Your Character',
+  feelingsLabel: 'Under the surface',
+  feelingsNavLabel: 'Inner Map',
+  newStoryLabel: 'New Story',
+  quickStoryLabel: 'Quick Start',
+  companionLabel: 'Companion',
+  heroLabel: 'Character',
+  feelingsPrompt: "What's going on under the surface?",
+);
+
+/// Adult (ages 18+): Refined minimal dark, warm amber-gold accent,
+/// adult-appropriate vocabulary. The most editorial and understated band.
+const adultTheme = AgeBandThemeData(
+  band: AgeBand.adult,
+  // Deep slate with warm amber-gold
+  primary: Color(0xFFBFA45A), // Warm amber-gold
+  primaryLight: Color(0xFFD4B97A), // Light amber
+  primaryDark: Color(0xFF8C7240), // Deep amber
+  gradientStart: Color(0xFF08080E), // Near-black
+  gradientMid: Color(0xFF100E18), // Very dark purple-black
+  gradientEnd: Color(0xFF0A0A12), // Near-black
+  accent: Color(0xFFBFA45A), // Amber gold
+  accentLight: Color(0xFFD4B97A),
+  surface: Color(0xFF1A1A24), // Dark surface
+  textOnDark: Color(0xFFEEEAE0), // Warm off-white
+  textOnLight: Color(0xFF1A1A1A),
+  uiFontFamily: 'SourceSansPro',
+  storyFontFamily: 'Merriweather',
+  headingScale: 0.85,
+  bodyScale: 0.85,
+  buttonRadiusBase: 4.0,
+  cardRadiusBase: 8.0,
+  touchTargetMin: 48.0,
+  spacingScale: 0.85,
+  sparkleIntensity: 0.0,
+  showParticles: false,
+  preferDarkMode: true,
+  createCharacterLabel: 'Your Character',
+  feelingsLabel: 'Emotional landscape',
+  feelingsNavLabel: 'Landscape',
+  newStoryLabel: 'New Story',
+  quickStoryLabel: 'Quick Start',
+  companionLabel: 'Companion',
+  heroLabel: 'Character',
+  feelingsPrompt: 'Explore the emotional landscape',
+);
+
 /// Look up the theme data for a given band.
 AgeBandThemeData themeForBand(AgeBand band) {
   switch (band) {
@@ -408,11 +490,30 @@ AgeBandThemeData themeForBand(AgeBand band) {
       return adventurerTheme;
     case AgeBand.creator:
       return creatorTheme;
+    case AgeBand.adolescent:
+      return adolescentTheme;
+    case AgeBand.adult:
+      return adultTheme;
   }
 }
 
 /// Look up the theme data for a given age.
 AgeBandThemeData themeForAge(int age) => themeForBand(ageBandFromAge(age));
+
+/// Convenience helpers for common band groupings used across the app.
+extension AgeBandGroups on AgeBand {
+  /// True for creator, adolescent, and adult — the three "mature" bands
+  /// that share dark-mode editorial UI and direct label language.
+  bool get isMature =>
+      this == AgeBand.creator ||
+      this == AgeBand.adolescent ||
+      this == AgeBand.adult;
+
+  /// True for sprout and explorer — the "young child" bands that use
+  /// large touch targets, bright colors, and simplified language.
+  bool get isYoung =>
+      this == AgeBand.sprout || this == AgeBand.explorer;
+}
 
 extension AgeBandSizing on AgeBandThemeData {
   double heading(double base) => base * headingScale;
