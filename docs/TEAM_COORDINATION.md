@@ -2,6 +2,25 @@
 
 ---
 
+## Session Update - 2026-03-18 (Illustration Count Entitlement)
+
+### Scope Completed
+- Wired the inline illustration fallback in the active magic review flow to use the existing subscription tier path instead of a hardcoded single image.
+- Kept the existing subscription provider and BYOK gating logic intact; only the fallback illustration count now varies by tier.
+
+### Changes
+- `lib/screens/wizard_steps/magic_review_step.dart`
+  - Updated `_generateInlineIllustrations(...)` to accept the already-constructed `UserSubscription`.
+  - Replaced the hardcoded `numberOfImages: 1` with a helper that maps `family` to `2` and `free`/`premium` to `1`, matching the existing entitlement definitions.
+- `docs/TEAM_COORDINATION.md`
+  - Added this session entry at the top of the coordination log.
+
+### Verification
+- `flutter analyze`
+  - Result: did not complete in this environment. Multiple direct runs timed out at 2 minutes, 5 minutes, and 15 minutes without returning analyzer diagnostics.
+- `cmd /c C:\dev\flutter\bin\flutter.bat analyze lib\screens\wizard_steps\magic_review_step.dart`
+  - Result: also timed out without returning diagnostics, so no analyzer errors were available to fix from this session.
+
 ## Session Update - 2026-03-18 (Manual Integration Testing)
 
 ### Results by Age Band
