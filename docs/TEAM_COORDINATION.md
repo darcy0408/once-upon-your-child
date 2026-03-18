@@ -775,3 +775,29 @@ End-to-end flow:
 5. TTS reads story aloud; sleep timer can cut it short with a goodnight message
 
 ### flutter analyze result: No issues found
+
+---
+
+## Session Update - 2026-03-18 (Bedtime Quality + Pet Avatar Fixes)
+
+### Pet Avatar Pipeline — 3 bugs fixed (commit 5a4e08b)
+
+1. **Wrong color sent** — `owner_favorite_color` was hardcoded to `'gold'` in `hero_creator_step.dart`; now uses `wizardData.favoriteColor`
+2. **PNG rejection** — `generate_pet_avatar()` in `gemini_image_generator.py` hardcoded `mime_type="image/jpeg"` even for PNG uploads; added `_detect_mime_type()` helper using magic bytes
+3. **No fallback** — `generate_pet_avatar()` in `avatar_generation_service.py` had no fallback chain; added text-only fallback via `fallback_generator.generate_character_avatar()` when Gemini image gen fails
+
+### Bedtime Audio-Only Quality (commit d78d953)
+
+- **Age always asked** — voice wizard now always asks "How old are you?" regardless of profile default (was silently using default age 8, causing wrong age-band stories)
+- **BYOK setup card** — full-screen parent guidance card when no Gemini key set: step-by-step aistudio.google.com instructions with "Go to Settings" button; TTS also reads guidance aloud
+- **Listeners already wired** — confirmed BW-1 changes (siblings/friends by name) are live
+
+### Bedtime Story Quality (Codex analysis applied)
+
+Confirmed via Codex audit:
+- Backend path (`story_service.py`) uses rich age-band prompt framework ✅
+- `_build_bedtime_prompt()` enforces soothing pacing, cozy landing, sleep transition ✅
+- BYOK path in `api_service_manager.dart` mirrors backend quality with `_buildBedtimePrompt()` ✅
+- Interactive bedtime still uses generic adventure prompt (not bedtime-specific) — acceptable for now
+
+### flutter analyze: No issues found
