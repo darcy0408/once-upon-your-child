@@ -5,9 +5,9 @@ from pathlib import Path
 def process_button(input_path):
     # Open an image file
     with Image.open(input_path) as img:
-        # Scale the image slightly bigger (e.g., 5% bigger)
+        # Scale the image slightly smaller (e.g., 5% smaller)
         width, height = img.size
-        new_size = (int(width * 1.05), int(height * 1.05))
+        new_size = (int(width * 0.95), int(height * 0.95))
         img_resized = img.resize(new_size, Image.Resampling.LANCZOS)
         
         # Increase brightness slightly (e.g., 15% brighter)
