@@ -132,7 +132,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
       case BedtimeStep.greeting:
         await _speakAndAdvance(
           "Hi ${widget.childName}! Let's make a magical bedtime story together. Just talk to me!",
-          _resolvedAge > 0 ? BedtimeStep.heroName : BedtimeStep.age,
+          BedtimeStep.age, // Always ask age so stories are always age-appropriate
         );
         break;
 
@@ -141,7 +141,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
           "How old are you? Say a number like five, seven, or ten.",
         );
         final parsed = _parseAge(ageAnswer);
-        _resolvedAge = parsed > 0 ? parsed : 8; // default to 8 if unparseable
+        _resolvedAge = parsed > 0 ? parsed : (widget.childAge > 0 ? widget.childAge : 8);
         _advance(BedtimeStep.heroName);
         break;
 
