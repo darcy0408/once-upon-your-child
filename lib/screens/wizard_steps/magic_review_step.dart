@@ -259,7 +259,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
           inlineIllustrations = await _generateInlineIllustrations(
               storyText: result.storyText,
               storyTitle: result.title ?? 'My Magical Story',
-              requestData: requestData);
+              requestData: requestData,
+              subscription: subscription);
         }
 
         if (mounted) {
@@ -333,7 +334,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   Future<List<Map<String, dynamic>>> _generateInlineIllustrations(
       {required String storyText,
       required String storyTitle,
-      required Map<String, dynamic> requestData}) async {
+      required Map<String, dynamic> requestData,
+      required UserSubscription subscription}) async {
     try {
       final companionPrompts = _buildIllustrationCompanions(requestData);
       final generated = await _illustrationService.generateIllustrations(
@@ -342,7 +344,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
           characterName: requestData['character']?.toString() ??
               widget.wizardData.characterName,
           theme: requestData['theme']?.toString(),
-          numberOfImages: 1,
+          numberOfImages: _illustrationCountForSubscription(subscription),
           age: requestData['age'] as int? ?? widget.wizardData.characterAge,
           characterAppearance:
               requestData['characterDetails'] as Map<String, dynamic>?,
@@ -367,6 +369,16 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     } catch (e) {
       debugPrint('⚠️ Illustration generation failed: $e');
       return const [];
+    }
+  }
+
+  int _illustrationCountForSubscription(UserSubscription subscription) {
+    switch (subscription.tier) {
+      case SubscriptionTier.family:
+        return 2;
+      case SubscriptionTier.free:
+      case SubscriptionTier.premium:
+        return 1;
     }
   }
 

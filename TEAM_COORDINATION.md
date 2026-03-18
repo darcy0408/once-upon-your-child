@@ -8,4 +8,7 @@
 - Verification: `cd backend && python -m pytest tests/security/ -v` passed with `97 passed` on 2026-03-18.
 - Verification note: the exact import check command `cd backend && python -c "from app import create_app; app = create_app('testing'); print('OK')"` still fails because this repo's current import layout mixes package-relative imports with top-level execution. A package-safe equivalent succeeded: `python -c "import sys; sys.path.insert(0, r'C:\\dev\\story-weaver-app'); from backend.app import create_app; app = create_app('testing'); print('OK')"`.
 - In progress: adding per-phase story generation perf instrumentation in `backend/tasks/story_tasks.py` and extending `backend/tests/story_load_audit.py` with real-provider, fallback switchover, and concurrency-ramp coverage.
-- Next: run `python backend/tests/story_load_audit.py` and `python backend/tests/story_load_thresholds.py`, then update this file with results and any artifact baseline changes.
+- Completed: `cd backend && python tests/story_load_audit.py` now passes and writes fresh audit artifacts with the new fallback switchover line (`~4573ms`) and concurrency ramp table.
+- Completed: `cd backend && python tests/story_load_thresholds.py` passes with the new `concurrency_ramp_c16` checks.
+- Completed: manual Flask test-client verification shows `/generate-story` responses now include `story._perf`, and `backend.tasks.story_tasks` emits `perf phase=` debug lines for prompt build, AI call, validation, and total task.
+- Next: real-provider baseline remains gated behind `--real-api` / `RUN_REAL_API_TESTS=true` and was not executed because `GEMINI_API_KEY` is not set in this environment.
