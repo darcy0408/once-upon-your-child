@@ -129,8 +129,9 @@ class StoryIllustrationService {
     int numberOfImages = 3,
     int age = 7,
     String? therapeuticFocus,
-    Map<String, dynamic>? characterAppearance,  // NEW: Character appearance details
-    List<Map<String, String>>? companions,       // NEW: Companions/pets
+    Map<String, dynamic>? characterAppearance, // NEW: Character appearance details
+    List<Map<String, String>>? companions, // NEW: Companions/pets
+    String? sceneRequirements,
   }) async {
     // Split story into segments for illustration
     final segments = _identifyKeyScenes(storyText, numberOfImages);
@@ -138,8 +139,10 @@ class StoryIllustrationService {
 
     for (int i = 0; i < segments.length; i++) {
       try {
+        final sceneDescription =
+            _composeSceneDescription(segments[i], sceneRequirements);
         final prompt = _generateImagePrompt(
-          scene: segments[i],
+          scene: sceneDescription,
           characterName: characterName,
           theme: theme,
           style: style,
@@ -149,13 +152,13 @@ class StoryIllustrationService {
 
         // Call backend API instead of OpenAI
         final imageUrl = await _callBackendIllustrationAPI(
-          sceneDescription: segments[i],
+          sceneDescription: sceneDescription,
           characterName: characterName,
           style: _styleToString(style),
           age: age,
           therapeuticFocus: therapeuticFocus,
-          characterAppearance: characterAppearance,  // NEW: Pass character appearance
-          companions: companions,                     // NEW: Pass companions
+          characterAppearance: characterAppearance,
+          companions: companions,
         );
 
         illustrations.add(StoryIllustration(
@@ -181,6 +184,16 @@ class StoryIllustrationService {
     return style.displayName.toLowerCase();
   }
 
+  String _composeSceneDescription(String scene, String? sceneRequirements) {
+    final trimmedScene = scene.trim();
+    final trimmedRequirements = sceneRequirements?.trim() ?? '';
+    if (trimmedRequirements.isEmpty) {
+      return trimmedScene;
+    }
+    return '$trimmedScene\n\nStory elements to visibly include: '
+        '$trimmedRequirements';
+  }
+
   /// Call backend API to generate an illustration
   Future<String> _callBackendIllustrationAPI({
     required String sceneDescription,
@@ -188,8 +201,8 @@ class StoryIllustrationService {
     required String style,
     required int age,
     String? therapeuticFocus,
-    Map<String, dynamic>? characterAppearance,  // NEW: Character appearance
-    List<Map<String, String>>? companions,       // NEW: Companions/pets
+    Map<String, dynamic>? characterAppearance,
+    List<Map<String, String>>? companions,
   }) async {
     final illHeaders = await ApiServiceManager.authHeaders();
     final response = await http.post(
@@ -202,8 +215,9 @@ class StoryIllustrationService {
         'num_images': 1,
         'age': age,
         'therapeutic_focus': therapeuticFocus,
-        if (characterAppearance != null) 'character_appearance': characterAppearance,  // NEW
-        if (companions != null) 'companions': companions,                               // NEW
+        if (characterAppearance != null)
+          'character_appearance': characterAppearance,
+        if (companions != null) 'companions': companions,
       }),
     );
 
@@ -409,8 +423,9 @@ class GeminiIllustrationService extends StoryIllustrationService {
     int numberOfImages = 3,
     int age = 7,
     String? therapeuticFocus,
-    Map<String, dynamic>? characterAppearance,  // NEW: Character appearance
-    List<Map<String, String>>? companions,       // NEW: Companions/pets
+    Map<String, dynamic>? characterAppearance,
+    List<Map<String, String>>? companions,
+    String? sceneRequirements,
   }) async {
     // Use the base implementation, which calls /generate-illustrations
     // with scene_description (the current backend contract).
@@ -425,6 +440,7 @@ class GeminiIllustrationService extends StoryIllustrationService {
       therapeuticFocus: therapeuticFocus,
       characterAppearance: characterAppearance,
       companions: companions,
+      sceneRequirements: sceneRequirements,
     );
   }
 }
@@ -443,8 +459,9 @@ class MockIllustrationService extends StoryIllustrationService {
     int numberOfImages = 3,
     int age = 7,
     String? therapeuticFocus,
-    Map<String, dynamic>? characterAppearance,  // NEW: Character appearance
-    List<Map<String, String>>? companions,       // NEW: Companions/pets
+    Map<String, dynamic>? characterAppearance,
+    List<Map<String, String>>? companions,
+    String? sceneRequirements,
   }) async {
     // Generate mock illustrations with placeholder images
     final mockIllustrations = <StoryIllustration>[];

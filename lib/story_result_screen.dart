@@ -78,6 +78,10 @@ class StoryResultScreen extends StatefulWidget {
   final OfflineStoryService? offlineService;
   final String? storyLengthHint;
   final Map<String, GeneratedAvatar>? companionAvatars;
+  final List<String>? companionNames;
+  final List<Map<String, dynamic>>? companionPets;
+  final List<dynamic>? companionCharacters;
+  final String? customElements;
 
   const StoryResultScreen({
     super.key,
@@ -106,6 +110,10 @@ class StoryResultScreen extends StatefulWidget {
     this.offlineService,
     this.storyLengthHint,
     this.companionAvatars,
+    this.companionNames,
+    this.companionPets,
+    this.companionCharacters,
+    this.customElements,
   })  : assert(!trackStoryCreation || achievementsService != null),
         assert(!trackStoryCreation || storyCreatedAt != null);
 
@@ -221,6 +229,10 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         return 'Reading Level: Middle Grade';
       case AgeBand.creator:
         return 'Young Adult';
+      case AgeBand.adolescent:
+        return 'Young Adult';
+      case AgeBand.adult:
+        return 'Adult';
     }
   }
 
@@ -743,6 +755,13 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   }
 
   List<String> _buildScenes(int numberOfScenes) {
+    final customElements = widget.customElements?.trim() ?? '';
+
+    String applyStoryElements(String scene) {
+      if (customElements.isEmpty) return scene;
+      return '$scene\n\nStory elements to include: $customElements';
+    }
+
     final sentences = widget.storyText
         .split(RegExp(r'[.!?]+'))
         .map((s) => s.trim())
@@ -750,7 +769,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         .toList();
 
     if (sentences.isEmpty) {
-      return [widget.storyText];
+      return [applyStoryElements(widget.storyText)];
     }
 
     final scenes = <String>[];
@@ -765,7 +784,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       final chunk = sentences.sublist(i, endIndex);
       if (chunk.isEmpty) continue;
       final text = chunk.join('. ');
-      scenes.add(text.endsWith('.') ? text : '$text.');
+      final sceneText = text.endsWith('.') ? text : '$text.';
+      scenes.add(applyStoryElements(sceneText));
       if (scenes.length == numberOfScenes) {
         break;
       }
@@ -887,6 +907,45 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     );
   }
 
+  List<Map<String, String>> _buildCompanionPrompts() {
+    final companions = <Map<String, String>>[];
+
+    final companionPets = widget.companionPets ?? const <Map<String, dynamic>>[];
+    for (final pet in companionPets) {
+      final name = pet['name']?.toString().trim();
+      if (name == null || name.isEmpty) continue;
+      final species = pet['species']?.toString().trim();
+      companions.add({
+        'name': name,
+        if (species != null && species.isNotEmpty) 'type': species,
+      });
+    }
+
+    final companionCharacters = widget.companionCharacters ?? const <dynamic>[];
+    for (final character in companionCharacters) {
+      if (character is Map) {
+        final name = character['name']?.toString().trim();
+        if (name == null || name.isEmpty) continue;
+        companions.add({'name': name});
+      } else {
+        final name = character.toString().trim();
+        if (name.isEmpty) continue;
+        companions.add({'name': name});
+      }
+    }
+
+    if (companions.isEmpty) {
+      final fallbackNames = widget.companionNames ?? const <String>[];
+      for (final name in fallbackNames) {
+        final trimmed = name.trim();
+        if (trimmed.isEmpty) continue;
+        companions.add({'name': trimmed});
+      }
+    }
+
+    return companions;
+  }
+
   /// Generate coloring pages from the story
   Future<void> _generateColoringPages() async {
     final initialCount = _cachedColoringPages?.length ?? 3;
@@ -931,6 +990,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
         storyTitle: widget.title,
         scenes: scenes,
         characterAppearance: _buildCharacterAppearance(),
+        companions: _buildCompanionPrompts(),
         age: _effectiveAge,
         therapeuticFocus: therapeuticFocus,
       );
@@ -3123,12 +3183,13 @@ class ColoringSettingsDialog extends StatefulWidget {
 }
 
 class _ColoringSettingsDialogState extends State<ColoringSettingsDialog> {
-  static const int _pageCount = 1;
+  late int _pageCount;
   late String _selectedTherapeuticFocus;
 
   @override
   void initState() {
     super.initState();
+    _pageCount = widget.initialPageCount.clamp(1, 5);
     final initial = widget.initialTherapeuticFocus;
     _selectedTherapeuticFocus = initial != null && initial.isNotEmpty
         ? initial
@@ -3150,6 +3211,31 @@ class _ColoringSettingsDialogState extends State<ColoringSettingsDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Text(
+              'How many pages?',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Slider(
+              value: _pageCount.toDouble(),
+              min: 1,
+              max: 5,
+              divisions: 4,
+              label: '$_pageCount',
+              onChanged: (value) {
+                setState(() {
+                  _pageCount = value.round();
+                });
+              },
+            ),
+            Center(
+              child: Text(
+                '$_pageCount ${_pageCount == 1 ? 'page' : 'pages'}',
+                style:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(height: 20),
             const Text(
               'Therapeutic focus (optional):',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),

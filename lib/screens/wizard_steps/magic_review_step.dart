@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
@@ -230,6 +231,22 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
           }
         }
 
+        // Fallback: if no custom avatar was set, send the preset character PNG
+        // the user picked from the carousel so Nano Banana uses it as a reference.
+        final charDetails = requestData['characterDetails'];
+        if (charDetails is Map<String, dynamic> &&
+            charDetails['custom_avatar_base64'] == null &&
+            widget.wizardData.selectedCharacterAssetPath != null) {
+          try {
+            final byteData = await rootBundle
+                .load(widget.wizardData.selectedCharacterAssetPath!);
+            final assetBase64 = base64Encode(byteData.buffer.asUint8List());
+            charDetails['custom_avatar_base64'] = assetBase64;
+          } catch (e) {
+            debugPrint('⚠️ Could not load preset character asset for illustration: $e');
+          }
+        }
+
         List<Map<String, dynamic>> inlineIllustrations = result.illustrations;
         // Only try to generate inline illustrations if user is premium/BYOK
         if (widget.wizardData.includeIllustrations &&
@@ -273,7 +290,16 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                   adventureSteps: result.adventureSteps,
                   storyLengthHint: requestData['storyLength']?.toString() ??
                       widget.wizardData.storyLength,
-                  companionAvatars: widget.wizardData.petAvatars)));
+                  companionAvatars: widget.wizardData.petAvatars,
+                  companionNames:
+                      widget.wizardData.companionNames.toList(growable: false),
+                  companionPets: List<Map<String, dynamic>>.from(
+                      (requestData['companion_pets'] as List?) ?? const []),
+                  companionCharacters: List<dynamic>.from(
+                      (requestData['companion_characters'] as List?) ??
+                          const []),
+                  customElements:
+                      requestData['customElements']?.toString() ?? '')));
           if (mounted) {
             setState(() => _isGenerating = false);
           }
@@ -309,6 +335,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       required String storyTitle,
       required Map<String, dynamic> requestData}) async {
     try {
+      final companionPrompts = _buildIllustrationCompanions(requestData);
       final generated = await _illustrationService.generateIllustrations(
           storyText: storyText,
           storyTitle: storyTitle,
@@ -318,7 +345,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
           numberOfImages: 1,
           age: requestData['age'] as int? ?? widget.wizardData.characterAge,
           characterAppearance:
-              requestData['characterDetails'] as Map<String, dynamic>?);
+              requestData['characterDetails'] as Map<String, dynamic>?,
+          companions: companionPrompts,
+          sceneRequirements: requestData['customElements']?.toString());
       return generated
           .map((illustration) {
             final url = illustration.imageUrl;
@@ -339,6 +368,39 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       debugPrint('⚠️ Illustration generation failed: $e');
       return const [];
     }
+  }
+
+  List<Map<String, String>> _buildIllustrationCompanions(
+      Map<String, dynamic> requestData) {
+    final companions = <Map<String, String>>[];
+
+    final companionPets = (requestData['companion_pets'] as List?) ?? const [];
+    for (final pet in companionPets) {
+      if (pet is! Map) continue;
+      final name = pet['name']?.toString().trim();
+      if (name == null || name.isEmpty) continue;
+      final species = pet['species']?.toString().trim();
+      companions.add({
+        'name': name,
+        if (species != null && species.isNotEmpty) 'type': species,
+      });
+    }
+
+    final companionCharacters =
+        (requestData['companion_characters'] as List?) ?? const [];
+    for (final character in companionCharacters) {
+      if (character is Map) {
+        final name = character['name']?.toString().trim();
+        if (name == null || name.isEmpty) continue;
+        companions.add({'name': name});
+      } else {
+        final name = character.toString().trim();
+        if (name.isEmpty) continue;
+        companions.add({'name': name});
+      }
+    }
+
+    return companions;
   }
 
   Future<void> _saveCharacterIfNeeded() async {
@@ -400,15 +462,17 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         case AgeBand.adventurer:
           return 'Limerick Laughs story';
         case AgeBand.creator:
+        case AgeBand.adolescent:
+        case AgeBand.adult:
           return 'First Chapter';
       }
     }
     if (data.includeIllustrations) {
-      return band.band == AgeBand.creator
+      return band.band.isMature
           ? 'Illustrated story'
           : 'Picture tale';
     }
-    return band.band == AgeBand.creator ? 'Story draft' : 'Magical story';
+    return band.band.isMature ? 'Story draft' : 'Magical story';
   }
 
   String _storyLengthLabel(String length) {
@@ -458,13 +522,13 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  band.band == AgeBand.creator
+                  band.band.isMature
                       ? "Review Your Story Brief"
                       : band.band == AgeBand.adventurer
                           ? "Review Your Adventure"
                           : "Your Adventure Awaits!",
                   textAlign: TextAlign.center,
-                  style: (band.band == AgeBand.creator)
+                  style: (band.band.isMature)
                       ? GoogleFonts.sourceSans3(
                           color: const Color(0xFFFFD700),
                           fontSize: band.heading(22),
@@ -528,7 +592,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             if (data.characterName.isNotEmpty) ...[
               Text(
                 data.characterName,
-                style: (band.band == AgeBand.creator)
+                style: (band.band.isMature)
                     ? GoogleFonts.sourceSans3(
                         color: const Color(0xFFFFD700),
                         fontSize: band.heading(16),
@@ -687,7 +751,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                         child: ImageMakeMagicButton(
                             onTap: _launchStoryCreation,
                             isEnabled: !_isGenerating && data.isComplete,
-                            label: band.band == AgeBand.creator
+                            label: band.band.isMature
                                 ? 'CREATE STORY'
                                 : band.band == AgeBand.adventurer
                                     ? 'START ADVENTURE'
