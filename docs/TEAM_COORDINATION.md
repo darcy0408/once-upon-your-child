@@ -2,6 +2,37 @@
 
 ---
 
+## Session Update - 2026-03-18 (Manual Integration Testing)
+
+### Results by Age Band
+┌────────────┬──────────┬────────────┬────────────┬───────┬───────────────┬────────┐
+│ Band       │ Visual   │ Characters │ Companions │ Story │ Illustrations │ Result │
+├────────────┼──────────┼────────────┼────────────┼───────┼───────────────┼────────┤
+│ sprout     │ FAIL     │ FAIL       │ FAIL       │ FAIL  │ FAIL          │ FAIL   │
+│ explorer   │ FAIL     │ FAIL       │ FAIL       │ FAIL  │ FAIL          │ FAIL   │
+│ adventurer │ FAIL     │ FAIL       │ FAIL       │ FAIL  │ FAIL          │ FAIL   │
+│ creator    │ FAIL     │ FAIL       │ FAIL       │ FAIL  │ FAIL          │ FAIL   │
+│ adolescent │ FAIL     │ FAIL       │ FAIL       │ FAIL  │ FAIL          │ FAIL   │
+│ adult      │ FAIL     │ FAIL       │ FAIL       │ FAIL  │ FAIL          │ FAIL   │
+└────────────┴──────────┴────────────┴────────────┴───────┴───────────────┴────────┘
+
+### Cross-Cutting Scenarios
+- BYOK key entry: FAIL - Could not reach a live app session to open Settings or submit a Gemini key.
+- Custom avatar upload: FAIL - Could not access the wizard or avatar generation flow.
+- Pet avatar: FAIL - Could not access the companion/pet upload flow.
+- Parent hidden context: FAIL - Could not access parent controls or generate a verifying story.
+- Bedtime mode: FAIL - Could not launch sprout/explorer flows to verify bedtime behavior.
+- Navigation: FAIL - Could not load the UI to inspect age-band-specific bottom navigation.
+
+### Issues Found
+- `environment/local launch` - High - Manual integration testing was blocked because local services would not stay reachable in this session. Repeated attempts to launch `python app.py` from `backend/` and `flutter run -d chrome --web-port 8080` did not leave a usable backend on `http://127.0.0.1:5000/health` or frontend on `http://localhost:8080`.
+- `environment/manual testability` - High - Because the app never became reachable, none of the required age-band or cross-cutting end-to-end checks could be honestly executed.
+
+### Notes
+- This entry records an attempted manual integration pass that was blocked by local runtime startup/reachability issues rather than product behavior.
+
+---
+
 ## Session Update - 2026-03-18 (Backend Logging Cleanup)
 
 ### Scope Completed
