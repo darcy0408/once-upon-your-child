@@ -4,7 +4,6 @@ import re
 import json
 import time
 from typing import Any
-from google.api_core import exceptions as google_exceptions
 from .avatar_to_prompt_helper import AvatarToPromptHelper
 from ..utils.validators import validate_age, validate_story_length
 
