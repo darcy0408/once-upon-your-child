@@ -6,7 +6,7 @@ from flask import Blueprint, jsonify
 from ..database import db
 
 
-def create_health_blueprint(logger, api_key: str, app_version: str, gemini_model: str):
+def create_health_blueprint(logger, api_key: str, app_version: str, gemini_model: str, limiter=None):
     health_bp = Blueprint("health", __name__)
 
     @health_bp.route("/health", methods=["GET"])
@@ -106,5 +106,11 @@ def create_health_blueprint(logger, api_key: str, app_version: str, gemini_model
             )
         except Exception as e:
             return jsonify({"status": "error", "error": str(e)}), 500
+
+    if limiter is not None:
+        limiter.exempt(health_check)
+        limiter.exempt(version)
+        limiter.exempt(detailed_health)
+        limiter.exempt(database_health)
 
     return health_bp

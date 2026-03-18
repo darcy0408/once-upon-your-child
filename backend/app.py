@@ -571,7 +571,9 @@ def create_app(config_name):
     )
     character_bp = create_character_blueprint(limiter=limiter, logger=logger)
     admin_bp = create_admin_blueprint(logger=logger, limiter=limiter)
-    health_bp = create_health_blueprint(logger=logger, api_key=api_key, app_version="1.0.2", gemini_model=GEMINI_MODEL)
+    health_bp = create_health_blueprint(
+        logger=logger, api_key=api_key, app_version="1.0.2", gemini_model=GEMINI_MODEL, limiter=limiter
+    )
     utility_bp = create_utility_blueprint(logger=logger, log_error=log_error, limiter=limiter)
     therapist_bp = create_therapist_blueprint(logger=logger, limiter=limiter)
     chronicle_bp = create_chronicle_blueprint(api_key=api_key, limiter=limiter)

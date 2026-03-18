@@ -943,3 +943,33 @@ Confirmed via Codex audit:
 ### Notes
 - This is a local environment fix, not a shared repo fix.
 - If real hooks are needed later, the underlying Git-for-Windows shell/runtime issue should be repaired or Git should be reinstalled.
+
+---
+
+## Session Update - 2026-03-18 (Health Route Limiter Exemptions)
+
+### Scope Completed
+- Exempted the Railway-monitored health endpoints from the global Flask-Limiter defaults so uptime probes do not consume the shared application rate-limit bucket.
+- Kept the health blueprint factory backward-compatible for tests and dev contexts by making the limiter dependency optional.
+
+### Changes
+- `backend/routes/health_routes.py`
+  - Updated `create_health_blueprint(...)` to accept `limiter=None`.
+  - Applied `limiter.exempt(...)` to:
+    - `/health`
+    - `/version`
+    - `/health/detailed`
+    - `/health/database`
+  - Exemptions are applied after route registration and only when a limiter instance is supplied.
+- `backend/app.py`
+  - Passed the existing app-wide `limiter` into `create_health_blueprint(...)`.
+
+### Verification
+- `python -c "from backend.app import create_app; app = create_app('testing'); print('OK')"`
+  - Result: `OK`
+- `python -c "from backend.app import create_app; app = create_app('testing'); client = app.test_client(); resp = client.get('/health'); print(resp.status_code); print([k for k in resp.headers.keys() if k.startswith('X-RateLimit')])"`
+  - Result: `200` and `[]`
+
+### Notes
+- The repo-specific package layout means `cd backend && python -c "from app import create_app ..."` currently fails because top-level `app` import breaks relative imports under `backend/models`.
+- The limiter exemption change itself is verified and working when imported via the package path from the repo root.
