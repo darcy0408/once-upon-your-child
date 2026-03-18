@@ -801,3 +801,57 @@ Confirmed via Codex audit:
 - Interactive bedtime still uses generic adventure prompt (not bedtime-specific) — acceptable for now
 
 ### flutter analyze: No issues found
+
+---
+
+## Session Update - 2026-03-18 (Illustration + Coloring Flow Audit)
+
+### Scope Completed
+- Audited the end-to-end story illustration and coloring-page pipeline across wizard mapping, backend story generation, backend image endpoints, and the post-story result screen.
+- Verified whether generated illustrations are likely to match the created character, stay age-appropriate, include companions, and reflect custom story requests.
+- Checked whether the printable coloring-page option is still present and whether it is fully wired.
+
+### Findings
+- **Story text path is covered and comparatively strong.**
+  - `wizard_data_mapper.dart` forwards `companion_pets`, `companion_characters`, and `customElements`.
+  - Backend story generation validates required companion names and custom phrases, then retries when they are missing.
+- **Illustration fallback path is weaker than the main story path.**
+  - `magic_review_step.dart` falls back to `_generateInlineIllustrations()` when the story response has no illustrations.
+  - That fallback hardcodes `numberOfImages: 1`.
+  - It forwards `characterAppearance` but does **not** forward companion data into `StoryIllustrationService.generateIllustrations(...)`.
+  - Result: fallback illustrations are more likely to omit companions and may not reflect custom selected story elements as reliably as the story text itself.
+- **Coloring-page feature still exists in the product, but its current settings/UI are reduced.**
+  - `story_result_screen.dart` still exposes the bottom-bar `Color` action and calls `_generateColoringPages()`.
+  - `ColoringSettingsDialog` currently hardcodes `_pageCount = 1`, so the prior multi-page choice is effectively gone even though the service supports multi-scene generation.
+- **Companions are not explicitly forwarded into coloring generation from the result screen.**
+  - `ColoringBookService` and backend `/generate-coloring-pages` both support `companions`.
+  - `story_result_screen.dart` calls `generateColoringPagesFromStory(...)` without passing companions, so selected companions/pets are not enforced in coloring-page prompts.
+- **Age appropriateness is explicitly handled in backend image generation.**
+  - `gemini_image_generator.py` uses age bands to change illustration detail and coloring-page intricacy.
+  - The image prompts explicitly require safe, age-appropriate output and, when a reference image exists, likeness to the provided avatar/photo.
+- **Illustration count behavior is inconsistent at the product level.**
+  - `illustration_controls.dart` documents plan-based counts (`Premium = 1`, `Family = 2`) but is not wired anywhere active.
+  - The currently observed inline fallback path always generates 1 illustration.
+
+### Relevant Files
+- `lib/screens/wizard_steps/wizard_data_mapper.dart`
+- `lib/screens/wizard_steps/magic_review_step.dart`
+- `lib/story_illustration_service.dart`
+- `lib/story_result_screen.dart`
+- `lib/coloring_book_service.dart`
+- `backend/routes/story_routes.py`
+- `backend/tasks/story_tasks.py`
+- `backend/services/story_service.py`
+- `backend/gemini_image_generator.py`
+
+### Verification
+- Ran targeted backend coverage for story forwarding and age/content rules:
+  - `python -m pytest backend\tests\unit\test_story_age_appropriateness_suite.py backend\tests\api\test_story_routes.py backend\tests\integration\test_features.py -q`
+- Result:
+  - `71 passed`
+
+### Recommended Next Steps
+- Patch `_generateInlineIllustrations()` to forward companion data and any scene-critical custom request context.
+- Restore a real page-count choice in `ColoringSettingsDialog` if multi-page printable coloring books are still intended.
+- Pass companions from `story_result_screen.dart` into `generateColoringPagesFromStory(...)`.
+- Centralize illustration-count entitlement logic so the product behavior matches the pricing/UX copy.
