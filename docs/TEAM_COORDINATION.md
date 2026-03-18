@@ -974,25 +974,24 @@ Confirmed via Codex audit:
 
 ---
 
-## Session Update - 2026-03-18 (Local Git Hook Fix)
+## Session Update - 2026-03-18 (Local Git Hook Fix — Permanent)
 
 ### Scope Completed
-- Restored `.git/hooks/pre-commit` to active state after a prior session disabled it.
-- Confirmed hooks are executing correctly on commit.
+- Permanently fixed the intermittent `fatal error - couldn't create signal pipe, Win32 error 5` commit failures.
 
-### Findings
-- Prior session renamed hook to `pre-commit.disabled` after `fatal error - couldn't create signal pipe, Win32 error 5`.
-- Re-enabling the hook and running a test commit succeeded cleanly — no error.
-- Root cause: Malwarebytes (installed) intermittently blocks Git-for-Windows process spawning. The block was transient and had cleared by the time the fix was attempted.
-- The hook content (`#!/bin/sh\nexit 0`) was never the problem.
+### Root Cause
+- `.git/hooks/pre-commit` contained only `#!/bin/sh\nexit 0` — a complete no-op with no actual checks.
+- Git-for-Windows spawns `sh.exe` to execute any hook file present. Malwarebytes intermittently blocks this `sh.exe` process spawn, causing `Win32 error 5` (Access Denied).
+- Prior session re-enabled the hook after it seemed to work, but a subsequent agent session hit the same failure again and had to use `--no-verify`.
 
 ### Fix Applied
-- Restored `.git/hooks/pre-commit` (moved back from `.pre-commit.disabled`).
-- Deleted `pre-commit.disabled`.
-- Hooks are active and working.
+- Deleted `.git/hooks/pre-commit` entirely.
+- Without the file, Git never invokes `sh.exe`, so Malwarebytes has nothing to block.
+- Verified clean commit without `--no-verify`.
 
-### If This Recurs
-- Malwarebytes is the likely culprit. Wait for any active scan to complete, or temporarily pause Real-Time Protection, then retry the commit.
+### Notes
+- The hook had no functional value (pure `exit 0`). Nothing was lost by removing it.
+- If real hooks are added in future, use a `.bat`/`.cmd` wrapper to avoid the `sh.exe` spawn issue.
 
 ---
 
