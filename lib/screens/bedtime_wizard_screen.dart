@@ -33,6 +33,7 @@ enum BedtimeStep {
   companion, // "Who's coming with you?"
   setting, // "Where will your adventure happen?"
   feeling, // "What kind of story?"
+  duration, // "How long should the story be?"
   confirm, // "OK! [name] and [companion] in [setting]. Ready?"
   generating, // "Making your story now... close your eyes..."
   reading, // Reading the story aloud
@@ -52,6 +53,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
   String? _companionChoice;
   String? _settingChoice;
   String? _feelingChoice;
+  int _storyDurationMinutes = 15;
 
   // UI state
   String _statusText = '';
@@ -95,6 +97,15 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
 
   Future<void> _initAndStart() async {
     _speechAvailable = await _speech.initialize();
+    final hasKey = await ApiServiceManager.isUsingOwnApiKey();
+    if (!hasKey && mounted) {
+      await _speak(
+        "To use bedtime stories, a parent needs to add a Gemini API key in Settings first. Goodnight!",
+      );
+      await Future.delayed(const Duration(seconds: 4));
+      if (mounted) Navigator.of(context).pop();
+      return;
+    }
     await _runStep();
   }
 
@@ -146,12 +157,20 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
           "What kind of story? A brave adventure, a funny story, a story about friendship, or a calming story?",
         );
         _feelingChoice = _matchStoryMood(answer);
+        _advance(BedtimeStep.duration);
+        break;
+
+      case BedtimeStep.duration:
+        final answer = await _askQuestion(
+          "How long should the bedtime story be? Ten, fifteen, or twenty minutes?",
+        );
+        _storyDurationMinutes = _matchDurationMinutes(answer);
         _advance(BedtimeStep.confirm);
         break;
 
       case BedtimeStep.confirm:
         final summary =
-            "$_heroName and $_companionChoice in $_settingChoice. A $_feelingChoice story.";
+            "$_heroName and $_companionChoice in $_settingChoice. A $_feelingChoice story for $_storyDurationMinutes minutes.";
         final answer = await _askQuestion(
           "Here's your story recipe: $summary. Shall I make it? Say yes, or tell me what to change.",
         );
@@ -309,6 +328,19 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         lower.isEmpty;
   }
 
+  int _matchDurationMinutes(String input) {
+    final lower = input.toLowerCase();
+    if (lower.contains('20') || lower.contains('twenty')) return 20;
+    if (lower.contains('10') || lower.contains('ten')) return 10;
+    if (lower.contains('15') || lower.contains('fifteen')) return 15;
+    return 15;
+  }
+
+  void _selectDuration(int minutes) {
+    if (!mounted) return;
+    setState(() => _storyDurationMinutes = minutes);
+  }
+
   Future<void> _generateAndReadStory() async {
     _wizardData.characterName = _heroName ?? widget.childName;
     _wizardData.characterAge = widget.childAge;
@@ -347,6 +379,9 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         companionCharacters: requestData['companion_characters'],
         storyLength: requestData['storyLength'] ?? 'standard',
         customElements: requestData['customElements'] ?? '',
+        bedtimeMode: true,
+        bedtimeMood: _feelingChoice ?? 'calming',
+        bedtimeDurationMinutes: _storyDurationMinutes,
         subscriptionTier: 'free',
         onProgress: (status) {
           if (mounted) setState(() => _statusText = status);
@@ -511,6 +546,34 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                if (_step == BedtimeStep.duration) ...[
+                  const SizedBox(height: 24),
+                  Wrap(
+                    spacing: 12,
+                    alignment: WrapAlignment.center,
+                    children: [10, 15, 20]
+                        .map(
+                          (minutes) => ChoiceChip(
+                            label: Text('$minutes min'),
+                            selected: _storyDurationMinutes == minutes,
+                            onSelected: (_) => _selectDuration(minutes),
+                            selectedColor:
+                                Colors.amber.withValues(alpha: 0.3),
+                            labelStyle: TextStyle(
+                              color: _storyDurationMinutes == minutes
+                                  ? Colors.white
+                                  : Colors.white.withValues(alpha: 0.8),
+                            ),
+                            backgroundColor:
+                                Colors.white.withValues(alpha: 0.08),
+                            side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.18),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
                 const SizedBox(height: 60),
                 TextButton(
                   onPressed: () {

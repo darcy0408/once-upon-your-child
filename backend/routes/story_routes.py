@@ -437,6 +437,7 @@ def create_story_blueprint(
             ),
             "feelings_prompt": feelings_prompt_text or payload.get("feelings_prompt"),
             "story_length": payload.get("story_length", "standard"),
+            "bedtime_duration_minutes": payload.get("bedtime_duration_minutes"),
             "age": resolved_age,
         }
 
