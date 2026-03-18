@@ -31,6 +31,7 @@ enum BedtimeStep {
   greeting, // "Hi [name]! Let's make a bedtime story!"
   heroName, // "What's your hero's name?" (may reuse child's name)
   companion, // "Who's coming with you?"
+  listeners, // "Are any brothers, sisters, or friends listening too?"
   setting, // "Where will your adventure happen?"
   feeling, // "What kind of story?"
   duration, // "How long should the story be?"
@@ -51,6 +52,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
   // Collected answers
   String? _heroName;
   String? _companionChoice;
+  List<String> _listenerNames = [];
   String? _settingChoice;
   String? _feelingChoice;
   int _storyDurationMinutes = 15;
@@ -141,6 +143,14 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
           "Who's coming with $_heroName? A tiny dragon, a wise owl, a shadow cat, a star dog, or someone else?",
         );
         _companionChoice = _fuzzyMatchCompanion(answer);
+        _advance(BedtimeStep.listeners);
+        break;
+
+      case BedtimeStep.listeners:
+        final listenersAnswer = await _askQuestion(
+          "Are any brothers, sisters, or friends listening with you tonight? Say their names, or say 'just me'.",
+        );
+        _listenerNames = _parseListenerNames(listenersAnswer);
         _advance(BedtimeStep.setting);
         break;
 
@@ -169,8 +179,11 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         break;
 
       case BedtimeStep.confirm:
+        final listenersText = _listenerNames.isEmpty
+            ? ''
+            : ', with ${_listenerNames.join(' and ')}';
         final summary =
-            "$_heroName and $_companionChoice in $_settingChoice. A $_feelingChoice story for $_storyDurationMinutes minutes.";
+            "$_heroName$listenersText and $_companionChoice in $_settingChoice. A $_feelingChoice story for $_storyDurationMinutes minutes.";
         final answer = await _askQuestion(
           "Here's your story recipe: $summary. Shall I make it? Say yes, or tell me what to change.",
         );
@@ -328,6 +341,26 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         lower.isEmpty;
   }
 
+  List<String> _parseListenerNames(String input) {
+    final lower = input.toLowerCase().trim();
+    if (lower.isEmpty ||
+        lower.contains('just me') ||
+        lower.contains('nobody') ||
+        lower.contains('no one') ||
+        lower.contains('only me')) {
+      return [];
+    }
+    final parts = input
+        .replaceAll(' and ', ',')
+        .replaceAll(' with ', ',')
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty && s.length >= 2)
+        .map((s) => s[0].toUpperCase() + s.substring(1))
+        .toList();
+    return parts.take(5).toList();
+  }
+
   int _matchDurationMinutes(String input) {
     final lower = input.toLowerCase();
     if (lower.contains('20') || lower.contains('twenty')) return 20;
@@ -349,12 +382,15 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     _wizardData.storyLength = 'standard';
 
     final requestData = WizardDataMapper.mapToStoryRequest(_wizardData);
+    final additionalChars = _listenerNames
+        .map((n) => <String, dynamic>{'name': n})
+        .toList();
 
     try {
       if (widget.isInteractive) {
         await _runInteractiveStoryLoop(requestData);
       } else {
-        await _runRegularStory(requestData);
+        await _runRegularStory(requestData, additionalChars);
       }
     } catch (e) {
       await _speak(
@@ -363,7 +399,10 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     }
   }
 
-  Future<void> _runRegularStory(Map<String, dynamic> requestData) async {
+  Future<void> _runRegularStory(
+    Map<String, dynamic> requestData,
+    List<Map<String, dynamic>> additionalChars,
+  ) async {
     final result = await ApiServiceManager.generateStory(
         characterName: requestData['character'] ?? 'Hero',
         age: requestData['age'] ?? 5,
@@ -371,7 +410,9 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         companion: requestData['companion'] ?? '',
         characterDetails: requestData['characterDetails'],
         currentFeeling: null,
-        additionalCharacters: null,
+        additionalCharacters: additionalChars.isEmpty
+            ? null
+            : additionalChars.map((m) => m['name'] as String).toList(),
         includeIllustrations: false,
         rhymeTimeMode: false,
         learningToReadMode: false,
