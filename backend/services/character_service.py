@@ -1,10 +1,12 @@
-
+import logging
 import uuid
 import json
 
 from ..repositories import character_repository
 from ..models.character import Character
 from ..utils.validators import validate_age, sanitize_text
+
+logger = logging.getLogger(__name__)
 
 PERSONALITY_SLIDER_DEFINITIONS = {
     "organization_planning": {"label": "Organization & Planning", "left_label": "Tidy Planner", "right_label": "Messy Freestyle"},
@@ -82,8 +84,8 @@ def _sanitize_pets(pets_data):
     return sanitized_pets
 
 def create_character(data: dict):
-    print(f"\n[DEBUG create_character] Received data: {data}")
-    print(f"[DEBUG create_character] Pets field: {data.get('pets', 'NOT PROVIDED')}")
+    logger.debug(f"create_character: received data: {data}")
+    logger.debug(f"create_character: pets field: {data.get('pets', 'NOT PROVIDED')}")
 
     # Check required fields - use explicit None check for age (age=0 is valid for newborns)
     missing = []
@@ -133,11 +135,11 @@ def create_character(data: dict):
     if avatar_data:
         new_character.avatar_data = avatar_data
 
-    print(f"[DEBUG create_character] Setting pets to: {new_character.pets}")
+    logger.debug(f"create_character: setting pets to: {new_character.pets}")
 
     character_repository.add_character(new_character)
 
-    print(f"[DEBUG create_character] After save, character.pets: {new_character.pets}")
+    logger.debug(f"create_character: after save, pets: {new_character.pets}")
 
     return new_character.to_dict(), 201
 
@@ -161,15 +163,15 @@ def get_character(char_id: str):
 
 def update_character(char_id: str, data: dict):
     """Partial update allowed."""
-    print(f"\n[DEBUG update_character] Character ID: {char_id}")
-    print(f"[DEBUG update_character] Received data: {data}")
-    print(f"[DEBUG update_character] Pets field: {data.get('pets', 'NOT PROVIDED')}")
+    logger.debug(f"update_character: id={char_id}")
+    logger.debug(f"update_character: received data: {data}")
+    logger.debug(f"update_character: pets field: {data.get('pets', 'NOT PROVIDED')}")
 
     char = character_repository.get_character_by_id(char_id)
     if not char:
         return {"error": "Character not found"}, 404
 
-    print(f"[DEBUG update_character] Current pets before update: {char.pets}")
+    logger.debug(f"update_character: current pets: {char.pets}")
 
     if "name" in data:
         char.name = sanitize_text(data["name"]) or char.name
@@ -237,11 +239,11 @@ def update_character(char_id: str, data: dict):
     if "avatar_params" in data:
         char.avatar_params = data["avatar_params"]
 
-    print(f"[DEBUG update_character] Final pets before save: {char.pets}")
+    logger.debug(f"update_character: final pets before save: {char.pets}")
 
     character_repository.update_character(char)
 
-    print(f"[DEBUG update_character] After save, character.pets: {char.pets}")
+    logger.debug(f"update_character: after save, pets: {char.pets}")
 
     return char.to_dict(), 200
 

@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 
 # Configure logging to file
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.WARNING,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler("backend_errors.log"),
@@ -109,8 +109,8 @@ def before_send(event, hint):
     return event
 
 def create_app(config_name):
-    print(f"=== Creating Flask app with config: {config_name} ===")
-    print(f"=== Available configs: {list(config_by_name.keys())} ===")
+    logger.info(f"Creating Flask app with config: {config_name}")
+    logger.info(f"Available configs: {list(config_by_name.keys())}")
     # Image generation fix deployed - 2024-12-01
     # Explicitly set static folder to ensure avatars are served correctly
     static_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
@@ -118,13 +118,13 @@ def create_app(config_name):
 
     # Normalize config name
     if config_name not in config_by_name:
-        print(f"WARNING: Config '{config_name}' not found, using 'production'")
+        logger.warning(f"Config '{config_name}' not found, using 'production'")
         config_name = 'production'
 
     # Initialize Sentry (Priority 3)
     sentry_dsn = os.getenv('SENTRY_DSN')
     if sentry_dsn and config_name != 'testing':
-        print(f"=== Initializing Sentry (Env: {config_name}) ===")
+        logger.info(f"Initializing Sentry (Env: {config_name})")
         try:
             sentry_environment = config_name or os.getenv('FLASK_ENV', 'production')
             sentry_sdk.init(
@@ -136,7 +136,7 @@ def create_app(config_name):
                 before_send=before_send,
             )
         except Exception as e:
-            print(f"WARNING: Sentry initialization failed: {e}")
+            logger.warning(f"Sentry initialization failed: {e}")
 
     if config_name == 'testing':
         app.config.from_object(config_by_name['testing'])
@@ -156,9 +156,9 @@ def create_app(config_name):
 
     testing_mode = app.config.get('TESTING', False)
 
-    print(f"=== Config loaded, initializing database ===")
+    logger.info("Config loaded, initializing database")
     db.init_app(app)
-    print(f"=== Database initialized ===")
+    logger.info("Database initialized")
 
     # Update Celery configuration
     celery.config_from_object(app.config, namespace='CELERY')
@@ -356,9 +356,9 @@ def create_app(config_name):
     GEMINI_MODEL = app.config.get("GEMINI_MODEL", "gemini-2.5-flash")
     api_key = None if testing_mode else app.config.get("GEMINI_API_KEY")
     gemini_client = None
-    print(f"DEBUG: GEMINI_MODEL set to {GEMINI_MODEL}")
+    logger.debug(f"GEMINI_MODEL set to {GEMINI_MODEL}")
     # SECURITY: Don't log API keys, even partially masked
-    print(f"DEBUG: GEMINI_API_KEY configured: {bool(api_key)}")
+    logger.debug(f"GEMINI_API_KEY configured: {bool(api_key)}")
     if not api_key:
         logger.warning("GEMINI_API_KEY not set in Flask app config. Generation endpoints will use fallbacks.")
         model = None
@@ -425,7 +425,7 @@ def create_app(config_name):
         logger.exception("Failed to initialize image generator: %s", e)
         image_generator = None
 
-    print(f"=== Creating database tables ===")
+    logger.info("Creating database tables")
     with app.app_context():
         db.create_all()
 
@@ -473,7 +473,7 @@ def create_app(config_name):
         except Exception as e:
             logger.error(f"Failed to create anonymous user: {e}")
             db.session.rollback()
-    print(f"=== Database tables created ===")
+    logger.info("Database tables created")
 
     # JWT setup - SECURITY: Require proper secret in production
     jwt = JWTManager(app)
@@ -519,7 +519,7 @@ def create_app(config_name):
         from routes.subscription_routes import create_subscription_blueprint
         from routes.user_routes import create_user_routes_blueprint
 
-    print(f"=== Registering routes ===")
+    logger.info("Registering routes")
     if stripe_routes:
         app.register_blueprint(stripe_routes, url_prefix='/api/stripe')
     if webhook_routes:
@@ -537,7 +537,7 @@ def create_app(config_name):
         from backend.routes.story_routes import create_story_blueprint
         from backend.routes.character_routes import create_character_blueprint
         from backend.routes.admin_routes import create_admin_blueprint
-        from backend.routes.avatar_routes import avatar_bp
+        from backend.routes.avatar_routes import create_avatar_blueprint
         from backend.routes.avatar_gallery_routes import avatar_gallery_bp
         from backend.routes.health_routes import create_health_blueprint
         from backend.routes.utility_routes import create_utility_blueprint
@@ -547,7 +547,7 @@ def create_app(config_name):
         from routes.story_routes import create_story_blueprint
         from routes.character_routes import create_character_blueprint
         from routes.admin_routes import create_admin_blueprint
-        from routes.avatar_routes import avatar_bp
+        from routes.avatar_routes import create_avatar_blueprint
         from routes.avatar_gallery_routes import avatar_gallery_bp
         from routes.health_routes import create_health_blueprint
         from routes.utility_routes import create_utility_blueprint
@@ -583,7 +583,7 @@ def create_app(config_name):
     app.register_blueprint(utility_bp)
     app.register_blueprint(therapist_bp)
     app.register_blueprint(chronicle_bp)
-    app.register_blueprint(avatar_bp, url_prefix='/avatar')
+    app.register_blueprint(create_avatar_blueprint(limiter), url_prefix='/avatar')
     app.register_blueprint(avatar_gallery_bp, url_prefix='/avatar/gallery')
 
     # TTS narration (lazy — works without Google credentials, returns 503)
@@ -620,10 +620,13 @@ def create_app(config_name):
             "message": str(e) # Only show message in dev
         }), 500
 
-    print(f"=== All routes registered successfully ===")
-    print(
-        "=== Registered routes: "
-        f"{sorted([{'path': rule.rule, 'methods': sorted(m for m in rule.methods if m not in {'HEAD', 'OPTIONS'})} for rule in app.url_map.iter_rules()], key=lambda r: (r['path'], tuple(r['methods'])))} ==="
+    logger.info("All routes registered successfully")
+    logger.debug(
+        "Registered routes: %s",
+        sorted(
+            [{'path': rule.rule, 'methods': sorted(m for m in rule.methods if m not in {'HEAD', 'OPTIONS'})} for rule in app.url_map.iter_rules()],
+            key=lambda r: (r['path'], tuple(r['methods']))
+        )
     )
     return app
 

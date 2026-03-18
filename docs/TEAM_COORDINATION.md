@@ -804,6 +804,39 @@ Confirmed via Codex audit:
 
 ---
 
+## Session Update - 2026-03-18 (Pre-Launch Blockers — Rate Limiting + Debug Cleanup)
+
+### Avatar Route Rate Limiting — Fixed
+
+**Problem**: Avatar routes used a homemade in-memory dict (`_rate_limit_hits = {}`) for rate limiting instead of the app-wide Redis-backed `flask_limiter` instance. In production on Railway with multiple instances, each instance had its own isolated counter — rate limits were effectively bypassed across restarts and load-balanced requests.
+
+**Fix**: Converted `avatar_routes.py` from a bare blueprint to a `create_avatar_blueprint(limiter)` factory function, matching the pattern used by every other blueprint in the app. Replaced the custom `rate_limit_by_user_tier` decorator with `@limiter.limit(_tier_limit(free, premium))` where `_tier_limit` returns a dynamic callable that resolves the limit string at request time based on user tier. Updated both import locations and `register_blueprint` call in `app.py`.
+
+**Side effect**: `tweak_gallery_avatar` (was `free=0`) now returns 403 for free users instead of 429 — more semantically correct since it's a feature gate, not a rate limit.
+
+**Files changed**: `backend/routes/avatar_routes.py`, `backend/app.py`
+
+### Debug Output Cleanup — Fixed
+
+**Problem**: Three backend files had `print()` statements writing unstructured output to stdout in production. `app.py` also had `logging.basicConfig(level=logging.DEBUG)` flooding all logs.
+
+**Fix**:
+- `app.py`: Changed root log level `DEBUG` → `WARNING`. Replaced all `print()` startup banners with `logger.info()` / `logger.warning()` / `logger.debug()` calls.
+- `config/__init__.py`: Added module-level `logger = logging.getLogger(__name__)`. Replaced 8 `print()` calls with appropriate log levels.
+- `character_service.py`: Replaced 10 `[DEBUG ...]` print statements in `create_character()` and `update_character()` with `logger.debug()` calls.
+
+**Files changed**: `backend/app.py`, `backend/config/__init__.py`, `backend/services/character_service.py`
+
+### Remaining Pre-Launch Items
+
+- [ ] Health check endpoints exempt from rate limiting (`/health`, `/health/detailed`, `/health/database`, `/version`)
+- [ ] Companion assets: creator/adolescent/adult bands referencing adventurer folder — fix `companion_selector_step.dart`
+- [ ] Authorization test suite verification
+- [ ] Performance testing (story generation time targets)
+- [ ] Cross-browser testing
+
+---
+
 ## Session Update - 2026-03-18 (Illustration + Coloring Flow Audit)
 
 ### Scope Completed

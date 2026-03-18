@@ -1,28 +1,31 @@
 import os
 import re
+import logging
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file ONLY if it exists
 # In Railway/production, environment variables are set directly in the platform
 dotenv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
 if os.path.exists(dotenv_path):
-    print(f"Loading .env from: {dotenv_path}")
+    logger.debug(f"Loading .env from: {dotenv_path}")
     # Preserve FLASK_ENV if already set (e.g., by pytest conftest)
     preserved_flask_env = os.environ.get('FLASK_ENV')
     load_dotenv(dotenv_path=dotenv_path, override=True)
     if preserved_flask_env:
         os.environ['FLASK_ENV'] = preserved_flask_env
     # SECURITY: Don't log API keys, even partially masked
-    print(f"GEMINI_API_KEY loaded: {bool(os.environ.get('GEMINI_API_KEY'))}")
+    logger.debug(f"GEMINI_API_KEY loaded: {bool(os.environ.get('GEMINI_API_KEY'))}")
 else:
-    print(f"No .env file found at {dotenv_path}, using system environment variables")
+    logger.info(f"No .env file found at {dotenv_path}, using system environment variables")
     # SECURITY: Don't log API keys, even partially masked
-    print(f"GEMINI_API_KEY present: {bool(os.environ.get('GEMINI_API_KEY'))}")
+    logger.debug(f"GEMINI_API_KEY present: {bool(os.environ.get('GEMINI_API_KEY'))}")
 
 # Use gemini-2.5-flash as default if not set in environment.
 if not os.environ.get('GEMINI_MODEL'):
     os.environ['GEMINI_MODEL'] = 'gemini-2.5-flash'
-print(f"DEFAULT GEMINI_MODEL = {os.environ.get('GEMINI_MODEL')}")
+logger.debug(f"DEFAULT GEMINI_MODEL = {os.environ.get('GEMINI_MODEL')}")
 
 def _get_required_secret(key_name, allow_dev_fallback=True):
     """
@@ -40,7 +43,7 @@ def _get_required_secret(key_name, allow_dev_fallback=True):
         raise ValueError(f"SECURITY ERROR: {key_name} must be set in production environment!")
 
     if allow_dev_fallback:
-        print(f"WARNING: {key_name} not set - using dev fallback. NOT SAFE FOR PRODUCTION!")
+        logger.warning(f"{key_name} not set - using dev fallback. NOT SAFE FOR PRODUCTION!")
         return f'dev-{key_name.lower()}-fallback'
 
     raise ValueError(f"{key_name} is required but not set")
@@ -68,7 +71,7 @@ class Config:
     if not database_url or database_url.strip() == '':
         database_url = 'sqlite:///app.db'
         SQLALCHEMY_ENGINE_OPTIONS = {}  # SQLite doesn't need pooling
-        print("Using SQLite database (no DATABASE_URL provided)")
+        logger.info("Using SQLite database (no DATABASE_URL provided)")
     else:
         if database_url.startswith('postgres://'):
             database_url = database_url.replace('postgres://', 'postgresql://', 1)
@@ -80,7 +83,7 @@ class Config:
             'max_overflow': 20,
             'pool_timeout': 30,
         }
-        print(f"Using PostgreSQL database: {database_url[:30]}...")
+        logger.info(f"Using PostgreSQL database: {database_url[:30]}...")
 
     SQLALCHEMY_DATABASE_URI = database_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
