@@ -2,6 +2,38 @@
 
 ---
 
+## Session Update - 2026-03-18 (Backend Logging Cleanup)
+
+### Scope Completed
+- Replaced stray backend `print()` calls with logger calls in the requested files only.
+- Reduced the root logger level in `backend/app.py` from `DEBUG` to `WARNING` to cut noisy startup output.
+
+### Changes
+- `backend/app.py`
+  - Changed the top-level `logging.basicConfig(... level=...)` from `logging.DEBUG` to `logging.WARNING`.
+  - Replaced the requested startup/debug `print()` calls inside `create_app()` with `logger.info(...)`, `logger.warning(...)`, and `logger.debug(...)`.
+  - Replaced the registered-routes dump `print(...)` with `logger.debug(...)`.
+- `backend/config/__init__.py`
+  - Added module-level logging setup with `import logging` and `logger = logging.getLogger(__name__)`.
+  - Replaced the module-level `print()` calls used during environment/config loading with logger calls at the requested levels.
+- `backend/services/character_service.py`
+  - Added module-level logging setup so the requested `logger.debug(...)` replacements are valid.
+  - Replaced the character create/update debug `print()` calls with `logger.debug(...)`.
+
+### Verification
+- `rg -n "\bprint\(" backend/app.py backend/config/__init__.py backend/services/character_service.py`
+  - Result: no remaining standalone `print(` calls in the three target files.
+- `cd backend && python -c "from app import create_app; app = create_app('testing'); print('OK')"`
+  - Result: failed due to an existing package import-path issue, not the logging changes.
+  - Error path:
+    - `ModuleNotFoundError: No module named 'backend'`
+    - fallback import then hit `ImportError: attempted relative import beyond top-level package`
+
+### Notes
+- `backend/services/character_service.py` did not actually have a `logger` defined before the replacement, so the module-level logger setup was required to avoid `NameError`.
+
+---
+
 ## Session Update - 2026-03-18 (Android Build Fix — Java Version)
 
 ### Scope Completed
