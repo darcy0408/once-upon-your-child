@@ -240,7 +240,7 @@ class _EmotionRecognitionGameState extends State<EmotionRecognitionGame>
 
       return EmotionQuestion(
         emotionId: emotion.id,
-        imagePath: 'assets/emotions/${emotion.id}.png', // Placeholder path
+        imagePath: 'assets/images/feelings/sprout/${emotion.id}.png',
         options: options,
         correctAnswer: emotion.name,
         hint: emotion.description,
@@ -474,10 +474,17 @@ class _EmotionRecognitionGameState extends State<EmotionRecognitionGame>
                           width: 3,
                         ),
                       ),
-                      child: const Icon(
-                        Icons.face,
-                        size: 80,
-                        color: Colors.grey,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(13),
+                        child: Image.asset(
+                          currentQuestion.imagePath,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => const Icon(
+                            Icons.face,
+                            size: 80,
+                            color: Colors.grey,
+                          ),
+                        ),
                       ),
                     ),
                   ),
