@@ -3,13 +3,8 @@
 
 ## 🔴 Active Blockers
 
-### B1 — CORS: Production Frontend URL Not in Allowed Origins
-- **Issue:** Backend `ALLOWED_ORIGINS` reads from `RAILWAY_FRONTEND_URL` env var, which is not set.
-  Production frontend (`https://grand-light-production-68d9.up.railway.app`) calls are blocked by CORS on all story/character routes.
-- **Impact:** Core wizard cannot complete in production. Story generation, character persistence all fail.
-- **Fix:** Railway dashboard → backend service → Variables → add `RAILWAY_FRONTEND_URL=https://grand-light-production-68d9.up.railway.app`
-- **Effort:** 5 minutes, no code change, no redeploy needed (Railway auto-redeploys on var change)
-- **Assigned:** Darcy (manual step only)
+### ~~B1 — CORS: Production Frontend URL Not in Allowed Origins~~
+- ✅ RESOLVED 2026-03-18: `RAILWAY_FRONTEND_URL` set in Railway backend env, redeployed successfully.
 
 ### B2 — Companion Assets Load From Wrong Folder
 - **Issue:** `companion_selector_step.dart` loads companion images for creator/adolescent/adult age bands from the `adventurer` folder.

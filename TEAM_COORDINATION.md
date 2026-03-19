@@ -11,6 +11,7 @@
 - Key finding: CORS blocker is NOT a code bug — backend already handles it via `RAILWAY_FRONTEND_URL` env var. Just needs that variable set in Railway dashboard to `https://grand-light-production-68d9.up.railway.app`. No deploy required.
 - Updated: `docs/LAUNCH_BLOCKERS.md` to reflect both previously listed items are resolved.
 - Next: Darcy sets Railway env var (5 min), then hand assignments to each model in parallel.
+- Completed: Railway redeployed successfully with `RAILWAY_FRONTEND_URL` set — CORS blocker B1 resolved 2026-03-18.
 
 ## 2026-03-18
 
