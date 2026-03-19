@@ -6,6 +6,7 @@ import '../services/app_tts_service.dart';
 import '../services/api_service_manager.dart';
 import '../models.dart';
 import 'wizard_steps/wizard_data_mapper.dart';
+import 'parent_controls_screen.dart';
 
 /// Voice-driven bedtime story wizard.
 /// Minimal screen — just a pulsing star and voice interaction.
@@ -604,7 +605,11 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: () {
-                  Navigator.of(context).pop(); // Go back so parent can open Settings
+                  Navigator.of(context).pop(); // Close bedtime screen first
+                  // Then navigate to settings from the parent context
+                  Navigator.of(context, rootNavigator: true).push(
+                    MaterialPageRoute(builder: (_) => const ParentControlsScreen()),
+                  );
                 },
                 icon: const Icon(Icons.settings),
                 label: const Text('Go to Settings'),

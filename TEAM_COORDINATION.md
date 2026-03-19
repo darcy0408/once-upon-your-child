@@ -161,3 +161,6 @@
 - Completed: Updated `lib/screens/wizard_steps/hero_creator_step.dart` so `_getReadingLabel()` now maps Explorer to `Easy Reader` and Adventurer to `Chapter Reader`, while leaving older bands on `First Chapter`.
 - Completed: Updated `lib/screens/wizard_steps/magic_review_step.dart` so the learning-to-read review label now says `Rhyme Time story` instead of `Limerick Laughs story`.
 - Verification: `rg -n "Limerick Laughs" lib` returns no matches after the change.
+
+## 2026-03-19 (Task 1.4 - Bedtime Settings CTA)
+- Completed: Updated `lib/screens/bedtime_wizard_screen.dart` so the 'Go to Settings' button now navigates to the `ParentControlsScreen` instead of just calling `Navigator.pop()`.
