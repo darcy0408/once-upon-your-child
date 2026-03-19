@@ -2,6 +2,40 @@
 
 ---
 
+## Session Update - 2026-03-18 (Cross-Browser Testing)
+
+### Results
+
+┌─────────────────┬─────────┬────────────┬─────────────┬───────────────┐
+│ Feature         │ Chrome  │ Firefox    │ Edge        │ Mobile Chrome │
+├─────────────────┼─────────┼────────────┼─────────────┼───────────────┤
+│ App loads       │ FAIL    │ PARTIAL    │ FAIL        │ FAIL          │
+├─────────────────┼─────────┼────────────┼─────────────┼───────────────┤
+│ Story wizard    │ FAIL    │ UNVERIFIED │ FAIL        │ FAIL          │
+├─────────────────┼─────────┼────────────┼─────────────┼───────────────┤
+│ Images load     │ FAIL    │ PARTIAL    │ FAIL        │ FAIL          │
+├─────────────────┼─────────┼────────────┼─────────────┼───────────────┤
+│ Button textures │ PASS    │ UNVERIFIED │ PASS        │ PASS          │
+├─────────────────┼─────────┼────────────┼─────────────┼───────────────┤
+│ Fonts           │ FAIL    │ UNVERIFIED │ FAIL        │ FAIL          │
+├─────────────────┼─────────┼────────────┼─────────────┼───────────────┤
+│ TTS/audio       │ BLOCKED │ UNVERIFIED │ BLOCKED     │ BLOCKED       │
+├─────────────────┼─────────┼────────────┼─────────────┼───────────────┤
+│ Story result    │ FAIL    │ UNVERIFIED │ FAIL        │ FAIL          │
+└─────────────────┴─────────┴────────────┴─────────────┴───────────────┘
+
+### Issues Found
+
+- [Chrome/Edge/Mobile Chrome, production story creation is blocked by CORS on backend calls from `https://grand-light-production-68d9.up.railway.app` to `https://story-weaver-app-production.up.railway.app` (`/get-characters`, `/create-character`, `/generate-story`, Stripe subscription status), blocker]
+- [Chrome, scenario card art requests under `assets/images/scenarios/*.png` return 404s, so the adventure/theme cards fall back to emoji/text instead of the intended images, minor]
+- [Chrome, browser console logs `TypeError: Cannot read properties of undefined (reading 'toString')` during wizard use, minor]
+- [Chrome, Flutter web logs missing-glyph/Noto font warnings, so font rendering is not clean across the full character set, cosmetic]
+- [Firefox, load/title probe succeeded but full wizard verification could not be completed in this environment because Firefox automation was unstable here; treat Firefox coverage as incomplete, minor]
+
+### Go/No-Go
+
+Needs fix before launch. The deployed frontend cannot complete the core wizard in production because story generation and character persistence are blocked by backend CORS, and the story result/TTS path is unreachable as a consequence.
+
 ## Session Update - 2026-03-18 (Illustration Count Entitlement)
 
 ### Scope Completed
