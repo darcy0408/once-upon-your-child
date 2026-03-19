@@ -2,6 +2,23 @@
 
 ---
 
+## Session Update - 2026-03-18 (Illustration Count Entitlement)
+
+### Scope Completed
+Wired the plan-based illustration count entitlement logic into the Story Weaver wizard flow. The inline illustration fallback in `MagicReviewStep` now correctly honors the user's subscription tier and special modes (like Learning-to-Read).
+
+### Changes
+- **lib/screens/wizard_steps/magic_review_step.dart**:
+  - Updated `canGetIllustrations` check to include `learningToReadMode` as an entitlement for free users.
+  - Updated `_illustrationCountForSubscription` to explicitly handle `learningToReadMode` (1 illustration) and return 2 for Family tier, 1 for Premium/Free (with BYOK).
+- **lib/story_based_illustration_service.dart**:
+  - Fixed an `invalid_override` error by adding the missing `sceneRequirements` parameter to `generateIllustrations` to match the updated base class.
+
+### Verification
+- Ran `flutter analyze`: Fixed the one blocking error in `story_based_illustration_service.dart`. Remaining items are informational or unrelated warnings.
+
+---
+
 ## Session Update - 2026-03-18 (Backend Cold Start Fix + Antigravity Plan)
 
 ### Scope Completed

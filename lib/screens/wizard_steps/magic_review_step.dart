@@ -122,7 +122,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       isActive: subState.status == 'active',
     );
     final isUsingOwnKey = await ApiServiceManager.isUsingOwnApiKey();
-    final canGetIllustrations = isPremium || isUsingOwnKey;
+    final canGetIllustrations = isPremium || isUsingOwnKey || widget.wizardData.learningToReadMode;
 
     setState(() => _isGenerating = true);
     await Future<void>.delayed(const Duration(milliseconds: 80));
@@ -373,6 +373,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   }
 
   int _illustrationCountForSubscription(UserSubscription subscription) {
+    // Learning-to-read mode always gets 1 illustration
+    if (widget.wizardData.learningToReadMode) return 1;
+
     switch (subscription.tier) {
       case SubscriptionTier.family:
         return 2;
