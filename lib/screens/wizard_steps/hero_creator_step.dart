@@ -292,22 +292,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     _heroPageController = PageController(initialPage: _heroPage);
     _logPageView(_heroPage);
 
-    final band = ageBandFromAge(widget.wizardData.characterAge);
-    int initialCarouselIndex = 0;
-
-    if (band == AgeBand.sprout) {
-      initialCarouselIndex = widget.wizardData.characterGender == 'Boy' ? 0 : 5;
-    } else if (band == AgeBand.explorer) {
-      initialCarouselIndex = widget.wizardData.characterGender == 'Boy' ? 0 : 4;
-    } else {
-      // Adventurer/Creator: search by skin tone if possible, else 0
-      initialCarouselIndex = 0;
-    }
-
-    _sproutCarouselController = PageController(
-      initialPage: initialCarouselIndex,
-      viewportFraction: 0.75,
-    );
+    _sproutCarouselController = PageController(viewportFraction: 0.75);
 
     if (widget.wizardData.characterAge < 3 ||
         widget.wizardData.characterAge > 99) {
@@ -2356,101 +2341,47 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Widget _buildGenderPicker() {
-    return _buildHeroCharacterCarousel();
-  }
-
-  Widget _buildHeroCharacterCarousel() {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    final choices = band.band == AgeBand.sprout
-        ? _sproutHeroChoices
-        : band.band == AgeBand.explorer
-            ? _explorerHeroChoices
-            : band.band == AgeBand.adventurer
-                ? _adventurerHeroChoices
-                : _creatorHeroChoices;
+    final ageBand = band.band;
 
-    return Column(
+    final String boyAsset;
+    final String girlAsset;
+    switch (ageBand) {
+      case AgeBand.sprout:
+        boyAsset = 'assets/images/ui/sprout/boy_character.png';
+        girlAsset = 'assets/images/ui/sprout/girl_character.png';
+        break;
+      case AgeBand.adventurer:
+        boyAsset = 'assets/images/ui/adventurer/hero_white.png';
+        girlAsset = 'assets/images/ui/adventurer/hero_white.png';
+        break;
+      case AgeBand.explorer:
+      default:
+        boyAsset = 'assets/images/ui/explorer/boy_character_white.png';
+        girlAsset = 'assets/images/ui/explorer/girl_character_white.png';
+    }
+
+    final gender = widget.wizardData.characterGender;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        SizedBox(
-          height: 280,
-          child: PageView.builder(
-            controller: _sproutCarouselController,
-            itemCount: choices.length,
-            onPageChanged: (index) {
-              final choice = choices[index];
-              setState(() {
-                widget.wizardData.characterGender = choice.gender;
-                widget.wizardData.selectedSkinTone = choice.skinTone;
-                widget.wizardData.selectedCharacterAssetPath = choice.assetPath;
-              });
-            },
-            itemBuilder: (context, index) {
-              final choice = choices[index];
-              final isSelected =
-                  widget.wizardData.characterGender == choice.gender &&
-                      widget.wizardData.selectedSkinTone == choice.skinTone;
-
-              return AnimatedBuilder(
-                animation: _sproutCarouselController,
-                builder: (context, child) {
-                  double value = 1.0;
-                  if (_sproutCarouselController.position.haveDimensions) {
-                    value = _sproutCarouselController.page! - index;
-                    value = (1 - (value.abs() * 0.25)).clamp(0.0, 1.0);
-                  } else {
-                    final initialPage = _sproutCarouselController.initialPage;
-                    value = (1 - ((initialPage - index).abs() * 0.25))
-                        .clamp(0.0, 1.0);
-                  }
-
-                  return Center(
-                    child: Transform.scale(
-                      scale: Curves.easeInOut.transform(value),
-                      child: Opacity(
-                        opacity:
-                            (value * 1.5).clamp(0.4, 1.0), // Fade outer items
-                        child: child,
-                      ),
-                    ),
-                  );
-                },
-                child: _GenderImageButton(
-                  gender: choice.label,
-                  assetPath: choice.assetPath,
-                  isSelected: isSelected,
-                  width: 180,
-                  height: 240,
-                  onTap: () {
-                    widget.wizardData.selectedSkinTone = choice.skinTone;
-                    widget.wizardData.selectedCharacterAssetPath = choice.assetPath;
-                    _handleGenderSelection(choice.gender);
-                  },
-                ),
-              );
-            },
-          ),
+        _GenderImageButton(
+          gender: 'Boy',
+          assetPath: boyAsset,
+          isSelected: gender == 'Boy',
+          width: 140,
+          height: 180,
+          onTap: () => _handleGenderSelection('Boy'),
         ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(choices.length, (index) {
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              height: 8,
-              width: 8,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: widget.wizardData.selectedSkinTone ==
-                            choices[index].skinTone &&
-                        widget.wizardData.characterGender ==
-                            choices[index].gender
-                    ? const Color(0xFFFFD700)
-                    : Colors.white24,
-              ),
-            );
-          }),
+        SizedBox(width: band.space(32)),
+        _GenderImageButton(
+          gender: 'Girl',
+          assetPath: girlAsset,
+          isSelected: gender == 'Girl',
+          width: 140,
+          height: 180,
+          onTap: () => _handleGenderSelection('Girl'),
         ),
       ],
     );
@@ -3142,6 +3073,68 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
+  Widget _buildBriefGenderSelector() {
+    final band =
+        Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final ageBand = band.band;
+
+    final String boyAsset;
+    final String girlAsset;
+    switch (ageBand) {
+      case AgeBand.adolescent:
+        boyAsset = 'assets/images/ui/adolescent/boy_character.png';
+        girlAsset = 'assets/images/ui/adolescent/girl_character.png';
+        break;
+      case AgeBand.adult:
+        boyAsset = 'assets/images/ui/adult/man_character_white.png';
+        girlAsset = 'assets/images/ui/adult/woman_character_white.png';
+        break;
+      default:
+        boyAsset = 'assets/images/ui/creator/creator_white.png';
+        girlAsset = 'assets/images/ui/creator/creator_white.png';
+    }
+
+    final gender = widget.wizardData.characterGender;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'CHARACTER GENDER',
+          style: GoogleFonts.sourceSans3(
+            color: Colors.white.withAlpha(100),
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _GenderImageButton(
+              gender: 'Boy',
+              assetPath: boyAsset,
+              isSelected: gender == 'Boy',
+              width: 110,
+              height: 140,
+              onTap: () =>
+                  setState(() => widget.wizardData.characterGender = 'Boy'),
+            ),
+            const SizedBox(width: 32),
+            _GenderImageButton(
+              gender: 'Girl',
+              assetPath: girlAsset,
+              isSelected: gender == 'Girl',
+              width: 110,
+              height: 140,
+              onTap: () =>
+                  setState(() => widget.wizardData.characterGender = 'Girl'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildBriefIdentityInputs() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3162,6 +3155,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           ),
           onChanged: (v) => widget.wizardData.characterName = v,
         ),
+        const SizedBox(height: 24),
+        _buildBriefGenderSelector(),
         const SizedBox(height: 24),
         Text(
           'CORE ARCHETYPE',
