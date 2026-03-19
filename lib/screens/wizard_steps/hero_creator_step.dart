@@ -284,11 +284,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     if (widget.availableCharacters.isNotEmpty) {
       _heroPage = 0;
     } else {
-      // Onboarding already collected name+age, so jump straight to style setup.
-      _heroPage = (widget.wizardData.characterName.trim().isNotEmpty &&
-              widget.wizardData.characterAge >= 3)
-          ? 2
-          : 1;
+      // Always start at page 1 (name + character/gender carousel) for new
+      // characters, even if onboarding pre-filled the name. The character
+      // picker on page 1 sets gender, which must not be silently skipped.
+      _heroPage = 1;
     }
     _heroPageController = PageController(initialPage: _heroPage);
     _logPageView(_heroPage);
