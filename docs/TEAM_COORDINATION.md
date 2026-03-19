@@ -2,6 +2,61 @@
 
 ---
 
+## SESSION HANDOFF — 2026-03-18 (Darcy restarting computer)
+
+### Current State
+- **Git**: clean worktree, branch `main`, last commit `d19dba8`
+- **Launch readiness**: ~90% — all code work is done, only manual testing remains
+
+### What Was Completed This Session
+| Item | Status | Commit |
+|------|--------|--------|
+| Avatar rate limiting (Redis-backed) | ✅ | d216ae6 |
+| Debug output cleanup (print → logger) | ✅ | d216ae6 |
+| Health check rate limit exemption | ✅ | e856047 |
+| Authorization tests + API key security fix | ✅ | 7a8012d |
+| Android build fix (JDK 21) | ✅ | ae9e724 |
+| Performance instrumentation + load tests | ✅ | a1182d4 |
+| Companion forwarding to illustrations + coloring | ✅ | 08398b9 |
+| ColoringSettingsDialog page count (1–5) restored | ✅ | 08398b9 |
+| Age-band UI expansion (6 bands, companions, archetypes) | ✅ | c2fe9ee |
+| Age-band assets for all 6 bands | ✅ | c36ed78 |
+| Illustration count entitlement by subscription tier | ✅ | 6ff3d74 |
+| UI polish (accent colors, action bar, sparkle lint) | ✅ | d19dba8 |
+
+### What Still Needs Doing (by Darcy, requires running app)
+1. **Manual integration testing** — checklist is in docs/TEAM_COORDINATION.md (Manual Integration Testing entry). The Codex entry above it is all FAILs due to environment, not real failures — ignore it and overwrite with real results.
+2. **Cross-browser testing** — test in Firefox and Edge after Chrome passes.
+3. **Real-provider performance baseline** — with backend running: `RUN_REAL_API_TESTS=true python backend/tests/story_load_audit.py`
+
+### How to Resume
+```bash
+# Start backend
+cd C:/dev/story-weaver-app/backend
+python app.py
+
+# Start Flutter web
+cd C:/dev/story-weaver-app
+flutter run -d chrome
+
+# Verify backend healthy
+curl http://127.0.0.1:5000/health
+```
+
+### Manual Testing Checklist Location
+The one-sitting checklist Claude wrote is in this conversation. Quick summary:
+- 6 age bands × (visual, characters, companions, story, illustrations)
+- Cross-cutting: BYOK, custom avatar, pet avatar, parent hidden context, bedtime mode
+- Cross-browser: Chrome ✓ baseline, then Firefox + Edge + mobile DevTools
+
+### After Testing
+```bash
+git add docs/TEAM_COORDINATION.md
+git commit -m "docs: manual + cross-browser integration test results — real run"
+```
+
+---
+
 ## Session Update - 2026-03-18 (Cross-Browser Testing)
 
 ### Results
