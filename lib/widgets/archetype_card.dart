@@ -59,12 +59,12 @@ class ArchetypeCard extends StatelessWidget {
             width: cardWidth, // Dynamic width based on age band
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: isSelected ? bandTheme.primaryColor.withValues(alpha: 0.15) : AppColors.surface,
+              color: isSelected ? bandTheme.primary.withValues(alpha: 0.15) : AppColors.surface,
               gradient: isSelected
                   ? LinearGradient(
                       colors: [
-                        bandTheme.accentColor.withValues(alpha: 0.3),
-                        bandTheme.primaryColor.withValues(alpha: 0.15),
+                        bandTheme.accent.withValues(alpha: 0.3),
+                        bandTheme.primary.withValues(alpha: 0.15),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -72,19 +72,19 @@ class ArchetypeCard extends StatelessWidget {
                   : null,
               borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(
-                color: isSelected ? bandTheme.accentColor : Colors.grey.shade300,
+                color: isSelected ? bandTheme.accent : Colors.grey.shade300,
                 width: isSelected ? 2.5 : 1,
               ),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: bandTheme.accentColor.withValues(alpha: 0.55),
+                        color: bandTheme.accent.withValues(alpha: 0.55),
                         blurRadius: 16,
                         spreadRadius: 3,
                         offset: const Offset(0, 6),
                       ),
                       BoxShadow(
-                        color: bandTheme.primaryColor.withValues(alpha: 0.3),
+                        color: bandTheme.primary.withValues(alpha: 0.3),
                         blurRadius: 12,
                         spreadRadius: 1,
                       ),
@@ -211,10 +211,10 @@ class _TraitChip extends StatelessWidget {
         vertical: 4,
       ),
       decoration: BoxDecoration(
-        color: bandTheme.accentColor.withValues(alpha: 0.3),
+        color: bandTheme.accent.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(
-          color: bandTheme.accentColor.withValues(alpha: 0.8),
+          color: bandTheme.accent.withValues(alpha: 0.8),
           width: 1,
         ),
       ),
@@ -223,7 +223,7 @@ class _TraitChip extends StatelessWidget {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: bandTheme.textColor,
+          color: bandTheme.textOnDark,
         ),
       ),
     );
