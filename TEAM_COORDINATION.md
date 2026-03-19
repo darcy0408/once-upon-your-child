@@ -153,3 +153,11 @@
 - Verification gap: targeted analyzer runs for the touched Dart files were attempted, but both `flutter analyze` and `dart analyze` timed out in this environment before returning diagnostics, so only code inspection and repo-state verification were completed here.
 - Completed: Comprehensive UI aesthetic audit for Age Band adaptations. Addressed hardcoded colors in `app_bottom_navigation.dart`, updated `ArchetypeCard` to use dynamic layout sizes and proper `AgeBandThemeData` colors, corrected the hardcoded yellow highlighting in `magic_review_step.dart`, and ensured the "Export to Coloring Book" action is appropriately hidden for younger age bands in `story_result_screen.dart`.
 - Completed: Verified and merged `age_band_assets` directories into `assets/images/ui` and `assets/images/orbs` to ensure all 6 age bands correctly load their variant image buttons and progress orbs correctly.
+
+## 2026-03-19 (Phase 1 Fixes - BigFeelingsFlowScreen Theme Isolation)
+- Completed: Fixed `BigFeelingsFlowScreen` to respect the age-band theme system by passing `childAge` parameter. Used `AgeBandThemeData` for gradients and fonts. Added "Happy" and "Excited" options, and replaced emojis with band-specific face images for feelings.
+
+## 2026-03-19 (Task 1.2 - Reading Label Rename)
+- Completed: Updated `lib/screens/wizard_steps/hero_creator_step.dart` so `_getReadingLabel()` now maps Explorer to `Easy Reader` and Adventurer to `Chapter Reader`, while leaving older bands on `First Chapter`.
+- Completed: Updated `lib/screens/wizard_steps/magic_review_step.dart` so the learning-to-read review label now says `Rhyme Time story` instead of `Limerick Laughs story`.
+- Verification: `rg -n "Limerick Laughs" lib` returns no matches after the change.

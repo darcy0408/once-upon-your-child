@@ -1735,8 +1735,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       case AgeBand.sprout:
         return 'First Reader';
       case AgeBand.explorer:
+        return 'Easy Reader';
       case AgeBand.adventurer:
-        return 'Limerick Laughs';
+        return 'Chapter Reader';
       case AgeBand.creator:
       case AgeBand.adolescent:
       case AgeBand.adult:

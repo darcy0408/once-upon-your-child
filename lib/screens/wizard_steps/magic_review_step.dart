@@ -475,7 +475,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
           return 'Easy reader';
         case AgeBand.explorer:
         case AgeBand.adventurer:
-          return 'Limerick Laughs story';
+          return 'Rhyme Time story';
         case AgeBand.creator:
         case AgeBand.adolescent:
         case AgeBand.adult:
