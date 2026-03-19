@@ -967,35 +967,36 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             !magicAndPetNames.contains(c.name))
         .toList();
 
-    // Collect selected pets (supports multiple saved pets).
-    final selectedPets = widget.wizardData.pets.where((pet) {
-      final petName = (pet['name'] ?? '').trim();
-      return petName.isNotEmpty &&
-          widget.wizardData.companionNames.contains(petName);
-    }).toList();
-
     // Build slot list: magic companions, then saved friends, then pet, then empty
     final slots = <_ShowcaseSlot>[];
     for (final c in selectedNamed) {
       slots.add(_ShowcaseSlot(
+        id: c.id,
         imagePath: 'assets/images/companions/${c.id}_normal.jpg',
         name: c.name,
       ));
     }
     for (final friend in selectedFriends) {
       slots.add(_ShowcaseSlot(
+        id: friend.id,
         photoBase64: friend.generatedAvatar?.imageBase64,
         name: friend.name,
         isFriend: true,
       ));
     }
-    for (final pet in selectedPets) {
-      final petName = pet['name'] ?? 'My Pet';
-      slots.add(_ShowcaseSlot(
-        photoBase64: widget.wizardData.petAvatars[petName]?.imageBase64 ??
-            widget.wizardData.petPhotos[petName],
-        name: petName,
-      ));
+    for (int i = 0; i < widget.wizardData.pets.length; i++) {
+      final pet = widget.wizardData.pets[i];
+      final petName = (pet['name'] ?? '').trim().isEmpty
+          ? 'My Pet ${i + 1}'
+          : pet['name']!;
+      if (widget.wizardData.companionNames.contains(petName)) {
+        slots.add(_ShowcaseSlot(
+          id: 'my_pet_$i',
+          photoBase64: widget.wizardData.petAvatars[petName]?.imageBase64 ??
+              widget.wizardData.petPhotos[petName],
+          name: petName,
+        ));
+      }
     }
     // Always show at least 3 slots (empty slots fill the row)
     const maxSlots = 3;
@@ -1013,20 +1014,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               _GlowingCompanionOrb(
                 slot: slots[i],
                 onTap: () => setState(() {
-                  final slotName = slots[i].name;
-                  // Magic companion?
-                  final matched = selectedNamed
-                      .where((c) => c.name == slotName)
-                      .firstOrNull;
-                  if (matched != null) {
-                    widget.wizardData.companionNames.remove(matched.name);
-                    widget.wizardData.selectedCompanions.remove(matched.id);
-                  } else if (slots[i].isFriend) {
-                    // Saved-character friend — just remove from companionNames
-                    widget.wizardData.companionNames.remove(slotName);
-                  } else {
-                    // Pet
-                    widget.wizardData.companionNames.remove(slotName);
+                  final slot = slots[i];
+                  widget.wizardData.companionNames.remove(slot.name);
+                  if (slot.id != null) {
+                    widget.wizardData.selectedCompanions.remove(slot.id);
                   }
                 }),
               ),
@@ -1137,10 +1128,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                 onTap: () => setState(() {
                   if (isSelected) {
                     widget.wizardData.companionNames.remove(c.name);
-                    widget.wizardData.selectedCompanions.remove(c.name);
+                    widget.wizardData.selectedCompanions.remove(c.id);
                   } else {
                     widget.wizardData.companionNames.add(c.name);
-                    widget.wizardData.selectedCompanions.add(c.name);
+                    widget.wizardData.selectedCompanions.add(c.id);
                   }
                 }),
               );
@@ -3615,11 +3606,13 @@ class _CompanionData {
 
 /// Data carrier for a showcase orb slot.
 class _ShowcaseSlot {
+  final String? id;
   final String? imagePath;
   final String? photoBase64;
   final String name;
   final bool isFriend; // true = saved character (not a magic companion or pet)
   const _ShowcaseSlot({
+    this.id,
     this.imagePath,
     this.photoBase64,
     required this.name,
