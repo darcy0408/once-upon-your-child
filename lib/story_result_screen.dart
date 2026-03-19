@@ -1857,7 +1857,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       showDecorations: !_highContrastMode,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final maxImageHeight = constraints.maxHeight * 0.62;
+          final maxImageHeight = constraints.maxHeight * 0.55;
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -1889,6 +1889,42 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                   color: _highContrastMode
                       ? Colors.white
                       : const Color(0xFF2C3E50),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Navigation hint — always show so kids know to tap the arrow
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 18, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6C3FC7).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: const Color(0xFF6C3FC7).withValues(alpha: 0.35),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Tap the arrow to start reading!',
+                      style: GoogleFonts.fredoka(
+                        fontSize: 15 * _textScale,
+                        fontWeight: FontWeight.w500,
+                        color: _highContrastMode
+                            ? Colors.white70
+                            : const Color(0xFF6C3FC7),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 18,
+                      color: _highContrastMode
+                          ? Colors.white70
+                          : const Color(0xFF6C3FC7),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -1928,16 +1964,24 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                 const SizedBox(height: 24),
                 _buildWisdomGem(),
               ],
-              const SizedBox(height: 32),
+              const SizedBox(height: 28),
+              Divider(
+                indent: 40,
+                endIndent: 40,
+                color: _highContrastMode
+                    ? Colors.white24
+                    : Colors.grey.withValues(alpha: 0.3),
+              ),
+              const SizedBox(height: 16),
               Text(
-                'How did you like this story?',
+                '⭐ Rate this story',
                 style: GoogleFonts.quicksand(
                   fontSize: 16 * _textScale,
                   fontWeight: FontWeight.w600,
                   color: _highContrastMode ? Colors.white70 : Colors.grey[600],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(5, (i) {
@@ -2796,16 +2840,21 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                                                 currentPage:
                                                     _currentPageIndex + 1,
                                                 totalPages: _totalPages,
-                                                stageLabel: _adventureSteps
-                                                            .length >
-                                                        _currentPageIndex
-                                                    ? _adventureSteps[
-                                                            _currentPageIndex]
-                                                        .replaceAll(
-                                                            RegExp(
-                                                                r'^(Step \d+:|🌟|🚪|🎨|😮|🤔|💪|✨|🏠|🎭|🤪|🎉|💭)\s*'),
-                                                            '')
-                                                    : null,
+                                                isCompleted:
+                                                    _currentPageIndex >=
+                                                        _totalPages - 1,
+                                                stageLabel: _currentPageIndex >=
+                                                        _totalPages - 1
+                                                    ? null
+                                                    : (_adventureSteps.length >
+                                                            _currentPageIndex
+                                                        ? _adventureSteps[
+                                                                _currentPageIndex]
+                                                            .replaceAll(
+                                                                RegExp(
+                                                                    r'^(Step \d+:|🌟|🚪|🎨|😮|🤔|💪|✨|🏠|🎭|🤪|🎉|💭)\s*'),
+                                                                '')
+                                                        : null),
                                               ),
                                             ],
                                           ),

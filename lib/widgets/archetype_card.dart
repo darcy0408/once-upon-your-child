@@ -393,13 +393,13 @@ class ArchetypeData {
   }
 
   String? imagePathForBand(AgeBand band) {
+    // Sprout uses simplified age-appropriate versions.
     if (band == AgeBand.sprout && sproutImageId != null) {
       return 'assets/images/archetypes/sprout/$sproutImageId.jpg';
     }
-    if (bandImageId != null) {
-      return 'assets/images/archetypes/${band.name}/$bandImageId.jpg';
-    }
-    return imagePath; // fall back to old framed PNG
+    // All other bands use the original archetype-specific framed PNGs,
+    // which are designed to match each archetype's concept.
+    return imagePath;
   }
 }
 

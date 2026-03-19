@@ -447,25 +447,38 @@ class _CloudEmotionCardState extends State<CloudEmotionCard>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
+            // Cloud shape always visible with colored glow
+            Container(
               height: cloudH,
-              child: Image.asset(
-                'assets/feelings_faces/${widget.id}.png',
-                height: cloudH,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => ClipPath(
-                  clipper: _CloudClipper(),
-                  child: Container(
-                    decoration:
-                        BoxDecoration(color: widget.color.withAlpha(220)),
-                    child: Center(
-                      child: Padding(
-                        padding: EdgeInsets.only(bottom: cloudH * 0.05),
-                        child: _FaceImage(
-                          id: widget.id,
-                          emoji: widget.emoji,
-                          height: faceH,
-                        ),
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.color.withAlpha(130),
+                    blurRadius: 14,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: ClipPath(
+                clipper: _CloudClipper(),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        widget.color,
+                        widget.color.withAlpha(200),
+                      ],
+                    ),
+                  ),
+                  child: Center(
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: cloudH * 0.05),
+                      child: _FaceImage(
+                        id: widget.id,
+                        emoji: widget.emoji,
+                        height: faceH,
                       ),
                     ),
                   ),
