@@ -1,5 +1,17 @@
 # Team Coordination
 
+## 2026-03-18 (Deployment Plan + Assignment Creation — Claude)
+
+- Completed: Read all TEAM_COORDINATION logs (root + docs/) and synthesized a comprehensive deployment plan.
+- Created: `docs/DEPLOYMENT_PLAN_2026-03-18.md` — master go/no-go plan with priorities, blockers, and criteria.
+- Created: `docs/assignments/ASSIGNMENT_DARCY_MANUAL.md` — CORS Railway env var fix + manual test checklist.
+- Created: `docs/assignments/ASSIGNMENT_GEMINI_ANTIGRAVITY.md` — Flutter UI fixes (companion assets, scenario 404s, TypeError, fonts).
+- Created: `docs/assignments/ASSIGNMENT_CODEX.md` — Backend work (Gemini health probe, smoke tests, performance baseline, update LAUNCH_BLOCKERS).
+- Created: `docs/assignments/ASSIGNMENT_GEMINI_PRO.md` — Firefox testing + launch readiness review.
+- Key finding: CORS blocker is NOT a code bug — backend already handles it via `RAILWAY_FRONTEND_URL` env var. Just needs that variable set in Railway dashboard to `https://grand-light-production-68d9.up.railway.app`. No deploy required.
+- Updated: `docs/LAUNCH_BLOCKERS.md` to reflect both previously listed items are resolved.
+- Next: Darcy sets Railway env var (5 min), then hand assignments to each model in parallel.
+
 ## 2026-03-18
 
 - Completed: fixed the unsecured API key routes in `backend/routes/api_key_routes.py` so `/api/user/settings/api-key` and `/api/user/usage` now require JWT auth and use `request.current_user` instead of trusting `X-User-ID`.
