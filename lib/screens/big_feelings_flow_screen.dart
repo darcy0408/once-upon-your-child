@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
+import '../theme/age_band_theme.dart';
 
 class BigFeelingsFlowResult {
   const BigFeelingsFlowResult({
@@ -18,14 +19,15 @@ class BigFeelingsFlowResult {
 }
 
 class BigFeelingsFlowScreen extends StatefulWidget {
-  const BigFeelingsFlowScreen({super.key});
+  const BigFeelingsFlowScreen({super.key, this.childAge = 5});
+  final int childAge;
 
-  static Future<BigFeelingsFlowResult?> show(BuildContext context) {
+  static Future<BigFeelingsFlowResult?> show(BuildContext context, {int childAge = 5}) {
     return Navigator.of(context, rootNavigator: true)
         .push<BigFeelingsFlowResult>(
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (_) => const BigFeelingsFlowScreen(),
+        builder: (_) => BigFeelingsFlowScreen(childAge: childAge),
       ),
     );
   }
@@ -54,6 +56,18 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
       emoji: '😨',
       subtitle: 'Uh-oh feeling',
     ),
+    _ChoiceOption(
+      value: 'Happy',
+      label: 'Happy',
+      emoji: '😊',
+      subtitle: 'Big smile feeling',
+    ),
+    _ChoiceOption(
+      value: 'Excited',
+      label: 'Excited',
+      emoji: '🤩',
+      subtitle: 'Bouncy, can\'t-wait feeling',
+    ),
   ];
 
   static const _triggerOptions = {
@@ -72,6 +86,16 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
       _ChoiceOption(value: 'It was loud', label: 'Loud', emoji: '🔊'),
       _ChoiceOption(value: 'Something was new', label: 'New', emoji: '✨'),
     ],
+    'Happy': [
+      _ChoiceOption(value: 'Did something fun', label: 'Fun', emoji: '🎉'),
+      _ChoiceOption(value: 'Made a friend', label: 'Friend', emoji: '🤝'),
+      _ChoiceOption(value: 'Got a surprise', label: 'Surprise', emoji: '🎁'),
+    ],
+    'Excited': [
+      _ChoiceOption(value: 'Something is coming', label: 'Coming', emoji: '⏰'),
+      _ChoiceOption(value: 'Going somewhere', label: 'Going', emoji: '✈️'),
+      _ChoiceOption(value: 'Trying something new', label: 'New', emoji: '🌟'),
+    ],
   };
 
   static const _bodyOptions = {
@@ -89,6 +113,16 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
       _ChoiceOption(value: 'Fast heart', label: 'Fast heart', emoji: '💓'),
       _ChoiceOption(value: 'Shaky hands', label: 'Shaky hands', emoji: '🫳'),
       _ChoiceOption(value: 'Hide close', label: 'Hide close', emoji: '🤗'),
+    ],
+    'Happy': [
+      _ChoiceOption(value: 'Big smiles', label: 'Big smiles', emoji: '😁'),
+      _ChoiceOption(value: 'Warm chest', label: 'Warm chest', emoji: '💛'),
+      _ChoiceOption(value: 'Bouncy feet', label: 'Bouncy feet', emoji: '🦶'),
+    ],
+    'Excited': [
+      _ChoiceOption(value: 'Butterflies', label: 'Butterflies', emoji: '🦋'),
+      _ChoiceOption(value: 'Fast talking', label: 'Fast talking', emoji: '💬'),
+      _ChoiceOption(value: 'Wiggly body', label: 'Wiggly body', emoji: '🕺'),
     ],
   };
 
@@ -111,6 +145,16 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
       _ChoiceOption(
           value: 'Take a slow breath', label: 'Slow breath', emoji: '🌬️'),
       _ChoiceOption(value: 'Ask for help', label: 'Ask for help', emoji: '🙋'),
+    ],
+    'Happy': [
+      _ChoiceOption(value: 'Share the joy', label: 'Share it', emoji: '💝'),
+      _ChoiceOption(value: 'Do a happy dance', label: 'Dance', emoji: '💃'),
+      _ChoiceOption(value: 'Draw the feeling', label: 'Draw it', emoji: '🖍️'),
+    ],
+    'Excited': [
+      _ChoiceOption(value: 'Take a deep breath', label: 'Deep breath', emoji: '🌬️'),
+      _ChoiceOption(value: 'Tell someone', label: 'Tell someone', emoji: '🗣️'),
+      _ChoiceOption(value: 'Count to ten', label: 'Count', emoji: '🔢'),
     ],
   };
 
@@ -166,8 +210,18 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
     );
   }
 
+  String _bandFolder() {
+    if (widget.childAge <= 5) return 'sprout';
+    if (widget.childAge <= 8) return 'explorer';
+    if (widget.childAge <= 11) return 'adventurer';
+    if (widget.childAge <= 14) return 'creator';
+    if (widget.childAge <= 17) return 'adolescent';
+    return 'adult';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final options = switch (_step) {
       0 => _feelings,
       1 => _triggerOptions[_feeling] ?? const <_ChoiceOption>[],
@@ -175,81 +229,95 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
       _ => _helperOptions[_feeling] ?? const <_ChoiceOption>[],
     };
     return Scaffold(
-      backgroundColor: const Color(0xFF1A0E3A),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: _goBack,
-                    icon: Icon(
-                      _step == 0
-                          ? Icons.close
-                          : Icons.arrow_back_ios_new_rounded,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      _titleForStep(),
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.fredoka(
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [band.gradientStart, band.gradientMid, band.gradientEnd],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: _goBack,
+                      icon: Icon(
+                        _step == 0
+                            ? Icons.close
+                            : Icons.arrow_back_ios_new_rounded,
                         color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                _subtitleForStep(),
-                textAlign: TextAlign.center,
-                style: GoogleFonts.fredoka(
-                  color: Colors.white70,
-                  fontSize: 15,
+                    Expanded(
+                      child: Text(
+                        _titleForStep(),
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.getFont(
+                          band.uiFontFamily,
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 48),
+                  ],
                 ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              Expanded(
-                child: GridView.builder(
-                  itemCount: options.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: AppSpacing.md,
-                    mainAxisSpacing: AppSpacing.md,
-                    childAspectRatio: 1,
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  _subtitleForStep(),
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.getFont(
+                    band.uiFontFamily,
+                    color: Colors.white70,
+                    fontSize: 15,
                   ),
-                  itemBuilder: (context, index) {
-                    final option = options[index];
-                    return _BigFeelingsChoiceCard(
-                      option: option,
-                      onTap: () {
-                        switch (_step) {
-                          case 0:
-                            _selectFeeling(option.value);
-                            break;
-                          case 1:
-                            _selectTrigger(option.value);
-                            break;
-                          case 2:
-                            _selectBodySignal(option.value);
-                            break;
-                          default:
-                            _selectCopingTool(option.value);
-                        }
-                      },
-                    );
-                  },
                 ),
-              ),
-            ],
+                const SizedBox(height: AppSpacing.xl),
+                Expanded(
+                  child: GridView.builder(
+                    itemCount: options.length,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: AppSpacing.md,
+                      mainAxisSpacing: AppSpacing.md,
+                      childAspectRatio: 1,
+                    ),
+                    itemBuilder: (context, index) {
+                      final option = options[index];
+                      return _BigFeelingsChoiceCard(
+                        option: option,
+                        isFirstStep: _step == 0,
+                        bandFolder: _bandFolder(),
+                        fontFamily: band.uiFontFamily,
+                        onTap: () {
+                          switch (_step) {
+                            case 0:
+                              _selectFeeling(option.value);
+                              break;
+                            case 1:
+                              _selectTrigger(option.value);
+                              break;
+                            case 2:
+                              _selectBodySignal(option.value);
+                              break;
+                            default:
+                              _selectCopingTool(option.value);
+                          }
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -287,10 +355,16 @@ class _BigFeelingsChoiceCard extends StatelessWidget {
   const _BigFeelingsChoiceCard({
     required this.option,
     required this.onTap,
+    this.isFirstStep = false,
+    this.bandFolder = 'sprout',
+    this.fontFamily = 'Fredoka',
   });
 
   final _ChoiceOption option;
   final VoidCallback onTap;
+  final bool isFirstStep;
+  final String bandFolder;
+  final String fontFamily;
 
   @override
   Widget build(BuildContext context) {
@@ -313,12 +387,21 @@ class _BigFeelingsChoiceCard extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(option.emoji, style: const TextStyle(fontSize: 40)),
+                  if (isFirstStep)
+                    Image.asset(
+                      'assets/images/feelings/$bandFolder/${option.value.toLowerCase()}.png',
+                      width: 48,
+                      height: 48,
+                      errorBuilder: (_, __, ___) => Text(option.emoji, style: const TextStyle(fontSize: 40)),
+                    )
+                  else
+                    Text(option.emoji, style: const TextStyle(fontSize: 40)),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     option.label,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.fredoka(
+                    style: GoogleFonts.getFont(
+                      fontFamily,
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -329,7 +412,8 @@ class _BigFeelingsChoiceCard extends StatelessWidget {
                     Text(
                       option.subtitle!,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.fredoka(
+                      style: GoogleFonts.getFont(
+                        fontFamily,
                         color: Colors.white70,
                         fontSize: 13,
                       ),

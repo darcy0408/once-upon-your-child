@@ -118,7 +118,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
         : widget.wizardData.characterAge;
     final usesAges6To8Vocabulary = age >= 6 && age <= 8;
     if (age <= 5) {
-      final result = await BigFeelingsFlowScreen.show(context);
+      final result = await BigFeelingsFlowScreen.show(context, childAge: age);
       if (result != null && mounted) {
         setState(() {
           widget.wizardData.selectedFeeling = result.feeling;
