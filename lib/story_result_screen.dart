@@ -3021,24 +3021,6 @@ class _PostStoryActionBar extends StatelessWidget {
             // Secondary action row — simplified for young users (5-7)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _ActionChip(
-                  icon: Icons.record_voice_over_rounded,
-                  label: 'Re-read',
-                  onTap: onReread,
-                  color: Colors.white,
-                  largeMode: isYoungUser,
-                ),
-                _ActionChip(
-                  icon: Icons.palette_rounded,
-                  label: 'Color',
-                  onTap: onColor,
-                  color: Colors.white,
-                  largeMode: isYoungUser,
-                ),
-                if (!isYoungUser) ...[
-                  _ActionChip(
-                    icon: Icons.shuffle_rounded,
                     label: 'Remix',
                     onTap: onRemix,
                     color: Colors.white,

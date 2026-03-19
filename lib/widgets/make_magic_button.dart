@@ -94,7 +94,7 @@ class _MakeMagicButtonState extends State<MakeMagicButton>
     final screenWidth = MediaQuery.of(context).size.width;
     final buttonWidth = math.min(screenWidth * 0.86, 360.0);
     // Respect the system/app setting for particles, combining it with the widget's own prop
-    final bool _actualShowSparkles =
+    final bool actualShowSparkles =
         widget.showSparkles && MotionPrefs.showParticles(context);
     final String actualLabel = widget.label ??
         (widget.ageBand == AgeBand.adventurer
@@ -166,7 +166,7 @@ class _MakeMagicButtonState extends State<MakeMagicButton>
               alignment: Alignment.center,
               children: [
                 // Animated Sparkles (if enabled)
-                if (_actualShowSparkles && widget.isEnabled) ...[
+                if (actualShowSparkles && widget.isEnabled) ...[
                   const Positioned(
                     left: 20,
                     top: 15,

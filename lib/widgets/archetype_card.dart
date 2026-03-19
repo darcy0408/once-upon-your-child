@@ -34,6 +34,10 @@ class ArchetypeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bandTheme = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    final isYoung = bandTheme.band == AgeBand.sprout || bandTheme.band == AgeBand.explorer;
+    final cardWidth = isYoung ? 200.0 : 160.0;
+
     return Semantics(
       button: true,
       selected: isSelected,
@@ -52,15 +56,15 @@ class ArchetypeCard extends StatelessWidget {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeInOut,
-            width: 160, // Fixed width for horizontal scroll
+            width: cardWidth, // Dynamic width based on age band
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primaryLight.withAlpha(38) : AppColors.surface,
+              color: isSelected ? bandTheme.primaryColor.withValues(alpha: 0.15) : AppColors.surface,
               gradient: isSelected
                   ? LinearGradient(
                       colors: [
-                        AppColors.gold.withAlpha(80),
-                        AppColors.primaryLight.withAlpha(40),
+                        bandTheme.accentColor.withValues(alpha: 0.3),
+                        bandTheme.primaryColor.withValues(alpha: 0.15),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -68,19 +72,19 @@ class ArchetypeCard extends StatelessWidget {
                   : null,
               borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(
-                color: isSelected ? AppColors.gold : Colors.grey.shade300,
+                color: isSelected ? bandTheme.accentColor : Colors.grey.shade300,
                 width: isSelected ? 2.5 : 1,
               ),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: AppColors.gold.withAlpha(140),
+                        color: bandTheme.accentColor.withValues(alpha: 0.55),
                         blurRadius: 16,
                         spreadRadius: 3,
                         offset: const Offset(0, 6),
                       ),
                       BoxShadow(
-                        color: AppColors.primary.withAlpha(80),
+                        color: bandTheme.primaryColor.withValues(alpha: 0.3),
                         blurRadius: 12,
                         spreadRadius: 1,
                       ),
@@ -114,8 +118,8 @@ class ArchetypeCard extends StatelessWidget {
                       if (imagePath != null)
                         Image.asset(
                           imagePath!,
-                          width: 116,
-                          height: 116,
+                          width: isYoung ? 140 : 116,
+                          height: isYoung ? 140 : 116,
                           fit: BoxFit.contain,
                           errorBuilder: (context, error, stackTrace) => Text(
                             icon ?? '✨',
@@ -200,25 +204,26 @@ class _TraitChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bandTheme = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: 8,
         vertical: 4,
       ),
       decoration: BoxDecoration(
-        color: AppColors.gold.withAlpha(80), // Increased opacity
+        color: bandTheme.accentColor.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(
-          color: AppColors.gold.withAlpha(200), // Darker border
+          color: bandTheme.accentColor.withValues(alpha: 0.8),
           width: 1,
         ),
       ),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: AppColors.textDark,
+          color: bandTheme.textColor,
         ),
       ),
     );

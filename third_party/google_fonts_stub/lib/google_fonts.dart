@@ -1,4 +1,4 @@
-library google_fonts;
+library;
 
 import "package:flutter/material.dart";
 

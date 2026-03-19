@@ -545,18 +545,18 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                   textAlign: TextAlign.center,
                   style: (band.band.isMature)
                       ? GoogleFonts.sourceSans3(
-                          color: const Color(0xFFFFD700),
+                          color: band.accentColor,
                           fontSize: band.heading(22),
                           fontWeight: FontWeight.bold,
                         )
                       : (band.band == AgeBand.adventurer)
                           ? GoogleFonts.bitter(
-                              color: const Color(0xFFFFD700),
+                              color: band.accentColor,
                               fontSize: band.heading(22),
                               fontWeight: FontWeight.bold,
                             )
                           : GoogleFonts.cinzelDecorative(
-                              color: const Color(0xFFFFD700),
+                              color: band.accentColor,
                               fontSize: band.heading(22),
                               fontWeight: FontWeight.bold,
                             ),

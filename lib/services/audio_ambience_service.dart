@@ -194,19 +194,27 @@ class AudioAmbienceService {
     if (lower.contains('adventure')) return 'Adventure';
     if (lower.contains('space') ||
         lower.contains('sky') ||
-        lower.contains('stars')) return 'Space';
+        lower.contains('stars')) {
+      return 'Space';
+    }
     if (lower.contains('forest') ||
         lower.contains('jungle') ||
         lower.contains('meadow') ||
-        lower.contains('field')) return 'Forest';
+        lower.contains('field')) {
+      return 'Forest';
+    }
     if (lower.contains('magic') ||
         lower.contains('crystal') ||
         lower.contains('firefly') ||
-        lower.contains('glow')) return 'Magic';
+        lower.contains('glow')) {
+      return 'Magic';
+    }
     if (lower.contains('ocean') ||
         lower.contains('water') ||
         lower.contains('waves') ||
-        lower.contains('falls')) return 'Ocean';
+        lower.contains('falls')) {
+      return 'Ocean';
+    }
     if (lower.contains('storm')) return 'Adventure'; // Wind fits storm
     return theme;
   }
