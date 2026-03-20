@@ -211,8 +211,29 @@ class _FeelingsGardenScreenState extends State<FeelingsGardenScreen>
     );
   }
 
+  String _tab1Label() {
+    if (widget.childAge >= 15) return 'Landscape';
+    if (widget.childAge >= 12) return 'Mood';
+    if (widget.childAge >= 9) return 'Mood Check';
+    return 'How Big Is My Feeling';
+  }
+
+  String _tab2Label() {
+    if (widget.childAge >= 15) return 'Explore';
+    if (widget.childAge >= 12) return 'Explore';
+    if (widget.childAge >= 9) return 'Mood Explorer';
+    return 'Feelings Explorer';
+  }
+
+  String _tab3Label() {
+    if (widget.childAge >= 15) return 'Reflections';
+    if (widget.childAge >= 12) return 'Journal';
+    if (widget.childAge >= 9) return 'My Journal';
+    return 'My Feelings Journal';
+  }
+
   Widget _buildTabBar(AgeBandThemeData band, int tabCount) {
-    final labels = ['How Big?', 'Explorer', 'Journal'];
+    final labels = [_tab1Label(), _tab2Label(), _tab3Label()];
     final icons = [Icons.favorite_rounded, Icons.explore_rounded, Icons.menu_book_rounded];
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),

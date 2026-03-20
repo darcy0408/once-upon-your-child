@@ -185,3 +185,6 @@
 
 ## 2026-03-19 (Task 2.5 - Adapt Bedtime Mode Prompts Per Age Band)
 - Completed: Added `_isMature` helper to `bedtime_wizard_screen.dart` to determine age dynamically based on the child's input. Adapted greeting, companion, setting, making, and completion voice prompts for users 12+.
+
+## 2026-03-19 (Task 2.6 - Fix FeelingsGardenScreen Tab Labels for Mature Bands)
+- Completed: Replaced hardcoded juvenile tab labels in `feelings_garden_screen.dart` with adaptive `_tab1Label()`, `_tab2Label()`, and `_tab3Label()` getters based on the child's age band.
