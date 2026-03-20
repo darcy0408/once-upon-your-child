@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../models.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/age_band_theme.dart';
@@ -39,6 +40,10 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   final TextEditingController _safeSpaceController = TextEditingController();
   final TextEditingController _mathController = TextEditingController();
   final TextEditingController _avoidController = TextEditingController();
+
+  // Voice input for Imagine It field (young children only)
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _isListening = false;
 
   // Math gate state
   late int _mathA;
@@ -147,7 +152,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
       Map<String, int> sliders) {
     final value = sliders[key]?.toDouble() ?? 50.0;
     final age = widget.wizardData.characterAge;
-    final isYoung = age <= 11;
+    final isYoung = age <= 8;
 
     return Column(
       children: [
@@ -247,11 +252,36 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
   @override
   void dispose() {
+    _speech.stop();
     _parentalNoteController.dispose();
     _safeSpaceController.dispose();
     _mathController.dispose();
     _avoidController.dispose();
     super.dispose();
+  }
+
+  Future<void> _toggleVoiceInput() async {
+    if (_isListening) {
+      _speech.stop();
+      setState(() => _isListening = false);
+      return;
+    }
+    final available = await _speech.initialize();
+    if (available) {
+      setState(() => _isListening = true);
+      _speech.listen(
+        onResult: (result) {
+          if (result.finalResult) {
+            setState(() {
+              _safeSpaceController.text = result.recognizedWords;
+              widget.wizardData.customElements = result.recognizedWords;
+              _isListening = false;
+            });
+          }
+        },
+        listenFor: const Duration(seconds: 15),
+      );
+    }
   }
 
   @override
@@ -413,6 +443,16 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
               ),
               filled: true,
               fillColor: AppColors.primary.withValues(alpha: 0.05),
+              suffixIcon: widget.wizardData.characterAge <= 8
+                  ? IconButton(
+                      icon: Icon(
+                        _isListening ? Icons.mic : Icons.mic_none,
+                        color: _isListening ? Colors.red : AppColors.primary,
+                      ),
+                      tooltip: _isListening ? 'Stop listening' : 'Speak your answer',
+                      onPressed: _toggleVoiceInput,
+                    )
+                  : null,
             ),
             onChanged: (value) {
               widget.wizardData.customElements = value;
