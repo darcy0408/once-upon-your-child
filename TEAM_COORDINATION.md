@@ -113,9 +113,60 @@
 - **Phase 1.3** (Generate 12 face assets): Requires AI image generation or manual art creation — Darcy/design tool.
 
 ### Next Steps
-- Begin Phase 1 implementation (BigFeelingsFlowScreen theme fix + Limerick Laughs label fix as first targets).
-- Generate 12 missing feelings face assets (requires design/AI art tool, not code change).
-- Darcy to review plan and confirm phase prioritization.
+- Generate 12 missing feelings face assets (requires Gemini 3 Pro image gen — prompt in docs/assignments/UX_AUDIT_FIX_PLAN.md Task 1.3).
+- Remaining Phase 3 tasks: 3.2 (wire per-band feelings images), 3.3 (isMature feelings picker variant).
+- Remaining Phase 4 tasks: 4.1, 4.2, 4.3, 4.4, 4.6.
+- Remaining Phase 5 tasks: 5.2, 5.3, 5.5.
+
+---
+
+## 2026-03-20 (Phase 1-5 UX Audit Implementation — Gemini 3 Pro + Claude Sonnet 4.6)
+
+### Scope Completed
+- **Gemini 3 Pro** executed Tasks 1.1, 1.2, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7 (all of Phase 1 and Phase 2)
+- **Claude Sonnet 4.6** executed Tasks 3.1, 3.4, 3.5, 3.6, 4.5, 5.1, 5.4 in this session
+
+### Changes Made (Claude Sonnet 4.6 — 2026-03-20)
+
+#### Task 3.1 — Wire Per-Band Archetype Images
+- Updated `imagePathForBand()` in `lib/widgets/archetype_card.dart` to use `assets/images/archetypes/${band.name}/$bandImageId.jpg` for all non-Sprout bands
+- Copied `animal_whisperer.jpg` into all 5 non-Sprout band asset directories (explorer, adventurer, creator, adolescent, adult)
+- Note: per-band JPG files are gitignored by `*.jpg` rule but are registered in `pubspec.yaml` and will bundle correctly
+
+#### Task 3.4 — Move Story Length Picker to Review Screen
+- Removed orb-based story length picker (heading + 3x `ImageCrystalFormation`) from `hero_creator_step.dart`
+- Added interactive `_LengthChip` row to `magic_review_step.dart` — hidden for Sprout, band-adaptive labels (Short/Medium/Long for mature, Short tale/Story time/Big adventure for young)
+- Added `_LengthChip` widget class and `_lengthLabelForBand()` helper
+
+#### Task 3.5 — Fix CinzelDecorative Font for Sprout
+- Changed `useDecorative` flag in `hero_creator_step.dart` from `sprout || explorer` to `explorer` only (2 occurrences)
+
+#### Task 3.6 — Fix Navigation Button Consistency for Mature Bands
+- Changed all 3 nav button conditionals in `wizard_story_screen.dart` from `band.band != AgeBand.creator` to `!band.band.isMature`
+- Adolescent and Adult now correctly get icon-only nav
+
+#### Task 4.5 — Emoji Slider Threshold
+- Changed `isYoung = age <= 11` to `isYoung = age <= 8` in `feeling_selection_step.dart`
+- Ages 9+ (Adventurer band and above) now see text labels instead of emoji endpoints
+
+#### Task 5.1 — Remove Dead Code
+- Deleted `_SproutHeroChoice` class and all 4 unused list constants (`_sproutHeroChoices`, `_explorerHeroChoices`, `_adventurerHeroChoices`, `_creatorHeroChoices`) from `hero_creator_step.dart`
+- Removed ~170 lines of dead code
+
+#### Task 5.4 — Voice Input for Imagine It Field
+- Added `speech_to_text` import and `_toggleVoiceInput()` method to `feeling_selection_step.dart`
+- Mic button appears on "Imagine It" TextField for ages ≤8 only; red when listening
+
+### Commits
+- `5e5e9be` — feat: Phase 3 UX audit fixes — archetype images, story length, fonts, nav
+- `139cf9e` — feat: Phase 4+5 UX audit fixes — sliders, dead code, voice input
+
+### Remaining Work
+- **Task 1.3**: Generate 12 missing feelings face PNGs (Gemini 3 Pro with image gen — see delegation prompt)
+- **Task 3.2**: Wire per-band feelings images into feelings picker
+- **Task 3.3**: Create isMature variant of feelings picker (geometric/flat style for Creator+)
+- **Tasks 4.1-4.4, 4.6**: Structural improvements (scenario filtering, Creative Brief refactor, carousel dots, scene assets)
+- **Tasks 5.2, 5.3, 5.5**: Cleanup (centralize age checks, audit unused assets, welcome density)
 
 ---
 
