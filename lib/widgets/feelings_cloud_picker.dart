@@ -19,6 +19,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../feelings_wheel_data.dart';
+import '../theme/age_band_theme.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public result type
@@ -228,6 +229,8 @@ class _Breadcrumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMature =
+        Theme.of(context).extension<AgeBandThemeData>()?.band.isMature ?? false;
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
       child: Row(
@@ -239,33 +242,40 @@ class _Breadcrumb extends StatelessWidget {
             tooltip: 'Back',
           ),
           if (core != null) ...[
-            _crumb(core!.emoji, core!.name, core!.color!),
+            _crumb(core!.emoji, core!.name, core!.color!, isMature: isMature),
           ],
           if (secondary != null) ...[
             const Icon(Icons.chevron_right, color: Colors.white38, size: 18),
             _crumb(secondary!.emoji, secondary!.name,
-                core?.secondaryColor ?? core?.color ?? Colors.white),
+                core?.secondaryColor ?? core?.color ?? Colors.white,
+                isMature: isMature),
           ],
         ],
       ),
     );
   }
 
-  Widget _crumb(String emoji, String name, Color color) {
+  Widget _crumb(String emoji, String name, Color color, {bool isMature = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color.withAlpha(60),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(isMature ? 8 : 20),
         border: Border.all(color: color.withAlpha(120)),
       ),
       child: Text(
-        '$emoji $name',
-        style: GoogleFonts.fredoka(
-          color: Colors.white,
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-        ),
+        isMature ? name : '$emoji $name',
+        style: isMature
+            ? TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              )
+            : GoogleFonts.fredoka(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
       ),
     );
   }
@@ -348,6 +358,8 @@ class _TertiaryGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final tertiary = secondary.tertiary;
     final color = core.tertiaryColor ?? core.secondaryColor ?? core.color!;
+    final isMature =
+        Theme.of(context).extension<AgeBandThemeData>()?.band.isMature ?? false;
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -355,9 +367,10 @@ class _TertiaryGrid extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Pick the one that fits best:',
-              style: GoogleFonts.fredoka(
-                  color: Colors.white70, fontSize: 18),
+              isMature ? 'Which feels most accurate?' : 'Pick the one that fits best:',
+              style: isMature
+                  ? const TextStyle(color: Colors.white70, fontSize: 16)
+                  : GoogleFonts.fredoka(color: Colors.white70, fontSize: 18),
             ),
             const SizedBox(height: 28),
             Wrap(
@@ -369,6 +382,7 @@ class _TertiaryGrid extends StatelessWidget {
                         label: t,
                         color: color,
                         onTap: () => onPick(t),
+                        isMature: isMature,
                       ))
                   .toList(),
             ),
@@ -437,6 +451,70 @@ class _CloudEmotionCardState extends State<CloudEmotionCard>
     final cloudH = widget.small ? 72.0 : 100.0;
     final faceH = widget.small ? 44.0 : 64.0;
     final fontSize = widget.small ? 12.0 : 14.0;
+    final isMature =
+        Theme.of(context).extension<AgeBandThemeData>()?.band.isMature ?? false;
+
+    Widget cardFace = Center(
+      child: Padding(
+        padding: EdgeInsets.only(bottom: cloudH * 0.05),
+        child: _FaceImage(
+          id: widget.id,
+          emoji: widget.emoji,
+          height: faceH,
+        ),
+      ),
+    );
+
+    Widget cardShape;
+    if (isMature) {
+      // Mature: flat rounded rectangle, subtle border, no cloud clip
+      cardShape = Container(
+        height: cloudH,
+        decoration: BoxDecoration(
+          color: widget.color.withAlpha(50),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: widget.color.withAlpha(140), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: widget.color.withAlpha(60),
+              blurRadius: 8,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: cardFace,
+      );
+    } else {
+      // Young: cloud shape with gradient and glow
+      cardShape = Container(
+        height: cloudH,
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: widget.color.withAlpha(130),
+              blurRadius: 14,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: ClipPath(
+          clipper: _CloudClipper(),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  widget.color,
+                  widget.color.withAlpha(200),
+                ],
+              ),
+            ),
+            child: cardFace,
+          ),
+        ),
+      );
+    }
 
     return GestureDetector(
       onTapDown: _onTapDown,
@@ -447,53 +525,22 @@ class _CloudEmotionCardState extends State<CloudEmotionCard>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Cloud shape always visible with colored glow
-            Container(
-              height: cloudH,
-              decoration: BoxDecoration(
-                boxShadow: [
-                  BoxShadow(
-                    color: widget.color.withAlpha(130),
-                    blurRadius: 14,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: ClipPath(
-                clipper: _CloudClipper(),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        widget.color,
-                        widget.color.withAlpha(200),
-                      ],
-                    ),
-                  ),
-                  child: Center(
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: cloudH * 0.05),
-                      child: _FaceImage(
-                        id: widget.id,
-                        emoji: widget.emoji,
-                        height: faceH,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            cardShape,
             const SizedBox(height: 6),
             Text(
               widget.name,
               textAlign: TextAlign.center,
-              style: GoogleFonts.fredoka(
-                color: Colors.white,
-                fontSize: fontSize,
-                fontWeight: FontWeight.w500,
-              ),
+              style: isMature
+                  ? TextStyle(
+                      color: Colors.white,
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w500,
+                    )
+                  : GoogleFonts.fredoka(
+                      color: Colors.white,
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w500,
+                    ),
             ),
           ],
         ),
@@ -510,8 +557,9 @@ class _TertiaryChip extends StatefulWidget {
   final String label;
   final Color color;
   final VoidCallback onTap;
+  final bool isMature;
   const _TertiaryChip(
-      {required this.label, required this.color, required this.onTap});
+      {required this.label, required this.color, required this.onTap, this.isMature = false});
 
   @override
   State<_TertiaryChip> createState() => _TertiaryChipState();
@@ -549,25 +597,38 @@ class _TertiaryChipState extends State<_TertiaryChip>
       child: ScaleTransition(
         scale: _scale,
         child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 26, vertical: 13),
+          padding: EdgeInsets.symmetric(
+            horizontal: widget.isMature ? 20 : 26,
+            vertical: widget.isMature ? 10 : 13,
+          ),
           decoration: BoxDecoration(
-            color: widget.color.withAlpha(200),
-            borderRadius: BorderRadius.circular(50),
+            color: widget.isMature
+                ? widget.color.withAlpha(60)
+                : widget.color.withAlpha(200),
+            borderRadius: BorderRadius.circular(widget.isMature ? 10 : 50),
+            border: widget.isMature
+                ? Border.all(color: widget.color.withAlpha(160), width: 1)
+                : null,
             boxShadow: [
               BoxShadow(
-                  color: widget.color.withAlpha(100),
+                  color: widget.color.withAlpha(widget.isMature ? 60 : 100),
                   blurRadius: 12,
                   spreadRadius: 1),
             ],
           ),
           child: Text(
             widget.label,
-            style: GoogleFonts.fredoka(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-            ),
+            style: widget.isMature
+                ? TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  )
+                : GoogleFonts.fredoka(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                  ),
           ),
         ),
       ),

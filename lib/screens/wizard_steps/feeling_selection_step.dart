@@ -937,8 +937,13 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   }
 
   List<Widget> _buildScenarioSections(int age) {
+    // Sprout (≤5) only sees Magical Worlds — Real-Life Heroes are too abstract
+    final visibleScenarios = age <= 5
+        ? _scenarios.where((s) => s.category == 'Magical Worlds').toList()
+        : _scenarios;
+
     final Map<String, List<ScenarioCard>> grouped = {};
-    for (var scenario in _scenarios) {
+    for (var scenario in visibleScenarios) {
       grouped.putIfAbsent(scenario.category, () => []).add(scenario);
     }
 

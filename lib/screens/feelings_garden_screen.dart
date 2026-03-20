@@ -38,11 +38,13 @@ class _FeelingsGardenScreenState extends State<FeelingsGardenScreen>
 
   late final TabController _tabController;
 
+  int get _tabCount =>
+      widget.childAge >= 8 ? 3 : (widget.childAge >= 6 ? 2 : 1);
+
   @override
   void initState() {
     super.initState();
-    final tabCount = widget.childAge >= 8 ? 3 : (widget.childAge >= 6 ? 2 : 1);
-    _tabController = TabController(length: tabCount, vsync: this);
+    _tabController = TabController(length: _tabCount, vsync: this);
     _loadJournal();
   }
 
@@ -98,7 +100,7 @@ class _FeelingsGardenScreenState extends State<FeelingsGardenScreen>
   @override
   Widget build(BuildContext context) {
     final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    final tabCount = widget.childAge >= 8 ? 3 : (widget.childAge >= 6 ? 2 : 1);
+    final tabCount = _tabCount;
 
     return Scaffold(
       body: Container(

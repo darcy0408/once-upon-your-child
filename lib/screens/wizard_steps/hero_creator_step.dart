@@ -2440,7 +2440,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         ageBand == AgeBand.adventurer || ageBand == AgeBand.creator;
     const cardWidth = 165.0;
     const cardHeight = 220.0;
-    return SizedBox(
+    final selectedIndex =
+        archetypes.indexWhere((a) => a.name == _selectedArchetypeId);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+      SizedBox(
       height: cardHeight,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -2557,6 +2562,27 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           );
         },
       ),
+      ),
+      const SizedBox(height: 10),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(archetypes.length, (i) {
+          final isActive = i == selectedIndex;
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            width: isActive ? 16 : 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: isActive
+                  ? const Color(0xFFFFD700)
+                  : Colors.white30,
+              borderRadius: BorderRadius.circular(3),
+            ),
+          );
+        }),
+      ),
+      ],
     );
   }
 
@@ -2717,14 +2743,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           _buildRestoreCharacterSection(),
           const SizedBox(height: 16),
           _buildBriefSection(
-              'Character & Role', _buildBriefIdentityInputs()),
-          const SizedBox(height: 32),
+              'Character & Role', _buildBriefIdentityInputs(),
+              initiallyExpanded: true),
           _buildBriefSection(
               'Personality', _buildBriefPersonalitySliders()),
-          const SizedBox(height: 32),
           _buildBriefSection(
               'World & Setting', _buildBriefWorldInputs()),
-          const SizedBox(height: 32),
           _buildBriefSection('Story Options', _buildBriefConfigInputs()),
           const SizedBox(height: 48),
           Center(
@@ -2785,11 +2809,15 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     );
   }
 
-  Widget _buildBriefSection(String title, Widget content) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
+  Widget _buildBriefSection(String title, Widget content,
+      {bool initiallyExpanded = false}) {
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        initiallyExpanded: initiallyExpanded,
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: const EdgeInsets.only(bottom: 16),
+        title: Text(
           title.toUpperCase(),
           style: GoogleFonts.sourceSans3(
             color: const Color(0xFFFFD700).withAlpha(180),
@@ -2798,9 +2826,10 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             letterSpacing: 1.5,
           ),
         ),
-        const SizedBox(height: 16),
-        content,
-      ],
+        iconColor: const Color(0xFFFFD700),
+        collapsedIconColor: Colors.white30,
+        children: [content],
+      ),
     );
   }
 
