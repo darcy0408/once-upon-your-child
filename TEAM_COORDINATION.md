@@ -112,11 +112,11 @@
 - **Phase 4.3** (Creative Brief refactor): Major widget architecture change — best for Claude.
 - **Phase 1.3** (Generate 12 face assets): Requires AI image generation or manual art creation — Darcy/design tool.
 
-### Next Steps
-- Generate 12 missing feelings face assets (requires Gemini 3 Pro image gen — prompt in docs/assignments/UX_AUDIT_FIX_PLAN.md Task 1.3).
-- Remaining Phase 3 tasks: 3.2 (wire per-band feelings images), 3.3 (isMature feelings picker variant).
-- Remaining Phase 4 tasks: 4.1, 4.2, 4.3, 4.4, 4.6.
-- Remaining Phase 5 tasks: 5.2, 5.3, 5.5.
+### Next Steps (Updated 2026-03-20 after second Claude session)
+- Task 1.3 COMPLETE — Gemini 3 Pro generated 12 missing feelings face PNGs (21 total now in assets/images/feelings/sprout/)
+- Task 3.2 SKIPPED — `assets/feelings_faces/` already has 150+ wired images; per-band set (8 each) would be a downgrade
+- Tasks 3.3, 4.1, 4.3, 4.4, 5.2 COMPLETE — see second Claude session entry below
+- Remaining: 4.2 (band-exclusive scenarios), 4.6 (sprout scenes), 5.3 (unused asset audit), 5.5 (welcome density)
 
 ---
 
@@ -161,12 +161,48 @@
 - `5e5e9be` — feat: Phase 3 UX audit fixes — archetype images, story length, fonts, nav
 - `139cf9e` — feat: Phase 4+5 UX audit fixes — sliders, dead code, voice input
 
+### Additional Changes (Claude Sonnet 4.6 — second session, 2026-03-20)
+
+#### Task 1.3 — 12 Feelings Face PNGs (Gemini 3 Pro)
+- Gemini generated all 12 missing PNGs; now 21 files in `assets/images/feelings/sprout/`
+
+#### Task 3.2 — SKIPPED
+- `assets/feelings_faces/` already has 150+ wired images, better than 8-image per-band dirs
+
+#### Task 3.3 — Mature Feelings Picker Style
+- Added `AgeBandThemeData` import to `lib/widgets/feelings_cloud_picker.dart`
+- Mature bands (isMature=true): flat rounded-rect emotion cards, system font, no cloud clip, subtle border
+- Young bands: unchanged cloud shape with gradient and Fredoka font
+- `_TertiaryChip`: rectangular (radius 10) for mature, pill (radius 50) for young
+- `_Breadcrumb`: emoji hidden, system font for mature
+- `_TertiaryGrid`: "Which feels most accurate?" label for mature
+
+#### Task 4.1 — Sprout Scenario Filter
+- Sprout (age ≤5) now only sees Magical Worlds category in `_buildScenarioSections()`
+- Real-Life Heroes hidden behind filter (too abstract for pre-readers)
+
+#### Task 4.3 — Creative Brief Expandable Sections
+- `_buildBriefSection()` now uses `ExpansionTile` instead of plain `Column`
+- "Character & Role" expanded by default; Personality/World/Story Options collapsed
+
+#### Task 4.4 — Archetype Carousel Dots
+- Animated position dots added below horizontal archetype `ListView` in `_buildArchetypeCards()`
+- Selected archetype shows gold wide dot; unselected show small white dots
+
+#### Task 5.2 — Age Check Centralization
+- `big_feelings_flow_screen.dart`: `_bandFolder()` now uses `ageBandFromAge().name` (1 line, was 6 raw if-checks)
+- `feelings_garden_screen.dart`: extracted `_tabCount` getter, eliminating duplicated logic in initState/build
+
+### Commits
+- `5e5e9be` — feat: Phase 3 UX audit fixes — archetype images, story length, fonts, nav
+- `139cf9e` — feat: Phase 4+5 UX audit fixes — sliders, dead code, voice input
+- `f0f3233` — feat: Tasks 3.3, 4.1, 4.3, 4.4, 5.2 — picker style, scenarios, brief, dots
+
 ### Remaining Work
-- **Task 1.3**: Generate 12 missing feelings face PNGs (Gemini 3 Pro with image gen — see delegation prompt)
-- **Task 3.2**: Wire per-band feelings images into feelings picker
-- **Task 3.3**: Create isMature variant of feelings picker (geometric/flat style for Creator+)
-- **Tasks 4.1-4.4, 4.6**: Structural improvements (scenario filtering, Creative Brief refactor, carousel dots, scene assets)
-- **Tasks 5.2, 5.3, 5.5**: Cleanup (centralize age checks, audit unused assets, welcome density)
+- **Task 4.2**: Add band-exclusive scenarios (mystery/survival for Adventurer+)
+- **Task 4.6**: Populate `assets/images/scenes/sprout/` with scene backgrounds
+- **Task 5.3**: Audit unused assets
+- **Task 5.5**: Welcome age selector density (group bands for young users)
 
 ---
 
