@@ -389,6 +389,8 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
 
   @override
   Widget build(BuildContext context) {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -486,7 +488,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
               Center(
                 child: PillButton(
                   emoji: '✨',
-                  label: 'Gather Party!',
+                  label: band.companionCTALabel,
                   onTap: widget.onNext,
                   variant: PillButtonVariant.purple,
                   isSelected: true,
@@ -497,7 +499,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
                 child: TextButton(
                   onPressed: widget.onNext,
                   child: Text(
-                    'Go Solo (Be Brave!)',
+                    band.band.isMature ? 'Skip' : 'Go Solo (Be Brave!)',
                     style: GoogleFonts.quicksand(
                       color: Colors.white.withAlpha(150),
                       fontSize: 16,

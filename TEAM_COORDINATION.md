@@ -164,3 +164,12 @@
 
 ## 2026-03-19 (Task 1.4 - Bedtime Settings CTA)
 - Completed: Updated `lib/screens/bedtime_wizard_screen.dart` so the 'Go to Settings' button now navigates to the `ParentControlsScreen` instead of just calling `Navigator.pop()`.
+
+## 2026-03-19 (Task 1.5 - Companion Selection Fix)
+- Completed: Updated `_ShowcaseSlot` and associated friend/pet selection logic in `lib/screens/wizard_steps/hero_creator_step.dart` to correctly insert and remove `id` instead of `name` within `selectedCompanions`.
+
+## 2026-03-19 (Task 1.6 - Emotion Game Assets Fix)
+- Completed: Updated `lib/emotion_recognition_game.dart` to correctly point to `assets/images/feelings/sprout` instead of `assets/emotions/` and implemented `Image.asset` for rendering it within a `ClipRRect`.
+
+## 2026-03-19 (Task 2.1 - Make Primary CTAs Band-Configurable)
+- Completed: Added `launchStoryLabel` and `companionCTALabel` to `AgeBandThemeData` and implemented them in `companion_selector_step.dart`, `magic_review_step.dart`, and `wizard_story_screen.dart` to remove hardcoded juvenile CTAs for older age bands.

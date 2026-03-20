@@ -88,6 +88,8 @@ class AgeBandThemeData extends ThemeExtension<AgeBandThemeData> {
   final String companionLabel;
   final String heroLabel;
   final String feelingsPrompt;
+  final String launchStoryLabel;
+  final String companionCTALabel;
 
   const AgeBandThemeData({
     required this.band,
@@ -121,6 +123,8 @@ class AgeBandThemeData extends ThemeExtension<AgeBandThemeData> {
     required this.companionLabel,
     required this.heroLabel,
     required this.feelingsPrompt,
+    required this.launchStoryLabel,
+    required this.companionCTALabel,
   });
 
   /// Background gradient built from the band's three gradient colors.
@@ -280,6 +284,8 @@ const sproutTheme = AgeBandThemeData(
   companionLabel: 'Pick a Buddy!',
   heroLabel: 'Your Hero',
   feelingsPrompt: 'Tap a face!',
+  launchStoryLabel: 'Make Magic!',
+  companionCTALabel: 'Pick My Friends!',
 );
 
 /// Explorer (ages 6-8): Current magical purple — the baseline aesthetic.
@@ -321,6 +327,8 @@ const explorerTheme = AgeBandThemeData(
   companionLabel: 'Choose a Companion',
   heroLabel: 'Your Hero',
   feelingsPrompt: 'Tap to explore feelings',
+  launchStoryLabel: 'Make Magic!',
+  companionCTALabel: 'Gather Party!',
 );
 
 /// Adventurer (ages 9-12): Deeper cosmic palette, book-like typography,
@@ -362,6 +370,8 @@ const adventurerTheme = AgeBandThemeData(
   companionLabel: 'Choose Companion',
   heroLabel: 'Character',
   feelingsPrompt: 'Set the mood for your story',
+  launchStoryLabel: 'Start Adventure!',
+  companionCTALabel: 'Assemble Party',
 );
 
 /// Creator (ages 13+): Clean, editorial, dark mode default.
@@ -403,6 +413,8 @@ const creatorTheme = AgeBandThemeData(
   companionLabel: 'Companion',
   heroLabel: 'Character',
   feelingsPrompt: 'What mood fits your story?',
+  launchStoryLabel: 'Create Story',
+  companionCTALabel: 'Set the Cast',
 );
 
 /// Adolescent (ages 15-17): Cinematic charcoal-black, electric teal accent,
@@ -440,6 +452,8 @@ const adolescentTheme = AgeBandThemeData(
   companionLabel: 'Companion',
   heroLabel: 'Character',
   feelingsPrompt: "What's going on under the surface?",
+  launchStoryLabel: 'Start Writing',
+  companionCTALabel: 'Continue',
 );
 
 /// Adult (ages 18+): Refined minimal dark, warm amber-gold accent,
@@ -477,6 +491,8 @@ const adultTheme = AgeBandThemeData(
   companionLabel: 'Companion',
   heroLabel: 'Character',
   feelingsPrompt: 'Explore the emotional landscape',
+  launchStoryLabel: 'Begin',
+  companionCTALabel: 'Continue',
 );
 
 /// Look up the theme data for a given band.

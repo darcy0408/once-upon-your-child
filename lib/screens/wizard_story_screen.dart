@@ -294,31 +294,31 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                           child: Builder(
                             builder: (context) {
                               final stepLabels = band.band == AgeBand.sprout
-                                  ? const [
+                                  ? <String>[
                                       'My Hero!',
                                       'My Buddies!',
                                       'My World!',
-                                      'Make Magic!'
+                                      band.launchStoryLabel
                                     ]
                                   : band.band == AgeBand.adventurer
-                                      ? const [
+                                      ? <String>[
                                           'My Character',
                                           'My Companions',
                                           'My Setting',
-                                          'Start Adventure'
+                                          band.launchStoryLabel
                                         ]
                                       : band.band == AgeBand.creator
-                                          ? const [
+                                          ? <String>[
                                               'Character',
                                               'Companions',
                                               'Setting',
-                                              'Create Story'
+                                              band.launchStoryLabel
                                             ]
-                                          : const [
+                                          : <String>[
                                               'Pick Hero',
                                               'Pick Team',
                                               'Pick Place',
-                                              'Make Magic'
+                                              band.launchStoryLabel
                                             ];
                               return Transform.scale(
                                 scale: band.spacingScale,

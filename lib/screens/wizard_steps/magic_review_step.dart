@@ -766,11 +766,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                         child: ImageMakeMagicButton(
                             onTap: _launchStoryCreation,
                             isEnabled: !_isGenerating && data.isComplete,
-                            label: band.band.isMature
-                                ? 'CREATE STORY'
-                                : band.band == AgeBand.adventurer
-                                    ? 'START ADVENTURE'
-                                    : 'MAKE MAGIC'))),
+                            label: band.launchStoryLabel))),
             SizedBox(height: band.space(AppSpacing.xl)),
           ],
         ),
