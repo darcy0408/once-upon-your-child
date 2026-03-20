@@ -176,3 +176,6 @@
 
 ## 2026-03-19 (Task 2.2 - Rewrite Creative Brief Labels)
 - Completed: Replaced all clinical string labels like "PSYCHOLOGICAL VITALITY" and "CREATIVE BRIEF" in the teen wizard flow (`hero_creator_step.dart`) with natural language variants.
+
+## 2026-03-19 (Task 2.3 - Update Mature Archetype Names and Descriptions)
+- Completed: Updated `ArchetypeData` in `archetype_card.dart` to support a new `matureDescription` property alongside `matureName`. Populated `matureDescription` for every archetype. Replaced hardcoded "Senior Architect" and "mighty_guardian" strings with their proper replacements. Wired the `descriptionForAge` method into `hero_creator_step.dart`'s UI grid cards.

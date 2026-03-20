@@ -240,6 +240,7 @@ class CharacterArchetypes {
     traits: ['Brave', 'Curious', 'Determined'],
     specialAbility: 'Can command wind and weather to soar through storms',
     matureName: 'Storm Vanguard',
+    matureDescription: 'Leads through chaos and thrives when the stakes are highest',
     sproutImageId: 'storm_rider',
     bandImageId: 'brave_hero',
     attributes: {
@@ -260,6 +261,7 @@ class CharacterArchetypes {
     traits: ['Smart', 'Modest', 'Curious'],
     specialAbility: 'Can solve any quiz, puzzle, or brain teaser with clever thinking',
     matureName: 'Logic Architect',
+    matureDescription: 'Deconstructs complex problems and architects elegant solutions',
     sproutImageId: 'quiz_whiz',
     bandImageId: 'clever_inventor',
     attributes: {
@@ -279,7 +281,8 @@ class CharacterArchetypes {
     description: 'Magic paintbrush brings drawings to life',
     traits: ['Creative', 'Expressive', 'Imaginative'],
     specialAbility: 'Has a magic paintbrush that brings drawings to life',
-    matureName: 'Senior Architect',
+    matureName: 'Vision Architect',
+    matureDescription: 'Creates art that bleeds into reality — illustrations gain a life of their own',
     sproutImageId: 'master_creator',
     bandImageId: 'gentle_dreamer',
     attributes: {
@@ -300,6 +303,7 @@ class CharacterArchetypes {
     traits: ['Caring', 'Patient', 'Loyal'],
     specialAbility: 'Can sense emotions and heal broken spirits with kindness',
     matureName: 'Harmony Mediator',
+    matureDescription: 'Reads emotional undercurrents and mediates conflicts with empathy',
     sproutImageId: 'heart_healer',
     bandImageId: 'kind_healer',
     attributes: {
@@ -320,6 +324,7 @@ class CharacterArchetypes {
     traits: ['Energetic', 'Fast', 'Determined'],
     specialAbility: 'Moves faster than sound and leaves trails of stardust',
     matureName: 'Kinetic Specialist',
+    matureDescription: 'Channels raw physical energy into precision movement and split-second decisions',
     sproutImageId: 'lightning_runner',
     bandImageId: 'speedy_explorer',
     attributes: {
@@ -340,8 +345,9 @@ class CharacterArchetypes {
     traits: ['Kind', 'Observant', 'Gentle'],
     specialAbility: 'Can talk to animals and move unseen like a shadow',
     matureName: 'Ecological Whisperer',
+    matureDescription: 'Reads the language of ecosystems and hears what the living world doesn\'t say aloud',
     sproutImageId: 'animal_whisperer',
-    bandImageId: 'mighty_guardian',
+    bandImageId: 'animal_whisperer',
     attributes: {
       'energy': 35,
       'sociability': 25,
@@ -371,6 +377,7 @@ class ArchetypeData {
   final Map<String, int> attributes;
   final String specialAbility; // New: physics-defying power for adventures
   final String? matureName;
+  final String? matureDescription;
   final String? sproutImageId; // filename (no ext) in assets/images/archetypes/sprout/
   final String? bandImageId;   // filename (no ext) in assets/images/archetypes/{band}/
 
@@ -383,6 +390,7 @@ class ArchetypeData {
     required this.attributes,
     required this.specialAbility,
     this.matureName,
+    this.matureDescription,
     this.sproutImageId,
     this.bandImageId,
   });
@@ -390,6 +398,11 @@ class ArchetypeData {
   String nameForAge(int age) {
     if (age >= 12 && matureName != null) return matureName!;
     return name;
+  }
+
+  String descriptionForAge(int age) {
+    if (age >= 12 && matureDescription != null) return matureDescription!;
+    return description;
   }
 
   String? imagePathForBand(AgeBand band) {

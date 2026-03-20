@@ -2733,7 +2733,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                               if (showDescriptions) ...[
                                 const SizedBox(height: 2),
                                 Text(
-                                  a.description,
+                                  a.descriptionForAge(widget.wizardData.characterAge),
                                   textAlign: TextAlign.center,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
