@@ -24,7 +24,6 @@ import '../../services/audio_ambience_service.dart';
 import '../../config/environment.dart';
 import '../../widgets/avatar_gallery_selector.dart';
 import '../../widgets/image_mode_orb.dart';
-import '../../widgets/image_crystal_formation.dart';
 import '../../data/scenario_data.dart';
 import '../../character_traits_data.dart';
 import '../../widgets/feelings_quest_modal.dart';
@@ -1833,47 +1832,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                     ),
                   ]
                 ],
-              ),
-            ],
-          ),
-          SizedBox(height: band.space(36)),
-          // Story length selection
-          Text(
-            "How long should it be?",
-            style: GoogleFonts.fredoka(
-              color: Colors.white.withAlpha(200),
-              fontSize: band.body(16),
-            ),
-          ),
-          SizedBox(height: band.space(16)),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Flexible(
-                child: ImageCrystalFormation(
-                  type: 'quick',
-                  label: 'Quick',
-                  isSelected: data.storyLength == 'quick',
-                  onTap: () => setState(() => data.storyLength = 'quick'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Flexible(
-                child: ImageCrystalFormation(
-                  type: 'classic',
-                  label: 'Classic',
-                  isSelected: data.storyLength == 'standard',
-                  onTap: () => setState(() => data.storyLength = 'standard'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Flexible(
-                child: ImageCrystalFormation(
-                  type: 'epic',
-                  label: 'Epic',
-                  isSelected: data.storyLength == 'epic',
-                  onTap: () => setState(() => data.storyLength = 'epic'),
-                ),
               ),
             ],
           ),
@@ -4826,8 +4784,7 @@ class _GenderImageButtonState extends State<_GenderImageButton> {
   Widget build(BuildContext context) {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    final bool useDecorative =
-        band.band == AgeBand.sprout || band.band == AgeBand.explorer;
+    final bool useDecorative = band.band == AgeBand.explorer;
     final imageWidget = Image.asset(
       widget.assetPath,
       width: widget.width,
@@ -4990,8 +4947,7 @@ class _ThemedNameInputState extends State<_ThemedNameInput>
   Widget build(BuildContext context) {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
-    final bool useDecorative =
-        band.band == AgeBand.sprout || band.band == AgeBand.explorer;
+    final bool useDecorative = band.band == AgeBand.explorer;
     return AnimatedBuilder(
       animation: _glowAnim,
       builder: (context, child) {

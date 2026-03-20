@@ -410,8 +410,10 @@ class ArchetypeData {
     if (band == AgeBand.sprout && sproutImageId != null) {
       return 'assets/images/archetypes/sprout/$sproutImageId.jpg';
     }
-    // All other bands use the original archetype-specific framed PNGs,
-    // which are designed to match each archetype's concept.
+    // Other bands use per-band images when available.
+    if (bandImageId != null) {
+      return 'assets/images/archetypes/${band.name}/$bandImageId.jpg';
+    }
     return imagePath;
   }
 }

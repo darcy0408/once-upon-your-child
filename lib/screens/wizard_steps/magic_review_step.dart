@@ -490,14 +490,24 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     return band.band.isMature ? 'Story draft' : 'Magical story';
   }
 
-  String _storyLengthLabel(String length) {
+  String _lengthLabelForBand(String length, AgeBandThemeData band) {
+    if (band.band.isMature) {
+      switch (length) {
+        case 'quick':
+          return 'Short';
+        case 'epic':
+          return 'Long';
+        default:
+          return 'Medium';
+      }
+    }
     switch (length) {
       case 'quick':
-        return 'Quick read';
+        return 'Short tale';
       case 'epic':
-        return 'Epic adventure';
+        return 'Big adventure';
       default:
-        return 'Classic length';
+        return 'Story time';
     }
   }
 
@@ -721,14 +731,38 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                     onTap: widget.onGoBack,
                     colorAccent: const Color(0xFF9C4DCC))),
             SizedBox(height: band.space(8)),
-            _StaggeredReveal(
+            if (band.band != AgeBand.sprout)
+              _StaggeredReveal(
                 index: 1,
-                child: _SummaryRow(
-                    icon: Icons.timer,
-                    band: band,
-                    label: _storyLengthLabel(data.storyLength),
-                    onTap: widget.onGoBack,
-                    colorAccent: const Color(0xFF4DB6AC))),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: band.space(4)),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _LengthChip(
+                        label: _lengthLabelForBand('quick', band),
+                        isSelected: data.storyLength == 'quick',
+                        onTap: () => setState(() => data.storyLength = 'quick'),
+                        band: band,
+                      ),
+                      SizedBox(width: band.space(8)),
+                      _LengthChip(
+                        label: _lengthLabelForBand('standard', band),
+                        isSelected: data.storyLength == 'standard',
+                        onTap: () => setState(() => data.storyLength = 'standard'),
+                        band: band,
+                      ),
+                      SizedBox(width: band.space(8)),
+                      _LengthChip(
+                        label: _lengthLabelForBand('epic', band),
+                        isSelected: data.storyLength == 'epic',
+                        onTap: () => setState(() => data.storyLength = 'epic'),
+                        band: band,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             if (data.customElements.isNotEmpty) ...[
               SizedBox(height: band.space(8)),
               _StaggeredReveal(
@@ -1234,5 +1268,51 @@ class _StaggeredRevealState extends State<_StaggeredReveal>
     return FadeTransition(
         opacity: _opacity,
         child: SlideTransition(position: _slide, child: widget.child));
+  }
+}
+
+class _LengthChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final AgeBandThemeData band;
+
+  const _LengthChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    required this.band,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(
+          horizontal: band.space(16),
+          vertical: band.space(10),
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? band.accent.withValues(alpha: 0.3)
+              : Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(band.buttonRadiusBase),
+          border: Border.all(
+            color: isSelected ? band.accent : Colors.white24,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? band.accent : band.textOnDark,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            fontSize: band.body(14),
+          ),
+        ),
+      ),
+    );
   }
 }

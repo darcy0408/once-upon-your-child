@@ -342,8 +342,8 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                         ),
                       ),
                     ),
-                    // Feelings Garden button — labeled for all child bands
-                    if (band.band != AgeBand.creator)
+                    // Feelings Garden button — labeled for young bands, icon-only for mature
+                    if (!band.band.isMature)
                       _LabeledNavButton(
                         icon: Icons.favorite,
                         label: 'Feelings',
@@ -371,8 +371,8 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                         ),
                         tooltip: 'Feelings Garden',
                       ),
-                    // Character Library button — labeled for all child bands
-                    if (band.band != AgeBand.creator)
+                    // Character Library button — labeled for young bands, icon-only for mature
+                    if (!band.band.isMature)
                       _LabeledNavButton(
                         icon: Icons.people,
                         label: 'Heroes',
@@ -400,8 +400,8 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                         },
                         tooltip: 'My Characters',
                       ),
-                    // Bedtime Mode button
-                    if (band.band != AgeBand.creator)
+                    // Bedtime Mode button — labeled for young bands, icon-only for mature
+                    if (!band.band.isMature)
                       Semantics(
                         button: true,
                         label: 'Start bedtime story mode. Voice only, no screen needed.',
