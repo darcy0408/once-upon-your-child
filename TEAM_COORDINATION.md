@@ -182,3 +182,6 @@
 
 ## 2026-03-19 (Task 2.4 - Fix Welcome Screen Text)
 - Completed: Updated the welcome screen's main text from "Once Upon YOUR Child" to a universal "Once Upon a Time".
+
+## 2026-03-19 (Task 2.5 - Adapt Bedtime Mode Prompts Per Age Band)
+- Completed: Added `_isMature` helper to `bedtime_wizard_screen.dart` to determine age dynamically based on the child's input. Adapted greeting, companion, setting, making, and completion voice prompts for users 12+.

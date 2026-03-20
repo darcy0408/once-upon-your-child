@@ -70,6 +70,9 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
   late AnimationController _orbController;
   Timer? _sleepTimer;
 
+  bool get _isMature => widget.childAge >= 12;
+  bool get _isYoung => widget.childAge <= 8;
+
   @override
   void initState() {
     super.initState();
@@ -131,8 +134,11 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         break; // handled in build() — parent must tap Settings or Exit
 
       case BedtimeStep.greeting:
+        final greeting = _isMature
+            ? 'Hey ${widget.childName}. Let\'s build your story. Just talk to me.'
+            : 'Hi ${widget.childName}! Let\'s make a magical bedtime story together. Just talk to me!';
         await _speakAndAdvance(
-          "Hi ${widget.childName}! Let's make a magical bedtime story together. Just talk to me!",
+          greeting,
           BedtimeStep.age, // Always ask age so stories are always age-appropriate
         );
         break;
@@ -155,9 +161,10 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         break;
 
       case BedtimeStep.companion:
-        final answer = await _askQuestion(
-          "Who's coming with $_heroName? A tiny dragon, a wise owl, a shadow cat, a star dog, or someone else?",
-        );
+        final compPrompt = _isMature
+            ? "Who's joining $_heroName? A storm hawk, shadow lynx, iron golem, void sprite, or someone else?"
+            : "Who's coming with $_heroName? A tiny dragon, a wise owl, a shadow cat, a star dog, or someone else?";
+        final answer = await _askQuestion(compPrompt);
         _companionChoice = _fuzzyMatchCompanion(answer);
         _advance(BedtimeStep.listeners);
         break;
@@ -179,9 +186,10 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         break;
 
       case BedtimeStep.feeling:
-        final answer = await _askQuestion(
-          "What kind of story? A brave adventure, a funny story, a story about friendship, or a calming story?",
-        );
+        final feelingPrompt = _isMature
+            ? "What's the vibe? Brave, funny, friendship, or atmospheric?"
+            : "What kind of story? A brave adventure, a funny story, a story about friendship, or a calming story?";
+        final answer = await _askQuestion(feelingPrompt);
         _feelingChoice = _matchStoryMood(answer);
         _advance(BedtimeStep.duration);
         break;
@@ -211,7 +219,10 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         break;
 
       case BedtimeStep.generating:
-        await _speak("Making your story now. Close your eyes and imagine...");
+        final genPrompt = _isMature
+            ? "Writing your story now. Give it a moment..."
+            : "Making your story now. Close your eyes and imagine...";
+        await _speak(genPrompt);
         await _generateAndReadStory();
         break;
 
@@ -219,7 +230,10 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         break;
 
       case BedtimeStep.done:
-        await _speak("The end. Goodnight, ${widget.childName}. Sweet dreams.");
+        final donePrompt = _isMature
+            ? "That's the end. Rest well, ${widget.childName}."
+            : "The end. Goodnight, ${widget.childName}. Sweet dreams.";
+        await _speak(donePrompt);
         await Future.delayed(const Duration(seconds: 3));
         if (mounted) Navigator.of(context).pop();
         break;
