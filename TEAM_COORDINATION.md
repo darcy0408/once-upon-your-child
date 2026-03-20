@@ -179,3 +179,6 @@
 
 ## 2026-03-19 (Task 2.3 - Update Mature Archetype Names and Descriptions)
 - Completed: Updated `ArchetypeData` in `archetype_card.dart` to support a new `matureDescription` property alongside `matureName`. Populated `matureDescription` for every archetype. Replaced hardcoded "Senior Architect" and "mighty_guardian" strings with their proper replacements. Wired the `descriptionForAge` method into `hero_creator_step.dart`'s UI grid cards.
+
+## 2026-03-19 (Task 2.4 - Fix Welcome Screen Text)
+- Completed: Updated the welcome screen's main text from "Once Upon YOUR Child" to a universal "Once Upon a Time".

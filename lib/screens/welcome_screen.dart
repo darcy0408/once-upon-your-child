@@ -236,20 +236,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                     ),
                   ),
                   TextSpan(
-                    text: 'YOUR',
+                    text: 'a Time',
                     style: GoogleFonts.cinzelDecorative(
                       fontSize: 38,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
-                      height: 1.3,
-                    ),
-                  ),
-                  TextSpan(
-                    text: ' Child',
-                    style: GoogleFonts.cinzelDecorative(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: _goldColor,
                       height: 1.3,
                     ),
                   ),
