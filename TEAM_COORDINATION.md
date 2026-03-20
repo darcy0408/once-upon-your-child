@@ -173,3 +173,6 @@
 
 ## 2026-03-19 (Task 2.1 - Make Primary CTAs Band-Configurable)
 - Completed: Added `launchStoryLabel` and `companionCTALabel` to `AgeBandThemeData` and implemented them in `companion_selector_step.dart`, `magic_review_step.dart`, and `wizard_story_screen.dart` to remove hardcoded juvenile CTAs for older age bands.
+
+## 2026-03-19 (Task 2.2 - Rewrite Creative Brief Labels)
+- Completed: Replaced all clinical string labels like "PSYCHOLOGICAL VITALITY" and "CREATIVE BRIEF" in the teen wizard flow (`hero_creator_step.dart`) with natural language variants.

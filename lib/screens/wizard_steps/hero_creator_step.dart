@@ -2927,15 +2927,15 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           _buildRestoreCharacterSection(),
           const SizedBox(height: 16),
           _buildBriefSection(
-              'Identity & Archetype', _buildBriefIdentityInputs()),
+              'Character & Role', _buildBriefIdentityInputs()),
           const SizedBox(height: 32),
           _buildBriefSection(
-              'Psychological Profile', _buildBriefPersonalitySliders()),
+              'Personality', _buildBriefPersonalitySliders()),
           const SizedBox(height: 32),
           _buildBriefSection(
-              'Setting & Narrative Focus', _buildBriefWorldInputs()),
+              'World & Setting', _buildBriefWorldInputs()),
           const SizedBox(height: 32),
-          _buildBriefSection('Technical Parameters', _buildBriefConfigInputs()),
+          _buildBriefSection('Story Options', _buildBriefConfigInputs()),
           const SizedBox(height: 48),
           Center(
             child: SizedBox(
@@ -2951,7 +2951,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   elevation: 8,
                 ),
                 child: Text(
-                  'INITIALIZE STORY GENERATION',
+                  'Create Story',
                   style: GoogleFonts.sourceSans3(
                     fontWeight: FontWeight.w900,
                     letterSpacing: 2.0,
@@ -2972,7 +2972,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'CREATIVE BRIEF',
+          'Build Your Story',
           style: GoogleFonts.sourceSans3(
             color: const Color(0xFFFFD700),
             fontSize: 14,
@@ -3205,14 +3205,14 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     return Column(
       children: [
         _buildBriefSlider(
-          'PSYCHOLOGICAL VITALITY',
+          'Energy Level',
           def('expressiveness').leftLabelForAge(age),
           def('expressiveness').rightLabelForAge(age),
           'expressiveness',
           sliders,
         ),
         _buildBriefSlider(
-          'SOCIAL ARCHITECTURE',
+          'Social Style',
           def('sociability').leftLabelForAge(age),
           def('sociability').rightLabelForAge(age),
           'sociability',
