@@ -47,7 +47,7 @@ class ParentalConsentService {
   Future<void> recordConsent({
     required int age,
     String? parentEmail,
-    String method = 'email_plus',
+    String method = 'email_verified',
     bool allowPhotoAvatar = true,
   }) async {
     final recordedAt = DateTime.now().toIso8601String();
@@ -67,10 +67,9 @@ class ParentalConsentService {
       final userId = await api.getUserId();
       if (userId != null) {
         await api.post('/api/user/$userId/consent', {
-          'age': age,
-          'method': method,
+          'child_age': age,
+          'consent_method': method,
           'allow_photo_avatar': allowPhotoAvatar,
-          'recorded_at': recordedAt,
           if (parentEmail != null && parentEmail.isNotEmpty)
             'parent_email': parentEmail,
         });

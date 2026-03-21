@@ -273,7 +273,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
       await widget.consentService.recordConsent(
         age: widget.declaredAge,
         parentEmail: _parentEmail?.trim(),
-        method: _isUnder13 ? 'email_plus' : 'parent',
+        method: _isUnder13 ? 'email_verified' : 'parent',
         allowPhotoAvatar: _allowPhotoAvatar,
       );
       if (!mounted) return;

@@ -2,6 +2,32 @@
 
 ---
 
+## Session Update — 2026-03-21 (Consent Endpoint 400 Fix)
+
+### Problem
+Backend logs showed the `/api/user/<id>/consent` POST returning 400 after a successful token refresh. The consent record was never being saved server-side.
+
+### Root Cause
+Three field-name mismatches between the Flutter frontend and the Flask backend:
+
+| Frontend was sending | Backend expects    |
+|---------------------|--------------------|
+| `age`               | `child_age`        |
+| `method`            | `consent_method`   |
+| `email_plus`        | `email_verified`   |
+
+The backend validation rejected every request because the required fields (`child_age`, `consent_method`) were always `None`.
+
+### Changes
+- **`lib/services/parental_consent_service.dart`** — fixed POST body keys (`age` → `child_age`, `method` → `consent_method`), changed default method from `email_plus` → `email_verified`, removed unused `recorded_at` field
+- **`lib/screens/parental_consent_screen.dart`** — changed under-13 consent method from `email_plus` → `email_verified`
+
+### Impact
+- COPPA consent records were not being synced to the backend for any user. Local SharedPreferences records were unaffected (app still functioned), but the server had no consent audit trail.
+- All three call sites now send valid payloads: `age_gate_screen.dart` (`self_attested`), `parental_consent_screen.dart` (`email_verified` / `parent`), `welcome_screen.dart` (`self_attested`).
+
+---
+
 ## SESSION HANDOFF — 2026-03-18 (Darcy restarting computer)
 
 ### Current State
