@@ -18,7 +18,7 @@ class WizardDataMapper {
       currentFeeling = _mapStructuredFeeling(data);
     } else if (data.selectedEmotionChips.isNotEmpty) {
       final chipLabel = data.selectedEmotionChips.first;
-      currentFeeling = _mapChipToFeeling(chipLabel);
+      currentFeeling = _mapChipToFeeling(chipLabel, age);
     }
 
     // 3. Map Archetype to Character Traits or Details
@@ -376,7 +376,7 @@ class WizardDataMapper {
     }
   }
 
-  static Map<String, dynamic> _mapChipToFeeling(String chipLabel) {
+  static Map<String, dynamic> _mapChipToFeeling(String chipLabel, int age) {
     final normalizedChip = chipLabel.trim().toLowerCase();
     // defaults
     String emotionName = 'Happy';
@@ -399,7 +399,7 @@ class WizardDataMapper {
           mouthType: '',
           color: Color(0xFF6495ED)));
       description = details.description;
-      coping = details.coping;
+      coping = details.copingForAge(age);
     } else if (normalizedChip.contains('angry') ||
         normalizedChip.contains('mad') ||
         normalizedChip.contains('annoyed')) {
@@ -414,7 +414,7 @@ class WizardDataMapper {
           mouthType: '',
           color: Color(0xFFFF6B6B)));
       description = details.description;
-      coping = details.coping;
+      coping = details.copingForAge(age);
     } else if (normalizedChip.contains('worried') ||
         normalizedChip.contains('nervous') ||
         normalizedChip.contains('uneasy')) {

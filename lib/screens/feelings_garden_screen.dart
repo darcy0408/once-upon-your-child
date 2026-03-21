@@ -649,7 +649,7 @@ class _CopingCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 // Show the first coping strategy (or joined list if appropriate)
                 Text(
-                  detail.coping.first,
+                  detail.copingForAge(childAge).first,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 14,
