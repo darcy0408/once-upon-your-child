@@ -4,6 +4,7 @@ import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/data/companion_data.dart';
 import 'package:story_weaver_app/data/mood_physics.dart';
 import 'package:story_weaver_app/data/scenario_data.dart';
+import 'package:story_weaver_app/utils/input_sanitizer.dart';
 
 /// Helper to map WizardData to API-ready payload
 class WizardDataMapper {
@@ -150,33 +151,37 @@ class WizardDataMapper {
 
     // 6. Merge hero superpower into character strengths (Feature 3)
     if (data.heroSuperpower != null) {
+      final sanitizedPower = InputSanitizer.sanitizeSuperpower(data.heroSuperpower!);
       final strengths =
           List<String>.from(characterDetails['strengths'] as List);
-      if (!strengths.contains(data.heroSuperpower!)) {
-        strengths.insert(0, data.heroSuperpower!);
+      if (sanitizedPower.isNotEmpty && !strengths.contains(sanitizedPower)) {
+        strengths.insert(0, sanitizedPower);
       }
       characterDetails['strengths'] = strengths;
     }
 
-    // Combine parentalNote + Story DNA into therapeutic_prompt for the backend
+    // Combine parentalNote + Story DNA into therapeutic_prompt for the backend.
+    // All user-entered text is sanitized against prompt injection.
     final List<String> therapeuticParts = [];
     if (data.parentalNote != null && data.parentalNote!.trim().isNotEmpty) {
-      therapeuticParts.add('Parent note: ${data.parentalNote!.trim()}');
+      therapeuticParts.add('Parent note: ${InputSanitizer.sanitizeParentalNote(data.parentalNote!)}');
     }
     if (data.storyDnaContext != null) {
-      therapeuticParts.add('Current situation: ${data.storyDnaContext}');
+      therapeuticParts.add('Current situation: ${InputSanitizer.sanitizeText(data.storyDnaContext!, maxLength: InputSanitizer.maxDnaContext)}');
     }
     if (data.storyDnaOutcome != null) {
-      therapeuticParts.add('Desired outcome: ${data.storyDnaOutcome}');
+      therapeuticParts.add('Desired outcome: ${InputSanitizer.sanitizeText(data.storyDnaOutcome!, maxLength: InputSanitizer.maxDnaContext)}');
     }
     if (data.storyDnaAvoid != null && data.storyDnaAvoid!.trim().isNotEmpty) {
-      therapeuticParts.add('Avoid: ${data.storyDnaAvoid!.trim()}');
+      therapeuticParts.add('Avoid: ${InputSanitizer.sanitizeAvoid(data.storyDnaAvoid!)}');
     }
     final String? therapeuticPrompt =
         therapeuticParts.isNotEmpty ? therapeuticParts.join(' | ') : null;
 
     return {
-      'character': data.characterName.isNotEmpty ? data.characterName : 'Hero',
+      'character': data.characterName.isNotEmpty
+          ? InputSanitizer.sanitizeName(data.characterName)
+          : 'Hero',
       'age': age,
       'theme': theme,
       'conflictHook': conflictHook,
@@ -201,10 +206,10 @@ class WizardDataMapper {
       if (data.selectedRepairGoal != null &&
           data.selectedRepairGoal!.trim().isNotEmpty)
         'repairGoal': data.selectedRepairGoal!.trim(),
-      'customElements': [
+      'customElements': InputSanitizer.sanitizeCustomElements([
         if (data.selectedGenre != null) 'Genre: ${data.selectedGenre}',
         if (data.customElements.isNotEmpty) data.customElements,
-      ].join(' | '),
+      ].join(' | ')),
       // Story mode settings from wizard
       'storyLength': data.storyLength,
       'rhymeTimeMode': data.rhymeTimeMode,
@@ -212,9 +217,10 @@ class WizardDataMapper {
       'interactiveMode': data.interactiveMode,
       'includeIllustrations': data.includeIllustrations,
       // Resolved lifeChallenge: Guardian Mode takes priority over Superpower Quest
-      'lifeChallenge': data.lifeChallenge ??
-          (data.heroQuest != null
-              ? _questToLifeChallenge(data.heroQuest!)
+      'lifeChallenge': data.lifeChallenge != null
+          ? InputSanitizer.sanitizeLifeChallenge(data.lifeChallenge!)
+          : (data.heroQuest != null
+              ? InputSanitizer.sanitizeQuest(_questToLifeChallenge(data.heroQuest!))
               : null),
       // Story DNA: parent-authored therapeutic context (Feature 4)
       if (therapeuticPrompt != null) 'therapeutic_prompt': therapeuticPrompt,

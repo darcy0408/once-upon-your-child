@@ -350,7 +350,9 @@ def create_story_blueprint(
     @require_auth
     @limiter.limit(lambda: get_tier_limits() or "1000/minute")  # BYOK users get high limit
     def generate_story_endpoint():
+        from ..utils.sanitizer import sanitize_story_request
         payload = request.get_json(silent=True) or {}
+        payload = sanitize_story_request(payload)
 
         # Validate mode combinations before processing
         is_valid, mode_error = validate_story_modes(payload)
