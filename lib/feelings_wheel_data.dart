@@ -163,12 +163,19 @@ class FeelingDetail {
   final String description;
   final List<String> coping;
   final String? emoji;
+  final List<String>? matureCoping;
 
   const FeelingDetail({
     required this.description,
     required this.coping,
     this.emoji,
+    this.matureCoping,
   });
+
+  List<String> copingForAge(int age) {
+    if (age >= 12 && matureCoping != null) return matureCoping!;
+    return coping;
+  }
 }
 
 /// Child-friendly descriptions and coping ideas per feeling.
@@ -181,6 +188,11 @@ class FeelingDetails {
         'Shake out your hands and stretch.',
         'Ask an adult to break the problem into small steps.',
       ],
+      matureCoping: [
+        'Step back and take a few slow breaths.',
+        'Break the problem into smaller parts.',
+        'Write down what\'s blocking you.',
+      ],
       emoji: '😤',
     ),
     'Worried': const FeelingDetail(
@@ -189,6 +201,11 @@ class FeelingDetails {
         'Name five things you can see to feel calmer.',
         'Breathe in for 4, out for 4.',
         'Tell a trusted adult what you’re worried about.',
+      ],
+      matureCoping: [
+        'Practice box breathing (4 in, 4 hold, 4 out, 4 hold).',
+        'Write down your worry and challenge it with evidence.',
+        'Talk to someone you trust about what\'s on your mind.',
       ],
       emoji: '😟',
     ),
@@ -199,6 +216,11 @@ class FeelingDetails {
         'Draw someone you like spending time with.',
         'Say hi to someone nearby or send a kind message.',
       ],
+      matureCoping: [
+        'Reach out to one person, even with a simple message.',
+        'Spend time in a shared space, even quietly.',
+        'Remember that loneliness is temporary and common.',
+      ],
       emoji: '😔',
     ),
     'Sensitive': const FeelingDetail(
@@ -207,6 +229,11 @@ class FeelingDetails {
         'Sit close to someone safe.',
         'Place your hand on your heart and breathe slowly.',
         'Wrap in a blanket and notice you are safe right now.',
+      ],
+      matureCoping: [
+        'Practice box breathing (4 in, 4 hold, 4 out, 4 hold).',
+        'Write down your worry and challenge it with evidence.',
+        'Talk to someone you trust about what\'s on your mind.',
       ],
       emoji: '😟',
     ),
@@ -226,6 +253,11 @@ class FeelingDetails {
         'Write or draw what you would do differently.',
         'Remind yourself mistakes help us learn.',
       ],
+      matureCoping: [
+        'Reach out to one person, even with a simple message.',
+        'Spend time in a shared space, even quietly.',
+        'Remember that loneliness is temporary and common.',
+      ],
       emoji: '😔',
     ),
     'Down': const FeelingDetail(
@@ -243,6 +275,11 @@ class FeelingDetails {
         'Stomp safely like a dinosaur, then pause.',
         'Blow big dragon breaths into your hands.',
         'Talk about what bothered you.',
+      ],
+      matureCoping: [
+        'Remove yourself from the situation for a few minutes.',
+        'Use deep breathing to slow your heart rate.',
+        'Journal about what triggered the anger.',
       ],
       emoji: '😠',
     ),
@@ -271,6 +308,11 @@ class FeelingDetails {
         'Look around and name things that are safe.',
         'Stand near a trusted adult.',
       ],
+      matureCoping: [
+        'Ground yourself: name 5 things you see, 4 you hear, 3 you feel.',
+        'Remind yourself of times you\'ve faced fear before.',
+        'Talk to someone you trust about what feels threatening.',
+      ],
       emoji: '😨',
     ),
     'Sad': const FeelingDetail(
@@ -279,6 +321,11 @@ class FeelingDetails {
         'Wrap up in a cozy blanket.',
         'Draw or write about your feeling.',
         'Talk to someone who listens kindly.',
+      ],
+      matureCoping: [
+        'Allow yourself to feel it — sadness is valid.',
+        'Reach out to someone you trust.',
+        'Do one small thing that usually brings you comfort.',
       ],
       emoji: '😢',
     ),

@@ -198,6 +198,28 @@
 - `139cf9e` — feat: Phase 4+5 UX audit fixes — sliders, dead code, voice input
 - `f0f3233` — feat: Tasks 3.3, 4.1, 4.3, 4.4, 5.2 — picker style, scenarios, brief, dots
 
+---
+
+## 2026-03-20 (Asset Audit — Codex)
+
+### Scope Completed
+- Audited all literal `assets/...` references in `lib/**/*.dart`.
+- Cross-referenced Dart asset usage against on-disk files under `assets/` and the `flutter.assets` section in `pubspec.yaml`.
+- Checked registered asset directories for empty or missing paths.
+- Reviewed `scenario_data.dart` short-path illustrations (`images/scenarios/...`) because they are promoted to `assets/...` at runtime by `magic_review_step.dart`.
+
+### Findings
+- **Broken references:** No broken literal `assets/...` references found in Dart.
+- **Additional runtime-broken scenario illustrations:** `lib/data/scenario_data.dart` references `images/scenarios/mystery.png` and `images/scenarios/survival.png`, which resolve to missing files `assets/images/scenarios/mystery.png` and `assets/images/scenarios/survival.png`.
+- **Dynamic/unverifiable references:** 32 asset paths use interpolation or directory prefixes and cannot be statically verified (examples: `assets/images/archetypes/${band.name}/$bandImageId.jpg`, `assets/feelings_faces/$key.png`, `assets/images/companions/${widget.id}_normal.jpg`).
+- **Unregistered assets:** 125 files under `assets/feelings_faces_backup_20260130_150545/` are not covered by `pubspec.yaml`.
+- **Empty/missing pubspec asset directories:** None.
+
+### Action Taken
+- No safe `pubspec.yaml` changes were made.
+- The unregistered files are a backup directory and were left for manual review rather than added to app assets.
+- No asset files were deleted and no Dart references were changed.
+
 ### Additional Changes (Claude Sonnet 4.6 — third pass, 2026-03-20)
 
 #### Task 4.2 — Band-Exclusive Scenarios
@@ -216,8 +238,25 @@
 - `2e90174` — feat: Tasks 4.2 + 5.5 — band-exclusive scenarios, two-stage age picker
 
 ### Remaining Work
-- **Task 4.6**: Generate 4 Sprout scene backgrounds (Gemini 3 Pro — prompt provided to user)
-- **Task 5.3**: Audit unused assets (low priority)
+- **Task 4.6**: Generate 4 Sprout scene backgrounds (Gemini 3 Pro — prompt provided to user; pubspec.yaml already updated)
+- **Task 5.3**: Audit unused assets (low priority — Codex already ran this; findings above)
+- **Missing illustrations**: `assets/images/scenarios/mystery.png` and `assets/images/scenarios/survival.png` needed for new midnight_mystery/survival_island scenarios
+
+---
+
+## 2026-03-20 (Task 2.7 wiring + Task 4.6 pubspec — Claude Opus 4.6)
+
+### Changes Made
+
+#### Task 2.7 — Wire copingForAge() into UI (completion)
+- `lib/screens/feelings_garden_screen.dart`: `_CopingCard` now calls `detail.copingForAge(childAge)` so ages 12+ see mature coping strategies instead of child-oriented ones like "Stomp like a dinosaur"
+- `lib/screens/wizard_steps/wizard_data_mapper.dart`: threaded age into `_mapChipToFeeling(chipLabel, age)` and switched Sad/Angry chip lookups to `details.copingForAge(age)` so story generation payloads also carry age-appropriate coping
+
+#### Task 4.6 — Sprout scenes pubspec registration
+- `pubspec.yaml`: added `assets/images/scenes/sprout/` to flutter assets block so images bundle correctly once Gemini generates them
+
+### Commit
+- `05b83ef` — fix: wire copingForAge() into UI + add sprout scenes to pubspec
 
 ---
 
