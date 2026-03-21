@@ -937,10 +937,14 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   }
 
   List<Widget> _buildScenarioSections(int age) {
-    // Sprout (≤5) only sees Magical Worlds — Real-Life Heroes are too abstract
-    final visibleScenarios = age <= 5
-        ? _scenarios.where((s) => s.category == 'Magical Worlds').toList()
-        : _scenarios;
+    final currentBand = ageBandFromAge(age);
+    // Sprout (≤5) only sees Magical Worlds — Real-Life Heroes are too abstract.
+    // All bands: filter out scenarios with a minBand above the current band.
+    final visibleScenarios = _scenarios.where((s) {
+      if (age <= 5 && s.category == 'Real-Life Heroes') return false;
+      if (s.minBand != null && s.minBand!.index > currentBand.index) return false;
+      return true;
+    }).toList();
 
     final Map<String, List<ScenarioCard>> grouped = {};
     for (var scenario in visibleScenarios) {

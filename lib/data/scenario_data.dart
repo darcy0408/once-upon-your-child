@@ -9,6 +9,7 @@ class ScenarioCard {
   final String conflictHook;
   final String sensoryPalette;
   final String category; // 'Magical Worlds' or 'Real-Life Heroes'
+  final AgeBand? minBand; // null = all ages; set = only shown for this band and above
   final String worldBible; // Rich world description for AI consistency
   // Age-appropriate alternatives for younger children (ages 3-6)
   final String? youngTitle;
@@ -30,6 +31,7 @@ class ScenarioCard {
     required this.conflictHook,
     required this.sensoryPalette,
     this.category = 'Magical Worlds',
+    this.minBand,
     this.worldBible = '',
     this.youngTitle,
     this.youngDescription,
@@ -405,6 +407,53 @@ class ScenarioData {
           'Any place, any atmosphere, any vibe. Set the scene and we\'ll do the rest.',
       matureWorldBible:
           'Respect the user\'s creative vision completely. Build the world with sophisticated detail, internal logic, and atmospheric depth appropriate to whatever they describe. If they give a genre (sci-fi, fantasy, realistic), lean into its conventions. Add complexity, moral ambiguity, and stakes appropriate to their age.',
+    ),
+    // --- ADVENTURER+ EXCLUSIVE ---
+    ScenarioCard(
+      id: 'midnight_mystery',
+      emoji: '🔍',
+      title: 'The Midnight Mystery',
+      illustration: 'images/scenarios/mystery.png',
+      description:
+          'Something has gone missing and only you can piece together the clues before dawn.',
+      conflictHook:
+          'The clues lead somewhere unexpected — and the clock is ticking.',
+      sensoryPalette:
+          'Hushed voices, the scratch of a pen on paper, dim lamplight, the smell of old books.',
+      category: 'Magical Worlds',
+      minBand: AgeBand.adventurer,
+      worldBible:
+          'A richly detailed mystery world — part noir, part adventure. A grand old building (manor, library, museum, school) at night holds a secret. Clues are scattered: a torn letter, a muddy footprint, an alibi that doesn\'t add up. The hero is the only detective. Each clue reveals a layer of the truth. Suspects have motives but none are purely villainous — the real culprit made a mistake, not a crime. The investigation teaches logical deduction, attention to detail, and that truth is rarely simple. Resolution: the hero exposes the truth in a satisfying reveal, choosing mercy over punishment.',
+      matureTitle: 'The Unsolved Case',
+      matureDescription:
+          'Every witness is hiding something. The truth is buried — and dangerous.',
+      matureConflictHook:
+          'The evidence points to someone you trust. Do you follow the facts wherever they lead?',
+      matureWorldBible:
+          'A morally complex mystery where the solution is uncomfortable. The case involves real stakes — reputation, relationships, someone\'s future. The hero must weigh justice against loyalty, truth against kindness. Evidence contradicts itself; witnesses lie for understandable reasons. The investigation requires reading people as much as reading clues. The "villain" is sympathetic — driven by fear, love, or desperation rather than malice. Resolution is ambiguous: the hero discovers the full truth and must decide what to do with it, with no easy answer provided.',
+    ),
+    ScenarioCard(
+      id: 'survival_island',
+      emoji: '🏝️',
+      title: "Survival Island",
+      illustration: 'images/scenarios/survival.png',
+      description:
+          'Stranded somewhere wild, you must use your wits and grit to find a way through.',
+      conflictHook:
+          'Resources are limited. Every choice matters. Can you make it out?',
+      sensoryPalette:
+          'Salt air, rustling leaves, the crackle of a fire, the ache of tired muscles.',
+      category: 'Magical Worlds',
+      minBand: AgeBand.adventurer,
+      worldBible:
+          'A survival scenario set on a lush island, a dense forest, or an isolated wilderness. The hero has limited supplies and must prioritise: shelter, water, fire, food, signal. The environment is challenging but not hostile — it rewards patience and problem-solving over brute force. Wildlife is realistic, weather shifts, and each day brings new challenges. A secondary goal: figure out how you got here and find a way out. The survival skills woven in are real (fire-starting, water collection, navigation by stars, basic first aid). The tone is empowering — hardship as a teacher, not a punishment. Teamwork option: a companion with complementary skills.',
+      matureTitle: 'Into the Wild',
+      matureDescription:
+          'No map. No signal. No rescue coming. Just you, the elements, and your choices.',
+      matureConflictHook:
+          'Your supplies are gone. Someone is injured. And the weather is turning. What do you do first?',
+      matureWorldBible:
+          'A grounded, psychologically real survival story. Physical challenges are secondary to mental ones: managing fear, making decisions under pressure, accepting when a plan has failed. The environment is genuinely dangerous — weather, injury, dehydration all have real consequences in the narrative. Moral dilemmas arise: ration the last of the food alone or share? Take a dangerous shortcut or wait for rescue? The story explores the hierarchy of needs — safety, water, food, warmth — and the psychology of survival: the importance of small goals, staying rational, not surrendering to despair. Resolution comes through persistence and ingenuity, not luck.',
     ),
   ];
 
