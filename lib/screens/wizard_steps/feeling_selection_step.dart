@@ -941,17 +941,40 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
     // Sprout (≤5) only sees Magical Worlds — Real-Life Heroes are too abstract.
     // All bands: filter out scenarios with a minBand above the current band.
     final visibleScenarios = _scenarios.where((s) {
-      if (age <= 5 && s.category == 'Real-Life Heroes') return false;
+      // Featured scenarios (e.g. "Imagine It") are always visible regardless of category.
+      if (age <= 5 && s.category == 'Real-Life Heroes' && !s.featured) return false;
       if (s.minBand != null && s.minBand!.index > currentBand.index) return false;
       return true;
     }).toList();
 
+    // Separate featured scenarios (pinned at top) from regular ones.
+    final featured = visibleScenarios.where((s) => s.featured).toList();
+    final regular = visibleScenarios.where((s) => !s.featured).toList();
+
     final Map<String, List<ScenarioCard>> grouped = {};
-    for (var scenario in visibleScenarios) {
+    for (var scenario in regular) {
       grouped.putIfAbsent(scenario.category, () => []).add(scenario);
     }
 
     final List<Widget> sections = [];
+
+    // Featured scenarios — rendered as a prominent full-width card at the top.
+    for (final scenario in featured) {
+      final isSelected = _selectedScenario == scenario.id;
+      sections.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.md),
+          child: _ScenarioCardWidget(
+            scenario: scenario,
+            isSelected: isSelected,
+            childAge: age,
+            isFeatured: true,
+            onTap: () => _selectScenario(scenario.id),
+          ),
+        ),
+      );
+    }
+
     grouped.forEach((category, scenarios) {
       sections.add(
         Padding(
@@ -1005,12 +1028,14 @@ class _ScenarioCardWidget extends StatelessWidget {
   final bool isSelected;
   final int childAge;
   final VoidCallback onTap;
+  final bool isFeatured;
 
   const _ScenarioCardWidget({
     required this.scenario,
     required this.isSelected,
     required this.childAge,
     required this.onTap,
+    this.isFeatured = false,
   });
 
   @override
@@ -1027,7 +1052,7 @@ class _ScenarioCardWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.xl),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          width: _settingCardWidth, // Slightly wider to accommodate text
+          width: isFeatured ? double.infinity : _settingCardWidth,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.sm,
             vertical: AppSpacing.md,

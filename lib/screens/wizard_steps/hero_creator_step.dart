@@ -213,7 +213,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         widget.wizardData.characterName.trim().isNotEmpty) {
       _nameController.text = widget.wizardData.characterName;
     }
+    // Only auto-advance past the name/gender page for *existing* characters
+    // (characterId is set). New characters must visit page 1 so the user can
+    // enter their name and pick boy/girl before proceeding.
     if (_heroPage == 1 &&
+        !_isCreatingNew &&
+        widget.wizardData.characterId != null &&
         widget.wizardData.characterName.trim().isNotEmpty &&
         widget.wizardData.characterAge >= 3) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2313,15 +2318,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
   Widget _buildArchetypeCards() {
     final ageBand = ageBandFromAge(widget.wizardData.characterAge);
-    // Sprout sees 4 age-appropriate archetypes (exclude Quiz Whiz).
-    final archetypes = ageBand == AgeBand.sprout
-        ? <ArchetypeData>[
-            CharacterArchetypes.adventurer,
-            CharacterArchetypes.artist,
-            CharacterArchetypes.helper,
-            CharacterArchetypes.shyOne, // Animal Whisperer
-          ]
-        : CharacterArchetypes.all;
+    // Sprout/Explorer see 4 age-appropriate archetypes; older bands get all 6.
+    final archetypes = CharacterArchetypes.forBand(ageBand);
 
     // Sprout & Explorer: 2-column grid — image-dominant cards.
     if (ageBand == AgeBand.sprout || ageBand == AgeBand.explorer) {
@@ -2980,7 +2978,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: CharacterArchetypes.all.map((archetype) {
+          children: CharacterArchetypes.forBand(ageBandFromAge(widget.wizardData.characterAge)).map((archetype) {
             final isSelected = _selectedArchetypeId == archetype.name;
             return FilterChip(
               label: Text(archetype

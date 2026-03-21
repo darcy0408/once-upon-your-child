@@ -109,8 +109,10 @@ Twins Great Adventures - Copy/
 
 # Screenshots and images
 Screenshot*.png
-*.jpg
+/*.jpg
 HowDoYouFeelToday.jpg
+# Track asset JPGs (override root-level ignore)
+!assets/images/**/*.jpg
 
 # Marketing and reference images (keep local only)
 SellItPowerpoint images/

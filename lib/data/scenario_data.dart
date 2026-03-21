@@ -21,6 +21,7 @@ class ScenarioCard {
   final String? matureDescription;
   final String? matureConflictHook;
   final String? matureWorldBible;
+  final bool featured; // Pinned at the top of scenario selection
 
   const ScenarioCard({
     required this.id,
@@ -32,6 +33,7 @@ class ScenarioCard {
     required this.sensoryPalette,
     this.category = 'Magical Worlds',
     this.minBand,
+    this.featured = false,
     this.worldBible = '',
     this.youngTitle,
     this.youngDescription,
@@ -391,6 +393,7 @@ class ScenarioData {
       sensoryPalette:
           'Soft cushions, warm glowing lights, the gentle sound of wind chimes.',
       category: 'Real-Life Heroes',
+      featured: true,
       worldBible:
           'This is the user\'s own creation — honour their description exactly. Build the world from whatever they type in the free-text input. If they give a brief description, expand it with rich sensory details that match their intent. If they give a detailed description, follow it faithfully. Always maintain internal consistency with whatever world rules the user implies. The tone should match the child\'s age band.',
       youngTitle: 'Make One Up!',

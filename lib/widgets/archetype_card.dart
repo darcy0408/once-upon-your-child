@@ -366,6 +366,17 @@ class CharacterArchetypes {
         athlete,
         shyOne,
       ];
+
+  /// Returns a filtered list for young bands (Sprout/Explorer get 4 archetypes).
+  static List<ArchetypeData> forBand(AgeBand band) {
+    if (band == AgeBand.sprout || band == AgeBand.explorer) {
+      // 4 most appropriate for ages 3-7:
+      // Storm Rider (brave), Master Creator (creative),
+      // Heart Healer (caring), Animal Whisperer (required)
+      return [adventurer, artist, helper, shyOne];
+    }
+    return all;
+  }
 }
 
 class ArchetypeData {
