@@ -275,6 +275,13 @@ Static analysis of 7 areas: story payload completeness, story launch, illustrati
 - The unregistered files are a backup directory and were left for manual review rather than added to app assets.
 - No asset files were deleted and no Dart references were changed.
 
+## 2026-03-21 (Asset Audit Follow-Up — Codex)
+
+### Status
+- Confirmed the 2026-03-20 asset audit note remains in the root coordination log.
+- No `pubspec.yaml` changes were required from that audit.
+- Current repo state now includes untracked `assets/images/scenarios/mystery.png` and `assets/images/scenarios/survival.png`; if those are committed in a later change, the prior missing-scenario-image note from the audit can be treated as resolved.
+
 ### Additional Changes (Claude Sonnet 4.6 — third pass, 2026-03-20)
 
 #### Task 4.2 — Band-Exclusive Scenarios
