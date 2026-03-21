@@ -192,7 +192,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             age: requestData['age'] ?? 5,
             theme: requestData['theme'] ?? 'Magical Adventure',
             childProfileId: requestData['childProfileId']?.toString(),
-            companion: requestData['companion'] ?? '',
+            companion: requestData['companion']?.toString() ?? '',
             characterDetails: requestData['characterDetails'],
             currentFeeling: requestData['currentFeeling'],
             feelingTrigger: requestData['feelingTrigger'],
@@ -209,6 +209,14 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             storyLength: requestData['storyLength'] ?? 'standard',
             customElements: requestData['customElements'] ?? '',
             subscriptionTier: subscription.tier.name,
+            therapeuticPrompt: requestData['therapeutic_prompt']?.toString(),
+            conflictHook: requestData['conflictHook']?.toString(),
+            sensoryPalette: requestData['sensoryPalette']?.toString(),
+            worldBible: requestData['worldBible']?.toString(),
+            moodPhysics: requestData['moodPhysics'] is Map<String, dynamic>
+                ? requestData['moodPhysics'] as Map<String, dynamic>
+                : null,
+            lifeChallenge: requestData['lifeChallenge']?.toString(),
             onProgress: (status) {
               if (mounted) {
                 setState(() => _loadingStatus = status);

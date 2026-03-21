@@ -560,11 +560,18 @@ class ApiServiceManager {
     List<Map<String, dynamic>>? companionPets,
     List<dynamic>? companionCharacters,
     String storyLength = 'standard',
-    String customElements = '', // NEW: Custom elements
+    String customElements = '',
     bool bedtimeMode = false,
     String bedtimeMood = 'calming',
     int? bedtimeDurationMinutes,
     void Function(String)? onProgress,
+    // Age-appropriate story parameters
+    String? therapeuticPrompt,
+    String? conflictHook,
+    String? sensoryPalette,
+    String? worldBible,
+    Map<String, dynamic>? moodPhysics,
+    String? lifeChallenge,
   }) async {
     final useOwnKey = await isUsingOwnApiKey();
     final userId = await UserIdentityService.getOrCreateUserId();
@@ -612,6 +619,12 @@ class ApiServiceManager {
         bedtimeMood: bedtimeMood,
         bedtimeDurationMinutes: bedtimeDurationMinutes,
         onProgress: onProgress,
+        therapeuticPrompt: therapeuticPrompt,
+        conflictHook: conflictHook,
+        sensoryPalette: sensoryPalette,
+        worldBible: worldBible,
+        moodPhysics: moodPhysics,
+        lifeChallenge: lifeChallenge,
       );
     }
 
@@ -857,6 +870,12 @@ class ApiServiceManager {
     String bedtimeMood = 'calming',
     int? bedtimeDurationMinutes,
     void Function(String)? onProgress,
+    String? therapeuticPrompt,
+    String? conflictHook,
+    String? sensoryPalette,
+    String? worldBible,
+    Map<String, dynamic>? moodPhysics,
+    String? lifeChallenge,
   }) async {
     var attempts = 0;
     var delay = initialDelay;
@@ -894,6 +913,12 @@ class ApiServiceManager {
           bedtimeMood: bedtimeMood,
           bedtimeDurationMinutes: bedtimeDurationMinutes,
           onProgress: onProgress,
+          therapeuticPrompt: therapeuticPrompt,
+          conflictHook: conflictHook,
+          sensoryPalette: sensoryPalette,
+          worldBible: worldBible,
+          moodPhysics: moodPhysics,
+          lifeChallenge: lifeChallenge,
         );
       } catch (error, stackTrace) {
         attempts++;
@@ -946,6 +971,12 @@ class ApiServiceManager {
     String bedtimeMood = 'calming',
     int? bedtimeDurationMinutes,
     void Function(String)? onProgress,
+    String? therapeuticPrompt,
+    String? conflictHook,
+    String? sensoryPalette,
+    String? worldBible,
+    Map<String, dynamic>? moodPhysics,
+    String? lifeChallenge,
   }) async {
     final httpClient = client ?? _testClient ?? http.Client();
     final generateUri = Uri.parse('$_localBackendUrl/generate-story');
@@ -955,6 +986,7 @@ class ApiServiceManager {
       'theme': theme,
       'child_profile_id': childProfileId,
       'companion': companion,
+      'age': age,
       'character_age': age,
       'character_details': characterDetails,
       'rhyme_time_mode': rhymeTimeMode,
@@ -977,6 +1009,17 @@ class ApiServiceManager {
       'bedtime_mode': bedtimeMode,
       'bedtime_mood': bedtimeMood,
       'bedtime_duration_minutes': bedtimeDurationMinutes,
+      if (therapeuticPrompt != null && therapeuticPrompt.isNotEmpty)
+        'therapeutic_prompt': therapeuticPrompt,
+      if (conflictHook != null && conflictHook.isNotEmpty)
+        'conflictHook': conflictHook,
+      if (sensoryPalette != null && sensoryPalette.isNotEmpty)
+        'sensoryPalette': sensoryPalette,
+      if (worldBible != null && worldBible.isNotEmpty)
+        'worldBible': worldBible,
+      if (moodPhysics != null) 'moodPhysics': moodPhysics,
+      if (lifeChallenge != null && lifeChallenge.isNotEmpty)
+        'lifeChallenge': lifeChallenge,
     };
     if (userApiKey != null && userApiKey.isNotEmpty) {
       body['user_api_key'] = userApiKey;

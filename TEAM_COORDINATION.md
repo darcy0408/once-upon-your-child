@@ -1,5 +1,60 @@
 # Team Coordination
 
+## 2026-03-20 (Comprehensive Static Testing — Story Pipeline & Age-Band Audit)
+
+### Scope
+Static analysis of 7 areas: story payload completeness, story launch, illustration service, feelings UX per band, "Imagine It" passthrough, backend story generation, and dart analyze.
+
+### Findings
+
+#### TEST 1: WizardDataMapper — Story payload completeness
+- Companions (pets + characters): correctly included via `companion_pets` / `companion_characters`. PASS.
+- Custom scenario text ("Imagine It"): `customElements` field is written by `_safeSpaceController.onChanged` and included in mapper output. PASS.
+- Age: included as `age`. PASS.
+- Personality sliders: included in `characterDetails['personality_sliders']`. PASS.
+
+#### TEST 2: magic_review_step.dart — Story launch
+- **BUG FOUND**: `therapeuticPrompt`, `conflictHook`, `sensoryPalette`, `worldBible`, `moodPhysics`, and `lifeChallenge` were computed by `WizardDataMapper` but never forwarded through `ApiServiceManager.generateStory()` to the backend. All scenario-specific world-building, mood, and therapeutic data was silently dropped.
+- Custom avatar handled correctly. Age passed correctly.
+
+#### TEST 3: StoryIllustrationService — Age-appropriate illustrations
+- Character appearance, age, companions all passed to backend. PASS.
+- Backend uses age to adjust illustration prompt style. PASS.
+
+#### TEST 4: Feelings section — per-band UX
+- `FeelingsCloudPicker._maxLevel`: age ≤ 5 → level 0, 6-8 → level 1, 9+ → level 2. Correct.
+- `CloudEmotionCard` uses `isMature` to switch between cloud-shape (young) and flat rectangle (mature). Correct.
+- `BigFeelingsFlowScreen` triggered for age ≤ 5 (as `_openFeelingsQuest` checks). Correct.
+- Scenario filter (`minBand`) in `_buildScenarioSections` working correctly.
+- Voice mic hidden for age > 8 in safe_space input field. Correct.
+
+#### TEST 5: Custom "Imagine It" passthrough
+- Full chain confirmed working: `_safeSpaceController → wizardData.customElements → WizardDataMapper['customElements'] → ApiServiceManager body 'customElements' → backend task_kwargs['custom_elements'] → AdvancedStoryEngine prompt`. PASS.
+
+#### TEST 6: Backend story generation
+- `story_service.py` has full age-band constraint table (6 bands from 3-4 to adult). Age calibration built into `AdvancedStoryEngine.generate_enhanced_prompt`. PASS.
+- Companions included in all story prompt builders (enhanced, rhyme time, bedtime, LTR). PASS.
+- `custom_elements` passed verbatim to prompts. PASS.
+- `therapeutic_prompt` fully integrated via `_augment_therapeutic_prompt`. PASS.
+- **BUG**: The `age` field was only sent as `character_age` in the HTTP body. Backend reads `age` first, falls back to `character_age`. Added `'age': age` to ensure primary key is set.
+
+#### TEST 7: dart analyze
+- No errors. 27 pre-existing warnings/infos (all in files not modified this session).
+
+### Fixes Applied
+
+| File | Change |
+|------|--------|
+| `lib/services/api_service_manager.dart` | Added `therapeuticPrompt`, `conflictHook`, `sensoryPalette`, `worldBible`, `moodPhysics`, `lifeChallenge` params to `generateStory()`, `_generateStoryWithBackendRetry()`, `_generateStoryWithBackend()`; threaded into HTTP body. Also added `'age': age` alongside existing `'character_age'` for backend compatibility. |
+| `lib/screens/wizard_steps/magic_review_step.dart` | Pass `therapeuticPrompt`, `conflictHook`, `sensoryPalette`, `worldBible`, `moodPhysics`, `lifeChallenge` from `requestData` to `ApiServiceManager.generateStory()`. |
+
+### Items NOT Fixed (Pre-existing, Noted for Future Work)
+- 12 missing feelings face PNGs (`assets/feelings_faces/`) — asset creation task, not code.
+- `main_story.dart` unused fields/methods (dead code cleanup, low risk).
+- `therapist_portal_screen.dart` deprecated `withOpacity()` calls.
+
+---
+
 ## 2026-03-19 (Comprehensive Age-Band UX/UI Audit — Claude + Gemini + Codex)
 
 ### Scope Completed
