@@ -198,11 +198,26 @@
 - `139cf9e` — feat: Phase 4+5 UX audit fixes — sliders, dead code, voice input
 - `f0f3233` — feat: Tasks 3.3, 4.1, 4.3, 4.4, 5.2 — picker style, scenarios, brief, dots
 
+### Additional Changes (Claude Sonnet 4.6 — third pass, 2026-03-20)
+
+#### Task 4.2 — Band-Exclusive Scenarios
+- Added `minBand` field to `ScenarioCard` in `lib/data/scenario_data.dart`
+- Added `midnight_mystery` (detective/mystery) and `survival_island` (survival) scenarios, both gated to `AgeBand.adventurer` and above
+- Both have full mature variants with `matureTitle`/`matureDescription`/`matureWorldBible`
+- Filter applied in `_buildScenarioSections()` alongside existing Sprout filter
+
+#### Task 5.5 — Two-Stage Age Picker
+- Replaced flat 12-item age grid in `welcome_screen.dart` with two-stage band picker
+- Stage 1: 6 band group cards (Little One 3-5, Explorer 6-8, Adventurer 9-11, Creator 12-14, Teen 15-17, Adult 18+)
+- Stage 2: 3 large age circles within the selected band (back button to return to groups)
+- Adult group selects directly (single value)
+
+### Commits
+- `2e90174` — feat: Tasks 4.2 + 5.5 — band-exclusive scenarios, two-stage age picker
+
 ### Remaining Work
-- **Task 4.2**: Add band-exclusive scenarios (mystery/survival for Adventurer+)
-- **Task 4.6**: Populate `assets/images/scenes/sprout/` with scene backgrounds
-- **Task 5.3**: Audit unused assets
-- **Task 5.5**: Welcome age selector density (group bands for young users)
+- **Task 4.6**: Generate 4 Sprout scene backgrounds (Gemini 3 Pro — prompt provided to user)
+- **Task 5.3**: Audit unused assets (low priority)
 
 ---
 
