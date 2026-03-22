@@ -1069,8 +1069,12 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       widget.wizardData.petPhotos[existingName] = b64;
       widget.wizardData.petAvatars.remove(existingName);
       // Auto-select the pet as a companion
+      final petId = 'my_pet_$targetIndex';
       if (!widget.wizardData.companionNames.contains(existingName)) {
         widget.wizardData.companionNames.add(existingName);
+      }
+      if (!widget.wizardData.selectedCompanions.contains(petId)) {
+        widget.wizardData.selectedCompanions.add(petId);
       }
     });
 
@@ -4122,6 +4126,10 @@ class _PetCardState extends State<_PetCard> {
     });
     if (!widget.wizardData.companionNames.contains(name)) {
       widget.wizardData.companionNames.add(name);
+    }
+    final petId = 'my_pet_$nextIndex';
+    if (!widget.wizardData.selectedCompanions.contains(petId)) {
+      widget.wizardData.selectedCompanions.add(petId);
     }
     widget.onChanged();
     _selectPet(nextIndex, edit: true);

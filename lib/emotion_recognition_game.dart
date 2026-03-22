@@ -240,7 +240,7 @@ class _EmotionRecognitionGameState extends State<EmotionRecognitionGame>
 
       return EmotionQuestion(
         emotionId: emotion.id,
-        imagePath: 'assets/images/feelings/sprout/${emotion.id}.png',
+        imagePath: 'assets/images/feelings/sprout/${emotion.id.toLowerCase().replaceAll(' ', '_')}.png',
         options: options,
         correctAnswer: emotion.name,
         hint: emotion.description,
