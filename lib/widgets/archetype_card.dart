@@ -422,8 +422,10 @@ class ArchetypeData {
       return 'assets/images/archetypes/sprout/$sproutImageId.jpg';
     }
     // Other bands use per-band images when available.
+    // animal_whisperer was regenerated as PNG (includes actual animals per band).
     if (bandImageId != null) {
-      return 'assets/images/archetypes/${band.name}/$bandImageId.jpg';
+      final ext = bandImageId == 'animal_whisperer' ? 'png' : 'jpg';
+      return 'assets/images/archetypes/${band.name}/$bandImageId.$ext';
     }
     return imagePath;
   }
