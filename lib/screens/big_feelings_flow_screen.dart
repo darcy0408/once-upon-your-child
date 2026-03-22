@@ -19,15 +19,21 @@ class BigFeelingsFlowResult {
 }
 
 class BigFeelingsFlowScreen extends StatefulWidget {
-  const BigFeelingsFlowScreen({super.key, this.childAge = 5});
+  const BigFeelingsFlowScreen({super.key, this.childAge = 5, this.gender = ''});
   final int childAge;
+  /// 'Boy', 'Girl', or '' (defaults to non-gendered path)
+  final String gender;
 
-  static Future<BigFeelingsFlowResult?> show(BuildContext context, {int childAge = 5}) {
+  static Future<BigFeelingsFlowResult?> show(
+    BuildContext context, {
+    int childAge = 5,
+    String gender = '',
+  }) {
     return Navigator.of(context, rootNavigator: true)
         .push<BigFeelingsFlowResult>(
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (_) => BigFeelingsFlowScreen(childAge: childAge),
+        builder: (_) => BigFeelingsFlowScreen(childAge: childAge, gender: gender),
       ),
     );
   }
@@ -525,7 +531,18 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
     );
   }
 
-  String _bandFolder() => ageBandFromAge(widget.childAge).name;
+  /// Returns the asset subfolder for feeling face images.
+  /// Creator, Adolescent, and Adult use gendered subfolders (boy/girl).
+  /// All younger bands use gender-neutral icons/blobs — no subfolder needed.
+  String _bandFolder() {
+    final band = ageBandFromAge(widget.childAge);
+    const genderedBands = {AgeBand.creator, AgeBand.adolescent, AgeBand.adult};
+    if (genderedBands.contains(band) && widget.gender.isNotEmpty) {
+      final genderFolder = widget.gender.toLowerCase(); // 'boy' or 'girl'
+      return '${band.name}/$genderFolder';
+    }
+    return band.name;
+  }
 
   @override
   Widget build(BuildContext context) {
