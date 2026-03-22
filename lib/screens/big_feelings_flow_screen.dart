@@ -43,128 +43,55 @@ class BigFeelingsFlowScreen extends StatefulWidget {
 }
 
 class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
-  static const _feelings = [
-    _ChoiceOption(
-      value: 'Happy',
-      label: 'Happy',
-      emoji: '😊',
-      subtitle: 'Big smile feeling',
-    ),
-    _ChoiceOption(
-      value: 'Sad',
-      label: 'Sad',
-      emoji: '😢',
-      subtitle: 'Heavy, teary feeling',
-    ),
-    _ChoiceOption(
-      value: 'Mad',
-      label: 'Mad',
-      emoji: '😠',
-      subtitle: 'Big fire feeling',
-    ),
-    _ChoiceOption(
-      value: 'Scared',
-      label: 'Scared',
-      emoji: '😨',
-      subtitle: 'Uh-oh feeling',
-    ),
-    _ChoiceOption(
-      value: 'Excited',
-      label: 'Excited',
-      emoji: '🤩',
-      subtitle: 'Bouncy, can\'t-wait feeling',
-    ),
-    _ChoiceOption(
-      value: 'Calm',
-      label: 'Calm',
-      emoji: '🍃',
-      subtitle: 'Quiet and peaceful',
-    ),
-    _ChoiceOption(
-      value: 'Confused',
-      label: 'Confused',
-      emoji: '🤨',
-      subtitle: 'Thinking hard',
-    ),
-    _ChoiceOption(
-      value: 'Surprised',
-      label: 'Surprised',
-      emoji: '😮',
-      subtitle: 'Oh my!',
-    ),
-    _ChoiceOption(
-      value: 'Bothered',
-      label: 'Bothered',
-      emoji: '😒',
-      subtitle: 'Itty-bitty mad',
-    ),
-    _ChoiceOption(
-      value: 'Bouncy',
-      label: 'Bouncy',
-      emoji: '🤸',
-      subtitle: 'High energy fun',
-    ),
-    _ChoiceOption(
-      value: 'Gloomy',
-      label: 'Gloomy',
-      emoji: '☁️',
-      subtitle: 'Raincloud feeling',
-    ),
-    _ChoiceOption(
-      value: 'Grossed_Out',
-      label: 'Grossed Out',
-      emoji: '🤢',
-      subtitle: 'Yucky feeling',
-    ),
-    _ChoiceOption(
-      value: 'Hurt_Mad',
-      label: 'Hurt-Mad',
-      emoji: '🤕',
-      subtitle: 'Ouchy and angry',
-    ),
-    _ChoiceOption(
-      value: 'Hyper',
-      label: 'Hyper',
-      emoji: '🌪️',
-      subtitle: 'Super-duper fast',
-    ),
-    _ChoiceOption(
-      value: 'Impatient',
-      label: 'Impatient',
-      emoji: '⏳',
-      subtitle: 'Hard to wait',
-    ),
-    _ChoiceOption(
-      value: 'Let_Down',
-      label: 'Let Down',
-      emoji: '😔',
-      subtitle: 'Expected more',
-    ),
-    _ChoiceOption(
-      value: 'Red_Faced',
-      label: 'Red Faced',
-      emoji: '😳',
-      subtitle: 'Oopsie feeling',
-    ),
-    _ChoiceOption(
-      value: 'Stuck',
-      label: 'Stuck',
-      emoji: '🧱',
-      subtitle: 'Don\'t know how',
-    ),
-    _ChoiceOption(
-      value: 'What_If_y',
-      label: 'What-if-y',
-      emoji: '❓',
-      subtitle: 'Thinking a lot',
-    ),
-    _ChoiceOption(
-      value: 'Wish_I_Could_Hide',
-      label: 'Shy',
-      emoji: '🫣',
-      subtitle: 'Peeking feeling',
-    ),
+  // Core 8 — shown to every band
+  static const _feelingsCore = [
+    _ChoiceOption(value: 'Happy',     label: 'Happy',     emoji: '😊', subtitle: 'Big smile feeling'),
+    _ChoiceOption(value: 'Sad',       label: 'Sad',       emoji: '😢', subtitle: 'Heavy, teary feeling'),
+    _ChoiceOption(value: 'Mad',       label: 'Mad',       emoji: '😠', subtitle: 'Big fire feeling'),
+    _ChoiceOption(value: 'Scared',    label: 'Scared',    emoji: '😨', subtitle: 'Uh-oh feeling'),
+    _ChoiceOption(value: 'Excited',   label: 'Excited',   emoji: '🤩', subtitle: 'Bouncy, can\'t-wait feeling'),
+    _ChoiceOption(value: 'Calm',      label: 'Calm',      emoji: '🍃', subtitle: 'Quiet and peaceful'),
+    _ChoiceOption(value: 'Confused',  label: 'Confused',  emoji: '🤨', subtitle: 'Thinking hard'),
+    _ChoiceOption(value: 'Surprised', label: 'Surprised', emoji: '😮', subtitle: 'Oh my!'),
   ];
+
+  // Explorer+ (7+) adds concrete body/social feelings
+  static const _feelingsExplorer = [
+    _ChoiceOption(value: 'Bothered',    label: 'Bothered',   emoji: '😒', subtitle: 'Itty-bitty mad'),
+    _ChoiceOption(value: 'Bouncy',      label: 'Bouncy',     emoji: '🤸', subtitle: 'High energy fun'),
+    _ChoiceOption(value: 'Grossed_Out', label: 'Grossed Out',emoji: '🤢', subtitle: 'Yucky feeling'),
+    _ChoiceOption(value: 'Hurt_Mad',    label: 'Hurt-Mad',   emoji: '🤕', subtitle: 'Ouchy and angry'),
+    _ChoiceOption(value: 'Hyper',       label: 'Hyper',      emoji: '🌪️', subtitle: 'Super-duper fast'),
+  ];
+
+  // Adventurer+ (10+) adds reflective/situational feelings
+  static const _feelingsAdventurer = [
+    _ChoiceOption(value: 'Gloomy',    label: 'Gloomy',    emoji: '☁️', subtitle: 'Raincloud feeling'),
+    _ChoiceOption(value: 'Impatient', label: 'Impatient', emoji: '⏳', subtitle: 'Hard to wait'),
+    _ChoiceOption(value: 'Let_Down',  label: 'Let Down',  emoji: '😔', subtitle: 'Expected more'),
+    _ChoiceOption(value: 'Red_Faced', label: 'Red Faced', emoji: '😳', subtitle: 'Oopsie feeling'),
+    _ChoiceOption(value: 'Stuck',     label: 'Stuck',     emoji: '🧱', subtitle: 'Don\'t know how'),
+  ];
+
+  // Creator+ (13+) adds self-awareness feelings
+  static const _feelingsCreator = [
+    _ChoiceOption(value: 'What_If_y',        label: 'What-if-y', emoji: '❓', subtitle: 'Thinking a lot'),
+    _ChoiceOption(value: 'Wish_I_Could_Hide', label: 'Shy',       emoji: '🫣', subtitle: 'Peeking feeling'),
+  ];
+
+  /// Returns the age-appropriate feelings list for the given band.
+  /// Sprout: 8 | Explorer: 13 | Adventurer: 18 | Creator+: 20
+  static List<_ChoiceOption> _feelingsForBand(AgeBand band) {
+    const explorer   = [..._feelingsCore, ..._feelingsExplorer];
+    const adventurer = [...explorer, ..._feelingsAdventurer];
+    const creator    = [...adventurer, ..._feelingsCreator];
+    return switch (band) {
+      AgeBand.sprout     => _feelingsCore,
+      AgeBand.explorer   => explorer,
+      AgeBand.adventurer => adventurer,
+      _                  => creator,
+    };
+  }
 
   static const _triggerOptions = {
     'Happy': [
@@ -548,7 +475,7 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
   Widget build(BuildContext context) {
     final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
     final options = switch (_step) {
-      0 => _feelings,
+      0 => _feelingsForBand(ageBandFromAge(widget.childAge)),
       1 => _triggerOptions[_feeling] ?? const <_ChoiceOption>[],
       2 => _bodyOptions[_feeling] ?? const <_ChoiceOption>[],
       _ => _helperOptions[_feeling] ?? const <_ChoiceOption>[],
