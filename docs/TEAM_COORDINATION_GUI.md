@@ -82,10 +82,24 @@ Full sweep of all `lib/` files importing `dart:io`. All `File()` and `Platform.*
 - `lib/emotion_recognition_game.dart` — normalized asset path filenames
 - `lib/screens/wizard_steps/hero_creator_step.dart` — pet auto-select fix
 
+### UX Audit Fix Plan — All Phases Complete (audited 2026-03-22)
+
+All 20 tasks in `docs/assignments/UX_AUDIT_FIX_PLAN.md` were audited and confirmed already implemented.
+
+| Phase | Tasks | Status |
+|-------|-------|--------|
+| Phase 1 — Critical Bugs | 1.1, 1.2, 1.4, 1.5, 1.6 | ✅ All done |
+| Phase 2 — Age-Band Text & Tone | 2.1–2.7 | ✅ All done |
+| Phase 3 — Visual Consistency | 3.1, 3.4, 3.5, 3.6 | ✅ All done |
+| Phase 4 — Structural | 4.5 | ✅ Done |
+| Phase 5 — Cleanup & Polish | 5.1, 5.4 | ✅ All done |
+
+Notable: `BigFeelingsFlowScreen`, bedtime prompts, archetype images, nav buttons, feelings garden tabs, coping strategies, CTA labels — all band-aware and implemented.
+
 ---
 
 ## 📝 Next Actions
-- **UX Audit** — `docs/assignments/UX_AUDIT_FIX_PLAN.md` — ~20 tasks across 5 phases; start with Phase 1 (critical bugs)
-- **Age Band Expansion** — `age_band_assets/` directories exist but not wired into Flutter (no pubspec, no Dart refs)
+- **Age Band Expansion** — `age_band_assets/` directories exist but not wired into Flutter (no pubspec, no Dart refs); this is the next major task
 - **Badge assets** — supply `assets/images/feelings/adventurer/{happy,excited,calm,sad,worried,frustrated,angry,embarrassed}.png` (8×128×128 transparent PNGs) for `FeelingsBadgeGrid`
+- **Delete dead code** — `lib/emotion_recognition_game.dart` has no importers; safe to delete
 - **Device testing** — F11 badge grid, F12 PIN gate, repeat story buttons, Chronicles discovery
