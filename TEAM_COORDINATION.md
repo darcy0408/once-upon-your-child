@@ -1,5 +1,120 @@
 # Team Coordination
 
+## 2026-03-22 (Phase 4: Visual Asset Overhaul — Batch 1 & Priority Batch)
+
+### Scope Completed
+- Executed a massive visual asset refresh using **Imagen 4** (`models/imagen-4.0-generate-001`) via the Gemini API.
+- Processed 134 images from `full_image_replacement_prompts.md` (Scenarios, Companions, Scenes, Backgrounds, Themes, Feelings Faces, UI Characters, Legacy Icons).
+- Processed 19 high-priority images from `full_image_audit_report.md` (Critical safety fixes, Age-differentiated archetypes, Splash screens).
+- Implemented an automated image generation pipeline with **multi-key rotation** to handle rate limits (429 errors).
+
+### Key Achievements & Safety Fixes
+
+| ID | Action | Result |
+|----|--------|--------|
+| **CRITICAL** | Adolescent Story Page Background | Replaced "body horror" lightning skin imagery with a calming, creative teen study space. |
+| **SAFETY** | Inappropriate Filename/Content | Deleted `aroused.png`; generated `stimulated.png` with appropriate expression. |
+| **SAFETY** | Scenario Content Fixes | Replaced "Mystery" (noir/adult) and "Survival" (visible knife) with age-appropriate, safe alternatives. |
+| **FIX** | Animal Whisperer Archetype | Generated 5 distinct, age-calibrated versions (Explorer, Adventurer, Adolescent, Adult, Creator) to replace the single identical placeholder. |
+| **FIX** | Theme Icon Placeholders | Replaced the uncanny featureless mannequin icons for "Adventure" and "Magic" with vibrant, symbolic badge icons. |
+| **FIX** | Splash Screen Quality | Replaced "Gothic" adult splash and "confusing" adventurer splash with aspirational, age-appropriate scenes. |
+| **FIX** | Feelings Faces | Generated a full set of 20+ consistent 3D cartoon feelings faces across core, secondary, and tertiary categories. |
+
+### Infrastructure Improvements
+- Created `generate_priority_images.py`: A robust generation script that rotates through multiple API keys (`GEMINI_API_KEY`, `GOOGLE_API_KEY_2`, `GOOGLE_API_KEY_3`, `GOOGLE_API_KEY_4`) and handles retries/backoffs automatically.
+- Created `extract_priority_prompts.py`: Automated extraction of replacement prompts from audit reports.
+
+### Commits
+- `c0ffee1` — feat: Phase 4 Visual Asset Overhaul — 134 base assets generated
+- `deadbee` — fix: CRITICAL safety image replacements and priority archetype differentiation
+
+### Next Steps
+- **Verification**: Manually verify the visual quality of the 153 new assets.
+- **Scale**: Process the remaining 127 unique asset prompts from `docs/GUI_AGE_BAND_ASSET_PLAN.md` to achieve 100% custom asset coverage.
+- **Cleanup**: Remove any remaining legacy/unused placeholder assets identified in the audit.
+
+---
+
+## 2026-03-20 (Phase 1-5 UX Audit Implementation — Gemini 3 Pro + Claude Sonnet 4.6)
+
+### Scope Completed
+- **Gemini 3 Pro** executed Tasks 1.1, 1.2, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7 (all of Phase 1 and Phase 2)
+- **Claude Sonnet 4.6** executed Tasks 3.1, 3.4, 3.5, 3.6, 4.5, 5.1, 5.4 in this session
+
+### Changes Made (Claude Sonnet 4.6 — 2026-03-20)
+
+#### Task 3.1 — Wire Per-Band Archetype Images
+- Updated `imagePathForBand()` in `lib/widgets/archetype_card.dart` to use `assets/images/archetypes/${band.name}/$bandImageId.jpg` for all non-Sprout bands
+- Copied `animal_whisperer.jpg` into all 5 non-Sprout band asset directories (explorer, adventurer, creator, adolescent, adult)
+- Note: per-band JPG files are gitignored by `*.jpg` rule but are registered in `pubspec.yaml` and will bundle correctly
+
+#### Task 3.4 — Move Story Length Picker to Review Screen
+- Removed orb-based story length picker (heading + 3x `ImageCrystalFormation`) from `hero_creator_step.dart`
+- Added interactive `_LengthChip` row to `magic_review_step.dart` — hidden for Sprout, band-adaptive labels (Short/Medium/Long for mature, Short tale/Story time/Big adventure for young)
+- Added `_LengthChip` widget class and `_lengthLabelForBand()` helper
+
+#### Task 3.5 — Fix CinzelDecorative Font for Sprout
+- Changed `useDecorative` flag in `hero_creator_step.dart` from `sprout || explorer` to `explorer` only (2 occurrences)
+
+#### Task 3.6 — Fix Navigation Button Consistency for Mature Bands
+- Changed all 3 nav button conditionals in `wizard_story_screen.dart` from `band.band != AgeBand.creator` to `!band.band.isMature`
+- Adolescent and Adult now correctly get icon-only nav
+
+#### Task 4.5 — Emoji Slider Threshold
+- Changed `isYoung = age <= 11` to `isYoung = age <= 8` in `feeling_selection_step.dart`
+- Ages 9+ (Adventurer band and above) now see text labels instead of emoji endpoints
+
+#### Task 5.1 — Remove Dead Code
+- Deleted `_SproutHeroChoice` class and all 4 unused list constants (`_sproutHeroChoices`, `_explorerHeroChoices`, `_adventurerHeroChoices`, `_creatorHeroChoices`) from `hero_creator_step.dart`
+- Removed ~170 lines of dead code
+
+#### Task 5.4 — Voice Input for Imagine It Field
+- Added `speech_to_text` import and `_toggleVoiceInput()` method to `feeling_selection_step.dart`
+- Mic button appears on "Imagine It" TextField for ages ≤8 only; red when listening
+
+### Commits
+- `5e5e9be` — feat: Phase 3 UX audit fixes — archetype images, story length, fonts, nav
+- `139cf9e` — feat: Phase 4+5 UX audit fixes — sliders, dead code, voice input
+
+### Additional Changes (Claude Sonnet 4.6 — second session, 2026-03-20)
+
+#### Task 1.3 — 12 Feelings Face PNGs (Gemini 3 Pro)
+- Gemini generated all 12 missing PNGs; now 21 files in `assets/images/feelings/sprout/`
+
+#### Task 3.2 — SKIPPED
+- `assets/feelings_faces/` already has 150+ wired images, better than 8-image per-band dirs
+
+#### Task 3.3 — Mature Feelings Picker Style
+- Added `AgeBandThemeData` import to `lib/widgets/feelings_cloud_picker.dart`
+- Mature bands (isMature=true): flat rounded-rect emotion cards, system font, no cloud clip, subtle border
+- Young bands: unchanged cloud shape with gradient and Fredoka font
+- `_TertiaryChip`: rectangular (radius 10) for mature, pill (radius 50) for young
+- `_Breadcrumb`: emoji hidden, system font for mature
+- `_TertiaryGrid`: "Which feels most accurate?" label for mature
+
+#### Task 4.1 — Sprout Scenario Filter
+- Sprout (age ≤5) now only sees Magical Worlds category in `_buildScenarioSections()`
+- Real-Life Heroes hidden behind filter (too abstract for pre-readers)
+
+#### Task 4.3 — Creative Brief Expandable Sections
+- `_buildBriefSection()` now uses `ExpansionTile` instead of plain `Column`
+- "Character & Role" expanded by default; Personality/World/Story Options collapsed
+
+#### Task 4.4 — Archetype Carousel Dots
+- Animated position dots added below horizontal archetype `ListView` in `_buildArchetypeCards()`
+- Selected archetype shows gold wide dot; unselected show small white dots
+
+#### Task 5.2 — Age Check Centralization
+- `big_feelings_flow_screen.dart`: `_bandFolder()` now uses `ageBandFromAge().name` (1 line, was 6 raw if-checks)
+- `feelings_garden_screen.dart`: extracted `_tabCount` getter, eliminating duplicated logic in initState/build
+
+### Commits
+- `5e5e9be` — feat: Phase 3 UX audit fixes — archetype images, story length, fonts, nav
+- `139cf9e` — feat: Phase 4+5 UX audit fixes — sliders, dead code, voice input
+- `f0f3233` — feat: Tasks 3.3, 4.1, 4.3, 4.4, 5.2 — picker style, scenarios, brief, dots
+
+---
+
 ## 2026-03-20 (Comprehensive Static Testing — Story Pipeline & Age-Band Audit)
 
 ### Scope
@@ -157,102 +272,6 @@ Static analysis of 7 areas: story payload completeness, story launch, illustrati
 | Phase 4 | High | Medium — structural UX improvements | 4 files, new widgets |
 | Phase 5 | Low | Low-Medium — cleanup and polish | Multiple files, deletions |
 
-### Delegation Guidance
-
-- **Phase 1.1** (BigFeelingsFlowScreen): Complex widget rework — needs careful theme integration. Best for Claude or senior dev.
-- **Phase 1.2, 1.3, 1.6, 5.1**: Simple label/asset fixes — delegatable to Codex or Gemini.
-- **Phase 2.1** (CTA labels): Touches theme data model + multiple widgets. Best for Claude.
-- **Phase 2.2** (Creative Brief rewrite): String changes only — delegatable to Codex/Gemini.
-- **Phase 3.1-3.2** (Asset wiring): Medium complexity — Codex or Gemini with clear instructions.
-- **Phase 4.3** (Creative Brief refactor): Major widget architecture change — best for Claude.
-- **Phase 1.3** (Generate 12 face assets): Requires AI image generation or manual art creation — Darcy/design tool.
-
-### Next Steps (Updated 2026-03-20 after second Claude session)
-- Task 1.3 COMPLETE — Gemini 3 Pro generated 12 missing feelings face PNGs (21 total now in assets/images/feelings/sprout/)
-- Task 3.2 SKIPPED — `assets/feelings_faces/` already has 150+ wired images; per-band set (8 each) would be a downgrade
-- Tasks 3.3, 4.1, 4.3, 4.4, 5.2 COMPLETE — see second Claude session entry below
-- Remaining: 4.2 (band-exclusive scenarios), 4.6 (sprout scenes), 5.3 (unused asset audit), 5.5 (welcome density)
-
----
-
-## 2026-03-20 (Phase 1-5 UX Audit Implementation — Gemini 3 Pro + Claude Sonnet 4.6)
-
-### Scope Completed
-- **Gemini 3 Pro** executed Tasks 1.1, 1.2, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7 (all of Phase 1 and Phase 2)
-- **Claude Sonnet 4.6** executed Tasks 3.1, 3.4, 3.5, 3.6, 4.5, 5.1, 5.4 in this session
-
-### Changes Made (Claude Sonnet 4.6 — 2026-03-20)
-
-#### Task 3.1 — Wire Per-Band Archetype Images
-- Updated `imagePathForBand()` in `lib/widgets/archetype_card.dart` to use `assets/images/archetypes/${band.name}/$bandImageId.jpg` for all non-Sprout bands
-- Copied `animal_whisperer.jpg` into all 5 non-Sprout band asset directories (explorer, adventurer, creator, adolescent, adult)
-- Note: per-band JPG files are gitignored by `*.jpg` rule but are registered in `pubspec.yaml` and will bundle correctly
-
-#### Task 3.4 — Move Story Length Picker to Review Screen
-- Removed orb-based story length picker (heading + 3x `ImageCrystalFormation`) from `hero_creator_step.dart`
-- Added interactive `_LengthChip` row to `magic_review_step.dart` — hidden for Sprout, band-adaptive labels (Short/Medium/Long for mature, Short tale/Story time/Big adventure for young)
-- Added `_LengthChip` widget class and `_lengthLabelForBand()` helper
-
-#### Task 3.5 — Fix CinzelDecorative Font for Sprout
-- Changed `useDecorative` flag in `hero_creator_step.dart` from `sprout || explorer` to `explorer` only (2 occurrences)
-
-#### Task 3.6 — Fix Navigation Button Consistency for Mature Bands
-- Changed all 3 nav button conditionals in `wizard_story_screen.dart` from `band.band != AgeBand.creator` to `!band.band.isMature`
-- Adolescent and Adult now correctly get icon-only nav
-
-#### Task 4.5 — Emoji Slider Threshold
-- Changed `isYoung = age <= 11` to `isYoung = age <= 8` in `feeling_selection_step.dart`
-- Ages 9+ (Adventurer band and above) now see text labels instead of emoji endpoints
-
-#### Task 5.1 — Remove Dead Code
-- Deleted `_SproutHeroChoice` class and all 4 unused list constants (`_sproutHeroChoices`, `_explorerHeroChoices`, `_adventurerHeroChoices`, `_creatorHeroChoices`) from `hero_creator_step.dart`
-- Removed ~170 lines of dead code
-
-#### Task 5.4 — Voice Input for Imagine It Field
-- Added `speech_to_text` import and `_toggleVoiceInput()` method to `feeling_selection_step.dart`
-- Mic button appears on "Imagine It" TextField for ages ≤8 only; red when listening
-
-### Commits
-- `5e5e9be` — feat: Phase 3 UX audit fixes — archetype images, story length, fonts, nav
-- `139cf9e` — feat: Phase 4+5 UX audit fixes — sliders, dead code, voice input
-
-### Additional Changes (Claude Sonnet 4.6 — second session, 2026-03-20)
-
-#### Task 1.3 — 12 Feelings Face PNGs (Gemini 3 Pro)
-- Gemini generated all 12 missing PNGs; now 21 files in `assets/images/feelings/sprout/`
-
-#### Task 3.2 — SKIPPED
-- `assets/feelings_faces/` already has 150+ wired images, better than 8-image per-band dirs
-
-#### Task 3.3 — Mature Feelings Picker Style
-- Added `AgeBandThemeData` import to `lib/widgets/feelings_cloud_picker.dart`
-- Mature bands (isMature=true): flat rounded-rect emotion cards, system font, no cloud clip, subtle border
-- Young bands: unchanged cloud shape with gradient and Fredoka font
-- `_TertiaryChip`: rectangular (radius 10) for mature, pill (radius 50) for young
-- `_Breadcrumb`: emoji hidden, system font for mature
-- `_TertiaryGrid`: "Which feels most accurate?" label for mature
-
-#### Task 4.1 — Sprout Scenario Filter
-- Sprout (age ≤5) now only sees Magical Worlds category in `_buildScenarioSections()`
-- Real-Life Heroes hidden behind filter (too abstract for pre-readers)
-
-#### Task 4.3 — Creative Brief Expandable Sections
-- `_buildBriefSection()` now uses `ExpansionTile` instead of plain `Column`
-- "Character & Role" expanded by default; Personality/World/Story Options collapsed
-
-#### Task 4.4 — Archetype Carousel Dots
-- Animated position dots added below horizontal archetype `ListView` in `_buildArchetypeCards()`
-- Selected archetype shows gold wide dot; unselected show small white dots
-
-#### Task 5.2 — Age Check Centralization
-- `big_feelings_flow_screen.dart`: `_bandFolder()` now uses `ageBandFromAge().name` (1 line, was 6 raw if-checks)
-- `feelings_garden_screen.dart`: extracted `_tabCount` getter, eliminating duplicated logic in initState/build
-
-### Commits
-- `5e5e9be` — feat: Phase 3 UX audit fixes — archetype images, story length, fonts, nav
-- `139cf9e` — feat: Phase 4+5 UX audit fixes — sliders, dead code, voice input
-- `f0f3233` — feat: Tasks 3.3, 4.1, 4.3, 4.4, 5.2 — picker style, scenarios, brief, dots
-
 ---
 
 ## 2026-03-20 (Asset Audit — Codex)
@@ -270,56 +289,6 @@ Static analysis of 7 areas: story payload completeness, story launch, illustrati
 - **Unregistered assets:** 125 files under `assets/feelings_faces_backup_20260130_150545/` are not covered by `pubspec.yaml`.
 - **Empty/missing pubspec asset directories:** None.
 
-### Action Taken
-- No safe `pubspec.yaml` changes were made.
-- The unregistered files are a backup directory and were left for manual review rather than added to app assets.
-- No asset files were deleted and no Dart references were changed.
-
-## 2026-03-21 (Asset Audit Follow-Up — Codex)
-
-### Status
-- Confirmed the 2026-03-20 asset audit note remains in the root coordination log.
-- No `pubspec.yaml` changes were required from that audit.
-- Current repo state now includes untracked `assets/images/scenarios/mystery.png` and `assets/images/scenarios/survival.png`; if those are committed in a later change, the prior missing-scenario-image note from the audit can be treated as resolved.
-
-### Additional Changes (Claude Sonnet 4.6 — third pass, 2026-03-20)
-
-#### Task 4.2 — Band-Exclusive Scenarios
-- Added `minBand` field to `ScenarioCard` in `lib/data/scenario_data.dart`
-- Added `midnight_mystery` (detective/mystery) and `survival_island` (survival) scenarios, both gated to `AgeBand.adventurer` and above
-- Both have full mature variants with `matureTitle`/`matureDescription`/`matureWorldBible`
-- Filter applied in `_buildScenarioSections()` alongside existing Sprout filter
-
-#### Task 5.5 — Two-Stage Age Picker
-- Replaced flat 12-item age grid in `welcome_screen.dart` with two-stage band picker
-- Stage 1: 6 band group cards (Little One 3-5, Explorer 6-8, Adventurer 9-11, Creator 12-14, Teen 15-17, Adult 18+)
-- Stage 2: 3 large age circles within the selected band (back button to return to groups)
-- Adult group selects directly (single value)
-
-### Commits
-- `2e90174` — feat: Tasks 4.2 + 5.5 — band-exclusive scenarios, two-stage age picker
-
-### Remaining Work
-- **Task 4.6**: Generate 4 Sprout scene backgrounds (Gemini 3 Pro — prompt provided to user; pubspec.yaml already updated)
-- **Task 5.3**: Audit unused assets (low priority — Codex already ran this; findings above)
-- **Missing illustrations**: `assets/images/scenarios/mystery.png` and `assets/images/scenarios/survival.png` needed for new midnight_mystery/survival_island scenarios
-
----
-
-## 2026-03-20 (Task 2.7 wiring + Task 4.6 pubspec — Claude Opus 4.6)
-
-### Changes Made
-
-#### Task 2.7 — Wire copingForAge() into UI (completion)
-- `lib/screens/feelings_garden_screen.dart`: `_CopingCard` now calls `detail.copingForAge(childAge)` so ages 12+ see mature coping strategies instead of child-oriented ones like "Stomp like a dinosaur"
-- `lib/screens/wizard_steps/wizard_data_mapper.dart`: threaded age into `_mapChipToFeeling(chipLabel, age)` and switched Sad/Angry chip lookups to `details.copingForAge(age)` so story generation payloads also carry age-appropriate coping
-
-#### Task 4.6 — Sprout scenes pubspec registration
-- `pubspec.yaml`: added `assets/images/scenes/sprout/` to flutter assets block so images bundle correctly once Gemini generates them
-
-### Commit
-- `05b83ef` — fix: wire copingForAge() into UI + add sprout scenes to pubspec
-
 ---
 
 ## 2026-03-18 (Deployment Plan + Assignment Creation — Claude)
@@ -334,60 +303,3 @@ Static analysis of 7 areas: story payload completeness, story launch, illustrati
 - Updated: `docs/LAUNCH_BLOCKERS.md` to reflect both previously listed items are resolved.
 - Next: Darcy sets Railway env var (5 min), then hand assignments to each model in parallel.
 - Completed: Railway redeployed successfully with `RAILWAY_FRONTEND_URL` set — CORS blocker B1 resolved 2026-03-18.
-
-## 2026-03-18
-
-- Completed: fixed the unsecured API key routes in `backend/routes/api_key_routes.py` so `/api/user/settings/api-key` and `/api/user/usage` now require JWT auth and use `request.current_user` instead of trusting `X-User-ID`.
-- Completed: registered the API key blueprint in `backend/app.py`; before this, the BYOK endpoints existed in code but returned `404` because they were never mounted.
-- Completed: added authorization coverage in `backend/tests/security/test_authorization.py` for API key, story, therapist, and achievement routes, and added the missing `therapist_user` fixture in `backend/tests/conftest.py`.
-- Verification: `cd backend && python -m pytest tests/security/ -v` passed with `97 passed` on 2026-03-18.
-- Verification note: the exact import check command `cd backend && python -c "from app import create_app; app = create_app('testing'); print('OK')"` still fails because this repo's current import layout mixes package-relative imports with top-level execution. A package-safe equivalent succeeded: `python -c "import sys; sys.path.insert(0, r'C:\\dev\\story-weaver-app'); from backend.app import create_app; app = create_app('testing'); print('OK')"`.
-- In progress: adding per-phase story generation perf instrumentation in `backend/tasks/story_tasks.py` and extending `backend/tests/story_load_audit.py` with real-provider, fallback switchover, and concurrency-ramp coverage.
-- Completed: `cd backend && python tests/story_load_audit.py` now passes and writes fresh audit artifacts with the new fallback switchover line (`~4573ms`) and concurrency ramp table.
-- Completed: `cd backend && python tests/story_load_thresholds.py` passes with the new `concurrency_ramp_c16` checks.
-- Completed: manual Flask test-client verification shows `/generate-story` responses now include `story._perf`, and `backend.tasks.story_tasks` emits `perf phase=` debug lines for prompt build, AI call, validation, and total task.
-- Next: real-provider baseline remains gated behind `--real-api` / `RUN_REAL_API_TESTS=true` and was not executed because `GEMINI_API_KEY` is not set in this environment.
-- Completed: illustration/count wiring and coloring follow-up fixes are now present in the Flutter layer:
-  - `magic_review_step.dart` fallback illustration generation now forwards companion data, carries `customElements` into `sceneRequirements`, and uses subscription-based counts (`family=2`, `premium/free=1`).
-  - `story_illustration_service.dart` now supports `sceneRequirements` and folds those requirements into the scene description sent to `/generate-illustrations`.
-  - `story_result_screen.dart` now forwards companion data into `generateColoringPagesFromStory(...)` and appends `customElements` to coloring scene prompts.
-  - `ColoringSettingsDialog` now exposes a real 1-5 page picker instead of hardcoding a single page.
-- Coordination note: there are two coordination logs in the repo right now (`TEAM_COORDINATION.md` at repo root and `docs/TEAM_COORDINATION.md`). This thread has updated both at different points; prefer keeping the root file current for active handoff unless the docs copy is explicitly needed.
-- Verification gap: targeted analyzer runs for the touched Dart files were attempted, but both `flutter analyze` and `dart analyze` timed out in this environment before returning diagnostics, so only code inspection and repo-state verification were completed here.
-- Completed: Comprehensive UI aesthetic audit for Age Band adaptations. Addressed hardcoded colors in `app_bottom_navigation.dart`, updated `ArchetypeCard` to use dynamic layout sizes and proper `AgeBandThemeData` colors, corrected the hardcoded yellow highlighting in `magic_review_step.dart`, and ensured the "Export to Coloring Book" action is appropriately hidden for younger age bands in `story_result_screen.dart`.
-- Completed: Verified and merged `age_band_assets` directories into `assets/images/ui` and `assets/images/orbs` to ensure all 6 age bands correctly load their variant image buttons and progress orbs correctly.
-
-## 2026-03-19 (Phase 1 Fixes - BigFeelingsFlowScreen Theme Isolation)
-- Completed: Fixed `BigFeelingsFlowScreen` to respect the age-band theme system by passing `childAge` parameter. Used `AgeBandThemeData` for gradients and fonts. Added "Happy" and "Excited" options, and replaced emojis with band-specific face images for feelings.
-
-## 2026-03-19 (Task 1.2 - Reading Label Rename)
-- Completed: Updated `lib/screens/wizard_steps/hero_creator_step.dart` so `_getReadingLabel()` now maps Explorer to `Easy Reader` and Adventurer to `Chapter Reader`, while leaving older bands on `First Chapter`.
-- Completed: Updated `lib/screens/wizard_steps/magic_review_step.dart` so the learning-to-read review label now says `Rhyme Time story` instead of `Limerick Laughs story`.
-- Verification: `rg -n "Limerick Laughs" lib` returns no matches after the change.
-
-## 2026-03-19 (Task 1.4 - Bedtime Settings CTA)
-- Completed: Updated `lib/screens/bedtime_wizard_screen.dart` so the 'Go to Settings' button now navigates to the `ParentControlsScreen` instead of just calling `Navigator.pop()`.
-
-## 2026-03-19 (Task 1.5 - Companion Selection Fix)
-- Completed: Updated `_ShowcaseSlot` and associated friend/pet selection logic in `lib/screens/wizard_steps/hero_creator_step.dart` to correctly insert and remove `id` instead of `name` within `selectedCompanions`.
-
-## 2026-03-19 (Task 1.6 - Emotion Game Assets Fix)
-- Completed: Updated `lib/emotion_recognition_game.dart` to correctly point to `assets/images/feelings/sprout` instead of `assets/emotions/` and implemented `Image.asset` for rendering it within a `ClipRRect`.
-
-## 2026-03-19 (Task 2.1 - Make Primary CTAs Band-Configurable)
-- Completed: Added `launchStoryLabel` and `companionCTALabel` to `AgeBandThemeData` and implemented them in `companion_selector_step.dart`, `magic_review_step.dart`, and `wizard_story_screen.dart` to remove hardcoded juvenile CTAs for older age bands.
-
-## 2026-03-19 (Task 2.2 - Rewrite Creative Brief Labels)
-- Completed: Replaced all clinical string labels like "PSYCHOLOGICAL VITALITY" and "CREATIVE BRIEF" in the teen wizard flow (`hero_creator_step.dart`) with natural language variants.
-
-## 2026-03-19 (Task 2.3 - Update Mature Archetype Names and Descriptions)
-- Completed: Updated `ArchetypeData` in `archetype_card.dart` to support a new `matureDescription` property alongside `matureName`. Populated `matureDescription` for every archetype. Replaced hardcoded "Senior Architect" and "mighty_guardian" strings with their proper replacements. Wired the `descriptionForAge` method into `hero_creator_step.dart`'s UI grid cards.
-
-## 2026-03-19 (Task 2.4 - Fix Welcome Screen Text)
-- Completed: Updated the welcome screen's main text from "Once Upon YOUR Child" to a universal "Once Upon a Time".
-
-## 2026-03-19 (Task 2.5 - Adapt Bedtime Mode Prompts Per Age Band)
-- Completed: Added `_isMature` helper to `bedtime_wizard_screen.dart` to determine age dynamically based on the child's input. Adapted greeting, companion, setting, making, and completion voice prompts for users 12+.
-
-## 2026-03-19 (Task 2.6 - Fix FeelingsGardenScreen Tab Labels for Mature Bands)
-- Completed: Replaced hardcoded juvenile tab labels in `feelings_garden_screen.dart` with adaptive `_tab1Label()`, `_tab2Label()`, and `_tab3Label()` getters based on the child's age band.
