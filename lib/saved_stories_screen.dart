@@ -223,7 +223,6 @@ class SavedStoriesScreen extends ConsumerWidget {
         builder: (_) => StoryResultScreen(
           title: story.title,
           storyText: story.storyText,
-          wisdomGem: story.wisdomGem ?? '',
           characterName: story.characters.isNotEmpty
               ? story.characters.first.name
               : null,

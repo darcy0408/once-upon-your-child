@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'feelings_cloud_picker.dart';
+import 'feelings_badge_grid.dart';
+import '../theme/age_band_theme.dart';
 
 class FeelingsQuestModal {
   /// Returns ['happy'], ['happy','playful'], or ['happy','playful','silly'].
@@ -43,6 +45,9 @@ class _FeelingsQuestScreenState extends State<_FeelingsQuestScreen> {
   // Track level for header title
   int _level = 0;
 
+  bool get _useBadgeGrid =>
+      ageBandFromAge(widget.childAge) == AgeBand.adventurer;
+
   static const _titles = [
     'How are you feeling?',
     'Tell me more…',
@@ -67,26 +72,27 @@ class _FeelingsQuestScreenState extends State<_FeelingsQuestScreen> {
                 children: [
                   SizedBox(
                     width: 48,
-                    child: _level > 0
+                    child: _useBadgeGrid || _level == 0
                         ? IconButton(
+                            icon: const Icon(Icons.close,
+                                color: Colors.white60, size: 22),
+                            onPressed: () => Navigator.of(context).pop(),
+                          )
+                        : IconButton(
                             icon: const Icon(Icons.arrow_back_ios_new_rounded,
                                 color: Colors.white, size: 20),
                             onPressed: () {
                               final wentBack =
-                                  _pickerKey.currentState?.goBack() ??
-                                      false;
+                                  _pickerKey.currentState?.goBack() ?? false;
                               if (!wentBack) Navigator.of(context).pop();
                             },
-                          )
-                        : IconButton(
-                            icon: const Icon(Icons.close,
-                                color: Colors.white60, size: 22),
-                            onPressed: () => Navigator.of(context).pop(),
                           ),
                   ),
                   Expanded(
                     child: Text(
-                      _titles[_level.clamp(0, 2)],
+                      _useBadgeGrid
+                          ? 'How are you feeling?'
+                          : _titles[_level.clamp(0, 2)],
                       textAlign: TextAlign.center,
                       style: GoogleFonts.fredoka(
                         color: Colors.white,
@@ -99,15 +105,19 @@ class _FeelingsQuestScreenState extends State<_FeelingsQuestScreen> {
                 ],
               ),
             ),
-            // Picker
+            // Picker — badge grid for Adventurer band, cloud picker otherwise
             Expanded(
-              child: FeelingsCloudPicker(
-                key: _pickerKey,
-                childAge: widget.childAge,
-                onLevelChanged: _onLevelChanged,
-                onSelected: (sel) =>
-                    Navigator.of(context).pop(sel.ids),
-              ),
+              child: _useBadgeGrid
+                  ? FeelingsBadgeGrid(
+                      onSelected: (ids) => Navigator.of(context).pop(ids),
+                    )
+                  : FeelingsCloudPicker(
+                      key: _pickerKey,
+                      childAge: widget.childAge,
+                      onLevelChanged: _onLevelChanged,
+                      onSelected: (sel) =>
+                          Navigator.of(context).pop(sel.ids),
+                    ),
             ),
           ],
         ),

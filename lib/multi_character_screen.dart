@@ -94,7 +94,6 @@ class _MultiCharacterScreenState extends State<MultiCharacterScreen> {
           builder: (_) => StoryResultScreen(
             title: title,
             storyText: storyText,
-            wisdomGem: '', // multi-character endpoint returns just 'story'; you can add wisdom if you want
             characterName: main.name,
             characterId: main.id,
             theme: _theme,

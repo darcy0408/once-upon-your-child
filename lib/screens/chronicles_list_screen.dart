@@ -145,6 +145,7 @@ class _ChroniclesListScreenState extends State<ChroniclesListScreen> {
                 itemCount: _chronicles.length,
                 itemBuilder: (ctx, i) {
                   final c = _chronicles[i];
+                  final isOneChapter = c.chapterCount == 1;
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     child: ListTile(
@@ -155,7 +156,26 @@ class _ChroniclesListScreenState extends State<ChroniclesListScreen> {
                       subtitle: Text(
                         '${c.chapterCount} chapter${c.chapterCount == 1 ? '' : 's'} • ${c.genre}',
                       ),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      trailing: isOneChapter
+                          ? Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.deepPurple.withAlpha(25),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                    color: Colors.deepPurple.withAlpha(80)),
+                              ),
+                              child: const Text(
+                                'Start Chapter 2! ✨',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.deepPurple,
+                                ),
+                              ),
+                            )
+                          : const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () => _navigateToChronicle(c),
                     ),
                   );

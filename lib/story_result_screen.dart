@@ -50,11 +50,12 @@ import 'widgets/storybook_progress_indicator.dart';
 import 'widgets/storybook_page.dart';
 import 'screens/byok_setup_wizard.dart';
 import 'screens/wizard_story_screen.dart';
+import 'screens/chronicles_list_screen.dart';
 
 class StoryResultScreen extends StatefulWidget {
   final String title;
   final String storyText;
-  final String wisdomGem;
+  final String? wisdomGem;
   final String? characterName;
   final String? storyId;
   final String? theme;
@@ -82,12 +83,13 @@ class StoryResultScreen extends StatefulWidget {
   final List<Map<String, dynamic>>? companionPets;
   final List<dynamic>? companionCharacters;
   final String? customElements;
+  final WizardData? wizardData;
 
   const StoryResultScreen({
     super.key,
     required this.title,
     required this.storyText,
-    required this.wisdomGem,
+    this.wisdomGem,
     this.characterName,
     this.storyId,
     this.theme,
@@ -114,6 +116,7 @@ class StoryResultScreen extends StatefulWidget {
     this.companionPets,
     this.companionCharacters,
     this.customElements,
+    this.wizardData,
   })  : assert(!trackStoryCreation || achievementsService != null),
         assert(!trackStoryCreation || storyCreatedAt != null);
 
@@ -1094,12 +1097,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       ..writeln(widget.title)
       ..writeln()
       ..writeln(widget.storyText);
-    if (widget.wisdomGem.isNotEmpty) {
-      buffer
-        ..writeln()
-        ..writeln('Wisdom Gem: ${widget.wisdomGem}');
-    }
-
     if (includeMetadata) {
       buffer
         ..writeln()
@@ -1241,7 +1238,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
           isInteractive: widget.isInteractive ?? false,
           isRhyming: widget.isRhyming ?? false,
           isLearningToRead: widget.isLearningToReadMode,
-          wisdomGem: widget.wisdomGem,
           pages: widget.pages,
           adventureSteps: widget.adventureSteps,
           // Calculate stats
@@ -1934,7 +1930,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     );
   }
 
-  /// Celebratory end-of-story page with wisdom gem and rating.
+  /// Celebratory end-of-story page with rating.
   Widget _buildEndOfStoryPage() {
     final band =
         Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
@@ -1960,10 +1956,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                   color: _highContrastMode ? Colors.white : band.primary,
                 ),
               ),
-              if (widget.wisdomGem.isNotEmpty) ...[
-                const SizedBox(height: 24),
-                _buildWisdomGem(),
-              ],
               const SizedBox(height: 28),
               Divider(
                 indent: 40,
@@ -2008,7 +2000,109 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                   );
                 }),
               ),
+              if (widget.characterId != null) ...[
+                const SizedBox(height: 20),
+                _buildRepeatButton(
+                  label: 'My Chronicles',
+                  icon: Icons.menu_book_rounded,
+                  onTap: () {
+                    final stub = Character(
+                      id: widget.characterId!,
+                      name: widget.characterName ?? '',
+                      age: widget.characterAge ?? 8,
+                      role: 'Adventurer',
+                    );
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => ChroniclesListScreen(
+                        character: stub,
+                        userId: '',
+                      ),
+                    ));
+                  },
+                ),
+              ],
+              if (widget.wizardData != null) ...[
+                const SizedBox(height: 28),
+                Divider(
+                  indent: 40,
+                  endIndent: 40,
+                  color: _highContrastMode
+                      ? Colors.white24
+                      : Colors.grey.withValues(alpha: 0.3),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Ready for another adventure?',
+                  style: GoogleFonts.quicksand(
+                    fontSize: 15 * _textScale,
+                    fontWeight: FontWeight.w600,
+                    color: _highContrastMode ? Colors.white70 : Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildRepeatButton(
+                  label: 'Same Character, New Story',
+                  icon: Icons.auto_stories_rounded,
+                  onTap: () {
+                    final clone = widget.wizardData!.clone();
+                    clone.selectedScenario = null;
+                    clone.selectedEmotionChips = [];
+                    clone.selectedFeeling = null;
+                    clone.selectedTrigger = null;
+                    clone.selectedBodySignal = null;
+                    clone.selectedCopingTool = null;
+                    clone.selectedRepairGoal = null;
+                    clone.customElements = '';
+                    Navigator.of(context).pushReplacement(MaterialPageRoute(
+                      builder: (_) => WizardStoryScreen(
+                        initialStep: 0,
+                        initialWizardData: clone,
+                      ),
+                    ));
+                  },
+                ),
+                const SizedBox(height: 10),
+                _buildRepeatButton(
+                  label: 'Same Settings, New Story',
+                  icon: Icons.replay_rounded,
+                  onTap: () {
+                    Navigator.of(context).pushReplacement(MaterialPageRoute(
+                      builder: (_) => WizardStoryScreen(
+                        initialStep: 1,
+                        initialWizardData: widget.wizardData!.clone(),
+                      ),
+                    ));
+                  },
+                ),
+              ],
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRepeatButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    return SizedBox(
+      width: 260,
+      child: ElevatedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 18),
+        label: Text(
+          label,
+          style: GoogleFonts.quicksand(fontWeight: FontWeight.w700),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: band.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),
@@ -2206,157 +2300,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     );
   }
 
-  Widget _buildWisdomGem() {
-    // Ages 3-7: Large, animated, prominent — full sparkle display
-    if (_effectiveAge <= 7) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-        margin: const EdgeInsets.symmetric(horizontal: 24),
-        decoration: BoxDecoration(
-          color: AppColors.gold.withValues(alpha: 0.18),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppColors.gold.withValues(alpha: 0.6),
-            width: 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.gold.withValues(alpha: 0.25),
-              blurRadius: 16,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            const Icon(Icons.auto_awesome, color: AppColors.gold, size: 40),
-            const SizedBox(height: 10),
-            Text(
-              widget.wisdomGem,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.quicksand(
-                fontSize: 22 * _textScale,
-                fontWeight: FontWeight.bold,
-                fontStyle: FontStyle.italic,
-                color:
-                    _highContrastMode ? Colors.white : const Color(0xFF2C3E50),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    // Ages 8-10: Discoverable — medium prominence, no animation, no glow
-    if (_effectiveAge <= 10) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        margin: const EdgeInsets.symmetric(horizontal: 24),
-        decoration: BoxDecoration(
-          color: AppColors.gold.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
-        ),
-        child: Column(
-          children: [
-            const Icon(Icons.auto_awesome, color: AppColors.gold, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              widget.wisdomGem,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.quicksand(
-                fontSize: 18 * _textScale,
-                fontWeight: FontWeight.w600,
-                fontStyle: FontStyle.italic,
-                color:
-                    _highContrastMode ? Colors.white : const Color(0xFF2C3E50),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    // Ages 11-13: Optional tap-to-reveal tile, labelled "Story Reflection"
-    if (_effectiveAge <= 13) {
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 24),
-        decoration: BoxDecoration(
-          color: AppColors.gold.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
-        ),
-        child: ExpansionTile(
-          leading: const Icon(Icons.auto_awesome, color: AppColors.gold),
-          title: Text(
-            'Story Reflection',
-            style: GoogleFonts.quicksand(
-              fontSize: 16 * _textScale,
-              fontWeight: FontWeight.bold,
-              color: _highContrastMode ? Colors.white : const Color(0xFF2C3E50),
-            ),
-          ),
-          iconColor: AppColors.gold,
-          collapsedIconColor: AppColors.gold,
-          shape: const Border(),
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-              child: Text(
-                widget.wisdomGem,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.quicksand(
-                  fontSize: 16 * _textScale,
-                  fontWeight: FontWeight.w500,
-                  fontStyle: FontStyle.italic,
-                  color: _highContrastMode
-                      ? Colors.white70
-                      : const Color(0xFF2C3E50),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    // Ages 14+: Plain "Reflection" text, collapsed by default, minimal decoration
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: BoxDecoration(
-        color: AppColors.gold.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
-      ),
-      child: ExpansionTile(
-        leading: Icon(Icons.auto_awesome,
-            color: AppColors.gold.withValues(alpha: 0.6), size: 18),
-        title: Text(
-          'Reflection',
-          style: GoogleFonts.quicksand(
-            fontSize: 14 * _textScale,
-            fontWeight: FontWeight.w600,
-            color: _highContrastMode ? Colors.white70 : Colors.grey[600]!,
-          ),
-        ),
-        iconColor: AppColors.gold.withValues(alpha: 0.6),
-        collapsedIconColor: AppColors.gold.withValues(alpha: 0.4),
-        shape: const Border(),
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-            child: Text(
-              widget.wisdomGem,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.quicksand(
-                fontSize: 14 * _textScale,
-                fontWeight: FontWeight.w400,
-                fontStyle: FontStyle.italic,
-                color: _highContrastMode ? Colors.white54 : Colors.grey[500]!,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Wisdom gem feature removed — stories now end cleanly without a lesson overlay.
 
   double _flipShadowIntensity = 0.0;
   double _flipShadowAlignment = 0.0;
@@ -2449,43 +2393,6 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                               size: isNarrow ? 28 : 32),
                           SizedBox(width: band.space(8)),
                         ],
-                        if (widget.wisdomGem.isNotEmpty)
-                          Expanded(
-                            key: const Key('wisdom_chip'),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: AppColors.gold.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(30),
-                                border: Border.all(
-                                    color:
-                                        AppColors.gold.withValues(alpha: 0.5)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.auto_awesome,
-                                      color: AppColors.gold, size: 20),
-                                  if (!isNarrow) ...[
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        widget.wisdomGem,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.quicksand(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: band.body(14),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ),
                         SizedBox(width: band.space(8)),
                         // Adventure Log Button (only if choices exist)
                         if (widget.choicesMade != null &&

@@ -52,6 +52,7 @@ class WizardData {
   // Step 3: Companion Selector
   List<String> selectedCompanions = [];
   List<String> companionNames = [];
+  Map<String, String> companionCustomNames = {}; // id → user's custom name
 
   // Step 4: Story Settings
   bool rhymeTimeMode = false;
@@ -76,6 +77,58 @@ class WizardData {
   String? heroSuperpower; // e.g. "Kindness Magic"
   String?
       heroQuest; // e.g. "Making new friends" — maps silently to lifeChallenge
+
+  /// Returns a deep copy of this WizardData.
+  WizardData clone() {
+    final c = WizardData();
+    c.selectedArchetypeId = selectedArchetypeId;
+    c.characterId = characterId;
+    c.characterGender = characterGender;
+    c.personalitySliders = Map<String, int>.from(personalitySliders);
+    c.characterName = characterName;
+    c.characterAge = characterAge;
+    c.favoriteColor = favoriteColor;
+    c.selectedHairStyle = selectedHairStyle;
+    c.selectedSkinTone = selectedSkinTone;
+    c.selectedOutfit = selectedOutfit;
+    c.generatedAvatar = generatedAvatar;
+    c.customAvatarPath = customAvatarPath;
+    c.selectedCharacterAssetPath = selectedCharacterAssetPath;
+    c.fears = List<String>.from(fears);
+    c.strengths = List<String>.from(strengths);
+    c.comfortItem = comfortItem;
+    c.pets = pets.map((p) => Map<String, String>.from(p)).toList();
+    c.petAvatars = Map.from(petAvatars);
+    c.petPhotos = Map<String, String>.from(petPhotos);
+    c.additionalCharacters = List<String>.from(additionalCharacters);
+    c.selectedScenario = selectedScenario;
+    c.selectedEmotionChips = List<String>.from(selectedEmotionChips);
+    c.selectedFeeling = selectedFeeling;
+    c.selectedTrigger = selectedTrigger;
+    c.selectedBodySignal = selectedBodySignal;
+    c.selectedCopingTool = selectedCopingTool;
+    c.selectedRepairGoal = selectedRepairGoal;
+    c.parentHiddenContext = parentHiddenContext;
+    c.parentalNote = parentalNote;
+    c.selectedCompanions = List<String>.from(selectedCompanions);
+    c.companionNames = List<String>.from(companionNames);
+    c.companionCustomNames = Map<String, String>.from(companionCustomNames);
+    c.rhymeTimeMode = rhymeTimeMode;
+    c.learningToReadMode = learningToReadMode;
+    c.interactiveMode = interactiveMode;
+    c.includeIllustrations = includeIllustrations;
+    c.storyLength = storyLength;
+    c.customElements = customElements;
+    c.selectedGenre = selectedGenre;
+    c.selectedSparkTool = selectedSparkTool;
+    c.lifeChallenge = lifeChallenge;
+    c.storyDnaContext = storyDnaContext;
+    c.storyDnaOutcome = storyDnaOutcome;
+    c.storyDnaAvoid = storyDnaAvoid;
+    c.heroSuperpower = heroSuperpower;
+    c.heroQuest = heroQuest;
+    return c;
+  }
 
   // Helper methods
   bool get isStep1Complete =>

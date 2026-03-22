@@ -452,6 +452,10 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
                     companion: companion,
                     isSelected: isSelected,
                     onTap: () => _toggleCompanion(companion),
+                    customName: widget.wizardData.companionCustomNames[companion.id],
+                    onNameChanged: (name) => setState(() {
+                      widget.wizardData.companionCustomNames[companion.id] = name;
+                    }),
                   );
                 },
               ),
@@ -477,6 +481,10 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
                   isSelected: isSelected,
                   onTap: () => _toggleCompanion(creature),
                   isMagical: true,
+                  customName: widget.wizardData.companionCustomNames[creature.id],
+                  onNameChanged: (name) => setState(() {
+                    widget.wizardData.companionCustomNames[creature.id] = name;
+                  }),
                 ),
               );
             }),
@@ -540,40 +548,73 @@ class Companion {
   });
 }
 
-class _CompanionCard extends StatelessWidget {
+class _CompanionCard extends StatefulWidget {
   final Companion companion;
   final bool isSelected;
   final VoidCallback onTap;
   final bool isMagical;
+  final String? customName;
+  final ValueChanged<String>? onNameChanged;
 
-  const _CompanionCard(
-      {required this.companion,
-      required this.isSelected,
-      required this.onTap,
-      this.isMagical = false});
+  const _CompanionCard({
+    required this.companion,
+    required this.isSelected,
+    required this.onTap,
+    this.isMagical = false,
+    this.customName,
+    this.onNameChanged,
+  });
+
+  @override
+  State<_CompanionCard> createState() => _CompanionCardState();
+}
+
+class _CompanionCardState extends State<_CompanionCard> {
+  late final TextEditingController _nameController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(
+        text: widget.customName ?? widget.companion.name);
+  }
+
+  @override
+  void didUpdateWidget(_CompanionCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.isSelected && oldWidget.isSelected) {
+      _nameController.text = widget.customName ?? widget.companion.name;
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      selected: isSelected,
+      selected: widget.isSelected,
       label:
-          'Companion: ${companion.name}. ${companion.description}. ${isSelected ? 'Selected' : 'Double tap to select'}',
+          'Companion: ${widget.companion.name}. ${widget.companion.description}. ${widget.isSelected ? 'Selected' : 'Double tap to select'}',
       child: GestureDetector(
-        onTap: onTap,
+        onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           decoration: BoxDecoration(
-            color: isSelected
+            color: widget.isSelected
                 ? Colors.white.withAlpha(20)
                 : Colors.white.withAlpha(10),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-                color: isSelected
+                color: widget.isSelected
                     ? const Color(0xFFFFD700)
                     : const Color(0xFFD4A0FF).withAlpha(80),
-                width: isSelected ? 3 : 1.5),
-            boxShadow: isSelected
+                width: widget.isSelected ? 3 : 1.5),
+            boxShadow: widget.isSelected
                 ? [
                     BoxShadow(
                         color: const Color(0xFFFFD700).withAlpha(80),
@@ -593,23 +634,76 @@ class _CompanionCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(companion.name,
+                        Text(widget.companion.name,
                             style: GoogleFonts.fredoka(
                                 color: Colors.white,
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
-                        Text(companion.description,
+                        Text(widget.companion.description,
                             style: GoogleFonts.quicksand(
                                 color: Colors.white.withAlpha(180),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500)),
+                        // Greeting speech bubble + naming field when selected
+                        if (widget.isSelected) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withAlpha(20),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                  color: const Color(0xFFFFD700).withAlpha(120)),
+                            ),
+                            child: Text(
+                              '"${widget.companion.greeting}"',
+                              style: GoogleFonts.quicksand(
+                                color: const Color(0xFFFFD700),
+                                fontSize: 13,
+                                fontStyle: FontStyle.italic,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          GestureDetector(
+                            onTap: () {}, // absorb tap to prevent card deselect
+                            child: TextField(
+                              controller: _nameController,
+                              onChanged: widget.onNameChanged,
+                              style: GoogleFonts.quicksand(
+                                  color: Colors.white, fontSize: 14),
+                              decoration: InputDecoration(
+                                labelText: 'Companion\'s name',
+                                labelStyle: TextStyle(
+                                    color: Colors.white.withAlpha(150),
+                                    fontSize: 12),
+                                filled: true,
+                                fillColor: Colors.white.withAlpha(15),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                      color: Colors.white.withAlpha(60)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                      color: Color(0xFFFFD700)),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
                 ],
               ),
-              if (isSelected)
+              if (widget.isSelected)
                 Positioned(
                     top: 12,
                     right: 12,
@@ -627,28 +721,30 @@ class _CompanionCard extends StatelessWidget {
   }
 
   Widget _buildBackground() {
-    if (companion.generatedAvatar != null) {
+    if (widget.companion.generatedAvatar != null) {
       return Image.memory(
-          base64Decode(companion.generatedAvatar!.imageBase64.split(',').last),
+          base64Decode(
+              widget.companion.generatedAvatar!.imageBase64.split(',').last),
           height: 120,
           fit: BoxFit.cover);
     }
-    if (companion.character?.generatedAvatar != null) {
-      final b64 = companion.character!.generatedAvatar!.imageBase64;
+    if (widget.companion.character?.generatedAvatar != null) {
+      final b64 = widget.companion.character!.generatedAvatar!.imageBase64;
       if (b64.startsWith('assets/')) {
         return Image.asset(b64, height: 120, fit: BoxFit.cover);
       }
       return Image.memory(base64Decode(b64.split(',').last),
           height: 120, fit: BoxFit.cover);
     }
-    if (companion.imagePath != null) {
-      return Image.asset(companion.imagePath!, height: 120, fit: BoxFit.cover);
+    if (widget.companion.imagePath != null) {
+      return Image.asset(widget.companion.imagePath!,
+          height: 120, fit: BoxFit.cover);
     }
     return Container(
         height: 120,
         color: Colors.white.withAlpha(10),
         child: Center(
-            child:
-                Text(companion.emoji, style: const TextStyle(fontSize: 50))));
+            child: Text(widget.companion.emoji,
+                style: const TextStyle(fontSize: 50))));
   }
 }

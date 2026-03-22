@@ -624,23 +624,15 @@ class _StoryScreenState extends State<StoryScreen> {
 
       if (!mounted) return;
 
-      // Generate title and wisdom gem
+      // Generate title
       final story = storyResult.storyText;
       final backendTitle = storyResult.title?.trim();
-      final backendWisdom = storyResult.wisdomGem?.trim();
 
       final String title = (backendTitle != null && backendTitle.isNotEmpty)
           ? backendTitle
           : (_additionalCharacterIds.isEmpty
               ? '${_selectedCharacter!.name}\'s $_selectedTheme Adventure'
               : _generateMultiCharacterTitle());
-
-      final String wisdomGem =
-          (backendWisdom != null && backendWisdom.isNotEmpty)
-              ? backendWisdom
-              : (_additionalCharacterIds.isEmpty
-                  ? 'Every adventure makes us stronger and wiser.'
-                  : 'Together, we are stronger than we are alone.');
 
       final storyTimestamp = DateTime.now();
 
@@ -652,7 +644,6 @@ class _StoryScreenState extends State<StoryScreen> {
         characters: allSelectedCharacters,
         createdAt: storyTimestamp,
         isInteractive: false,
-        wisdomGem: wisdomGem,
       );
 
       // Save to Isar for Library visibility
@@ -683,7 +674,6 @@ class _StoryScreenState extends State<StoryScreen> {
           builder: (_) => StoryResultScreen(
             title: title,
             storyText: story,
-            wisdomGem: wisdomGem,
             characterName: _selectedCharacter?.name,
             storyId: saved.id,
             theme: _selectedTheme,

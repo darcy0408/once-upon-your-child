@@ -1,3 +1,9 @@
+// NOTE: This service is actively used by main_story.dart and api_service_manager.dart
+// for client-side age-group labelling (getAgeGroup, buildAgeInstructions) and prompt
+// construction. The word-count ranges here are intentionally different from the
+// backend InteractiveAdventurePromptBuilder — that system uses per-segment counts
+// scaled by path depth, whereas this service expresses single-story totals used in
+// legacy/non-interactive story flows. Do not merge or delete.
 class AgeGroup {
   final String name;
   final int minAge;

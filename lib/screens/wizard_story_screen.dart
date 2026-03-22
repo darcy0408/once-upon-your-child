@@ -13,6 +13,7 @@ import 'wizard_steps/magic_review_step.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service_manager.dart';
 import 'bedtime_wizard_screen.dart';
+import 'chronicles_list_screen.dart';
 
 /// WizardStoryScreen - Main 4-step wizard for creating magical stories
 ///
@@ -399,6 +400,28 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                           _loadSavedCharacters();
                         },
                         tooltip: 'My Characters',
+                      ),
+                    // Chronicles button — only when a character is selected
+                    if (_wizardData.characterId != null)
+                      IconButton(
+                        icon: const Icon(Icons.menu_book_rounded,
+                            color: Colors.white),
+                        onPressed: () {
+                          final stub = Character(
+                            id: _wizardData.characterId!,
+                            name: _wizardData.characterName,
+                            age: _wizardData.characterAge,
+                            role: _wizardData.selectedArchetypeId ??
+                                'Adventurer',
+                          );
+                          Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => ChroniclesListScreen(
+                              character: stub,
+                              userId: '',
+                            ),
+                          ));
+                        },
+                        tooltip: 'My Chronicles',
                       ),
                     // Bedtime Mode button — labeled for young bands, icon-only for mature
                     if (!band.band.isMature)

@@ -43,18 +43,21 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
 
   static const _goldColor = Color(0xFFFFD700);
 
-  // Band groups for two-stage age picker
-  static const _bandGroups = <({String label, String sublabel, String emoji, List<({String label, int value})> ages})>[
-    (label: 'Little One',  sublabel: 'Ages 3–5',   emoji: '🌱', ages: [(label: '3', value: 3), (label: '4', value: 4), (label: '5', value: 5)]),
-    (label: 'Explorer',    sublabel: 'Ages 6–8',   emoji: '🔭', ages: [(label: '6', value: 6), (label: '7', value: 7), (label: '8', value: 8)]),
-    (label: 'Adventurer',  sublabel: 'Ages 9–11',  emoji: '⚔️', ages: [(label: '9', value: 9), (label: '10', value: 10), (label: '11', value: 11)]),
-    (label: 'Creator',     sublabel: 'Ages 12–14', emoji: '✨', ages: [(label: '12', value: 12), (label: '13', value: 13), (label: '14', value: 14)]),
-    (label: 'Teen',        sublabel: 'Ages 15–17', emoji: '🌙', ages: [(label: '15', value: 15), (label: '16', value: 16), (label: '17', value: 17)]),
-    (label: 'Adult',       sublabel: 'Age 18+',    emoji: '🌟', ages: [(label: '18+', value: 21)]),
+  // Age options: individual ages 3–12, then grouped 13-17 and 18+.
+  static const _ageEntries = <({String label, int value})>[
+    (label: '3', value: 3),
+    (label: '4', value: 4),
+    (label: '5', value: 5),
+    (label: '6', value: 6),
+    (label: '7', value: 7),
+    (label: '8', value: 8),
+    (label: '9', value: 9),
+    (label: '10', value: 10),
+    (label: '11', value: 11),
+    (label: '12', value: 12),
+    (label: '13‑17', value: 14),
+    (label: '18+', value: 21),
   ];
-
-  // null = showing band groups; set = showing ages within that band
-  int? _selectedBandGroupIndex;
 
   @override
   void initState() {
@@ -136,12 +139,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
       AppTtsService.instance.stop();
       _speech.stop();
       setState(() => _step = 2);
-      unawaited(_speak('How old are you? Tap your number!'));
+      unawaited(_speak('How old are you? Tap your age!'));
     }
   }
 
   void _onAgeSelected(int age) {
     if (_submitting) return;
+    AppTtsService.instance.stop();
     setState(() => _selectedAge = age);
     _handleContinue();
   }
@@ -443,101 +447,29 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
           style: TextStyle(color: Colors.white70, fontSize: 12),
         ),
         const SizedBox(height: 8),
-        if (_selectedBandGroupIndex == null)
-          _buildBandGroupPicker()
-        else
-          _buildAgePicker(_bandGroups[_selectedBandGroupIndex!]),
-      ],
-    );
-  }
-
-  Widget _buildBandGroupPicker() {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      childAspectRatio: 2.6,
-      children: List.generate(_bandGroups.length, (i) {
-        final group = _bandGroups[i];
-        return GestureDetector(
-          onTap: _submitting
-              ? null
-              : () {
-                  if (group.ages.length == 1) {
-                    // Adult/Teen single-value groups: select directly
-                    _onAgeSelected(group.ages.first.value);
-                  } else {
-                    setState(() => _selectedBandGroupIndex = i);
-                  }
-                },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(18),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white24),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              children: [
-                Text(group.emoji, style: const TextStyle(fontSize: 22)),
-                const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(group.label,
-                        style: GoogleFonts.fredoka(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600)),
-                    Text(group.sublabel,
-                        style: const TextStyle(
-                            color: Colors.white54, fontSize: 11)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildAgePicker(({String label, String sublabel, String emoji, List<({String label, int value})> ages}) group) {
-    return Column(
-      children: [
-        GestureDetector(
-          onTap: () => setState(() => _selectedBandGroupIndex = null),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.arrow_back_ios_new_rounded,
-                  color: Colors.white54, size: 14),
-              const SizedBox(width: 4),
-              Text('${group.emoji} ${group.label}',
-                  style: GoogleFonts.fredoka(
-                      color: Colors.white70, fontSize: 16)),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: group.ages.map((entry) {
-            const circleSize = 72.0;
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: _AgeCircle(
-                label: entry.label,
-                size: circleSize,
-                selected: _selectedAge == entry.value,
-                onTap: _submitting ? null : () => _onAgeSelected(entry.value),
-              ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const spacing = 6.0;
+            final circleSize =
+                ((constraints.maxWidth - (spacing * 2)) / 3).clamp(50.0, 72.0);
+            return GridView.count(
+              crossAxisCount: 3,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: spacing,
+              crossAxisSpacing: spacing,
+              children: _ageEntries.map((entry) {
+                return _AgeCircle(
+                  label: entry.label,
+                  size: circleSize,
+                  selected: _selectedAge == entry.value,
+                  onTap: _submitting
+                      ? null
+                      : () => _onAgeSelected(entry.value),
+                );
+              }).toList(),
             );
-          }).toList(),
+          },
         ),
       ],
     );

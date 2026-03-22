@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -223,7 +224,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
               }
             });
 
-        if (widget.wizardData.customAvatarPath != null) {
+        if (widget.wizardData.customAvatarPath != null && !kIsWeb) {
           try {
             final avatarFile = File(widget.wizardData.customAvatarPath!);
             if (await avatarFile.exists()) {
@@ -276,7 +277,6 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
               builder: (context) => StoryResultScreen(
                   title: result.title ?? 'My Magical Story',
                   storyText: result.storyText,
-                  wisdomGem: result.wisdomGem ?? 'You are magic!',
                   characterName: widget.wizardData.characterName,
                   theme: widget.wizardData.selectedScenario != null
                       ? ScenarioData.getById(
@@ -308,7 +308,8 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                       (requestData['companion_characters'] as List?) ??
                           const []),
                   customElements:
-                      requestData['customElements']?.toString() ?? '')));
+                      requestData['customElements']?.toString() ?? '',
+                  wizardData: widget.wizardData)));
           if (mounted) {
             setState(() => _isGenerating = false);
           }

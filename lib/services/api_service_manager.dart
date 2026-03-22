@@ -1400,8 +1400,6 @@ STORY START
 Write immersive, age-appropriate prose (no code fences) that leads with the current emotion, names body sensations, and sets a clear, kid-repeatable problem. Include at least two rising steps ("and then...") before resolving. Show coping skills in action.
 STORY END
 
-WISDOM GEM: A 5-10 word heart lesson in kid language.
-
 ADVENTURE REPORT
 - PLOT BEATS: 3-6 bullets summarizing arc
 - CHARACTER SNAPSHOT: who they are + how they changed
@@ -1528,12 +1526,11 @@ WORD COUNT: $minWords–$maxWords words total.
 5. REDUCED STIMULATION — no chases, battles, or scary moments. Gentle challenges, gentle resolutions.
 6. CALM MAGIC — things glow softly, float gently, hum quietly. Nothing explodes, races, or shocks.
 7. SLEEP TRANSITION — weave in natural sleep cues: sky deepening to indigo, stars appearing, characters yawning and finding a perfect warm place to rest.
-8. WISDOM GEM — end with one short warm phrase the child can carry into sleep.
+8. COZY CLOSING — end the final page with a warm, comforting sentence that feels like a goodnight hug — woven naturally into the narrative.
 
 OUTPUT FORMAT — return ONLY valid JSON, no prose outside it:
 {
   "title": "Story Title",
-  "wisdom_gem": "One short warm phrase for the child to carry into sleep.",
   "pages": [
     {"text": "First page prose..."},
     {"text": "Second page prose..."},
@@ -1702,7 +1699,6 @@ JSON SCHEMA:
     "..."
   ],
   "post_story": {
-    "wisdom_gem": "A short, meaningful heart lesson",
     "adventure_report": {
       "plot_beats": ["string"],
       "character_snapshot": "string",
@@ -2103,12 +2099,12 @@ $storySoFar
 
 $characterName chose: "$choice"
 
-${shouldEnd ? 'This should be the ENDING. Wrap up the story positively (200-280 words) and include STORY END, WISDOM GEM, and ADVENTURE REPORT in text.' : 'Write the next segment (200-280 words) and provide 2-3 new choices. Keep text labeled as below.'}
+${shouldEnd ? 'This should be the ENDING. Wrap up the story positively (200-280 words) and include STORY END and ADVENTURE REPORT in text.' : 'Write the next segment (200-280 words) and provide 2-3 new choices. Keep text labeled as below.'}
 
 OUTPUT: Return STRICT JSON with keys "text", "choices", and "is_ending".
 - "text": Plain prose with labels (no code fences):
   STORY CONTINUES (reflect last choice)
-  If is_ending is true, append STORY END, WISDOM GEM (5-10 words), and ADVENTURE REPORT bullets (plot beats, character snapshot, emotion notes, re-readability hooks).
+  If is_ending is true, append STORY END and ADVENTURE REPORT bullets (plot beats, character snapshot, emotion notes, re-readability hooks).
 - "choices": 2-3 meaningful next options. If ending, include an "end_story" option and keep list short.
 - "is_ending": ${shouldEnd ? 'true' : 'false'}
 

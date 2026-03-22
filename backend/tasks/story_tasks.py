@@ -487,7 +487,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     provider_name,
                     attempt_ai_call_ms,
                 )
-                title, wisdom_gem, story_body, pages, post_story = _safe_extract_title_and_gem(story_text, theme)
+                title, _, story_body, pages, post_story = _safe_extract_title_and_gem(story_text, theme)
                 
                 # Validation Logic (Content Sanitizer)
                 is_clean = True
@@ -665,7 +665,7 @@ def generate_story_task(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
                     "title": title,
                     "story_text": story_body,
                     "theme": theme,
-                    "wisdom_gem": wisdom_gem,
+                    "wisdom_gem": None,  # Removed: no longer generated
                     "include_illustrations": include_illustrations,
                     "illustrations": illustrations,
                     "rhyme_time_mode": rhyme_time_mode,

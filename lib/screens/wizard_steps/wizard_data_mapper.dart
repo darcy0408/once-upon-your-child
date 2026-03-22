@@ -103,6 +103,15 @@ class WizardDataMapper {
         ? data.companionNames
         : data.selectedCompanions;
 
+    // Build a reverse map: default name → companion ID (for custom name lookup)
+    final Map<String, String> nameToId = {};
+    if (data.companionNames.isNotEmpty &&
+        data.selectedCompanions.length == data.companionNames.length) {
+      for (var i = 0; i < data.companionNames.length; i++) {
+        nameToId[data.companionNames[i]] = data.selectedCompanions[i];
+      }
+    }
+
     // Separate companions into pets vs other characters
     final List<Map<String, dynamic>> companionsPets = [];
     final List<Map<String, dynamic>> companionsOther = [];
@@ -125,9 +134,18 @@ class WizardDataMapper {
         // It's another character or magical creature
         // Check if it's one of our special Power-Pairing companions and pass their full details/ability
         final companionData = _getCompanionData(companionName);
+        final companionId = nameToId[companionName];
+        final customName = companionId != null
+            ? data.companionCustomNames[companionId]
+            : null;
+        final displayName =
+            (customName != null && customName.trim().isNotEmpty)
+                ? customName.trim()
+                : companionData?.name ?? companionName;
+
         if (companionData != null) {
           companionsOther.add({
-            'name': companionData.name,
+            'name': displayName,
             'description': companionData.description,
             'signaturePower': companionData.signaturePower,
             'powerConstraint': companionData.powerConstraint,
@@ -135,7 +153,7 @@ class WizardDataMapper {
           });
         } else {
           // Standard friend/sibling
-          companionsOther.add({'name': companionName});
+          companionsOther.add({'name': displayName});
         }
       }
     }

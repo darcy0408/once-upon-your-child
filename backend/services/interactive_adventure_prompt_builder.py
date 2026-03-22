@@ -105,12 +105,31 @@ class InteractiveAdventurePromptBuilder:
         }
     }
 
-    # Choice count based on story length (default 2 for meaningful choices)
+    # Choice count based on story length (default 2 for meaningful choices).
+    # NOTE: This dict is retained for reference but is no longer used directly.
+    # All runtime choice-count resolution goes through _get_choice_count().
     CHOICE_COUNTS = {
         'short': 2,
         'medium': 2,
         'long': 2
     }
+
+    @staticmethod
+    def _get_choice_count(age: int, length: str) -> int:
+        """Return the appropriate number of choices for a story segment.
+
+        Cognitive-load rationale:
+          Ages 3-7   — 2 choices: simple binary keeps decision-making manageable.
+          Ages 8-11  — 2-3 choices: scaled by length; more text = more complexity.
+          Ages 12+   — 3-4 choices: teens benefit from richer branching and nuance.
+        """
+        if age <= 7:
+            return 2
+        if age <= 11:
+            # Short stories stay at 2; medium and long step up to 3.
+            return 2 if length == 'short' else 3
+        # Ages 12+: short and medium get 3; long gets 4.
+        return 4 if length == 'long' else 3
 
     # Estimated Path Depths (how many segments a user actually reads in one play)
     # These are used to divide the total word count into per-segment counts.
@@ -387,11 +406,13 @@ SAFETY RULES:
         }
         final_sensory = sensory_palette or default_sensories.get(age_band, 'Bright colors, soft sounds.')
 
-        # Pre-calculate choice templates
+        # Pre-calculate choice templates — count is age- and length-aware.
+        desired_choice_count = cls._get_choice_count(age, length)
         choice_templates = cls._build_choice_templates(
             age=age,
             big_feelings_context=big_feelings_context,
             is_opening=True,
+            count=desired_choice_count,
         )
         choice_count = len(choice_templates)
         choices_json = ",\n".join(choice_templates)
@@ -549,10 +570,12 @@ You are generating the OPENING SEGMENT of a Pick-A-Path adventure for {child_nam
             is_opening=False,
         )
 
+        desired_choice_count = cls._get_choice_count(age, length)
         choice_templates = cls._build_choice_templates(
             age=age,
             big_feelings_context=story_context.get('big_feelings_context'),
             is_opening=False,
+            count=desired_choice_count,
         )
         choice_count = len(choice_templates)
         choices_json = ",\n".join(choice_templates)
@@ -782,12 +805,17 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
         age: int,
         big_feelings_context: Optional[Dict[str, Any]],
         is_opening: bool,
+        count: int = 2,
     ) -> List[str]:
         if not isinstance(big_feelings_context, dict) or not big_feelings_context:
-            return [
+            # Build a generic template list sized to `count`.
+            generic = [
                 '    {"id": "choice_1", "text": "First choice option (Action-oriented)"}',
-                '    {"id": "choice_2", "text": "Second choice option (Action-oriented)"}'
+                '    {"id": "choice_2", "text": "Second choice option (Action-oriented)"}',
+                '    {"id": "choice_3", "text": "Third choice option (Action-oriented)"}',
+                '    {"id": "choice_4", "text": "Fourth choice option (Action-oriented)"}',
             ]
+            return generic[:count]
 
         current_feeling = big_feelings_context.get('current_feeling') or {}
         emotion_name = (
@@ -847,7 +875,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
                     coping_tool or 'Take a breath',
                     'Ask for help',
                 ]
-            return [choice(text, idx + 1) for idx, text in enumerate(options[:2])]
+            return [choice(text, idx + 1) for idx, text in enumerate(options[:count])]
 
         if 6 <= age <= 8:
             if feeling in {'mad', 'angry', 'annoyed', 'irritated', 'furious', 'hurt-mad', 'left-out mad'}:
@@ -934,7 +962,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
                     coping_tool or 'Pause long enough to steady yourself',
                     'Tell someone what is going on',
                 ]
-            return [choice(text, idx + 1) for idx, text in enumerate(options[:3])]
+            return [choice(text, idx + 1) for idx, text in enumerate(options[:count])]
 
         if 9 <= age <= 12:
             if feeling in {'mad', 'angry', 'annoyed', 'irritated', 'furious', 'resentful', 'wronged', 'defensive', 'heated'}:
@@ -995,7 +1023,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
                     coping_tool or 'Pause until you have a real choice again',
                     'Tell one honest version of what is going on',
                 ]
-            return [choice(text, idx + 1) for idx, text in enumerate(options[:3])]
+            return [choice(text, idx + 1) for idx, text in enumerate(options[:count])]
 
         if 13 <= age <= 15:
             if feeling in {'mad', 'angry', 'annoyed', 'irritated', 'furious', 'resentful', 'wronged', 'defensive', 'heated'}:
@@ -1056,7 +1084,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
                     coping_tool or 'Take enough space to choose instead of performing',
                     'Tell the truth to one person who can handle it',
                 ]
-            return [choice(text, idx + 1) for idx, text in enumerate(options[:3])]
+            return [choice(text, idx + 1) for idx, text in enumerate(options[:count])]
 
         if feeling in {'mad', 'angry'}:
             options = [
@@ -1078,7 +1106,7 @@ You are continuing a Pick-A-Path adventure for {child_name}{gender_text} (age {a
                 coping_tool or 'Pause and think',
                 'Try a different plan',
             ]
-        return [choice(text, idx + 1) for idx, text in enumerate(options[:2])]
+        return [choice(text, idx + 1) for idx, text in enumerate(options[:count])]
 
     @staticmethod
     def _build_chronicle_block(ctx: Dict) -> str:

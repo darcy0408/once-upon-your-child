@@ -23,7 +23,6 @@ import 'widgets/loading_spinner.dart';
 import 'screens/byok_setup_wizard.dart';
 import 'screens/child_profile_manager_screen.dart';
 import 'screens/parent_dashboard_screen.dart';
-import 'screens/therapist_portal_screen.dart';
 import 'screens/privacy_policy_screen.dart';
 import 'screens/terms_of_service_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -438,23 +437,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     context,
                     MaterialPageRoute(
                         builder: (_) => const ChildProfileManagerScreen()),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              AppCard(
-                child: ListTile(
-                  leading: const Icon(Icons.psychology, color: Color(0xFFAA88FF)),
-                  title: const Text('Therapist Portal',
-                      style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('For licensed therapists & counselors',
-                      style: TextStyle(color: Colors.white54, fontSize: 12)),
-                  trailing: const Icon(Icons.arrow_forward_ios,
-                      color: Colors.white38, size: 16),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const TherapistPortalScreen()),
                   ),
                 ),
               ),
