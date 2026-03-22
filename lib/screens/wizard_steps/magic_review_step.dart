@@ -263,7 +263,14 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             inlineIllustrations.isEmpty) {
           if (mounted) {
             setState(
-                () => _loadingStatus = 'Painting magical illustrations...');
+                () {
+                  final age = widget.wizardData.characterAge;
+                  _loadingStatus = ageBandFromAge(age).isMature
+                      ? 'Generating illustrations...'
+                      : age >= 10
+                          ? 'Creating illustrations...'
+                          : 'Painting magical illustrations...';
+                });
           }
           inlineIllustrations = await _generateInlineIllustrations(
               storyText: result.storyText,
@@ -520,14 +527,16 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     }
   }
 
-  String _buildReviewSpokenText() {
+  String _buildReviewSpokenText(AgeBandThemeData band) {
     final wd = widget.wizardData;
-    final hero = wd.characterName.isEmpty ? 'your hero' : wd.characterName;
-    final scenario = wd.selectedScenario ?? 'a magical place';
+    final heroTerm = band.heroLabel.toLowerCase(); // 'your hero' or 'character'
+    final hero = wd.characterName.isEmpty ? heroTerm : wd.characterName;
+    final scenario = wd.selectedScenario ?? 'a place';
     final companions = wd.companionNames.isEmpty
         ? 'no companions yet'
         : wd.companionNames.join(' and ');
-    return 'Here is your story recipe! $hero is adventuring in $scenario with $companions. Check everything looks right, then tap Make Magic to start!';
+    final launchLabel = band.launchStoryLabel; // 'Make Magic!', 'Create Story', 'Begin', etc.
+    return 'Here is your story summary. $hero is heading into $scenario with $companions. Check everything looks right, then tap $launchLabel.';
   }
 
   @override
@@ -551,7 +560,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 MagicEarButton(
-                  spokenText: _buildReviewSpokenText(),
+                  spokenText: _buildReviewSpokenText(band),
                   size: 32,
                 ),
                 const SizedBox(width: 8),
