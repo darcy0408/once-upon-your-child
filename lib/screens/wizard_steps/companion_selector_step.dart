@@ -384,7 +384,14 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
 
   String _buildCompanionSpokenText() {
     final names = _magicalCompanions.map((c) => c.name).join(', ');
-    return 'Pick your travel buddies! Tap a companion to bring them along. You can choose $names.';
+    final age = widget.wizardData.characterAge;
+    final band = ageBandFromAge(age <= 0 ? 8 : age);
+    final prompt = band.isMature
+        ? 'Choose a companion to join your story. Options: $names.'
+        : age <= 8
+            ? 'Pick a friend to come along! You can choose $names.'
+            : 'Pick your companions! Tap one to bring them along. You can choose $names.';
+    return prompt;
   }
 
   @override
@@ -507,7 +514,7 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
                 child: TextButton(
                   onPressed: widget.onNext,
                   child: Text(
-                    band.band.isMature ? 'Skip' : 'Go Solo (Be Brave!)',
+                    band.band.isMature ? 'Skip' : 'Go Solo',
                     style: GoogleFonts.quicksand(
                       color: Colors.white.withAlpha(150),
                       fontSize: 16,

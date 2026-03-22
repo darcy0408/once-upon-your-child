@@ -319,7 +319,7 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
     ],
     'Scared': [
       _ChoiceOption(
-          value: 'Hold a grown-up hand', label: 'Hold hands', emoji: '🫱'),
+          value: 'Hold someone\'s hand', label: 'Hold hands', emoji: '🫱'),
       _ChoiceOption(
           value: 'Take a slow breath', label: 'Slow breath', emoji: '🌬️'),
       _ChoiceOption(value: 'Ask for help', label: 'Ask for help', emoji: '🙋'),
@@ -367,7 +367,7 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
     'Hurt_Mad': [
       _ChoiceOption(value: 'Get a hug', label: 'Squeeze hug', emoji: '🤍'),
       _ChoiceOption(value: 'Ice pack', label: 'Ice pack', emoji: '🧊'),
-      _ChoiceOption(value: 'Tell a grown-up', label: 'Tell someone', emoji: '🗣️'),
+      _ChoiceOption(value: 'Tell someone you trust', label: 'Tell someone', emoji: '🗣️'),
     ],
     'Hyper': [
       _ChoiceOption(value: 'Dragon breath', label: 'Dragon breath', emoji: '🐉'),
