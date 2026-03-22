@@ -943,10 +943,12 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   List<Widget> _buildScenarioSections(int age) {
     final currentBand = ageBandFromAge(age);
     // Sprout (≤5) only sees Magical Worlds — Real-Life Heroes are too abstract.
+    // Adults skip the Big Feelings Quest — it's designed for children.
     // All bands: filter out scenarios with a minBand above the current band.
     final visibleScenarios = _scenarios.where((s) {
       // Featured scenarios (e.g. "Imagine It") are always visible regardless of category.
       if (age <= 5 && s.category == 'Real-Life Heroes' && !s.featured) return false;
+      if (currentBand == AgeBand.adult && s.id == 'big_feelings_quest') return false;
       if (s.minBand != null && s.minBand!.index > currentBand.index) return false;
       return true;
     }).toList();
