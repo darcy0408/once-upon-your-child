@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../models.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/age_band_theme.dart';
@@ -8,6 +7,7 @@ import '../../widgets/feelings_quest_modal.dart';
 import '../../data/scenario_data.dart';
 import '../../character_traits_data.dart';
 import '../../widgets/magic_ear_button.dart';
+import '../../widgets/imagine_it_input.dart';
 import '../big_feelings_flow_screen.dart';
 
 const double _settingCardWidth = 220;
@@ -42,8 +42,6 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
   final TextEditingController _avoidController = TextEditingController();
 
   // Voice input for Imagine It field (young children only)
-  final stt.SpeechToText _speech = stt.SpeechToText();
-  bool _isListening = false;
 
   // Math gate state
   late int _mathA;
@@ -256,36 +254,11 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
   @override
   void dispose() {
-    _speech.stop();
     _parentalNoteController.dispose();
     _safeSpaceController.dispose();
     _mathController.dispose();
     _avoidController.dispose();
     super.dispose();
-  }
-
-  Future<void> _toggleVoiceInput() async {
-    if (_isListening) {
-      _speech.stop();
-      setState(() => _isListening = false);
-      return;
-    }
-    final available = await _speech.initialize();
-    if (available) {
-      setState(() => _isListening = true);
-      _speech.listen(
-        onResult: (result) {
-          if (result.finalResult) {
-            setState(() {
-              _safeSpaceController.text = result.recognizedWords;
-              widget.wizardData.customElements = result.recognizedWords;
-              _isListening = false;
-            });
-          }
-        },
-        listenFor: const Duration(seconds: 15),
-      );
-    }
   }
 
   @override
@@ -362,7 +335,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             // Safe Space Input (Conditional)
             if (_selectedScenario == 'safe_space') ...[
               const SizedBox(height: AppSpacing.md),
-              _buildSafeSpaceInput(),
+              BandAdaptiveImagineIt(wizardData: widget.wizardData),
               const SizedBox(height: AppSpacing.lg),
             ],
 
@@ -380,89 +353,6 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
             const SizedBox(height: AppSpacing.xl),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSafeSpaceInput() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.primary, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text('🤫', style: TextStyle(fontSize: 20)),
-              const SizedBox(width: 8),
-              Text(
-                'Let your imagination go wild...',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Picture any place you can imagine — a world, a feeling, an adventure. Tell us and we\'ll make a story just for you!',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textDark.withValues(alpha: 0.6),
-                  fontStyle: FontStyle.italic,
-                ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _safeSpaceController,
-            maxLines: 3,
-            decoration: InputDecoration(
-              hintText:
-                  'e.g., A enchanted forest, outer space, under the ocean...',
-              hintStyle: TextStyle(
-                color: AppColors.textDark.withValues(alpha: 0.4),
-                fontSize: 14,
-                fontStyle: FontStyle.italic,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide:
-                    BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide:
-                    const BorderSide(color: AppColors.primary, width: 2),
-              ),
-              filled: true,
-              fillColor: AppColors.primary.withValues(alpha: 0.05),
-              suffixIcon: widget.wizardData.characterAge <= 8
-                  ? IconButton(
-                      icon: Icon(
-                        _isListening ? Icons.mic : Icons.mic_none,
-                        color: _isListening ? Colors.red : AppColors.primary,
-                      ),
-                      tooltip: _isListening ? 'Stop listening' : 'Speak your answer',
-                      onPressed: _toggleVoiceInput,
-                    )
-                  : null,
-            ),
-            onChanged: (value) {
-              widget.wizardData.customElements = value;
-            },
-          ),
-        ],
       ),
     );
   }
