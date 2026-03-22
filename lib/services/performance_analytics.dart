@@ -15,7 +15,7 @@ class PerformanceAnalytics {
       await _analytics.logEvent(
         name: 'app_start',
         parameters: <String, Object>{
-          'platform': Platform.operatingSystem,
+          'platform': kIsWeb ? 'web' : Platform.operatingSystem,
           'version': info.version,
           'build_number': info.buildNumber,
         },
