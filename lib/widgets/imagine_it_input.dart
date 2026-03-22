@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../models/wizard_data.dart';
+import '../models.dart';
 import '../services/app_tts_service.dart';
 import '../theme/age_band_theme.dart';
 import '../theme/app_theme.dart';
@@ -137,6 +138,7 @@ class _BandAdaptiveImagineItState extends State<BandAdaptiveImagineIt> {
           controller: _textController,
           onChanged: _onTextChanged,
           band: band,
+          wizardData: widget.wizardData,
         ),
     };
   }
@@ -779,11 +781,13 @@ class _MatureInput extends StatefulWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
   final AgeBandThemeData band;
+  final WizardData wizardData;
 
   const _MatureInput({
     required this.controller,
     required this.onChanged,
     required this.band,
+    required this.wizardData,
   });
 
   @override
@@ -795,6 +799,37 @@ class _MatureInputState extends State<_MatureInput> {
   String? _genre;
   String? _tone;
   String? _pov;
+
+  @override
+  void initState() {
+    super.initState();
+    _genre = widget.wizardData.selectedGenre;
+  }
+
+  void _applyAdvanced({String? genre, String? tone, String? pov}) {
+    setState(() {
+      if (genre != null) _genre = genre;
+      if (tone != null) _tone = tone;
+      if (pov != null) _pov = pov;
+    });
+    // Write genre to the dedicated WizardData field
+    widget.wizardData.selectedGenre = _genre;
+    // Append tone/POV as a natural-language suffix in customElements
+    _updateCustomElements();
+  }
+
+  void _updateCustomElements() {
+    final base = widget.controller.text
+        .replaceAll(RegExp(r'\s*\[.*?\]\s*$'), '') // strip any prior suffix
+        .trimRight();
+    final parts = <String>[];
+    if (_tone != null) parts.add('Tone: $_tone');
+    if (_pov != null) parts.add('POV: $_pov');
+    final suffix = parts.isEmpty ? '' : ' [${parts.join(', ')}]';
+    final full = '$base$suffix';
+    widget.controller.text = full;
+    widget.onChanged(full);
+  }
 
   static const _genres = [
     'Fantasy', 'Sci-Fi', 'Mystery', 'Thriller',
@@ -953,7 +988,7 @@ class _MatureInputState extends State<_MatureInput> {
                             items: _genres,
                             band: widget.band,
                             textColor: _textColor,
-                            onChanged: (v) => setState(() => _genre = v),
+                            onChanged: (v) => _applyAdvanced(genre: v),
                           ),
                           _AdvancedDropdown(
                             label: 'Tone',
@@ -961,7 +996,7 @@ class _MatureInputState extends State<_MatureInput> {
                             items: _tones,
                             band: widget.band,
                             textColor: _textColor,
-                            onChanged: (v) => setState(() => _tone = v),
+                            onChanged: (v) => _applyAdvanced(tone: v),
                           ),
                           _AdvancedDropdown(
                             label: 'POV',
@@ -969,7 +1004,7 @@ class _MatureInputState extends State<_MatureInput> {
                             items: _povs,
                             band: widget.band,
                             textColor: _textColor,
-                            onChanged: (v) => setState(() => _pov = v),
+                            onChanged: (v) => _applyAdvanced(pov: v),
                           ),
                         ],
                       ),
