@@ -557,26 +557,25 @@ def create_story_blueprint(
                      return jsonify({"error": "QUOTA_EXCEEDED", "message": "Google Gemini API quota exceeded. Please try again later.", "details": str(async_exc)}), 429
 
                 logger.exception("Async fallback also failed: %s", async_exc)
-                logger.error(f"Full error response: {str(async_exc)}")
-                return jsonify({"error": "Story generation failed completely", "details": str(async_exc)}), 500
-            logger.exception("Falling back to synchronous story generation: %s", exc)
-            try:
-                sync_result = _run_sync_story_task_with_timeout(task_kwargs, sync_story_timeout)
-                story_payload = (sync_result or {}).get("story", {})
-                response_payload = {
-                    "status": sync_result.get("status", "complete"),
-                    "title": story_payload.get("title"),
-                    "story": story_payload.get("story_text"),
-                    "story_text": story_payload.get("story_text"),
-                    "task_id": None,
-                    "theme": story_payload.get("theme"),
-                    "wisdom_gem": story_payload.get("wisdom_gem"),
-                    "async_illustrations": payload.get("async_illustrations", False),
-                }
-                return jsonify(response_payload), 200
-            except Exception as fallback_exc:
-                logger.exception("Synchronous story generation failed: %s", fallback_exc)
-                return jsonify({"error": "Story generation failed"}), 500
+                # Last resort: retry synchronously before giving up entirely
+                logger.warning("Retrying synchronous story generation after async failure")
+                try:
+                    sync_result = _run_sync_story_task_with_timeout(task_kwargs, sync_story_timeout)
+                    story_payload = (sync_result or {}).get("story", {})
+                    response_payload = {
+                        "status": sync_result.get("status", "complete"),
+                        "title": story_payload.get("title"),
+                        "story": story_payload.get("story_text"),
+                        "story_text": story_payload.get("story_text"),
+                        "task_id": None,
+                        "theme": story_payload.get("theme"),
+                        "wisdom_gem": story_payload.get("wisdom_gem"),
+                        "async_illustrations": payload.get("async_illustrations", False),
+                    }
+                    return jsonify(response_payload), 200
+                except Exception as fallback_exc:
+                    logger.exception("Synchronous retry also failed: %s", fallback_exc)
+                    return jsonify({"error": "Story generation failed completely", "details": str(async_exc)}), 500
 
     @story_bp.route("/generate-story-mock", methods=["POST"])
     def generate_story_mock_endpoint():

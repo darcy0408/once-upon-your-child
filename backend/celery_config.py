@@ -3,9 +3,16 @@ from celery import Celery
 
 # Get Redis URL from environment
 # If not present, default to memory/cache to avoid connection errors on localhost
-REDIS_URL = os.getenv("REDIS_URL")
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
+
+def _fix_redis_scheme(url: str | None) -> str | None:
+    """Normalize non-standard Redis URL schemes (e.g. rredis://) to redis://."""
+    if url and url.startswith("rredis://"):
+        return "redis://" + url[len("rredis://"):]
+    return url
+
+REDIS_URL = _fix_redis_scheme(os.getenv("REDIS_URL"))
+CELERY_BROKER_URL = _fix_redis_scheme(os.getenv("CELERY_BROKER_URL"))
+CELERY_RESULT_BACKEND = _fix_redis_scheme(os.getenv("CELERY_RESULT_BACKEND"))
 
 
 def _as_bool(name: str, default: bool = False) -> bool:
