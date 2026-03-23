@@ -119,8 +119,10 @@ SellItPowerpoint images/
 StoryWeaverImagestoShare/
 
 # Avatar working files (local only - large binaries, not needed in repo)
-avatarImages/Avatar_Final/
-avatarImages/avatar_review.html
+avatarImages/
+
+# Backup asset folders (local only)
+assets/feelings_faces_backup_20260130_150545/
 
 # Old/archived assets
 assets/mood_lanterns/old/
