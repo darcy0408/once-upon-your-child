@@ -2,6 +2,63 @@
 
 ---
 
+## Deployment Readiness Checklist — 2026-03-22
+
+Compiled from all session updates and LAUNCH_BLOCKERS.md. Items are grouped by severity.
+
+### Blockers (must fix before deploy)
+
+- [ ] **B2 — Companion assets load from wrong folder.** `companion_selector_step.dart` loads companion images for creator/adolescent/adult bands from the `adventurer` folder. Companions look mismatched for older users. (Assigned: Gemini Antigravity)
+
+### High Priority (fix before launch)
+
+- [ ] **H1 — Scenario card art 404s.** `assets/images/scenarios/*.png` return 404 in production; adventure/theme cards fall back to emoji. (Assigned: Gemini Antigravity)
+- [ ] **H2 — TypeError during wizard.** Browser console: `TypeError: Cannot read properties of undefined (reading 'toString')` during wizard use. (Assigned: Gemini Antigravity)
+- [ ] **H3 — No live Gemini health probe.** Health endpoints only check config presence, not live Gemini connectivity. (Assigned: Codex)
+- [ ] **H4 — Re-run production smoke tests.** Need to confirm all 10 smoke tests pass after CORS fix. (Assigned: Codex)
+- [ ] **Illustration fallback doesn't forward companions.** `_generateInlineIllustrations()` in `magic_review_step.dart` omits companion data, so fallback illustrations may not include them.
+- [ ] **Coloring pages don't include companions.** `story_result_screen.dart` calls `generateColoringPagesFromStory()` without passing companion data.
+- [ ] **ColoringSettingsDialog page count hardcoded to 1.** Multi-page coloring books are supported by the backend but the UI removed the choice.
+
+### Medium Priority (should fix before launch)
+
+- [ ] **Consent field names were broken until 2026-03-21.** No backend consent records exist for any user prior to the fix (commit `552529f`). Existing users may need a re-consent prompt or backfill from local SharedPreferences.
+- [ ] **COPPA verifiable consent is checkbox-only.** Accepted for launch with documented gap. v1.1 plan exists for SMS OTP / Stripe micro-charge (see `docs/COPPA_AUDIT.md`).
+- [ ] **COPPA operator info incomplete.** Privacy policy lacks physical address and phone number.
+- [ ] **Noto font / missing glyph warnings.** Font rendering not clean across full character set (cosmetic but visible in console).
+- [ ] **Firefox testing incomplete.** Cross-browser pass from 3/18 couldn't fully verify Firefox due to automation instability.
+
+### Manual Testing Still Required
+
+- [ ] **6-band integration test.** Each of the 6 age bands needs a real manual pass: visual theme, characters, companions, story generation, illustrations.
+- [ ] **Cross-cutting scenarios.** BYOK key entry, custom avatar upload, pet avatar, parent hidden context, bedtime mode.
+- [ ] **Cross-browser.** Chrome baseline, then Firefox + Edge + mobile DevTools.
+- [ ] **Real-provider performance baseline.** `RUN_REAL_API_TESTS=true python backend/tests/story_load_audit.py`
+
+### Production Environment
+
+- [ ] **Set real SECRET_KEY** in Railway env (currently using dev fallback).
+- [ ] **Set real JWT secret** in Railway env (currently using dev fallback).
+- [ ] **Set STRIPE_API_KEY** in Railway env if Stripe flows are needed at launch.
+- [ ] **Remove duplicate API key.** Both `GOOGLE_API_KEY` and `GEMINI_API_KEY` are set; remove one to silence warning.
+- [ ] **Verify RAILWAY_FRONTEND_URL** is still correct after any redeployment.
+
+### Resolved (do not re-do)
+
+- [x] ~~B1 — CORS production frontend URL~~ (fixed 2026-03-18, `RAILWAY_FRONTEND_URL` set)
+- [x] ~~Avatar route rate limiting~~ (fixed 2026-03-18, Redis-backed limiter)
+- [x] ~~Health check rate limit exemption~~ (fixed 2026-03-18)
+- [x] ~~Consent POST 400 bug~~ (fixed 2026-03-21, field name mismatch)
+- [x] ~~Backend cold start 200s+ on Windows~~ (fixed, unused import removed)
+- [x] ~~404 → 500 error handler~~ (fixed 2026-03-15)
+- [x] ~~`rredis` module error in production~~ (resolved, stale deploy)
+- [x] ~~Debug print() cleanup~~ (fixed 2026-03-18)
+- [x] ~~Android build JDK 25 incompatibility~~ (fixed, pinned to JDK 21)
+- [x] ~~Git hook Win32 error 5~~ (fixed, removed no-op hook)
+- [x] ~~UX audit fix plan~~ (all 20 tasks verified complete)
+
+---
+
 ## Session Update — 2026-03-21 (Consent Endpoint 400 Fix)
 
 ### Problem
