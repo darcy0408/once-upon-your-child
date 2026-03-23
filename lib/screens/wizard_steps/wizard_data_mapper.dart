@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:story_weaver_app/feelings_wheel_data.dart';
 import 'package:story_weaver_app/models.dart';
 import 'package:story_weaver_app/data/companion_data.dart';
+import 'package:story_weaver_app/data/companion_personality_data.dart';
 import 'package:story_weaver_app/data/mood_physics.dart';
 import 'package:story_weaver_app/data/scenario_data.dart';
+import 'package:story_weaver_app/theme/age_band_theme.dart';
 import 'package:story_weaver_app/utils/input_sanitizer.dart';
 
 /// Helper to map WizardData to API-ready payload
@@ -143,6 +145,13 @@ class WizardDataMapper {
                 ? customName.trim()
                 : companionData?.name ?? companionName;
 
+        // Resolve band-specific behavior pattern, falling back to the generic one.
+        final bandName = ageBandFromAge(age <= 0 ? 8 : age).name;
+        final bandKey = '${bandName}_$companionId';
+        final bandBehavior = companionBehaviorPatterns[bandKey] ??
+            companionData?.behaviorPattern ??
+            '';
+
         if (companionData != null) {
           companionsOther.add({
             'name': displayName,
@@ -150,9 +159,16 @@ class WizardDataMapper {
             'signaturePower': companionData.signaturePower,
             'powerConstraint': companionData.powerConstraint,
             'sensoryTell': companionData.sensoryTell,
+            'behaviorPattern': bandBehavior,
+          });
+        } else if (bandBehavior.isNotEmpty) {
+          // Band-specific companion without a magicCompanions entry.
+          companionsOther.add({
+            'name': displayName,
+            'behaviorPattern': bandBehavior,
           });
         } else {
-          // Standard friend/sibling
+          // Standard friend/sibling — no special data.
           companionsOther.add({'name': displayName});
         }
       }
@@ -577,8 +593,12 @@ class WizardDataMapper {
 
   static CompanionData? _getCompanionData(String name) {
     try {
-      return magicCompanions
-          .firstWhere((c) => name.contains(c.id) || name.contains(c.name));
+      final lower = name.toLowerCase();
+      return magicCompanions.firstWhere((c) =>
+          lower.contains(c.id) ||
+          lower.contains(c.name.toLowerCase()) ||
+          // Robin may be stored under old key "rockin' robin"
+          (c.id == 'robin' && lower.contains('robin')));
     } catch (e) {
       return null;
     }

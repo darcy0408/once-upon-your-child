@@ -1197,3 +1197,45 @@ Confirmed via Codex audit:
 ### Notes
 - The repo-specific package layout means `cd backend && python -c "from app import create_app ..."` currently fails because top-level `app` import breaks relative imports under `backend/models`.
 - The limiter exemption change itself is verified and working when imported via the package path from the repo root.
+
+---
+
+## SESSION UPDATE — 2026-03-22 (Companion Personality Depth, Robin Tribute, Friend-by-Name)
+
+### What Was Completed
+
+| Item | Status | Files |
+|------|--------|-------|
+| Band-aware pet avatar generation | ✅ | `backend/services/avatar_generation_service.py`, `backend/routes/avatar_routes.py`, `lib/screens/wizard_steps/hero_creator_step.dart` |
+| `behaviorPattern` field added to all CompanionData | ✅ | `lib/data/companion_data.dart` |
+| Per-band companion personality map (30 entries) | ✅ | `lib/data/companion_personality_data.dart` (new file) |
+| Band-aware behavior lookup in wizard mapper | ✅ | `lib/screens/wizard_steps/wizard_data_mapper.dart` |
+| Story prompt updated to pass behavior instructions | ✅ | `backend/services/story_service.py` |
+| Robin added to all 6 age bands as guardian/scout tribute | ✅ | `lib/screens/wizard_steps/companion_selector_step.dart` |
+| Robin companion data revamped (name, emoji, description, tags) | ✅ | `lib/data/companion_data.dart` |
+| Mature content threshold changed age 10 → age 12 | ✅ | `lib/data/scenario_data.dart` |
+| Rainbow Land Jello Road added to young world bible | ✅ | `lib/data/scenario_data.dart` |
+| Robin images placed for all 6 bands | ✅ | `assets/images/companions/{sprout,explorer,adventurer,creator,adolescent,adult}/robin.jpg` |
+| Free "Bring a Friend by Name" companion feature | ✅ | `lib/screens/wizard_steps/hero_creator_step.dart` |
+
+### Robin — Tribute Character
+Robin is a guardian/protector robin bird added as a companion in every age band. She was created as a tribute to a real person named Robin who passed away — a friend's mom who was fiercely protective, loud when alarmed, and whose love was completely obvious. Her character is consistent across all bands: she scouts ahead, chirps warnings (three chirps = stop, one long note = safe), launches wings-first at threats, and leaves small gifts (a berry, a pebble, a feather). The expression of these traits evolves with age — from "CHIRP CHIRP! You're safe. I checked." (Sprout) to "I know. I know. I still had to check." (Adult).
+
+### Companion Personality System
+- `companion_personality_data.dart` — new file, `Map<String, String>` keyed `'${band}_${companionId}'`
+- Covers all companions × 6 bands (30 entries)
+- Sprout/Explorer bands use the original magical companions (fluffy_dragon, magic_bunny, etc.)
+- Adventurer+ bands use the deeper characters (storm_hawk, shadow_lynx, iron_golem, void_sprite)
+- Mapper looks up by band+id key first, falls back to flat `CompanionData.behaviorPattern`
+- Story prompt labels each companion's behavior: `[{name} — recurring behavior throughout the WHOLE story, not just the climax]`
+
+### Free "Bring a Friend by Name"
+- New section in companion selection page: text field + "Add" button
+- Friend name is stored in `wizardData.additionalCharacters` (List<String>)
+- Already flows to story API via `wizard_data_mapper.dart` → `story_service.py` as `GUESTS: [name]`
+- Removable chips show active named friends
+- Premium path unchanged: photo upload → magical avatar generation via `_PetCard`
+
+### Pending / Still Needs Images
+- All band-specific companions need actual images: Storm Hawk, Shadow Lynx, Iron Golem, Void Sprite (adventurer/creator/adolescent/adult), Ember Dragon, Moon Owl, Bloom Sprite, Star Fox (explorer), Fluffy Dragon, Magic Bunny, Shining Puppy, Tiny Fairy (sprout)
+- Currently placeholder `.png` files exist in each band folder for non-Robin companions

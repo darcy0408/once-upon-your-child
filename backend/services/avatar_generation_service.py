@@ -460,6 +460,102 @@ Maintain the character's facial features while converting them into a vibrant no
             "sparkly eyes, transparent PNG background, 512x512"
         )
 
+    def _pet_style_for_age(self, age: int) -> dict:
+        """Return band-specific art style directives for magical pet generation."""
+        if age <= 5:
+            return {
+                'style_name': 'Magical Plush Companion',
+                'art_style': (
+                    'oversized sparkly eyes, extremely soft rounded plush-toy proportions, '
+                    'pastel rainbow color grading, extra fluffy fur or feathers, gentle glow aura, '
+                    'Pixar baby-character warmth'
+                ),
+                'environment': (
+                    'cozy whimsical nursery forest with giant pastel mushrooms, '
+                    'glowing flowers, and floating soap bubbles'
+                ),
+                'accessory': (
+                    "tiny glittering crown or bow with a heart-shaped charm in the owner's favorite color"
+                ),
+            }
+        elif age <= 8:
+            return {
+                'style_name': 'Animated Sidekick',
+                'art_style': (
+                    'expressive cartoon eyes, vibrant saturated colors, fun dynamic pose, '
+                    'animated movie sidekick energy, Pixar 3D animation style'
+                ),
+                'environment': (
+                    'colorful adventure playground with rainbow trees, '
+                    'sparkling waterfalls, and friendly woodland creatures'
+                ),
+                'accessory': (
+                    "hero's bandana or small cape in the owner's favorite color with a star emblem"
+                ),
+            }
+        elif age <= 11:
+            return {
+                'style_name': 'Fantasy RPG Companion',
+                'art_style': (
+                    'fantasy RPG companion portrait, glowing magical aura, '
+                    'slightly mystical color grading, detailed fur/scale/feather texture '
+                    'with subtle arcane sparkle'
+                ),
+                'environment': (
+                    'enchanted forest glade with bioluminescent plants, '
+                    'ancient stone ruins, and drifting magical spores'
+                ),
+                'accessory': (
+                    "enchanted rune collar or arcane harness with a gemstone "
+                    "in the owner's favorite color emitting soft light"
+                ),
+            }
+        elif age <= 14:
+            return {
+                'style_name': 'Graphic Novel Companion',
+                'art_style': (
+                    'stylized graphic novel illustration, bold lines, dramatic contrast, '
+                    'cool aesthetic with subtle magical elements'
+                ),
+                'environment': (
+                    'cinematic urban-fantasy rooftop at twilight with glowing city lights '
+                    'and drifting magical embers'
+                ),
+                'accessory': (
+                    "sleek metallic collar with a geometric charm in the owner's favorite color"
+                ),
+            }
+        elif age <= 17:
+            return {
+                'style_name': 'Stylized Art Companion',
+                'art_style': (
+                    'semi-realistic with artistic stylization, rich color depth, '
+                    'expressive character design, subtle magical elements'
+                ),
+                'environment': (
+                    'atmospheric misty woodland with dramatic light rays '
+                    'and floating luminescent particles'
+                ),
+                'accessory': (
+                    "elegant woven collar with a polished gem pendant in the owner's favorite color"
+                ),
+            }
+        else:
+            return {
+                'style_name': 'Elegant Magical Companion',
+                'art_style': (
+                    'elegant magical realism, tasteful fantasy, painterly texture, '
+                    'refined color palette'
+                ),
+                'environment': (
+                    'serene enchanted garden with soft mist, ancient stone paths, '
+                    'and glowing flora'
+                ),
+                'accessory': (
+                    "refined silver collar with a luminous gem in the owner's favorite color"
+                ),
+            }
+
     def generate_pet_avatar(
         self,
         pet_name: str,
@@ -467,6 +563,7 @@ Maintain the character's facial features while converting them into a vibrant no
         breed_description: str,
         owner_favorite_color: str,
         photo_bytes: bytes,
+        owner_age: int = 0,
     ) -> Dict:
         """
         Generate a magical pet avatar based on a pet's photo and preferences.
@@ -489,46 +586,42 @@ Maintain the character's facial features while converting them into a vibrant no
         if not species or not species.strip():
             raise ValueError("Species is required")
 
-        # Use the requested Magical Pet Avatar Creator v1 prompt
-        prompt_template = """
-**Generated Prompt:** Magical Pet Avatar Creator v1 (Storybook Companion Edition)
+        # Build a band-aware prompt based on the owner’s age
+        band_style = self._pet_style_for_age(owner_age)
 
-**Context & Background**
-This prompt is designed for "Story Weaver," an app that transforms real-world images of family pets into Pixar-style magical companions. The system maintains breed identity and specific markings while applying a 3D animation aesthetic, placing the pet in a whimsical, storybook world that matches their owner's avatar.
+        prompt = f"""
+**Magical Pet Avatar Creator v2 — {band_style[‘style_name’]}**
 
-**Core Role & Capabilities**
-* **Creature Stylist:** Expert in translating animal features into stylized 3D companion designs.
-* **Breed Preservation:** MANDATORY: Maintain identifiable traits (tuxedo markings, specific ear shapes, tail carriage, and unique coat patterns) so the owner recognizes their specific pet.
-* **Magical Enhancement:** Adds subtle magical elements like a glowing collar or swirling sparkles that represent the pet's unique bond with their human.
+Transform the reference photo into a fully illustrated magical pet companion for Story Weaver.
+
+**Core Requirements**
+* Creature Stylist: translate animal features into the target art style below.
+* Breed Preservation: MANDATORY — maintain identifiable traits (coat markings, ear shape, tail carriage) so the owner recognizes their specific pet.
+* Magical Enhancement: add subtle magical elements that match the art style.
 
 **Technical Configuration**
-* **Model:** Nano Banana (Image-to-Image / Text-to-Image).
-* **Compositional Control:** Reference the uploaded photo for body shape, coat markings, and breed characteristics.
-* **Style Anchor:** Painterly Storybook illustration with 3D animated depth; soft textures, vibrant colors, and cinematic lighting.
+* Reference the uploaded photo for body shape, coat markings, and breed anatomy.
+* Species: {species}
+* Breed/Description: {breed_description}
+* Style Anchor: {band_style[‘art_style’]}
 
 **Operational Guidelines**
-1. **Breed Likeness:** Prioritize the uploaded photo for structural likeness and coat markings. Use the provided **Species: {species}** and **Breed/Description: {breed_description}** to refine the AI's understanding of the pet's anatomy.
-2. **The "Bond-Matched" Accessory:**
-   - **Primary Accessory:** Clothe the pet in a "Magical Guardian Collar" or "Hero’s Harness." Use a jewel-tone version of the **Owner’s Favorite Color: {owner_favorite_color}** as the primary color for the accessory.
-   - **Celestial Charm:** Attached to the collar is a glowing, semi-translucent star charm that emits soft nebula light in the same **Owner’s Favorite Color: {owner_favorite_color}**.
-3. **Environment:** Place the pet in the "Painterly Storybook Forest" to match the human avatars. Include soft-focus "bokeh" glowing mushrooms and floating fireflies. 
-4. **Final Render:** Full-body or chest-up portrait, expressive eyes, high-resolution.
+1. Breed Likeness: use reference photo as primary source; fall back to Species/Breed text if photo quality is low.
+2. Bond-Matched Accessory: {band_style[‘accessory’].format(owner_favorite_color=owner_favorite_color)}
+   — Ensure accessory uses a jewel-tone of Owner’s Favorite Color: {owner_favorite_color}
+   — Add gold or silver trim if the accessory color clashes with the pet’s coat.
+3. Environment: {band_style[‘environment’]}
+4. Final Render: full-body or chest-up portrait, expressive eyes, 1024×1024 square.
 
 **Output Specifications**
-* **Format:** Single high-resolution square image (1024x1024+).
-* **Style:** Pixar-inspired 3D animation with soft, painterly lighting.
+* Format: single high-resolution square image.
+* Style: {band_style[‘art_style’]}
 
-**Error Handling**
-* **Photo Quality:** If the photo is low-quality, lean heavily on provided text (Species, Breed) to generate a representative "best-fit" pet companion.
-* **Color Clashes:** Ensure the magical accessory stands out clearly against the pet's fur color by adding gold or silver trim to the edges.
+**Fallback**
+If reference photo is unclear, use Species/Breed description to generate a representative best-fit pet companion.
 """
-        prompt = prompt_template.format(
-            species=species,
-            breed_description=breed_description,
-            owner_favorite_color=owner_favorite_color
-        )
 
-        logger.info(f"Generating magical pet avatar for {pet_name} ({species})")
+        logger.info(f"Generating magical pet avatar for {pet_name} ({species}), owner_age={owner_age}, style={band_style['style_name']}")
         primary_error = None
 
         if self.image_generator is None:

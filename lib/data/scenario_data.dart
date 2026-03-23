@@ -56,29 +56,29 @@ class ScenarioCard {
     if (age <= 8 && youngTitle != null) return youngTitle!;
     // Creator band (ages 12-14) gets an identity-focused framing when available.
     if (age >= 12 && age <= 14 && creatorTitle != null) return creatorTitle!;
-    // Adventurer (9-11) and older bands get the mature title if defined.
-    if (age >= 10 && matureTitle != null) return matureTitle!;
+    // Ages 12+ get the mature title if defined; Adventurer (9-11) uses standard title.
+    if (age >= 12 && matureTitle != null) return matureTitle!;
     return title;
   }
 
   /// Get the description appropriate for the given age.
   String descriptionForAge(int age) {
     if (age <= 8 && youngDescription != null) return youngDescription!;
-    if (age >= 10 && matureDescription != null) return matureDescription!;
+    if (age >= 12 && matureDescription != null) return matureDescription!;
     return description;
   }
 
   /// Get the conflict hook appropriate for the given age.
   String conflictHookForAge(int age) {
     if (age <= 8 && youngConflictHook != null) return youngConflictHook!;
-    if (age >= 10 && matureConflictHook != null) return matureConflictHook!;
+    if (age >= 12 && matureConflictHook != null) return matureConflictHook!;
     return conflictHook;
   }
 
   /// Get the world bible appropriate for the given age.
   String worldBibleForAge(int age) {
     if (age <= 8 && youngWorldBible != null) return youngWorldBible!;
-    if (age >= 10 && matureWorldBible != null) return matureWorldBible!;
+    if (age >= 12 && matureWorldBible != null) return matureWorldBible!;
     return worldBible;
   }
 
@@ -272,21 +272,21 @@ class ScenarioData {
           'Shimmering air, the smell of wet paint, smooth canvas textures.',
       category: 'Magical Worlds',
       worldBible:
-          'A world that looks like a living painting — rolling hills of brushstroke grass, skies layered in watercolour gradients, rivers of liquid pigment. Colour is the life-force here: when a flower loses its colour, it wilts; when a creature turns grey, it falls asleep. The Great Eraser is a fog-like entity that absorbs colour and leaves monochrome in its wake. Allies include the Paint Sprites (tiny beings that each carry one colour), the Palette Guardian (a wise rainbow tortoise), and Brushstroke Birds that trail colour behind them as they fly. The hero can restore colour through creative acts — painting, singing, dancing, telling stories. Each restored colour brings back a sense: red returns warmth, blue returns sound, yellow returns smell, green returns taste.',
+          'A world that looks like a living painting — rolling hills of brushstroke grass, skies layered in watercolour gradients, rivers of liquid pigment. Colour is the life-force here: when a flower loses its colour, it wilts; when a creature turns grey, it falls asleep. The Great Eraser is a fog-like entity that absorbs colour and leaves monochrome in its wake. Allies include the Paint Sprites (tiny beings that each carry one colour), the Palette Guardian (a wise rainbow tortoise), and Brushstroke Birds that trail colour behind them as they fly. The hero can restore colour through creative acts — painting, singing, dancing, telling stories. Each restored colour brings back a sense: red returns warmth, blue returns sound, yellow returns smell, green returns taste. THE JELLO ROAD: The main road through this land is paved in solid rainbow gelatin. In dry weather it is firm and springy, with a satisfying bounce underfoot — like walking on the world\'s bounciest trampoline. When it rains, the surface turns frictionless and slick, becoming a wild slip-and-slide (fast travel, zero control). After the rain stops, the road goes through a sticky phase — anything on it gets gently held in place for a minute while it sets — before firming back up. Locals know to read the road like weather: bounce means go, slide means hang on, sticky means wait.',
       youngTitle: 'Rainbow World',
       youngDescription:
           'A magical land full of rainbows, colors, and happy surprises!',
       youngConflictHook:
           'Help your friends find all the colors of the rainbow for a big celebration!',
       youngWorldBible:
-          'A happy land where everything is made of colours — the grass is crayon-green, the sky is painted blue, and the rivers are sparkly rainbow water. Cute little Paint Sprites carry buckets of colour. A friendly rainbow turtle helps everyone stay colourful. Birds fly and leave pretty colour trails behind them. When something loses its colour and turns grey, it falls asleep — but you can wake it up by painting it, singing to it, or giving it a hug!',
+          'A happy land where everything is made of colours — the grass is crayon-green, the sky is painted blue, and the rivers are sparkly rainbow water. Cute little Paint Sprites carry buckets of colour. A friendly rainbow turtle helps everyone stay colourful. Birds fly and leave pretty colour trails behind them. When something loses its colour and turns grey, it falls asleep — but you can wake it up by painting it, singing to it, or giving it a hug! THE JELLO ROAD: The road through Rainbow World is made of real bouncy jello! It\'s springy and fun to hop on when it\'s dry. When it rains, it turns into a slippery slip-and-slide and everyone goes zooming! But once the rain stops, it gets sticky for a little while — if you step on it you get stuck like a frog on a leaf until it dries! Then it goes bouncy again.',
       matureTitle: 'The Fading Realm',
       matureDescription:
           'Reality itself is being unmade. Every hour, more of the world turns to static.',
       matureConflictHook:
           'The Void is sentient, and it wants to consume everything. You\'re the last line of defense.',
       matureWorldBible:
-          'A dimension where perception literally shapes reality — colour, sound, and texture are manifestations of collective consciousness. The Entropy (called "the Eraser" by younger inhabitants) is a natural force of creative decay, accelerated by despair and apathy. As regions lose colour, they don\'t just go grey — they lose dimensional complexity, flattening into 2D, then 1D, then nothing. Resistance comes through authentic creative expression, not just art but genuine emotional honesty. The Chromatists are a resistance movement who\'ve learned to weaponise creativity, but they\'re fractured by debate: fight the Entropy or accept it as a natural cycle? The hero must navigate both the external threat and the philosophical divide.',
+          'A dimension where perception literally shapes reality — colour, sound, and texture are manifestations of collective consciousness. The Entropy (called "the Eraser" by younger inhabitants) is a natural force of creative decay, accelerated by despair and apathy. As regions lose colour, they don\'t just go grey — they lose dimensional complexity, flattening into 2D, then 1D, then nothing. Resistance comes through authentic creative expression, not just art but genuine emotional honesty. The Chromatists are a resistance movement who\'ve learned to weaponise creativity, but they\'re fractured by debate: fight the Entropy or accept it as a natural cycle? The hero must navigate both the external threat and the philosophical divide. THE JELLO ROAD: The primary artery of this realm is the Chromatic Causeway — a road paved in solid pigment-gelatin that shifts state with the weather. Dry: firm and springy, each footfall sending up a small chromatic ripple. Rain: instantly frictionless, a mirror-smooth slide that moves people whether they want to move or not. Post-rain: a brief adhesive window where the surface grips everything touching it — creatures, objects, secrets — before releasing as it sets. The Causeway is both infrastructure and metaphor: the Chromatists say the road reflects the realm\'s emotional state. A sticky road means something is holding on. A sliding road means something is out of control. A bouncy road means the world is still alive.',
       // Identity resonance: the idea that apathy erases your world maps well to 12-14 self-expression themes.
       creatorTitle: 'When Everything Fades',
     ),

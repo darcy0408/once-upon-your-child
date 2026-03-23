@@ -94,6 +94,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   late TextEditingController _wishController;
   bool _isPetAvatarGenerating = false;
   String? _petAvatarStatusMessage;
+  late TextEditingController _friendNameController;
 
   // ─── Analytics Helpers ──────────────────────────────────────────────────────
   void _logPageView(int pageIndex) {
@@ -148,6 +149,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     _imagineItController = TextEditingController(
       text: widget.wizardData.customElements,
     );
+    _friendNameController = TextEditingController();
     // ── Animation controllers ──────────────────────────────────────────────────
     _sparkleCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1600));
@@ -196,6 +198,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     _questController.dispose();
     _wishController.dispose();
     _imagineItController.dispose();
+    _friendNameController.dispose();
 
     _sparkleCtrl.dispose();
     _speech.stop();
@@ -983,7 +986,87 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               ? (name) => _speakForSprout(name)
               : null,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
+        // ── Bring a friend by name (free) ─────────────────────────────────────
+        const Text(
+          'Bring a Friend Along:',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Type a friend\'s name and they\'ll be part of your story.',
+          style: TextStyle(color: Colors.white60, fontSize: 12),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _friendNameController,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  hintText: 'Friend\'s name...',
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  filled: true,
+                  fillColor: Colors.white12,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                onSubmitted: (_) => _addFriendByName(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: _addFriendByName,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7C4DFF),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+        if (widget.wizardData.additionalCharacters.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: widget.wizardData.additionalCharacters.map((name) {
+              return Chip(
+                label: Text(
+                  name,
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+                backgroundColor: const Color(0xFF7C4DFF).withValues(alpha: 0.6),
+                deleteIconColor: Colors.white70,
+                onDeleted: () => setState(() {
+                  widget.wizardData.additionalCharacters.remove(name);
+                }),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+              );
+            }).toList(),
+          ),
+        ],
+        const SizedBox(height: 16),
         // ── Pet card (photo + name/species/color) ──────────────────────────────
         _PetCard(
           wizardData: widget.wizardData,
@@ -1032,6 +1115,16 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         ),
       ],
     );
+  }
+
+  void _addFriendByName() {
+    final name = _friendNameController.text.trim();
+    if (name.isEmpty) return;
+    if (widget.wizardData.additionalCharacters.contains(name)) return;
+    setState(() {
+      widget.wizardData.additionalCharacters.add(name);
+      _friendNameController.clear();
+    });
   }
 
   String _defaultPetNameForIndex(int index) =>
@@ -1137,6 +1230,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           looksDescription.trim().isEmpty ? species : looksDescription;
       request.fields['owner_favorite_color'] =
           widget.wizardData.favoriteColor.toLowerCase();
+      request.fields['owner_age'] =
+          widget.wizardData.characterAge.toString();
 
       final headers = await ApiServiceManager.authHeaders();
       headers.forEach((key, value) {
@@ -3592,10 +3687,10 @@ const _companions = [
   ),
   _CompanionData(
     id: 'robin',
-    name: 'Rockin\' Robin',
-    tagline: 'Always watching, always guiding you forward.',
+    name: 'Robin',
+    tagline: 'Overprotective. Loud about it. Loves you completely.',
     personality:
-        'Rockin\' Robin (Scout) darts overhead, chirping warning trills. She swoops low to show the way like a living arrow. If she dive-bombs someone, it\'s because they\'re a threat — even if they look harmless. Acts like a tiny bodyguard with zero chill; won\'t just point — must swoop the route herself. Catchphrases: "Move. Now-now-now." / "Trust me. Wings don\'t lie."',
+        'Robin (Guardian) is overprotective and not remotely sorry about it. She scouts ahead of every step, physically bats away anything she decides is a threat — which is often — and is extremely loud when alarmed. Three sharp chirps: stop. One long note: safe. She has been wrong before and does not slow down. Through all the shrieking and wing-flapping it is completely obvious how much she loves the hero. She brings small gifts when things calm down: a bright berry, a warm feather from her own chest. Her protectiveness is not performance. It is love at full volume. Catchphrases: "NO. Back. NOW." / "I handled it." / "(soft) You\'re okay. I\'ve got you."',
   ),
 ];
 

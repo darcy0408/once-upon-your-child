@@ -46,10 +46,10 @@ const kCompanionOptions = <CompanionOption>[
     description: 'A quick-witted trickster who can solve any puzzle or outsmart any trap.',
   ),
   CompanionOption(
-    label: 'Rockin\' Robin',
-    keyName: 'Rockin\' Robin',
+    label: 'Robin',
+    keyName: 'Robin',
     asset: 'assets/images/companions/robin.jpg',
-    description: 'A cheerful singer whose music can lift anyone\'s mood or distract a foe.',
+    description: 'Flies ahead to scout every path and signals the all-clear — three chirps means danger, one long note means you\'re safe to come.',
   ),
 ];
 

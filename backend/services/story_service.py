@@ -420,10 +420,30 @@ class AdvancedStoryEngine:
             companion_sections.append(f"PETS: {', '.join(pets)}")
         if companion_characters:
             chars = []
+            behavior_instructions = []
             for c in companion_characters:
-                chars.append(f"{c['name']}{' (Power: ' + c['signaturePower'] + ')' if c.get('signaturePower') else ''}")
-                all_companion_names.append(c['name'])
-            companion_sections.append(f"FRIENDS: {', '.join(chars)}")
+                name = c['name']
+                power = c.get('signaturePower', '')
+                constraint = c.get('powerConstraint', '')
+                sensory = c.get('sensoryTell', '')
+                behavior = c.get('behaviorPattern', '')
+                chars.append(
+                    f"{name}"
+                    + (f" | Power: {power}" if power else '')
+                    + (f" | Constraint: {constraint}" if constraint else '')
+                    + (f" | Sensory: {sensory}" if sensory else '')
+                )
+                if behavior:
+                    behavior_instructions.append(
+                        f"  [{name} — recurring behavior throughout the WHOLE story, not just the climax]: {behavior}"
+                    )
+                all_companion_names.append(name)
+            companion_sections.append("FRIENDS:\n  " + "\n  ".join(chars))
+            if behavior_instructions:
+                companion_sections.append(
+                    "CHARACTER BEHAVIOR (follow these THROUGHOUT the story — these define who these companions ARE):\n"
+                    + "\n".join(behavior_instructions)
+                )
         if additional_characters:
             others = []
             for ac in additional_characters:

@@ -167,6 +167,7 @@ def create_avatar_blueprint(limiter):
             species = request.form.get('species')
             breed_description = request.form.get('breed_description')
             owner_favorite_color = request.form.get('owner_favorite_color')
+            owner_age = request.form.get('owner_age', '0')
 
             # Basic validation
             if not all([pet_name, species, breed_description, owner_favorite_color]):
@@ -176,7 +177,12 @@ def create_avatar_blueprint(limiter):
                     'message': 'All fields (pet_name, species, breed_description, owner_favorite_color) are required'
                 }), 400
 
-            logger.info(f"Pet avatar request: name={pet_name}, species={species}")
+            try:
+                owner_age = int(owner_age)
+            except (ValueError, TypeError):
+                owner_age = 0
+
+            logger.info(f"Pet avatar request: name={pet_name}, species={species}, owner_age={owner_age}")
 
             service = get_avatar_service()
 
@@ -186,7 +192,8 @@ def create_avatar_blueprint(limiter):
                     species=species,
                     breed_description=breed_description,
                     owner_favorite_color=owner_favorite_color,
-                    photo_bytes=photo_bytes
+                    photo_bytes=photo_bytes,
+                    owner_age=owner_age,
                 )
 
                 logger.info(f"Pet avatar generated successfully: {avatar_data['id']}")
