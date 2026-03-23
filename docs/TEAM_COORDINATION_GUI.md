@@ -98,8 +98,81 @@ Notable: `BigFeelingsFlowScreen`, bedtime prompts, archetype images, nav buttons
 
 ---
 
+---
+
+## ✅ Completed — Session 2026-03-22 (continued)
+
+### Gendered Feeling Portrait Images
+- 38 of 48 gendered feeling portraits generated and committed
+- Asset subfolders added to `pubspec.yaml`: `creator/boy/`, `creator/girl/`, `adolescent/boy/`, `adolescent/girl/`
+- Adult band images skipped (see below); remaining 10 adult images still missing due to API quota (70 req/day/project limit hit across all 4 keys)
+- **Still needed (manual generation):** `adult/boy`: sad, scared, surprised · `adult/girl`: angry, calm, excited, happy, sad, scared, surprised
+
+### Adult Band — Big Feelings Quest Removed
+- `feeling_selection_step.dart`: `big_feelings_quest` scenario card filtered out for `AgeBand.adult` in `visibleScenarios`
+- Adult band gendered image paths removed from `pubspec.yaml` (adult/boy, adult/girl subfolders deleted — not needed)
+- Adults are directed to Chronicles/ongoing story mode; guided meditation section planned for a future session
+
+### Per-Band Feelings Filtering
+`big_feelings_flow_screen.dart` now uses `_feelingsForBand(AgeBand)` instead of a single static list:
+
+| Band | Count | Feelings |
+|------|-------|---------|
+| Sprout (3–5) | 8 | Core emotions only |
+| Explorer (6–8) | 13 | +5: bothered, bouncy, grossed_out, hurt_mad, hyper |
+| Adventurer (9–11) | 18 | +5: gloomy, impatient, let_down, red_faced, stuck |
+| Creator+ (12+) | 20 | +2: what_if_y, wish_i_could_hide |
+
+### Animal Whisperer Images — Per-Band PNGs with Real Animals
+- New per-band `animal_whisperer.png` images (actual animals) committed
+- `archetype_card.dart` `imagePathForBand()` updated: uses `.png` extension for `animal_whisperer`, `.jpg` for all others
+
+### Age-Appropriateness Fixes
+| Change | File |
+|--------|------|
+| "Go Solo (Be Brave!)" → "Go Solo" | `companion_selector_step.dart` |
+| "Hold a grown-up hand" → "Hold someone's hand" | `big_feelings_flow_screen.dart` |
+| "Tell a grown-up" → "Tell someone you trust" | `big_feelings_flow_screen.dart` |
+| Real-Life Heroes hidden for Explorer (6–8) too | `feeling_selection_step.dart` |
+| Band-aware "travel buddies" spoken prompt | `companion_selector_step.dart` |
+
+### Band-Aware Spoken Prompts & Loading Text
+- `magic_review_step.dart`: `_buildReviewSpokenText()` uses `band.heroLabel` and `band.launchStoryLabel`
+- `magic_review_step.dart`: illustration loading text adapts — "Painting magical illustrations..." / "Creating illustrations..." / "Generating illustrations..."
+
+### BandAdaptiveImagineIt — New Widget
+New file: `lib/widgets/imagine_it_input.dart`
+
+| Band | UI Strategy |
+|------|-------------|
+| Sprout (3–5) | Large pulsing voice button (120px) + 2×3 place tile grid + caregiver bottom sheet |
+| Explorer (6–8) | Idea chips row (6 chips) + text field + voice suffix button |
+| Adventurer (9–11) | Genre filter chips + word-count badge (Spark/Flame/Inferno) + Surprise Me button |
+| Creator/Adolescent/Adult | Dark surface card + privacy lock icon + collapsible Advanced panel (Genre/Tone/POV) |
+
+- Replaces `_buildSafeSpaceInput()` in `feeling_selection_step.dart`
+- Advanced controls wired: Genre → `wizardData.selectedGenre`; Tone/POV → `[Tone: X, POV: Y]` suffix on `customElements`
+- Sprout voice flow: TTS asks "Where do you want to go?" → `speech_to_text` listens (12s timeout) → shows confirmed text
+
+---
+
+## 📁 New Files (all sessions)
+- `lib/widgets/feelings_badge_grid.dart` — RPG/scout badge emotion grid for adventurer band
+- `lib/services/therapist_auth_service.dart` — PIN gate service for therapist portal
+- `lib/widgets/imagine_it_input.dart` — `BandAdaptiveImagineIt` dispatcher + 4 band-specific Imagine It UIs
+
+## 🔧 Key Changes (all sessions)
+- `lib/models/wizard_data.dart` — `clone()`, `companionCustomNames`, `selectedGenre`
+- `lib/screens/big_feelings_flow_screen.dart` — per-band feelings filtering, fixed grown-up language
+- `lib/screens/wizard_steps/feeling_selection_step.dart` — BandAdaptiveImagineIt integration, Explorer Real-Life Heroes filter, adult Big Feelings Quest filter
+- `lib/screens/wizard_steps/companion_selector_step.dart` — "Go Solo" label, band-aware spoken prompt
+- `lib/screens/wizard_steps/magic_review_step.dart` — band-aware spoken review + loading text
+- `lib/widgets/archetype_card.dart` — .png extension for animal_whisperer images
+
 ## 📝 Next Actions
-- **Age Band Expansion** — `age_band_assets/` directories exist but not wired into Flutter (no pubspec, no Dart refs); this is the next major task
+- **Remaining adult feeling images** — Generate manually via Gemini: adult/boy (sad, scared, surprised), adult/girl (angry, calm, excited, happy, sad, scared, surprised)
+- **Sprout tile illustrations** — Optional: replace emoji tiles in `_SproutInput` with painted images (Castle/Ocean/Space/Forest/Candy Land/Dinosaurs)
+- **Pet avatar band-awareness** — Consider per-band pet generation style (magical/whimsical for young, realistic for older)
+- **Age Band Expansion** — `age_band_assets/` directories exist but not wired into Flutter (no pubspec, no Dart refs)
 - **Badge assets** — supply `assets/images/feelings/adventurer/{happy,excited,calm,sad,worried,frustrated,angry,embarrassed}.png` (8×128×128 transparent PNGs) for `FeelingsBadgeGrid`
-- **Delete dead code** — `lib/emotion_recognition_game.dart` has no importers; safe to delete
-- **Device testing** — F11 badge grid, F12 PIN gate, repeat story buttons, Chronicles discovery
+- **Device testing** — Badge grid, PIN gate, repeat story, Chronicles, new Imagine It UI
