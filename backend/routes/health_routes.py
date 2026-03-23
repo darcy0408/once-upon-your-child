@@ -28,9 +28,18 @@ def create_health_blueprint(logger, api_key: str, app_version: str, gemini_model
             health_status["database_error"] = str(e)
             health_status["status"] = "degraded"
 
-        # Gemini API check
+        # Gemini API check — live probe
         health_status["has_api_key"] = bool(api_key)
         health_status["model"] = os.getenv("GEMINI_MODEL", "not-set")
+        try:
+            from google import genai as _genai
+            _client = _genai.Client(api_key=api_key)
+            _client.models.get(model=gemini_model)
+            health_status["gemini_live"] = True
+        except Exception as _e:
+            health_status["gemini_live"] = False
+            health_status["gemini_error"] = str(_e)
+            health_status["status"] = "degraded"
 
         # Stripe check
         health_status["stripe_configured"] = bool(os.getenv("STRIPE_API_KEY"))
@@ -63,12 +72,15 @@ def create_health_blueprint(logger, api_key: str, app_version: str, gemini_model
             health_status["status"] = "unhealthy"
             health_status["checks"]["database"] = {"status": "unhealthy", "error": str(e)}
 
-        # Gemini API check
+        # Gemini API check — live probe
         try:
-            health_status["checks"]["gemini_api"] = {"status": "healthy" if api_key else "unhealthy", "configured": bool(api_key)}
+            from google import genai as _genai
+            _client = _genai.Client(api_key=api_key)
+            _client.models.get(model=gemini_model)
+            health_status["checks"]["gemini_api"] = {"status": "healthy", "configured": True, "live": True}
         except Exception as e:
             health_status["status"] = "degraded"
-            health_status["checks"]["gemini_api"] = {"status": "unhealthy", "error": str(e)}
+            health_status["checks"]["gemini_api"] = {"status": "unhealthy", "configured": bool(api_key), "live": False, "error": str(e)}
 
         # Memory check
         try:

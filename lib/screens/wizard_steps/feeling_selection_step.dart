@@ -999,7 +999,9 @@ class _ScenarioCardWidget extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.asset(
-                  scenario.illustration,
+                  scenario.illustration.startsWith('assets/')
+                      ? scenario.illustration
+                      : 'assets/${scenario.illustration}',
                   width: 200,
                   height: 140,
                   fit: BoxFit.cover,
