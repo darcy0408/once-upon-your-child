@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:story_weaver_app/services/secure_storage_service.dart';
@@ -779,14 +780,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         const SizedBox(height: AppSpacing.sm),
         InkWell(
-          onTap: () => launchUrl(Uri.parse('https://elevenlabs.io')),
-          child: Image.network(
+          onTap: () => launchUrl(Uri.parse('https://elevenlabs.io/impact-program')),
+          child: SvgPicture.network(
             isDark
                 ? 'https://eleven-public-cdn.elevenlabs.io/payloadcms/csnjio02mx4-elevenlabs-logo-white.svg'
                 : 'https://eleven-public-cdn.elevenlabs.io/payloadcms/rxk2xwmcbb-elevenlabs-logo-black.svg',
             height: 28,
-            semanticLabel: 'ElevenLabs Impact Program',
-            errorBuilder: (_, __, ___) => const Text('ElevenLabs Impact Program'),
+            semanticsLabel: 'ElevenLabs Impact Program',
+            placeholderBuilder: (_) => const Text('ElevenLabs Impact Program'),
           ),
         ),
       ],

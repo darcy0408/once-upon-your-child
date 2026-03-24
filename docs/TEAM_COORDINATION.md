@@ -2,6 +2,38 @@
 
 ---
 
+## Session Update — 2026-03-23
+
+### Consent Endpoint 400 Fix (carryover from 3/21)
+- Fixed three field-name mismatches between Flutter frontend and Flask backend on `/api/user/<id>/consent`:
+  - `age` → `child_age`, `method` → `consent_method`, `email_plus` → `email_verified`
+- Removed unused `recorded_at` field from POST body
+- Files: `lib/services/parental_consent_service.dart`, `lib/screens/parental_consent_screen.dart`
+
+### CORS Production Blocker — Confirmed Resolved
+- Investigated CORS config in `backend/config/__init__.py` and `backend/app.py`
+- Confirmed fix was already deployed (commit `e6fff91`, 2026-03-18) — `RAILWAY_FRONTEND_URL` env var set in Railway
+- No action needed; marked resolved in deployment checklist
+
+### ElevenLabs Impact Program Logo Fix
+- Logo was present in Settings → Partners section but was invisible because `Image.network` can't render SVGs
+- Switched to `SvgPicture.network` (from `flutter_svg` package already in pubspec)
+- Updated link from `elevenlabs.io` → `elevenlabs.io/impact-program` per partnership requirements
+- File: `lib/settings_screen.dart`
+
+### Package Upgrades (user-initiated)
+- Ran `flutter pub upgrade --major-versions`, bumping 4 direct dependencies:
+  - `shared_preferences` 2.4.0 → ^2.5.4
+  - `share_plus` ^11.0.0 → ^12.0.1 (major)
+  - `package_info_plus` ^8.0.2 → ^9.0.0 (major)
+  - `flutter_lints` ^5.0.0 → ^6.0.0 (major)
+- Riverpod 2.x → 3.x migration deferred (too large for pre-launch)
+
+### Deployment Readiness Checklist
+- Compiled comprehensive checklist from all session logs and LAUNCH_BLOCKERS.md (see below)
+
+---
+
 ## Deployment Readiness Checklist — 2026-03-22
 
 Compiled from all session updates and LAUNCH_BLOCKERS.md. Items are grouped by severity.
