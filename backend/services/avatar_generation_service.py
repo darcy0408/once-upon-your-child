@@ -128,83 +128,73 @@ class AvatarGenerationService:
 
         # 'character/storybook hero' wording avoids Gemini safety classifier triggers
         # (words like 'child/children/person' + photo = policy rejection)
-        if age <= 5:
-            age_profile = (
-                "Age Styling: Character should read as approximately {age} years old "
-                "with a larger head-to-body ratio, round cheeks, softer jawline, "
-                "shorter neck, and playful proportions."
-            )
-            environment_style = (
-                "Bright whimsical day scene with soft sky glow, pastel highlights, "
-                "sparkly flowers, floating bubbles, and cheerful magical particles."
-            )
-            lighting_style = (
-                "High-key lighting, bright midtones, gentle bloom, uplifting palette."
-            )
-        elif age <= 8:
-            age_profile = (
-                "Age Styling: Character should read as approximately {age} years old "
-                "with youthful proportions, expressive eyes, and rounded features."
-            )
-            environment_style = (
-                "Playful storybook setting with warm light rays, colorful foliage, "
-                "and soft magical sparkles."
-            )
-            lighting_style = "Soft cinematic lighting with vibrant color contrast."
-        else:
-            age_profile = (
-                "Age Styling: Character should read as approximately {age} years old "
-                "with proportionally mature but still stylized animated features."
-            )
-            environment_style = (
-                "Magical storybook environment with layered depth, subtle glow effects, "
-                "and elegant cinematic atmosphere."
-            )
-            lighting_style = "Cinematic lighting with balanced contrast and rich texture detail."
+        band_style = self._hero_style_for_age(age)
+
+        # ── Photo feature extraction (best-effort) ────────────────────────────
+        photo_descriptors = self._analyze_photo_features(photo_bytes)
+        photo_context = ""
+        if photo_descriptors:
+            parts = []
+            if photo_descriptors.get("hair_style"):
+                parts.append(f"Hair: {photo_descriptors['hair_style']}")
+            if photo_descriptors.get("skin_tone"):
+                parts.append(f"Skin tone: {photo_descriptors['skin_tone']}")
+            if photo_descriptors.get("distinguishing"):
+                parts.append(f"Notable: {photo_descriptors['distinguishing']}")
+            if parts:
+                photo_context = "Photo Analysis — " + "; ".join(parts) + "."
+
+        age_profile = (
+            f"Age Styling: Character should appear approximately {age} years old, "
+            f"matching the visual maturity level appropriate for a {band_style['band_name']} protagonist. "
+            f"Art style: {band_style['art_style']}. "
+            f"Proportions: {band_style['proportions']}. "
+            f"Costume complexity: {band_style['complexity']}. "
+            f"Tone: {band_style['tone']}."
+        )
+
+        gender_tailoring = self._gender_wardrobe(gender, band_style['band_name'])
 
         prompt_template = """
-**Magical Storybook Character Creator v3 (Dynamic Celestial Edition)**
+**Magical Storybook Character Creator v4 (Age-Adaptive Edition)**
 
-Transform the reference image into a fully illustrated Pixar-style 3D animated storybook character.
-Maintain the character's facial features while converting them into a vibrant non-photorealistic animated style.
+Transform the reference image into a fully illustrated storybook character
+in the following style: {art_style_directive}.
+Maintain the character's facial features while converting them into the target art style.
 
 **Core Capabilities**
-* Character Stylist: translating reference features into stylized 3D animated character designs.
-* Feature Preservation: maintains eye shape, smile lines, hair texture in illustrated animation style.
+* Character Stylist: translating reference features into {art_style_directive} character designs.
+* Feature Preservation: maintains eye shape, smile lines, hair texture in illustrated style.
 * {age_profile}
+{photo_context}
 
 **Technical Configuration**
-* Style: Non-photorealistic illustrated 3D animation. NOT a photograph. NOT realistic.
+* Style: {art_style_directive}. NOT a photograph. NOT hyper-realistic.
 * Use the reference image for head shape, skin tone, and facial structure only.
-* Style: Professional 3D animated film aesthetic; vibrant textures, soft subsurface scattering.
 * Lighting Direction: {lighting_style}
 
 **Character Design**
 1. Likeness Synthesis: Use reference image for structural likeness. Eye Color: {eye_color} for iris tint.
-2. Wardrobe: Hero's Tunic of iridescent star-spun silk in jewel-tone of Favorite Color: {favorite_color}.
+2. Wardrobe: {wardrobe}
    Silhouette: {gender_tailoring}
-   Celestial Cape: semi-translucent cape glowing with nebula light in Favorite Color: {favorite_color},
-   with tiny floating gold star particles. Gold constellation embroidery on collar and cuffs.
 3. Environment: {environment_style}
 4. Final Render: Chest-up portrait, center-aligned, 1024x1024 square.
 
-**Output**: Pixar-inspired 3D animation, soft lighting, fully illustrated, NOT photographic.
+**Output**: {art_style_directive}, soft lighting, fully illustrated, NOT photographic.
 **Fallback**: If reference is low quality, use Eye Color: {eye_color} and Favorite Color: {favorite_color}.
 """
-        gender_tailoring = (
-            "Heroic: hip-length tunic with dark fitted trousers or leggings."
-            if gender.lower() == 'boy'
-            else "Whimsical: tunic-dress or hip-length top with leggings."
-        )
 
         prompt = prompt_template.format(
             age=age,
-            age_profile=age_profile.format(age=age),
+            age_profile=age_profile,
+            art_style_directive=band_style['art_style'],
             eye_color=eye_color,
             favorite_color=favorite_color,
             gender_tailoring=gender_tailoring,
-            environment_style=environment_style,
-            lighting_style=lighting_style,
+            wardrobe=band_style['wardrobe'].format(favorite_color=favorite_color),
+            environment_style=band_style['environment'],
+            lighting_style=band_style['lighting'],
+            photo_context=f"\n* {photo_context}" if photo_context else "",
         )
 
         logger.info(f"Generating custom avatar for {character_name}, age {age}, eye_color {eye_color}, fav_color {favorite_color}")
@@ -339,6 +329,172 @@ Maintain the character's facial features while converting them into a vibrant no
                 )
 
         raise Exception(f"Custom avatar generation failed: {primary_error}")
+
+    @staticmethod
+    def _hero_style_for_age(age: int) -> dict:
+        """Return age-band visual style profile for hero avatar generation."""
+        if age <= 5:
+            return {
+                'band_name': 'Sprout (3-5)',
+                'art_style': 'Soft, rounded watercolor-adjacent 3D animation with gentle edges',
+                'proportions': 'Large head-to-body ratio, chubby limbs, big expressive eyes, round cheeks',
+                'complexity': 'Simple costume with 2-3 colors max, no fine detail',
+                'tone': 'Warm, safe, friendly',
+                'wardrobe': (
+                    "Simple cozy tunic in soft jewel-tone of {favorite_color}, "
+                    "with rounded collar and big friendly buttons."
+                ),
+                'environment': (
+                    "Bright whimsical day scene with soft sky glow, pastel highlights, "
+                    "sparkly flowers, floating bubbles, and cheerful magical particles."
+                ),
+                'lighting': 'High-key lighting, bright midtones, gentle bloom, uplifting palette.',
+            }
+        elif age <= 8:
+            return {
+                'band_name': 'Explorer (6-8)',
+                'art_style': 'Bright cartoon with clear outlines, Pixar-style 3D animation',
+                'proportions': 'Slightly elongated body, expressive face, rounded features',
+                'complexity': 'Simple costume with one defining accessory',
+                'tone': 'Playful, adventurous',
+                'wardrobe': (
+                    "Hero's tunic of star-spun silk in jewel-tone of {favorite_color}, "
+                    "with one signature accessory (belt, scarf, or armband) and subtle sparkle trim."
+                ),
+                'environment': (
+                    "Playful storybook setting with warm light rays, colorful foliage, "
+                    "and soft magical sparkles."
+                ),
+                'lighting': 'Soft cinematic lighting with vibrant color contrast.',
+            }
+        elif age <= 11:
+            return {
+                'band_name': 'Adventurer (9-11)',
+                'art_style': 'Stylized cartoon with semi-realistic faces, rich color palette',
+                'proportions': 'Balanced proportions with more anatomical detail, expressive posture',
+                'complexity': 'Costume with role-specific gear and layered elements',
+                'tone': 'Capable, cool, relatable',
+                'wardrobe': (
+                    "Adventure-ready outfit in {favorite_color} tones: layered tunic with "
+                    "utility belt, shoulder guard, and constellation-embroidered cape."
+                ),
+                'environment': (
+                    "Dynamic storybook environment with atmospheric depth, wind-swept elements, "
+                    "and cinematic scale."
+                ),
+                'lighting': 'Cinematic lighting with balanced contrast and rich texture detail.',
+            }
+        elif age <= 14:
+            return {
+                'band_name': 'Creator (12-14)',
+                'art_style': 'Semi-realistic graphic novel style with detailed shading',
+                'proportions': 'Near-realistic proportions, detailed facial features',
+                'complexity': 'Detailed outfit reflecting personal style, layered accessories',
+                'tone': 'Authentic, edgy-lite, identity-forward',
+                'wardrobe': (
+                    "Stylish modern-fantasy outfit in {favorite_color}: fitted jacket or layered top, "
+                    "personal accessories (rings, necklace, or earpiece), celestial embroidery details."
+                ),
+                'environment': (
+                    "Atmospheric environment with moody lighting, architectural elements, "
+                    "and subtle magical undertones."
+                ),
+                'lighting': 'Dramatic cinematic lighting with depth, contrast, and subtle rim light.',
+            }
+        else:
+            return {
+                'band_name': 'Adolescent/Adult (15+)',
+                'art_style': 'Stylized realistic or anime-influenced illustration with painterly textures',
+                'proportions': 'Realistic proportions, expressive posture, detailed features',
+                'complexity': 'Full outfit detail with personal style and expressive posture',
+                'tone': 'Sophisticated, aspirational, self-expressive',
+                'wardrobe': (
+                    "Fully realized character outfit in {favorite_color}: tailored silhouette with "
+                    "personal flair, subtle magical elements woven into fabric, confident posture."
+                ),
+                'environment': (
+                    "Elegant cinematic environment with layered depth, subtle glow effects, "
+                    "and sophisticated magical atmosphere."
+                ),
+                'lighting': 'Cinematic lighting with rich contrast, rim light, and atmospheric haze.',
+            }
+
+    @staticmethod
+    def _gender_wardrobe(gender: str, band_name: str) -> str:
+        """Return gender-specific silhouette description scaled to age band."""
+        is_boy = gender.lower() == 'boy'
+        if 'Sprout' in band_name:
+            return "Soft rounded smock-style tunic." if not is_boy else "Simple round-collar tunic with soft trousers."
+        elif 'Explorer' in band_name:
+            return (
+                "Heroic: hip-length tunic with dark fitted trousers."
+                if is_boy else "Whimsical: tunic-dress or hip-length top with leggings."
+            )
+        elif 'Adventurer' in band_name:
+            return (
+                "Athletic: fitted adventure tunic with utility belt and sturdy boots."
+                if is_boy else "Dynamic: layered adventure dress over leggings with belt and boots."
+            )
+        elif 'Creator' in band_name:
+            return (
+                "Modern-fantasy: fitted jacket over dark trousers, personal accessories."
+                if is_boy else "Expressive: styled jacket or layered top, curated accessories."
+            )
+        else:
+            return (
+                "Tailored: confident silhouette with structured layers."
+                if is_boy else "Refined: flowing or structured silhouette with intentional styling."
+            )
+
+    def _analyze_photo_features(self, photo_bytes: bytes) -> dict:
+        """
+        Best-effort photo feature extraction via Gemini vision.
+        Returns dict with keys: hair_style, skin_tone, distinguishing.
+        Returns empty dict on any failure.
+        """
+        if self.image_generator is None:
+            return {}
+        try:
+            from google import genai as _genai
+            from google.genai import types
+
+            api_key = os.getenv("GEMINI_API_KEY")
+            if not api_key:
+                return {}
+
+            client = _genai.Client(api_key=api_key)
+            analysis_prompt = (
+                "Analyze this photo for character illustration reference. "
+                "Return ONLY a JSON object with these keys:\n"
+                '- "hair_style": brief description of hair color and style (e.g. "wavy brown shoulder-length")\n'
+                '- "skin_tone": neutral descriptor on a light/medium/olive/tan/deep scale\n'
+                '- "distinguishing": one notable visual feature if any (e.g. "round glasses", "curly bangs", "freckles"), or empty string\n'
+                "Use visually neutral terms only. No racial, ethnic, or nationality descriptors."
+            )
+
+            response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=[
+                    analysis_prompt,
+                    types.Part.from_bytes(data=photo_bytes, mime_type="image/jpeg"),
+                ],
+            )
+
+            text = response.text.strip()
+            # Strip markdown code fences if present
+            if text.startswith("```"):
+                text = re.sub(r"^```(?:json)?\s*", "", text)
+                text = re.sub(r"\s*```$", "", text)
+
+            import json
+            result = json.loads(text)
+            if isinstance(result, dict):
+                logger.info(f"Photo analysis extracted: {result}")
+                return result
+            return {}
+        except Exception as e:
+            logger.warning(f"Photo feature extraction failed (non-fatal): {e}")
+            return {}
 
     def _extract_base64_from_results(self, results: Optional[List[Dict]]) -> Optional[str]:
         """Extract clean base64 image data from a generator results list."""
@@ -586,36 +742,36 @@ Maintain the character's facial features while converting them into a vibrant no
         if not species or not species.strip():
             raise ValueError("Species is required")
 
-        # Build a band-aware prompt based on the owner’s age
+        # Build a band-aware prompt based on the owner's age
         band_style = self._pet_style_for_age(owner_age)
 
         prompt = f"""
-**Magical Pet Avatar Creator v2 — {band_style[‘style_name’]}**
+**Magical Pet Avatar Creator v2 -- {band_style['style_name']}**
 
 Transform the reference photo into a fully illustrated magical pet companion for Story Weaver.
 
 **Core Requirements**
 * Creature Stylist: translate animal features into the target art style below.
-* Breed Preservation: MANDATORY — maintain identifiable traits (coat markings, ear shape, tail carriage) so the owner recognizes their specific pet.
+* Breed Preservation: MANDATORY -- maintain identifiable traits (coat markings, ear shape, tail carriage) so the owner recognizes their specific pet.
 * Magical Enhancement: add subtle magical elements that match the art style.
 
 **Technical Configuration**
 * Reference the uploaded photo for body shape, coat markings, and breed anatomy.
 * Species: {species}
 * Breed/Description: {breed_description}
-* Style Anchor: {band_style[‘art_style’]}
+* Style Anchor: {band_style['art_style']}
 
 **Operational Guidelines**
 1. Breed Likeness: use reference photo as primary source; fall back to Species/Breed text if photo quality is low.
-2. Bond-Matched Accessory: {band_style[‘accessory’].format(owner_favorite_color=owner_favorite_color)}
-   — Ensure accessory uses a jewel-tone of Owner’s Favorite Color: {owner_favorite_color}
-   — Add gold or silver trim if the accessory color clashes with the pet’s coat.
-3. Environment: {band_style[‘environment’]}
-4. Final Render: full-body or chest-up portrait, expressive eyes, 1024×1024 square.
+2. Bond-Matched Accessory: {band_style['accessory'].format(owner_favorite_color=owner_favorite_color)}
+   -- Ensure accessory uses a jewel-tone of the owner's Favorite Color: {owner_favorite_color}
+   -- Add gold or silver trim if the accessory color clashes with the pet's coat.
+3. Environment: {band_style['environment']}
+4. Final Render: full-body or chest-up portrait, expressive eyes, 1024x1024 square.
 
 **Output Specifications**
 * Format: single high-resolution square image.
-* Style: {band_style[‘art_style’]}
+* Style: {band_style['art_style']}
 
 **Fallback**
 If reference photo is unclear, use Species/Breed description to generate a representative best-fit pet companion.
