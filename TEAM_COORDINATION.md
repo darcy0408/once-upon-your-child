@@ -1,5 +1,47 @@
 # Team Coordination
 
+## 2026-03-23 (Railway Deployment Fix — Git Repo Size Reduction — Claude Sonnet 4.6)
+
+### Problem
+Frontend service `grand-light` on Railway failed with:
+> "Repository snapshot operation timed out. This may be due to a large repository size or network issues."
+
+Root cause: git pack size had grown to **691MB** due to accumulated binary image assets in history, causing Railway's repo clone step to time out before the Docker build could start.
+
+### Diagnosis
+- `avatarImages/` (402 files, several at 7MB+ each — high-res PNG originals) was committed to git
+- `assets/feelings_faces_backup_20260130_150545/` (125 files) — a local backup that was accidentally committed
+- 1,755 image files total across `assets/`, accumulating across many commits
+- BFG identified 13 blobs >5MB across history
+
+### Fix Applied
+
+| Step | Action |
+|------|--------|
+| 1 | `git rm -r --cached avatarImages/ assets/feelings_faces_backup_20260130_150545/` — removed from tracking |
+| 2 | Updated `.gitignore` to exclude `avatarImages/` (entire dir) and the backup folder going forward |
+| 3 | Committed removal as `chore: untrack avatarImages and feelings backup from git` |
+| 4 | Downloaded **BFG Repo Cleaner 1.14.0** and ran `--delete-folders avatarImages --strip-blobs-bigger-than 5M` — rewrote **1,412 commits** |
+| 5 | `git reflog expire --expire=now --all && git gc --prune=now --aggressive` — compacted pack: **691MB → 564MB** |
+| 6 | `git push origin main --force` — pushed rewritten history to GitHub |
+| 7 | Railway auto-triggered new deployment; all 4 services reached **SUCCESS** |
+
+### Result
+- `grand-light` (frontend), `story-weaver-app` (backend), `lovely-perfection`, and Redis all deployed successfully
+- `avatarImages/` and the backup folder no longer exist in any commit in git history
+- Future growth from large binary originals is blocked by `.gitignore`
+
+### Remaining Concern
+At 564MB the pack is still large — primarily from `assets/images/` (333MB of legitimately needed Flutter assets). If Railway snapshot timeouts recur, the next steps are:
+1. **Git LFS** — convert large binary assets to LFS pointers (preferred long-term fix)
+2. **Second BFG pass** with lower threshold (e.g. `--strip-blobs-bigger-than 2M`) — risky as it may strip needed assets
+3. **CDN offload** — serve static assets from a CDN and reference by URL instead of bundling
+
+### Commits
+- `chore: untrack avatarImages and feelings backup from git` — removal + gitignore update (history-rewritten hash)
+
+---
+
 ## 2026-03-22 (Phase 4: Visual Asset Overhaul — Batch 1 & Priority Batch)
 
 ### Scope Completed
