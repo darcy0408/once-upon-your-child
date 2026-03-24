@@ -89,9 +89,9 @@ class AppBottomNavigationBar extends StatelessWidget {
         ];
         break;
       case AgeBand.adult:
+        // Adults don't have a feelings/emotional-landscape tab.
         tabConfigs = [
           _TabConfig(Icons.auto_stories, 'Stories'),
-          _TabConfig(Icons.psychology, 'Landscape'),
           _TabConfig(Icons.library_books, 'Library'),
           _TabConfig(Icons.settings, 'Settings'),
         ];

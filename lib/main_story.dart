@@ -220,38 +220,44 @@ class _StoryScreenState extends State<StoryScreen> {
       _selectedTabIndex = index;
     });
 
+    // Adults have no feelings tab, so their indices shift:
+    //   Adult:  0=Stories, 1=Library, 2=Settings
+    //   Others: 0=Stories, 1=Feelings, 2=Library, 3=Settings
+    final age = _selectedCharacter?.age ?? 8;
+    final isAdult = ageBandFromAge(age) == AgeBand.adult;
+
+    final int feelingsIdx = isAdult ? -1 : 1;
+    final int libraryIdx  = isAdult ? 1 : 2;
+    final int settingsIdx = isAdult ? 2 : 3;
+
     // Handle navigation to different screens
-    switch (index) {
-      case 0: // Stories - already on this screen
-        break;
-      case 1: // Feelings Garden
-        Navigator.of(context)
-            .push(MaterialPageRoute(
-              builder: (_) => FeelingsGardenScreen(
-                childAge: _selectedCharacter?.age ?? 8,
-              ),
-            ))
-            .then((_) => setState(() => _selectedTabIndex = 0));
-        break;
-      case 2: // Library
-        Navigator.of(context)
-            .push(
-              MaterialPageRoute(builder: (_) => const SavedStoriesScreen()),
-            )
-            .then((_) => setState(() => _selectedTabIndex = 0));
-        break;
-      case 3: // Settings
-        settings_screen.loadLibrary().then((_) {
-          if (mounted) {
-            Navigator.of(context)
-                .push(
-                  MaterialPageRoute(
-                      builder: (_) => settings_screen.SettingsScreen()),
-                )
-                .then((_) => setState(() => _selectedTabIndex = 0));
-          }
-        });
-        break;
+    if (index == 0) {
+      // Stories - already on this screen
+    } else if (index == feelingsIdx) {
+      Navigator.of(context)
+          .push(MaterialPageRoute(
+            builder: (_) => FeelingsGardenScreen(
+              childAge: age,
+            ),
+          ))
+          .then((_) => setState(() => _selectedTabIndex = 0));
+    } else if (index == libraryIdx) {
+      Navigator.of(context)
+          .push(
+            MaterialPageRoute(builder: (_) => const SavedStoriesScreen()),
+          )
+          .then((_) => setState(() => _selectedTabIndex = 0));
+    } else if (index == settingsIdx) {
+      settings_screen.loadLibrary().then((_) {
+        if (mounted) {
+          Navigator.of(context)
+              .push(
+                MaterialPageRoute(
+                    builder: (_) => settings_screen.SettingsScreen()),
+              )
+              .then((_) => setState(() => _selectedTabIndex = 0));
+        }
+      });
     }
   }
 

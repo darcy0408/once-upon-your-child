@@ -2,7 +2,65 @@
 
 ---
 
-## Session Update — 2026-03-23
+## Session Update — 2026-03-23 (Evening)
+
+### Adult Feelings Section Removed
+- Removed "Landscape" (emotional landscape) tab from adult bottom navigation
+- Adults now have 3 tabs: Stories, Library, Settings (instead of 4)
+- Tab handler in `main_story.dart` updated to be band-aware (adult indices shift)
+- Big Feelings Quest was already excluded for adults in scenario filtering
+- Rationale: adults won't use the child-focused Big Feelings flow; therapeutic scenarios still available in wizard
+- Files: `lib/widgets/app_bottom_navigation.dart`, `lib/main_story.dart`
+
+### Companion Image Generation Prompts
+- Wrote detailed art prompts for all 30 companion characters across 6 age bands
+- Each prompt includes band-appropriate art style, palette, composition, and age target
+- Saved to `docs/COMPANION_IMAGE_PROMPTS.md` for future regeneration
+- All 30 companion images already exist and are committed (from `d7bdf48`)
+
+### Sprout Tile Illustration Prompts
+- Wrote 6 watercolor-style prompts for sprout "Imagine It" tiles (Castle, Ocean, Space, Forest, Candy Land, Dinosaurs)
+- Currently these tiles use emoji (🏰🌊🚀🌲🍭🦕) — prompts allow replacing with painted images
+- Prompts included in `docs/COMPANION_IMAGE_PROMPTS.md`
+
+### Deployment Checklist Updates
+- Updated resolved items below with fixes from this session
+
+---
+
+## Session Update — 2026-03-23 (Afternoon)
+
+### Railway Deployment Fixes — All Production Smoke Tests Passing (10/10)
+
+#### H1 — Scenario card images 404 (FIXED)
+- `feeling_selection_step.dart:1002` — added `assets/` prefix guard to `Image.asset()` calls
+- Same pattern used in `magic_review_step.dart`
+
+#### H3 — Live Gemini health probe (FIXED)
+- Added live `client.models.get(model=gemini_model)` probe to both `/health` and `/health/detailed`
+- Returns `gemini_live: true/false` and degrades status on failure
+- File: `backend/routes/health_routes.py`
+
+#### H4 — `rredis://` Redis URL causing Celery import error (FIXED)
+- Railway's managed Redis injects `rredis://` URL scheme via reference variables
+- Added `_fix_redis_scheme()` normalizer in `backend/celery_config.py`
+- Fixed dead-code sync fallback in `backend/routes/story_routes.py` (lines 562-579 were unreachable)
+
+#### Age-Adaptive Hero Avatar Generation
+- Major feature: 5-band style profiles in `backend/services/avatar_generation_service.py`
+- `_hero_style_for_age(age)`: returns art_style, proportions, complexity, tone per band
+- `_analyze_photo_features(photo_bytes)`: Gemini vision pre-analysis
+- `_gender_wardrobe(gender, band_name)`: age-scaled outfit descriptions
+- Prompt template upgraded to v4 (Age-Adaptive Edition)
+- Fixed pre-existing smart-quote syntax errors in pet avatar prompt section
+
+#### Production Smoke Tests — All Passing
+- 10/10 tests pass against `https://story-weaver-app-production.up.railway.app`
+- Includes story generation, health checks, version endpoint
+
+---
+
+## Session Update — 2026-03-23 (Morning)
 
 ### Consent Endpoint 400 Fix (carryover from 3/21)
 - Fixed three field-name mismatches between Flutter frontend and Flask backend on `/api/user/<id>/consent`:
@@ -40,14 +98,14 @@ Compiled from all session updates and LAUNCH_BLOCKERS.md. Items are grouped by s
 
 ### Blockers (must fix before deploy)
 
-- [ ] **B2 — Companion assets load from wrong folder.** `companion_selector_step.dart` loads companion images for creator/adolescent/adult bands from the `adventurer` folder. Companions look mismatched for older users. (Assigned: Gemini Antigravity)
+- [x] ~~**B2 — Companion assets load from wrong folder.**~~ Verified clean — per-band companion folders exist with correct images. (2026-03-23)
 
 ### High Priority (fix before launch)
 
-- [ ] **H1 — Scenario card art 404s.** `assets/images/scenarios/*.png` return 404 in production; adventure/theme cards fall back to emoji. (Assigned: Gemini Antigravity)
-- [ ] **H2 — TypeError during wizard.** Browser console: `TypeError: Cannot read properties of undefined (reading 'toString')` during wizard use. (Assigned: Gemini Antigravity)
-- [ ] **H3 — No live Gemini health probe.** Health endpoints only check config presence, not live Gemini connectivity. (Assigned: Codex)
-- [ ] **H4 — Re-run production smoke tests.** Need to confirm all 10 smoke tests pass after CORS fix. (Assigned: Codex)
+- [x] ~~**H1 — Scenario card art 404s.**~~ Fixed: added `assets/` prefix guard in `feeling_selection_step.dart`. (2026-03-23)
+- [x] ~~**H2 — TypeError during wizard.**~~ Verified clean — could not reproduce; likely resolved by prior fixes. (2026-03-23)
+- [x] ~~**H3 — No live Gemini health probe.**~~ Fixed: added live `models.get()` probe to health endpoints. (2026-03-23)
+- [x] ~~**H4 — Production smoke tests.**~~ All 10/10 passing after `rredis://` fix and dead-code sync fallback repair. (2026-03-23)
 - [ ] **Illustration fallback doesn't forward companions.** `_generateInlineIllustrations()` in `magic_review_step.dart` omits companion data, so fallback illustrations may not include them.
 - [ ] **Coloring pages don't include companions.** `story_result_screen.dart` calls `generateColoringPagesFromStory()` without passing companion data.
 - [ ] **ColoringSettingsDialog page count hardcoded to 1.** Multi-page coloring books are supported by the backend but the UI removed the choice.
@@ -83,8 +141,9 @@ Compiled from all session updates and LAUNCH_BLOCKERS.md. Items are grouped by s
 - [x] ~~Consent POST 400 bug~~ (fixed 2026-03-21, field name mismatch)
 - [x] ~~Backend cold start 200s+ on Windows~~ (fixed, unused import removed)
 - [x] ~~404 → 500 error handler~~ (fixed 2026-03-15)
-- [x] ~~`rredis` module error in production~~ (resolved, stale deploy)
+- [x] ~~`rredis` module error in production~~ (fixed 2026-03-23, `_fix_redis_scheme()` in celery_config.py)
 - [x] ~~Debug print() cleanup~~ (fixed 2026-03-18)
+- [x] ~~Adult feelings section~~ (removed 2026-03-23, adults get Stories/Library/Settings only)
 - [x] ~~Android build JDK 25 incompatibility~~ (fixed, pinned to JDK 21)
 - [x] ~~Git hook Win32 error 5~~ (fixed, removed no-op hook)
 - [x] ~~UX audit fix plan~~ (all 20 tasks verified complete)
