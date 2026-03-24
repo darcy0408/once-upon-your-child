@@ -538,7 +538,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
     if (widget.trackAnalytics) {
       _trackStoryView();
     }
-    if (_effectiveAge <= 7) {
+    if (ageBandFromAge(_effectiveAge).index <= AgeBand.explorer.index) {
       _initAutoTts();
     }
   }
@@ -2799,6 +2799,7 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
                     builder: (_) => StoryReaderScreen(
                       storyText: widget.storyText,
                       title: widget.title,
+                      theme: widget.theme,
                     ),
                   ),
                 ),

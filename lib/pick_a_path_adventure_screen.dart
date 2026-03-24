@@ -10,6 +10,7 @@ import 'services/interactive_story_service.dart';
 import 'services/chronicle_service.dart';
 import 'subscription_service.dart';
 import 'theme/app_theme.dart';
+import 'theme/age_band_theme.dart';
 import 'package:story_weaver_app/widgets/app_button.dart';
 import 'widgets/app_card.dart';
 import 'widgets/error_message.dart';
@@ -92,7 +93,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.character.age <= 7) {
+    if (ageBandFromAge(widget.character.age).index <= AgeBand.explorer.index) {
       _initTts();
     }
     if (widget.existingStoryId != null) {

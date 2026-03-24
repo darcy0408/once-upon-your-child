@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "fetch": {
+      "type": "stdio",
+      "command": "mcp-server-fetch",
+      "args": [],
+      "env": {}
+    },
+    "puppeteer": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-puppeteer"],
+      "env": {}
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "C:/dev/story-weaver-app"],
+      "env": {}
+    }
+  }
+}
