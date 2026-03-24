@@ -1296,3 +1296,50 @@ Robin is a guardian/protector robin bird added as a companion in every age band.
 ### Pending / Still Needs Images
 - All band-specific companions need actual images: Storm Hawk, Shadow Lynx, Iron Golem, Void Sprite (adventurer/creator/adolescent/adult), Ember Dragon, Moon Owl, Bloom Sprite, Star Fox (explorer), Fluffy Dragon, Magic Bunny, Shining Puppy, Tiny Fairy (sprout)
 - Currently placeholder `.png` files exist in each band folder for non-Robin companions
+
+---
+
+## SESSION UPDATE — 2026-03-23 (Deployment Fixes + Age-Adaptive Hero Avatars)
+
+### Deployment Blockers Resolved
+
+| Issue | Was | Fix |
+|-------|-----|-----|
+| B2 — Companion wrong folder | Confirmed already fixed | All 6 bands use correct asset paths |
+| H1 — Scenario card images blank | `feeling_selection_step.dart` missing `assets/` prefix in `Image.asset()` | Added prefix guard matching `magic_review_step.dart` |
+| H2 — TypeError during wizard | No actual null `.toString()` calls found | Already clean |
+| H3 — Gemini health probe | Only checked API key presence | Now makes live `models.get()` call in both `/health` and `/health/detailed` |
+| H4 — Story gen 500 in production | Two bugs: `rredis://` broker URL + unreachable sync fallback | `celery_config.py` normalizes `rredis://` → `redis://`; `story_routes.py` sync retry now reachable |
+| Smart-quote syntax errors | Pet avatar prompt had Unicode curly quotes in f-string dict lookups | Replaced with straight quotes |
+
+### H4 Deep Dive — rredis:// Issue
+Railway's managed Redis service injects `REDIS_URL` with scheme `rredis://` (non-standard). Celery interprets the URL scheme as a transport module name and tries `import rredis`, which fails. The code fix normalizes the scheme at startup in `celery_config.py`. The env vars in Railway (`CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`) use `${{Redis.REDIS_URL}}` reference variables — cannot be changed at source since Railway controls the format.
+
+Additionally, `story_routes.py` had an unreachable sync fallback (lines 562-579) after the async except block already returned. Moved the sync retry into the async except handler so when Celery broker fails, we attempt synchronous generation before returning 500.
+
+### Age-Adaptive Hero Avatar Generation
+**File:** `backend/services/avatar_generation_service.py`
+
+Expanded hero avatar prompt from 3 tiers to 5 developmental bands:
+
+| Band | Ages | Art Style | Key Differences |
+|------|------|-----------|-----------------|
+| Sprout | 3-5 | Soft watercolor-adjacent 3D | Big head ratio, chubby limbs, 2-3 color costume |
+| Explorer | 6-8 | Bright Pixar cartoon | One signature accessory, playful tone |
+| Adventurer | 9-11 | Stylized semi-realistic | Utility gear, dynamic posture, cool tone |
+| Creator | 12-14 | Graphic novel style | Personal fashion, identity-forward |
+| 15+ | 15-99 | Stylized realistic/anime | Full outfit detail, sophisticated |
+
+New methods:
+- `_hero_style_for_age(age)` — 5-band style profile lookup
+- `_analyze_photo_features(photo_bytes)` — Gemini vision pre-analysis of uploaded photo (hair, skin tone, distinguishing features) injected into prompt
+- `_gender_wardrobe(gender, band_name)` — age-scaled gender-specific outfit descriptions
+
+### Production Smoke Test Results (pre-fix)
+- 7/10 tests passed (health, auth, CORS, contracts)
+- Story generation returned 500: `No module named 'rredis'` — fixed by broker URL normalization
+- Awaiting Railway redeploy to re-run full suite
+
+### Dependencies Updated
+- `google-genai` 1.65.0 → 1.68.0
+- `sentry-sdk` 2.54.0 → 2.55.0
