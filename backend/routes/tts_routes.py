@@ -97,8 +97,8 @@ def create_tts_blueprint(limiter, require_auth):
         if not text:
             return jsonify({"error": "text is required"}), 400
 
-        # Strip markdown/formatting before truncating so we don't waste
-        # the 5 000-char budget on asterisks and pound signs.
+        # Strip markdown/formatting before sending so we don't waste
+        # the per-chunk budget on asterisks and pound signs.
         try:
             from backend.elevenlabs_tts_service import clean_text_for_tts
         except ImportError:
@@ -110,14 +110,26 @@ def create_tts_blueprint(limiter, require_auth):
 
         _, default_voice_id = _get_voice_list()
         voice_id = (data.get("voice_id") or "").strip() or default_voice_id
-
-        # Truncate to 5 000 chars (~1 000 words) to keep latency and cost sane
-        if len(text) > 5000:
-            logger.info("TTS text truncated from %d to 5000 chars", len(text))
-            text = text[:5000]
+        character_voice_id = (data.get("character_voice_id") or "").strip() or None
 
         try:
-            audio_bytes = service.generate_speech(text=text, voice_id=voice_id)
+            if character_voice_id:
+                # Dialogue-differentiated synthesis: narrator + character voices
+                logger.info(
+                    "Dialogue synthesis (%d chars) — narrator=%s character=%s",
+                    len(text), voice_id, character_voice_id,
+                )
+                audio_bytes = service.generate_speech_with_dialogue(
+                    text=text,
+                    narrator_voice_id=voice_id,
+                    character_voice_id=character_voice_id,
+                )
+            elif len(text) > 5000:
+                # Long story — chunked synthesis to avoid truncation
+                logger.info("Long story (%d chars) — using chunked synthesis", len(text))
+                audio_bytes = service.generate_speech_chunked(text=text, voice_id=voice_id)
+            else:
+                audio_bytes = service.generate_speech(text=text, voice_id=voice_id)
         except Exception as e:
             logger.error("ElevenLabs TTS synthesis error: %s", e)
             return jsonify({"error": "Synthesis failed", "message": str(e)}), 500

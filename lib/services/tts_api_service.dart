@@ -22,6 +22,7 @@ class TtsApiService {
   static Future<Uint8List?> synthesize(
     String text, {
     String? voiceId,
+    String? characterVoiceId,
   }) async {
     if (text.trim().isEmpty) return null;
 
@@ -30,16 +31,19 @@ class TtsApiService {
       final uri = Uri.parse('$baseUrl/tts/synthesize');
       final headers = await ApiServiceManager.authHeaders();
 
+      final body = <String, dynamic>{
+        'text': text,
+        'voice_id': voiceId ?? ElevenLabsVoice.defaultVoiceId,
+        if (characterVoiceId != null) 'character_voice_id': characterVoiceId,
+      };
+
       final response = await http
           .post(
             uri,
             headers: headers,
-            body: jsonEncode({
-              'text': text,
-              'voice_id': voiceId ?? ElevenLabsVoice.defaultVoiceId,
-            }),
+            body: jsonEncode(body),
           )
-          .timeout(const Duration(seconds: 45));
+          .timeout(const Duration(seconds: 300));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
