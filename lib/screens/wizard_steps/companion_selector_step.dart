@@ -109,22 +109,13 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             imagePath: 'assets/images/companions/sprout/shining_puppy.png',
           ),
           Companion(
-            id: 'tiny_fairy',
-            emoji: '🧚',
-            name: 'Tiny Fairy',
-            color: const Color(0xFFAB47BC),
-            greeting: 'Oh! I\'ve been looking for you! I have ideas!',
-            description: 'Thumb-sized with very big opinions. She grants tiny perfect wishes and always leaves dream dust behind.',
-            imagePath: 'assets/images/companions/sprout/tiny_fairy.png',
-          ),
-          Companion(
             id: 'robin',
-            emoji: '🐦‍⬛',
+            emoji: '🐦',
             name: 'Robin',
             color: const Color(0xFFE53935),
             greeting: 'CHIRP CHIRP! ...You\'re safe. I checked.',
             description: 'Very small, very loud, completely sure you need protecting. She brings tiny gifts and reports on everything.',
-            imagePath: 'assets/images/companions/sprout/robin.jpg',
+            imagePath: 'assets/images/companions/sprout/robin.png',
           ),
         ];
         break;
@@ -149,15 +140,6 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
             imagePath: 'assets/images/companions/explorer/moon_owl.png',
           ),
           Companion(
-            id: 'bloom_sprite',
-            emoji: '🌸',
-            name: 'Bloom Sprite',
-            color: const Color(0xFF66BB6A),
-            greeting: 'Oh! Something grew here. It knew you were coming.',
-            description: 'Flowers bloom in her footprints. She believes gardens prove things get better — and she\'s right.',
-            imagePath: 'assets/images/companions/explorer/bloom_sprite.png',
-          ),
-          Companion(
             id: 'star_fox',
             emoji: '🦊',
             name: 'Star Fox',
@@ -168,208 +150,172 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
           ),
           Companion(
             id: 'robin',
-            emoji: '🐦‍⬛',
+            emoji: '🐦',
             name: 'Robin',
             color: const Color(0xFFE53935),
             greeting: 'Three chirps: stop. One whistle: safe. Two clicks: run. Ready?',
             description: 'Has a very clear warning system and has launched herself at harmless pinecones. Checks you\'re okay before she\'d ever admit she was worried.',
-            imagePath: 'assets/images/companions/explorer/robin.jpg',
+            imagePath: 'assets/images/companions/explorer/robin.png',
           ),
         ];
         break;
       case AgeBand.adventurer:
         defaultCompanions = [
           Companion(
-            id: 'storm_hawk',
-            emoji: '🦅',
-            name: 'Storm Hawk',
-            color: const Color(0xFF42A5F5),
-            greeting: 'I\'ve already scouted ahead. Here\'s what you need to know.',
-            description: 'Reports the truth without softening it. Hard to impress — "good call" from her actually means something.',
-            imagePath: 'assets/images/companions/adventurer/storm_hawk.png',
+            id: 'thunder_wolf',
+            emoji: '🐺',
+            name: 'Thunder Wolf',
+            color: const Color(0xFF5C6BC0),
+            greeting: 'Pack moves together. I\'ve got your left side.',
+            description: 'Runs ahead to scout, always circles back. Will howl the honest truth before letting you walk into something unprepared.',
+            imagePath: 'assets/images/companions/adventurer/thunder_wolf.png',
           ),
           Companion(
-            id: 'shadow_lynx',
-            emoji: '🐱',
-            name: 'Shadow Lynx',
+            id: 'shadow_panther',
+            emoji: '🐈‍⬛',
+            name: 'Shadow Panther',
             color: const Color(0xFF7E57C2),
-            greeting: 'I don\'t know yet. But I will.',
-            description: 'Moves along the edges, noticing exits and things that don\'t add up. When he trusts you, his eyes turn gold.',
-            imagePath: 'assets/images/companions/adventurer/shadow_lynx.png',
+            greeting: 'I noticed something. Want to hear it?',
+            description: 'Moves silently and sees everything. When she decides you\'re worth trusting, her eyes catch the light gold.',
+            imagePath: 'assets/images/companions/adventurer/shadow_panther.png',
           ),
           Companion(
-            id: 'iron_golem',
-            emoji: '🤖',
-            name: 'Iron Golem',
-            color: const Color(0xFF78909C),
-            greeting: 'I stand with you. I will tell you if I cannot.',
-            description: 'Speaks slowly and permanently. Will not do something wrong even if everyone votes for it.',
-            imagePath: 'assets/images/companions/adventurer/iron_golem.png',
-          ),
-          Companion(
-            id: 'void_sprite',
-            emoji: '✨',
-            name: 'Void Sprite',
-            color: const Color(0xFFE040FB),
-            greeting: 'I chose you on purpose.',
-            description: 'Flickers at the edge of reality. She doesn\'t try to be mysterious — the words just don\'t translate well.',
-            imagePath: 'assets/images/companions/adventurer/void_sprite.png',
+            id: 'crystal_phoenix',
+            emoji: '🦅',
+            name: 'Crystal Phoenix',
+            color: const Color(0xFFFFCA28),
+            greeting: 'I\'ve been here before. Different shape, same fire.',
+            description: 'Falls apart and comes back, every time. Carries old scars like proof. Not afraid of the hard parts.',
+            imagePath: 'assets/images/companions/adventurer/crystal_phoenix.png',
           ),
           Companion(
             id: 'robin',
-            emoji: '🐦‍⬛',
+            emoji: '🐦',
             name: 'Robin',
             color: const Color(0xFFE53935),
-            greeting: '*three sharp chirps* — wait. Okay. One long note. Safe to come.',
+            greeting: '*three sharp chirps* — wait. One long note. Safe to come.',
             description: 'Very low threshold for danger. Loud, fearless, sometimes wrong, never slower for it. Brings gifts when the danger clears.',
-            imagePath: 'assets/images/companions/adventurer/robin.jpg',
+            imagePath: 'assets/images/companions/adventurer/robin.png',
           ),
         ];
         break;
       case AgeBand.creator:
         defaultCompanions = [
           Companion(
-            id: 'storm_hawk',
-            emoji: '🦅',
-            name: 'Storm Hawk',
-            color: const Color(0xFF42A5F5),
-            greeting: 'What did you see up there? I want to compare notes.',
-            description: 'Has learned to pull up before committing. Notices when you\'ve changed but waits until you\'re ready.',
-            imagePath: 'assets/images/companions/creator/storm_hawk.png',
+            id: 'thunder_wolf',
+            emoji: '🐺',
+            name: 'Thunder Wolf',
+            color: const Color(0xFF5C6BC0),
+            greeting: 'I know what you\'re building. I want to help.',
+            description: 'Thinks in systems and loyalty. Will push back on bad ideas, but never on you.',
+            imagePath: 'assets/images/companions/creator/thunder_wolf.png',
           ),
           Companion(
-            id: 'shadow_lynx',
-            emoji: '🐱',
-            name: 'Shadow Lynx',
+            id: 'shadow_panther',
+            emoji: '🐈‍⬛',
+            name: 'Shadow Panther',
             color: const Color(0xFF7E57C2),
             greeting: 'Something feels off. Give me a minute.',
-            description: 'Has begun walking beside you instead of always in the shadows. Admits when he\'s been wrong about people.',
-            imagePath: 'assets/images/companions/creator/shadow_lynx.png',
+            description: 'Has begun walking beside you instead of always in the shadows. Catches the things you almost missed.',
+            imagePath: 'assets/images/companions/creator/shadow_panther.png',
           ),
           Companion(
-            id: 'iron_golem',
-            emoji: '🤖',
-            name: 'Iron Golem',
-            color: const Color(0xFF78909C),
-            greeting: 'What do you think first? I want to hear it.',
-            description: 'Has started asking what you think before offering his knowledge. Remembers small things you said weeks ago.',
-            imagePath: 'assets/images/companions/creator/iron_golem.png',
-          ),
-          Companion(
-            id: 'void_sprite',
-            emoji: '✨',
-            name: 'Void Sprite',
-            color: const Color(0xFFE040FB),
-            greeting: 'You already know what I\'m going to say.',
-            description: 'Has a private name for you she never explains. Takes your choices more seriously than anyone else\'s.',
-            imagePath: 'assets/images/companions/creator/void_sprite.png',
+            id: 'crystal_phoenix',
+            emoji: '🦅',
+            name: 'Crystal Phoenix',
+            color: const Color(0xFFFFCA28),
+            greeting: 'That version didn\'t work. Good. Now we know.',
+            description: 'Transforms failure into fuel without making it a lesson. The comeback is always more interesting than the fall.',
+            imagePath: 'assets/images/companions/creator/crystal_phoenix.png',
           ),
           Companion(
             id: 'robin',
-            emoji: '🐦‍⬛',
+            emoji: '🐦',
             name: 'Robin',
             color: const Color(0xFFE53935),
             greeting: 'I have a new sound for this. You\'ll know it when you need it.',
-            description: 'Louder than you remember and you\'ve stopped being surprised. Has strong opinions but follows your lead anyway.',
-            imagePath: 'assets/images/companions/creator/robin.jpg',
+            description: 'Louder than you remember and you\'ve stopped being surprised. Strong opinions, follows your lead anyway.',
+            imagePath: 'assets/images/companions/creator/robin.png',
           ),
         ];
         break;
       case AgeBand.adolescent:
         defaultCompanions = [
           Companion(
-            id: 'storm_hawk',
-            emoji: '🦅',
-            name: 'Storm Hawk',
-            color: const Color(0xFF42A5F5),
-            greeting: 'I\'m already moving. Catch up or redirect me.',
-            description: 'Already three moves ahead. Says difficult things directly, then watches how you carry them.',
-            imagePath: 'assets/images/companions/adolescent/storm_hawk.png',
+            id: 'thunder_wolf',
+            emoji: '🐺',
+            name: 'Thunder Wolf',
+            color: const Color(0xFF5C6BC0),
+            greeting: 'I\'m already moving. Redirect me if I\'m wrong.',
+            description: 'Three moves ahead, says difficult things directly. Chosen you as his person — not something he does lightly.',
+            imagePath: 'assets/images/companions/adolescent/thunder_wolf.png',
           ),
           Companion(
-            id: 'shadow_lynx',
-            emoji: '🐱',
-            name: 'Shadow Lynx',
+            id: 'shadow_panther',
+            emoji: '🐈‍⬛',
+            name: 'Shadow Panther',
             color: const Color(0xFF7E57C2),
             greeting: 'That\'s not actually what you believe, is it?',
-            description: 'Reads you as closely as he reads rooms. His loyalty was built deliberately, and he knows exactly when.',
-            imagePath: 'assets/images/companions/adolescent/shadow_lynx.png',
+            description: 'Reads you as closely as she reads rooms. Her loyalty was built deliberately, and she knows exactly when.',
+            imagePath: 'assets/images/companions/adolescent/shadow_panther.png',
           ),
           Companion(
-            id: 'iron_golem',
-            emoji: '🤖',
-            name: 'Iron Golem',
-            color: const Color(0xFF78909C),
-            greeting: 'I\'m still here.',
-            description: 'Carries enough to know weight is better shared. Simply still there after everything.',
-            imagePath: 'assets/images/companions/adolescent/iron_golem.png',
-          ),
-          Companion(
-            id: 'void_sprite',
-            emoji: '✨',
-            name: 'Void Sprite',
-            color: const Color(0xFFE040FB),
-            greeting: 'I sense it too. We don\'t have to name it yet.',
-            description: 'More present than ever. Tells you what she senses in you — things you haven\'t said — without accusation.',
-            imagePath: 'assets/images/companions/adolescent/void_sprite.png',
+            id: 'crystal_phoenix',
+            emoji: '🦅',
+            name: 'Crystal Phoenix',
+            color: const Color(0xFFFFCA28),
+            greeting: 'I\'ve burned down before. The next version was better.',
+            description: 'Proof that reinvention is survivable. Doesn\'t romanticize the hard parts — just lived through them and kept going.',
+            imagePath: 'assets/images/companions/adolescent/crystal_phoenix.png',
           ),
           Companion(
             id: 'robin',
-            emoji: '🐦‍⬛',
+            emoji: '🐦',
             name: 'Robin',
             color: const Color(0xFFE53935),
             greeting: 'I\'m watching you more than the path right now. You okay?',
             description: 'Not calmer, but more precise. Watches you more than she scouts the path these days.',
-            imagePath: 'assets/images/companions/adolescent/robin.jpg',
+            imagePath: 'assets/images/companions/adolescent/robin.png',
           ),
         ];
         break;
       case AgeBand.adult:
         defaultCompanions = [
           Companion(
-            id: 'storm_hawk',
-            emoji: '🦅',
-            name: 'Storm Hawk',
-            color: const Color(0xFF42A5F5),
-            greeting: 'Wind\'s shifting. Here\'s what I see.',
-            description: 'Not here to protect you — here to fly in the same storm. Reads wind and exits as reflex.',
-            imagePath: 'assets/images/companions/adult/storm_hawk.png',
+            id: 'thunder_wolf',
+            emoji: '🐺',
+            name: 'Thunder Wolf',
+            color: const Color(0xFF5C6BC0),
+            greeting: 'Wind\'s coming from the east. Here\'s what I see.',
+            description: 'Not here to protect you — here to run the same storm. Chosen family, not assigned companion.',
+            imagePath: 'assets/images/companions/adult/thunder_wolf.png',
           ),
           Companion(
-            id: 'shadow_lynx',
-            emoji: '🐱',
-            name: 'Shadow Lynx',
+            id: 'shadow_panther',
+            emoji: '🐈‍⬛',
+            name: 'Shadow Panther',
             color: const Color(0xFF7E57C2),
             greeting: 'The thing no one\'s saying — it\'s this.',
-            description: 'Names what everyone else is avoiding. Comfortable with discomfort. Honest about what he doesn\'t know.',
-            imagePath: 'assets/images/companions/adult/shadow_lynx.png',
+            description: 'Names what everyone else avoids. Comfortable with discomfort. Honest about what she doesn\'t know.',
+            imagePath: 'assets/images/companions/adult/shadow_panther.png',
           ),
           Companion(
-            id: 'iron_golem',
-            emoji: '🤖',
-            name: 'Iron Golem',
-            color: const Color(0xFF78909C),
-            greeting: 'The door is already there. I\'ll be here when you\'re ready.',
-            description: 'Has outlasted almost every certainty he once held. Gives counsel only when the door is already there.',
-            imagePath: 'assets/images/companions/adult/iron_golem.png',
-          ),
-          Companion(
-            id: 'void_sprite',
-            emoji: '✨',
-            name: 'Void Sprite',
-            color: const Color(0xFFE040FB),
-            greeting: 'I chose you long ago. Still choosing.',
-            description: 'Chose you long ago and keeps choosing, which she finds quietly interesting. Stays for her own reasons.',
-            imagePath: 'assets/images/companions/adult/void_sprite.png',
+            id: 'crystal_phoenix',
+            emoji: '🦅',
+            name: 'Crystal Phoenix',
+            color: const Color(0xFFFFCA28),
+            greeting: 'I stopped counting the times. It\'s not the point.',
+            description: 'Has outlasted every certainty it once held. The fire isn\'t dramatic anymore — just steady. Still warm.',
+            imagePath: 'assets/images/companions/adult/crystal_phoenix.png',
           ),
           Companion(
             id: 'robin',
-            emoji: '🐦‍⬛',
+            emoji: '🐦',
             name: 'Robin',
             color: const Color(0xFFE53935),
             greeting: 'I know. I know. I still had to check.',
             description: 'Still the same bird — loud, loyal, occasionally wrong. Her gifts are better now because she\'s learned what you need.',
-            imagePath: 'assets/images/companions/adult/robin.jpg',
+            imagePath: 'assets/images/companions/adult/robin.png',
           ),
         ];
         break;
@@ -390,7 +336,17 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
       );
     }).toList();
 
-    return [...customPets, ...defaultCompanions];
+    // Generic "Bring Your Pet" card — shown when no pet has been added yet
+    final yourPetCard = Companion(
+      id: 'your_pet',
+      emoji: '🐾',
+      name: 'Your Pet',
+      color: const Color(0xFF8D6E63),
+      greeting: 'Add a photo and I\'ll become part of the story!',
+      description: 'Bring your real pet along. Add their name, species, and a photo to create their storybook character.',
+    );
+
+    return [...customPets, ...defaultCompanions, yourPetCard];
   }
 
   String _getEmojiForSpecies(String? species) {
@@ -415,6 +371,11 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
   }
 
   void _toggleCompanion(Companion companion) {
+    // "Your Pet" card is a prompt to add a pet, not a selectable companion
+    if (companion.id == 'your_pet') {
+      _showAddPetDialog();
+      return;
+    }
     setState(() {
       if (_selectedCompanions.contains(companion.id)) {
         _selectedCompanions.remove(companion.id);
@@ -428,6 +389,69 @@ class _CompanionSelectorStepState extends State<CompanionSelectorStep> {
         }
       }
     });
+  }
+
+  void _showAddPetDialog() {
+    final nameCtrl = TextEditingController();
+    String selectedSpecies = 'Dog';
+    const species = ['Dog', 'Cat', 'Bird', 'Bunny', 'Hamster', 'Fish', 'Reptile', 'Other'];
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Add Your Pet'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Pet\'s name',
+                  hintText: 'e.g. Biscuit',
+                ),
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: selectedSpecies,
+                decoration: const InputDecoration(labelText: 'Type of animal'),
+                items: species
+                    .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                    .toList(),
+                onChanged: (v) => setDialogState(() => selectedSpecies = v ?? 'Dog'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final name = nameCtrl.text.trim();
+                if (name.isEmpty) return;
+                Navigator.pop(ctx);
+                setState(() {
+                  widget.wizardData.pets.add({
+                    'name': name,
+                    'species': selectedSpecies,
+                    'personality': '',
+                  });
+                  // _magicalCompanions is a getter that rebuilds automatically
+                  // Auto-select the new pet
+                  _selectedCompanions.add(name);
+                  widget.wizardData.selectedCompanions.add(name);
+                  widget.wizardData.companionNames.add(name);
+                });
+              },
+              child: const Text('Add to Story'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _audioPrompt() {

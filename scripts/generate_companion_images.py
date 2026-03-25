@@ -50,215 +50,181 @@ MODEL = 'models/imagen-4.0-generate-001'
 # Prompts — kept in sync with docs/COMPANION_IMAGE_PROMPTS.md
 # ---------------------------------------------------------------------------
 
+# Style note: all images use a deep dark background (near-black or deep navy)
+# baked into the image so there is no transparency/checkerboard.
+# Characters are lit warmly from below-front to feel inviting, not cold.
+
 COMPANION_PROMPTS = {
     'sprout': {
         'fluffy_dragon': (
-            "A tiny, round baby dragon with soft fluffy fur instead of scales, in gentle watercolor style. "
-            "Pastel lavender body with a cream-colored belly. Oversized sparkling eyes full of wonder. "
-            "Tiny wings that look like cotton candy puffs. A small, harmless flame-shaped glow on the tip of its tail (no actual fire). "
-            "Sitting in a meadow of oversized daisies. Cheerful, cozy, and non-threatening. "
-            "Children's storybook illustration, ages 2-4. Square format, no text."
+            "A tiny round baby dragon with soft fluffy fur instead of scales, on a deep dark velvety background. "
+            "Pastel lavender body, cream belly, oversized sparkling eyes. Cotton-candy puff wings. "
+            "Harmless warm glow at tail tip. Warm golden front lighting. "
+            "Deep near-black background, no transparency. Soft watercolor style. Ages 2-4. Square format, no text."
         ),
         'magic_bunny': (
-            "An adorable round bunny with impossibly soft white fur and a faint shimmer of magic sparkles, in gentle watercolor style. "
-            "Big floppy ears with pink insides. Holding a tiny glowing star between its paws. "
-            "Wearing a small flower crown of daisies. Sitting on a puffy cloud in a pastel sky. "
-            "Warm, dreamy, and huggable. Children's storybook illustration, ages 2-4. Square format, no text."
+            "An adorable round bunny with soft white fur and a shimmer of magic sparkles, on a deep dark background. "
+            "Big floppy ears, pink insides. Holding a tiny glowing star. Daisy flower crown. "
+            "Warm golden rim light. Deep near-black background, no transparency. "
+            "Soft watercolor style. Ages 2-4. Square format, no text."
         ),
         'shining_puppy': (
-            "A small golden puppy with a warm, glowing aura around it, in gentle watercolor style. "
-            "Soft, fluffy fur that catches the light like sunshine. Big round brown eyes full of love. "
-            "A tiny cape made of rainbow ribbons trailing behind. Playfully bouncing in a field of soft grass and butterflies. "
-            "Joyful and energetic but gentle. Children's storybook illustration, ages 2-4. Square format, no text."
-        ),
-        'tiny_fairy': (
-            "A miniature fairy no bigger than a daisy, in gentle watercolor style. "
-            "Soft peach skin with rosy cheeks. Translucent iridescent wings like soap bubbles. "
-            "Wearing a dress made of flower petals (pink and yellow). Sprinkling tiny golden sparkles from fingertips. "
-            "Standing on a mushroom cap in a mossy garden. Sweet, magical, and delicate. "
-            "Children's storybook illustration, ages 2-4. Square format, no text."
+            "A small golden puppy with a warm glowing aura, on a deep dark background. "
+            "Fluffy fur in warm amber light. Big round brown eyes full of love. Tiny rainbow ribbon cape. "
+            "Warm amber front lighting, dark background with soft glow behind. "
+            "Deep near-black background, no transparency. Soft watercolor style. Ages 2-4. Square format, no text."
         ),
         'robin': (
-            "A friendly round robin bird with bright red-orange breast, in gentle watercolor style. "
-            "Soft brown feathers on wings and back. Big bright eyes full of curiosity. "
-            "Slightly oversized head for extra cuteness. Perched on a wooden fence post with wildflowers nearby. "
-            "Warm morning light. Cheerful and approachable. Children's storybook illustration, ages 2-4. Square format, no text."
+            "A round friendly robin with a bright red-orange breast, on a deep dark background. "
+            "Slightly oversized cute head, big bright curious eyes. Perched on a short wooden post. "
+            "Warm front lighting, soft amber glow behind. "
+            "Deep near-black background, no transparency. Soft watercolor style. Ages 2-4. Square format, no text."
         ),
     },
     'explorer': {
         'ember_dragon': (
-            "A small friendly dragon with deep orange and amber scales that flicker like candlelight, in bright storybook illustration style. "
-            "Soft expressive eyes, rounded snout, small functional wings. Wearing a tiny explorer's backpack and a compass around its neck. "
-            "Breathing a small puff of colorful sparkles (not fire). Standing at the entrance of a candy-colored cave. "
-            "Curious and adventurous expression. Children's storybook illustration, ages 5-7. Square format, no text."
+            "A friendly small dragon with warm amber-orange scales, on a deep dark background. "
+            "Rounded snout, soft expressive eyes, small wings. Tiny explorer's backpack and compass. "
+            "Puff of colorful sparkles (not fire). Warm amber front lighting. "
+            "Deep near-black background, no transparency. Bright storybook style. Ages 5-7. Square format, no text."
         ),
         'moon_owl': (
-            "A charming small owl with silver-white feathers and large luminous golden eyes, in bright storybook illustration style. "
-            "A crescent moon symbol on its forehead that glows softly. Slightly oversized head with tufted ears. "
-            "Perched on a glowing lantern in a twilight garden with fireflies. One wing extended as if pointing the way. "
-            "Wise and gentle expression. Children's storybook illustration, ages 5-7. Square format, no text."
-        ),
-        'bloom_sprite': (
-            "A cheerful tiny fairy with green hair made of flower petals and vine-like arms, in bright storybook illustration style. "
-            "Delicate butterfly-like wings with flower patterns. Surrounded by blooming flowers that open as she passes. "
-            "Wearing a dress woven from leaves and tiny blossoms. Flying in a sun-dappled forest with a trail of flower petals behind her. "
-            "Warm and nurturing expression. Children's storybook illustration, ages 5-7. Square format, no text."
+            "A charming small owl with silver-white feathers and large golden eyes, on a deep dark background. "
+            "Soft crescent moon symbol glowing on forehead. Tufted ears, warm welcoming expression. "
+            "One wing extended. Warm amber-silver lighting. "
+            "Deep near-black background, no transparency. Bright storybook style. Ages 5-7. Square format, no text."
         ),
         'star_fox': (
-            "A playful young fox with bright amber fur and a bushy tail that sparkles with tiny stars, in bright storybook illustration style. "
-            "Sharp friendly eyes and perky pointed ears. Wearing a celestial navigator's scarf with constellation patterns. "
-            "Running through a meadow at night, leaving a glittery trail. Stars visible in a twilight sky behind. "
-            "Swift and clever expression. Children's storybook illustration, ages 5-7. Square format, no text."
+            "A playful young fox with amber fur and a tail sparkling with tiny stars, on a deep dark background. "
+            "Friendly eyes, perky ears, star-patterned neckerchief. Sitting alert and happy, tail wrapped around paws. "
+            "Warm golden-amber lighting, tiny star specks in dark background. "
+            "Deep near-black background, no transparency. Bright storybook style. Ages 5-7. Square format, no text."
         ),
         'robin': (
-            "A cheerful robin bird with bright red-orange breast, in bright storybook illustration style. "
-            "Wearing a tiny leather aviator cap and goggles pushed up. Slightly larger and more detailed than a toddler illustration. "
-            "Perched on a signpost at a forest crossroads, pointing the way with one wing. "
-            "A tiny satchel with adventure stickers. Confident and helpful expression. "
-            "Children's storybook illustration, ages 5-7. Square format, no text."
+            "A cheerful robin with a bright red-orange breast, on a deep dark background. "
+            "Tiny aviator cap with goggles pushed up. Perched on a signpost, one wing pointing forward. "
+            "Adventure sticker satchel. Warm amber front lighting. "
+            "Deep near-black background, no transparency. Bright storybook style. Ages 5-7. Square format, no text."
         ),
     },
     'adventurer': {
-        'storm_hawk': (
-            "A fierce and noble hawk with storm-grey feathers edged in electric blue, in dynamic semi-realistic illustration style. "
-            "Sharp intelligent eyes that miss nothing. Powerful wingspan partially spread, wind-ruffled feathers. "
-            "A leather scout's harness with a tiny mission badge. Banking in flight over a dramatic mountain range with storm clouds building. "
-            "Alert, fearless, and trustworthy expression. Middle-grade book illustration, ages 8-10. Square format, no text."
+        'thunder_wolf': (
+            "A noble wolf with silver-grey fur and warm amber eyes, lit by firelight from below. "
+            "Deep dark forest background — near-black with glowing ember tones. No transparency. "
+            "Powerful but approachable: sitting alert, one paw forward, tail curved. "
+            "A worn leather scout's collar with a carved wooden charm. "
+            "Warm inviting glow on the fur, dark background. Semi-realistic illustration, ages 8-10. Square format, no text."
         ),
-        'shadow_lynx': (
-            "A sleek lynx with dark charcoal fur and subtle silver dappling, in dynamic semi-realistic illustration style. "
-            "Tufted ears, observant amber eyes that shift to gold when trusting. Moving silently along the shadowed edge of a forest. "
-            "Barely visible among dappled light and shadow. A single glowing eye visible from the darkness. "
-            "Mysterious and watchful expression. Middle-grade book illustration, ages 8-10. Square format, no text."
+        'shadow_panther': (
+            "A sleek black panther with golden eyes that catch the light, emerging from deep shadow. "
+            "Deep dark background — near-black, with subtle blue-purple undertones. No transparency. "
+            "Sitting calmly, body relaxed but watchful. Golden eyes are the warmest point of the image. "
+            "A single amber gem on a simple collar. Warm rim light on the fur edge. "
+            "Semi-realistic illustration, ages 8-10. Square format, no text."
         ),
-        'iron_golem': (
-            "A medium-sized golem built from smooth river stones and ancient bronze, in dynamic semi-realistic illustration style. "
-            "Surprisingly gentle for its size — rounded edges, no sharp protrusions. Mossy patches where old and new meet. "
-            "A warm amber glow in its chest like a hearth fire. Standing steady in a forest clearing, hand extended to help. "
-            "Steadfast and protective expression. Middle-grade book illustration, ages 8-10. Square format, no text."
-        ),
-        'void_sprite': (
-            "A curious small sprite made of living shadow and stardust, in dynamic semi-realistic illustration style. "
-            "Body is deep indigo and translucent, stars visible within. Wispy edges that dissolve into darkness. "
-            "Two bright teal eyes and a faint smile. Floating just above the ground in a moonlit clearing. "
-            "Leaves a trail of tiny floating stars. Playful and mysterious expression. Middle-grade book illustration, ages 8-10. Square format, no text."
+        'crystal_phoenix': (
+            "A phoenix with warm amber and rose-gold feathers that glow like embers. "
+            "Deep dark background — near-black with warm ember glow. No transparency. "
+            "Medium-sized, wings half-spread, comfortable and welcoming rather than dramatic. "
+            "Feathers transition from deep burgundy to glowing gold at the tips. Warm and inviting light. "
+            "Semi-realistic illustration, ages 8-10. Square format, no text."
         ),
         'robin': (
-            "A robin bird rendered with realistic proportions and rich detail, in dynamic semi-realistic illustration style. "
-            "Vivid red-orange breast feathers with fine texture. Alert posture on a lichen-covered branch. "
-            "Wearing a tiny hand-forged copper leg band with runic markings. "
-            "A misty forest clearing with shafts of golden light. Brave and steadfast expression. "
-            "Middle-grade book illustration, ages 8-10. Square format, no text."
+            "A robin with a vivid red-orange breast, perched on a mossy branch. "
+            "Deep dark background — near-black with soft warm glow. No transparency. "
+            "Rich feather detail. Alert, bright-eyed, completely focused on you. "
+            "Warm rim light on feathers, soft amber background glow. "
+            "Semi-realistic illustration, ages 8-10. Square format, no text."
         ),
     },
     'creator': {
-        'storm_hawk': (
-            "A powerful hawk with storm-grey and electric-blue plumage, in polished digital art style with anime influence. "
-            "Sleek aerodynamic build, wings partially folded in a precision dive. Crackling energy traces along flight feathers. "
-            "Battle-tested tactical gear — a lightweight communications earpiece, mission markings on wing. "
-            "Mid-dive above a thunderstorm, lightning visible in the background. "
-            "Intense and focused expression. Young adult illustration, ages 11-13. Square format, no text."
+        'thunder_wolf': (
+            "A wolf with storm-silver fur and deep amber eyes, in polished digital art style. "
+            "Deep dark background — near-black with cool blue-silver ambient light. No transparency. "
+            "Standing, confident and focused. Glowing rune-like markings faintly visible in the fur. "
+            "A crescent moon pendant on a leather cord. Dramatic side lighting, warm on one side. "
+            "Digital art, ages 11-13. Square format, no text."
         ),
-        'shadow_lynx': (
-            "A lithe lynx with deep charcoal fur and a shifting shadow aura, in polished digital art style with anime influence. "
-            "Gold eyes that glow when he trusts you, silver-grey otherwise. Shadow tendrils trail from his paws as he moves. "
-            "A runic collar that dampens sound. Moving along rooftop edges in a rain-soaked urban fantasy setting. "
-            "Calculating and quietly loyal expression. Young adult illustration, ages 11-13. Square format, no text."
+        'shadow_panther': (
+            "A sleek panther that seems to be made partly of shadow, in polished digital art style. "
+            "Deep dark background — near-black with purple-indigo tones. No transparency. "
+            "Gold eyes glow with warmth. Shadow aura trails softly from paws and tail. "
+            "Crouched low, watching — but the expression is warm, not threatening. "
+            "Digital art, ages 11-13. Square format, no text."
         ),
-        'iron_golem': (
-            "A golem forged from dark iron and living stone, in polished digital art style with anime influence. "
-            "Runes etched into armor-like plating that glow amber. Towering but balanced — clearly built to protect, not destroy. "
-            "Moss and vines growing in the joints between stones, softening the silhouette. "
-            "Standing guard at the entrance of an ancient library. "
-            "Unshakeable and dependable expression. Young adult illustration, ages 11-13. Square format, no text."
-        ),
-        'void_sprite': (
-            "A sprite woven from living void and captured starlight, in polished digital art style with anime influence. "
-            "Body is deep cosmic black with nebula swirls visible within. Bright teal eyes and a knowing smile. "
-            "Trailing stardust with every movement. Small but radiating an aura larger than its form. "
-            "Hovering in a dark space environment, stars and galaxies visible through its semi-transparent form. "
-            "Impish and wiser-than-they-look expression. Young adult illustration, ages 11-13. Square format, no text."
+        'crystal_phoenix': (
+            "A phoenix with crystalline feathers that fracture light into warm prismatic colors, in polished digital art style. "
+            "Deep dark background — near-black with scattered light refraction. No transparency. "
+            "Feathers are translucent rose-gold crystal tipped with amber fire. Wings spread confidently. "
+            "Light radiates from the bird itself, warming the scene. "
+            "Digital art, ages 11-13. Square format, no text."
         ),
         'robin': (
-            "A robin reimagined with artistic flair, in polished digital art style with anime influence. "
-            "Feathers have a metallic sheen — copper breast, dark bronze wings. "
-            "Perched on a steampunk-style mechanical branch with tiny gears. "
-            "A glowing runic symbol floating near one eye like a monocle. "
-            "Background: a twilight cityscape blending nature and technology. "
-            "Creative and resourceful expression. Young adult illustration, ages 11-13. Square format, no text."
+            "A robin with copper-metallic breast feathers and dark bronze wings, in polished digital art style. "
+            "Deep dark background — near-black with warm copper-toned lighting. No transparency. "
+            "Perched on a mechanical branch with tiny softly glowing gears. "
+            "A faint runic symbol glows near one eye. Warm amber lighting. "
+            "Digital art, ages 11-13. Square format, no text."
         ),
     },
     'adolescent': {
-        'storm_hawk': (
-            "A battle-hardened hawk of commanding presence, in refined concept art style. "
-            "Storm-grey and midnight-blue plumage, each feather razor-precise. Electric arcs trace along wingtips. "
-            "Tactical combat harness with encrypted comms gear. Hovering in the eye of a massive storm, debris swirling around. "
-            "Expression: she has already assessed the situation and knows exactly what needs to happen. Ages 14-17. Square format, no text."
+        'thunder_wolf': (
+            "A wolf that carries the weight of experience — scars healed over, eyes steady. "
+            "Deep dark background — near-black with moonlit blue-grey atmosphere. No transparency. "
+            "Sitting still in a night forest, snow on the ground, breath just visible. "
+            "Eyes catch the moonlight: calm, present, chosen. Warm rim light on fur. "
+            "Refined digital art, ages 14-17. Square format, no text."
         ),
-        'shadow_lynx': (
-            "A lynx that is more shadow than substance, in refined concept art style. "
-            "Dark charcoal form with glowing gold eyes — the only fixed points in shifting darkness. "
-            "Shadow tendrils extend outward, probing. Crouched at the edge of a rooftop, city lights reflecting below. "
-            "A sense of contained power and sharp intelligence. "
-            "Watchful, unreadable, quietly present expression. Ages 14-17. Square format, no text."
+        'shadow_panther': (
+            "A black panther at the edge of light and shadow, in refined digital art style. "
+            "Deep dark background — near-black. No transparency. "
+            "Only the amber eyes and the warm edge of fur are clearly visible. "
+            "The sense of presence is larger than the visible form. Poised, reading the room. "
+            "Refined digital art, ages 14-17. Square format, no text."
         ),
-        'iron_golem': (
-            "An ancient golem of immense stature and quiet dignity, in refined concept art style. "
-            "Dark iron and volcanic stone, glowing amber rune lines tracing complex geometric patterns. "
-            "Lichens and centuries of moss in every crevice. One massive hand extended, offering to carry something for you. "
-            "Background: ruins of a great library being slowly reclaimed by forest. "
-            "Timeless and immovable loyalty expression. Ages 14-17. Square format, no text."
-        ),
-        'void_sprite': (
-            "A sprite at the edge between something and nothing, in refined concept art style. "
-            "Form is pure cosmic void — deep space visible through a silhouette rimmed with teal bioluminescence. "
-            "Stars drift through its body like slow-moving thoughts. Hovering at the event horizon of a small black hole. "
-            "The vastness around it makes it seem paradoxically intimate. "
-            "Ancient, unknowable, yet somehow deeply friendly expression. Ages 14-17. Square format, no text."
+        'crystal_phoenix': (
+            "A phoenix mid-rise — not at peak, not at ash — caught in the act of becoming. "
+            "Deep dark background — near-black with warm amber light radiating from the bird. No transparency. "
+            "Feathers shift from grey-ash at the roots to glowing amber and rose-gold at the tips. "
+            "Wings spread wide but unhurried. The fire is quiet, not dramatic. "
+            "Refined digital art, ages 14-17. Square format, no text."
         ),
         'robin': (
-            "A robin rendered with photorealistic detail and dramatic composition, in refined concept art style. "
-            "Rich russet-red breast with individual feather detail. "
-            "Perched on a weathered iron sword planted in mossy earth. "
-            "Rain-soaked scene with a single ray of golden light. Background: ancient battlefield returning to nature. "
-            "Resilient and hopeful expression. Ages 14-17. Square format, no text."
+            "A robin in dramatic composition, photorealistic detail. "
+            "Deep dark background — near-black with a single beam of warm golden light. No transparency. "
+            "Red-orange breast feathers rendered individually. Perched on mossy stone in a rain-damp forest. "
+            "The bird is small but the light finds it anyway. "
+            "Refined digital art, ages 14-17. Square format, no text."
         ),
     },
     'adult': {
-        'storm_hawk': (
-            "A hawk that has become the storm itself, in fine art painterly style. "
-            "Feathers are indistinguishable from lightning — the silhouette holds, but the substance shifts. "
-            "Flying at the apex of a massive tempest, eye of the storm visible behind. "
-            "Below, the world is turbulent. Here, there is only clarity. "
-            "Expression of complete composure within chaos. Fine art quality, ages 18+. Square format, no text."
+        'thunder_wolf': (
+            "A wolf that has run many storms and chosen to stay, in fine art painterly style. "
+            "Deep dark background — near-black with warm amber firelight. No transparency. "
+            "Sitting by a low fire, head up, watching the dark beyond. Fur is warm and rich. "
+            "The expression is not protection — it is companionship. "
+            "Fine art painterly, ages 18+. Square format, no text."
         ),
-        'shadow_lynx': (
-            "A lynx that exists at the threshold between seen and unseen, in fine art painterly style. "
-            "Painted in deep shadow and golden negative space. Only the eyes are fully rendered — everything else bleeds into dark. "
-            "The composition suggests presence without insisting on it. "
-            "The feeling of being known by something that chooses not to reveal itself. "
-            "Deeply still expression. Fine art quality, ages 18+. Square format, no text."
+        'shadow_panther': (
+            "A black panther painted mostly in shadow, in fine art painterly style. "
+            "Deep dark background — near-black. No transparency. "
+            "The body is suggestion and shadow. The eyes are fully present — warm amber, seeing you. "
+            "A sense of something that has chosen to be here. "
+            "Fine art painterly, ages 18+. Square format, no text."
         ),
-        'iron_golem': (
-            "An iron golem in the late autumn of its existence, in fine art painterly style. "
-            "Most of the iron has given way to moss, stone, and root. It is more garden than golem now. "
-            "But the amber glow in the chest still burns steady. Sitting in the center of a forest that grew up around it. "
-            "Small animals nest in the joints. Trees grow through the arms. "
-            "Peaceful, patient, enduring expression. Fine art quality, ages 18+. Square format, no text."
-        ),
-        'void_sprite': (
-            "A void sprite that has drifted long enough to become something almost like starlight, in fine art painterly style. "
-            "The form is barely there — a suggestion of eyes, a warmth at the center that doesn't require a body. "
-            "Painted as though you are not sure whether you are looking at a sprite or at a memory. "
-            "Background of infinite dark space, a single distant galaxy visible. "
-            "Expression of profound peace with uncertainty. Fine art quality, ages 18+. Square format, no text."
+        'crystal_phoenix': (
+            "A phoenix at rest after many cycles, feathers soft amber and grey-rose, in fine art painterly style. "
+            "Deep dark background — near-black with warm ember light. No transparency. "
+            "Not triumphant. Not fallen. Simply present. The fire is interior now — visible through feathers. "
+            "Wings folded. Eyes open. At peace with the count. "
+            "Fine art painterly, ages 18+. Square format, no text."
         ),
         'robin': (
-            "A single robin perched on a weathered garden fence at dawn, in fine art painterly style reminiscent of classical naturalist painting. "
-            "Every feather rendered with extraordinary detail. "
-            "Warm morning light catches the red breast like a small flame of hope. Dew drops on the fence post. "
-            "A cottage garden in soft bokeh behind. Simple, honest beauty. "
-            "Contemplative and grounding. Fine art quality, ages 18+. Square format, no text."
+            "A robin at dawn on a garden fence, in fine art painterly style — classical naturalist quality. "
+            "Deep dark background — near-black at the edges, warming to soft amber behind the bird. No transparency. "
+            "Every feather painted with care. The red breast catches early light like a small steady flame. "
+            "Dew on the fence post. The bird is just a bird. That is the whole point. "
+            "Fine art painterly, ages 18+. Square format, no text."
         ),
     },
 }
@@ -325,7 +291,7 @@ def generate_image(client, prompt: str, output_path: Path, force: bool = False) 
             config=types.GenerateImagesConfig(
                 number_of_images=1,
                 aspect_ratio='1:1',
-                safety_filter_level='block_only_high',
+                safety_filter_level='block_low_and_above',
                 person_generation='dont_allow',
             ),
         )
@@ -385,9 +351,7 @@ def run(args):
                 chars = {args.character: chars[args.character]}
 
             for char_name, prompt in chars.items():
-                # robin is referenced as .jpg in companion_selector_step.dart
-                ext = 'jpg' if char_name == 'robin' else 'png'
-                out = COMPANIONS_DIR / band / f'{char_name}.{ext}'
+                out = COMPANIONS_DIR / band / f'{char_name}.png'
                 if args.dry_run:
                     status = 'EXISTS' if out.exists() else 'WOULD GENERATE'
                     print(f'  {char_name}: {status}')
