@@ -23,6 +23,10 @@
   - Switch bedtime voice prompts, fallback companions, and fallback settings to use the resolved age band instead of child-only defaults.
   - Replace `tiny dragon` / `Magical Forest` fallbacks for older bands with mature options such as `Thunder Wolf`, `Deep Archive`, and `Ruined Citadel`.
   - Keep younger bands on playful bedtime language while giving older bands/adults a cleaner audio-only prompt vocabulary.
+- `lib/screens/wizard_steps/feeling_selection_step.dart`
+  - Make `Guardian Mode` copy age-aware so older users do not see child-only framing like "support your child's growth."
+  - Swap child-only focus chips for creator/adolescent/adult options such as `Finding Your Voice`, `Setting Boundaries`, and `Burnout & Rest`.
+  - Rename the note field for older bands from `Parental Note` to `Story Note`.
 
 ### Next Planned Fixes
 1. Re-test the deployed bedtime/audio-only flow for each age band after this copy/defaults patch is live.

@@ -327,7 +327,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
             // Parental input (if shown)
             if (_showParentalInput) ...[
-              _buildGuardianModeContainer(),
+              _buildGuardianModeContainer(age),
               const SizedBox(height: AppSpacing.xl),
             ],
 
@@ -362,7 +362,111 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
     );
   }
 
-  Widget _buildGuardianModeContainer() {
+  String _guardianModeDescription(int age) {
+    final band = ageBandFromAge(age);
+    switch (band) {
+      case AgeBand.sprout:
+      case AgeBand.explorer:
+      case AgeBand.adventurer:
+        return 'Personalize the adventure to support your child\'s growth.';
+      case AgeBand.creator:
+      case AgeBand.adolescent:
+        return 'Shape the adventure around what feels real, supportive, or useful tonight.';
+      case AgeBand.adult:
+        return 'Tune the adventure around the tone, challenge, or reflection you want tonight.';
+    }
+  }
+
+  String _guardianFocusTitle(int age) {
+    final band = ageBandFromAge(age);
+    switch (band) {
+      case AgeBand.adult:
+        return 'Tonight\'s Story Focus';
+      case AgeBand.creator:
+      case AgeBand.adolescent:
+        return 'Tonight\'s Focus';
+      case AgeBand.sprout:
+      case AgeBand.explorer:
+      case AgeBand.adventurer:
+        return 'Today\'s Heart Focus';
+    }
+  }
+
+  List<String> _guardianFocusOptions(int age) {
+    final band = ageBandFromAge(age);
+    switch (band) {
+      case AgeBand.creator:
+      case AgeBand.adolescent:
+        return const [
+          'Building Confidence',
+          'Dealing with Change',
+          'Finding Your Voice',
+          'Handling Big Feelings',
+          'Friendship Tension',
+          'Belonging',
+          'Trusting Yourself',
+          'Patience & Waiting',
+        ];
+      case AgeBand.adult:
+        return const [
+          'Dealing with Change',
+          'Finding Your Voice',
+          'Burnout & Rest',
+          'Belonging',
+          'Trusting Yourself',
+          'Setting Boundaries',
+          'Starting Over',
+          'Handling Big Feelings',
+        ];
+      case AgeBand.sprout:
+      case AgeBand.explorer:
+      case AgeBand.adventurer:
+        return const [
+          'Making New Friends',
+          'Starting School',
+          'Sibling Rivalry',
+          'Handling Big Feelings',
+          'Trying New Foods',
+          'Sharing Toys',
+          'Being Brave at Night',
+          'Patience & Waiting',
+          'Building Confidence',
+          'Dealing with Change',
+        ];
+    }
+  }
+
+  String _guardianNoteTitle(int age) {
+    final band = ageBandFromAge(age);
+    switch (band) {
+      case AgeBand.adult:
+      case AgeBand.creator:
+      case AgeBand.adolescent:
+        return 'Story Note';
+      case AgeBand.sprout:
+      case AgeBand.explorer:
+      case AgeBand.adventurer:
+        return 'Parental Note';
+    }
+  }
+
+  String _guardianNoteHint(int age) {
+    final band = ageBandFromAge(age);
+    switch (band) {
+      case AgeBand.adult:
+        return 'e.g., Keep it calm, reflective, and focused on starting over';
+      case AgeBand.creator:
+      case AgeBand.adolescent:
+        return 'e.g., Keep it grounded and focused on confidence at school';
+      case AgeBand.sprout:
+      case AgeBand.explorer:
+      case AgeBand.adventurer:
+        return 'e.g., Help with sharing during playdates';
+    }
+  }
+
+  Widget _buildGuardianModeContainer(int age) {
+    final focusOptions = _guardianFocusOptions(age);
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -396,7 +500,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Personalize the adventure to support your child\'s growth.',
+            _guardianModeDescription(age),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AppColors.textDark.withValues(alpha: 0.6),
                   fontStyle: FontStyle.italic,
@@ -410,7 +514,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
               const Text('❤️', style: TextStyle(fontSize: 18)),
               const SizedBox(width: 8),
               Text(
-                'Today\'s Heart Focus',
+                _guardianFocusTitle(age),
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -421,18 +525,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: [
-              'Making New Friends',
-              'Starting School',
-              'Sibling Rivalry',
-              'Handling Big Feelings',
-              'Trying New Foods',
-              'Sharing Toys',
-              'Being Brave at Night',
-              'Patience & Waiting',
-              'Building Confidence',
-              'Dealing with Change',
-            ].map((challenge) {
+            children: focusOptions.map((challenge) {
               final isSelected = widget.wizardData.lifeChallenge == challenge;
               return Semantics(
                 button: true,
@@ -533,7 +626,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
               const Text('📝', style: TextStyle(fontSize: 18)),
               const SizedBox(width: 8),
               Text(
-                'Parental Note',
+                _guardianNoteTitle(age),
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -542,12 +635,12 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
           ),
           const SizedBox(height: 12),
           Semantics(
-            label: "Parental note for story guidance",
+            label: "${_guardianNoteTitle(age)} for story guidance",
             textField: true,
             child: TextField(
               controller: _parentalNoteController,
               decoration: InputDecoration(
-                hintText: 'e.g., Help with sharing during playdates',
+                hintText: _guardianNoteHint(age),
                 hintStyle: TextStyle(
                     color: AppColors.textDark.withValues(alpha: 0.4),
                     fontSize: 14),
