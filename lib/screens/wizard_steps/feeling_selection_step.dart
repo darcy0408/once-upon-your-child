@@ -281,7 +281,7 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Choose Your Adventure!',
+                    age <= 5 ? 'Pick a Place!' : 'Choose Your Adventure!',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           color: AppColors.textDark,
                           fontWeight: FontWeight.bold,
@@ -315,7 +315,9 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
 
             // Subtitle
             Text(
-              'Where shall we go today?',
+              age <= 5
+                  ? 'Where should the story happen?'
+                  : 'Where shall we go today?',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: AppColors.textDark.withValues(alpha: 0.7),
                   ),
@@ -830,8 +832,51 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
     );
   }
 
+  // The 4 scenarios shown to sprouts (ages ≤5), in display order.
+  // Chosen for maximum 3-5 year old appeal: dinosaurs, forest, castle, ocean.
+  static const _sproutScenarioIds = [
+    'volcano_dragons',  // Stomp with the Dinosaurs!
+    'neon_jungle',      // The Magical Forest
+    'storm_chaser_sky', // The Fluffy Cloud Castle
+    'crystal_cavern',   // Under the Sea!
+  ];
+
+  /// Full-screen 2×2 grid for sprout band — no scroll, no category headers,
+  /// no "Imagine It" card. Everything visible at once.
+  List<Widget> _buildSproutGrid(int age) {
+    final sproutScenarios = _scenarios
+        .where((s) => _sproutScenarioIds.contains(s.id))
+        .toList()
+      ..sort((a, b) => _sproutScenarioIds.indexOf(a.id)
+          .compareTo(_sproutScenarioIds.indexOf(b.id)));
+
+    return [
+      GridView.count(
+        crossAxisCount: 2,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisSpacing: AppSpacing.md,
+        mainAxisSpacing: AppSpacing.md,
+        childAspectRatio: 0.88,
+        children: sproutScenarios.map((scenario) {
+          final isSelected = _selectedScenario == scenario.id;
+          return _ScenarioCardWidget(
+            scenario: scenario,
+            isSelected: isSelected,
+            childAge: age,
+            onTap: () => _selectScenario(scenario.id),
+          );
+        }).toList(),
+      ),
+    ];
+  }
+
   List<Widget> _buildScenarioSections(int age) {
     final currentBand = ageBandFromAge(age);
+
+    // Sprout band gets its own simplified 2×2 grid — no carousel, no featured card.
+    if (currentBand == AgeBand.sprout) return _buildSproutGrid(age);
+
     // Sprout (≤5) and Explorer (6-8) only see Magical Worlds — Real-Life Heroes
     // are too abstract/heavy for under-9s.
     // Adults skip the Big Feelings Quest — it's designed for children.
@@ -939,20 +984,48 @@ class _ScenarioCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = scenario.titleForAge(childAge);
     final description = scenario.descriptionForAge(childAge);
+    final isSprout = childAge <= 5 && !isFeatured;
+    final illustrationPath = scenario.illustrationForAge(childAge);
+    final resolvedPath = illustrationPath.startsWith('assets/')
+        ? illustrationPath
+        : 'assets/$illustrationPath';
+
+    Widget imageWidget(double? width, double? height) => Image.asset(
+          resolvedPath,
+          width: width,
+          height: height,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? Colors.white.withValues(alpha: 0.5)
+                  : AppColors.secondaryLight.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Text(
+                scenario.emoji,
+                style: TextStyle(fontSize: isSprout ? 52 : 48),
+              ),
+            ),
+          ),
+        );
 
     return Semantics(
       button: true,
       selected: isSelected,
-      label: '$title, $description',
+      label: isSprout ? title : '$title, $description',
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.xl),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          width: isFeatured ? double.infinity : _settingCardWidth,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.md,
+          width: (isFeatured || isSprout) ? double.infinity : _settingCardWidth,
+          padding: EdgeInsets.symmetric(
+            horizontal: isSprout ? AppSpacing.xs : AppSpacing.sm,
+            vertical: isSprout ? AppSpacing.xs : AppSpacing.md,
           ),
           decoration: BoxDecoration(
             gradient: isSelected
@@ -991,73 +1064,88 @@ class _ScenarioCardWidget extends StatelessWidget {
                     ),
                   ],
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min, // Wrap content
-            children: [
-              // Scenario illustration image (sprout band uses dedicated tile images)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  scenario.illustrationForAge(childAge).startsWith('assets/')
-                      ? scenario.illustrationForAge(childAge)
-                      : 'assets/${scenario.illustrationForAge(childAge)}',
-                  width: 200,
-                  height: 140,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    width: 200,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? Colors.white.withValues(alpha: 0.5)
-                          : AppColors.secondaryLight.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(
-                      child: Text(
-                        scenario.emoji,
-                        style: const TextStyle(fontSize: 48),
+          child: isSprout
+              // ── Sprout tile: big image fills the card, bold title below ──
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: imageWidget(double.infinity, null),
                       ),
                     ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(scenario.emoji),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color:
-                                isSelected ? AppColors.textDark : Colors.white,
+                    const SizedBox(height: 6),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Text(
+                        title,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: isSelected
+                                  ? AppColors.textDark
+                                  : Colors.white,
+                            ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                )
+              // ── Standard tile: image + emoji + title + description ──
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: imageWidget(200, 140),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(scenario.emoji),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            title,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: isSelected
+                                      ? AppColors.textDark
+                                      : Colors.white,
+                                ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      description,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isSelected
+                                ? AppColors.textDark.withValues(alpha: 0.7)
+                                : Colors.white.withValues(alpha: 0.8),
                           ),
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                description,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: isSelected
-                          ? AppColors.textDark.withValues(alpha: 0.7)
-                          : Colors.white.withValues(alpha: 0.8),
-                    ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
+                  ],
+                ),
         ),
       ),
     );
