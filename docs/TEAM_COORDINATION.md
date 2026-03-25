@@ -2,6 +2,67 @@
 
 ---
 
+## Session Update — 2026-03-25 (Sprout UX Overhaul + Checklist Audit)
+
+### Sprout Band Setting Picker — Full UX Overhaul
+Rewrote the story setting selector for ages ≤5 based on expert review of the screen from both a child development UX lens and a 3-year-old's perspective.
+
+**Problems addressed:**
+- "Choose Your Adventure!" / "Where shall we go today?" — abstract/formal language swapped for "Pick a Place!" / "Where should the story happen?"
+- "Imagine It" featured card was the first thing a sprout saw — free-text/voice input is developmentally inappropriate for 2–5 year olds; hidden entirely
+- Horizontal scrolling carousel (6 tiles, only 2 visible) — young children don't reliably know to swipe; replaced with 2×2 grid, all tiles visible at once
+- "Magical Worlds" category header removed — meaningless text to a non-reader
+- Card layout stripped of description text — image fills card, single bold title only
+
+**Implementation:**
+- `lib/screens/wizard_steps/feeling_selection_step.dart` — `_buildSproutGrid()` (2×2 GridView), band-aware heading copy, `isSprout` flag in `_ScenarioCardWidget`
+- `lib/data/scenario_data.dart` (prior commit `c8a89bc`) — `sproutTitle`, `sproutDescription`, `sproutIllustration` fields; all 6 tiles wired; `illustrationForAge()` / `titleForAge()` sprout-first priority
+- `pubspec.yaml` (prior commit) — `assets/images/ui/sprout/tiles/` registered
+
+**Best 4 tiles for ages 3–5 (by developmental appeal):**
+| Tile | Scenario | Why |
+|------|----------|-----|
+| Stomp with the Dinosaurs! | `volcano_dragons` | #1 toddler obsession universally |
+| The Magical Forest | `neon_jungle` | forest animals, cozy, familiar |
+| The Fluffy Cloud Castle | `storm_chaser_sky` | castles + clouds = magical + safe |
+| Under the Sea! | `crystal_cavern` | "Nemo effect", bright colors |
+
+### Pick-a-Path TTS Choices
+For sprout/explorer bands, TTS now reads story choices aloud after each segment ("Choice 1: … Choice 2: …") so young children can follow along without reading.
+- `lib/pick_a_path_adventure_screen.dart` — `_speakSegmentWithChoices()` replaces direct `_speakSegment()` calls at all 5 load sites
+
+### Parental Consent Screen Fix
+- `AlwaysScrollableScrollPhysics` added so compact devices can scroll to the consent button
+- Internal spacing tightened (md → sm) to reduce required scrolling
+
+### Checklist Audit — All High Priority Items Now Clear
+Verified in code that the three remaining open High Priority items were already fixed in commit `08398b9` (2026-03-18) but never marked done. Marked resolved.
+
+### Commits This Session
+- `bfca514` feat: sprout UX overhaul — 2×2 grid, 4 tiles, no Imagine It
+- `a6d1f99` feat: TTS reads choices aloud in pick-a-path for young bands
+- `5aecf68` fix: parental consent screen scrollability and spacing
+
+### Remaining Open Items
+**Medium Priority:**
+- Re-consent prompt for users whose consent wasn't synced before 2026-03-21
+- COPPA verifiable consent checkbox-only (v1.1 plan exists)
+- Privacy policy missing physical address and phone number
+- Noto font / missing glyph warnings (cosmetic)
+- Firefox testing incomplete
+
+**Manual Testing:**
+- 6-band integration test (visual, characters, companions, story, illustrations)
+- Cross-cutting: BYOK, custom avatar, pet avatar, parent hidden context, bedtime mode
+- Cross-browser: Chrome → Firefox → Edge → mobile DevTools
+- Real-provider performance baseline (`RUN_REAL_API_TESTS=true python backend/tests/story_load_audit.py`)
+
+**Production Env:**
+- Set real SECRET_KEY and JWT secret in Railway
+- Remove duplicate `GOOGLE_API_KEY` / `GEMINI_API_KEY`
+
+---
+
 ## Session Update — 2026-03-23 (Evening)
 
 ### Adult Feelings Section Removed
@@ -106,9 +167,9 @@ Compiled from all session updates and LAUNCH_BLOCKERS.md. Items are grouped by s
 - [x] ~~**H2 — TypeError during wizard.**~~ Verified clean — could not reproduce; likely resolved by prior fixes. (2026-03-23)
 - [x] ~~**H3 — No live Gemini health probe.**~~ Fixed: added live `models.get()` probe to health endpoints. (2026-03-23)
 - [x] ~~**H4 — Production smoke tests.**~~ All 10/10 passing after `rredis://` fix and dead-code sync fallback repair. (2026-03-23)
-- [ ] **Illustration fallback doesn't forward companions.** `_generateInlineIllustrations()` in `magic_review_step.dart` omits companion data, so fallback illustrations may not include them.
-- [ ] **Coloring pages don't include companions.** `story_result_screen.dart` calls `generateColoringPagesFromStory()` without passing companion data.
-- [ ] **ColoringSettingsDialog page count hardcoded to 1.** Multi-page coloring books are supported by the backend but the UI removed the choice.
+- [x] ~~**Illustration fallback doesn't forward companions.**~~ Verified fixed — `magic_review_step.dart` lines 309–314 pass `companionAvatars`, `companionNames`, `companionPets`, `companionCharacters` to inline illustration generation. (commit `08398b9`, confirmed 2026-03-25)
+- [x] ~~**Coloring pages don't include companions.**~~ Verified fixed — `story_result_screen.dart:1000` passes `companions: _buildCompanionPrompts()` to `generateColoringPagesFromStory()`. (commit `08398b9`, confirmed 2026-03-25)
+- [x] ~~**ColoringSettingsDialog page count hardcoded to 1.**~~ Verified fixed — dialog has a 1–5 page slider (`_pageCount.clamp(1, 5)`). (commit `08398b9`, confirmed 2026-03-25)
 
 ### Medium Priority (should fix before launch)
 
@@ -147,6 +208,10 @@ Compiled from all session updates and LAUNCH_BLOCKERS.md. Items are grouped by s
 - [x] ~~Android build JDK 25 incompatibility~~ (fixed, pinned to JDK 21)
 - [x] ~~Git hook Win32 error 5~~ (fixed, removed no-op hook)
 - [x] ~~UX audit fix plan~~ (all 20 tasks verified complete)
+- [x] ~~Illustration fallback / coloring companion forwarding~~ (verified complete in code, committed 08398b9, confirmed 2026-03-25)
+- [x] ~~ColoringSettingsDialog page count~~ (1–5 slider working, confirmed 2026-03-25)
+- [x] ~~Sprout tile integration~~ (6 tiles wired, 2×2 grid, simplified UX, committed c8a89bc + bfca514, 2026-03-25)
+- [x] ~~Pick-a-path TTS choices~~ (young bands now hear choices read aloud, committed a6d1f99, 2026-03-25)
 
 ---
 
