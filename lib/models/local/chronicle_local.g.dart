@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'chronicle_local.dart';
+part of 'chronicle_local_io.dart';
 
 // **************************************************************************
 // IsarCollectionGenerator

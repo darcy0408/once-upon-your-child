@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'chapter_memory_local.dart';
+part of 'chapter_memory_local_io.dart';
 
 // **************************************************************************
 // IsarCollectionGenerator
