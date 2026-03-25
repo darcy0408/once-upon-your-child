@@ -556,7 +556,10 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
   Future<void> _speakPage(String text) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final voiceId = prefs.getString(ElevenLabsVoice.prefsKey);
+      final savedVoiceId = prefs.getString(ElevenLabsVoice.prefsKey);
+      // Fall back to band-appropriate default rather than always using Matilda.
+      final voiceId = savedVoiceId ??
+          ElevenLabsVoice.defaultVoiceIdForBand(ageBandFromAge(_effectiveAge));
       final mp3 = await TtsApiService.synthesize(text, voiceId: voiceId);
       if (mp3 != null && mp3.isNotEmpty) {
         await _audioPlayer?.stop();

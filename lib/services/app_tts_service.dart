@@ -10,6 +10,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/elevenlabs_voice.dart';
+import '../theme/age_band_theme.dart';
 import 'tts_api_service.dart';
 
 /// Common wizard/onboarding phrases pre-warmed at startup.
@@ -103,7 +104,7 @@ class AppTtsService {
     try {
       Uint8List? mp3 = _cache[cleanText];
       if (mp3 == null) {
-        final id = voiceId ?? await _savedVoiceId();
+        final id = voiceId ?? (await _savedVoiceId());
         mp3 = await TtsApiService.synthesize(cleanText, voiceId: id);
         if (mp3 != null && mp3.isNotEmpty) _cache[cleanText] = mp3;
       }
@@ -128,8 +129,12 @@ class AppTtsService {
     await _fallback.stop();
   }
 
-  Future<String?> _savedVoiceId() async {
+  /// Returns the saved voice ID, or the age-band-appropriate default if none saved.
+  Future<String> _savedVoiceId() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(ElevenLabsVoice.prefsKey);
+    final saved = prefs.getString(ElevenLabsVoice.prefsKey);
+    if (saved != null && ElevenLabsVoice.byId(saved) != null) return saved;
+    final age = prefs.getInt('user_age') ?? 7;
+    return ElevenLabsVoice.defaultVoiceIdForBand(ageBandFromAge(age));
   }
 }
