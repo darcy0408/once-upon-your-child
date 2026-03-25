@@ -81,7 +81,8 @@ class AppTtsService {
       final key = phrase.trim();
       if (_cache.containsKey(key)) continue;
       try {
-        final mp3 = await TtsApiService.synthesize(key, voiceId: voiceId);
+        final ttsResult = await TtsApiService.synthesize(key, voiceId: voiceId);
+        final mp3 = ttsResult?.audioBytes;
         if (mp3 != null && mp3.isNotEmpty) _cache[key] = mp3;
       } catch (e) {
         debugPrint('TTS prewarm failed for phrase: $e');
@@ -105,7 +106,8 @@ class AppTtsService {
       Uint8List? mp3 = _cache[cleanText];
       if (mp3 == null) {
         final id = voiceId ?? (await _savedVoiceId());
-        mp3 = await TtsApiService.synthesize(cleanText, voiceId: id);
+        final ttsResult = await TtsApiService.synthesize(cleanText, voiceId: id);
+        mp3 = ttsResult?.audioBytes;
         if (mp3 != null && mp3.isNotEmpty) _cache[cleanText] = mp3;
       }
       if (mp3 != null && mp3.isNotEmpty) {

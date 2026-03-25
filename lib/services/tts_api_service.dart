@@ -13,13 +13,30 @@ import '../config/environment.dart';
 import '../models/elevenlabs_voice.dart';
 import 'api_service_manager.dart';
 
+/// Result from the TTS synthesize endpoint.
+/// [wordTimestamps] is empty when the backend could not return timing data
+/// (long/chunked stories, dialogue mode, or older backend). The caller should
+/// fall back to character-weighted estimation when the list is empty.
+class TtsSynthesisResult {
+  final Uint8List audioBytes;
+
+  /// Per-word timing from ElevenLabs alignment data.
+  /// Each entry is (startMs, endMs) for the word at that index, parallel to
+  /// the tokenised word list in the story reader.
+  final List<({int startMs, int endMs})> wordTimestamps;
+
+  const TtsSynthesisResult({
+    required this.audioBytes,
+    required this.wordTimestamps,
+  });
+}
+
 class TtsApiService {
   /// Synthesize [text] via the backend ElevenLabs endpoint.
   ///
-  /// [voiceId] defaults to Rachel if not provided.
-  /// Returns raw MP3 bytes on success, or null if the service is
-  /// unavailable (no API key, network error, etc.).
-  static Future<Uint8List?> synthesize(
+  /// Returns a [TtsSynthesisResult] with audio bytes and optional per-word
+  /// timestamps, or null if the service is unavailable.
+  static Future<TtsSynthesisResult?> synthesize(
     String text, {
     String? voiceId,
     String? characterVoiceId,
@@ -49,7 +66,25 @@ class TtsApiService {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final b64 = data['audio_base64'] as String?;
         if (b64 != null && b64.isNotEmpty) {
-          return base64Decode(b64);
+          final audioBytes = base64Decode(b64);
+
+          // Parse word timestamps when available (short single-voice stories).
+          final rawTimestamps = data['word_timestamps'] as List<dynamic>?;
+          final wordTimestamps = rawTimestamps
+                  ?.map((e) {
+                    final m = e as Map<String, dynamic>;
+                    return (
+                      startMs: (m['start_ms'] as num).toInt(),
+                      endMs: (m['end_ms'] as num).toInt(),
+                    );
+                  })
+                  .toList() ??
+              [];
+
+          return TtsSynthesisResult(
+            audioBytes: audioBytes,
+            wordTimestamps: wordTimestamps,
+          );
         }
       }
 

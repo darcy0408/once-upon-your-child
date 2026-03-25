@@ -3,6 +3,7 @@ ElevenLabs Text-to-Speech Service
 High-quality AI narration for stories using ElevenLabs voices.
 """
 
+import base64
 import io
 import os
 import re
@@ -455,6 +456,103 @@ class ElevenLabsTTSService:
                 time.sleep(0.1)
 
         return combined.getvalue()
+
+    @staticmethod
+    def _chars_to_word_timestamps(
+        characters: list,
+        char_start_times: list,
+        char_end_times: list,
+    ) -> List[dict]:
+        """
+        Convert ElevenLabs character-level alignment into word-level timestamps.
+
+        Returns a list of {start_ms, end_ms} dicts, one per word, parallel to
+        the tokenised word list on the Flutter side.
+        """
+        word_timestamps: List[dict] = []
+        word_start: Optional[float] = None
+        word_end: Optional[float] = None
+        in_word = False
+
+        for char, start, end in zip(characters, char_start_times, char_end_times):
+            is_space = char in (" ", "\n", "\t", "\r")
+            if is_space:
+                if in_word:
+                    word_timestamps.append(
+                        {"start_ms": int(word_start * 1000), "end_ms": int(word_end * 1000)}
+                    )
+                    word_start = None
+                    word_end = None
+                    in_word = False
+            else:
+                if not in_word:
+                    word_start = start
+                    in_word = True
+                word_end = end
+
+        if in_word and word_start is not None:
+            word_timestamps.append(
+                {"start_ms": int(word_start * 1000), "end_ms": int(word_end * 1000)}
+            )
+
+        return word_timestamps
+
+    def generate_speech_with_timestamps(
+        self,
+        text: str,
+        voice_id: str = DEFAULT_VOICE_ID,
+        stability: float = 0.35,
+        similarity_boost: float = 0.80,
+        style: float = 0.50,
+        model_id: str = DEFAULT_MODEL,
+    ) -> Tuple[bytes, List[dict]]:
+        """
+        Generate MP3 audio with word-level timestamps for synchronized highlighting.
+
+        Uses the ElevenLabs with-timestamps endpoint to obtain character-level
+        alignment, then converts it to per-word start/end times in milliseconds.
+
+        Returns:
+            (audio_bytes, word_timestamps) where word_timestamps is a list of
+            {start_ms: int, end_ms: int} dicts, one per word, in order.
+            Falls back to (generate_speech(...), []) if timestamps unavailable.
+        """
+        cleaned = clean_text_for_tts(text)
+        voice_settings = VoiceSettings(
+            stability=stability,
+            similarity_boost=similarity_boost,
+            style=style,
+            use_speaker_boost=True,
+        )
+
+        try:
+            response = self.client.text_to_speech.convert_with_timestamps(
+                voice_id=voice_id,
+                text=cleaned,
+                model_id=model_id,
+                voice_settings=voice_settings,
+                output_format="mp3_44100_128",
+            )
+            audio_bytes = base64.b64decode(response.audio_base64)
+            alignment = response.alignment
+            word_timestamps = self._chars_to_word_timestamps(
+                characters=alignment.characters,
+                char_start_times=alignment.character_start_times_seconds,
+                char_end_times=alignment.character_end_times_seconds,
+            )
+            logger.info(
+                "with-timestamps: %d words for %d chars",
+                len(word_timestamps), len(cleaned),
+            )
+            return audio_bytes, word_timestamps
+        except Exception as e:
+            logger.warning("with-timestamps failed, falling back: %s", e)
+            audio_bytes = self.generate_speech(
+                text=text, voice_id=voice_id,
+                stability=stability, similarity_boost=similarity_boost,
+                style=style, model_id=model_id,
+            )
+            return audio_bytes, []
 
     @staticmethod
     def get_available_voices() -> List[dict]:

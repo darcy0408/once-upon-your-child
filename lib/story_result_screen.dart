@@ -560,7 +560,8 @@ class _StoryResultScreenState extends State<StoryResultScreen> {
       // Fall back to band-appropriate default rather than always using Matilda.
       final voiceId = savedVoiceId ??
           ElevenLabsVoice.defaultVoiceIdForBand(ageBandFromAge(_effectiveAge));
-      final mp3 = await TtsApiService.synthesize(text, voiceId: voiceId);
+      final ttsResult = await TtsApiService.synthesize(text, voiceId: voiceId);
+      final mp3 = ttsResult?.audioBytes;
       if (mp3 != null && mp3.isNotEmpty) {
         await _audioPlayer?.stop();
         await _audioPlayer?.play(BytesSource(mp3));

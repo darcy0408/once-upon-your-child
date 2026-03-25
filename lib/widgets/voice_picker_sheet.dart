@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,10 +57,11 @@ class _VoicePickerSheetState extends ConsumerState<VoicePickerSheet> {
       _isLoadingPreview = true;
     });
 
-    final Uint8List? mp3 = await TtsApiService.synthesize(
+    final ttsResult = await TtsApiService.synthesize(
       _previewText,
       voiceId: voiceId,
     );
+    final mp3 = ttsResult?.audioBytes;
 
     if (!mounted) return;
     setState(() => _isLoadingPreview = false);

@@ -112,9 +112,11 @@ def create_tts_blueprint(limiter, require_auth):
         voice_id = (data.get("voice_id") or "").strip() or default_voice_id
         character_voice_id = (data.get("character_voice_id") or "").strip() or None
 
+        word_timestamps = []
         try:
             if character_voice_id:
-                # Dialogue-differentiated synthesis: narrator + character voices
+                # Dialogue-differentiated synthesis: narrator + character voices.
+                # Timestamps not supported across multi-voice segments.
                 logger.info(
                     "Dialogue synthesis (%d chars) — narrator=%s character=%s",
                     len(text), voice_id, character_voice_id,
@@ -125,11 +127,15 @@ def create_tts_blueprint(limiter, require_auth):
                     character_voice_id=character_voice_id,
                 )
             elif len(text) > 5000:
-                # Long story — chunked synthesis to avoid truncation
+                # Long story — chunked synthesis to avoid ElevenLabs truncation.
+                # Timestamps not supported for chunked mode.
                 logger.info("Long story (%d chars) — using chunked synthesis", len(text))
                 audio_bytes = service.generate_speech_chunked(text=text, voice_id=voice_id)
             else:
-                audio_bytes = service.generate_speech(text=text, voice_id=voice_id)
+                # Short story — use with-timestamps endpoint for accurate word highlighting.
+                audio_bytes, word_timestamps = service.generate_speech_with_timestamps(
+                    text=text, voice_id=voice_id
+                )
         except Exception as e:
             logger.error("ElevenLabs TTS synthesis error: %s", e)
             return jsonify({"error": "Synthesis failed", "message": str(e)}), 500
@@ -141,6 +147,7 @@ def create_tts_blueprint(limiter, require_auth):
             "audio_base64": base64.b64encode(audio_bytes).decode("utf-8"),
             "format": "mp3",
             "voice_id": voice_id,
+            "word_timestamps": word_timestamps,  # [] when not available (dialogue/chunked)
         })
 
     @tts_bp.route("/tts/transcribe", methods=["POST"])

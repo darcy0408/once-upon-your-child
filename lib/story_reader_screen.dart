@@ -1,7 +1,6 @@
 // lib/story_reader_screen.dart
 import 'dart:async';
 import 'dart:math';
-import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -69,6 +68,9 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
   bool _isLoadingAudio = false;
   Duration _audioDuration = Duration.zero;
   final List<StreamSubscription<dynamic>> _audioSubs = [];
+
+  // Exact word timestamps from ElevenLabs alignment (empty = use char-weighted estimation)
+  List<({int startMs, int endMs})> _wordTimestamps = [];
 
   // Animation for the "active" reading state
   late AnimationController _pulseController;
@@ -216,25 +218,24 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
       }),
     );
 
-    // Estimate current word from playback position (character-weighted)
+    // Highlight current word from playback position.
+    // Prefers exact ElevenLabs timestamps; falls back to character-weighted estimation.
     _audioSubs.add(
       _audioPlayer.onPositionChanged.listen((position) {
         if (!mounted || !_usingNeural2 || _audioDuration == Duration.zero) {
           return;
         }
-        final progress =
-            position.inMilliseconds / _audioDuration.inMilliseconds;
 
         int wordIndex;
-        if (_totalStoryChars > 0) {
-          // Binary search: find last word whose cumulative char offset <= targetChars
-          final targetChars = (progress * _totalStoryChars).round();
+        if (_wordTimestamps.isNotEmpty) {
+          // Exact path: binary search on ElevenLabs alignment timestamps.
+          final posMs = position.inMilliseconds;
           var lo = 0;
-          var hi = _wordCharOffsets.length - 1;
+          var hi = _wordTimestamps.length - 1;
           wordIndex = 0;
           while (lo <= hi) {
             final mid = (lo + hi) ~/ 2;
-            if (_wordCharOffsets[mid] <= targetChars) {
+            if (_wordTimestamps[mid].startMs <= posMs) {
               wordIndex = mid;
               lo = mid + 1;
             } else {
@@ -243,9 +244,29 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
           }
           wordIndex = wordIndex.clamp(0, _wordTokenIndices.length - 1);
         } else {
-          wordIndex = (progress * _wordTokenIndices.length)
-              .floor()
-              .clamp(0, _wordTokenIndices.length - 1);
+          // Fallback: character-weighted estimation from audio progress.
+          final progress =
+              position.inMilliseconds / _audioDuration.inMilliseconds;
+          if (_totalStoryChars > 0) {
+            final targetChars = (progress * _totalStoryChars).round();
+            var lo = 0;
+            var hi = _wordCharOffsets.length - 1;
+            wordIndex = 0;
+            while (lo <= hi) {
+              final mid = (lo + hi) ~/ 2;
+              if (_wordCharOffsets[mid] <= targetChars) {
+                wordIndex = mid;
+                lo = mid + 1;
+              } else {
+                hi = mid - 1;
+              }
+            }
+            wordIndex = wordIndex.clamp(0, _wordTokenIndices.length - 1);
+          } else {
+            wordIndex = (progress * _wordTokenIndices.length)
+                .floor()
+                .clamp(0, _wordTokenIndices.length - 1);
+          }
         }
 
         if (wordIndex != _currentWordIndex) {
@@ -270,6 +291,7 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
           _isPlaying = false;
           _usingNeural2 = false;
           _currentWordIndex = -1;
+          _wordTimestamps = [];
           _pulseController.stop();
         });
         // Clear saved bookmark now that the story is finished
@@ -385,14 +407,14 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
     final voiceId = ref.read(voicePreferenceNotifierProvider);
     final characterVoiceId = ElevenLabsVoice.characterVoiceForNarrator(voiceId);
     setState(() => _isLoadingAudio = true);
-    final Uint8List? mp3Bytes = await TtsApiService.synthesize(
+    final result = await TtsApiService.synthesize(
       widget.storyText,
       voiceId: voiceId,
       characterVoiceId: characterVoiceId,
     );
     if (!mounted) return;
 
-    if (mp3Bytes != null) {
+    if (result != null) {
       // ── Neural2 path ────────────────────────────────────────────────
       await _tts.stop();
       setState(() {
@@ -400,9 +422,10 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
         _isPlaying = true;
         _usingNeural2 = true;
         _currentWordIndex = -1;
+        _wordTimestamps = result.wordTimestamps;
         _pulseController.repeat(reverse: true);
       });
-      await _audioPlayer.play(BytesSource(mp3Bytes));
+      await _audioPlayer.play(BytesSource(result.audioBytes));
       await _audioPlayer.setPlaybackRate(_playbackRate);
     } else {
       // ── flutter_tts fallback ────────────────────────────────────────
