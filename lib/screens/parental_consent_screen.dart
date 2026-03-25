@@ -53,7 +53,13 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              AppSpacing.xl,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -71,7 +77,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                   'As required by COPPA, we need your verifiable consent before your child can use this app.',
                   style: GoogleFonts.fredoka(color: Colors.white, fontSize: 16),
                 ),
-                const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.sm),
                 // Notice to Parents box
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.md),
@@ -124,7 +130,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.sm),
                 TextField(
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
