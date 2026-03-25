@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -43,8 +44,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
 
   static const _goldColor = Color(0xFFFFD700);
 
-  // Age options: individual ages 3–12, then grouped 13-17 and 18+.
+  // Age options: individual ages 2–12, then grouped 13-17 and 18+.
   static const _ageEntries = <({String label, int value})>[
+    (label: '2', value: 2),
     (label: '3', value: 3),
     (label: '4', value: 4),
     (label: '5', value: 5),
@@ -85,6 +87,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
 
   Future<void> _promptNameAndListen() async {
     await _speak("Hi, what's your name?");
+    // Don't auto-open the mic on web — browser requires a user gesture first.
+    if (kIsWeb) return;
     if (!_speechEnabled || _isListening || !mounted) return;
     await _listen();
   }
@@ -269,6 +273,18 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
       key: const ValueKey('name'),
       mainAxisSize: MainAxisSize.min,
       children: [
+        // App branding
+        const Icon(Icons.auto_awesome, color: _goldColor, size: 40),
+        const SizedBox(height: 6),
+        Text(
+          'Story Weaver',
+          style: GoogleFonts.cinzelDecorative(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: _goldColor,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
         Semantics(
           label: "Enter your name",
           textField: true,

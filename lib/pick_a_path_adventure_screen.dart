@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'models.dart';
 import 'services/app_tts_service.dart';
+import 'services/api_service_manager.dart';
 import 'storage_service.dart';
 import 'services/interactive_story_analytics.dart';
 import 'services/interactive_story_service.dart';
 import 'services/chronicle_service.dart';
 import 'subscription_service.dart';
 import 'theme/app_theme.dart';
-import 'theme/age_band_theme.dart';
 import 'package:story_weaver_app/widgets/app_button.dart';
 import 'widgets/app_card.dart';
 import 'widgets/error_message.dart';
@@ -115,22 +115,30 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
     if (mounted) setState(() => _ttsEnabled = true);
   }
 
-  void _speakSegment(String text) {
-    if (!_ttsEnabled) return;
-    final clean = text.replaceAll(RegExp(r'\*+'), '').trim();
-    unawaited(AppTtsService.instance.speak(clean));
-  }
 
-  /// For sprout/explorer bands: speaks the segment, then reads choices aloud.
+  /// Speaks the segment; for young bands also reads choices aloud.
+  /// Sprouts on continuation-only segments auto-advance after TTS.
   void _speakSegmentWithChoices() {
     if (!_ttsEnabled) return;
     final segment = _currentSegment;
     if (segment == null) return;
     final clean = segment.content.replaceAll(RegExp(r'\*+'), '').trim();
-    if (segment.choices.isEmpty) {
-      unawaited(AppTtsService.instance.speak(clean));
+
+    final age = widget.character.age;
+    final isSprout = age <= 5;
+    final isYoung = age <= 8; // sprout + explorer
+
+    if (!isYoung || segment.choices.isEmpty) {
+      // For sprouts on continuation segments: auto-advance after narration.
+      if (isSprout && segment.isContinuation && !_isCompleted) {
+        unawaited(_speakThenAutoAdvance(clean));
+      } else {
+        unawaited(AppTtsService.instance.speak(clean));
+      }
       return;
     }
+
+    // Young bands with choices: read segment then choices.
     final choiceParts = segment.choices
         .asMap()
         .entries
@@ -143,6 +151,15 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
     await AppTtsService.instance.speak(content, awaitCompletion: true);
     if (!mounted) return;
     await AppTtsService.instance.speak('What will you choose? $choicesText');
+  }
+
+  /// Sprout-only: speaks content then waits briefly before auto-advancing.
+  Future<void> _speakThenAutoAdvance(String content) async {
+    await AppTtsService.instance.speak(content, awaitCompletion: true);
+    if (!mounted || _isContinuing || _isCompleted) return;
+    await Future.delayed(const Duration(milliseconds: 1200));
+    if (!mounted || _isContinuing || _isCompleted) return;
+    unawaited(_handleContinue());
   }
 
   int get _targetSegmentCount {
@@ -183,21 +200,23 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
             widget.chronicleId!);
       }
 
-      final response = await _storyService.startInteractiveStory(
-        userId: widget.userId,
-        characterId: widget.character.id,
-        theme: widget.theme,
-        tone: widget.tone,
-        length: widget.length,
-        age: widget.character.age,
-        interests: widget.interests,
-        mustInclude: widget.mustInclude,
-        avoid: widget.avoid,
-        lifeChallenge: widget.lifeChallenge,
-        personalitySliders: widget.personalitySliders,
-        chronicleContext: chronicleContext,
-        bigFeelingsContext: widget.bigFeelingsContext,
-      );
+      final response = await _runWithAuthRetry(() {
+        return _storyService.startInteractiveStory(
+          userId: widget.userId,
+          characterId: widget.character.id,
+          theme: widget.theme,
+          tone: widget.tone,
+          length: widget.length,
+          age: widget.character.age,
+          interests: widget.interests,
+          mustInclude: widget.mustInclude,
+          avoid: widget.avoid,
+          lifeChallenge: widget.lifeChallenge,
+          personalitySliders: widget.personalitySliders,
+          chronicleContext: chronicleContext,
+          bigFeelingsContext: widget.bigFeelingsContext,
+        );
+      });
 
       if (!mounted) return;
       setState(() {
@@ -249,7 +268,9 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
     });
 
     try {
-      final response = await _storyService.resumeStory(widget.existingStoryId!);
+      final response = await _runWithAuthRetry(() {
+        return _storyService.resumeStory(widget.existingStoryId!);
+      });
 
       if (!mounted) return;
       setState(() {
@@ -282,6 +303,21 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
     });
   }
 
+  bool _isAuthError(InteractiveStoryException error) =>
+      error.message.contains('code 401');
+
+  Future<T> _runWithAuthRetry<T>(Future<T> Function() action) async {
+    try {
+      return await action();
+    } on InteractiveStoryException catch (error) {
+      if (!_isAuthError(error)) {
+        rethrow;
+      }
+      await ApiServiceManager.resetAndReauthenticate();
+      return action();
+    }
+  }
+
   Future<void> _handleChoiceSelected(StoryChoiceData choice) async {
     if (_isContinuing || _isCompleted || _storyId == null) return;
 
@@ -294,10 +330,12 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
     });
 
     try {
-      final response = await _storyService.continueInteractiveStory(
-        storyId: _storyId!,
-        choiceId: choice.id,
-      );
+      final response = await _runWithAuthRetry(() {
+        return _storyService.continueInteractiveStory(
+          storyId: _storyId!,
+          choiceId: choice.id,
+        );
+      });
 
       if (!mounted) return;
       setState(() {
@@ -357,11 +395,13 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
     _customChoiceController.clear();
 
     try {
-      final response = await _storyService.continueInteractiveStory(
-        storyId: _storyId!,
-        choiceId: 'custom',
-        customText: text,
-      );
+      final response = await _runWithAuthRetry(() {
+        return _storyService.continueInteractiveStory(
+          storyId: _storyId!,
+          choiceId: 'custom',
+          customText: text,
+        );
+      });
 
       if (!mounted) return;
       setState(() {
@@ -418,10 +458,12 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
     try {
       // For CONTINUE segments, we create a pseudo-choice to advance the story
       // The backend will recognize this and generate the next segment
-      final response = await _storyService.continueInteractiveStory(
-        storyId: _storyId!,
-        choiceId: 'continue', // Special ID for continuation
-      );
+      final response = await _runWithAuthRetry(() {
+        return _storyService.continueInteractiveStory(
+          storyId: _storyId!,
+          choiceId: 'continue', // Special ID for continuation
+        );
+      });
 
       if (!mounted) return;
       setState(() {
