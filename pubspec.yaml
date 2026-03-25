@@ -152,6 +152,48 @@ flutter:
     - assets/images/scenes/adult/
     - assets/images/scenarios/
     - assets/images/themes/
+    # age_band_assets — per-band AI-generated artwork (archetypes, backgrounds, scenes, feelings, orbs, ui)
+    - age_band_assets/sprouts/archetypes/
+    - age_band_assets/sprouts/backgrounds/
+    - age_band_assets/sprouts/companions/
+    - age_band_assets/sprouts/feelings/
+    - age_band_assets/sprouts/orbs/
+    - age_band_assets/sprouts/ui/
+    - age_band_assets/early_readers/archetypes/
+    - age_band_assets/early_readers/backgrounds/
+    - age_band_assets/early_readers/companions/
+    - age_band_assets/early_readers/feelings/
+    - age_band_assets/early_readers/orbs/
+    - age_band_assets/early_readers/scenes/
+    - age_band_assets/early_readers/ui/
+    - age_band_assets/adventurers/archetypes/
+    - age_band_assets/adventurers/backgrounds/
+    - age_band_assets/adventurers/companions/
+    - age_band_assets/adventurers/feelings/
+    - age_band_assets/adventurers/orbs/
+    - age_band_assets/adventurers/scenes/
+    - age_band_assets/adventurers/ui/
+    - age_band_assets/creators/archetypes/
+    - age_band_assets/creators/backgrounds/
+    - age_band_assets/creators/companions/
+    - age_band_assets/creators/feelings/
+    - age_band_assets/creators/orbs/
+    - age_band_assets/creators/scenes/
+    - age_band_assets/creators/ui/
+    - age_band_assets/adolescents/archetypes/
+    - age_band_assets/adolescents/backgrounds/
+    - age_band_assets/adolescents/companions/
+    - age_band_assets/adolescents/feelings/
+    - age_band_assets/adolescents/orbs/
+    - age_band_assets/adolescents/scenes/
+    - age_band_assets/adolescents/ui/
+    - age_band_assets/adults/archetypes/
+    - age_band_assets/adults/backgrounds/
+    - age_band_assets/adults/companions/
+    - age_band_assets/adults/feelings/
+    - age_band_assets/adults/orbs/
+    - age_band_assets/adults/scenes/
+    - age_band_assets/adults/ui/
     - assets/feelings_faces/
     - assets/mood_lanterns/
     - assets/sounds/

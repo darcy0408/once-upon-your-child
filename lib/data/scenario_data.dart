@@ -1,4 +1,5 @@
 import '../theme/age_band_theme.dart';
+import '../theme/age_band_asset_resolver.dart';
 
 class ScenarioCard {
   final String id;
@@ -11,7 +12,11 @@ class ScenarioCard {
   final String category; // 'Magical Worlds' or 'Real-Life Heroes'
   final AgeBand? minBand; // null = all ages; set = only shown for this band and above
   final String worldBible; // Rich world description for AI consistency
-  // Age-appropriate alternatives for younger children (ages 3-6)
+  // Sprout-band (ages 2-5) specific wording — even simpler than youngTitle, and
+  // matched to the sproutIllustration tile image shown in the setting picker.
+  final String? sproutTitle;
+  final String? sproutDescription;
+  // Age-appropriate alternatives for younger children (ages 6-8, Explorer band)
   final String? youngTitle;
   final String? youngDescription;
   final String? youngConflictHook;
@@ -29,6 +34,12 @@ class ScenarioCard {
   // Sprout-band (ages 2-5) specific tile image, displayed instead of the
   // general illustration when the child is in the sprout band.
   final String? sproutIllustration;
+  // Per-band scene art from age_band_assets/.
+  // youngBandSceneId  → used for explorer band (ages 6-8); file stem in early_readers/scenes/.
+  // olderBandSceneId  → used for adventurer+ (ages 9+); file stem in adventurers/scenes/ and above.
+  // Both are optional — falls back to illustration when null.
+  final String? youngBandSceneId;
+  final String? olderBandSceneId;
 
   const ScenarioCard({
     required this.id,
@@ -42,6 +53,8 @@ class ScenarioCard {
     this.minBand,
     this.featured = false,
     this.worldBible = '',
+    this.sproutTitle,
+    this.sproutDescription,
     this.youngTitle,
     this.youngDescription,
     this.youngConflictHook,
@@ -52,11 +65,15 @@ class ScenarioCard {
     this.matureWorldBible,
     this.creatorTitle,
     this.sproutIllustration,
+    this.youngBandSceneId,
+    this.olderBandSceneId,
   });
 
   /// Get the title appropriate for the given age.
   String titleForAge(int age) {
-    // Explorer band (ages 6-8) gets the young/accessible version — same as Sprout.
+    // Sprout band (ages 2-5) gets its own tile-matched wording when available.
+    if (age <= 5 && sproutTitle != null) return sproutTitle!;
+    // Explorer band (ages 6-8) gets the young/accessible version.
     if (age <= 8 && youngTitle != null) return youngTitle!;
     // Creator band (ages 12-14) gets an identity-focused framing when available.
     if (age >= 12 && age <= 14 && creatorTitle != null) return creatorTitle!;
@@ -67,6 +84,8 @@ class ScenarioCard {
 
   /// Get the description appropriate for the given age.
   String descriptionForAge(int age) {
+    // Sprout band (ages 2-5) gets its own tile-matched description when available.
+    if (age <= 5 && sproutDescription != null) return sproutDescription!;
     if (age <= 8 && youngDescription != null) return youngDescription!;
     if (age >= 12 && matureDescription != null) return matureDescription!;
     return description;
@@ -90,8 +109,8 @@ class ScenarioCard {
   String titleForBand(AgeBand band) {
     switch (band) {
       case AgeBand.sprout:
+        return sproutTitle ?? youngTitle ?? title;
       case AgeBand.explorer:
-        // Both sprout (3-5) and explorer (6-8) use the young/accessible title.
         return youngTitle ?? title;
       case AgeBand.adventurer:
         return title;
@@ -105,9 +124,16 @@ class ScenarioCard {
   }
 
   /// Get the illustration path appropriate for the given age.
-  /// Sprout band (ages ≤5) uses the dedicated tile image when available.
+  /// Sprout (≤5): dedicated tile image. Explorer (6-8): youngBandSceneId art.
+  /// Adventurer+ (≥9): olderBandSceneId art. Falls back to illustration.
   String illustrationForAge(int age) {
     if (age <= 5 && sproutIllustration != null) return sproutIllustration!;
+    if (age <= 8 && youngBandSceneId != null) {
+      return AgeBandAssetResolver.scenePath(AgeBand.explorer, youngBandSceneId!);
+    }
+    if (age >= 9 && olderBandSceneId != null) {
+      return AgeBandAssetResolver.scenePath(AgeBand.adventurer, olderBandSceneId!);
+    }
     return illustration;
   }
 }
@@ -129,6 +155,8 @@ class ScenarioData {
       category: 'Magical Worlds',
       worldBible:
           'A circular hall of four ornate doors — Spring (green vines), Summer (golden light), Autumn (amber leaves), Winter (frost crystals). Each door opens to a full landscape of that season. The Season Keeper, a gentle clock-like being, maintains balance. Creatures from each season (snowflake sprites, sunbeam foxes, leaf dancers, blossom bunnies) live in their own realm but visit the hall. Magic rule: carrying an object from one season into another causes playful chaos — snowballs bloom flowers, autumn leaves turn into butterflies.',
+      sproutTitle: 'Zoom to the Stars!',
+      sproutDescription: 'Hop in a rocket and fly up to the twinkly stars!',
       youngTitle: 'The Magic Door',
       youngDescription:
           'Open the magic door and see what fun season is waiting for you!',
@@ -146,6 +174,8 @@ class ScenarioData {
       // Mystery/adventure scenario — the standard title works for 12-14; no distinct framing needed.
       creatorTitle: null,
       sproutIllustration: 'assets/images/ui/sprout/tiles/space.png',
+      youngBandSceneId: 'star_village',
+      olderBandSceneId: 'ruined_citadel',
     ),
     ScenarioCard(
       id: 'volcano_dragons',
@@ -161,6 +191,8 @@ class ScenarioData {
       category: 'Magical Worlds',
       worldBible:
           'A dormant volcano island with terraced ledges where dragons of all sizes sleep in nests of warm obsidian. The volcano rumbles gently like a purring cat. Inside, lava rivers flow in channels alongside walkable crystal bridges. Each dragon has a unique breath — rainbow fire, bubble breath, sparkle mist, warm-cookie scent. The Elder Dragon (enormous but gentle) sleeps at the caldera\'s heart. Lava flowers bloom along the paths and glow-moths light the tunnels. The dragons communicate through musical hums and only wake fully when sung to. Treasure: not gold, but memory-crystals that replay happy moments.',
+      sproutTitle: 'Stomp with the Dinosaurs!',
+      sproutDescription: 'Meet big, friendly dinosaurs who love to stomp and play!',
       youngTitle: 'Friendly Dragons',
       youngDescription:
           'Meet friendly dragons who love to play and go on adventures with you!',
@@ -178,6 +210,8 @@ class ScenarioData {
       // Adventure scenario — matureTitle works for 12-14; no distinct framing needed.
       creatorTitle: null,
       sproutIllustration: 'assets/images/ui/sprout/tiles/dinosaurs.png',
+      youngBandSceneId: 'enchanted_forest',
+      olderBandSceneId: 'tidal_shrine',
     ),
     ScenarioCard(
       id: 'neon_jungle',
@@ -193,6 +227,8 @@ class ScenarioData {
       category: 'Magical Worlds',
       worldBible:
           'A dense tropical jungle where every plant bioluminesces — trees pulse in neon greens and blues, flowers glow hot pink and amber. The jungle is alive and sentient; it communicates through whispers carried by the wind. Whispering a kind word to a plant makes it glow brighter. The Jungle Heart is a massive ancient tree at the centre whose roots connect all life. Animals include luminous tree frogs, firefly-mane monkeys, and silk-wing parrots that echo whispers. Rivers run with water that shimmers like liquid starlight. At night, the whole jungle becomes a light show — but only if the inhabitants remember to whisper.',
+      sproutTitle: 'The Magical Forest',
+      sproutDescription: 'Skip through a glowing forest and find friendly animals!',
       youngTitle: 'The Glowing Jungle',
       youngDescription:
           'A magical jungle where the trees and flowers glow in pretty colors!',
@@ -210,6 +246,8 @@ class ScenarioData {
       // Adventure scenario — matureTitle works for 12-14; no distinct framing needed.
       creatorTitle: null,
       sproutIllustration: 'assets/images/ui/sprout/tiles/forest.png',
+      youngBandSceneId: 'enchanted_forest',
+      olderBandSceneId: 'deep_archive',
     ),
     ScenarioCard(
       id: 'crystal_cavern',
@@ -225,6 +263,8 @@ class ScenarioData {
       category: 'Magical Worlds',
       worldBible:
           'An enormous underground cavern system with chambers of crystals in every colour — amethyst cathedrals, emerald grottos, diamond corridors. Sound behaves magically here: whispers travel for miles, shouts become solid shapes, singing creates temporary light bridges. The Echo-King is a crystal golem who collects beautiful sounds and stores them in singing crystals. Friendly cave creatures include echo-bats (repeat the last nice thing said), crystal snails (leave trails of gemstone dust), and glow-worms that spell words on the ceiling. Underground lakes reflect everything upside-down, showing the hidden truth of whatever you ask. The only rule: be gentle with your voice, because loud sounds crack the crystals.',
+      sproutTitle: 'Under the Sea!',
+      sproutDescription: 'Swim with colorful fish and make friends under the waves!',
       youngTitle: 'Cave Full of Crystals',
       youngDescription:
           'A sparkly cave full of shiny crystals that make beautiful music!',
@@ -242,6 +282,8 @@ class ScenarioData {
       // The matureTitle angle (emotions manifesting as real things) resonates well with 12-14.
       creatorTitle: 'The Echo Inside',
       sproutIllustration: 'assets/images/ui/sprout/tiles/ocean.png',
+      youngBandSceneId: 'ocean_depths',
+      olderBandSceneId: 'deep_archive',
     ),
     ScenarioCard(
       id: 'storm_chaser_sky',
@@ -257,6 +299,8 @@ class ScenarioData {
       category: 'Magical Worlds',
       worldBible:
           'A massive airborne fortress built from cloudstone and bronze, sailing through an endless sky filled with storm-clouds, rainbows, and floating islands. The fortress has sails made of woven lightning, a helm that steers by singing, and rooms that rearrange when the wind changes. Crew includes sky-sailors, weather-weavers (who knit clouds into useful shapes), and storm-dancers who redirect lightning. Sky wildlife: thunder-whales that breach through clouds, spark-finches that nest in lightning rods, and cloud-sheep whose wool is literally fog. Below the clouds, the ground is a distant memory. Navigation uses constellation maps that only appear during storms.',
+      sproutTitle: 'The Fluffy Cloud Castle',
+      sproutDescription: 'Bounce on soft clouds and play in a cozy castle in the sky!',
       youngTitle: 'Candy Cloud Castle',
       youngDescription:
           'A fluffy castle in the clouds made of cotton candy and rainbows!',
@@ -274,6 +318,8 @@ class ScenarioData {
       // Adventure scenario — matureTitle works for 12-14; no distinct framing needed.
       creatorTitle: null,
       sproutIllustration: 'assets/images/ui/sprout/tiles/castle.png',
+      youngBandSceneId: 'cloud_castle',
+      olderBandSceneId: 'orbital_station',
     ),
     ScenarioCard(
       id: 'vanishing_colors',
@@ -289,6 +335,8 @@ class ScenarioData {
       category: 'Magical Worlds',
       worldBible:
           'A world that looks like a living painting — rolling hills of brushstroke grass, skies layered in watercolour gradients, rivers of liquid pigment. Colour is the life-force here: when a flower loses its colour, it wilts; when a creature turns grey, it falls asleep. The Great Eraser is a fog-like entity that absorbs colour and leaves monochrome in its wake. Allies include the Paint Sprites (tiny beings that each carry one colour), the Palette Guardian (a wise rainbow tortoise), and Brushstroke Birds that trail colour behind them as they fly. The hero can restore colour through creative acts — painting, singing, dancing, telling stories. Each restored colour brings back a sense: red returns warmth, blue returns sound, yellow returns smell, green returns taste. THE JELLO ROAD: The main road through this land is paved in solid rainbow gelatin. In dry weather it is firm and springy, with a satisfying bounce underfoot — like walking on the world\'s bounciest trampoline. When it rains, the surface turns frictionless and slick, becoming a wild slip-and-slide (fast travel, zero control). After the rain stops, the road goes through a sticky phase — anything on it gets gently held in place for a minute while it sets — before firming back up. Locals know to read the road like weather: bounce means go, slide means hang on, sticky means wait.',
+      sproutTitle: 'Rainbow World',
+      sproutDescription: 'A yummy world full of rainbows, sweets, and happy surprises!',
       youngTitle: 'Rainbow World',
       youngDescription:
           'A magical land full of rainbows, colors, and happy surprises!',
@@ -306,6 +354,8 @@ class ScenarioData {
       // Identity resonance: the idea that apathy erases your world maps well to 12-14 self-expression themes.
       creatorTitle: 'When Everything Fades',
       sproutIllustration: 'assets/images/ui/sprout/tiles/candy_land.png',
+      youngBandSceneId: 'cloud_castle',
+      olderBandSceneId: 'ruined_citadel',
     ),
 
     // --- REAL-LIFE HEROES ---

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
 import '../theme/age_band_theme.dart';
+import '../theme/age_band_asset_resolver.dart';
 
 class BigFeelingsFlowResult {
   const BigFeelingsFlowResult({
@@ -549,6 +550,7 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
                         isFirstStep: _step == 0,
                         bandFolder: _bandFolder(),
                         fontFamily: band.uiFontFamily,
+                        ageBand: band.band,
                         onTap: () {
                           switch (_step) {
                             case 0:
@@ -610,6 +612,7 @@ class _BigFeelingsChoiceCard extends StatelessWidget {
     this.isFirstStep = false,
     this.bandFolder = 'sprout',
     this.fontFamily = 'Fredoka',
+    this.ageBand,
   });
 
   final _ChoiceOption option;
@@ -617,6 +620,12 @@ class _BigFeelingsChoiceCard extends StatelessWidget {
   final bool isFirstStep;
   final String bandFolder;
   final String fontFamily;
+  final AgeBand? ageBand;
+
+  static bool _useAgeBandAssets(AgeBand band) =>
+      band == AgeBand.sprout ||
+      band == AgeBand.explorer ||
+      band == AgeBand.adventurer;
 
   @override
   Widget build(BuildContext context) {
@@ -641,7 +650,15 @@ class _BigFeelingsChoiceCard extends StatelessWidget {
                 children: [
                   if (isFirstStep)
                     Image.asset(
-                      'assets/images/feelings/$bandFolder/${option.value.toLowerCase()}.png',
+                      // Younger bands (sprout/explorer/adventurer) use the new
+                      // per-band artwork from age_band_assets/. Creator+ keeps
+                      // the gendered subfolders in assets/images/feelings/.
+                      ageBand != null && _useAgeBandAssets(ageBand!)
+                          ? AgeBandAssetResolver.feelingPath(
+                              ageBand!,
+                              option.value.toLowerCase(),
+                            )
+                          : 'assets/images/feelings/$bandFolder/${option.value.toLowerCase()}.png',
                       width: 48,
                       height: 48,
                       errorBuilder: (_, __, ___) => Text(option.emoji, style: const TextStyle(fontSize: 40)),

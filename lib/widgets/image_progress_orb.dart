@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'magical_float.dart';
 import '../theme/age_band_theme.dart';
+import '../theme/age_band_asset_resolver.dart';
 
 /// Image-based Progress Orb using transparent PNG assets
 class ImageProgressOrb extends StatefulWidget {
@@ -23,14 +24,10 @@ class _ImageProgressOrbState extends State<ImageProgressOrb>
     with SingleTickerProviderStateMixin {
   late AnimationController _shimmerController;
   String _orbAssetPathForBand(AgeBand band) {
-    final bandName = band.name; // 'sprout', 'explorer', etc.
     final isDoneIcon = widget.icon == Icons.check_rounded ||
         widget.icon == Icons.check ||
         widget.icon == Icons.check_circle;
-    if (isDoneIcon) {
-      return 'assets/images/orbs/$bandName/progress_done.png';
-    }
-    return 'assets/images/orbs/$bandName/progress_active.png';
+    return AgeBandAssetResolver.orbPath(band, done: isDoneIcon);
   }
 
   @override

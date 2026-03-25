@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import '../utils/motion_utils.dart';
 import '../theme/age_band_theme.dart';
+import '../theme/age_band_asset_resolver.dart';
 
 /// Image-based Make Magic Button using transparent PNG asset.
 ///
@@ -39,41 +40,15 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
   bool _isPressed = false;
 
   String get _assetNormal {
-    switch (widget.ageBand) {
-      case AgeBand.sprout:
-        return 'assets/images/ui/sprout/make_magic_normal.png';
-      case AgeBand.explorer:
-        return 'assets/images/ui/explorer/make_magic_normal.png';
-      case AgeBand.adventurer:
-        return 'assets/images/ui/adventurer/make_magic_normal.png';
-      case AgeBand.creator:
-        return 'assets/images/ui/creator/make_magic_normal.png';
-      case AgeBand.adolescent:
-        return 'assets/images/ui/adolescent/make_magic_normal.png';
-      case AgeBand.adult:
-        return 'assets/images/ui/adult/make_magic_normal.png';
-      default:
-        return 'assets/images/ui/clean/make_magic_button.png';
-    }
+    final band = widget.ageBand;
+    if (band != null) return AgeBandAssetResolver.uiPath(band, 'make_magic_normal.png');
+    return 'assets/images/ui/clean/make_magic_button.png';
   }
 
   String get _assetPressed {
-    switch (widget.ageBand) {
-      case AgeBand.sprout:
-        return 'assets/images/ui/sprout/make_magic_normal_clicked.png';
-      case AgeBand.explorer:
-        return 'assets/images/ui/explorer/make_magic_normal_clicked.png';
-      case AgeBand.adventurer:
-        return 'assets/images/ui/adventurer/make_magic_normal_clicked.png';
-      case AgeBand.creator:
-        return 'assets/images/ui/creator/make_magic_normal_clicked.png';
-      case AgeBand.adolescent:
-        return 'assets/images/ui/adolescent/make_magic_normal_clicked.png';
-      case AgeBand.adult:
-        return 'assets/images/ui/adult/make_magic_normal_clicked.png';
-      default:
-        return 'assets/images/ui/clean/make_magic_button_pressed.png';
-    }
+    final band = widget.ageBand;
+    if (band != null) return AgeBandAssetResolver.uiPath(band, 'make_magic_normal_clicked.png');
+    return 'assets/images/ui/clean/make_magic_button_pressed.png';
   }
 
   @override

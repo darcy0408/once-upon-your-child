@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../theme/age_band_theme.dart';
+import '../theme/age_band_asset_resolver.dart';
 
 /// ArchetypeCard - Displays character archetype templates
 ///
@@ -417,17 +418,18 @@ class ArchetypeData {
   }
 
   String? imagePathForBand(AgeBand band) {
-    // Sprout uses simplified age-appropriate versions.
+    // Sprout uses simplified age-appropriate versions from age_band_assets/sprouts/.
     if (band == AgeBand.sprout && sproutImageId != null) {
-      return 'assets/images/archetypes/sprout/$sproutImageId.jpg';
+      return AgeBandAssetResolver.archetypePath(band, sproutImageId!);
     }
-    // Other bands use per-band images when available.
-    // animal_whisperer was regenerated as PNG (includes actual animals per band).
-    if (bandImageId != null) {
-      final ext = bandImageId == 'animal_whisperer' ? 'png' : 'jpg';
-      return 'assets/images/archetypes/${band.name}/$bandImageId.$ext';
+    if (bandImageId == null) return imagePath;
+    // animal_whisperer has no dedicated file in the age_band_assets non-sprout
+    // archetypes folders — fall back to the existing per-band PNG in assets/.
+    if (bandImageId == 'animal_whisperer') {
+      return 'assets/images/archetypes/${band.name}/animal_whisperer.png';
     }
-    return imagePath;
+    // All other archetypes use the new per-band artwork from age_band_assets/.
+    return AgeBandAssetResolver.archetypePath(band, bandImageId!);
   }
 }
 
