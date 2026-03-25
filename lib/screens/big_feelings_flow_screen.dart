@@ -417,12 +417,15 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
     super.initState();
   }
 
+  bool get _isSproutBand => ageBandFromAge(widget.childAge) == AgeBand.sprout;
+
   void _goBack() {
     if (_step == 0) {
       Navigator.of(context).pop();
       return;
     }
-    setState(() => _step -= 1);
+    // Sprout: only 2 steps — feeling → coping tool, so back always goes to step 0
+    setState(() => _step = _isSproutBand ? 0 : _step - 1);
   }
 
   void _selectFeeling(String feeling) {
@@ -430,7 +433,8 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
       _feeling = feeling;
       _trigger = null;
       _bodySignal = null;
-      _step = 1;
+      // Sprout band skips trigger + body signal — go straight to coping tool
+      _step = _isSproutBand ? 3 : 1;
     });
   }
 
@@ -452,8 +456,8 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
     Navigator.of(context).pop(
       BigFeelingsFlowResult(
         feeling: _feeling!,
-        trigger: _trigger!,
-        bodySignal: _bodySignal!,
+        trigger: _trigger ?? '',   // sprout skips trigger step
+        bodySignal: _bodySignal ?? '', // sprout skips body signal step
         copingTool: copingTool,
       ),
     );
@@ -579,6 +583,9 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
   }
 
   String _titleForStep() {
+    if (_isSproutBand) {
+      return _step == 0 ? 'How do you feel?' : 'What can help?';
+    }
     switch (_step) {
       case 0:
         return 'A Big Feeling!';
@@ -592,6 +599,9 @@ class _BigFeelingsFlowScreenState extends State<BigFeelingsFlowScreen> {
   }
 
   String _subtitleForStep() {
+    if (_isSproutBand) {
+      return _step == 0 ? 'Tap the feeling.' : 'Tap something to try!';
+    }
     switch (_step) {
       case 0:
         return 'Help your hero.';

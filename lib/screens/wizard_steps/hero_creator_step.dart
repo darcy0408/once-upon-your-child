@@ -2316,61 +2316,87 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     }
 
     if (isSproutFour) {
-      return Container(
-        height: 60,
-        decoration: BoxDecoration(
-          color: const Color(0xFF5C1A8C).withAlpha(200),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: _listeningFor == 'name'
-                ? const Color(0xFFE28EFF)
-                : const Color(0xFFFFD54F).withAlpha(120),
-            width: 1.8,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _nameController,
-                  focusNode: _nameFocusNode,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.fredoka(
-                    fontSize: 22,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
+      final isListening = _listeningFor == 'name';
+      return Column(
+        children: [
+          // Big mic button — primary input for sprouts
+          GestureDetector(
+            onTap: () => _toggleListening('name'),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 88,
+              height: 88,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isListening
+                    ? const Color(0xFFFFD700)
+                    : const Color(0xFF7C3FC8),
+                boxShadow: [
+                  BoxShadow(
+                    color: isListening
+                        ? const Color(0xFFFFD700).withAlpha(160)
+                        : const Color(0xFF9E6CFF).withAlpha(120),
+                    blurRadius: isListening ? 28 : 16,
+                    spreadRadius: isListening ? 6 : 2,
                   ),
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    hintText: _listeningFor == 'name'
-                        ? 'Listening...'
-                        : "What's your name?",
-                    hintStyle: GoogleFonts.fredoka(
-                      color: Colors.white70,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  onChanged: (v) => setState(
-                      () => widget.wizardData.characterName = v.trim()),
-                ),
+                ],
               ),
-              IconButton(
-                onPressed: () => _toggleListening('name'),
-                icon: Icon(
-                  _listeningFor == 'name'
-                      ? Icons.mic_rounded
-                      : Icons.mic_none_rounded,
-                  color: _listeningFor == 'name'
-                      ? const Color(0xFFFFD700)
-                      : Colors.white70,
-                ),
+              child: Icon(
+                isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                size: 44,
+                color: isListening ? const Color(0xFF3D0080) : Colors.white,
               ),
-            ],
+            ),
           ),
-        ),
+          const SizedBox(height: 6),
+          Text(
+            isListening ? 'Listening…' : 'Tap to say your name!',
+            style: GoogleFonts.fredoka(
+              color: isListening
+                  ? const Color(0xFFFFD700)
+                  : Colors.white70,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Secondary text field
+          Container(
+            height: 52,
+            decoration: BoxDecoration(
+              color: const Color(0xFF5C1A8C).withAlpha(180),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: const Color(0xFFFFD54F).withAlpha(100),
+                width: 1.5,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: TextField(
+                controller: _nameController,
+                focusNode: _nameFocusNode,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.fredoka(
+                  fontSize: 20,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'or type it here',
+                  hintStyle: GoogleFonts.fredoka(
+                    color: Colors.white38,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                onChanged: (v) => setState(
+                    () => widget.wizardData.characterName = v.trim()),
+              ),
+            ),
+          ),
+        ],
       );
     }
 
@@ -2762,7 +2788,18 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             _questController.text = words;
             widget.wizardData.heroQuest = words;
           }
-          if (result.finalResult) _listeningFor = '';
+          if (result.finalResult) {
+          _listeningFor = '';
+          // Sprout: read back the name so young kids hear confirmation
+          if (field == 'name' && words.isNotEmpty) {
+            final bandData = Theme.of(context).extension<AgeBandThemeData>();
+            if (bandData?.band == AgeBand.sprout) {
+              final firstName = words.split(' ').first;
+              unawaited(AppTtsService.instance
+                  .speak('Hi $firstName! That\'s a lovely name!'));
+            }
+          }
+        }
         });
       },
     );

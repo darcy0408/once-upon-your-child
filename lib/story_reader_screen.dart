@@ -62,6 +62,9 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
   // Ambient sound
   bool _ambienceMuted = false;
 
+  // Sprout simplified controls
+  bool _sproutUnlocked = false;
+
   // Neural2 (ElevenLabs via backend)
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _usingNeural2 = false;
@@ -754,6 +757,10 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
+                                        // Sprout gets simplified controls; other bands get full controls
+                                        if (ref.watch(ageBandNotifierProvider).band == AgeBand.sprout && !_sproutUnlocked)
+                                          _buildSproutControls()
+                                        else
                                         Row(
                                           mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
@@ -873,8 +880,9 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
                                             ),
                                           ],
                                         ),
-                                        // Speed control chips — visible when playing or paused
-                                        if (_isPlaying || _currentWordIndex != -1) ...[
+                                        // Speed chips hidden for sprout (no speed chips visible)
+                                        if ((_isPlaying || _currentWordIndex != -1) &&
+                                            !(ref.watch(ageBandNotifierProvider).band == AgeBand.sprout && !_sproutUnlocked)) ...[
                                           const SizedBox(height: 10),
                                           _buildSpeedChips(),
                                         ],
@@ -969,6 +977,74 @@ class _StoryReaderScreenState extends ConsumerState<StoryReaderScreen> with Sing
             fontSize: 12,
             fontWeight: FontWeight.bold,
             color: AppColors.primary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Simplified 2-button controls for sprout band (play/pause + start over).
+  /// A small lock icon lets parents long-press 2s to reveal full controls.
+  Widget _buildSproutControls() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Start Over button
+        _buildControlButton(
+          icon: Icons.replay_rounded,
+          label: 'Start Over',
+          onPressed: _isPlaying || _currentWordIndex != -1
+              ? () async {
+                  await _stopReading();
+                  if (mounted) _startReading();
+                }
+              : null,
+          isPrimary: false,
+        ),
+        const SizedBox(width: 20),
+        // Big play / pause button
+        ScaleTransition(
+          scale: _pulseAnimation,
+          child: _isLoadingAudio
+              ? _buildLoadingButton()
+              : _buildControlButton(
+                  icon: _isPlaying
+                      ? Icons.pause_rounded
+                      : Icons.play_arrow_rounded,
+                  label: _isPlaying ? 'Pause' : 'Play',
+                  onPressed: _isPlaying
+                      ? _pauseReading
+                      : (_currentWordIndex != -1
+                          ? _resumeReading
+                          : _startReading),
+                  isPrimary: true,
+                  size: 64,
+                ),
+        ),
+        const SizedBox(width: 20),
+        // Parent lock — 2s long-press to unlock full controls
+        GestureDetector(
+          onLongPress: () {
+            setState(() => _sproutUnlocked = true);
+          },
+          child: Tooltip(
+            message: 'Hold 2s to unlock parent controls',
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.gold.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.gold.withValues(alpha: 0.35),
+                ),
+              ),
+              child: Icon(
+                Icons.lock_outline,
+                size: 20,
+                color: AppColors.gold.withValues(alpha: 0.6),
+              ),
+            ),
           ),
         ),
       ],
