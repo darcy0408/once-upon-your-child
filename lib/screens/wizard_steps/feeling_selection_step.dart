@@ -348,7 +348,10 @@ class _FeelingSelectionStepState extends State<FeelingSelectionStep> {
               Center(
                 key: const Key('wizard_continue_scenario'),
                 child: ImageContinueButton(
-                  onTap: widget.onNext,
+                  onTap: () {
+                    widget.wizardData.interactiveMode = true;
+                    widget.onNext();
+                  },
                   ageBand: ageBandFromAge(widget.wizardData.characterAge),
                 ),
               ),

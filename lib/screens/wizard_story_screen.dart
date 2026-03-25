@@ -191,8 +191,8 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SwitchListTile(
-                    title: const Text('Interactive Story', style: TextStyle(color: Colors.white)),
-                    subtitle: const Text('Child answers questions to shape the story.', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    title: const Text('Interactive Bedtime Adventure', style: TextStyle(color: Colors.white)),
+                    subtitle: const Text('Voice-led pick-a-path bedtime story.', style: TextStyle(color: Colors.white70, fontSize: 12)),
                     value: isInteractive,
                     activeThumbColor: const Color(0xFFFFD700),
                     onChanged: (val) => setDialogState(() => isInteractive = val),

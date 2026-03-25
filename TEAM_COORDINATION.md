@@ -15,11 +15,15 @@
   - Stop hardcoding `userId: 'guest'` for interactive launches.
 - `lib/pick_a_path_adventure_screen.dart`
   - Add one-time re-auth + retry behavior when the interactive API returns 401 so stale or missing anonymous tokens do not strand the user immediately.
+- `lib/screens/wizard_steps/feeling_selection_step.dart`
+  - Default the wizard into pick-your-path when the user advances from the adventure scenario step; keep the review toggle for opt-out.
+- `lib/screens/wizard_story_screen.dart`
+  - Rename bedtime interactive toggle copy so the audio-only path is clearly described as a voice-led pick-a-path bedtime story.
 
 ### Next Planned Fixes
-1. Make pick-your-path the default when the user comes through the adventure scenario flow, while still allowing opt-out in review.
-2. Re-verify adult scenario filtering in `feeling_selection_step.dart` and ship if the deployed behavior is simply stale.
-3. Clarify the audio-only story path so "interactive bedtime" and "pick-your-path" are understandable from the UI.
+1. Re-verify adult scenario filtering in `feeling_selection_step.dart` and ship if the deployed behavior is simply stale.
+2. Follow the bedtime/audio-only path in the deployed app after the auth fix is live.
+3. Audit mature-band companion/scenario language once the interactive flow is reachable again.
 
 ---
 
