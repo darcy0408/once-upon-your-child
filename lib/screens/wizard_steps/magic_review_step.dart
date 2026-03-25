@@ -42,6 +42,18 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   late String _loadingStatus;
   final StoryIllustrationService _illustrationService =
       StoryIllustrationService();
+
+  Future<String?> _resolveInteractiveUserId() async {
+    final api = ApiServiceManager();
+    var userId = await api.getUserId();
+    if (userId != null && userId.isNotEmpty) {
+      return userId;
+    }
+
+    await ApiServiceManager.resetAndReauthenticate();
+    userId = await api.getUserId();
+    return userId != null && userId.isNotEmpty ? userId : null;
+  }
   @override
   void initState() {
     super.initState();
@@ -140,6 +152,14 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         requestData['currentFeeling'] = currentFeeling.toJson();
       }
       if (widget.wizardData.interactiveMode) {
+        final userId = await _resolveInteractiveUserId();
+        if (!mounted) return;
+        if (userId == null) {
+          throw Exception(
+            'Unable to sign in anonymously for interactive stories.',
+          );
+        }
+
         if (mounted) {
           final character = Character(
               id: widget.wizardData.characterId ??
@@ -151,7 +171,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
               personalitySliders: widget.wizardData.personalitySliders);
           await Navigator.of(context).push(MaterialPageRoute(
               builder: (context) => PickAPathAdventureScreen(
-                      userId: 'guest',
+                      userId: userId,
                       character: character,
                       theme: requestData['theme'] ?? 'Adventure',
                       tone: 'whimsical',

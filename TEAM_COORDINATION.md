@@ -1,5 +1,28 @@
 # Team Coordination
 
+## 2026-03-25 (Pick-A-Path Audit + Auth Hardening — Codex)
+
+### Live Audit Findings
+- Tested the deployed Railway frontend (`grand-light-production-68d9.up.railway.app`) through the pick-your-path wizard as a user.
+- Confirmed a hard blocker on interactive launch: the flow reached `Pick-A-Path Adventure` and failed with `Unable to start story (code 401): Authentication required`.
+- Confirmed UX mismatch: step 2 is framed as "Choose Your Adventure", but step 4 still leaves `Pick-A-Path Adventure` off by default.
+- Confirmed adult-band regression in the deployed app: child-oriented scenarios, including `Big Feelings Quest`, were still visible for age 25.
+- Confirmed audio-only is not integrated into the pick-your-path review flow; current implementation lives under the separate bedtime wizard entry point.
+
+### Code Changes In Progress
+- `lib/screens/wizard_steps/magic_review_step.dart`
+  - Resolve the authenticated/anonymous user ID before launching `PickAPathAdventureScreen`.
+  - Stop hardcoding `userId: 'guest'` for interactive launches.
+- `lib/pick_a_path_adventure_screen.dart`
+  - Add one-time re-auth + retry behavior when the interactive API returns 401 so stale or missing anonymous tokens do not strand the user immediately.
+
+### Next Planned Fixes
+1. Make pick-your-path the default when the user comes through the adventure scenario flow, while still allowing opt-out in review.
+2. Re-verify adult scenario filtering in `feeling_selection_step.dart` and ship if the deployed behavior is simply stale.
+3. Clarify the audio-only story path so "interactive bedtime" and "pick-your-path" are understandable from the UI.
+
+---
+
 ## 2026-03-23 (Railway Deployment Fix — Git Repo Size Reduction — Claude Sonnet 4.6)
 
 ### Problem
