@@ -93,9 +93,9 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
   @override
   void initState() {
     super.initState();
-    if (ageBandFromAge(widget.character.age).index <= AgeBand.explorer.index) {
-      _initTts();
-    }
+    // TTS enabled for all bands — young kids hear choices read aloud,
+    // older kids/adults get automatic narration as they advance.
+    _initTts();
     if (widget.existingStoryId != null) {
       _resumeStory();
     } else {
@@ -119,6 +119,30 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
     if (!_ttsEnabled) return;
     final clean = text.replaceAll(RegExp(r'\*+'), '').trim();
     unawaited(AppTtsService.instance.speak(clean));
+  }
+
+  /// For sprout/explorer bands: speaks the segment, then reads choices aloud.
+  void _speakSegmentWithChoices() {
+    if (!_ttsEnabled) return;
+    final segment = _currentSegment;
+    if (segment == null) return;
+    final clean = segment.content.replaceAll(RegExp(r'\*+'), '').trim();
+    if (segment.choices.isEmpty) {
+      unawaited(AppTtsService.instance.speak(clean));
+      return;
+    }
+    final choiceParts = segment.choices
+        .asMap()
+        .entries
+        .map((e) => 'Choice ${e.key + 1}: ${e.value.text}')
+        .join('. ');
+    unawaited(_speakThenChoices(clean, choiceParts));
+  }
+
+  Future<void> _speakThenChoices(String content, String choicesText) async {
+    await AppTtsService.instance.speak(content, awaitCompletion: true);
+    if (!mounted) return;
+    await AppTtsService.instance.speak('What will you choose? $choicesText');
   }
 
   int get _targetSegmentCount {
@@ -186,7 +210,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
         _isLoading = false;
       });
       if (_ttsEnabled && _currentSegment != null) {
-        _speakSegment(_currentSegment!.content);
+        _speakSegmentWithChoices();
       }
 
       _chapterTextBuffer.write(_currentSegment?.content ?? '');
@@ -237,7 +261,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
         _isLoading = false;
       });
       if (_ttsEnabled && _currentSegment != null) {
-        _speakSegment(_currentSegment!.content);
+        _speakSegmentWithChoices();
       }
 
       _scrollToBottom();
@@ -284,7 +308,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
         _isContinuing = false;
       });
       if (_ttsEnabled && _currentSegment != null) {
-        _speakSegment(_currentSegment!.content);
+        _speakSegmentWithChoices();
       }
       _segmentsThisSession++;
       if (_segmentsThisSession >= _maxSegmentsPerSession) {
@@ -348,7 +372,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
         _isContinuing = false;
       });
       if (_ttsEnabled && _currentSegment != null) {
-        _speakSegment(_currentSegment!.content);
+        _speakSegmentWithChoices();
       }
       _segmentsThisSession++;
       if (_segmentsThisSession >= _maxSegmentsPerSession) {
@@ -408,7 +432,7 @@ class _PickAPathAdventureScreenState extends State<PickAPathAdventureScreen> {
         _isContinuing = false;
       });
       if (_ttsEnabled && _currentSegment != null) {
-        _speakSegment(_currentSegment!.content);
+        _speakSegmentWithChoices();
       }
       _segmentsThisSession++;
       if (_segmentsThisSession >= _maxSegmentsPerSession) {
