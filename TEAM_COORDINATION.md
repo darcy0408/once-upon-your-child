@@ -19,11 +19,15 @@
   - Default the wizard into pick-your-path when the user advances from the adventure scenario step; keep the review toggle for opt-out.
 - `lib/screens/wizard_story_screen.dart`
   - Rename bedtime interactive toggle copy so the audio-only path is clearly described as a voice-led pick-a-path bedtime story.
+- `lib/screens/bedtime_wizard_screen.dart`
+  - Switch bedtime voice prompts, fallback companions, and fallback settings to use the resolved age band instead of child-only defaults.
+  - Replace `tiny dragon` / `Magical Forest` fallbacks for older bands with mature options such as `Thunder Wolf`, `Deep Archive`, and `Ruined Citadel`.
+  - Keep younger bands on playful bedtime language while giving older bands/adults a cleaner audio-only prompt vocabulary.
 
 ### Next Planned Fixes
-1. Re-verify adult scenario filtering in `feeling_selection_step.dart` and ship if the deployed behavior is simply stale.
-2. Follow the bedtime/audio-only path in the deployed app after the auth fix is live.
-3. Audit mature-band companion/scenario language once the interactive flow is reachable again.
+1. Re-test the deployed bedtime/audio-only flow for each age band after this copy/defaults patch is live.
+2. Re-verify adult scenario filtering in `feeling_selection_step.dart` once Railway has the newer frontend commits.
+3. Decide whether the bedtime interactive loop should also expose a visible "audio-only pick-a-path" entry point from the main review screen instead of the separate bedtime button.
 
 ---
 

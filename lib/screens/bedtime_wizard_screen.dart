@@ -5,6 +5,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 import '../services/app_tts_service.dart';
 import '../services/api_service_manager.dart';
 import '../models.dart';
+import '../theme/age_band_theme.dart';
 import 'wizard_steps/wizard_data_mapper.dart';
 import 'parent_controls_screen.dart';
 
@@ -70,8 +71,15 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
   late AnimationController _orbController;
   Timer? _sleepTimer;
 
-  bool get _isMature => widget.childAge >= 12;
-  bool get _isYoung => widget.childAge <= 8;
+  int get _effectiveAge =>
+      _resolvedAge > 0 ? _resolvedAge : (widget.childAge > 0 ? widget.childAge : 8);
+  AgeBand get _ageBand => ageBandFromAge(_effectiveAge);
+  bool get _isMature =>
+      _ageBand == AgeBand.creator ||
+      _ageBand == AgeBand.adolescent ||
+      _ageBand == AgeBand.adult;
+  bool get _isYoung =>
+      _ageBand == AgeBand.sprout || _ageBand == AgeBand.explorer;
 
   @override
   void initState() {
@@ -161,10 +169,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         break;
 
       case BedtimeStep.companion:
-        final compPrompt = _isMature
-            ? "Who's joining $_heroName? A storm hawk, shadow lynx, iron golem, void sprite, or someone else?"
-            : "Who's coming with $_heroName? A tiny dragon, a wise owl, a shadow cat, a star dog, or someone else?";
-        final answer = await _askQuestion(compPrompt);
+        final answer = await _askQuestion(_companionPrompt());
         _companionChoice = _fuzzyMatchCompanion(answer);
         _advance(BedtimeStep.listeners);
         break;
@@ -178,9 +183,7 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         break;
 
       case BedtimeStep.setting:
-        final answer = await _askQuestion(
-          "Where should the story go? A rainbow world, a cave full of crystals, friendly dragons, or somewhere you make up?",
-        );
+        final answer = await _askQuestion(_settingPrompt());
         _settingChoice = _fuzzyMatchScenario(answer);
         _advance(BedtimeStep.feeling);
         break;
@@ -301,16 +304,53 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
     return answer;
   }
 
+  String _companionPrompt() {
+    switch (_ageBand) {
+      case AgeBand.sprout:
+      case AgeBand.explorer:
+        return "Who's coming with $_heroName? Fluffy Dragon, Magic Bunny, Moon Owl, Star Fox, or someone else?";
+      case AgeBand.adventurer:
+        return "Who's joining $_heroName? Thunder Wolf, Shadow Panther, Crystal Phoenix, Robin, or someone else?";
+      case AgeBand.creator:
+      case AgeBand.adolescent:
+      case AgeBand.adult:
+        return "Who's with $_heroName tonight? Thunder Wolf, Shadow Panther, Crystal Phoenix, Robin, or someone you invent?";
+    }
+  }
+
   String _fuzzyMatchCompanion(String input) {
     final lower = input.toLowerCase();
-    final companions = {
-      'dragon': 'a tiny dragon',
-      'owl': 'a wise owl',
-      'cat': 'a shadow cat',
-      'dog': 'a star dog',
-      'unicorn': 'a magic unicorn',
-      'fox': 'a clever fox',
-      'robin': 'a rockin\' robin',
+    final companions = switch (_ageBand) {
+      AgeBand.sprout || AgeBand.explorer => {
+          'dragon': 'Fluffy Dragon',
+          'fluffy': 'Fluffy Dragon',
+          'bunny': 'Magic Bunny',
+          'rabbit': 'Magic Bunny',
+          'owl': 'Moon Owl',
+          'moon': 'Moon Owl',
+          'fox': 'Star Fox',
+          'star': 'Star Fox',
+          'puppy': 'Shining Puppy',
+          'dog': 'Shining Puppy',
+          'fairy': 'Tiny Fairy',
+          'robin': 'Robin',
+        },
+      AgeBand.adventurer ||
+      AgeBand.creator ||
+      AgeBand.adolescent ||
+      AgeBand.adult => {
+          'wolf': 'Thunder Wolf',
+          'thunder': 'Thunder Wolf',
+          'panther': 'Shadow Panther',
+          'shadow': 'Shadow Panther',
+          'phoenix': 'Crystal Phoenix',
+          'crystal': 'Crystal Phoenix',
+          'robin': 'Robin',
+          'hawk': 'Thunder Wolf',
+          'lynx': 'Shadow Panther',
+          'golem': 'Crystal Phoenix',
+          'sprite': 'Robin',
+        },
     };
     for (final entry in companions.entries) {
       if (lower.contains(entry.key)) return entry.value;
@@ -322,30 +362,89 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
         return entry.value;
       }
     }
-    return input.isNotEmpty ? input : 'a tiny dragon';
+    return input.isNotEmpty ? input : _defaultCompanion();
+  }
+
+  String _defaultCompanion() {
+    switch (_ageBand) {
+      case AgeBand.sprout:
+      case AgeBand.explorer:
+        return 'Fluffy Dragon';
+      case AgeBand.adventurer:
+      case AgeBand.creator:
+      case AgeBand.adolescent:
+      case AgeBand.adult:
+        return 'Thunder Wolf';
+    }
+  }
+
+  String _settingPrompt() {
+    switch (_ageBand) {
+      case AgeBand.sprout:
+      case AgeBand.explorer:
+        return 'Where should the story go? A rainbow world, a magical forest, a cave full of crystals, or somewhere you make up?';
+      case AgeBand.adventurer:
+        return 'Where should the story go? A ruined citadel, a tidal shrine, an orbital station, a deep archive, or somewhere you invent?';
+      case AgeBand.creator:
+      case AgeBand.adolescent:
+      case AgeBand.adult:
+        return 'Where should the story unfold? A deep archive, a tidal shrine, an orbital station, a quiet city roof, or somewhere entirely your own?';
+    }
   }
 
   String _fuzzyMatchScenario(String input) {
     final lower = input.toLowerCase();
-    if (lower.contains('rainbow')) {
-      return 'Rainbow World';
+    if (_isYoung) {
+      if (lower.contains('rainbow')) {
+        return 'Rainbow World';
+      }
+      if (lower.contains('crystal') || lower.contains('cave')) {
+        return 'Cave Full of Crystals';
+      }
+      if (lower.contains('dragon')) {
+        return 'Friendly Dragons';
+      }
+      if (lower.contains('brave') || lower.contains('hero')) {
+        return 'Making a New Friend';
+      }
+      if (lower.contains('feel') || lower.contains('emotion')) {
+        return 'Big Feelings';
+      }
+      if (lower.contains('forest') || lower.contains('magic')) {
+        return 'Magical Forest';
+      }
+      return input.isNotEmpty ? input : _defaultSetting();
     }
-    if (lower.contains('crystal') || lower.contains('cave')) {
-      return 'Cave Full of Crystals';
+    if (lower.contains('archive') || lower.contains('library')) {
+      return 'Deep Archive';
     }
-    if (lower.contains('dragon')) {
-      return 'Friendly Dragons';
+    if (lower.contains('tidal') || lower.contains('shrine') || lower.contains('ocean')) {
+      return 'Tidal Shrine';
     }
-    if (lower.contains('brave') || lower.contains('hero')) {
-      return 'Making a New Friend';
+    if (lower.contains('orbit') || lower.contains('station') || lower.contains('space')) {
+      return 'Orbital Station';
     }
-    if (lower.contains('feel') || lower.contains('emotion')) {
-      return 'Big Feelings';
+    if (lower.contains('citadel') || lower.contains('ruin')) {
+      return 'Ruined Citadel';
     }
-    if (lower.contains('forest') || lower.contains('magic')) {
-      return 'Magical Forest';
+    if (lower.contains('roof') || lower.contains('city')) {
+      return 'Quiet City Roof';
     }
-    return input.isNotEmpty ? input : 'Magical Forest';
+    return input.isNotEmpty ? input : _defaultSetting();
+  }
+
+  String _defaultSetting() {
+    switch (_ageBand) {
+      case AgeBand.sprout:
+      case AgeBand.explorer:
+        return 'Magical Forest';
+      case AgeBand.adventurer:
+        return 'Ruined Citadel';
+      case AgeBand.creator:
+      case AgeBand.adolescent:
+      case AgeBand.adult:
+        return 'Deep Archive';
+    }
   }
 
   String _matchStoryMood(String input) {
@@ -425,8 +524,8 @@ class _BedtimeWizardScreenState extends State<BedtimeWizardScreen>
 
   Future<void> _generateAndReadStory() async {
     _wizardData.characterName = _heroName ?? widget.childName;
-    _wizardData.characterAge = _resolvedAge > 0 ? _resolvedAge : widget.childAge;
-    _wizardData.companionNames = [_companionChoice ?? 'a tiny dragon'];
+    _wizardData.characterAge = _effectiveAge;
+    _wizardData.companionNames = [_companionChoice ?? _defaultCompanion()];
     _wizardData.customElements = '$_feelingChoice story about $_settingChoice';
     _wizardData.storyLength = 'standard';
 
