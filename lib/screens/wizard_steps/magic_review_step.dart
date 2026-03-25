@@ -832,7 +832,11 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                 child: _isGenerating
                     ? MagicalLoadingView(
                         status: _loadingStatus,
-                        onCancel: () => setState(() => _isGenerating = false))
+                        onCancel: () => setState(() => _isGenerating = false),
+                        isSproutBand: band.band == AgeBand.sprout,
+                        companionImagePath: band.band == AgeBand.sprout
+                            ? _companionImage
+                            : null,)
                     : _PulsingCastSpellFrame(
                         isReady: !_isGenerating && data.isComplete,
                         child: ImageMakeMagicButton(

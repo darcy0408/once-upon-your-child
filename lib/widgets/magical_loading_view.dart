@@ -9,14 +9,22 @@ import '../utils/motion_utils.dart';
 
 /// A magical loading view with a central weaving "loom" animation,
 /// orbiting sparkles, rotating flavor messages, and layered aura glows.
+///
+/// For sprout band: shows a bouncing companion + star constellation countdown.
 class MagicalLoadingView extends StatefulWidget {
   final String status;
   final VoidCallback? onCancel;
+  /// Path to companion image (asset or URL). Shown bouncing for sprout band.
+  final String? companionImagePath;
+  /// When true, shows the child-friendly star constellation instead of the loom.
+  final bool isSproutBand;
 
   const MagicalLoadingView({
     super.key,
     required this.status,
     this.onCancel,
+    this.companionImagePath,
+    this.isSproutBand = false,
   });
 
   @override
@@ -28,6 +36,11 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
   late final AnimationController _pulseController;
   late final AnimationController _rotationController;
   late final AnimationController _weaveController;
+  // Sprout: companion bounce
+  AnimationController? _bounceController;
+  // Sprout: constellation countdown
+  int _starsLit = 0;
+  Timer? _constellationTimer;
 
   final List<_Sparkle> _sparkles = <_Sparkle>[];
   final Random _random = Random();
@@ -110,15 +123,33 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
         if (_stepIndex < _adventureSteps.length - 1) _stepIndex++;
       });
     });
+
+    if (widget.isSproutBand) {
+      // Companion bounce: continuous hop cycle
+      _bounceController = AnimationController(
+        duration: const Duration(milliseconds: 700),
+        vsync: this,
+      )..repeat(reverse: true);
+
+      // Star constellation: light 1 star every 4s (5 stars over 20s)
+      _constellationTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+        if (!mounted) return;
+        setState(() {
+          if (_starsLit < 5) _starsLit++;
+        });
+      });
+    }
   }
 
   @override
   void dispose() {
     _messageTimer?.cancel();
     _stepTimer?.cancel();
+    _constellationTimer?.cancel();
     _pulseController.dispose();
     _rotationController.dispose();
     _weaveController.dispose();
+    _bounceController?.dispose();
     super.dispose();
   }
 
@@ -167,7 +198,9 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (reduced) ...[
+            if (widget.isSproutBand) ...[
+              _buildSproutLoadingContent(),
+            ] else if (reduced) ...[
               // Static fallback for reduced-motion users
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
@@ -533,6 +566,83 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
         ),
       ),
     );
+  }
+
+  /// Sprout-specific loading UI: bouncing companion + 5-star constellation.
+  Widget _buildSproutLoadingContent() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 8),
+        // Bouncing companion image
+        if (widget.companionImagePath != null && _bounceController != null)
+          AnimatedBuilder(
+            animation: _bounceController!,
+            builder: (context, _) {
+              final hop = -18.0 * _bounceController!.value;
+              return Transform.translate(
+                offset: Offset(0, hop),
+                child: ClipOval(
+                  child: SizedBox(
+                    width: 100,
+                    height: 100,
+                    child: _loadCompanionImage(widget.companionImagePath!),
+                  ),
+                ),
+              );
+            },
+          )
+        else
+          // Fallback sparkle icon when no companion image
+          const Icon(Icons.auto_awesome, size: 64, color: Color(0xFF9E6CFF)),
+        const SizedBox(height: 20),
+        // 5-star constellation countdown
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(5, (i) {
+            final isLit = i < _starsLit;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 400),
+                child: Icon(
+                  isLit ? Icons.star_rounded : Icons.star_outline_rounded,
+                  key: ValueKey(isLit),
+                  size: 36,
+                  color: isLit
+                      ? const Color(0xFFFFD700)
+                      : const Color(0xFFB0A0CC),
+                  shadows: isLit
+                      ? [
+                          const Shadow(
+                            color: Color(0xFFFFD700),
+                            blurRadius: 12,
+                          )
+                        ]
+                      : null,
+                ),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _loadCompanionImage(String path) {
+    if (path.startsWith('assets/')) {
+      return Image.asset(path, fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) =>
+              const Icon(Icons.auto_awesome, size: 64, color: Color(0xFF9E6CFF)));
+    }
+    if (path.startsWith('http')) {
+      return Image.network(path, fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) =>
+              const Icon(Icons.auto_awesome, size: 64, color: Color(0xFF9E6CFF)));
+    }
+    return const Icon(Icons.auto_awesome, size: 64, color: Color(0xFF9E6CFF));
   }
 }
 

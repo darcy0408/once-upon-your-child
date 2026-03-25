@@ -36,6 +36,8 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
   late AnimationController _idleController;
   // Glow: slightly different period for organic feel
   late AnimationController _glowController;
+  // Star burst on long-press
+  late AnimationController _burstController;
   // Press feedback
   bool _isPressed = false;
 
@@ -67,6 +69,12 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
       vsync: this,
     );
 
+    // Star burst: fires once on long-press, 600ms
+    _burstController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
     if (widget.isEnabled) {
       _idleController.repeat(reverse: true);
       _glowController.repeat(reverse: true);
@@ -89,6 +97,7 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
   void dispose() {
     _idleController.dispose();
     _glowController.dispose();
+    _burstController.dispose();
     super.dispose();
   }
 
@@ -107,6 +116,12 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
 
   void _onTapCancel() {
     if (_isPressed) setState(() => _isPressed = false);
+  }
+
+  void _onLongPressStart(LongPressStartDetails _) {
+    if (!widget.isEnabled) return;
+    HapticFeedback.heavyImpact();
+    _burstController.forward(from: 0);
   }
 
   @override
@@ -129,8 +144,9 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
         onTapDown: _onTapDown,
         onTapUp: _onTapUp,
         onTapCancel: _onTapCancel,
+        onLongPressStart: _onLongPressStart,
         child: AnimatedBuilder(
-          animation: Listenable.merge([_idleController, _glowController]),
+          animation: Listenable.merge([_idleController, _glowController, _burstController]),
           builder: (context, child) {
             // Hop: translate Y using a bounce curve
             final hopT = _idleController.value;
@@ -215,6 +231,17 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
                           },
                         ),
                       ),
+
+                      // Star burst overlay on long-press
+                      if (_burstController.value > 0)
+                        IgnorePointer(
+                          child: CustomPaint(
+                            size: Size(buttonWidth + 30, buttonHeight + 30),
+                            painter: _StarBurstPainter(
+                              progress: _burstController.value,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -225,6 +252,69 @@ class _ImageMakeMagicButtonState extends State<ImageMakeMagicButton>
       ),
     );
   }
+}
+
+/// Paints 12 stars bursting outward from center on long-press.
+class _StarBurstPainter extends CustomPainter {
+  final double progress; // 0.0 → 1.0
+
+  const _StarBurstPainter({required this.progress});
+
+  static const _colors = [
+    Color(0xFFFFD700),
+    Color(0xFFFF8CFF),
+    Color(0xFF7FFFCF),
+    Color(0xFFFFAA44),
+    Color(0xFFB388FF),
+    Color(0xFFFFFFFF),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final maxRadius = size.width * 0.55;
+    // Fade: bright from 0→0.6, fade out 0.6→1.0
+    final opacity = progress < 0.6
+        ? (progress / 0.6)
+        : (1.0 - (progress - 0.6) / 0.4);
+
+    const starCount = 12;
+    for (int i = 0; i < starCount; i++) {
+      final angle = (i / starCount) * 2 * math.pi;
+      final dist = maxRadius * progress;
+      final cx = center.dx + dist * math.cos(angle);
+      final cy = center.dy + dist * math.sin(angle);
+      final color = _colors[i % _colors.length].withValues(alpha: opacity.clamp(0.0, 1.0));
+      final size4 = (4.0 + 4.0 * math.sin(progress * math.pi)) * (1 - progress * 0.3);
+
+      final paint = Paint()
+        ..color = color
+        ..style = PaintingStyle.fill;
+
+      // Draw a tiny 4-pointed star
+      _drawStar(canvas, Offset(cx, cy), size4, 4, paint);
+    }
+  }
+
+  void _drawStar(Canvas canvas, Offset center, double r, int points, Paint paint) {
+    final path = Path();
+    for (int i = 0; i < points * 2; i++) {
+      final angle = (i * math.pi / points) - math.pi / 2;
+      final radius = i.isEven ? r : r * 0.4;
+      final x = center.dx + radius * math.cos(angle);
+      final y = center.dy + radius * math.sin(angle);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_StarBurstPainter old) => old.progress != progress;
 }
 
 /// Code-rendered fallback if the PNG assets are missing.
