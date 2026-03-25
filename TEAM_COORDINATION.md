@@ -27,11 +27,14 @@
   - Make `Guardian Mode` copy age-aware so older users do not see child-only framing like "support your child's growth."
   - Swap child-only focus chips for creator/adolescent/adult options such as `Finding Your Voice`, `Setting Boundaries`, and `Burnout & Rest`.
   - Rename the note field for older bands from `Parental Note` to `Story Note`.
+- `lib/screens/wizard_steps/magic_review_step.dart`
+  - Add a direct `Audio-Only Adventure` launch from the review step whenever `Pick-A-Path Adventure` is enabled.
+  - Route that CTA into `BedtimeWizardScreen(isInteractive: true)` so users and parents do not have to discover the separate bedtime entry point first.
 
 ### Next Planned Fixes
 1. Re-test the deployed bedtime/audio-only flow for each age band after this copy/defaults patch is live.
 2. Re-verify adult scenario filtering in `feeling_selection_step.dart` once Railway has the newer frontend commits.
-3. Decide whether the bedtime interactive loop should also expose a visible "audio-only pick-a-path" entry point from the main review screen instead of the separate bedtime button.
+3. Follow the new review-step audio-only CTA in the deployed app and confirm it is understandable for both child and parent use cases.
 
 ---
 

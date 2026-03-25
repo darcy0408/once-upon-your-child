@@ -26,6 +26,7 @@ import 'package:story_weaver_app/providers/subscription_provider.dart';
 import 'package:story_weaver_app/subscription_models.dart';
 import 'wizard_data_mapper.dart';
 import '../../widgets/magic_ear_button.dart';
+import '../bedtime_wizard_screen.dart';
 
 /// Step 4: Magic Review & Launch
 /// Updated with audio prompts and consistent magical typography.
@@ -365,6 +366,25 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
         setState(() => _isGenerating = false);
       }
     }
+  }
+
+  void _launchAudioOnlyAdventure() {
+    if (!widget.wizardData.isComplete) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Please complete all steps first!'),
+          backgroundColor: AppColors.warning));
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => BedtimeWizardScreen(
+          childName: widget.wizardData.characterName,
+          childAge: widget.wizardData.characterAge,
+          isInteractive: true,
+        ),
+      ),
+    );
   }
 
   Future<List<Map<String, dynamic>>> _generateInlineIllustrations(
@@ -826,6 +846,54 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                     leadingAvatar:
                         _CompanionAvatar(companionImage: _companionImage),
                   )),
+            ],
+            if (data.interactiveMode) ...[
+              SizedBox(height: band.space(12)),
+              Container(
+                padding: EdgeInsets.all(band.space(14)),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.24),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFFFD54F).withValues(alpha: 0.45),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      band.band.isMature
+                          ? 'Want the same pick-a-path story without the screen?'
+                          : 'Want this adventure in audio-only bedtime mode?',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: band.body(13),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: band.space(10)),
+                    OutlinedButton.icon(
+                      onPressed: _launchAudioOnlyAdventure,
+                      icon: const Icon(Icons.bedtime_outlined),
+                      label: Text(
+                        band.band.isMature
+                            ? 'Start Audio-Only Adventure'
+                            : 'Start Bedtime Audio Adventure',
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFFFE082),
+                        side: BorderSide(
+                          color: const Color(0xFFFFE082).withValues(alpha: 0.7),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: band.space(16),
+                          vertical: band.space(12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
             SizedBox(height: band.space(AppSpacing.xxl)),
             Center(
