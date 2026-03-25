@@ -269,6 +269,7 @@ class _OfflineStoriesScreenState extends State<OfflineStoriesScreen> with Single
           title: story.title,
           storyText: story.storyText,
           characterName: story.characterName,
+          theme: story.theme,
         ),
       ),
     );

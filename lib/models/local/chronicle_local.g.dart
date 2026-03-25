@@ -15,7 +15,7 @@ extension GetChronicleLocalCollection on Isar {
 
 const ChronicleLocalSchema = CollectionSchema(
   name: r'ChronicleLocal',
-  id: 3397590408497397248,
+  id: 3397590408497397061,
   properties: {
     r'arcSummariesJson': PropertySchema(
       id: 0,
@@ -115,7 +115,7 @@ const ChronicleLocalSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'chronicleId': IndexSchema(
-      id: -2677070409302973952,
+      id: -2677070409302973780,
       name: r'chronicleId',
       unique: false,
       replace: false,
@@ -128,7 +128,7 @@ const ChronicleLocalSchema = CollectionSchema(
       ],
     ),
     r'characterId': IndexSchema(
-      id: 8442520835599207424,
+      id: 8442520835599207285,
       name: r'characterId',
       unique: false,
       replace: false,

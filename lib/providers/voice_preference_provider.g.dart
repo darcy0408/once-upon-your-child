@@ -7,10 +7,11 @@ part of 'voice_preference_provider.dart';
 // **************************************************************************
 
 String _$voicePreferenceNotifierHash() =>
-    r'327af81c3c16da47468cfa7a51c61335e8a18b21';
+    r'bafe897a407d578178c8eeaa7d67d9fa97f5930c';
 
 /// Persists and exposes the user's selected ElevenLabs voice ID.
-/// Defaults to Rachel (warm female, great for kids) on first launch.
+/// Defaults to an age-band-appropriate voice on first launch.
+/// A user's explicit choice always takes priority over the band default.
 ///
 /// Copied from [VoicePreferenceNotifier].
 @ProviderFor(VoicePreferenceNotifier)

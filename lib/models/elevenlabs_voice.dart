@@ -1,3 +1,5 @@
+import '../theme/age_band_theme.dart';
+
 /// ElevenLabs voice model and curated voice list for the voice picker.
 class ElevenLabsVoice {
   final String id;
@@ -23,6 +25,47 @@ class ElevenLabsVoice {
 
   /// SharedPreferences key for persisted voice selection.
   static const String prefsKey = 'tts_voice_id';
+
+  /// SharedPreferences key for persisted playback speed.
+  static const String playbackRatePrefsKey = 'tts_playback_rate';
+
+  /// Returns the age-appropriate default voice ID for the given [band].
+  /// This is the voice that will be pre-selected for new users.
+  /// User overrides stored in SharedPreferences always take priority.
+  static String defaultVoiceIdForBand(AgeBand band) {
+    switch (band) {
+      case AgeBand.sprout:
+      case AgeBand.explorer:
+        return 'jBpfuIE2acCO8z3wKNLl'; // Gigi — playful, childlike
+      case AgeBand.adventurer:
+      case AgeBand.creator:
+        return 'XrExE9yKIg1WjnnlVkGX'; // Matilda — warm storyteller
+      case AgeBand.adolescent:
+        return 'N2lVS1w4EtoT3dr4eOWO'; // Callum — clear, expressive, older
+      case AgeBand.adult:
+        return '21m00Tcm4TlvDq8ikWAM'; // Rachel — calm, mature
+    }
+  }
+
+  /// Returns the character voice ID to use when [narratorVoiceId] is the narrator.
+  /// Female narrators → Fin (male, Irish, magical feel).
+  /// Fin narrating → Callum.
+  /// Male narrators (George/Charlie/Callum) → Gigi.
+  static String characterVoiceForNarrator(String narratorVoiceId) {
+    const _femaleIds = {
+      'XrExE9yKIg1WjnnlVkGX', // Matilda
+      '21m00Tcm4TlvDq8ikWAM', // Rachel
+      'ThT5KcBeYPX3keUQqHPh', // Dorothy
+      'jBpfuIE2acCO8z3wKNLl', // Gigi
+    };
+    const _finId = 'D38z5RcWu1voky8WS1ja';
+    const _callumId = 'N2lVS1w4EtoT3dr4eOWO';
+    const _gigiId = 'jBpfuIE2acCO8z3wKNLl';
+
+    if (_femaleIds.contains(narratorVoiceId)) return _finId;
+    if (narratorVoiceId == _finId) return _callumId;
+    return _gigiId; // George, Charlie, Callum
+  }
 
   static ElevenLabsVoice? byId(String id) {
     try {

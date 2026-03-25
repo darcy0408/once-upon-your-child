@@ -16,7 +16,7 @@ extension GetChapterMemoryLocalCollection on Isar {
 
 const ChapterMemoryLocalSchema = CollectionSchema(
   name: r'ChapterMemoryLocal',
-  id: 4533444453014403072,
+  id: 4533444453014402822,
   properties: {
     r'chapterNumber': PropertySchema(
       id: 0,
@@ -81,7 +81,7 @@ const ChapterMemoryLocalSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'chronicleId': IndexSchema(
-      id: -2677070409302973952,
+      id: -2677070409302973780,
       name: r'chronicleId',
       unique: false,
       replace: false,

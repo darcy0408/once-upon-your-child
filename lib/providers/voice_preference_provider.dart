@@ -2,25 +2,30 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/elevenlabs_voice.dart';
+import 'age_band_provider.dart';
 
 part 'voice_preference_provider.g.dart';
 
 /// Persists and exposes the user's selected ElevenLabs voice ID.
-/// Defaults to Rachel (warm female, great for kids) on first launch.
+/// Defaults to an age-band-appropriate voice on first launch.
+/// A user's explicit choice always takes priority over the band default.
 @riverpod
 class VoicePreferenceNotifier extends _$VoicePreferenceNotifier {
   @override
   String build() {
-    _load();
-    return ElevenLabsVoice.defaultVoiceId;
+    final band = ref.watch(ageBandNotifierProvider).band;
+    _loadSavedPreference();
+    return ElevenLabsVoice.defaultVoiceIdForBand(band);
   }
 
-  Future<void> _load() async {
+  Future<void> _loadSavedPreference() async {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString(ElevenLabsVoice.prefsKey);
     if (saved != null && ElevenLabsVoice.byId(saved) != null) {
       state = saved;
     }
+    // If no explicit preference saved, state already holds the band default
+    // set in build() — no update needed.
   }
 
   Future<void> setVoice(String voiceId) async {

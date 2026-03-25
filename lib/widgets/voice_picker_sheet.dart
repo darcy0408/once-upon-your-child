@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models/elevenlabs_voice.dart';
+import '../providers/age_band_provider.dart';
 import '../providers/voice_preference_provider.dart';
 import '../services/tts_api_service.dart';
 import '../theme/app_theme.dart';
@@ -80,6 +81,8 @@ class _VoicePickerSheetState extends ConsumerState<VoicePickerSheet> {
   @override
   Widget build(BuildContext context) {
     final selectedId = ref.watch(voicePreferenceNotifierProvider);
+    final band = ref.watch(ageBandNotifierProvider).band;
+    final bandDefaultId = ElevenLabsVoice.defaultVoiceIdForBand(band);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
@@ -145,6 +148,7 @@ class _VoicePickerSheetState extends ConsumerState<VoicePickerSheet> {
                     return _VoiceCard(
                       voice: voice,
                       isSelected: isSelected,
+                      isBandDefault: voice.id == bandDefaultId,
                       isPreviewing: isPreviewing,
                       isLoadingPreview: isPreviewing && _isLoadingPreview,
                       onSelect: () {
@@ -169,6 +173,7 @@ class _VoicePickerSheetState extends ConsumerState<VoicePickerSheet> {
 class _VoiceCard extends StatelessWidget {
   final ElevenLabsVoice voice;
   final bool isSelected;
+  final bool isBandDefault;
   final bool isPreviewing;
   final bool isLoadingPreview;
   final VoidCallback onSelect;
@@ -177,6 +182,7 @@ class _VoiceCard extends StatelessWidget {
   const _VoiceCard({
     required this.voice,
     required this.isSelected,
+    required this.isBandDefault,
     required this.isPreviewing,
     required this.isLoadingPreview,
     required this.onSelect,
@@ -243,7 +249,7 @@ class _VoiceCard extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          if (voice.recommended) ...[
+                          if (isBandDefault) ...[
                             const SizedBox(width: 6),
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -255,7 +261,7 @@ class _VoiceCard extends StatelessWidget {
                                     color: AppColors.gold.withValues(alpha: 0.6)),
                               ),
                               child: Text(
-                                '★ Default',
+                                '★ Recommended',
                                 style: GoogleFonts.quicksand(
                                   color: AppColors.gold,
                                   fontSize: 10,

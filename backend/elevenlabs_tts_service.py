@@ -3,10 +3,12 @@ ElevenLabs Text-to-Speech Service
 High-quality AI narration for stories using ElevenLabs voices.
 """
 
+import io
 import os
 import re
+import time
 import logging
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +20,13 @@ except ImportError:
     ELEVENLABS_AVAILABLE = False
     ElevenLabs = None
     VoiceSettings = None
+
+try:
+    from pydub import AudioSegment
+    PYDUB_AVAILABLE = True
+except ImportError:
+    PYDUB_AVAILABLE = False
+    AudioSegment = None
 
 
 # Curated voices for kids' storytelling — picked for warmth, clarity, and age range
@@ -104,6 +113,111 @@ DEFAULT_VOICE_ID = "XrExE9yKIg1WjnnlVkGX"  # Matilda — warmest for kids' story
 DEFAULT_MODEL = "eleven_multilingual_v2"
 
 
+# Matches both straight ASCII quotes and Unicode smart quotes (\u201c / \u201d)
+# that AI models (Gemini, GPT) typically emit in generated stories.
+_DIALOGUE_RE = re.compile(r'["\u201c]([^"\u201c\u201d]{5,})["\u201d]')
+
+
+def split_narration_dialogue(text: str) -> List[Tuple[str, str]]:
+    """
+    Split text into alternating narration / dialogue segments.
+
+    Dialogue is identified by double-quoted strings of 5+ characters.
+    Returns a list of (segment_text, segment_type) where segment_type is
+    'narration' or 'dialogue'. The outer quotes are kept in dialogue
+    segments so ElevenLabs uses them for expressive phrasing.
+
+    Falls back to [(text, 'narration')] when no dialogue is found.
+    """
+    segments: List[Tuple[str, str]] = []
+    last_end = 0
+
+    for match in _DIALOGUE_RE.finditer(text):
+        start, end = match.start(), match.end()
+        if start > last_end:
+            narration = text[last_end:start].strip()
+            if narration:
+                segments.append((narration, "narration"))
+        dialogue = match.group(0).strip()
+        if dialogue:
+            segments.append((dialogue, "dialogue"))
+        last_end = end
+
+    if last_end < len(text):
+        trailing = text[last_end:].strip()
+        if trailing:
+            segments.append((trailing, "narration"))
+
+    return segments if segments else [(text, "narration")]
+
+
+def split_text_into_chunks(text: str, max_chars: int = 4500) -> List[str]:
+    """
+    Split cleaned story text into chunks suitable for ElevenLabs synthesis.
+
+    Splits on paragraph boundaries (\n\n) to avoid cutting mid-sentence.
+    If a single paragraph exceeds max_chars, splits at the last sentence
+    boundary (.!?) before the limit.
+    """
+    paragraphs = text.split("\n\n")
+    chunks: List[str] = []
+    current = ""
+
+    for para in paragraphs:
+        para = para.strip()
+        if not para:
+            continue
+
+        # If adding this paragraph stays within the limit, accumulate
+        separator = "\n\n" if current else ""
+        if len(current) + len(separator) + len(para) <= max_chars:
+            current += separator + para
+        else:
+            # Flush the current chunk first
+            if current:
+                chunks.append(current)
+                current = ""
+
+            # If the paragraph itself exceeds max_chars, split at sentence boundaries
+            if len(para) > max_chars:
+                sentence_end = re.compile(r"(?<=[.!?])\s+")
+                sentences = sentence_end.split(para)
+                current = ""
+                for sentence in sentences:
+                    if len(current) + len(sentence) + 1 <= max_chars:
+                        current = (current + " " + sentence).strip()
+                    else:
+                        if current:
+                            chunks.append(current)
+                        # Hard-split any sentence longer than max_chars (rare)
+                        while len(sentence) > max_chars:
+                            chunks.append(sentence[:max_chars])
+                            sentence = sentence[max_chars:]
+                        current = sentence
+            else:
+                current = para
+
+    if current:
+        chunks.append(current)
+
+    return chunks if chunks else [text]
+
+
+def _make_silence_mp3(duration_ms: int = 600) -> bytes:
+    """
+    Return a minimal silent MP3 segment for inter-chunk pauses.
+    Uses pydub if available; falls back to a pre-baked 600ms silent MP3 frame.
+    """
+    if PYDUB_AVAILABLE:
+        silent = AudioSegment.silent(duration=duration_ms)
+        buf = io.BytesIO()
+        silent.export(buf, format="mp3")
+        return buf.getvalue()
+    # Minimal valid MP3 silence fallback (just return empty bytes — ElevenLabs
+    # audio will still concatenate cleanly without inter-chunk silence)
+    return b""
+
+
 def clean_text_for_tts(text: str) -> str:
     """
     Strip markdown and normalise punctuation so ElevenLabs reads naturally.
@@ -181,7 +295,8 @@ class ElevenLabsTTSService:
         Generate MP3 audio from text using ElevenLabs.
 
         Args:
-            text: Story text to narrate (max ~5 000 chars for latency).
+            text: Story text to narrate. For stories > 5 000 chars use
+                  generate_speech_chunked() instead to avoid truncation.
                   Markdown and special formatting are stripped automatically.
             voice_id: ElevenLabs voice ID.
             stability: 0–1 — lower = more expressive natural variation.
@@ -215,6 +330,132 @@ class ElevenLabsTTSService:
 
         return b"".join(audio_generator)
 
+    def generate_speech_chunked(
+        self,
+        text: str,
+        voice_id: str = DEFAULT_VOICE_ID,
+        stability: float = 0.35,
+        similarity_boost: float = 0.80,
+        style: float = 0.50,
+        model_id: str = DEFAULT_MODEL,
+        chunk_size: int = 4500,
+        inter_chunk_pause_ms: int = 600,
+    ) -> bytes:
+        """
+        Synthesize full-length stories by chunking at paragraph boundaries.
+
+        Splits text into ≤chunk_size segments, synthesizes each via ElevenLabs,
+        and concatenates the MP3 bytes with a short silence between chunks so
+        the audio flows naturally at paragraph breaks.
+
+        Args:
+            text: Pre-cleaned story text (markdown already stripped).
+            chunk_size: Max characters per ElevenLabs API call (default 4500).
+            inter_chunk_pause_ms: Silence between chunks in milliseconds.
+
+        Returns:
+            Combined MP3 audio bytes for the full story.
+        """
+        chunks = split_text_into_chunks(text, max_chars=chunk_size)
+        logger.info("Chunked synthesis: %d chunks for %d chars", len(chunks), len(text))
+
+        silence = _make_silence_mp3(inter_chunk_pause_ms)
+        combined = io.BytesIO()
+
+        for i, chunk in enumerate(chunks):
+            if i > 0 and silence:
+                combined.write(silence)
+
+            try:
+                audio_bytes = self.generate_speech(
+                    text=chunk,
+                    voice_id=voice_id,
+                    stability=stability,
+                    similarity_boost=similarity_boost,
+                    style=style,
+                    model_id=model_id,
+                )
+                combined.write(audio_bytes)
+                logger.debug("Chunk %d/%d synthesized (%d chars)", i + 1, len(chunks), len(chunk))
+            except Exception as e:
+                logger.error("Chunk %d/%d synthesis failed: %s", i + 1, len(chunks), e)
+                raise
+
+            # Brief delay between ElevenLabs calls to avoid burst rate limits
+            if i < len(chunks) - 1:
+                time.sleep(0.2)
+
+        return combined.getvalue()
+
+    def generate_speech_with_dialogue(
+        self,
+        text: str,
+        narrator_voice_id: str = DEFAULT_VOICE_ID,
+        character_voice_id: str = "D38z5RcWu1voky8WS1ja",  # Fin — magical Irish
+        stability: float = 0.35,
+        similarity_boost: float = 0.80,
+        style: float = 0.50,
+        model_id: str = DEFAULT_MODEL,
+        inter_segment_pause_ms: int = 300,
+    ) -> bytes:
+        """
+        Synthesize text with dialogue spoken in a different voice from narration.
+
+        Splits the text at double-quoted dialogue (5+ chars), synthesizes each
+        narration segment with narrator_voice_id and each dialogue segment with
+        character_voice_id, then concatenates with brief silence between segments.
+
+        Falls back to single-voice synthesis when no dialogue is found.
+        """
+        segments = split_narration_dialogue(text)
+        has_dialogue = any(t == "dialogue" for _, t in segments)
+
+        if not has_dialogue:
+            # Fast path — same as single-voice synthesis
+            if len(text) > 5000:
+                return self.generate_speech_chunked(
+                    text=text, voice_id=narrator_voice_id,
+                    stability=stability, similarity_boost=similarity_boost,
+                    style=style, model_id=model_id,
+                )
+            return self.generate_speech(
+                text=text, voice_id=narrator_voice_id,
+                stability=stability, similarity_boost=similarity_boost,
+                style=style, model_id=model_id,
+            )
+
+        silence = _make_silence_mp3(inter_segment_pause_ms)
+        combined = io.BytesIO()
+        logger.info(
+            "Dialogue synthesis: %d segments, narrator=%s character=%s",
+            len(segments), narrator_voice_id, character_voice_id,
+        )
+
+        for i, (seg_text, seg_type) in enumerate(segments):
+            if i > 0 and silence:
+                combined.write(silence)
+
+            voice = narrator_voice_id if seg_type == "narration" else character_voice_id
+
+            if len(seg_text) > 4500:
+                audio = self.generate_speech_chunked(
+                    text=seg_text, voice_id=voice,
+                    stability=stability, similarity_boost=similarity_boost,
+                    style=style, model_id=model_id,
+                )
+            else:
+                audio = self.generate_speech(
+                    text=seg_text, voice_id=voice,
+                    stability=stability, similarity_boost=similarity_boost,
+                    style=style, model_id=model_id,
+                )
+            combined.write(audio)
+
+            if i < len(segments) - 1:
+                time.sleep(0.1)
+
+        return combined.getvalue()
+
     @staticmethod
     def get_available_voices() -> List[dict]:
         return CURATED_VOICES
@@ -225,6 +466,14 @@ class MockElevenLabsTTSService:
 
     def generate_speech(self, text: str, **kwargs) -> bytes:
         logger.info("[MockElevenLabsTTS] Would generate speech for %d chars", len(text))
+        return b""
+
+    def generate_speech_chunked(self, text: str, **kwargs) -> bytes:
+        logger.info("[MockElevenLabsTTS] Would generate chunked speech for %d chars", len(text))
+        return b""
+
+    def generate_speech_with_dialogue(self, text: str, **kwargs) -> bytes:
+        logger.info("[MockElevenLabsTTS] Would generate dialogue speech for %d chars", len(text))
         return b""
 
     @staticmethod

@@ -1659,7 +1659,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   String _getReadingLabel(AgeBand band) {
     switch (band) {
       case AgeBand.sprout:
-        return 'First Reader';
+        return 'Listen & Learn'; // Dr. Seuss style, auto-plays
       case AgeBand.explorer:
         return 'Easy Reader';
       case AgeBand.adventurer:

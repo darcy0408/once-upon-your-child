@@ -120,7 +120,7 @@ class AudioAmbienceService {
 
       await _player.stop();
       await _player
-          .setReleaseMode(ReleaseMode.release); // Play once, not looped
+          .setReleaseMode(ReleaseMode.loop); // Loop for continuous ambience
       await _player.setVolume(_isMuted ? 0 : _volume);
       await _player.play(AssetSource(assetPath));
       _currentTheme = normalizedTheme;
@@ -151,7 +151,7 @@ class AudioAmbienceService {
       if (assetPath == null) return;
 
       await _player.stop();
-      await _player.setReleaseMode(ReleaseMode.release); // Play once
+      await _player.setReleaseMode(ReleaseMode.loop); // Loop for continuous ambience
       await _player.setVolume(_isMuted ? 0 : _volume);
       await _player.play(AssetSource(assetPath));
 
