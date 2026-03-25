@@ -995,13 +995,13 @@ class _ScenarioCardWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min, // Wrap content
             children: [
-              // Scenario illustration image
+              // Scenario illustration image (sprout band uses dedicated tile images)
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.asset(
-                  scenario.illustration.startsWith('assets/')
-                      ? scenario.illustration
-                      : 'assets/${scenario.illustration}',
+                  scenario.illustrationForAge(childAge).startsWith('assets/')
+                      ? scenario.illustrationForAge(childAge)
+                      : 'assets/${scenario.illustrationForAge(childAge)}',
                   width: 200,
                   height: 140,
                   fit: BoxFit.cover,

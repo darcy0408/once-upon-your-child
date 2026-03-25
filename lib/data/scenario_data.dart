@@ -26,6 +26,9 @@ class ScenarioCard {
   // When null, falls back to matureTitle.
   final String? creatorTitle;
   final bool featured; // Pinned at the top of scenario selection
+  // Sprout-band (ages 2-5) specific tile image, displayed instead of the
+  // general illustration when the child is in the sprout band.
+  final String? sproutIllustration;
 
   const ScenarioCard({
     required this.id,
@@ -48,6 +51,7 @@ class ScenarioCard {
     this.matureConflictHook,
     this.matureWorldBible,
     this.creatorTitle,
+    this.sproutIllustration,
   });
 
   /// Get the title appropriate for the given age.
@@ -99,6 +103,13 @@ class ScenarioCard {
         return matureTitle ?? title;
     }
   }
+
+  /// Get the illustration path appropriate for the given age.
+  /// Sprout band (ages ≤5) uses the dedicated tile image when available.
+  String illustrationForAge(int age) {
+    if (age <= 5 && sproutIllustration != null) return sproutIllustration!;
+    return illustration;
+  }
 }
 
 class ScenarioData {
@@ -134,6 +145,7 @@ class ScenarioData {
           'An ancient nexus chamber with four temporal gates, each a stable wormhole to a pocket dimension locked in perpetual season. The Chronokeeper, an ageless entity bound to a celestial orrery, regulates the energy exchange between realms. Each dimension has evolved its own civilisation adapted to eternal climate — the Winterhold with its ice-forged architecture, the Summerlands with solar-powered cities. Temporal physics: objects carried between gates retain their native time-signature, creating paradox-fields that must be resolved or they cascade into reality tears.',
       // Mystery/adventure scenario — the standard title works for 12-14; no distinct framing needed.
       creatorTitle: null,
+      sproutIllustration: 'assets/images/ui/sprout/tiles/space.png',
     ),
     ScenarioCard(
       id: 'volcano_dragons',
@@ -165,6 +177,7 @@ class ScenarioData {
           'A volcanic caldera housing the last dragon colony — a complex society with castes, customs, and a code of honour older than human civilisation. The dragons range from hatchling-sized to leviathan elders who remember the world before humans. Their lair is an architectural marvel: obsidian halls, magma forges, memory-crystal archives containing millennia of draconic history. Dragon politics are ruthless but fair — disputes are settled through riddle-contests or aerial trials. The volcano itself is alive, a symbiotic entity the dragons tend like a garden. Outsiders must prove worth through a Trial of Three: wit, courage, and compassion.',
       // Adventure scenario — matureTitle works for 12-14; no distinct framing needed.
       creatorTitle: null,
+      sproutIllustration: 'assets/images/ui/sprout/tiles/dinosaurs.png',
     ),
     ScenarioCard(
       id: 'neon_jungle',
@@ -196,6 +209,7 @@ class ScenarioData {
           'A closed-canopy megaforest where bioluminescence has replaced photosynthesis as the primary energy cycle. The ecosystem runs on light-exchange — organisms trade luminous energy through root networks and airborne spores. The Nexus Tree, a kilometres-wide neural hub, processes the forest\'s collective consciousness. Apex predators are shadow-stalkers — creatures that absorb light rather than emit it, creating zones of absolute darkness. The jungle\'s whisper-network carries data like a biological internet. Human-equivalent intelligence exists in the Elder Groves — collectives of ancient trees that debate, remember, and scheme.',
       // Adventure scenario — matureTitle works for 12-14; no distinct framing needed.
       creatorTitle: null,
+      sproutIllustration: 'assets/images/ui/sprout/tiles/forest.png',
     ),
     ScenarioCard(
       id: 'crystal_cavern',
@@ -227,6 +241,7 @@ class ScenarioData {
           'A vast subterranean crystal network where sound frequencies interact with crystalline structures to manipulate matter. The caverns operate on resonance physics — specific tonal frequencies unlock passages, reshape walls, or summon stored memories from crystal archives. The Echo Sovereign is an ancient AI-like consciousness distributed across the crystal lattice, cataloguing every sound ever uttered underground. The deeper you go, the more the crystals respond to thought rather than voice, eventually manifesting emotions as tangible constructs. This is both powerful and dangerous — uncontrolled fear creates shadow-creatures, while focused calm can reshape the caverns themselves.',
       // The matureTitle angle (emotions manifesting as real things) resonates well with 12-14.
       creatorTitle: 'The Echo Inside',
+      sproutIllustration: 'assets/images/ui/sprout/tiles/ocean.png',
     ),
     ScenarioCard(
       id: 'storm_chaser_sky',
@@ -258,6 +273,7 @@ class ScenarioData {
           'A militarised sky-citadel — part aircraft carrier, part floating city — navigating a perpetual superstorm belt that encircles the planet. The storm belt is both barrier and resource: its lightning powers the citadel\'s engines, but its winds can shred unshielded hulls. The crew operates under a strict chain of command with storm-runner scouts, tactical navigators, and combat weather-shapers who weaponise atmospheric conditions. Rival sky-nations compete for storm-corridor control. The citadel\'s greatest secret: its core contains a captured storm-entity, a sentient weather phenomenon that powers everything but yearns for freedom.',
       // Adventure scenario — matureTitle works for 12-14; no distinct framing needed.
       creatorTitle: null,
+      sproutIllustration: 'assets/images/ui/sprout/tiles/castle.png',
     ),
     ScenarioCard(
       id: 'vanishing_colors',
@@ -289,6 +305,7 @@ class ScenarioData {
           'A dimension where perception literally shapes reality — colour, sound, and texture are manifestations of collective consciousness. The Entropy (called "the Eraser" by younger inhabitants) is a natural force of creative decay, accelerated by despair and apathy. As regions lose colour, they don\'t just go grey — they lose dimensional complexity, flattening into 2D, then 1D, then nothing. Resistance comes through authentic creative expression, not just art but genuine emotional honesty. The Chromatists are a resistance movement who\'ve learned to weaponise creativity, but they\'re fractured by debate: fight the Entropy or accept it as a natural cycle? The hero must navigate both the external threat and the philosophical divide. THE JELLO ROAD: The primary artery of this realm is the Chromatic Causeway — a road paved in solid pigment-gelatin that shifts state with the weather. Dry: firm and springy, each footfall sending up a small chromatic ripple. Rain: instantly frictionless, a mirror-smooth slide that moves people whether they want to move or not. Post-rain: a brief adhesive window where the surface grips everything touching it — creatures, objects, secrets — before releasing as it sets. The Causeway is both infrastructure and metaphor: the Chromatists say the road reflects the realm\'s emotional state. A sticky road means something is holding on. A sliding road means something is out of control. A bouncy road means the world is still alive.',
       // Identity resonance: the idea that apathy erases your world maps well to 12-14 self-expression themes.
       creatorTitle: 'When Everything Fades',
+      sproutIllustration: 'assets/images/ui/sprout/tiles/candy_land.png',
     ),
 
     // --- REAL-LIFE HEROES ---
