@@ -1434,3 +1434,75 @@ New methods:
 ### Dependencies Updated
 - `google-genai` 1.65.0 → 1.68.0
 - `sentry-sdk` 2.54.0 → 2.55.0
+
+---
+
+## SESSION UPDATE — 2026-03-24 (Companion Redesign + Image Generation + TTS Fixes)
+
+### Companion Character Redesign
+Replaced age-specific companion rosters to improve relatability across bands:
+
+| Band | Old Characters | New Characters |
+|------|---------------|----------------|
+| Sprout (2-4) | Fluffy Dragon, Magic Bunny, Shining Puppy, **Tiny Fairy**, Robin | Fluffy Dragon, Magic Bunny, Shining Puppy, Robin *(Tiny Fairy dropped to fit screen)* |
+| Explorer (5-7) | Fluffy Dragon, **Bloom Sprite**, Moon Owl, Star Fox, Robin | Ember Dragon, Moon Owl, Star Fox, Robin *(Bloom Sprite dropped)* |
+| Adventurer (8-10) | Ember Dragon, Storm Hawk, Shadow Lynx, Iron Golem, Robin | Ember Dragon, **Thunder Wolf**, **Shadow Panther**, **Crystal Phoenix**, Robin |
+| Creator (11-13) | Same old + | Thunder Wolf, Shadow Panther, Crystal Phoenix, Robin |
+| Adolescent (14-17) | Same old + | Thunder Wolf, Shadow Panther, Crystal Phoenix, Robin |
+| Adult (18+) | Same old + | Thunder Wolf, Shadow Panther, Crystal Phoenix, Robin |
+
+Rationale: Storm Hawk / Iron Golem / Void Sprite felt like game NPCs, not story companions. Thunder Wolf, Shadow Panther, Crystal Phoenix are universally relatable animals/archetypes.
+
+**"Your Pet" generic card** added to all bands — taps open a name + species dialog for users with real pets.
+
+**Files changed:**
+- `lib/screens/wizard_steps/companion_selector_step.dart` — new rosters, `_showAddPetDialog()`, `your_pet` intercept in `_toggleCompanion`
+- All Robin image paths changed from `.jpg` → `.png`
+- `docs/COMPANION_IMAGE_PROMPTS.md` — 30 companion prompts + 6 sprout tile prompts
+
+### New Images Generated (Imagen 4.0)
+Script: `scripts/generate_companion_images.py`
+
+| Category | Files |
+|----------|-------|
+| Sprout companions | fluffy_dragon.png, magic_bunny.png, shining_puppy.png, robin.png |
+| Explorer companions | ember_dragon.png, moon_owl.png, star_fox.png, robin.png |
+| Adventurer companions | thunder_wolf.png, shadow_panther.png, crystal_phoenix.png, robin.png |
+| Creator companions | thunder_wolf.png, shadow_panther.png, crystal_phoenix.png, robin.png |
+| Adolescent companions | thunder_wolf.png, shadow_panther.png, crystal_phoenix.png, robin.png |
+| Adult companions | thunder_wolf.png, shadow_panther.png, crystal_phoenix.png, robin.png |
+| Sprout tiles | castle.png, ocean.png, space.png, forest.png, candy_land.png, dinosaurs.png |
+
+All images use dark warm backgrounds (no transparency/checkerboard). Safety filter: `block_low_and_above`.
+
+**Known issue fixed during generation:** `block_only_high` is not a valid safety filter value for Imagen API — changed to `block_low_and_above`.
+
+### TTS Bug Fixes
+1. **HTTP timeout**: Increased Flutter TTS API timeout from 120s → 300s. Long stories (>5000 chars) require multiple ElevenLabs API calls via `generate_speech_chunked()`; the old limit was too tight for epic stories.
+   - File: `lib/services/tts_api_service.dart`
+
+2. **Auto-voice selection per band**: When no explicit voice preference was saved in SharedPreferences, all TTS calls defaulted to Matilda (`ElevenLabsVoice.defaultVoiceId`) regardless of age band.
+   - Fixed in `lib/story_result_screen.dart`: `_speakPage()` now uses `ElevenLabsVoice.defaultVoiceIdForBand(ageBandFromAge(_effectiveAge))` as fallback
+   - Fixed in `lib/services/app_tts_service.dart`: `_savedVoiceId()` now reads age from prefs and returns band-appropriate default (Gigi for sprout/explorer, Matilda for adventurer/creator, Callum for adolescent, Rachel for adult)
+
+### Adult Feelings Tab Removal
+Removed "Landscape" (big feelings/emotional landscape) tab from adult band navigation. Adults now get 3 tabs: Stories, Library, Settings.
+- `lib/widgets/app_bottom_navigation.dart` — removed adult feelings tab
+- `lib/main_story.dart` — added band-aware tab index shifting for adult band
+
+### Auto-TTS Band Fix
+Changed `age <= 7` guard to `ageBandFromAge(age).index <= AgeBand.explorer.index` so 8-year-old explorers correctly get auto-play narration.
+- `lib/story_result_screen.dart`
+- `lib/pick_a_path_adventure_screen.dart`
+
+### MCP Servers Configured
+`.mcp.json` created with:
+- `fetch` (mcp-server-fetch) — for hitting backend/external URLs
+- `puppeteer` (npx @modelcontextprotocol/server-puppeteer) — browser automation
+- `filesystem` (npx @modelcontextprotocol/server-filesystem) — file access
+
+### Commits This Session
+- `d0140c5` feat: companion redesign (new rosters + your_pet card + robin to .png)
+- `dbff051` assets: new companion images (wolf/panther/phoenix) + sprout tiles
+- `b313ae1` fix: increase TTS HTTP timeout to 300s for long story chunked synthesis
+- `1c0d74f` fix: use band-appropriate voice default when no explicit preference saved
