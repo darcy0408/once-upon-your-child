@@ -1571,3 +1571,59 @@ Changed `age <= 7` guard to `ageBandFromAge(age).index <= AgeBand.explorer.index
 - `dbff051` assets: new companion images (wolf/panther/phoenix) + sprout tiles
 - `b313ae1` fix: increase TTS HTTP timeout to 300s for long story chunked synthesis
 - `1c0d74f` fix: use band-appropriate voice default when no explicit preference saved
+
+---
+
+## Session Update — 2026-03-25 (UX Audit Fixes)
+
+### UX Fix List — Completed
+
+All 7 items from the UX audit priority list were addressed this session.
+
+#### 1. COPPA Scroll Fix ✅
+Consent checkbox was unreachable below the fold on 390px-wide phones.
+- Added `AlwaysScrollableScrollPhysics()` to `SingleChildScrollView`
+- Changed padding from `all(lg)` to `fromLTRB(lg, md, lg, xl)` (extra bottom space)
+- Tightened two `SizedBox(md)` → `SizedBox(sm)` between main sections
+- File: `lib/screens/parental_consent_screen.dart`
+- Commit: `5aecf68`
+
+#### 2. Read Choices Aloud in Pick-a-Path ✅
+After story segment TTS plays, young bands (age ≤8) now hear choices read aloud.
+- New `_speakSegmentWithChoices()` replaces all `_speakSegment(_currentSegment!.content)` call sites
+- Chains: speaks segment with `awaitCompletion: true`, then speaks "What will you choose? Choice 1: … Choice 2: …"
+- File: `lib/pick_a_path_adventure_screen.dart`
+- Commit: `0209258`
+
+#### 3. Sprout Auto-Advance on Continuation Segments ✅
+For ages ≤5 on non-choice (continuation-only) segments: after TTS plays, auto-advances to next segment after 1.2 s pause.
+- New `_speakThenAutoAdvance()` async method called for sprouts when `segment.isContinuation`
+- File: `lib/pick_a_path_adventure_screen.dart`
+
+#### 4. Continuous Audio for All Bands ✅
+TTS was only enabled for sprout/explorer in Pick-a-Path. Now enabled for all bands.
+- Removed `ageBandFromAge(age).index <= AgeBand.explorer.index` guard from `initState()`
+- Older kids/adults get automatic narration as they advance through choices
+- File: `lib/pick_a_path_adventure_screen.dart`
+
+#### 5. Add Age 2 to Age Picker ✅
+Welcome screen age picker started at 3. Added age 2 (sprout band starts at 2).
+- Added `(label: '2', value: 2)` entry to `_ageEntries` list
+- Updated comment from "3–12" to "2–12"
+- File: `lib/screens/welcome_screen.dart`
+- Commit: `0209258`
+
+#### 6. App Logo on Name Entry Screen ✅
+Name entry step was a bare purple screen with just a text box.
+- Added `Icons.auto_awesome` gold star icon + "Story Weaver" `cinzelDecorative` title above the text field
+- File: `lib/screens/welcome_screen.dart`
+
+#### 7. Don't Auto-Start Mic on Web ✅
+`_promptNameAndListen()` was opening the microphone immediately on web, which requires a user gesture in browsers.
+- Added `if (kIsWeb) return;` guard before the `_listen()` auto-call
+- Added `package:flutter/foundation.dart` import for `kIsWeb`
+- File: `lib/screens/welcome_screen.dart`
+
+### Commits This Session
+- `5aecf68` fix: parental consent screen scrollability and spacing
+- `0209258` fix: UX audit fixes — COPPA scroll, choices narration, age picker, branding, mic
