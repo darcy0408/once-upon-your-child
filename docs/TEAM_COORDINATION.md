@@ -61,21 +61,22 @@ df96e59 feat(sprout): mic-primary name entry, TTS name read-back, 2-step Big Fee
 
 ---
 
-### What still needs doing (open plan: `Voice-Only Mode Audio Improvements`)
+### Voice-Only Mode Audio Improvements — ALL COMPLETE ✅
 
-These 5 issues are tracked in the active plan at `~/.claude/plans/inherited-questing-pancake.md`:
+Verified 2026-03-27: all 5 issues from the plan (`~/.claude/plans/inherited-questing-pancake.md`) were already implemented in prior sessions.
 
 | # | Issue | Status |
 |---|-------|--------|
-| 1 | **Speed preference persistence** — rate resets to default each visit; needs `SharedPreferences` save/load in `story_reader_screen.dart` | ⏳ Not started |
-| 2 | **Character-weighted word highlighting** — current linear estimate drifts on long stories; needs cumulative char-offset binary search | ⏳ Not started |
-| 3 | **Bookmark / resume for long stories** — no way to resume a paused ElevenLabs story; needs resume banner + `SharedPreferences` position save | ⏳ Not started |
-| 4 | **Ambient sound wiring** — `AudioAmbienceService` exists and is called but `ReleaseMode.release` stops after first play instead of looping; fix to `ReleaseMode.loop` + pass `theme` param from call sites | ⏳ Not started |
-| 5 | **Character voice differentiation** — all story dialogue narrated in the same voice; needs `split_narration_dialogue()` backend + `characterVoiceForNarrator()` frontend | ⏳ Not started |
+| 1 | **Speed preference persistence** — `_loadPersistedRate()` / `_setPlaybackRate()` in `story_reader_screen.dart` + `ElevenLabsVoice.playbackRatePrefsKey` | ✅ Done |
+| 2 | **Character-weighted word highlighting** — `_wordCharOffsets` + `_totalStoryChars` + binary search in `onPositionChanged` | ✅ Done |
+| 3 | **Bookmark / resume** — `_checkForResume()`, `_doResume()`, `_persistPosition()`, `_buildResumeBanner()` in `story_reader_screen.dart` | ✅ Done |
+| 4 | **Ambient sound looping** — `ReleaseMode.loop` in `audio_ambience_service.dart`; `startAmbience(_effectiveTheme)` called in `_startReading()` / `_resumeReading()`; `theme` param passed from all call sites | ✅ Done |
+| 5 | **Character voice differentiation** — `split_narration_dialogue()` + `generate_speech_with_dialogue()` in backend; `characterVoiceForNarrator()` in `elevenlabs_voice.dart`; `characterVoiceId` param in `TtsApiService.synthesize()`; wired in `_startReading()` | ✅ Done |
 
-### Other open items
-- **Pick-Your-Path audio-only mode** — full per-age-band review of what's working/broken in audio-only mode (was requested but not yet done)
-- **Utility scripts cleanup** — `generate_all_requested_images.py`, `extract_prompts.py`, `audit_assets.py` etc. are untracked in the repo root; consider adding to `.gitignore` or deleting if no longer needed
+### Open items
+- **Pick-Your-Path audio-only mode** — full per-age-band review of what's working/broken in audio-only (PYP) mode was requested but not yet done
+- **Utility scripts cleanup** — `generate_all_requested_images.py`, `extract_prompts.py`, `audit_assets.py` etc. are untracked in the repo root; add to `.gitignore` or delete if no longer needed
+- **Deploy** — branch is ahead of `origin/main` by several commits; push and deploy to Railway when ready
 
 ---
 
