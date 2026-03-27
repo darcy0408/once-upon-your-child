@@ -2,6 +2,83 @@
 
 ---
 
+## Session Update — 2026-03-27 (Full Session Summary — Age Band Assets + Sprout UX + Audio)
+
+### What was completed this session
+
+#### 1. Smart Quotes Fix in Dialogue Regex (`backend/elevenlabs_tts_service.py`)
+- `_DIALOGUE_RE` updated to match Unicode smart quotes (`"` / `"`) in addition to ASCII `"`.
+- AI-generated stories use curly quotes — without this fix, dialogue synthesis fell back to treating the entire text as narration.
+
+#### 2. `AgeBandAssetResolver` — New Central Asset Path Resolver
+- New file: `lib/theme/age_band_asset_resolver.dart`
+- Single source of truth for all `age_band_assets/` path resolution across 6 bands.
+- Key mapping: `AgeBand.explorer → 'early_readers'` (folder name differs from enum name).
+- Methods: `archetypePath()`, `backgroundPath()`, `scenePath()`, `companionPath()`, `feelingPath()`, `orbPath()`, `uiPath()`.
+
+#### 3. Wired `age_band_assets/` into Flutter app
+- **`pubspec.yaml`**: Added 42 asset directory entries (6 bands × 7 subdirectories).
+- **`lib/widgets/archetype_card.dart`**: `imagePathForBand()` uses resolver for all 5 standard archetypes; `animal_whisperer` keeps fallback to `assets/images/archetypes/`.
+- **`lib/widgets/image_progress_orb.dart`**: Uses `AgeBandAssetResolver.orbPath()`.
+- **`lib/widgets/image_continue_button.dart`**: Replaced 6-level ternary with resolver.
+- **`lib/widgets/image_make_magic_button.dart`**: `_assetNormal` / `_assetPressed` use resolver.
+- **`lib/screens/big_feelings_flow_screen.dart`**: `_BigFeelingsChoiceCard` gets `ageBand` param; uses `AgeBandAssetResolver.feelingPath()` for sprout/explorer/adventurer.
+- **`lib/data/scenario_data.dart`**: Added `youngBandSceneId` / `olderBandSceneId` fields; `illustrationForAge()` returns per-band scene assets for ages 6–8 (explorer) and 9+ (adventurer).
+- Fixed `age_band_assets/sprouts/UI/` casing bug → renamed to lowercase `ui/`.
+
+#### 4. Regenerated `voice_preference_provider.g.dart`
+- `build()` now watches `ageBandNotifierProvider`; re-ran `flutter pub run build_runner build --delete-conflicting-outputs` to fix stale hash.
+
+#### 5. Sprout Band UX Improvements (all 8 features)
+| # | Feature | File |
+|---|---------|------|
+| 1 | TTS "Hi [Name]!" read-back after mic name entry | `hero_creator_step.dart` |
+| 2 | Simplified story reader: Play/Pause + Start Over only | `story_reader_screen.dart` |
+| 3 | Mic button as primary name-entry for sprout | `hero_creator_step.dart` |
+| 4+8 | Star constellation countdown + companion bounce on loading screen | `magical_loading_view.dart`, `magic_review_step.dart` |
+| 5 | Big Feelings 2-step (feeling → coping tool, skip trigger/body) | `big_feelings_flow_screen.dart` |
+| 6 | Voice picker locked; parent 2s long-press to unlock | `story_reader_screen.dart` |
+| 7 | Star burst `CustomPainter` on long-press of Make Magic button | `image_make_magic_button.dart` |
+
+#### 6. Web Audio Fix (`lib/services/app_tts_service.dart` + new `web_audio_player.dart`)
+- `audioplayers` BytesSource caused Chrome's 30s `preparationTimeout` on web due to `crossOrigin` / AudioContext interaction.
+- New `web_audio_player.dart` plays TTS bytes via plain `HTMLAudioElement` + blob URL on web.
+- `web_audio_player_stub.dart` provides no-ops on native.
+- Conditional import wires the correct file at compile time.
+
+#### 7. Age Band Assets Committed
+- 238 binary image files updated across all 6 age bands (archetypes, backgrounds, companions, feelings, orbs, scenes, UI buttons).
+
+### Commits this session
+```
+c5d876f assets: regenerate/update age_band_assets images for all 6 bands
+f9eb330 fix(web): use blob-URL AudioElement for TTS playback on web platform
+0221c97 docs: log 2026-03-26 sprout band magic improvements
+0528d2c feat(sprout): star burst on Make Magic long-press + companion bounce + constellation loading
+df96e59 feat(sprout): mic-primary name entry, TTS name read-back, 2-step Big Feelings, simplified reader controls
+```
+(Plus earlier session commits from age band asset wiring, archetype card, scenario data, etc.)
+
+---
+
+### What still needs doing (open plan: `Voice-Only Mode Audio Improvements`)
+
+These 5 issues are tracked in the active plan at `~/.claude/plans/inherited-questing-pancake.md`:
+
+| # | Issue | Status |
+|---|-------|--------|
+| 1 | **Speed preference persistence** — rate resets to default each visit; needs `SharedPreferences` save/load in `story_reader_screen.dart` | ⏳ Not started |
+| 2 | **Character-weighted word highlighting** — current linear estimate drifts on long stories; needs cumulative char-offset binary search | ⏳ Not started |
+| 3 | **Bookmark / resume for long stories** — no way to resume a paused ElevenLabs story; needs resume banner + `SharedPreferences` position save | ⏳ Not started |
+| 4 | **Ambient sound wiring** — `AudioAmbienceService` exists and is called but `ReleaseMode.release` stops after first play instead of looping; fix to `ReleaseMode.loop` + pass `theme` param from call sites | ⏳ Not started |
+| 5 | **Character voice differentiation** — all story dialogue narrated in the same voice; needs `split_narration_dialogue()` backend + `characterVoiceForNarrator()` frontend | ⏳ Not started |
+
+### Other open items
+- **Pick-Your-Path audio-only mode** — full per-age-band review of what's working/broken in audio-only mode (was requested but not yet done)
+- **Utility scripts cleanup** — `generate_all_requested_images.py`, `extract_prompts.py`, `audit_assets.py` etc. are untracked in the repo root; consider adding to `.gitignore` or deleting if no longer needed
+
+---
+
 ## Session Update — 2026-03-24 (Sprout Band Magic Improvements)
 
 ### Sprout Band Polish — 7 UX Improvements Shipped
