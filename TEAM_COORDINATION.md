@@ -1,6 +1,30 @@
 # Team Coordination
 
-## 2026-03-27 (Accurate Word Highlighting + Age-Band Asset Compression — Claude Sonnet 4.6)
+## 2026-03-27 (Accurate Word Highlighting + TTS Web Fix + Age-Band Asset Compression — Claude Sonnet 4.6)
+
+### Open / Still-Needed Items (as of 2026-03-27)
+
+#### Bug / Regression
+- **Subscription sync 403 on web** — anonymous users hit `{"error": "Access denied"}` when the app tries to sync subscription status. Visible in dev console on every load. Likely the `/api/subscription/status` endpoint rejecting anonymous tokens — needs backend auth middleware check.
+- **Device TTS fallback still logs `[object SpeechSynthesisErrorEvent]`** — this is inside `flutter_tts_web.dart`'s `utterance.onError` handler (`print(event)` on line ~99). Cannot be suppressed from app code; only relevant if ElevenLabs is unavailable. File a `flutter_tts` upstream issue or patch via override if it becomes noisy in prod.
+
+#### Auth / Pick-A-Path (from 2026-03-25 Codex audit — status unknown)
+- `magic_review_step.dart` — resolve real user ID before launching `PickAPathAdventureScreen` (stop hardcoding `userId: 'guest'`)
+- `pick_a_path_adventure_screen.dart` — one-time re-auth + retry on 401 so stale anonymous tokens don't strand users
+- Verify the audio-only CTA (`789fa48`) works end-to-end on Railway for all 6 age bands
+
+#### Testing
+- 6-band integration test (visual, characters, companions, story, illustrations) — never run against current codebase
+- Cross-browser: Chrome ✓ (dev) → Firefox → Edge → mobile DevTools
+- Real-provider performance baseline: `RUN_REAL_API_TESTS=true python backend/tests/story_load_audit.py`
+
+#### Production Env
+- Set real `SECRET_KEY` and JWT secret in Railway (currently dev defaults)
+- Remove duplicate `GOOGLE_API_KEY` / `GEMINI_API_KEY` env vars
+- Re-consent prompt for users whose consent wasn't synced before 2026-03-21
+- Privacy policy missing physical address and phone number
+
+---
 
 ### Accurate Word Highlighting in Read-Aloud (Younger Age Groups)
 
