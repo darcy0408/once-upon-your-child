@@ -2,6 +2,42 @@
 
 ---
 
+## Session Update — 2026-03-24 (Sprout Band Magic Improvements)
+
+### Sprout Band Polish — 7 UX Improvements Shipped
+
+Based on a Six Hats analysis of the app from a 5-year-old's perspective, implemented:
+
+**1. Mic-Primary Name Entry** (`hero_creator_step.dart`)
+- Flipped the `isSproutFour` name input layout: big circular mic button (88px) is now the primary element with a "Tap to say your name!" prompt; text field moves below as a secondary "or type it here" option.
+
+**2. TTS Name Read-Back** (`hero_creator_step.dart`)
+- After STT finalises the name, sprout band hears "Hi [FirstName]! That's a lovely name!" via TTS — gives young children immediate positive confirmation that the mic worked.
+
+**3. Simplified Story Reader Controls** (`story_reader_screen.dart`)
+- Sprout band sees only Play/Pause + Start Over buttons (speed chips hidden).
+- A small lock icon (2s long-press) reveals the full parent controls including voice picker.
+- `_sproutUnlocked` state bool persists for the session.
+
+**4. Big Feelings 2-Step** (`big_feelings_flow_screen.dart`)
+- Sprout band: Feeling → Coping Tool (2 taps). Trigger and body-signal steps are skipped entirely.
+- `BigFeelingsFlowResult.trigger` and `.bodySignal` default to `''` for sprout (callers should treat empty as "not captured").
+- Simplified, child-friendly step titles/subtitles.
+
+**5. Make Magic Star Burst** (`image_make_magic_button.dart`)
+- Long-pressing the Make Magic button fires a 600ms star burst animation (`_StarBurstPainter`) — 12 coloured stars radiate outward with heavy haptic feedback. Works on all age bands.
+
+**6. Companion Bounce + Constellation Loading** (`magical_loading_view.dart`, `magic_review_step.dart`)
+- New `isSproutBand` and `companionImagePath` params on `MagicalLoadingView`.
+- Sprout band: bouncing companion image (18px hop, 700ms) replaces the loom animation; a 5-star constellation lights up one star every 4s (all 5 lit by ~20s).
+- `magic_review_step.dart` passes these values when band == AgeBand.sprout.
+
+**Commits:**
+- `df96e59` feat(sprout): mic-primary name entry, TTS name read-back, 2-step Big Feelings, simplified reader controls
+- `0528d2c` feat(sprout): star burst on Make Magic long-press + companion bounce + constellation loading
+
+---
+
 ## Session Update — 2026-03-25 (Sprout UX Overhaul + Checklist Audit)
 
 ### Sprout Band Setting Picker — Full UX Overhaul
