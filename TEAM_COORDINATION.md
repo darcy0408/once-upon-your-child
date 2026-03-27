@@ -1,5 +1,79 @@
 # Team Coordination
 
+## 2026-03-27 (Accurate Word Highlighting + Age-Band Asset Compression — Claude Sonnet 4.6)
+
+### Accurate Word Highlighting in Read-Aloud (Younger Age Groups)
+
+**Problem**: The story reader was estimating word highlight positions using character-weighted duration estimation — this was noticeably inaccurate and broken for younger readers who rely on word-by-word tracking.
+
+**Solution**: Used the ElevenLabs `/v1/text-to-speech/{voice_id}/with-timestamps` endpoint which returns character-level audio alignment data (exact millisecond start/end per character → merged to word-level).
+
+#### Backend Changes
+- **`backend/elevenlabs_tts_service.py`**
+  - Added `_chars_to_word_timestamps()` static method: merges per-character alignment data into word-level `[{start_ms, end_ms}]` list
+  - Added `generate_speech_with_timestamps()`: calls `client.text_to_speech.convert_with_timestamps()`, returns `(audio_bytes, word_timestamps)` tuple; falls back to `generate_speech()` + empty list on any failure
+- **`backend/routes/tts_routes.py`**
+  - For short (<5000 char) single-voice stories: calls `generate_speech_with_timestamps()` instead of `generate_speech()`
+  - All response paths now return `word_timestamps` key (populated for short single-voice, empty list for dialogue/chunked modes)
+
+#### Flutter Changes
+- **`lib/services/tts_api_service.dart`**
+  - New `TtsSynthesisResult` class with `audioBytes: Uint8List` and `wordTimestamps: List<({int startMs, int endMs})>`
+  - `synthesize()` now returns `Future<TtsSynthesisResult?>` (was `Future<Uint8List?>`)
+  - Parses `word_timestamps` array from backend response
+- **`lib/story_reader_screen.dart`**
+  - Stores `_wordTimestamps` from `TtsSynthesisResult`
+  - `onPositionChanged` listener: binary search on `_wordTimestamps` when non-empty (exact path); falls back to character-weighted estimation when empty (ElevenLabs unavailable)
+  - Clears `_wordTimestamps` on playback complete
+- **`lib/services/app_tts_service.dart`**, **`lib/story_result_screen.dart`**, **`lib/widgets/voice_picker_sheet.dart`**
+  - Updated all `TtsApiService.synthesize()` call sites to use `ttsResult?.audioBytes`
+
+---
+
+### Age-Band Asset Compression + Registration
+
+**Problem**: 238 AI-generated images in `age_band_assets/` totalled ~94MB uncompressed — too large to add to git without risking Railway snapshot timeouts again.
+
+**Solution**: Compressed all images in-place using Pillow 256-colour quantisation before committing.
+
+#### Script: `scripts/compress_age_band_assets.py`
+- PNGs with alpha (RGBA): `Image.Quantize.FASTOCTREE` → 256 colours (only valid method for alpha channels)
+- PNGs without alpha (RGB): `Image.Quantize.MEDIANCUT` → 256 colours
+- JPGs: re-encode at quality=78 only if >400KB (most are already well-compressed)
+- Skips `older_adolescents/` (no AgeBand enum mapping) and `toddlers/` (empty)
+
+#### Result
+| Metric | Value |
+|--------|-------|
+| Files processed | 238 |
+| Before | 93.9 MB |
+| After | 27.7 MB |
+| Reduction | **65% (70% vs original ~94MB)** |
+
+#### Registration
+- `pubspec.yaml` already had all `age_band_assets/` subdirectory entries (lines 155-196) for all 6 bands
+- `lib/theme/age_band_asset_resolver.dart` already fully implemented with `archetypePath()`, `backgroundPath()`, `scenePath()`, `companionPath()`, `feelingPath()`, `orbPath()`, `uiPath()` methods
+
+#### Bands Covered
+`sprouts/`, `early_readers/` (explorer), `adventurers/`, `creators/`, `adolescents/`, `adults/`
+
+---
+
+### ElevenLabs TTS Web Fix — Blob-URL AudioElement (Claude Sonnet 4.6)
+
+**Problem**: On Flutter Web, `AppTtsService.speak()` was throwing `TimeoutException after 0:00:30.000000: Future not completed` when ElevenLabs audio successfully returned, causing a silent fallback to the device Speech Synthesis API (which then logged `[object SpeechSynthesisErrorEvent]`). TTS was effectively broken on the web build.
+
+**Root cause**: `audioplayers` 6.x has a static `preparationTimeout = const Duration(seconds: 30)`. When `BytesSource(mp3)` is played on web, `audioplayers_web` converts the bytes to a `data:audio/mpeg;base64,...` URI, sets it on an HTML audio element, and connects that element to a Web `AudioContext` with `crossOrigin='anonymous'`. Chrome's autoplay policy suspends the `AudioContext` unless triggered by a direct user gesture, which prevents the `loadeddata` event from firing. After 30 seconds the `preparationTimeout` fires as a `TimeoutException`, caught by `speak()`'s catch block, which falls back to `flutter_tts` device speech. The device fallback then also fails because Chrome's `SpeechSynthesis` API throws a `not-allowed` error (autoplay) which `flutter_tts_web.dart` prints literally as `[object SpeechSynthesisErrorEvent]`.
+
+**Fix**: Added a conditional-import web audio helper that bypasses `audioplayers` entirely on web:
+- `lib/services/web_audio_player.dart` — web: creates a blob URL from the MP3 bytes and plays it via a plain `HTMLAudioElement` (no `AudioContext`, no `crossOrigin`, no 30s timeout)
+- `lib/services/web_audio_player_stub.dart` — non-web: no-op stubs so the import compiles on Android/iOS/desktop
+- `lib/services/app_tts_service.dart` — `speak()` branches on `kIsWeb` to use `playAudioBytesOnWeb()` instead of `_player.play(BytesSource)`; `stop()` calls `stopWebAudio()` (no-op on non-web)
+
+**Commit**: `f9eb330`
+
+---
+
 ## 2026-03-25 (Pick-A-Path Audit + Auth Hardening — Codex)
 
 ### Live Audit Findings
