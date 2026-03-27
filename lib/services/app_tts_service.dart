@@ -12,6 +12,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/elevenlabs_voice.dart';
 import '../theme/age_band_theme.dart';
 import 'tts_api_service.dart';
+import 'web_audio_player_stub.dart'
+    if (dart.library.html) 'web_audio_player.dart';
 
 /// Common wizard/onboarding phrases pre-warmed at startup.
 const List<String> kWarmUpPhrases = [
@@ -111,11 +113,19 @@ class AppTtsService {
         if (mp3 != null && mp3.isNotEmpty) _cache[cleanText] = mp3;
       }
       if (mp3 != null && mp3.isNotEmpty) {
-        await _player.stop();
-        await _player.play(BytesSource(mp3));
-        if (awaitCompletion) {
-          await _player.onPlayerComplete.first
-              .timeout(const Duration(seconds: 120));
+        if (kIsWeb) {
+          // On web, audioplayers' BytesSource converts bytes to a data: URI and
+          // connects the element to a Web AudioContext with crossOrigin='anonymous'.
+          // This prevents loadeddata from firing in Chrome, triggering the 30-second
+          // preparationTimeout. Use a plain blob-URL AudioElement instead.
+          await playAudioBytesOnWeb(mp3, awaitCompletion: awaitCompletion);
+        } else {
+          await _player.stop();
+          await _player.play(BytesSource(mp3));
+          if (awaitCompletion) {
+            await _player.onPlayerComplete.first
+                .timeout(const Duration(seconds: 120));
+          }
         }
         return;
       }
@@ -127,6 +137,7 @@ class AppTtsService {
   }
 
   Future<void> stop() async {
+    stopWebAudio(); // no-op on non-web via stub
     await _player.stop();
     await _fallback.stop();
   }
