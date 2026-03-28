@@ -169,13 +169,13 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
         padding: const EdgeInsets.all(AppSpacing.xl),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppRadius.xl),
-          gradient: LinearGradient(
+          gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              const Color(0xFFFFF4D1).withValues(alpha: 0.72),
-              const Color(0xFFE7C5FF).withValues(alpha: 0.78),
-              const Color(0xFFBCE8FF).withValues(alpha: 0.74),
+              Color(0xFF1A0E36), // deep navy-purple — matches brand dark
+              Color(0xFF2C1B47), // rich purple — brand mid
+              Color(0xFF1A0E36),
             ],
           ),
           border: Border.all(
@@ -462,7 +462,7 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                     softWrap: true,
                     maxLines: 3,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: const Color(0xFF4D3D6A),
+                          color: Colors.white70,
                           fontStyle: FontStyle.italic,
                           fontWeight: FontWeight.w600,
                         ),
