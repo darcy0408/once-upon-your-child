@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -268,7 +269,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   Future<void> _goBack() async {
     await AppTtsService.instance.stop();
     if (_stepIndex == 0) {
-      Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
       return;
     }
     await _animCtrl.reverse();
@@ -288,10 +289,34 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   // ── Photo helpers ───────────────────────────────────────────────────────────
   Future<void> _takePhoto() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.camera,
-      preferredCameraDevice: CameraDevice.front,
-    );
+    XFile? picked;
+    if (kIsWeb) {
+      // Camera capture is not available on web via image_picker.
+      // Fall back to gallery/file picker so the button is never a dead end.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Camera isn't available here — opening your photos instead!"),
+          duration: Duration(seconds: 2),
+        ));
+      }
+      picked = await picker.pickImage(source: ImageSource.gallery);
+    } else {
+      try {
+        picked = await picker.pickImage(
+          source: ImageSource.camera,
+          preferredCameraDevice: CameraDevice.front,
+        );
+      } catch (_) {
+        // Camera permission denied or unavailable — fall back to gallery.
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("Can't open camera. Let's pick a photo instead!"),
+            duration: Duration(seconds: 2),
+          ));
+        }
+        picked = await picker.pickImage(source: ImageSource.gallery);
+      }
+    }
     if (picked != null) {
       final bytes = await picked.readAsBytes();
       if (mounted) setState(() => _imageBytes = bytes);
