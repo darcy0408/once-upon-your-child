@@ -101,6 +101,9 @@ class AppTtsService {
     String text, {
     String? voiceId,
     bool awaitCompletion = false,
+    /// Rate multiplier relative to the default (0.42). 1.0 = default.
+    /// Use ~0.8 for Sprouts band to slow narration for 3–5 year olds.
+    double rateScale = 1.0,
   }) async {
     final cleanText = text.trim();
     if (cleanText.isEmpty) return;
@@ -133,7 +136,11 @@ class AppTtsService {
       debugPrint('TTS ElevenLabs failed, falling back to device: $e');
     }
     // On-device fallback
-    if (_ready) await _fallback.speak(text);
+    if (_ready) {
+      if (rateScale != 1.0) await _fallback.setSpeechRate(0.42 * rateScale);
+      await _fallback.speak(text);
+      if (rateScale != 1.0) await _fallback.setSpeechRate(0.42);
+    }
   }
 
   Future<void> stop() async {

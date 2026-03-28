@@ -97,6 +97,10 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   String? get _companionImage {
     if (widget.wizardData.selectedCompanions.isNotEmpty) {
       final firstComp = widget.wizardData.selectedCompanions.first;
+      // Sprouts companions have IDs like 'sprout/fluffy_dragon' with PNG assets.
+      if (firstComp.startsWith('sprout/')) {
+        return 'assets/images/companions/$firstComp.png';
+      }
       try {
         final magicComp = magicCompanions.firstWhere((c) => c.id == firstComp);
         return 'assets/images/companions/${magicComp.id}.jpg';
@@ -117,10 +121,12 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
     return null;
   }
 
-  String get _scenarioLabel => widget.wizardData.selectedScenario != null
-      ? (ScenarioData.getById(widget.wizardData.selectedScenario!)?.title ??
-          'Magical Adventure')
-      : 'Magical Adventure';
+  String get _scenarioLabel {
+    if (widget.wizardData.selectedScenario == null) return 'Magical Adventure';
+    final scenario = ScenarioData.getById(widget.wizardData.selectedScenario!);
+    if (scenario == null) return 'Magical Adventure';
+    return scenario.titleForAge(widget.wizardData.characterAge);
+  }
 
   void _launchStoryCreation() async {
     if (!widget.wizardData.isComplete) {
@@ -606,30 +612,34 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                   size: 32,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  band.band.isMature
-                      ? "Review Your Story Brief"
-                      : band.band == AgeBand.adventurer
-                          ? "Review Your Adventure"
-                          : "Your Adventure Awaits!",
-                  textAlign: TextAlign.center,
-                  style: (band.band.isMature)
-                      ? GoogleFonts.sourceSans3(
-                          color: band.accent,
-                          fontSize: band.heading(22),
-                          fontWeight: FontWeight.bold,
-                        )
-                      : (band.band == AgeBand.adventurer)
-                          ? GoogleFonts.bitter(
-                              color: band.accent,
-                              fontSize: band.heading(22),
-                              fontWeight: FontWeight.bold,
-                            )
-                          : GoogleFonts.cinzelDecorative(
-                              color: band.accent,
-                              fontSize: band.heading(22),
-                              fontWeight: FontWeight.bold,
-                            ),
+                Flexible(
+                  child: Text(
+                    band.band.isMature
+                        ? "Review Your Story Brief"
+                        : band.band == AgeBand.adventurer
+                            ? "Review Your Adventure"
+                            : "Your Adventure Awaits!",
+                    textAlign: TextAlign.center,
+                    softWrap: true,
+                    overflow: TextOverflow.visible,
+                    style: (band.band.isMature)
+                        ? GoogleFonts.sourceSans3(
+                            color: band.accent,
+                            fontSize: band.heading(20),
+                            fontWeight: FontWeight.bold,
+                          )
+                        : (band.band == AgeBand.adventurer)
+                            ? GoogleFonts.bitter(
+                                color: band.accent,
+                                fontSize: band.heading(20),
+                                fontWeight: FontWeight.bold,
+                              )
+                            : GoogleFonts.cinzelDecorative(
+                                color: band.accent,
+                                fontSize: band.heading(18),
+                                fontWeight: FontWeight.bold,
+                              ),
+                  ),
                 ),
               ],
             ),

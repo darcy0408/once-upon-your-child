@@ -792,8 +792,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   /// Shows selected companions as glowing portrait orbs above the selection grid.
   /// Empty slots show a dashed placeholder. Tapping a filled orb deselects it.
   Widget _buildCompanionShowcase() {
+    // Include both general and Sprout-specific companions in the search.
+    final allKnownCompanions = [..._companions, ..._sproutCompanions];
+
     // Collect selected named companions in order
-    final selectedNamed = _companions
+    final selectedNamed = allKnownCompanions
         .where((c) =>
             widget.wizardData.companionNames.contains(c.name) ||
             widget.wizardData.selectedCompanions.contains(c.id))
@@ -801,7 +804,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
 
     // Collect selected saved-character friends (not magic companions, not pets)
     final magicAndPetNames = {
-      ..._companions.map((c) => c.name),
+      ...allKnownCompanions.map((c) => c.name),
       ...widget.wizardData.pets.map((p) => p['name'] ?? ''),
     };
     final selectedFriends = widget.availableCharacters
@@ -815,7 +818,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     for (final c in selectedNamed) {
       slots.add(_ShowcaseSlot(
         id: c.id,
-        imagePath: 'assets/images/companions/${c.id}_normal.jpg',
+        imagePath: c.imagePath,
         name: c.name,
       ));
     }
@@ -3420,7 +3423,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
     // Cancel any in-flight audio before starting a new clip.
     await AppTtsService.instance.stop();
     if (!mounted) return;
-    unawaited(AppTtsService.instance.speak(text));
+    unawaited(AppTtsService.instance.speak(text, rateScale: 0.8));
   }
 
   Future<void> _speakPagePrompt(int page) async {
