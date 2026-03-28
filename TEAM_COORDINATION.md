@@ -1,5 +1,166 @@
 # Team Coordination
 
+## 2026-03-28 — Deployment Plan (Claude Sonnet 4.6)
+
+Full cross-reference of TEAM_COORDINATION.md, commit history, and open items. Ordered by what must be done before launch.
+
+### Phase 0: Commit Pending Work
+- Commit 4 modified tracked files (TEAM_COORDINATION.md, custom_avatar_screen.dart, parental_consent_screen.dart, app_tts_service.dart)
+- Commit untracked utility scripts and docs
+- Push all commits to origin/main
+
+### Phase 1 — P0 Blockers (Fix Before Any User Testing)
+
+| # | File(s) | Issue | Fix |
+|---|---------|-------|-----|
+| 1 | `magic_review_step.dart` | Blank screen on generation failure — no error state, no retry, wizard state lost | Catch API exceptions; show child-facing error widget ("Uh oh! Something went wiggly.") + "Try Again" button; persist wizard state to Isar/shared_preferences before launch |
+| 2 | `lib/custom_avatar_screen.dart` | "Take Photo" does nothing on web — silently fails | Fix `image_picker` web: use `ImageSource.gallery` as fallback; show clear fallback message if camera unavailable |
+| 3 | `magic_review_step.dart` | Edit pencil on "Picture tale" routes to Step 1 instead of story style step | Fix the step index in the edit-pencil `onTap` callback to jump to the correct wizard step |
+| 4 | `hero_creator_step.dart` + `app_tts_service.dart` | Archetype tap fires 2–4 simultaneous audio clips | Call `stop()` before any new archetype audio; queue chime then voice sequentially; guard against rapid taps |
+| 5 | Loading screen | No animation; "Tap to make sparkles!" non-functional | Implement looping `AnimationController` with character + companion; wire `GestureDetector` to sparkle particle effect |
+
+### Phase 2 — P1 Drop-off (Fix Before Soft Launch)
+
+| # | File(s) | Issue | Fix |
+|---|---------|-------|-----|
+| 6 | `hero_creator_step.dart` | Archetype screen conflates identity vs appearance | Split into 2 sequential steps: "Who is your hero?" → "How do they look?" |
+| 7 | `hero_creator_step.dart` / TTS narration | Archetype narration says "choose your look" — wrong | Change to: "Who is your hero? Tap the one you like!" |
+| 8 | Companion step | Sprouts shows full ~7+ companion roster instead of 4 band-specific ones | Enforce age band filter; Sprouts sees only: fluffy dragon, magic bunny, shining puppy, tiny fairy |
+| 9 | Companion step | "My Pet is saved." shown for human friend | Replace all save-confirmation strings → "Your buddy is ready!" |
+| 10–11 | Story world screen | "Make one up" dead end + prominent placement | Replace blank field with illustrated suggestion tiles + voice; move to bottom of list |
+| 12 | `app_tts_service.dart` | TTS too fast for Sprouts | Add per-band `ttsRate`; Sprouts = ~0.8× default |
+| 13 | `magic_review_step.dart` | "YOUR ADVENTURE AWAITS" overflows 63px | `FittedBox` or reduce font; add `overflow: TextOverflow.ellipsis` |
+| 14 | `magic_review_step.dart` | "Big Feelings Quest" shown as scene/location label | Fix data mapping — display scene name + thumbnail; move thematic tag to story context |
+| 15 | `magic_review_step.dart` | Companion not shown on review screen | Add companion portrait alongside hero portrait |
+| 16–17 | Feelings step | Wrong vocab + 7 choices for Sprouts | Remove Disgusted/Fearful/Bad; replace with Happy/Sad/Angry/Scared/Excited (max 5) |
+| 18 | `magic_review_step.dart` | Hardcoded `userId: 'guest'` for pick-a-path | Resolve real user ID from Riverpod auth state; fall back to 'guest' only if truly anonymous |
+| 19 | `pick_a_path_adventure_screen.dart` | Stale token → 401 strands user | On 401: re-auth once, retry; on second failure show "Start over" |
+| 20 | Backend subscription endpoint | Anonymous users get 403 on every page load | Allow anonymous JWT through `/api/subscription/status`; return free-tier default |
+
+### Phase 3 — Production Environment Setup
+
+| # | Where | Action |
+|---|-------|--------|
+| 21 | Railway env vars | Set real `SECRET_KEY` and `JWT_SECRET_KEY` (`python -c "import secrets; print(secrets.token_hex(32))"`) |
+| 22 | Railway env vars | Remove duplicate `GOOGLE_API_KEY` / `GEMINI_API_KEY`; standardize on one |
+| 23 | App startup | Re-consent prompt for users whose consent wasn't synced before 2026-03-21 |
+| 24 | `lib/config/environment.dart` + Railway | Confirm prod URL in release build; `FLASK_ENV=production`, `DEBUG=False`; run story load audit baseline |
+
+### Phase 4 — Compliance & Legal (Required Before Public Launch)
+
+| # | Issue | Action |
+|---|-------|--------|
+| 25 | Privacy policy | Add physical postal address and phone number (COPPA requirement) |
+| 26 | `lib/screens/parental_consent_screen.dart` | Photo consent toggle defaults ON → change to OFF; parent must explicitly opt in |
+| 27 | Consent form | Confirm email field is NOT pre-filled with PII in production builds; guard with `kDebugMode` |
+
+### Phase 5 — P2 Polish (Before Full Launch)
+
+- Companion error message: "Magical transformation is unavailable" → child-friendly copy
+- Sad cloud: add 1–2 illustrated tears
+- Feelings: play name aloud on single tap; confirm on double-tap/hold
+- Story style orbs → illustrated scene thumbnails; pre-select "Adventure Story"
+- Reduce Sprouts story choices to 2 primary + 4 theme tiles; remove "Pick something special!" section
+- Loading screen background: match dark-purple brand color (no lavender flash)
+- "Bring a Friend Along" text input → mic/speech-to-text button
+- Remove duplicate mic icon from name entry text field
+- Delete "Choose Your Avatar" bottom sheet; route all avatar selection through "Hi [name]!" modal
+
+### Phase 6 — Testing
+
+- 6-band integration test: visual, characters, companions, story, illustrations across all bands
+- Cross-browser: Chrome ✓ → Firefox → Edge → mobile DevTools (iOS Safari, Android Chrome)
+- Real API performance baseline: `RUN_REAL_API_TESTS=true python backend/tests/story_load_audit.py`
+
+### Phase 7 — P3 Polish (Post-Launch OK)
+
+- Sprouts progress bar: replace text labels with illustrated icons
+- Remove character counter from avatar selection modal
+- Fix loading screen rotating message truncation
+- Audio-only CTA: verify end-to-end on Railway for all 6 age bands (`789fa48`)
+
+### Phase 8 — Structural (Post-Launch Design Discussions)
+
+- Feelings screen placement: move after scene selection so it reads as story element, not admin step
+- Companion count for Sprouts: reduce from 3 slots to 1 buddy
+- Wizard state persistence: survive any failure without full restart
+- Loading screen as mini-game: replace static wait with tap-to-interact animation
+
+### Launch Order
+
+```
+Phase 0 → Phase 1 → Phase 3 → Phase 4 → Phase 2 → Phase 6 → soft launch → Phase 5 → Phase 7/8
+```
+
+---
+
+## 2026-03-27 (Sprouts Band UX Audit — Six Hats Analysis — Claude Sonnet 4.6)
+
+Full walkthrough of the Sprouts (3–5) wizard flow as a simulated 4-year-old user. 20 screenshots captured. Issues categorized by severity below.
+
+### P0 — Blocks Use (Fix Before Any Further Testing)
+
+| # | Screen | Issue | Fix |
+|---|--------|-------|-----|
+| 1 | Story generation (final) | White blank screen on story generation failure — no error state, no back button, no retry, no persistence of wizard state | Implement animated child-facing error state ("Uh oh! Something went wiggly. Let's try again!") + "Try Again" button; persist wizard state in local storage so retry doesn't restart from name entry |
+| 2 | Avatar selection | "Take Photo" button does nothing — silently fails even when parent consented to photo avatars | Fix camera/image_picker integration on web; surface a clear fallback if permission is denied |
+| 3 | Review screen | Edit pencil on "Picture tale" row navigates back to name entry (Step 1) instead of story style step | Route edit action to the correct wizard step |
+| 4 | Archetype selection | Tapping an archetype fires 2–4 simultaneous audio clips + a chime at the same time — sensory overload | Play exactly one clip sequentially: chime first, then voice; cancel any in-flight audio before playing next |
+| 5 | Loading screen | No animation renders during story generation; "Tap to make sparkles!" is non-functional | Fix sparkle tap interaction; implement looping character + companion animation for the wait state |
+
+### P1 — Causes Drop-Off
+
+| # | Screen | Issue | Fix |
+|---|--------|-------|-----|
+| 6 | Archetype screen | Screen conflates two decisions: WHO your hero is (archetype/identity) vs HOW they look (avatar) — a 4-year-old cannot hold both simultaneously | Split into two sequential screens: "Who is your hero?" → "How do they look?" |
+| 7 | Archetype screen | Voice narration says "choose your look, pick the character you like" — this screen is identity/personality selection, not appearance | Rewrite to: "Who is your hero? Tap the one you like!" |
+| 8 | Companion screen | Sprouts band shows the full companion roster (~7+) instead of the 4 band-specific companions (fluffy dragon, magic bunny, shining puppy, tiny fairy) — wrong data binding | Fix age band filter on companion list; Sprouts must only see their 4 assigned companions |
+| 9 | Companion screen | "My Pet is saved." shown after adding a human friend via photo — wrong label | Replace all companion-saved messages with: "Your buddy is ready!" (type-agnostic) |
+| 10 | Story world screen | "Make one up" / "Imagine it" navigates to a blank text input with no prompts, no voice, no suggestions — dead end for a non-reader | Replace blank text field with large illustrated suggestion tiles + auto-play voice: "You could fly, meet a fairy, go swimming... what sounds fun?" |
+| 11 | Story world screen | "Make one up" is positioned prominently, encouraging non-readers toward the dead-end path | Move to bottom of option list, below all pre-suggested choices |
+| 12 | Story world screen | Voice narration speaks too fast for 3–5 comprehension | Add per-age-band TTS speed parameter; Sprouts = ~80% of default rate |
+| 13 | Review screen | "YOUR ADVENTURE AWAITS" heading overflows right edge by 63px — looks broken | Fix text overflow (wrap or reduce font size) |
+| 14 | Review screen | "Big Feelings Quest" displayed as the scene/location label — it is a thematic tag, not a place | Fix data mapping so scene label renders the chosen scene name + scene thumbnail; "Big Feelings Quest" belongs in story context, not the scene slot |
+| 15 | Review screen | Chosen companion is not displayed on the review/launch screen — child invested effort choosing a buddy but doesn't see them | Add companion portrait alongside hero portrait on review screen |
+| 16 | Feelings screen | "Disgusted" and "Fearful" exceed 3–5 vocabulary; "Bad" is too vague | Remove Disgusted, Fearful, Bad from Sprouts feelings screen; replace with: Happy, Sad, Angry, Scared, Excited |
+| 17 | Feelings screen | 7 simultaneous feeling choices — exceeds the 2–3 option cognitive limit for this age | Reduce to 4–5 choices for Sprouts band |
+
+### P2 — Reduces Delight / Trust
+
+| # | Screen | Issue | Fix |
+|---|--------|-------|-----|
+| 18 | Companion screen | "Magical transformation is unavailable right now." — adult-technical error language on a 4-year-old's screen | Replace with: "Oops! Magic isn't working on that picture. Want to pick a buddy instead?" + large retry/alternative button |
+| 19 | Feelings screen | Sad cloud has no tears — facial expression alone is ambiguous for pre-readers | Add 1–2 illustrated tears to the Sad cloud face |
+| 20 | Feelings screen | No audio plays the feeling name when a cloud is tapped before confirming — non-readers cannot identify options without audio | Play feeling name aloud on single tap; confirm on double tap or hold |
+| 21 | Story world screen | Story style orbs are small and abstract — a 4-year-old cannot decode "Pick a Path" from an orb icon | Replace orbs with illustrated scene thumbnails; pre-select "Adventure Story" by default with a highlight border |
+| 22 | Story world screen | 8 total story choices (4 styles + 4 specials) displayed across two sections | Reduce to 2 primary story styles for Sprouts; integrate up to 4 themes as illustrated tiles in the same grid; remove "Pick something special!" as a separate section |
+| 23 | Loading screen | Background switches from dark purple to light lavender with no transition — breaks immersion | Match loading screen background to app's dark-purple brand color |
+| 24 | Companion screen | "Bring a Friend Along:" section requires typing a friend's name — 3–5 year olds cannot type | Replace text input with a voice/mic button: "Tap to say your friend's name!" using speech-to-text |
+| 25 | Name entry | Two microphone icons (one inside input field, one on "Tap to say your name" button) — duplicate affordances cause hesitation | Remove mic from inside the text input; keep only the standalone "Tap to say your name" button |
+| 26 | Avatar selection | "Choose Your Avatar" bottom sheet and "Hi Alice!" modal appear to cover the same decision in two different UI patterns — likely a routing conflict | Remove the "Choose Your Avatar" bottom sheet; route all avatar type selection through the "Hi Alice!" two-button modal exclusively |
+
+### P3 — Polish / Nice-to-Have
+
+| # | Screen | Issue | Fix |
+|---|--------|-------|-----|
+| 27 | All wizard screens | Step progress bar uses text labels ("My Hero!," "My Buddies!," etc.) — unreadable for 3–5 | Replace text labels with illustrated icons only for Sprouts band |
+| 28 | Parental consent | "Allow photo-based avatar creation" toggle defaults to ON | Default to OFF; parent must explicitly opt in (COPPA best-practice for imagery features) |
+| 29 | Avatar modal | "150 characters to disc..." truncated counter visible in gallery avatar modal | Remove — character counter belongs on a text input screen, not avatar selection |
+| 30 | Loading screen | "Something magical is about..." mid-sentence — rotating message text is truncated | Fix to display complete sentences |
+
+### Structural Recommendations (Require Design Discussion)
+
+- **Feelings screen placement**: "How are you feeling?" currently appears mid-wizard as a modal. User feedback suggests it doesn't read as a "scene" or "place" — it feels like a detached administrative step. Recommend relocating it so it flows naturally as a story element (e.g., after scene selection as "What should happen in your story?") rather than interrupting hero/buddy setup.
+- **Companion count for Sprouts**: Reduce companion slots from 3 to 1 for this age band — one buddy is enough and reduces decision fatigue.
+- **Story generation failure recovery**: Wizard state must survive a failed generation attempt. Currently a blank screen with no path back forces full restart — all choices are lost.
+- **Loading screen as engagement**: The loading wait (15–60 seconds) is the highest-stakes UX moment for a 4-year-old. A static screen with broken sparkles will cause most children to abandon. This screen should be a mini-game or full character animation, not a progress indicator.
+
+### Privacy Note (Test Environment)
+
+A real email address was visible in the parental consent screenshot (in the pre-filled email field). Confirm this is a dev-only pre-fill and that production builds do not pre-populate PII in consent forms.
+
+---
+
 ## 2026-03-27 (Accurate Word Highlighting + TTS Web Fix + Age-Band Asset Compression — Claude Sonnet 4.6)
 
 ### Open / Still-Needed Items (as of 2026-03-27)
