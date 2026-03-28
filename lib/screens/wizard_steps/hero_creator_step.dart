@@ -1034,6 +1034,18 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
               ),
             ),
             const SizedBox(width: 8),
+            if (_speechAvailable)
+              IconButton(
+                tooltip: 'Say a friend\'s name',
+                icon: Icon(
+                  _listeningFor == 'friend' ? Icons.mic : Icons.mic_none,
+                  color: _listeningFor == 'friend'
+                      ? Colors.yellow
+                      : Colors.white70,
+                ),
+                onPressed: () => _toggleListening('friend'),
+              ),
+            const SizedBox(width: 4),
             ElevatedButton(
               onPressed: _addFriendByName,
               style: ElevatedButton.styleFrom(
@@ -2161,7 +2173,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             ),
           ),
           ElevatedButton(
-            onPressed: _openAvatarCreationOptions,
+            onPressed: _openAvatarGallery,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF7E57C2),
               foregroundColor: Colors.white,
@@ -2885,6 +2897,9 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             _wishController.text = words;
             _imagineItController.text = words;
             widget.wizardData.customElements = words;
+          } else if (field == 'friend') {
+            _friendNameController.text = words;
+            if (result.finalResult && words.isNotEmpty) _addFriendByName();
           } else {
             _questController.text = words;
             widget.wizardData.heroQuest = words;
