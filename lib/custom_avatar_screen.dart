@@ -79,7 +79,15 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
     'Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Pink', 'Orange', 'Teal', 'Gold'
   ];
   static const _eyeColors = ['Brown', 'Blue', 'Green', 'Hazel', 'Grey'];
-  static const _hairColors = ['Black', 'Brown', 'Blonde', 'Red', 'Grey', 'Pink'];
+  static const _hairColors = [
+    'Black',
+    'Dark Brown',
+    'Brown',
+    'Light Brown',
+    'Blonde',
+    'Auburn',
+    'Red',
+  ];
 
   static const Map<String, Color> _eyeSwatches = {
     'Brown': Color(0xFF6D4C41),
@@ -90,11 +98,12 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   };
   static const Map<String, Color> _hairSwatches = {
     'Black': Color(0xFF1B1B1F),
+    'Dark Brown': Color(0xFF4E342E),
     'Brown': Color(0xFF6D4C41),
+    'Light Brown': Color(0xFFA1887F),
     'Blonde': Color(0xFFFFE082),
+    'Auburn': Color(0xFF8D4E2F),
     'Red': Color(0xFFE57373),
-    'Grey': Color(0xFFB0BEC5),
-    'Pink': Color(0xFFF48FB1),
   };
   static const Map<String, Color> _favoriteSwatches = {
     'Red': Color(0xFFE53935),
@@ -151,13 +160,15 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
 
   @override
   void dispose() {
+    unawaited(AppTtsService.instance.stop());
     _animCtrl.dispose();
     super.dispose();
   }
 
   // ── TTS ─────────────────────────────────────────────────────────────────────
-  void _speakPrompt() {
-    AppTtsService.instance.speak(_question(_step));
+  Future<void> _speakPrompt() async {
+    await AppTtsService.instance.stop();
+    unawaited(AppTtsService.instance.speak(_question(_step)));
   }
 
   String _question(_AvatarStep step) {
@@ -171,7 +182,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
           _AvatarStep.hairColor: 'What color is your hair?',
           _AvatarStep.eyeColor: 'What color are your eyes?',
           _AvatarStep.favoriteColor: 'What is your favorite color?',
-          _AvatarStep.photo: "Now ask a grown-up to take a picture of your face!",
+          _AvatarStep.photo: "Let's take a photo of your face with a grown-up!",
         }[step]!;
       case AgeBand.explorer:
         return {
@@ -241,6 +252,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
       _stepOrder.where((s) => s != _AvatarStep.sproutWelcome).toList();
 
   Future<void> _goForward() async {
+    await AppTtsService.instance.stop();
     if (_isLastStep) {
       await _generateAvatar();
       return;
@@ -254,6 +266,7 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
   }
 
   Future<void> _goBack() async {
+    await AppTtsService.instance.stop();
     if (_stepIndex == 0) {
       Navigator.pop(context);
       return;
@@ -430,10 +443,11 @@ class _CustomAvatarScreenState extends State<CustomAvatarScreen>
                     _buildStepHeader(),
                     SizedBox(height: _isSprout ? 24 : 16),
                     Expanded(child: _buildStepContent()),
-                    // Sprout auto-advances on color/gender taps;
-                    // Next button only needed on the photo step for Sprout.
-                    if (!_isSprout || _step == _AvatarStep.photo)
-                      _buildNextButton(),
+                    // Keep an explicit Next button visible for every step.
+                    // Sprout still auto-advances on taps, but the button
+                    // prevents the flow from getting stuck if auto-advance
+                    // is delayed or interrupted.
+                    _buildNextButton(),
                     const SizedBox(height: 12),
                   ],
                 ),

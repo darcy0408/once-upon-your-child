@@ -99,6 +99,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       const Text('• Child\'s first name and age — to personalize stories', style: textWhite70),
+                      const Text('• Character choices and avatar selections — saved locally on this device for your child\'s stories', style: textWhite70),
                       const Text('• Story preferences & emotions — to generate content', style: textWhite70),
                       const Text('• Usage data — to improve the app (no personal identifiers)', style: textWhite70),
                       const SizedBox(height: AppSpacing.sm),
@@ -113,6 +114,8 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                       const SizedBox(height: AppSpacing.xs),
                       const Text("• Never sell or share your child's personal information", style: textWhite70),
                       const Text('• No behavioral advertising or third-party tracking', style: textWhite70),
+                      const Text('• Your child can choose a premade avatar instead of creating a cartoon image from a photo', style: textWhite70),
+                      const Text('• User characters and images are stored locally on this device, and we do not have access to them', style: textWhite70),
                       const Text('• Photos used for avatars stay on this device — never uploaded', style: textWhite70),
                       const SizedBox(height: AppSpacing.sm),
                       Text(
@@ -173,8 +176,8 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                       style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                     ),
                     subtitle: const Text(
-                      'Your child can use a selfie to create their avatar. '
-                      'Photos are processed on-device and never uploaded.',
+                      'Your child can choose a premade avatar instead, or use a selfie to create one on-device. '
+                      'User characters and images stay on this device, and we do not have access to them.',
                       style: TextStyle(color: Colors.white70, fontSize: 13),
                     ),
                     activeThumbColor: const Color(0xFFFFD700),

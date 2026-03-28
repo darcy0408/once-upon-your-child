@@ -44,7 +44,7 @@ const List<String> kWarmUpPhrases = [
   "What color is your hair?",
   "What color are your eyes?",
   "What is your favorite color?",
-  "Let's take a photo of your face!",
+  "Let's take a photo of your face with a grown-up!",
   "Your magical hero is ready!",
   "Girl",
   "Boy",
