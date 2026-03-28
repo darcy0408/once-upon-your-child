@@ -48,6 +48,7 @@ class MagicReviewStep extends ConsumerStatefulWidget {
 
 class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
   bool _isGenerating = false;
+  String? _generationError;
   late String _loadingStatus;
   final StoryIllustrationService _illustrationService =
       StoryIllustrationService();
@@ -127,6 +128,9 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
           content: Text('Please complete all steps first!'),
           backgroundColor: AppColors.warning));
       return;
+    }
+    if (_generationError != null) {
+      setState(() => _generationError = null);
     }
     if (!mounted) return;
     // Silently check for a recent feelings journal entry (last 24 h) BEFORE showing the loader
@@ -353,24 +357,14 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
       }
     } catch (e) {
       debugPrint('❌ Error generating story: $e');
-      String userMessage = 'Magic needed a recharge';
-      if (e.toString().contains('500')) {
-        userMessage = 'Server error. The magic faded.';
-      } else if (e.toString().contains('timeout')) {
-        userMessage = 'Story took too long.';
-      }
       if (mounted) {
-        setState(() => _isGenerating = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('$userMessage\nTry again?'),
-            backgroundColor: AppColors.error,
-            action: SnackBarAction(
-                label: 'Retry',
-                textColor: Colors.white,
-                onPressed: _launchStoryCreation)));
+        setState(() {
+          _isGenerating = false;
+          _generationError = 'Uh oh! Something went wiggly.';
+        });
       }
     } finally {
-      if (mounted) {
+      if (mounted && _isGenerating) {
         setState(() => _isGenerating = false);
       }
     }
@@ -905,20 +899,28 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
             ],
             SizedBox(height: band.space(AppSpacing.xxl)),
             Center(
-                child: _isGenerating
-                    ? MagicalLoadingView(
-                        status: _loadingStatus,
-                        onCancel: () => setState(() => _isGenerating = false),
-                        isSproutBand: band.band == AgeBand.sprout,
-                        companionImagePath: band.band == AgeBand.sprout
-                            ? _companionImage
-                            : null,)
-                    : _PulsingCastSpellFrame(
-                        isReady: !_isGenerating && data.isComplete,
-                        child: ImageMakeMagicButton(
-                            onTap: _launchStoryCreation,
-                            isEnabled: !_isGenerating && data.isComplete,
-                            label: band.launchStoryLabel))),
+                child: _generationError != null
+                    ? _GenerationErrorWidget(
+                        isSprout: band.band == AgeBand.sprout,
+                        onRetry: () {
+                          setState(() => _generationError = null);
+                          _launchStoryCreation();
+                        },
+                      )
+                    : _isGenerating
+                        ? MagicalLoadingView(
+                            status: _loadingStatus,
+                            onCancel: () => setState(() => _isGenerating = false),
+                            isSproutBand: band.band == AgeBand.sprout,
+                            companionImagePath: band.band == AgeBand.sprout
+                                ? _companionImage
+                                : null,)
+                        : _PulsingCastSpellFrame(
+                            isReady: !_isGenerating && data.isComplete,
+                            child: ImageMakeMagicButton(
+                                onTap: _launchStoryCreation,
+                                isEnabled: !_isGenerating && data.isComplete,
+                                label: band.launchStoryLabel))),
             SizedBox(height: band.space(AppSpacing.xl)),
           ],
         ),
@@ -1386,6 +1388,62 @@ class _StaggeredRevealState extends State<_StaggeredReveal>
     return FadeTransition(
         opacity: _opacity,
         child: SlideTransition(position: _slide, child: widget.child));
+  }
+}
+
+/// Full-screen child-friendly error widget shown when story generation fails.
+class _GenerationErrorWidget extends StatelessWidget {
+  final bool isSprout;
+  final VoidCallback onRetry;
+  const _GenerationErrorWidget({required this.isSprout, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            isSprout ? '🌀' : '✨',
+            style: const TextStyle(fontSize: 56),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            isSprout
+                ? 'Uh oh! Something went wiggly.\nLet\'s try again!'
+                : 'Something went wrong.\nWant to try again?',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: isSprout ? 22 : 18,
+              fontWeight: FontWeight.w600,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 28),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.auto_awesome, size: 22),
+              label: Text(
+                isSprout ? 'Try Again! ✨' : 'Try Again',
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF9C4DCC),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
