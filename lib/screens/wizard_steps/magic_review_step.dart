@@ -33,7 +33,15 @@ import '../bedtime_wizard_screen.dart';
 class MagicReviewStep extends ConsumerStatefulWidget {
   final WizardData wizardData;
   final VoidCallback? onGoBack;
-  const MagicReviewStep({super.key, required this.wizardData, this.onGoBack});
+  /// Navigate back AND jump to a specific HeroCreatorStep sub-step.
+  /// 0=Hero, 1=Team, 2=Place, 3=Story type (Make Magic)
+  final void Function(int subStep)? onGoToSubStep;
+  const MagicReviewStep({
+    super.key,
+    required this.wizardData,
+    this.onGoBack,
+    this.onGoToSubStep,
+  });
   @override
   ConsumerState<MagicReviewStep> createState() => _MagicReviewStepState();
 }
@@ -786,7 +794,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                     icon: Icons.auto_stories,
                     label: _storyTypeLabel(data, band),
                     band: band,
-                    onTap: widget.onGoBack,
+                    onTap: () => widget.onGoToSubStep?.call(3),
                     colorAccent: const Color(0xFF9C4DCC))),
             SizedBox(height: band.space(8)),
             if (band.band != AgeBand.sprout)
@@ -829,7 +837,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                       icon: Icons.auto_awesome,
                       band: band,
                       label: '"${data.customElements}"',
-                      onTap: widget.onGoBack,
+                      onTap: () => widget.onGoToSubStep?.call(2),
                       colorAccent: const Color(0xFFFFD54F),
                       isShimmering: true)),
             ],
@@ -841,7 +849,7 @@ class _MagicReviewStepState extends ConsumerState<MagicReviewStep> {
                     icon: Icons.favorite,
                     band: band,
                     label: data.companionNames.join(', '),
-                    onTap: widget.onGoBack,
+                    onTap: () => widget.onGoToSubStep?.call(1),
                     colorAccent: const Color(0xFFF06292),
                     leadingAvatar:
                         _CompanionAvatar(companionImage: _companionImage),

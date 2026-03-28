@@ -303,7 +303,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       setState(() => widget.wizardData.selectedScenario = id);
     }
     final label = _sceneLabel(id);
-    if (label != null) _speakForSprout(label);
+    if (label != null) unawaited(_speakForSprout(label));
   }
 
   void _heroNextPage() {
@@ -316,7 +316,11 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       setState(() => _heroPage++);
       _logPageView(_heroPage);
       _notifySubStep();
-      _speakPagePrompt(_heroPage);
+      // Delay voice prompt so it plays after the chime finishes (~800ms),
+      // preventing simultaneous audio on page transition.
+      Future.delayed(const Duration(milliseconds: 850), () {
+        if (mounted) unawaited(_speakPagePrompt(_heroPage));
+      });
     }
   }
 
@@ -463,7 +467,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       }
     });
     // Read the archetype name aloud for young children.
-    _speakForSprout(archetype.nameForAge(widget.wizardData.characterAge));
+    unawaited(_speakForSprout(archetype.nameForAge(widget.wizardData.characterAge)));
 
     // Step flow on page 2:
     // 1) Pick avatar and archetype in any order.
@@ -3411,12 +3415,15 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   // ─── Sprout TTS helpers ───────────────────────────────────────────────────
 
   /// Speaks a prompt only for young children (age ≤ 5 / sprout band).
-  void _speakForSprout(String text) {
+  Future<void> _speakForSprout(String text) async {
     if (widget.wizardData.characterAge > 5) return;
+    // Cancel any in-flight audio before starting a new clip.
+    await AppTtsService.instance.stop();
+    if (!mounted) return;
     unawaited(AppTtsService.instance.speak(text));
   }
 
-  void _speakPagePrompt(int page) {
+  Future<void> _speakPagePrompt(int page) async {
     final prompt = switch (page) {
       1 => "What is your hero's name? Tap the microphone to say it!",
       2 => "Pick your hero look! Tap the picture you like.",
@@ -3425,7 +3432,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       5 => "You are all set! Tap Make Magic!",
       _ => null,
     };
-    if (prompt != null) _speakForSprout(prompt);
+    if (prompt != null) await _speakForSprout(prompt);
   }
 
   String? _sceneLabel(String id) => switch (id) {

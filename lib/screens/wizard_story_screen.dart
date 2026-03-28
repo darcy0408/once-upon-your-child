@@ -169,6 +169,21 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
     }
   }
 
+  /// Navigate back to HeroCreatorStep and jump directly to [subStep].
+  /// 0=Hero, 1=Team, 2=Place, 3=Story type
+  void _goToSubStep(int subStep) {
+    setState(() {
+      _requestedSubStep = subStep;
+      _subStepRequestNonce++;
+      if (_currentStep > 0) _currentStep--;
+    });
+    _pageController.animateToPage(
+      0,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
+
   void _showBedtimeSettingsDialog(BuildContext context) {
     bool isInteractive = false;
     double timerMinutes = 0; // 0 means off
@@ -477,6 +492,7 @@ class _WizardStoryScreenState extends ConsumerState<WizardStoryScreen> {
                     MagicReviewStep(
                       wizardData: _wizardData,
                       onGoBack: _previousStep,
+                      onGoToSubStep: _goToSubStep,
                     ),
                   ],
                 ),
