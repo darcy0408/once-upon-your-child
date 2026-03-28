@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../feelings_wheel_data.dart';
+import '../services/app_tts_service.dart';
 import '../theme/age_band_theme.dart';
 import '../widgets/feelings_cloud_picker.dart';
 
@@ -356,18 +357,25 @@ class _HowBigZone extends StatelessWidget {
               alignment: WrapAlignment.center,
               children: _sproutEmotions.map((e) {
                 final isSelected = selectedCore?.id == e['id'];
+                void resolveAndSelect() {
+                  final allCores = [
+                    ...FeelingsWheelData.coreEmotions,
+                    ...FeelingsWheelData.bigFeelingsCoreEmotionsAges6To8,
+                  ];
+                  final core = allCores.firstWhere(
+                    (c) => c.id == e['id'],
+                    orElse: () => FeelingsWheelData.coreEmotions.first,
+                  );
+                  onCoreSelected(core);
+                }
                 return GestureDetector(
-                  onTap: () {
-                    final allCores = [
-                      ...FeelingsWheelData.coreEmotions,
-                      ...FeelingsWheelData.bigFeelingsCoreEmotionsAges6To8,
-                    ];
-                    final core = allCores.firstWhere(
-                      (c) => c.id == e['id'],
-                      orElse: () => FeelingsWheelData.coreEmotions.first,
-                    );
-                    onCoreSelected(core);
-                  },
+                  // Single tap: speak the emotion name aloud
+                  onTap: () => AppTtsService.instance
+                      .speak(e['label'] as String, rateScale: 0.85),
+                  // Double-tap: confirm the selection
+                  onDoubleTap: resolveAndSelect,
+                  // Long-press also confirms (easier for small fingers)
+                  onLongPress: resolveAndSelect,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     width: 88,

@@ -1414,10 +1414,23 @@ class _GenerationErrorWidget extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            isSprout ? '🌀' : '✨',
-            style: const TextStyle(fontSize: 56),
-          ),
+          if (isSprout)
+            const Column(
+              children: [
+                Text('🌧️', style: TextStyle(fontSize: 52)),
+                SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('💧', style: TextStyle(fontSize: 20)),
+                    SizedBox(width: 8),
+                    Text('💧', style: TextStyle(fontSize: 20)),
+                  ],
+                ),
+              ],
+            )
+          else
+            const Text('✨', style: TextStyle(fontSize: 56)),
           const SizedBox(height: 16),
           Text(
             isSprout
