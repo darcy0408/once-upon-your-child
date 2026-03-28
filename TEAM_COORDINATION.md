@@ -9,7 +9,7 @@ Full cross-reference of TEAM_COORDINATION.md, commit history, and open items. Or
 - Commit untracked utility scripts and docs
 - Push all commits to origin/main
 
-### Phase 1 — P0 Blockers (Fix Before Any User Testing)
+### Phase 1 — P0 Blockers ✅ COMPLETE (committed 2026-03-28)
 
 | # | File(s) | Issue | Fix |
 |---|---------|-------|-----|
@@ -19,7 +19,7 @@ Full cross-reference of TEAM_COORDINATION.md, commit history, and open items. Or
 | 4 | `hero_creator_step.dart` + `app_tts_service.dart` | Archetype tap fires 2–4 simultaneous audio clips | Call `stop()` before any new archetype audio; queue chime then voice sequentially; guard against rapid taps |
 | 5 | Loading screen | No animation; "Tap to make sparkles!" non-functional | Implement looping `AnimationController` with character + companion; wire `GestureDetector` to sparkle particle effect |
 
-### Phase 2 — P1 Drop-off (Fix Before Soft Launch)
+### Phase 2 — P1 Drop-off ✅ COMPLETE (committed 2026-03-28, items 6 + archetype split deferred to Phase 8)
 
 | # | File(s) | Issue | Fix |
 |---|---------|-------|-----|

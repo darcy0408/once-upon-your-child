@@ -23,7 +23,7 @@ class ParentalConsentScreen extends StatefulWidget {
 class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   String? _parentEmail;
   bool _consentGiven = false;
-  bool _allowPhotoAvatar = true;
+  bool _allowPhotoAvatar = false; // COPPA: parent must explicitly opt in
   bool _submitting = false;
 
   bool get _isUnder13 => widget.declaredAge < 13;
