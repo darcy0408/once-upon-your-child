@@ -54,17 +54,16 @@ Full cross-reference of TEAM_COORDINATION.md, commit history, and open items. Or
 | 26 | `lib/screens/parental_consent_screen.dart` | Photo consent toggle defaults ON → change to OFF; parent must explicitly opt in |
 | 27 | Consent form | Confirm email field is NOT pre-filled with PII in production builds; guard with `kDebugMode` |
 
-### Phase 5 — P2 Polish (Before Full Launch)
+### Phase 5 — P2 Polish (partial ✅ — 2026-03-28)
 
-- Companion error message: "Magical transformation is unavailable" → child-friendly copy
-- Sad cloud: add 1–2 illustrated tears
-- Feelings: play name aloud on single tap; confirm on double-tap/hold
-- Story style orbs → illustrated scene thumbnails; pre-select "Adventure Story"
-- Reduce Sprouts story choices to 2 primary + 4 theme tiles; remove "Pick something special!" section
-- Loading screen background: match dark-purple brand color (no lavender flash)
-- "Bring a Friend Along" text input → mic/speech-to-text button
-- Remove duplicate mic icon from name entry text field
-- Delete "Choose Your Avatar" bottom sheet; route all avatar selection through "Hi [name]!" modal
+- ✅ Sad cloud: rainy cloud (🌧️) + 2 tear drops for Sprout error state
+- ✅ Feelings: play name aloud on single tap; confirm on double-tap/long-press
+- ✅ Reduce Sprouts story choices: 2 orbs (Story Quest + Listen & Learn); remove "Pick something special!" section
+- ✅ Loading screen background: dark-purple gradient replaces cream/lavender
+- ✅ "Bring a Friend Along": mic button added; speaks name on finalResult
+- ✅ Skip "Choose Your Avatar" bottom sheet; "Choose Look" goes directly to gallery
+- ⏳ Companion error message: "Magical transformation is unavailable" → child-friendly copy (already done in earlier session per hero_creator_step.dart)
+- ⏳ Story style orbs → illustrated scene thumbnails; pre-select "Adventure Story"
 
 ### Phase 6 — Testing
 
