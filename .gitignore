@@ -76,6 +76,23 @@ backend/.venv/
 # Local Netlify folder
 .netlify
 
+# Audit output / generated data files (not source)
+audit_cache.json
+audit_results.csv
+feelings_audit_report.md
+full_image_audit_report.md
+full_plan_image_tasks.json
+image_tasks.json
+priority_image_tasks.json
+"python audit_assets.py"
+
+# BFG report (repo cleaner output)
+..bfg-report/
+
+# Temp / scratch docs
+docs/PastingProb.txt
+docs/assignments/*.bak
+
 # Netlify build script
 !.netlify/install_flutter.sh
 
