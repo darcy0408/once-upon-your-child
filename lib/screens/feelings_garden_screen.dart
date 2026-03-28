@@ -331,13 +331,14 @@ class _HowBigZone extends StatelessWidget {
     required this.onIntensityChanged,
   });
 
+  // Sprouts (age 3-5): exactly 5 age-appropriate core feelings — no
+  // Disgusted/Fearful/Bad which are too abstract or distressing for toddlers.
   static const _sproutEmotions = [
     {'id': 'happy', 'emoji': '😊', 'label': 'Happy'},
     {'id': 'sad', 'emoji': '😢', 'label': 'Sad'},
-    {'id': 'angry', 'emoji': '😠', 'label': 'Mad'},
+    {'id': 'angry', 'emoji': '😠', 'label': 'Angry'},
     {'id': 'fearful', 'emoji': '😨', 'label': 'Scared'},
-    {'id': 'surprised', 'emoji': '😲', 'label': 'Wow!'},
-    {'id': 'bad', 'emoji': '🤢', 'label': 'Yucky'},
+    {'id': 'excited', 'emoji': '🤩', 'label': 'Excited'},
   ];
 
   @override
@@ -357,9 +358,14 @@ class _HowBigZone extends StatelessWidget {
                 final isSelected = selectedCore?.id == e['id'];
                 return GestureDetector(
                   onTap: () {
-                    final core = FeelingsWheelData.coreEmotions
-                        .firstWhere((c) => c.id == e['id'],
-                            orElse: () => FeelingsWheelData.coreEmotions.first);
+                    final allCores = [
+                      ...FeelingsWheelData.coreEmotions,
+                      ...FeelingsWheelData.bigFeelingsCoreEmotionsAges6To8,
+                    ];
+                    final core = allCores.firstWhere(
+                      (c) => c.id == e['id'],
+                      orElse: () => FeelingsWheelData.coreEmotions.first,
+                    );
                     onCoreSelected(core);
                   },
                   child: AnimatedContainer(
