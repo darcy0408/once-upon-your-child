@@ -1201,7 +1201,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       _petAvatarStatusMessage = petAvatarResult.message ??
           (success
               ? '✨ Magical pet avatar ready!'
-              : 'Photo saved, but magical transform is unavailable right now.');
+              : "Oops! Magic isn't working on that picture. Want to pick a buddy instead?");
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1255,7 +1255,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           }
         } catch (_) {}
         return const _PetAvatarGenerationResult.error(
-          'Photo saved, but magical transform is unavailable right now.',
+          "Oops! Magic isn't working on that picture. Want to pick a buddy instead?",
         );
       }
       final body = jsonDecode(response.body) as Map<String, dynamic>;
@@ -1265,7 +1265,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           return _PetAvatarGenerationResult.error(message);
         }
         return const _PetAvatarGenerationResult.error(
-          'Photo saved, but magical transform is unavailable right now.',
+          "Oops! Magic isn't working on that picture. Want to pick a buddy instead?",
         );
       }
       final avatarJson = body['avatar'] as Map<String, dynamic>?;
@@ -1282,7 +1282,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
       });
       if (response.statusCode == 206) {
         return const _PetAvatarGenerationResult.success(
-          "We kept your pet's real photo — magical transformation is temporarily unavailable",
+          "Oops! Magic isn't working on that picture right now. Your buddy's photo is saved!",
         );
       }
       return const _PetAvatarGenerationResult.success();
@@ -1293,7 +1293,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
         return _PetAvatarGenerationResult.error(message);
       }
       return const _PetAvatarGenerationResult.error(
-        'Photo saved, but magical transform is unavailable right now.',
+        "Oops! Magic isn't working on that picture. Want to pick a buddy instead?",
       );
     }
   }
@@ -3426,7 +3426,7 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   Future<void> _speakPagePrompt(int page) async {
     final prompt = switch (page) {
       1 => "What is your hero's name? Tap the microphone to say it!",
-      2 => "Pick your hero look! Tap the picture you like.",
+      2 => "Who is your hero? Tap the one you like!",
       3 => "Tap your buddies to bring them along!",
       4 => "Where should we go? Tap the picture you want.",
       5 => "You are all set! Tap Make Magic!",
@@ -3556,12 +3556,18 @@ class _CompanionData {
   final String name;
   final String tagline;
   final String personality; // Sent to AI prompt so quirks stay consistent
+  /// Override image file extension (default '.jpg'). Sprout PNGs use '.png'.
+  final String imageSuffix;
   const _CompanionData({
     required this.id,
     required this.name,
     required this.tagline,
-    required this.personality,
+    this.personality = '',
+    this.imageSuffix = '.jpg',
   });
+
+  String get imagePath =>
+      'assets/images/companions/${id}_normal$imageSuffix';
 }
 
 /// Data carrier for a showcase orb slot.
@@ -3686,6 +3692,34 @@ class _GlowingCompanionOrb extends StatelessWidget {
   }
 }
 
+/// Sprouts (3–5) see only 4 age-appropriate companions with band-specific images.
+const _sproutCompanions = [
+  _CompanionData(
+    id: 'sprout/fluffy_dragon',
+    name: 'Fluffy Dragon',
+    tagline: 'Brave hugs and sparkly sneezes.',
+    imageSuffix: '.png',
+  ),
+  _CompanionData(
+    id: 'sprout/magic_bunny',
+    name: 'Magic Bunny',
+    tagline: 'Boing! Your silly, soft best friend.',
+    imageSuffix: '.png',
+  ),
+  _CompanionData(
+    id: 'sprout/shining_puppy',
+    name: 'Shining Puppy',
+    tagline: 'Glowy tail. Always there for you.',
+    imageSuffix: '.png',
+  ),
+  _CompanionData(
+    id: 'sprout/robin',
+    name: 'Robin',
+    tagline: 'Tiny bird, very loud love.',
+    imageSuffix: '.png',
+  ),
+];
+
 const _companions = [
   _CompanionData(
     id: 'dragon',
@@ -3769,8 +3803,14 @@ class _CompanionImageGrid extends StatelessWidget {
           .floorToDouble()
           .clamp(40.0, naturalSize);
 
+      // Sprouts see only their 4 age-appropriate companions; all other bands
+      // see the full general companion roster.
+      final companionList = band.band == AgeBand.sprout
+          ? _sproutCompanions
+          : _companions;
+
       // Build companion buttons with a uniform, pre-calculated size.
-      List<Widget> buttons = _companions.map((c) {
+      List<Widget> buttons = companionList.map((c) {
         final isSelected = wizardData.companionNames.contains(c.name) ||
             wizardData.selectedCompanions.contains(c.id);
         return _CompanionImageButton(
@@ -3779,6 +3819,7 @@ class _CompanionImageGrid extends StatelessWidget {
           tagline: c.tagline,
           isSelected: isSelected,
           size: itemSize,
+          imagePath: c.imagePath,
           onTap: () {
             if (isSelected) {
               wizardData.companionNames.remove(c.name);
@@ -3858,6 +3899,8 @@ class _CompanionImageButton extends StatefulWidget {
   final VoidCallback onTap;
   final String? photoBase64; // Real pet photo (base64 data URI)
   final double? size; // Override theme-derived size
+  /// Override the default image path (used for band-specific companion assets).
+  final String? imagePath;
 
   const _CompanionImageButton({
     required this.id,
@@ -3867,6 +3910,7 @@ class _CompanionImageButton extends StatefulWidget {
     required this.onTap,
     this.photoBase64,
     this.size,
+    this.imagePath,
   });
 
   @override
@@ -3876,7 +3920,8 @@ class _CompanionImageButton extends StatefulWidget {
 class _CompanionImageButtonState extends State<_CompanionImageButton> {
   bool _pressed = false;
 
-  String get _normalImage => 'assets/images/companions/${widget.id}_normal.jpg';
+  String get _normalImage =>
+      widget.imagePath ?? 'assets/images/companions/${widget.id}_normal.jpg';
   String get _pressedImage =>
       'assets/images/companions/${widget.id}_pressed.jpg';
 
@@ -4352,7 +4397,6 @@ class _PetCardState extends State<_PetCard> {
     }
 
     if (!_isEditing) {
-      final petName = _pet?['name'] ?? 'My Pet';
       return Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -4401,7 +4445,7 @@ class _PetCardState extends State<_PetCard> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    '$petName is saved.',
+                    'Your buddy is ready! 🌟',
                     style: const TextStyle(
                         color: Colors.white, fontWeight: FontWeight.w600),
                   ),
