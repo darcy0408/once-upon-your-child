@@ -72,7 +72,9 @@ class StripeService {
         return _decodeBody(response.body);
       }
 
-      if (response.statusCode == 404) {
+      if (response.statusCode == 404 || response.statusCode == 403) {
+        // 404 = no subscription record; 403 = anonymous/guest user not yet
+        // registered — both map to free tier rather than a hard error.
         return {'status': 'inactive', 'tier': 'free'};
       }
 
