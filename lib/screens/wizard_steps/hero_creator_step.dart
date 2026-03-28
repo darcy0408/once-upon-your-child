@@ -1413,52 +1413,6 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
           }),
           const SizedBox(height: 16),
 
-          // ── HERO: Imagine It ────────────────────────────────────────────────
-          _ImagineItHeroCard(
-            isSelected: isImagineItSelected,
-            onTap: () => setState(() {
-              widget.wizardData.selectedScenario =
-                  isImagineItSelected ? null : 'safe_space';
-            }),
-          ),
-
-          // Inline text/voice input — expands when Imagine It is selected
-          AnimatedCrossFade(
-            duration: const Duration(milliseconds: 280),
-            crossFadeState: isImagineItSelected
-                ? CrossFadeState.showFirst
-                : CrossFadeState.showSecond,
-            firstChild: _buildImagineItInput(),
-            secondChild: const SizedBox.shrink(),
-          ),
-
-          const SizedBox(height: 20),
-
-          // ── Divider: "or explore a ready-made world" ───────────────────────
-          Row(
-            children: [
-              const Expanded(
-                  child: Divider(color: Colors.white24, thickness: 1)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Builder(builder: (context) {
-                  final b = Theme.of(context).extension<AgeBandThemeData>() ??
-                      explorerTheme;
-                  return Text(
-                    b.band == AgeBand.sprout
-                        ? 'or pick one of these!'
-                        : b.band == AgeBand.explorer
-                            ? 'or try one of these worlds!'
-                            : 'or explore a ready-made world',
-                    style: GoogleFonts.fredoka(
-                        color: Colors.white54, fontSize: 13),
-                  );
-                }),
-              ),
-              const Expanded(
-                  child: Divider(color: Colors.white24, thickness: 1)),
-            ],
-          ),
           const SizedBox(height: 14),
 
           // ── 2-column grid of preset scene buttons ──────────────────────────
@@ -1530,6 +1484,35 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
                   .toList(),
             ),
 
+          const SizedBox(height: 20),
+
+          // ── Make One Up — shown below preset scenes so presets come first ──
+          _ImagineItHeroCard(
+            isSelected: isImagineItSelected,
+            onTap: () {
+              final b = Theme.of(context).extension<AgeBandThemeData>() ??
+                  explorerTheme;
+              setState(() {
+                widget.wizardData.selectedScenario =
+                    isImagineItSelected ? null : 'safe_space';
+                if (isImagineItSelected) widget.wizardData.customElements = '';
+              });
+              if (b.band == AgeBand.sprout && !isImagineItSelected) {
+                unawaited(_speakForSprout('Tap a picture to pick your world!'));
+              }
+            },
+          ),
+
+          // Inline input — expands when Make One Up is selected
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 280),
+            crossFadeState: isImagineItSelected
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
+            firstChild: _buildImagineItInput(),
+            secondChild: const SizedBox.shrink(),
+          ),
+
           const SizedBox(height: 24),
           _buildNextArrowButton(
               enabled: true, onTap: _heroNextPage, hint: 'Next: Story Style'),
@@ -1540,6 +1523,8 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
   }
 
   Widget _buildImagineItInput() {
+    final band = Theme.of(context).extension<AgeBandThemeData>() ?? explorerTheme;
+    if (band.band == AgeBand.sprout) return _buildSproutWorldTiles();
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Container(
@@ -1659,6 +1644,88 @@ class _HeroCreatorStepState extends State<HeroCreatorStep>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Four illustrated world-choice tiles shown for Sprouts (age 3-5) instead
+  // of the free-text field — tapping a tile speaks the label and sets
+  // customElements to a rich world description the backend can use.
+  Widget _buildSproutWorldTiles() {
+    const tiles = [
+      (emoji: '🌊', label: 'Under the Sea', value: 'a magical underwater kingdom with friendly sea creatures and colorful fish'),
+      (emoji: '🌲', label: 'Magic Forest', value: 'a sparkling enchanted forest with talking animals and glowing fairy lights'),
+      (emoji: '☁️', label: 'Up in the Clouds', value: 'a fluffy cloud kingdom high in the sky with rainbow bridges and sky castles'),
+      (emoji: '🏰', label: 'Magic Castle', value: 'a glittering magical castle with a friendly dragon guardian and hidden treasure rooms'),
+    ];
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Where should your story go? ✨',
+            style: GoogleFonts.fredoka(
+                color: const Color(0xFFFFD700),
+                fontSize: 16,
+                fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 10),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 1.5,
+            children: tiles.map((t) {
+              final isSelected = widget.wizardData.customElements == t.value;
+              return GestureDetector(
+                onTap: () {
+                  setState(() => widget.wizardData.customElements = t.value);
+                  unawaited(_speakForSprout(t.label));
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFFFFD700)
+                          : Colors.white24,
+                      width: isSelected ? 3 : 1,
+                    ),
+                    color: isSelected
+                        ? const Color(0xFF2C1B47)
+                        : Colors.white.withAlpha(15),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(t.emoji,
+                          style: const TextStyle(fontSize: 28)),
+                      const SizedBox(height: 4),
+                      Text(
+                        t.label,
+                        style: GoogleFonts.fredoka(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (isSelected) ...[
+                        const SizedBox(height: 2),
+                        const Icon(Icons.check_circle,
+                            color: Color(0xFFFFD700), size: 16),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }
