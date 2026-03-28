@@ -459,8 +459,8 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                     _phaseMessages[_messageIndex],
                     key: ValueKey<int>(_messageIndex),
                     textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    softWrap: true,
+                    maxLines: 3,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: const Color(0xFF4D3D6A),
                           fontStyle: FontStyle.italic,
@@ -570,12 +570,23 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
 
   /// Sprout-specific loading UI: bouncing companion + 5-star constellation.
   Widget _buildSproutLoadingContent() {
-    return Column(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (details) {
+        if (!mounted) return;
+        HapticFeedback.lightImpact();
+        setState(() {
+          _tapCount++;
+          _burstPositions.add(details.localPosition);
+          if (_burstPositions.length > 6) _burstPositions.removeAt(0);
+        });
+      },
+      child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(height: 8),
-        // Bouncing companion image
-        if (widget.companionImagePath != null && _bounceController != null)
+        // Bouncing companion OR fallback sparkle icon — both animate with bounce controller
+        if (_bounceController != null)
           AnimatedBuilder(
             animation: _bounceController!,
             builder: (context, _) {
@@ -586,14 +597,19 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
                   child: SizedBox(
                     width: 100,
                     height: 100,
-                    child: _loadCompanionImage(widget.companionImagePath!),
+                    child: widget.companionImagePath != null
+                        ? _loadCompanionImage(widget.companionImagePath!)
+                        : const ColoredBox(
+                            color: Color(0xFF3A1060),
+                            child: Icon(Icons.auto_awesome,
+                                size: 64, color: Color(0xFF9E6CFF)),
+                          ),
                   ),
                 ),
               );
             },
           )
         else
-          // Fallback sparkle icon when no companion image
           const Icon(Icons.auto_awesome, size: 64, color: Color(0xFF9E6CFF)),
         const SizedBox(height: 20),
         // 5-star constellation countdown
@@ -628,7 +644,8 @@ class _MagicalLoadingViewState extends State<MagicalLoadingView>
         ),
         const SizedBox(height: 16),
       ],
-    );
+    ), // Column
+    ); // GestureDetector
   }
 
   Widget _loadCompanionImage(String path) {
