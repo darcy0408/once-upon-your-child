@@ -1,5 +1,28 @@
 # Team Coordination
 
+## 2026-03-29 — Cross-Cutting UX Fixes (Claude Sonnet 4.6)
+
+**Goal:** Four UX issues flagged in a cross-band audit that affect all age bands: scenario carousel lacks swipe affordance, TTS auto-plays for older users (embarrassing for 13+), Guardian Mode gear icon is too hidden, and post-story engagement is buried below the fold.
+
+### Files to Change
+
+| File | What |
+|------|------|
+| `lib/story_reader_screen.dart` | Tighten auto-play to `band.isYoung` only |
+| `lib/screens/welcome_screen.dart` | Replace gear FAB with labeled "Parent" TextButton.icon |
+| `lib/screens/age_gate_screen.dart` | Add "Parent" button (shield icon + label) top-right corner |
+| `lib/screens/wizard_steps/feeling_selection_step.dart` | Carousel right-edge peek + first-use swipe dot indicator |
+| `lib/story_result_screen.dart` | Emoji rating for young bands; replay buttons above fold; split "Tell Me Another" by character context; quick rating in action bar |
+
+### Implementation Order & Status
+
+- [ ] **Issue 2 — TTS**: `shouldAutoPlay = band.isYoung` — sprout/explorer auto-play, adventurer+ manual only
+- [ ] **Issue 3 — Guardian Mode**: Add labeled "Parent" button to age gate + welcome screens
+- [ ] **Issue 1 — Carousel Affordance**: Right-edge peek padding + animated swipe-hint dots (first use only, skip for sprout)
+- [ ] **Issue 4 — Post-Story Engagement**: Emoji rating for young bands; replay buttons above fold; split action bar CTA by character; quick 3-tap rating in action bar
+
+---
+
 ## 2026-03-29 — Creator Band (Ages 12-14) UX Polish (Claude Sonnet 4.6)
 
 **Goal:** Make every Creator-band touchpoint feel like a creative tool, not a children's app with sparkles removed. Six areas: Welcome, Scenario Selection, Hero Creator, Big Feelings, Magic Review, and general polish. Emotional hooks, identity-focused prompts, journal reflection, and pitch-document aesthetic throughout.
