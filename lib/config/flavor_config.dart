@@ -46,7 +46,7 @@ class FlavorConfig {
     switch (flavorString) {
       case 'production':
         const defaultBackend =
-            'https://radiant-tranquility.up.railway.app';
+            'https://story-weaver-app-production.up.railway.app';
         final backendUrl = customBackendOverride.isNotEmpty
             ? customBackendOverride
             : defaultBackend;
