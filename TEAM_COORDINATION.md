@@ -1,5 +1,60 @@
 # Team Coordination
 
+## 2026-03-29 — Adventurer (Ages 9–11) Band Overhaul (Claude Sonnet 4.6)
+
+**Goal:** Transform every Adventurer-band touchpoint into a game-like, RPG-flavored experience. Animated welcome sequence, exclusive unlock celebration, badge system, mission briefing review, feeling-to-quest bridge, and physiological body signal hooks.
+
+### Files to Change
+
+| File | What |
+|------|------|
+| `lib/screens/welcome_screen.dart` | Band-aware animated splash + one-time unlock celebration trigger |
+| `lib/widgets/adventurer_welcome_sequence.dart` | NEW — staggered "loading your adventure profile" animation |
+| `lib/widgets/adventurer_unlock_celebration.dart` | NEW — one-time "You've unlocked new adventures!" dialog |
+| `lib/screens/wizard_steps/feeling_selection_step.dart` | Locked scenario teasers, "Adventurer Exclusive" badge, mission hook display, bridge-to-quest routing |
+| `lib/widgets/age_band_badge.dart` | NEW — reusable shield badge ("9+ Only" / "Adventurer Exclusive") |
+| `lib/screens/wizard_steps/magic_review_step.dart` | RPG character sheet layout, dark mission briefing aesthetic, "MISSION READY" button |
+| `lib/widgets/adventurer_character_sheet.dart` | NEW — stat-line RPG card (Name, Class, Power, Companions) |
+| `lib/widgets/mission_ready_button.dart` | NEW — rectangular pulsing teal-border launch button |
+| `lib/widgets/archetype_card.dart` | Add `adventurerDescription` field + role-focused text for all 6 archetypes |
+| `lib/theme/age_band_theme.dart` | Change `adventurerTheme.launchStoryLabel` → `'MISSION READY'` |
+| `lib/screens/big_feelings_flow_screen.dart` | "Want to go on a quest?" bridge step + physiological body signal hooks |
+
+### Implementation Phases
+
+**Phase 2 — Scenario Selection (do first, independent)**
+1. Locked scenario teasers: show Adventurer+ scenarios to younger bands as "Coming Soon For You" (opacity 0.5, lock icon, "Unlock at age 9+"), non-tappable
+2. "Adventurer Exclusive" shield badge overlay on `minBand`-gated scenario cards
+3. Mission hook: display `conflictHookForAge()` in italics for Adventurer+ users on scenario description cards
+
+**Phase 3+5 — Hero Creator + Mission Briefing (do together — both modify magic_review_step)**
+4. RPG character sheet: replace orb layout with dark indigo stat card (Name, Class, Power, Companions) with teal left-border accents
+5. Role-focused archetype descriptions: add `adventurerDescription` to all 6 archetypes describing their role in the adventure
+6. Dark mission briefing wrapper: adventurer gradient bg + thin teal border frame around review content
+7. "MISSION READY" button: rectangular, dark indigo bg, teal border, uppercase Bitter font, pulse animation; replaces `ImageMakeMagicButton` for Adventurer band
+
+**Phase 4 — Big Feelings Flow**
+8. Feeling-to-quest bridge: after selecting a feeling, insert intermediate step "Want to go on a quest that explores this feeling?" (Yes → auto-selects scenario, No → continues normal flow). Add `bridgeToScenario` to `BigFeelingsFlowResult`.
+9. Physiological body signal hooks: for Adventurer+ in body signal step (step 2), show one-line educational hook (e.g., "Your amygdala sends a danger signal — cortisol spikes so your body is ready to run or freeze"). Static map covering all feelings.
+
+**Phase 1 — Welcome (do last, polish layer)**
+10. Animated "loading your adventure profile" splash: replace "Once Upon a Time" with staggered text animation (indigo palette, Bitter font, personalised with user name) for Adventurer band
+11. One-time "New Adventures Unlocked" dialog: on first Adventurer-band entry, show celebration with Midnight Mystery + Survival Island cards; write `adventurer_band_unlock_seen` to SharedPreferences after dismissal
+
+### Key Risks
+- Phase 3+5 both modify `magic_review_step.dart` heavily — implement as a single unit
+- Big Feelings bridge step (Phase 4): use step index 5 to avoid renumbering existing steps 0-3; update `_goBack()` accordingly
+- Every change must be guarded by `band.band == AgeBand.adventurer` to not affect other 5 bands
+- `ArchetypeData` `const` constructors — adding nullable `adventurerDescription` is backwards-compatible
+
+### Status
+- [ ] Phase 2 — Scenario selection: teasers, badges, mission hooks
+- [ ] Phase 3+5 — Character sheet + mission briefing review + MISSION READY button
+- [ ] Phase 4 — Big Feelings: quest bridge + physiological hooks
+- [ ] Phase 1 — Welcome: animated splash + unlock celebration
+
+---
+
 ## 2026-03-29 — Cross-Cutting UX Fixes (Claude Sonnet 4.6)
 
 **Goal:** Four UX issues flagged in a cross-band audit that affect all age bands: scenario carousel lacks swipe affordance, TTS auto-plays for older users (embarrassing for 13+), Guardian Mode gear icon is too hidden, and post-story engagement is buried below the fold.
