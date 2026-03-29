@@ -6,10 +6,10 @@
       "args": [],
       "env": {}
     },
-    "puppeteer": {
+    "playwright": {
       "type": "stdio",
       "command": "cmd",
-      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-puppeteer"],
+      "args": ["/c", "npx", "-y", "@playwright/mcp@latest", "--browser", "chromium", "--headless"],
       "env": {}
     },
     "filesystem": {

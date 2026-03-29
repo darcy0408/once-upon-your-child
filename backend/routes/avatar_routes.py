@@ -1,7 +1,8 @@
 """
 Avatar Routes - API endpoints for magical avatar generation
 """
-from flask import Blueprint, request, jsonify, make_response
+import time
+from flask import Blueprint, request, jsonify, make_response, after_this_request, current_app
 import logging
 
 try:
@@ -36,6 +37,36 @@ def _tier_limit(free, premium):
             return f"{premium} per hour"
         return f"{free} per hour"
     return get_limit
+
+
+def _check_avatar_rate_limit(user_key: str, limit: int) -> tuple[bool, int]:
+    """
+    Check and increment per-user hourly rate limit for generate-avatar.
+    Increments the counter BEFORE checking, so all requests (including 400s) count.
+    Returns (is_over_limit, new_count).
+    Works regardless of flask-limiter's RATELIMIT_ENABLED setting.
+    """
+    now = int(time.time())
+    hour_bucket = now // 3600
+    counter_key = f"{user_key}:{hour_bucket}"
+
+    if not hasattr(current_app, '_avatar_generate_counts'):
+        current_app._avatar_generate_counts = {}
+
+    counts = current_app._avatar_generate_counts
+    current = counts.get(counter_key, 0)
+
+    if current >= limit:
+        return True, current
+
+    counts[counter_key] = current + 1
+    return False, counts[counter_key]
+
+
+def _seconds_until_next_hour() -> int:
+    """Seconds remaining until the next clock hour boundary."""
+    now = int(time.time())
+    return 3600 - (now % 3600)
 
 
 def create_avatar_blueprint(limiter):
@@ -228,7 +259,6 @@ def create_avatar_blueprint(limiter):
 
     @avatar_bp.route('/generate-avatar', methods=['POST'])
     @require_auth
-    @limiter.limit(_tier_limit(free=5, premium=50))
     def generate_avatar():
         """
         Generate a magical avatar for a child character.
@@ -278,6 +308,39 @@ def create_avatar_blueprint(limiter):
             "fallback_avatars": [...]
         }
         """
+        # Manual per-user hourly rate limiting (independent of flask-limiter enabled state).
+        # Counts ALL requests (including validation failures) so the limit is meaningful.
+        tier = (get_user_tier() or 'free').lower()
+        if tier == 'byok':
+            rate_limit = None
+        elif tier in ('premium', 'family'):
+            rate_limit = 50
+        else:
+            rate_limit = 5
+
+        if rate_limit is not None:
+            user_key = get_user_identifier()
+            is_limited, _ = _check_avatar_rate_limit(user_key, rate_limit)
+
+            if is_limited:
+                resp = make_response(jsonify({
+                    'error_code': 'RATE_LIMIT_EXCEEDED',
+                    'limit_per_hour': rate_limit,
+                    'retry_after_seconds': _seconds_until_next_hour(),
+                }), 429)
+                resp.headers['X-Avatar-RateLimit-Tier'] = tier
+                return resp
+
+            # Attach rate-limit headers to every non-429 response for this request.
+            _rl_tier = tier
+            _rl_limit = rate_limit
+
+            @after_this_request
+            def _add_rate_limit_headers(response):
+                response.headers['X-Avatar-RateLimit-Limit'] = str(_rl_limit)
+                response.headers['X-Avatar-RateLimit-Tier'] = _rl_tier
+                return response
+
         try:
             # Get request data
             data = request.get_json()
