@@ -1,5 +1,43 @@
 # Team Coordination
 
+## 2026-03-29 — Adolescent (Ages 15-17) UX Redesign (Claude Sonnet 4.6)
+
+**Goal:** Make the Adolescent band feel genuinely mature and self-directed — not "dark children's app." Audit all "magic" language, redesign the welcome screen age picker, surface literary scenario descriptions, add free-text character option, and replace the elaborate review screen with a minimal dark card.
+
+### Files to Change
+
+| File | What |
+|------|------|
+| `lib/theme/age_band_theme.dart` | 5 new label fields: `scenarioPageTitle`, `scenarioPageSubtitle`, `scenarioCategoryFantasyLabel`, `scenarioCategoryRealLabel`, `wizardNextHint` |
+| `lib/screens/welcome_screen.dart` | Split "13-17" into individual ages, neutral splash text, mature band transition |
+| `lib/services/app_tts_service.dart` | Replace pre-cached "Make Magic" phrases with band-neutral versions |
+| `lib/screens/wizard_steps/feeling_selection_step.dart` | Band-aware page title/subtitle, category labels, scenario ordering, conflict hooks on cards |
+| `lib/screens/wizard_steps/hero_creator_step.dart` | Band-aware hint text, free-text character description field |
+| `lib/models/wizard_data.dart` | Add `characterCustomDescription` nullable field |
+| `lib/screens/wizard_steps/companion_selector_step.dart` | Pet photo button: "Make Magic" → "Add to Story" for mature bands |
+| `lib/widgets/feelings_quest_modal.dart` | Use band UI font (SourceSansPro) for adolescent headers |
+| `lib/screens/wizard_steps/magic_review_step.dart` | Minimal dark card layout + `_MatureStartButton` for adolescent |
+| `lib/quick_story_screen.dart` | Band-aware CTA labels |
+| `lib/main_story.dart` | Replace "Make Magic" fallback with `band.launchStoryLabel` |
+| `lib/widgets/moon_phase_progress.dart` | Neutral default step 3 label |
+
+### Status
+- [ ] Phase 1 — Theme fields (`age_band_theme.dart` — all 6 band constants + constructor + copyWith + lerp)
+- [ ] Phase 2A — Welcome: split "13-17" into individual ages 13-17, 4-column grid
+- [ ] Phase 2B — Welcome: neutral title splash ("Your stories, your way.")
+- [ ] Phase 2C — Welcome: mature band transition screen after age selection
+- [ ] Phase 2D — TTS: remove "Make Magic" from pre-cached phrases
+- [ ] Phase 3A — Scenario selection: band-aware title/subtitle, category labels, ordering, conflict hooks
+- [ ] Phase 3B — Hero creator: hint text + free-text character field; `wizard_data.dart` field
+- [ ] Phase 3C — Companion selector: pet photo button text for mature bands
+- [ ] Phase 3D — Feelings quest modal: font for adolescent
+- [ ] Phase 3E/F — Magic review: minimal layout + `_MatureStartButton`
+- [ ] Phase 4 — "Magic" language mop-up: `quick_story_screen`, `main_story`, `moon_phase_progress`
+- [ ] flutter analyze clean
+- [ ] Committed
+
+---
+
 ## 2026-03-29 — Adventurer (Ages 9–11) Band Overhaul (Claude Sonnet 4.6)
 
 **Goal:** Transform every Adventurer-band touchpoint into a game-like, RPG-flavored experience. Animated welcome sequence, exclusive unlock celebration, badge system, mission briefing review, feeling-to-quest bridge, and physiological body signal hooks.
